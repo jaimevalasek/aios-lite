@@ -71,6 +71,7 @@ All notable changes to this project will be documented in this file.
 - Parallel commands now localize fallback `unknown` classification labels in human-readable errors.
 - `mcp:init` now avoids hardcoded fallback text for invalid `--tool` and uses i18n-backed messaging.
 - `mcp:init` now localizes generated server `reason` fields and preset `notes` content via i18n.
+- Removed remaining hardcoded `unknown` fallbacks in `parallel:doctor` check messages and `context:validate` parse-reason output.
 - Setup templates now default `aios_lite_version` to `0.1.8`.
 - Expanded automated coverage:
   - `tests/i18n-cli.test.js`

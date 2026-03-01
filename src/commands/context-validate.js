@@ -39,7 +39,11 @@ async function runContextValidate({ args, options = {}, logger, t }) {
     }
     logger.log(t('context_validate.invalid_frontmatter'));
     logger.log(t('context_validate.file_path', { path: result.filePath }));
-    logger.log(t('context_validate.parse_reason', { reason: result.parseError || 'unknown' }));
+    logger.log(
+      t('context_validate.parse_reason', {
+        reason: result.parseError || t('context_validate.parse_reason_unknown')
+      })
+    );
     logger.log(t('context_validate.hint_fix_frontmatter'));
     return output;
   }

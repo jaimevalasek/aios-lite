@@ -140,6 +140,7 @@ module.exports = {
     hint_setup: 'Run @setup to generate the file first.',
     invalid_frontmatter: 'Context file has invalid YAML frontmatter.',
     file_path: 'Context file: {path}',
+    parse_reason_unknown: 'unknown',
     parse_reason: 'Parse reason: {reason}',
     hint_fix_frontmatter: 'Use @setup to regenerate a valid context file.',
     invalid_fields: 'Context file is parsed but has validation issues:',

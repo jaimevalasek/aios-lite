@@ -43,3 +43,15 @@ test('translator resolves regional variants to es and fr dictionaries', () => {
   assert.equal(fr.t('cli.usage'), 'Utilisation :');
   assert.equal(fr.t('cli.unknown_command', { command: 'x' }), 'Commande inconnue : x');
 });
+
+test('translator exposes parse reason unknown fallback key per locale', () => {
+  const en = createTranslator('en');
+  const pt = createTranslator('pt-BR');
+  const es = createTranslator('es');
+  const fr = createTranslator('fr');
+
+  assert.equal(en.t('context_validate.parse_reason_unknown'), 'unknown');
+  assert.equal(pt.t('context_validate.parse_reason_unknown'), 'desconhecido');
+  assert.equal(es.t('context_validate.parse_reason_unknown'), 'desconocido');
+  assert.equal(fr.t('context_validate.parse_reason_unknown'), 'inconnu');
+});

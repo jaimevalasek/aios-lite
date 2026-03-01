@@ -143,3 +143,20 @@ test('parallel:doctor --fix localizes unknown classification fallback in pt-BR',
     /desconhecida/
   );
 });
+
+test('parallel:doctor localizes unknown classification fallback in check message (pt-BR)', async () => {
+  const dir = await makeTempDir();
+  const { t } = createTranslator('pt-BR');
+  await writeContext(dir, '');
+
+  const result = await runParallelDoctor({
+    args: [dir],
+    options: {},
+    logger: createQuietLogger(),
+    t
+  });
+
+  const check = result.checks.find((item) => item.id === 'context.classification');
+  assert.equal(Boolean(check), true);
+  assert.equal(check.message.includes('desconhecida'), true);
+});

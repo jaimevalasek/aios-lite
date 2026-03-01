@@ -148,10 +148,10 @@ function buildChecks(context, state, prerequisites, workersOption, force, t) {
       'error',
       classificationOk
         ? t('parallel_doctor.check_context_classification_ok', {
-            classification: classification || 'unknown'
+            classification: classification || t('parallel_doctor.classification_unknown')
           })
         : t('parallel_doctor.check_context_classification_invalid', {
-            classification: classification || 'unknown'
+            classification: classification || t('parallel_doctor.classification_unknown')
           }),
       classificationOk ? '' : t('parallel_doctor.check_context_classification_hint')
     )

@@ -144,6 +144,7 @@ module.exports = {
     hint_setup: 'Executez @setup pour generer le fichier.',
     invalid_frontmatter: 'Le fichier de contexte contient un frontmatter YAML invalide.',
     file_path: 'Fichier de contexte : {path}',
+    parse_reason_unknown: 'inconnu',
     parse_reason: 'Raison du parse : {reason}',
     hint_fix_frontmatter: 'Utilisez @setup pour regenerer un fichier de contexte valide.',
     invalid_fields: 'Le fichier de contexte est parse mais comporte des problemes de validation :',
