@@ -18,6 +18,7 @@ module.exports = {
     help_locale_apply: 'aios-lite locale:apply [path] [--lang=en|pt-BR] [--dry-run] [--locale=en]',
     help_test_smoke:
       'aios-lite test:smoke [workspace-path] [--lang=en|pt-BR] [--web3=ethereum|solana|cardano] [--keep] [--json] [--locale=en]',
+    help_mcp_init: 'aios-lite mcp:init [path] [--dry-run] [--json] [--locale=en]',
     unknown_command: 'Unknown command: {command}',
     error_prefix: 'Error: {message}'
   },
@@ -199,5 +200,12 @@ module.exports = {
     steps_count: 'Validated steps: {count}',
     workspace_kept: 'Workspace kept: {path}',
     workspace_removed: 'Workspace removed: {path}'
+  },
+  mcp_init: {
+    context_missing:
+      'Context file not found. Generating baseline MCP plan with generic assumptions.',
+    generated: 'MCP plan written: {path}',
+    dry_run_generated: '[dry-run] MCP plan would be written: {path}',
+    server_count: 'MCP servers in plan: {count}'
   }
 };

@@ -23,6 +23,7 @@ npx aios-lite install
 - `aios-lite context:validate [path] [--json]`
 - `aios-lite locale:apply [path] [--lang=en|pt-BR]`
 - `aios-lite test:smoke [workspace-path] [--lang=en|pt-BR] [--web3=ethereum|solana|cardano] [--keep] [--json]`
+- `aios-lite mcp:init [path] [--dry-run] [--json]`
 
 ## Agent usage helper
 If your AI CLI does not show a visual agent picker, use:
@@ -34,6 +35,7 @@ aios-lite locale:apply --lang=pt-BR
 aios-lite doctor --fix
 aios-lite test:smoke --lang=pt-BR
 aios-lite test:smoke --web3=ethereum
+aios-lite mcp:init --dry-run
 ```
 
 ## JSON output for CI
@@ -82,6 +84,14 @@ aios-lite i18n:add fr
 - release guide: `docs/en/release.md`
 - release flow: `docs/en/release-flow.md`
 - release notes template: `docs/en/release-notes-template.md`
+
+## MCP bootstrap
+Generate a local MCP server recommendation file from `project.context.md`:
+
+```bash
+aios-lite mcp:init
+aios-lite mcp:init --dry-run
+```
 
 ## License
 MIT

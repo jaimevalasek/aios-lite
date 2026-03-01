@@ -14,6 +14,7 @@ const { runContextValidate } = require('./commands/context-validate');
 const { runSetupContext } = require('./commands/setup-context');
 const { runLocaleApply } = require('./commands/locale-apply');
 const { runSmokeTest } = require('./commands/smoke');
+const { runMcpInit } = require('./commands/mcp-init');
 
 const JSON_SUPPORTED_COMMANDS = new Set([
   'info',
@@ -22,6 +23,8 @@ const JSON_SUPPORTED_COMMANDS = new Set([
   'context-validate',
   'test:smoke',
   'test-smoke',
+  'mcp:init',
+  'mcp-init',
   'version',
   '--version',
   '-v'
@@ -58,6 +61,7 @@ function printHelp(t, logger) {
   logger.log(`  ${t('cli.help_setup_context')}`);
   logger.log(`  ${t('cli.help_locale_apply')}`);
   logger.log(`  ${t('cli.help_test_smoke')}`);
+  logger.log(`  ${t('cli.help_mcp_init')}`);
 }
 
 function commandSupportsJson(command) {
@@ -116,6 +120,8 @@ async function main() {
       result = await runLocaleApply({ args, options, logger, t });
     } else if (command === 'test:smoke' || command === 'test-smoke') {
       result = await runSmokeTest({ args, options, logger, t });
+    } else if (command === 'mcp:init' || command === 'mcp-init') {
+      result = await runMcpInit({ args, options, logger, t });
     } else {
       const message = t('cli.unknown_command', { command });
       if (jsonMode) {

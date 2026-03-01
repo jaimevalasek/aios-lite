@@ -72,6 +72,17 @@ test('test:smoke --json returns structured success payload', async () => {
   assert.equal(parsed.stepCount >= 10, true);
 });
 
+test('mcp:init --json returns structured plan payload', async () => {
+  const dir = await makeTempDir();
+  const cli = await runCli(['mcp:init', dir, '--json']);
+  assert.equal(cli.code, 0);
+  assert.equal(cli.stderr.trim(), '');
+  const parsed = JSON.parse(cli.stdout);
+  assert.equal(parsed.ok, true);
+  assert.equal(parsed.serverCount >= 4, true);
+  assert.equal(Array.isArray(parsed.plan.servers), true);
+});
+
 test('unknown command with --json returns structured error', async () => {
   const cli = await runCli(['unknown', '--json']);
   assert.equal(cli.code, 1);
