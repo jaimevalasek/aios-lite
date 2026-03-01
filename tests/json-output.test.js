@@ -73,6 +73,19 @@ test('test:smoke --json returns structured success payload', async () => {
   assert.equal(parsed.stepCount >= 10, true);
 });
 
+test('test:smoke --json works with es and fr locales', async () => {
+  for (const locale of ['es', 'fr']) {
+    const cli = await runCli(['test:smoke', '--json', `--locale=${locale}`]);
+    assert.equal(cli.code, 0);
+    assert.equal(cli.stderr.trim(), '');
+    const parsed = JSON.parse(cli.stdout);
+    assert.equal(parsed.ok, true);
+    assert.equal(parsed.profile, 'standard');
+    assert.equal(parsed.web3Target, null);
+    assert.equal(parsed.stepCount >= 8, true);
+  }
+});
+
 test('mcp:init --json returns structured plan payload', async () => {
   const dir = await makeTempDir();
   const cli = await runCli(['mcp:init', dir, '--json']);

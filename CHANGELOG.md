@@ -38,6 +38,7 @@ All notable changes to this project will be documented in this file.
   - `tests/package-test.test.js`
   - `tests/workflow-plan.test.js`
   - extended `tests/mcp-init.test.js` and `tests/json-output.test.js`
+  - smoke JSON e2e checks for `--locale=es` and `--locale=fr`
 
 ## [0.1.7] - 2026-03-01
 ### Added
