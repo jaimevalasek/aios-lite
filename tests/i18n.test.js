@@ -91,3 +91,15 @@ test('translator exposes localized diagnostic line format keys', () => {
   assert.equal(es.t('parallel_doctor.hint_line', { hint: 'x' }), '  Sugerencia: x');
   assert.equal(fr.t('parallel_doctor.hint_line', { hint: 'x' }), '  Astuce : x');
 });
+
+test('translator exposes localized doctor command wrapper keys', () => {
+  const en = createTranslator('en');
+  const pt = createTranslator('pt-BR');
+  const es = createTranslator('es');
+  const fr = createTranslator('fr');
+
+  assert.equal(en.t('doctor.fix_action_line', { action: 'x' }), '- Action: x');
+  assert.equal(pt.t('doctor.fix_action_line', { action: 'x' }), '- Acao: x');
+  assert.equal(es.t('doctor.fix_action_line', { action: 'x' }), '- Accion: x');
+  assert.equal(fr.t('doctor.fix_action_line', { action: 'x' }), '- Action : x');
+});

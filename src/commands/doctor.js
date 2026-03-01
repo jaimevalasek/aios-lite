@@ -6,27 +6,54 @@ const { runDoctor, applyDoctorFixes } = require('../doctor');
 function printDoctorChecks(report, logger, t) {
   for (const check of report.checks) {
     const icon = check.ok ? t('doctor.ok') : t('doctor.fail');
-    logger.log(`[${icon}] ${t(check.key, check.params)}`);
+    logger.log(
+      t('doctor.check_line', {
+        icon,
+        message: t(check.key, check.params)
+      })
+    );
     if (!check.ok && check.hintKey) {
-      logger.log(`  ${t('doctor.hint_prefix', { hint: t(check.hintKey) })}`);
+      logger.log(
+        t('doctor.hint_line', {
+          hint: t(check.hintKey)
+        })
+      );
     }
   }
 }
 
 function printFixAction(action, logger, t, dryRun) {
-  logger.log(`- ${t(`doctor.fix_action_${action.id}`)}`);
+  logger.log(
+    t('doctor.fix_action_line', {
+      action: t(`doctor.fix_action_${action.id}`)
+    })
+  );
   if (action.skipped) {
-    logger.log(`  ${t('doctor.fix_not_applicable')}`);
+    logger.log(
+      t('doctor.detail_line', {
+        text: t('doctor.fix_not_applicable')
+      })
+    );
     return;
   }
-  logger.log(`  ${t('doctor.fix_target_count', { count: action.missingCount || action.count || 0 })}`);
   logger.log(
-    `  ${t(dryRun ? 'doctor.fix_planned_count' : 'doctor.fix_applied_count', {
-      count: action.count || 0
-    })}`
+    t('doctor.detail_line', {
+      text: t('doctor.fix_target_count', { count: action.missingCount || action.count || 0 })
+    })
+  );
+  logger.log(
+    t('doctor.detail_line', {
+      text: t(dryRun ? 'doctor.fix_planned_count' : 'doctor.fix_applied_count', {
+        count: action.count || 0
+      })
+    })
   );
   if (action.locale) {
-    logger.log(`  ${t('doctor.fix_locale', { locale: action.locale })}`);
+    logger.log(
+      t('doctor.detail_line', {
+        text: t('doctor.fix_locale', { locale: action.locale })
+      })
+    );
   }
 }
 
@@ -81,10 +108,11 @@ async function runDoctorCommand({ args, options = {}, logger, t }) {
 
   printDoctorChecks(report, logger, t);
 
+  logger.log('');
   if (!report.ok) {
-    logger.log(`\n${t('doctor.diagnosis_fail', { count: report.failedCount })}`);
+    logger.log(t('doctor.diagnosis_fail', { count: report.failedCount }));
   } else {
-    logger.log(`\n${t('doctor.diagnosis_ok')}`);
+    logger.log(t('doctor.diagnosis_ok'));
   }
 
   return output;
