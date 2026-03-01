@@ -3,6 +3,7 @@
 const path = require('node:path');
 const { REQUIRED_FILES } = require('./constants');
 const { exists } = require('./utils');
+const { validateProjectContextFile } = require('./context');
 
 function parseMajor(version) {
   const cleaned = String(version || '').replace(/^v/, '');
@@ -32,6 +33,27 @@ async function runDoctor(targetDir) {
     hintKey: 'doctor.context_hint'
   });
 
+  const contextValidation = await validateProjectContextFile(targetDir);
+  if (contextValidation.exists) {
+    checks.push({
+      id: 'context:frontmatter',
+      key: 'doctor.context_frontmatter_valid',
+      params: {},
+      ok: contextValidation.parsed,
+      hintKey: contextValidation.parsed ? undefined : 'doctor.context_frontmatter_valid_hint'
+    });
+
+    for (const issue of contextValidation.issues) {
+      checks.push({
+        id: issue.id,
+        key: issue.key,
+        params: issue.params || {},
+        ok: false,
+        hintKey: issue.hintKey
+      });
+    }
+  }
+
   const major = parseMajor(process.version);
   checks.push({
     id: 'node:version',
@@ -45,7 +67,8 @@ async function runDoctor(targetDir) {
   return {
     ok: failed.length === 0,
     checks,
-    failedCount: failed.length
+    failedCount: failed.length,
+    contextValidation
   };
 }
 

@@ -41,3 +41,15 @@
 ### D010 - Agent language contract
 - Decision: add `conversation_language` to setup output contract and require all agents to follow it.
 - Why: i18n should apply to full agent-user interaction, not only CLI messages.
+
+### D011 - Context validation hardening
+- Decision: validate `project.context.md` frontmatter and required keys in `doctor` and `context:validate`.
+- Why: avoid silent defaults and broken downstream agent behavior.
+
+### D012 - Agent usability commands
+- Decision: add `agents` and `agent:prompt` commands.
+- Why: users in Codex/other CLIs need explicit guidance because agent pickers are not automatically generated.
+
+### D013 - CLI context bootstrap
+- Decision: add `setup:context` command to generate `project.context.md` from CLI questions/defaults.
+- Why: unblock users when agent setup flow is not yet fully automated in their AI client.

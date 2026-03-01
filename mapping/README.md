@@ -9,6 +9,8 @@ This folder stores the technical memory for the project to prevent context loss 
 - `04-implementation-backlog.md`: executable MVP backlog.
 - `05-test-plan.md`: automated and manual testing strategy.
 - `06-release-checklist.md`: npm + GitHub release checklist.
+- `07-engineering-notes.md`: implementation notes and next technical targets.
+- `08-risk-register.md`: active risks, impact, and mitigations.
 
 ## Usage rules
 1. Every significant change should create or update a record in `02-decisions.md`.

@@ -20,6 +20,13 @@
 - Reports missing required files.
 - Reports missing `project.context.md`.
 - Validates minimum Node version.
+- Validates frontmatter contract and required context fields.
+- Validates `conversation_language` format.
+
+### agent usability
+- `agents` lists known agents and dependencies.
+- `agent:prompt` generates tool-specific prompt text.
+- `context:validate` reports parse/contract issues directly.
 
 ## Manual
 - Empty folder: `npx aios-lite init demo`.

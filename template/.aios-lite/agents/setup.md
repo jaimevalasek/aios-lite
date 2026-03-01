@@ -37,7 +37,7 @@ framework: "Laravel|Rails|Django|Next.js|Nuxt|Node|..."
 framework_installed: true
 classification: "MICRO|SMALL|MEDIUM"
 conversation_language: "en"
-aios_lite_version: "0.1.1"
+aios_lite_version: "0.1.2"
 generated_at: "ISO-8601"
 ---
 

@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.2] - 2026-03-01
+### Added
+- New commands:
+  - `aios-lite agents`
+  - `aios-lite agent:prompt <agent> [--tool=...]`
+  - `aios-lite context:validate [path]`
+  - `aios-lite setup:context [path]` (interactive or defaults mode)
+- New modules:
+  - `src/context.js` for frontmatter parsing and context contract validation
+  - `src/agents.js` for agent metadata and prompt generation
+  - `src/context-writer.js` for context rendering and classification scoring
+- New test suites:
+  - `tests/context.test.js`
+  - `tests/agents.test.js`
+  - `tests/context-writer.test.js`
+
+### Changed
+- `doctor` now validates `project.context.md` frontmatter and required fields, including `conversation_language` format.
+
 ## [0.1.1] - 2026-03-01
 ### Changed
 - Converted remaining template files to English (`.aios-lite` agents/config and Gemini command descriptions).

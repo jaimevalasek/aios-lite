@@ -17,6 +17,18 @@ npx aios-lite install
 - `aios-lite info [path]`
 - `aios-lite doctor [path]`
 - `aios-lite i18n:add <locale>`
+- `aios-lite setup:context [path]`
+- `aios-lite agents`
+- `aios-lite agent:prompt <agent> [--tool=codex|claude|gemini|opencode]`
+- `aios-lite context:validate [path]`
+
+## Agent usage helper
+If your AI CLI does not show a visual agent picker, use:
+
+```bash
+aios-lite agents
+aios-lite agent:prompt setup --tool=codex
+```
 
 ## i18n
 CLI localization is supported with:

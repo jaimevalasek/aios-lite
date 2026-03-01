@@ -14,6 +14,6 @@
 - [x] npm name availability checked (`aios-lite` and fallbacks verified as available on 2026-03-01).
 - [x] `bin` executable has shebang.
 - [x] `files` in package.json include templates and docs.
-- [ ] Release tag created in git repository.
+- [x] Release tag created in git repository (`v0.1.0`, `v0.1.1`).
 - [x] Release notes templates prepared (`.github/release-notes-template.md`, `docs/en/release-notes-template.md`).
 - [x] GitHub Actions CI and release workflows are configured.

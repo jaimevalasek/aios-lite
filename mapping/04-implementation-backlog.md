@@ -19,6 +19,7 @@
 - [x] Automated tests for installer/update.
 - [x] Automated tests for doctor.
 - [x] Local smoke test: `init -> install -> doctor -> update`.
+- [x] Context contract validation checks in doctor (`project.context.md` fields + language tag).
 
 ## Sprint 4 - Release readiness
 - [x] Main README.
@@ -26,3 +27,10 @@
 - [x] CONTRIBUTING and CODE_OF_CONDUCT.
 - [x] GitHub Actions CI and npm release workflows.
 - [ ] npm release checklist completion.
+
+## Sprint 5 - Usability and language contract
+- [x] `agents` command to list agent contracts.
+- [x] `agent:prompt` command to generate copy-paste prompts per tool.
+- [x] `context:validate` command for explicit context checks.
+- [ ] Localized agent packs (`en`, `pt-BR`) with selection flow.
+- [x] Optional interactive CLI onboarding for `project.context.md` generation (`setup:context`).

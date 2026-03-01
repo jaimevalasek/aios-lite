@@ -8,6 +8,9 @@ const { runUpdate } = require('./commands/update');
 const { runInfo } = require('./commands/info');
 const { runDoctorCommand } = require('./commands/doctor');
 const { runI18nAdd } = require('./commands/i18n-add');
+const { runAgentsList, runAgentPrompt } = require('./commands/agents');
+const { runContextValidate } = require('./commands/context-validate');
+const { runSetupContext } = require('./commands/setup-context');
 
 function printHelp(t) {
   console.log(`${t('cli.title')}\n`);
@@ -18,6 +21,10 @@ function printHelp(t) {
   console.log(`  ${t('cli.help_info')}`);
   console.log(`  ${t('cli.help_doctor')}`);
   console.log(`  ${t('cli.help_i18n_add')}`);
+  console.log(`  ${t('cli.help_agents')}`);
+  console.log(`  ${t('cli.help_agent_prompt')}`);
+  console.log(`  ${t('cli.help_context_validate')}`);
+  console.log(`  ${t('cli.help_setup_context')}`);
 }
 
 async function main() {
@@ -59,6 +66,22 @@ async function main() {
     }
     if (command === 'i18n:add' || command === 'i18n-add') {
       await runI18nAdd({ args, options, logger, t });
+      return;
+    }
+    if (command === 'agents') {
+      await runAgentsList({ args, options, logger, t });
+      return;
+    }
+    if (command === 'agent:prompt' || command === 'agent-prompt') {
+      await runAgentPrompt({ args, options, logger, t });
+      return;
+    }
+    if (command === 'context:validate' || command === 'context-validate') {
+      await runContextValidate({ args, options, logger, t });
+      return;
+    }
+    if (command === 'setup:context' || command === 'setup-context') {
+      await runSetupContext({ args, options, logger, t });
       return;
     }
 
