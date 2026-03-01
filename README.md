@@ -38,6 +38,7 @@ If your AI CLI does not show a visual agent picker, use:
 ```bash
 aios-lite agents
 aios-lite agent:prompt setup --tool=codex
+aios-lite agent:prompt ux-ui --tool=codex
 aios-lite init my-project --lang=pt-BR --tool=codex
 aios-lite install --lang=es --tool=claude
 aios-lite update --lang=fr
@@ -56,6 +57,8 @@ aios-lite parallel:doctor --fix --dry-run
 aios-lite mcp:init --dry-run
 aios-lite mcp:doctor --strict-env
 ```
+
+Default planning includes `@ux-ui` for SMALL/MEDIUM projects (and optional use for MICRO when frontend quality is a priority).
 
 ## JSON output for CI
 Use `--json` on selected commands:

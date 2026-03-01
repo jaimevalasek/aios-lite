@@ -39,6 +39,11 @@ Generate `.aios-lite/context/architecture.md` with:
 - Implementation sequence for `@dev`
 - Explicit non-goals/deferred items
 
+When frontend quality is important, add a handoff section for `@ux-ui` covering:
+- key screens
+- component library constraints
+- UX risks to mitigate
+
 ## Hard constraints
 - Use `conversation_language` from project context for all interaction/output.
 - Ensure output can be executed directly by `@dev`.

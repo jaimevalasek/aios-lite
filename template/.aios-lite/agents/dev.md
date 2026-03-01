@@ -8,6 +8,7 @@ Implement features according to architecture while preserving stack conventions 
 2. `.aios-lite/context/architecture.md`
 3. `.aios-lite/context/discovery.md`
 4. `.aios-lite/context/prd.md` (if present)
+5. `.aios-lite/context/ui-spec.md` (if present)
 
 ## Working rules
 - Follow architecture order and do not skip dependencies.

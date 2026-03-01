@@ -8,6 +8,10 @@ All notable changes to this project will be documented in this file.
 - Localized agent prompt packs for:
   - `es` at `template/.aios-lite/locales/es/agents/*.md`
   - `fr` at `template/.aios-lite/locales/fr/agents/*.md`
+- New `@ux-ui` agent contract and template set:
+  - `.aios-lite/agents/ux-ui.md`
+  - `.aios-lite/locales/{en,pt-BR,es,fr}/agents/ux-ui.md`
+  - `.gemini/commands/aios-ux-ui.toml`
 - New package installation validation command:
   - `aios-lite test:package [source-path] [--keep] [--dry-run] [--json]`
 - New workflow planning command:
@@ -81,6 +85,10 @@ All notable changes to this project will be documented in this file.
 - Localized diagnostic/action wrapper lines in `doctor` command output (checks, hints, fix actions, and detail lines).
 - `cli` help and unknown-command wrapper lines are now localized via i18n keys instead of inline formatting.
 - `init` and `install` now print explicit multi-IDE onboarding hints (`agents` + `agent:prompt setup`) with optional `--tool=codex|claude|gemini|opencode` guidance.
+- Agent flow now supports explicit UI/UX handoff:
+  - `@architect` may hand off key screens/component constraints to `@ux-ui`
+  - `@dev` now consumes `.aios-lite/context/ui-spec.md` when present
+  - `SMALL`/`MEDIUM` default sequence includes `@ux-ui`
 - `doctor` now enforces multi-IDE gateway contracts (Claude/Codex/Gemini/OpenCode) and validates required Gemini/OpenCode files.
 - `doctor` now also validates each Gemini command file (`.gemini/commands/aios-*.toml`) maps to the expected shared agent instruction file.
 - `doctor --fix` now restores broken gateway contract files (Claude/Codex/Gemini/OpenCode + Gemini command mappings) from template in safe mode.
@@ -99,6 +107,7 @@ All notable changes to this project will be documented in this file.
   - `i18n:add`
 - `init` and `install` now support `--lang=en|pt-BR|es|fr` to auto-apply localized agent packs during bootstrap.
 - Setup templates now default `aios_lite_version` to `0.1.8`.
+- `ui-ux-modern` static skill was expanded to a production-ready checklist with token, state, accessibility, responsive, and handoff guidance.
 - Expanded automated coverage:
   - `tests/i18n-cli.test.js`
   - `tests/init-install-guidance.test.js`

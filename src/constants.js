@@ -8,6 +8,7 @@ const MANAGED_FILES = [
   '.gemini/commands/aios-setup.toml',
   '.gemini/commands/aios-analyst.toml',
   '.gemini/commands/aios-architect.toml',
+  '.gemini/commands/aios-ux-ui.toml',
   '.gemini/commands/aios-pm.toml',
   '.gemini/commands/aios-dev.toml',
   '.gemini/commands/aios-qa.toml',
@@ -16,6 +17,7 @@ const MANAGED_FILES = [
   '.aios-lite/agents/setup.md',
   '.aios-lite/agents/analyst.md',
   '.aios-lite/agents/architect.md',
+  '.aios-lite/agents/ux-ui.md',
   '.aios-lite/agents/pm.md',
   '.aios-lite/agents/dev.md',
   '.aios-lite/agents/qa.md',
@@ -23,6 +25,7 @@ const MANAGED_FILES = [
   '.aios-lite/locales/en/agents/setup.md',
   '.aios-lite/locales/en/agents/analyst.md',
   '.aios-lite/locales/en/agents/architect.md',
+  '.aios-lite/locales/en/agents/ux-ui.md',
   '.aios-lite/locales/en/agents/pm.md',
   '.aios-lite/locales/en/agents/dev.md',
   '.aios-lite/locales/en/agents/qa.md',
@@ -30,6 +33,7 @@ const MANAGED_FILES = [
   '.aios-lite/locales/pt-BR/agents/setup.md',
   '.aios-lite/locales/pt-BR/agents/analyst.md',
   '.aios-lite/locales/pt-BR/agents/architect.md',
+  '.aios-lite/locales/pt-BR/agents/ux-ui.md',
   '.aios-lite/locales/pt-BR/agents/pm.md',
   '.aios-lite/locales/pt-BR/agents/dev.md',
   '.aios-lite/locales/pt-BR/agents/qa.md',
@@ -37,6 +41,7 @@ const MANAGED_FILES = [
   '.aios-lite/locales/es/agents/setup.md',
   '.aios-lite/locales/es/agents/analyst.md',
   '.aios-lite/locales/es/agents/architect.md',
+  '.aios-lite/locales/es/agents/ux-ui.md',
   '.aios-lite/locales/es/agents/pm.md',
   '.aios-lite/locales/es/agents/dev.md',
   '.aios-lite/locales/es/agents/qa.md',
@@ -44,6 +49,7 @@ const MANAGED_FILES = [
   '.aios-lite/locales/fr/agents/setup.md',
   '.aios-lite/locales/fr/agents/analyst.md',
   '.aios-lite/locales/fr/agents/architect.md',
+  '.aios-lite/locales/fr/agents/ux-ui.md',
   '.aios-lite/locales/fr/agents/pm.md',
   '.aios-lite/locales/fr/agents/dev.md',
   '.aios-lite/locales/fr/agents/qa.md',
@@ -78,6 +84,7 @@ const REQUIRED_FILES = [
   '.gemini/commands/aios-setup.toml',
   '.gemini/commands/aios-analyst.toml',
   '.gemini/commands/aios-architect.toml',
+  '.gemini/commands/aios-ux-ui.toml',
   '.gemini/commands/aios-pm.toml',
   '.gemini/commands/aios-dev.toml',
   '.gemini/commands/aios-qa.toml',
@@ -85,6 +92,7 @@ const REQUIRED_FILES = [
   '.aios-lite/config.md',
   '.aios-lite/agents/setup.md',
   '.aios-lite/agents/analyst.md',
+  '.aios-lite/agents/ux-ui.md',
   '.aios-lite/agents/dev.md',
   '.aios-lite/context/.gitkeep'
 ];
@@ -128,6 +136,17 @@ const AGENT_DEFINITIONS = [
       '.aios-lite/context/discovery.md'
     ],
     output: '.aios-lite/context/architecture.md'
+  },
+  {
+    id: 'ux-ui',
+    command: '@ux-ui',
+    path: '.aios-lite/agents/ux-ui.md',
+    dependsOn: [
+      '.aios-lite/context/project.context.md',
+      '.aios-lite/context/discovery.md',
+      '.aios-lite/context/architecture.md'
+    ],
+    output: '.aios-lite/context/ui-spec.md'
   },
   {
     id: 'pm',

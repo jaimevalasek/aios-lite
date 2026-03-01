@@ -1,0 +1,8 @@
+name = "aios-ux-ui"
+description = "Frontend design and UX specification"
+instruction_file = ".aios-lite/agents/ux-ui.md"
+requires_context = [
+  ".aios-lite/context/project.context.md",
+  ".aios-lite/context/discovery.md",
+  ".aios-lite/context/architecture.md"
+]

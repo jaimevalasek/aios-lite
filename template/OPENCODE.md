@@ -9,6 +9,7 @@
 - setup -> `.aios-lite/agents/setup.md`
 - analyst -> `.aios-lite/agents/analyst.md`
 - architect -> `.aios-lite/agents/architect.md`
+- ux-ui -> `.aios-lite/agents/ux-ui.md`
 - pm -> `.aios-lite/agents/pm.md`
 - dev -> `.aios-lite/agents/dev.md`
 - qa -> `.aios-lite/agents/qa.md`

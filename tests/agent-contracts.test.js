@@ -6,7 +6,7 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 
 const ROOT = path.resolve(__dirname, '..');
-const AGENTS = ['setup', 'analyst', 'architect', 'pm', 'dev', 'qa', 'orchestrator'];
+const AGENTS = ['setup', 'analyst', 'architect', 'ux-ui', 'pm', 'dev', 'qa', 'orchestrator'];
 
 async function read(filePath) {
   return fs.readFile(filePath, 'utf8');
@@ -71,6 +71,10 @@ test('core agent contracts include actionable sections', async () => {
     {
       file: 'dev.md',
       tokens: ['Working rules', 'Implementation strategy', 'Output expectations']
+    },
+    {
+      file: 'ux-ui.md',
+      tokens: ['Mission', 'Working rules', 'Output contract']
     },
     {
       file: 'qa.md',

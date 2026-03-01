@@ -6,9 +6,9 @@
 - Never assume stack: detect first, then ask.
 
 ## Project sizes
-- MICRO: `@setup -> @dev`
-- SMALL: `@setup -> @analyst -> @architect -> @dev -> @qa`
-- MEDIUM: `@setup -> @analyst -> @architect -> @pm -> @orchestrator -> @dev -> @qa`
+- MICRO: `@setup -> @dev` (optional `@ux-ui` for UI-heavy projects)
+- SMALL: `@setup -> @analyst -> @architect -> @ux-ui -> @dev -> @qa`
+- MEDIUM: `@setup -> @analyst -> @architect -> @ux-ui -> @pm -> @orchestrator -> @dev -> @qa`
 
 ## Official classification
 Score (0-6):
