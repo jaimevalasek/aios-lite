@@ -63,6 +63,7 @@ All notable changes to this project will be documented in this file.
 - `setup:context` onboarding notes are now localized (including beginner recommendation notes and stack-option notes).
 - `test:package` failure messages are now localized via i18n dictionaries.
 - `parallel:doctor` check/hint messages are now fully localized (including severity labels).
+- Internal validation failures inside `test:smoke` are now localized instead of hardcoded English.
 - Setup templates now default `aios_lite_version` to `0.1.8`.
 - Expanded automated coverage:
   - `tests/i18n-cli.test.js`

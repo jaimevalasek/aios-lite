@@ -57,9 +57,9 @@ function createQuietLogger() {
   };
 }
 
-function assertStep(condition, message) {
+function assertStep(condition, t, key, params = {}) {
   if (!condition) {
-    throw new Error(message);
+    throw new Error(t(key, params));
   }
 }
 
@@ -198,7 +198,7 @@ async function runSmokeTest({ args, options, logger, t }) {
       logger: quietLogger,
       t
     });
-    assertStep(installResult.copied.length > 0, 'install copied zero files');
+    assertStep(installResult.copied.length > 0, t, 'smoke.assert_install_files');
     steps.push('install');
     log(t('smoke.step_ok', { step: 'install' }));
 
@@ -206,7 +206,9 @@ async function runSmokeTest({ args, options, logger, t }) {
       const detection = await detectFramework(projectDir);
       assertStep(
         detection.framework === web3Profile.framework,
-        `unexpected web3 framework detection: ${detection.framework}`
+        t,
+        'smoke.assert_web3_framework',
+        { framework: detection.framework }
       );
       steps.push(`detect:web3:${web3Profile.target}`);
       log(
@@ -240,21 +242,23 @@ async function runSmokeTest({ args, options, logger, t }) {
       logger: quietLogger,
       t
     });
-    assertStep(Boolean(setupResult.filePath), 'setup:context did not write context file');
+    assertStep(Boolean(setupResult.filePath), t, 'smoke.assert_setup_written');
     if (web3Profile) {
-      assertStep(setupResult.data.projectType === 'dapp', 'setup did not infer project_type=dapp');
+      assertStep(setupResult.data.projectType === 'dapp', t, 'smoke.assert_setup_project_type_dapp');
       assertStep(
         String(setupResult.data.web3Networks || '').includes(web3Profile.network),
-        'setup did not infer expected web3 network'
+        t,
+        'smoke.assert_setup_web3_network'
       );
       assertStep(
         setupResult.data.framework === web3Profile.framework,
-        'setup did not keep expected web3 framework'
+        t,
+        'smoke.assert_setup_web3_framework'
       );
     } else if (smokeProfile === 'mixed') {
-      assertStep(setupResult.data.projectType === 'dapp', 'mixed profile did not infer project_type=dapp');
-      assertStep(setupResult.data.web3Enabled === true, 'mixed profile did not infer web3_enabled=true');
-      assertStep(setupResult.data.framework === 'Hardhat', 'mixed profile did not prefer web3 framework');
+      assertStep(setupResult.data.projectType === 'dapp', t, 'smoke.assert_mixed_project_type_dapp');
+      assertStep(setupResult.data.web3Enabled === true, t, 'smoke.assert_mixed_web3_enabled');
+      assertStep(setupResult.data.framework === 'Hardhat', t, 'smoke.assert_mixed_framework');
       steps.push('verify:mixed-context');
       log(t('smoke.mixed_context_verified', { framework: setupResult.data.framework }));
     }
@@ -267,7 +271,7 @@ async function runSmokeTest({ args, options, logger, t }) {
       logger: quietLogger,
       t
     });
-    assertStep(localeResult.copied.length > 0, 'locale:apply copied zero files');
+    assertStep(localeResult.copied.length > 0, t, 'smoke.assert_locale_apply_files');
     steps.push('locale:apply');
     log(t('smoke.step_ok', { step: 'locale:apply' }));
 
@@ -277,7 +281,7 @@ async function runSmokeTest({ args, options, logger, t }) {
       logger: quietLogger,
       t
     });
-    assertStep(agentsResult.count >= 7, 'agents command returned unexpected agent count');
+    assertStep(agentsResult.count >= 7, t, 'smoke.assert_agents_count');
     steps.push('agents');
     log(t('smoke.step_ok', { step: 'agents' }));
 
@@ -289,7 +293,8 @@ async function runSmokeTest({ args, options, logger, t }) {
     });
     assertStep(
       promptResult.prompt.includes('.aios-lite'),
-      'agent:prompt did not include expected path information'
+      t,
+      'smoke.assert_prompt_path'
     );
     steps.push('agent:prompt');
     log(t('smoke.step_ok', { step: 'agent:prompt' }));
@@ -300,25 +305,26 @@ async function runSmokeTest({ args, options, logger, t }) {
       logger: quietLogger,
       t
     });
-    assertStep(contextResult.ok, 'context:validate failed');
+    assertStep(contextResult.ok, t, 'smoke.assert_context_validate');
     steps.push('context:validate');
     log(t('smoke.step_ok', { step: 'context:validate' }));
 
     if (web3Profile) {
       const parsedContext = await validateProjectContextFile(projectDir);
-      assertStep(parsedContext.valid, 'web3 context parse failed');
-      assertStep(parsedContext.data.project_type === 'dapp', 'context project_type is not dapp');
-      assertStep(parsedContext.data.web3_enabled === true, 'context web3_enabled is not true');
+      assertStep(parsedContext.valid, t, 'smoke.assert_web3_context_valid');
+      assertStep(parsedContext.data.project_type === 'dapp', t, 'smoke.assert_web3_context_project_type');
+      assertStep(parsedContext.data.web3_enabled === true, t, 'smoke.assert_web3_context_enabled');
       assertStep(
         String(parsedContext.data.web3_networks || '').includes(web3Profile.network),
-        'context web3_networks does not include expected target'
+        t,
+        'smoke.assert_web3_context_network'
       );
       steps.push(`verify:web3-context:${web3Profile.target}`);
       log(t('smoke.web3_context_verified', { network: web3Profile.network }));
     }
 
     const doctorResult = await runDoctor(projectDir);
-    assertStep(doctorResult.ok, 'doctor check failed');
+    assertStep(doctorResult.ok, t, 'smoke.assert_doctor_ok');
     steps.push('doctor');
     log(t('smoke.step_ok', { step: 'doctor' }));
 
@@ -333,8 +339,8 @@ async function runSmokeTest({ args, options, logger, t }) {
         logger: quietLogger,
         t
       });
-      assertStep(parallelInit.ok, 'parallel:init failed');
-      assertStep(parallelInit.workers === 3, 'parallel:init workers mismatch');
+      assertStep(parallelInit.ok, t, 'smoke.assert_parallel_init_ok');
+      assertStep(parallelInit.workers === 3, t, 'smoke.assert_parallel_init_workers');
       steps.push('parallel:init');
       log(t('smoke.step_ok', { step: 'parallel:init' }));
 
@@ -344,8 +350,8 @@ async function runSmokeTest({ args, options, logger, t }) {
         logger: quietLogger,
         t
       });
-      assertStep(parallelAssign.ok, 'parallel:assign failed');
-      assertStep(parallelAssign.scopeCount > 0, 'parallel:assign produced no scopes');
+      assertStep(parallelAssign.ok, t, 'smoke.assert_parallel_assign_ok');
+      assertStep(parallelAssign.scopeCount > 0, t, 'smoke.assert_parallel_assign_scope');
       steps.push('parallel:assign');
       log(t('smoke.step_ok', { step: 'parallel:assign' }));
 
@@ -355,8 +361,8 @@ async function runSmokeTest({ args, options, logger, t }) {
         logger: quietLogger,
         t
       });
-      assertStep(parallelStatus.ok, 'parallel:status failed');
-      assertStep(parallelStatus.laneCount === 3, 'parallel:status lane count mismatch');
+      assertStep(parallelStatus.ok, t, 'smoke.assert_parallel_status_ok');
+      assertStep(parallelStatus.laneCount === 3, t, 'smoke.assert_parallel_status_lanes');
       steps.push('parallel:status');
       log(t('smoke.parallel_status_verified', { count: parallelStatus.laneCount }));
 
@@ -366,8 +372,8 @@ async function runSmokeTest({ args, options, logger, t }) {
         logger: quietLogger,
         t
       });
-      assertStep(parallelDoctor.ok, 'parallel:doctor failed');
-      assertStep(parallelDoctor.summary.failed === 0, 'parallel:doctor reported failures');
+      assertStep(parallelDoctor.ok, t, 'smoke.assert_parallel_doctor_ok');
+      assertStep(parallelDoctor.summary.failed === 0, t, 'smoke.assert_parallel_doctor_summary');
       steps.push('parallel:doctor');
       log(t('smoke.step_ok', { step: 'parallel:doctor' }));
     }
