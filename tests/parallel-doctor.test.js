@@ -20,6 +20,19 @@ function createQuietLogger() {
   };
 }
 
+function createCollectLogger() {
+  const lines = [];
+  return {
+    lines,
+    log(line) {
+      lines.push(String(line));
+    },
+    error(line) {
+      lines.push(String(line));
+    }
+  };
+}
+
 async function writeContext(dir, classification = 'MEDIUM') {
   const contextPath = path.join(dir, '.aios-lite/context/project.context.md');
   await fs.mkdir(path.dirname(contextPath), { recursive: true });
@@ -159,4 +172,20 @@ test('parallel:doctor localizes unknown classification fallback in check message
   const check = result.checks.find((item) => item.id === 'context.classification');
   assert.equal(Boolean(check), true);
   assert.equal(check.message.includes('desconhecida'), true);
+});
+
+test('parallel:doctor localizes hint line formatting in pt-BR output', async () => {
+  const dir = await makeTempDir();
+  const { t } = createTranslator('pt-BR');
+  const logger = createCollectLogger();
+
+  const result = await runParallelDoctor({
+    args: [dir],
+    options: {},
+    logger,
+    t
+  });
+
+  assert.equal(result.ok, false);
+  assert.equal(logger.lines.some((line) => line.startsWith('  Dica: ')), true);
 });

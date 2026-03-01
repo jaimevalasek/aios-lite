@@ -70,3 +70,28 @@ test('context:validate prints localized parse reason details in pt-BR', async ()
     true
   );
 });
+
+test('context:validate renders localized issue list lines for invalid fields', async () => {
+  const dir = await makeTempDir();
+  const filePath = path.join(dir, '.aios-lite/context/project.context.md');
+  await fs.mkdir(path.dirname(filePath), { recursive: true });
+
+  await fs.writeFile(
+    filePath,
+    `---\nproject_name: \"demo\"\n---\n\n# Project Context\n`,
+    'utf8'
+  );
+
+  const { t } = createTranslator('pt-BR');
+  const logger = createCollectLogger();
+  const result = await runContextValidate({
+    args: [dir],
+    options: {},
+    logger,
+    t
+  });
+
+  assert.equal(result.ok, false);
+  assert.equal(result.reason, 'invalid_fields');
+  assert.equal(logger.lines.some((line) => line.startsWith('- ')), true);
+});

@@ -62,7 +62,11 @@ async function runContextValidate({ args, options = {}, logger, t }) {
     logger.log(t('context_validate.invalid_fields'));
     logger.log(t('context_validate.file_path', { path: result.filePath }));
     for (const issue of result.issues) {
-      logger.log(`- ${t(issue.key, issue.params || {})}`);
+      logger.log(
+        t('context_validate.issue_line', {
+          issue: t(issue.key, issue.params || {})
+        })
+      );
     }
     return output;
   }

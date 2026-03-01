@@ -79,3 +79,15 @@ test('translator exposes context parse reason keys across locales', () => {
     'bloc de frontmatter non ferme'
   );
 });
+
+test('translator exposes localized diagnostic line format keys', () => {
+  const en = createTranslator('en');
+  const pt = createTranslator('pt-BR');
+  const es = createTranslator('es');
+  const fr = createTranslator('fr');
+
+  assert.equal(en.t('mcp_doctor.hint_line', { hint: 'x' }), '  Hint: x');
+  assert.equal(pt.t('mcp_doctor.hint_line', { hint: 'x' }), '  Dica: x');
+  assert.equal(es.t('parallel_doctor.hint_line', { hint: 'x' }), '  Sugerencia: x');
+  assert.equal(fr.t('parallel_doctor.hint_line', { hint: 'x' }), '  Astuce : x');
+});

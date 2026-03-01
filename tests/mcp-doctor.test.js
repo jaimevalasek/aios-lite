@@ -203,4 +203,5 @@ test('mcp:doctor localizes check prefixes in pt-BR output', async () => {
   assert.equal(result.ok, false);
   assert.equal(logger.lines.some((line) => line.startsWith('[AVISO] context.exists')), true);
   assert.equal(logger.lines.some((line) => line.startsWith('[FALHA] plan.exists')), true);
+  assert.equal(logger.lines.some((line) => line.startsWith('  Dica: ')), true);
 });

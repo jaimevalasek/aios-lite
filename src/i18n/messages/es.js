@@ -156,6 +156,7 @@ module.exports = {
     parse_reason: 'Motivo de parseo: {reason}',
     hint_fix_frontmatter: 'Usa @setup para regenerar un archivo de contexto valido.',
     invalid_fields: 'El archivo de contexto fue parseado pero tiene problemas de validacion:',
+    issue_line: '- {issue}',
     valid: 'El archivo de contexto es valido.'
   },
   setup_context: {
@@ -338,6 +339,8 @@ module.exports = {
     prefix_ok: 'OK',
     prefix_warn: 'AVISO',
     prefix_fail: 'FALLO',
+    check_line: '[{prefix}] {id} - {message}',
+    hint_line: '  Sugerencia: {hint}',
     invalid_workers:
       'Valor invalido para --workers. Usa un entero entre {min} y {max}.',
     classification_unknown: 'desconocida',
@@ -450,6 +453,8 @@ module.exports = {
     prefix_ok: 'OK',
     prefix_warn: 'AVISO',
     prefix_fail: 'FALLO',
+    check_line: '[{prefix}] {id} - {message}',
+    hint_line: '  Sugerencia: {hint}',
     context_missing: 'project.context.md no fue encontrado.',
     context_missing_hint: 'Ejecuta setup primero para validacion MCP basada en contexto.',
     context_parse_invalid: 'project.context.md no pudo parsearse ({reason}).',

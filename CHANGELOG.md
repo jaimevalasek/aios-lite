@@ -75,6 +75,7 @@ All notable changes to this project will be documented in this file.
 - `context:validate` now localizes known frontmatter parse reason codes into human-readable locale messages.
 - `mcp:doctor` now localizes context frontmatter parse reason codes using the same i18n mapping as `context:validate`.
 - Standardized localized line formatting for `agents`, `locale:apply`, `workflow:plan`, and `parallel:init` human-readable listings.
+- Localized diagnostic line wrappers for `mcp:doctor` and `parallel:doctor` checks/hints, plus `context:validate` issue list rows.
 - Setup templates now default `aios_lite_version` to `0.1.8`.
 - Expanded automated coverage:
   - `tests/i18n-cli.test.js`

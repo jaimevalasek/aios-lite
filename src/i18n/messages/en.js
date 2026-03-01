@@ -152,6 +152,7 @@ module.exports = {
     parse_reason: 'Parse reason: {reason}',
     hint_fix_frontmatter: 'Use @setup to regenerate a valid context file.',
     invalid_fields: 'Context file is parsed but has validation issues:',
+    issue_line: '- {issue}',
     valid: 'Context file is valid.'
   },
   setup_context: {
@@ -331,6 +332,8 @@ module.exports = {
     prefix_ok: 'OK',
     prefix_warn: 'WARN',
     prefix_fail: 'FAIL',
+    check_line: '[{prefix}] {id} - {message}',
+    hint_line: '  Hint: {hint}',
     invalid_workers: 'Invalid --workers value. Use an integer between {min} and {max}.',
     classification_unknown: 'unknown',
     requires_medium:
@@ -429,6 +432,8 @@ module.exports = {
     prefix_ok: 'OK',
     prefix_warn: 'WARN',
     prefix_fail: 'FAIL',
+    check_line: '[{prefix}] {id} - {message}',
+    hint_line: '  Hint: {hint}',
     context_missing: 'project.context.md was not found.',
     context_missing_hint: 'Run setup first for context-aware MCP validation.',
     context_parse_invalid: 'project.context.md could not be parsed ({reason}).',

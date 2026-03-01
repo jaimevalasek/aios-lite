@@ -400,9 +400,15 @@ async function runParallelDoctor({ args, options = {}, logger, t }) {
 
   logger.log(t('parallel_doctor.report_title', { path: targetDir }));
   for (const check of checks) {
-    logger.log(`[${formatCheckPrefix(check, t)}] ${check.id} - ${check.message}`);
+    logger.log(
+      t('parallel_doctor.check_line', {
+        prefix: formatCheckPrefix(check, t),
+        id: check.id,
+        message: check.message
+      })
+    );
     if (check.hint) {
-      logger.log(`  -> ${check.hint}`);
+      logger.log(t('parallel_doctor.hint_line', { hint: check.hint }));
     }
   }
   logger.log(
