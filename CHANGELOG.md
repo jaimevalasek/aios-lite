@@ -73,6 +73,7 @@ All notable changes to this project will be documented in this file.
 - `mcp:init` now localizes generated server `reason` fields and preset `notes` content via i18n.
 - Removed remaining hardcoded `unknown` fallbacks in `parallel:doctor` check messages and `context:validate` parse-reason output.
 - `context:validate` now localizes known frontmatter parse reason codes into human-readable locale messages.
+- `mcp:doctor` now localizes context frontmatter parse reason codes using the same i18n mapping as `context:validate`.
 - Setup templates now default `aios_lite_version` to `0.1.8`.
 - Expanded automated coverage:
   - `tests/i18n-cli.test.js`

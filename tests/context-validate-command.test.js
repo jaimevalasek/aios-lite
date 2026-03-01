@@ -6,7 +6,8 @@ const fs = require('node:fs/promises');
 const os = require('node:os');
 const path = require('node:path');
 const { createTranslator } = require('../src/i18n');
-const { runContextValidate, localizeParseReason } = require('../src/commands/context-validate');
+const { localizeContextParseReason } = require('../src/context-parse-reason');
+const { runContextValidate } = require('../src/commands/context-validate');
 
 async function makeTempDir() {
   return fs.mkdtemp(path.join(os.tmpdir(), 'aios-lite-context-validate-cmd-'));
@@ -28,18 +29,18 @@ function createCollectLogger() {
 test('localizeParseReason maps known parser reasons for pt-BR', () => {
   const { t } = createTranslator('pt-BR');
   assert.equal(
-    localizeParseReason('missing_frontmatter', t),
+    localizeContextParseReason('missing_frontmatter', t),
     'delimitador inicial do frontmatter ausente'
   );
   assert.equal(
-    localizeParseReason('unclosed_frontmatter', t),
+    localizeContextParseReason('unclosed_frontmatter', t),
     'bloco de frontmatter nao fechado'
   );
   assert.equal(
-    localizeParseReason('invalid_frontmatter_line', t),
+    localizeContextParseReason('invalid_frontmatter_line', t),
     'sintaxe invalida em linha do frontmatter'
   );
-  assert.equal(localizeParseReason('', t), 'desconhecido');
+  assert.equal(localizeContextParseReason('', t), 'desconhecido');
 });
 
 test('context:validate prints localized parse reason details in pt-BR', async () => {

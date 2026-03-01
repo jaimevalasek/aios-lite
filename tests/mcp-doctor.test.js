@@ -165,6 +165,29 @@ test('mcp:doctor strict env mode passes when required variables exist', async ()
   );
 });
 
+test('mcp:doctor localizes context parse reason when context frontmatter is invalid', async () => {
+  const dir = await makeTempDir();
+  const contextPath = path.join(dir, '.aios-lite/context/project.context.md');
+  await fs.mkdir(path.dirname(contextPath), { recursive: true });
+  await fs.writeFile(
+    contextPath,
+    `---\nproject_name: "demo"\nframework_installed: true\n`,
+    'utf8'
+  );
+
+  const { t } = createTranslator('pt-BR');
+  const result = await runMcpDoctor({
+    args: [dir],
+    options: {},
+    logger: createQuietLogger(),
+    t
+  });
+
+  const check = result.checks.find((item) => item.id === 'context.parsed');
+  assert.equal(Boolean(check), true);
+  assert.equal(check.message.includes('bloco de frontmatter nao fechado'), true);
+});
+
 test('mcp:doctor localizes check prefixes in pt-BR output', async () => {
   const dir = await makeTempDir();
   const { t } = createTranslator('pt-BR');

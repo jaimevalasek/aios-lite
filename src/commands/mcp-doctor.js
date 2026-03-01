@@ -3,6 +3,7 @@
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const { validateProjectContextFile } = require('../context');
+const { localizeContextParseReason } = require('../context-parse-reason');
 const { exists, readTextIfExists } = require('../utils');
 const { extractStackValue, normalizeDatabaseEngine } = require('./mcp-init');
 
@@ -124,7 +125,7 @@ async function runMcpDoctor({ args, options = {}, logger, t }) {
         false,
         'warn',
         t('mcp_doctor.context_parse_invalid', {
-          reason: contextResult.parseError || 'invalid_frontmatter'
+          reason: localizeContextParseReason(contextResult.parseError, t)
         }),
         t('mcp_doctor.context_parse_invalid_hint')
       )
