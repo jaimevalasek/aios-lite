@@ -17,10 +17,14 @@ test('template ships all base and localized agent files', async () => {
     const basePath = path.join(ROOT, 'template/.aios-lite/agents', `${agent}.md`);
     const enPath = path.join(ROOT, 'template/.aios-lite/locales/en/agents', `${agent}.md`);
     const ptPath = path.join(ROOT, 'template/.aios-lite/locales/pt-BR/agents', `${agent}.md`);
+    const esPath = path.join(ROOT, 'template/.aios-lite/locales/es/agents', `${agent}.md`);
+    const frPath = path.join(ROOT, 'template/.aios-lite/locales/fr/agents', `${agent}.md`);
 
     await assert.doesNotReject(() => fs.access(basePath));
     await assert.doesNotReject(() => fs.access(enPath));
     await assert.doesNotReject(() => fs.access(ptPath));
+    await assert.doesNotReject(() => fs.access(esPath));
+    await assert.doesNotReject(() => fs.access(frPath));
   }
 });
 

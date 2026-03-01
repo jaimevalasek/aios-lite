@@ -50,6 +50,7 @@ Optional Web3 context fields (recommended for `project_type=dapp`):
 ## Agent locale packs
 - Localized agent prompts are stored in `.aios-lite/locales/<locale>/agents/`.
 - Active runtime prompts are in `.aios-lite/agents/`.
+- Built-in locale packs: `en`, `pt-BR`, `es`, `fr`.
 - Apply locale pack using:
   - `aios-lite locale:apply` (reads `conversation_language` from context)
-  - `aios-lite locale:apply --lang=pt-BR` (manual override)
+  - `aios-lite locale:apply --lang=pt-BR` (manual override, also accepts `en`, `es`, `fr`)

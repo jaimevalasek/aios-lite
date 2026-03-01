@@ -10,15 +10,15 @@ module.exports = {
     help_info: 'aios-lite info [path] [--json] [--locale=fr]',
     help_doctor: 'aios-lite doctor [path] [--fix] [--dry-run] [--json] [--locale=fr]',
     help_i18n_add: 'aios-lite i18n:add <locale> [--force] [--dry-run] [--locale=fr]',
-    help_agents: 'aios-lite agents [path] [--lang=en|pt-BR] [--locale=fr]',
+    help_agents: 'aios-lite agents [path] [--lang=en|pt-BR|es|fr] [--locale=fr]',
     help_agent_prompt:
-      'aios-lite agent:prompt <agent> [path] [--tool=codex|claude|gemini|opencode] [--lang=en|pt-BR] [--locale=fr]',
+      'aios-lite agent:prompt <agent> [path] [--tool=codex|claude|gemini|opencode] [--lang=en|pt-BR|es|fr] [--locale=fr]',
     help_context_validate: 'aios-lite context:validate [path] [--json] [--locale=fr]',
     help_setup_context:
       'aios-lite setup:context [path] [--defaults] [--project-type=web_app|api|site|script|dapp] [--language=fr] [--web3-enabled=true|false] [--locale=fr]',
-    help_locale_apply: 'aios-lite locale:apply [path] [--lang=en|pt-BR] [--dry-run] [--locale=fr]',
+    help_locale_apply: 'aios-lite locale:apply [path] [--lang=en|pt-BR|es|fr] [--dry-run] [--locale=fr]',
     help_test_smoke:
-      'aios-lite test:smoke [workspace-path] [--lang=en|pt-BR] [--web3=ethereum|solana|cardano] [--profile=standard|mixed] [--keep] [--json] [--locale=fr]',
+      'aios-lite test:smoke [workspace-path] [--lang=en|pt-BR|es|fr] [--web3=ethereum|solana|cardano] [--profile=standard|mixed] [--keep] [--json] [--locale=fr]',
     help_test_package:
       'aios-lite test:package [source-path] [--keep] [--dry-run] [--json] [--locale=fr]',
     help_workflow_plan:
@@ -125,7 +125,7 @@ module.exports = {
     output: 'Sortie',
     none: 'aucun',
     prompt_usage_error:
-      'Utilisation : aios-lite agent:prompt <agent> [path] [--tool=codex|claude|gemini|opencode] [--lang=en|pt-BR] [--locale=fr]',
+      'Utilisation : aios-lite agent:prompt <agent> [path] [--tool=codex|claude|gemini|opencode] [--lang=en|pt-BR|es|fr] [--locale=fr]',
     prompt_unknown_agent: 'Agent inconnu : {agent}',
     prompt_title: 'Prompt pour l agent "{agent}" sur l outil "{tool}" (locale : {locale}) :'
   },

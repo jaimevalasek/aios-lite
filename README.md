@@ -21,8 +21,8 @@ npx aios-lite install
 - `aios-lite agents`
 - `aios-lite agent:prompt <agent> [--tool=codex|claude|gemini|opencode]`
 - `aios-lite context:validate [path] [--json]`
-- `aios-lite locale:apply [path] [--lang=en|pt-BR]`
-- `aios-lite test:smoke [workspace-path] [--lang=en|pt-BR] [--web3=ethereum|solana|cardano] [--profile=standard|mixed] [--keep] [--json]`
+- `aios-lite locale:apply [path] [--lang=en|pt-BR|es|fr]`
+- `aios-lite test:smoke [workspace-path] [--lang=en|pt-BR|es|fr] [--web3=ethereum|solana|cardano] [--profile=standard|mixed] [--keep] [--json]`
 - `aios-lite test:package [source-path] [--keep] [--dry-run] [--json]`
 - `aios-lite workflow:plan [path] [--classification=MICRO|SMALL|MEDIUM] [--json]`
 - `aios-lite mcp:init [path] [--tool=claude|codex|gemini|opencode] [--dry-run] [--json]`
@@ -59,6 +59,7 @@ Built-in locales: `en`, `pt-BR`, `es`, `fr`.
 Default locale is `en`.
 `pt`, `pt_br`, and `pt-BR` resolve to the same Portuguese dictionary.
 `es-*` resolves to `es`, and `fr-*` resolves to `fr`.
+Localized agent packs are built-in for `en`, `pt-BR`, `es`, and `fr`.
 
 Generate a new locale scaffold:
 

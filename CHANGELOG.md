@@ -5,6 +5,9 @@ All notable changes to this project will be documented in this file.
 ## [0.1.8] - Unreleased
 ### Added
 - Full `pt-BR` CLI dictionary at `src/i18n/messages/pt-BR.js`.
+- Localized agent prompt packs for:
+  - `es` at `template/.aios-lite/locales/es/agents/*.md`
+  - `fr` at `template/.aios-lite/locales/fr/agents/*.md`
 - New package installation validation command:
   - `aios-lite test:package [source-path] [--keep] [--dry-run] [--json]`
 - New workflow planning command:
@@ -31,10 +34,15 @@ All notable changes to this project will be documented in this file.
 - Locale resolution now also supports regional fallback for:
   - `es-*` -> `es`
   - `fr-*` -> `fr`
+- Agent locale resolution now supports:
+  - `es-*` -> `es`
+  - `fr-*` -> `fr`
 - `mcp:init` now writes both shared plan and tool-specific preset templates.
 - Setup templates now default `aios_lite_version` to `0.1.8`.
 - Expanded automated coverage:
   - `tests/i18n-cli.test.js`
+  - `tests/locales.test.js`
+  - `tests/agent-contracts.test.js`
   - `tests/package-test.test.js`
   - `tests/workflow-plan.test.js`
   - extended `tests/mcp-init.test.js` and `tests/json-output.test.js`

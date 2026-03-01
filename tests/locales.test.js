@@ -19,6 +19,8 @@ async function makeTempDir() {
 test('resolveAgentLocale maps base language and fallback correctly', () => {
   assert.equal(resolveAgentLocale('pt'), 'pt-BR');
   assert.equal(resolveAgentLocale('pt-BR'), 'pt-BR');
+  assert.equal(resolveAgentLocale('es-MX'), 'es');
+  assert.equal(resolveAgentLocale('fr_CA'), 'fr');
   assert.equal(resolveAgentLocale('en-US'), 'en');
   assert.equal(resolveAgentLocale('unknown'), 'en');
 });
@@ -43,3 +45,24 @@ test('applyAgentLocale copies localized files into active agents directory', asy
   assert.equal(content.includes('(pt-BR)'), true);
 });
 
+test('applyAgentLocale copies spanish and french localized files', async () => {
+  const esDir = await makeTempDir();
+  await installTemplate(esDir, { mode: 'install' });
+
+  const esResult = await applyAgentLocale(esDir, 'es-MX');
+  assert.equal(esResult.locale, 'es');
+  assert.equal(esResult.copied.length > 0, true);
+  const esSetupPath = path.join(esDir, '.aios-lite/agents/setup.md');
+  const esContent = await fs.readFile(esSetupPath, 'utf8');
+  assert.equal(esContent.includes('(es)'), true);
+
+  const frDir = await makeTempDir();
+  await installTemplate(frDir, { mode: 'install' });
+
+  const frResult = await applyAgentLocale(frDir, 'fr-CA');
+  assert.equal(frResult.locale, 'fr');
+  assert.equal(frResult.copied.length > 0, true);
+  const frSetupPath = path.join(frDir, '.aios-lite/agents/setup.md');
+  const frContent = await fs.readFile(frSetupPath, 'utf8');
+  assert.equal(frContent.includes('(fr)'), true);
+});

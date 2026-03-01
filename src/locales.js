@@ -5,7 +5,7 @@ const path = require('node:path');
 const { AGENT_DEFINITIONS } = require('./constants');
 const { exists, ensureDir } = require('./utils');
 
-const SUPPORTED_AGENT_LOCALES = ['en', 'pt-BR'];
+const SUPPORTED_AGENT_LOCALES = ['en', 'pt-BR', 'es', 'fr'];
 
 function normalizeLanguageTag(value) {
   return String(value || '').trim();
@@ -18,15 +18,18 @@ function localeForPath(value) {
 function resolveAgentLocale(languageTag) {
   const tag = normalizeLanguageTag(languageTag);
   if (!tag) return 'en';
+  const canonical = tag.replace(/_/g, '-');
 
   const exact = SUPPORTED_AGENT_LOCALES.find(
-    (locale) => locale.toLowerCase() === tag.toLowerCase()
+    (locale) => locale.toLowerCase() === canonical.toLowerCase()
   );
   if (exact) return exact;
 
-  const base = tag.split('-')[0].toLowerCase();
+  const base = canonical.split('-')[0].toLowerCase();
   if (base === 'pt') return 'pt-BR';
   if (base === 'en') return 'en';
+  if (base === 'es') return 'es';
+  if (base === 'fr') return 'fr';
 
   return 'en';
 }
@@ -79,4 +82,3 @@ module.exports = {
   getActiveAgentPath,
   applyAgentLocale
 };
-

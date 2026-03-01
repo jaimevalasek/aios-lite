@@ -10,15 +10,16 @@ module.exports = {
     help_info: 'aios-lite info [path] [--json] [--locale=pt-BR]',
     help_doctor: 'aios-lite doctor [path] [--fix] [--dry-run] [--json] [--locale=pt-BR]',
     help_i18n_add: 'aios-lite i18n:add <locale> [--force] [--dry-run] [--locale=pt-BR]',
-    help_agents: 'aios-lite agents [path] [--lang=en|pt-BR] [--locale=pt-BR]',
+    help_agents: 'aios-lite agents [path] [--lang=en|pt-BR|es|fr] [--locale=pt-BR]',
     help_agent_prompt:
-      'aios-lite agent:prompt <agent> [path] [--tool=codex|claude|gemini|opencode] [--lang=en|pt-BR] [--locale=pt-BR]',
+      'aios-lite agent:prompt <agent> [path] [--tool=codex|claude|gemini|opencode] [--lang=en|pt-BR|es|fr] [--locale=pt-BR]',
     help_context_validate: 'aios-lite context:validate [path] [--json] [--locale=pt-BR]',
     help_setup_context:
       'aios-lite setup:context [path] [--defaults] [--project-type=web_app|api|site|script|dapp] [--language=pt-BR] [--web3-enabled=true|false] [--locale=pt-BR]',
-    help_locale_apply: 'aios-lite locale:apply [path] [--lang=en|pt-BR] [--dry-run] [--locale=pt-BR]',
+    help_locale_apply:
+      'aios-lite locale:apply [path] [--lang=en|pt-BR|es|fr] [--dry-run] [--locale=pt-BR]',
     help_test_smoke:
-      'aios-lite test:smoke [workspace-path] [--lang=en|pt-BR] [--web3=ethereum|solana|cardano] [--profile=standard|mixed] [--keep] [--json] [--locale=pt-BR]',
+      'aios-lite test:smoke [workspace-path] [--lang=en|pt-BR|es|fr] [--web3=ethereum|solana|cardano] [--profile=standard|mixed] [--keep] [--json] [--locale=pt-BR]',
     help_test_package:
       'aios-lite test:package [source-path] [--keep] [--dry-run] [--json] [--locale=pt-BR]',
     help_workflow_plan:
@@ -126,7 +127,7 @@ module.exports = {
     output: 'Saida',
     none: 'nenhum',
     prompt_usage_error:
-      'Uso: aios-lite agent:prompt <agent> [path] [--tool=codex|claude|gemini|opencode] [--lang=en|pt-BR] [--locale=pt-BR]',
+      'Uso: aios-lite agent:prompt <agent> [path] [--tool=codex|claude|gemini|opencode] [--lang=en|pt-BR|es|fr] [--locale=pt-BR]',
     prompt_unknown_agent: 'Agente desconhecido: {agent}',
     prompt_title: 'Prompt para o agente "{agent}" na ferramenta "{tool}" (locale: {locale}):'
   },
