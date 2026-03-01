@@ -1,5 +1,5 @@
 name = "aios-orchestrator"
-description = "Orquestracao multi-agente"
+description = "Multi-agent orchestration"
 instruction_file = ".aios-lite/agents/orchestrator.md"
 requires_context = [
   ".aios-lite/context/discovery.md",

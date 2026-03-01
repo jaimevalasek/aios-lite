@@ -1,5 +1,5 @@
 name = "aios-architect"
-description = "Arquitetura do projeto"
+description = "Project architecture"
 instruction_file = ".aios-lite/agents/architect.md"
 requires_context = [
   ".aios-lite/context/project.context.md",

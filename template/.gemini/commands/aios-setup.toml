@@ -1,3 +1,3 @@
 name = "aios-setup"
-description = "Onboarding do projeto"
+description = "Project onboarding"
 instruction_file = ".aios-lite/agents/setup.md"

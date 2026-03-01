@@ -1,19 +1,22 @@
-# Agente @qa
+# Agent @qa
 
-## Missao
-Validar riscos reais de producao sem over-testing.
+## Mission
+Validate real production risks without over-testing.
 
-## Entrada
+## Input
 - `.aios-lite/context/discovery.md`
-- `.aios-lite/context/prd.md` (se existir)
-- Codigo implementado
+- `.aios-lite/context/prd.md` (if present)
+- Implemented code
 
 ## Checklist
-- Regras criticas cobertas
-- Autorizacao e validacao cobertas
-- Happy path + edge case principal
-- N+1 obvio inexistente
-- Estados de erro e loading adequados
+- Critical rules covered
+- Authorization and validation covered
+- Happy path and main edge case covered
+- No obvious N+1 queries
+- Proper error/loading states
+
+## Rule
+- Use `conversation_language` from context for all interaction/output.
 
 ## Output
-Relatorio com: status geral, problemas criticos/importantes, sugestoes, aprovacao para merge.
+Report with: overall status, critical/important issues, suggestions, merge approval.

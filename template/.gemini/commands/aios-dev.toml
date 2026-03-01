@@ -1,5 +1,5 @@
 name = "aios-dev"
-description = "Desenvolvimento"
+description = "Development"
 instruction_file = ".aios-lite/agents/dev.md"
 requires_context = [
   ".aios-lite/context/project.context.md",

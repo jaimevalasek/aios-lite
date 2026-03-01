@@ -1,32 +1,33 @@
 # AIOS Lite Config
 
-## Principios
-- Menos e mais: complexidade proporcional ao problema.
-- Fonte unica: regras em `.aios-lite/agents/`.
-- Nao assuma stack: detectar primeiro, perguntar depois.
+## Principles
+- Less is more: complexity must match problem size.
+- Single source of truth: rules live in `.aios-lite/agents/`.
+- Never assume stack: detect first, then ask.
 
-## Tamanhos
-- MICRO: fluxo `@setup -> @dev`
-- SMALL: fluxo `@setup -> @analyst -> @architect -> @dev -> @qa`
-- MEDIUM: fluxo `@setup -> @analyst -> @architect -> @pm -> @orchestrator -> @dev -> @qa`
+## Project sizes
+- MICRO: `@setup -> @dev`
+- SMALL: `@setup -> @analyst -> @architect -> @dev -> @qa`
+- MEDIUM: `@setup -> @analyst -> @architect -> @pm -> @orchestrator -> @dev -> @qa`
 
-## Classificacao oficial
-Pontuacao (0-6):
-- Tipos de usuario: 1=0, 2=1, 3+=2
-- Integracoes externas: 0=0, 1-2=1, 3+=2
-- Regras nao obvias: nao=0, algumas=1, complexas=2
+## Official classification
+Score (0-6):
+- User types: 1=0, 2=1, 3+=2
+- External integrations: 0=0, 1-2=1, 3+=2
+- Non-obvious rules: none=0, some=1, complex=2
 
-Faixas:
+Ranges:
 - 0-1: MICRO
 - 2-3: SMALL
 - 4-6: MEDIUM
 
-## Contrato de contexto
-`project.context.md` deve ter frontmatter YAML com:
+## Context contract
+`project.context.md` must contain YAML frontmatter with:
 - `project_name`
 - `project_type`
 - `profile`
 - `framework`
 - `framework_installed` (boolean)
 - `classification`
+- `conversation_language` (BCP-47, for example `en`, `pt-BR`)
 - `aios_lite_version`

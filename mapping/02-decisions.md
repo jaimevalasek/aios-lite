@@ -37,3 +37,7 @@
 ### D009 - Publish naming strategy
 - Decision: keep `aios-lite` as the primary npm package name and document fallback names.
 - Why: direct and memorable default while preserving alternatives if ownership conflicts happen later.
+
+### D010 - Agent language contract
+- Decision: add `conversation_language` to setup output contract and require all agents to follow it.
+- Why: i18n should apply to full agent-user interaction, not only CLI messages.

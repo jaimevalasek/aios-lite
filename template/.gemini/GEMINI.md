@@ -1,9 +1,9 @@
 # AIOS Lite - Gemini CLI
 
-## Inicializacao
-- Leia `.aios-lite/config.md`
-- Verifique `.aios-lite/context/project.context.md`
-- Se nao existir, execute `aios-setup`
+## Initialization
+- Read `.aios-lite/config.md`
+- Check `.aios-lite/context/project.context.md`
+- If missing, run `aios-setup`
 
-## Comandos
-Use os comandos em `.gemini/commands/` que apontam para os mesmos agentes em `.aios-lite/agents/`.
+## Commands
+Use command files in `.gemini/commands/` that point to the same agents in `.aios-lite/agents/`.

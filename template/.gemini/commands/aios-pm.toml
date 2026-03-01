@@ -1,5 +1,5 @@
 name = "aios-pm"
-description = "PRD leve"
+description = "Lightweight PRD"
 instruction_file = ".aios-lite/agents/pm.md"
 requires_context = [
   ".aios-lite/context/project.context.md",
