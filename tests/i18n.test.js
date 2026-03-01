@@ -55,3 +55,27 @@ test('translator exposes parse reason unknown fallback key per locale', () => {
   assert.equal(es.t('context_validate.parse_reason_unknown'), 'desconocido');
   assert.equal(fr.t('context_validate.parse_reason_unknown'), 'inconnu');
 });
+
+test('translator exposes context parse reason keys across locales', () => {
+  const en = createTranslator('en');
+  const pt = createTranslator('pt-BR');
+  const es = createTranslator('es');
+  const fr = createTranslator('fr');
+
+  assert.equal(
+    en.t('context_validate.parse_reason_unclosed_frontmatter'),
+    'unclosed frontmatter block'
+  );
+  assert.equal(
+    pt.t('context_validate.parse_reason_unclosed_frontmatter'),
+    'bloco de frontmatter nao fechado'
+  );
+  assert.equal(
+    es.t('context_validate.parse_reason_unclosed_frontmatter'),
+    'bloque de frontmatter sin cerrar'
+  );
+  assert.equal(
+    fr.t('context_validate.parse_reason_unclosed_frontmatter'),
+    'bloc de frontmatter non ferme'
+  );
+});

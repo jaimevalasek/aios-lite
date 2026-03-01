@@ -3,6 +3,23 @@
 const path = require('node:path');
 const { validateProjectContextFile } = require('../context');
 
+function localizeParseReason(reason, t) {
+  const normalized = String(reason || '')
+    .trim()
+    .toLowerCase();
+  if (!normalized) return t('context_validate.parse_reason_unknown');
+  if (normalized === 'missing_frontmatter') {
+    return t('context_validate.parse_reason_missing_frontmatter');
+  }
+  if (normalized === 'unclosed_frontmatter') {
+    return t('context_validate.parse_reason_unclosed_frontmatter');
+  }
+  if (normalized === 'invalid_frontmatter_line') {
+    return t('context_validate.parse_reason_invalid_frontmatter_line');
+  }
+  return normalized;
+}
+
 async function runContextValidate({ args, options = {}, logger, t }) {
   const targetDir = path.resolve(process.cwd(), args[0] || '.');
   const jsonMode = Boolean(options.json);
@@ -41,7 +58,7 @@ async function runContextValidate({ args, options = {}, logger, t }) {
     logger.log(t('context_validate.file_path', { path: result.filePath }));
     logger.log(
       t('context_validate.parse_reason', {
-        reason: result.parseError || t('context_validate.parse_reason_unknown')
+        reason: localizeParseReason(result.parseError, t)
       })
     );
     logger.log(t('context_validate.hint_fix_frontmatter'));
@@ -81,5 +98,6 @@ async function runContextValidate({ args, options = {}, logger, t }) {
 }
 
 module.exports = {
-  runContextValidate
+  runContextValidate,
+  localizeParseReason
 };
