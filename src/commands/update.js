@@ -3,6 +3,8 @@
 const path = require('node:path');
 const { detectFramework } = require('../detector');
 const { updateInstallation } = require('../updater');
+const { validateProjectContextFile } = require('../context');
+const { applyAgentLocale } = require('../locales');
 
 async function runUpdate({ args, options, logger, t }) {
   const targetDir = path.resolve(process.cwd(), args[0] || '.');
@@ -18,11 +20,24 @@ async function runUpdate({ args, options, logger, t }) {
     throw new Error(t('update.not_installed', { targetDir }));
   }
 
+  let localeSync = null;
+  if (!dryRun) {
+    const context = await validateProjectContextFile(targetDir);
+    const language =
+      context.parsed && context.data && context.data.conversation_language
+        ? context.data.conversation_language
+        : 'en';
+    localeSync = await applyAgentLocale(targetDir, language, { dryRun: false });
+  }
+
   logger.log(t('update.done_at', { targetDir }));
   logger.log(t('update.files_updated', { count: result.copied.length }));
   logger.log(t('update.backups_created', { count: result.backedUp.length }));
 
-  return result;
+  return {
+    ...result,
+    localeSync
+  };
 }
 
 module.exports = {

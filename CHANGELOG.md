@@ -37,12 +37,14 @@ All notable changes to this project will be documented in this file.
 - Agent locale resolution now supports:
   - `es-*` -> `es`
   - `fr-*` -> `fr`
+- `update` now reapplies active agent prompts from `conversation_language` in context, preventing locale reset after template refresh.
 - `mcp:init` now writes both shared plan and tool-specific preset templates.
 - Setup templates now default `aios_lite_version` to `0.1.8`.
 - Expanded automated coverage:
   - `tests/i18n-cli.test.js`
   - `tests/locales.test.js`
   - `tests/agent-contracts.test.js`
+  - `tests/smoke.test.js` now verifies active agent prompt locale application for `--lang=es` and `--lang=fr`
   - `tests/package-test.test.js`
   - `tests/workflow-plan.test.js`
   - extended `tests/mcp-init.test.js` and `tests/json-output.test.js`

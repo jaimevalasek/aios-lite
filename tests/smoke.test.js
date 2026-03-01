@@ -92,6 +92,35 @@ test('test:smoke supports mixed Web2+Web3 monorepo profile', async () => {
   await fs.rm(result.workspaceRoot, { recursive: true, force: true });
 });
 
+test('test:smoke applies es/fr localized agent packs into active prompts', async () => {
+  const baseDir = await makeTempDir();
+  const { t } = createTranslator('en');
+  const logger = { log() {}, error() {} };
+
+  const checks = [
+    { lang: 'es', marker: '(es)' },
+    { lang: 'fr', marker: '(fr)' }
+  ];
+
+  for (const check of checks) {
+    const result = await runSmokeTest({
+      args: [baseDir],
+      options: { lang: check.lang, keep: true },
+      logger,
+      t
+    });
+
+    assert.equal(result.ok, true);
+    assert.equal(result.language, check.lang);
+
+    const setupAgentPath = path.join(result.projectDir, '.aios-lite/agents/setup.md');
+    const setupAgentContent = await fs.readFile(setupAgentPath, 'utf8');
+    assert.equal(setupAgentContent.includes(check.marker), true);
+
+    await fs.rm(result.workspaceRoot, { recursive: true, force: true });
+  }
+});
+
 test('test:smoke rejects invalid web3 target', async () => {
   const baseDir = await makeTempDir();
   const { t } = createTranslator('en');
