@@ -41,6 +41,13 @@
 - Smoke command supports `--keep` to inspect generated workspace.
 - Smoke command supports `--web3=ethereum|solana|cardano` with chain-specific seeded workspace checks.
 
+### json output
+- `info --json` returns stable machine-readable payload.
+- `doctor --json` returns report + fix metadata without human-only text.
+- `context:validate --json` returns explicit `reason` for failures.
+- `test:smoke --json` returns steps, profile target, and workspace metadata.
+- Invalid commands with `--json` return structured error payload and non-zero exit code.
+
 ## Manual
 - Empty folder: `npx aios-lite init demo`.
 - Existing project: `npx aios-lite install`.
@@ -57,6 +64,11 @@
   - `aios-lite test:smoke --web3=ethereum`
   - `aios-lite test:smoke --web3=solana`
   - `aios-lite test:smoke --web3=cardano`
+- JSON automation checks:
+  - `aios-lite info --json`
+  - `aios-lite context:validate --json`
+  - `aios-lite doctor --json`
+  - `aios-lite test:smoke --json`
 - Recovery flow:
   - `aios-lite doctor --fix --dry-run`
   - `aios-lite doctor --fix`

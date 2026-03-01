@@ -7,17 +7,17 @@ module.exports = {
     help_init: 'aios-lite init <project-name> [--force] [--dry-run] [--locale=en]',
     help_install: 'aios-lite install [path] [--force] [--dry-run] [--locale=en]',
     help_update: 'aios-lite update [path] [--dry-run] [--locale=en]',
-    help_info: 'aios-lite info [path] [--locale=en]',
-    help_doctor: 'aios-lite doctor [path] [--fix] [--dry-run] [--locale=en]',
+    help_info: 'aios-lite info [path] [--json] [--locale=en]',
+    help_doctor: 'aios-lite doctor [path] [--fix] [--dry-run] [--json] [--locale=en]',
     help_i18n_add: 'aios-lite i18n:add <locale> [--force] [--dry-run] [--locale=en]',
     help_agents: 'aios-lite agents [path] [--lang=en|pt-BR] [--locale=en]',
     help_agent_prompt: 'aios-lite agent:prompt <agent> [path] [--tool=codex|claude|gemini|opencode] [--lang=en|pt-BR] [--locale=en]',
-    help_context_validate: 'aios-lite context:validate [path] [--locale=en]',
+    help_context_validate: 'aios-lite context:validate [path] [--json] [--locale=en]',
     help_setup_context:
       'aios-lite setup:context [path] [--defaults] [--project-type=web_app|api|site|script|dapp] [--language=en] [--web3-enabled=true|false] [--locale=en]',
     help_locale_apply: 'aios-lite locale:apply [path] [--lang=en|pt-BR] [--dry-run] [--locale=en]',
     help_test_smoke:
-      'aios-lite test:smoke [workspace-path] [--lang=en|pt-BR] [--web3=ethereum|solana|cardano] [--keep] [--locale=en]',
+      'aios-lite test:smoke [workspace-path] [--lang=en|pt-BR] [--web3=ethereum|solana|cardano] [--keep] [--json] [--locale=en]',
     unknown_command: 'Unknown command: {command}',
     error_prefix: 'Error: {message}'
   },

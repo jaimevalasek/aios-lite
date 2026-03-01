@@ -32,6 +32,7 @@ function parseArgv(argv) {
         if (flag === 'f') options.force = true;
         if (flag === 'd') options['dry-run'] = true;
         if (flag === 'h') options.help = true;
+        if (flag === 'j') options.json = true;
         if (flag === 'v') options.version = true;
       }
       continue;

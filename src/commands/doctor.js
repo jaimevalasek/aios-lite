@@ -34,23 +34,49 @@ async function runDoctorCommand({ args, options = {}, logger, t }) {
   const targetDir = path.resolve(process.cwd(), args[0] || '.');
   const fix = Boolean(options.fix);
   const dryRun = Boolean(options['dry-run']);
+  const jsonMode = Boolean(options.json);
 
   let report = await runDoctor(targetDir);
+  let fixResult = null;
 
   if (fix) {
-    logger.log(dryRun ? t('doctor.fix_start_dry_run') : t('doctor.fix_start'));
-    const fixResult = await applyDoctorFixes(targetDir, report, { dryRun });
-    for (const action of fixResult.actions) {
-      printFixAction(action, logger, t, dryRun);
+    if (!jsonMode) {
+      logger.log(dryRun ? t('doctor.fix_start_dry_run') : t('doctor.fix_start'));
     }
+    fixResult = await applyDoctorFixes(targetDir, report, { dryRun });
+    if (!jsonMode) {
+      for (const action of fixResult.actions) {
+        printFixAction(action, logger, t, dryRun);
+      }
 
-    logger.log(
-      dryRun
-        ? t('doctor.fix_summary_dry_run', { count: fixResult.changedCount })
-        : t('doctor.fix_summary', { count: fixResult.changedCount })
-    );
-    logger.log('');
+      logger.log(
+        dryRun
+          ? t('doctor.fix_summary_dry_run', { count: fixResult.changedCount })
+          : t('doctor.fix_summary', { count: fixResult.changedCount })
+      );
+      logger.log('');
+    }
     report = await runDoctor(targetDir);
+  }
+
+  const output = {
+    ok: report.ok,
+    targetDir,
+    fix: {
+      enabled: fix,
+      dryRun,
+      ...(fixResult
+        ? {
+            changedCount: fixResult.changedCount,
+            actions: fixResult.actions
+          }
+        : {})
+    },
+    report
+  };
+
+  if (jsonMode) {
+    return output;
   }
 
   printDoctorChecks(report, logger, t);
@@ -61,7 +87,7 @@ async function runDoctorCommand({ args, options = {}, logger, t }) {
     logger.log(`\n${t('doctor.diagnosis_ok')}`);
   }
 
-  return report;
+  return output;
 }
 
 module.exports = {

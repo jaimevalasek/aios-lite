@@ -54,3 +54,11 @@
 - [x] `test:smoke --web3=ethereum|solana|cardano` profiles.
 - [x] Smoke assertions for chain-specific framework detection.
 - [x] Smoke assertions for dApp/Web3 context frontmatter integrity.
+
+## Sprint 9 - Automation and CI output
+- [x] `--json` output for `info`.
+- [x] `--json` output for `doctor`.
+- [x] `--json` output for `context:validate`.
+- [x] `--json` output for `test:smoke`.
+- [x] Structured JSON error output for CLI unknown command/runtime failures.
+- [x] Automated tests for JSON output contracts.

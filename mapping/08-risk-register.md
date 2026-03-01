@@ -34,3 +34,8 @@
 - Severity: Medium
 - Probability: Medium
 - Mitigation: maintain per-chain smoke seeds and update profile fixtures when major tooling conventions change.
+
+## R008 - JSON contract breaking downstream automation
+- Severity: Medium
+- Probability: Medium
+- Mitigation: lock JSON payload fields with automated tests and document schema evolution before changes.

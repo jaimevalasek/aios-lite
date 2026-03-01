@@ -5,13 +5,26 @@ const path = require('node:path');
 const { detectFramework } = require('../detector');
 const { detectExistingInstall } = require('../installer');
 
-async function runInfo({ args, logger, t }) {
+async function runInfo({ args, options = {}, logger, t }) {
   const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const jsonMode = Boolean(options.json);
   const pkgPath = path.join(__dirname, '../../package.json');
   const pkg = JSON.parse(await fs.readFile(pkgPath, 'utf8'));
 
   const installed = await detectExistingInstall(targetDir);
   const detection = await detectFramework(targetDir);
+
+  const result = {
+    ok: true,
+    version: pkg.version,
+    targetDir,
+    installed,
+    detection
+  };
+
+  if (jsonMode) {
+    return result;
+  }
 
   logger.log(t('info.cli_version', { version: pkg.version }));
   logger.log(t('info.directory', { targetDir }));
@@ -21,11 +34,7 @@ async function runInfo({ args, logger, t }) {
     logger.log(t('info.evidence', { evidence: detection.evidence }));
   }
 
-  return {
-    version: pkg.version,
-    installed,
-    detection
-  };
+  return result;
 }
 
 module.exports = {

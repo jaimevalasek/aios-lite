@@ -85,6 +85,7 @@ async function seedWeb3Workspace(projectDir, profile) {
 async function runSmokeTest({ args, options, logger, t }) {
   const language = String(options.language || options.lang || 'en');
   const keep = Boolean(options.keep);
+  const jsonMode = Boolean(options.json);
   const web3Profile = resolveWeb3Profile(options.web3);
   if (web3Profile && web3Profile.invalid) {
     throw new Error(t('smoke.invalid_web3_target', { target: web3Profile.target }));
@@ -99,14 +100,15 @@ async function runSmokeTest({ args, options, logger, t }) {
 
   const steps = [];
   const quietLogger = createQuietLogger();
+  const log = jsonMode ? () => {} : logger.log.bind(logger);
 
   try {
-    logger.log(t('smoke.start', { projectDir }));
+    log(t('smoke.start', { projectDir }));
     if (web3Profile) {
-      logger.log(t('smoke.using_web3_profile', { target: web3Profile.target }));
+      log(t('smoke.using_web3_profile', { target: web3Profile.target }));
       await seedWeb3Workspace(projectDir, web3Profile);
       steps.push(`seed:web3:${web3Profile.target}`);
-      logger.log(t('smoke.seeded_web3_workspace', { target: web3Profile.target }));
+      log(t('smoke.seeded_web3_workspace', { target: web3Profile.target }));
     }
 
     const installResult = await runInstall({
@@ -117,7 +119,7 @@ async function runSmokeTest({ args, options, logger, t }) {
     });
     assertStep(installResult.copied.length > 0, 'install copied zero files');
     steps.push('install');
-    logger.log(t('smoke.step_ok', { step: 'install' }));
+    log(t('smoke.step_ok', { step: 'install' }));
 
     if (web3Profile) {
       const detection = await detectFramework(projectDir);
@@ -126,7 +128,7 @@ async function runSmokeTest({ args, options, logger, t }) {
         `unexpected web3 framework detection: ${detection.framework}`
       );
       steps.push(`detect:web3:${web3Profile.target}`);
-      logger.log(
+      log(
         t('smoke.web3_detected', {
           framework: detection.framework,
           network: web3Profile.network
@@ -165,7 +167,7 @@ async function runSmokeTest({ args, options, logger, t }) {
       );
     }
     steps.push('setup:context');
-    logger.log(t('smoke.step_ok', { step: 'setup:context' }));
+    log(t('smoke.step_ok', { step: 'setup:context' }));
 
     const localeResult = await runLocaleApply({
       args: [projectDir],
@@ -175,7 +177,7 @@ async function runSmokeTest({ args, options, logger, t }) {
     });
     assertStep(localeResult.copied.length > 0, 'locale:apply copied zero files');
     steps.push('locale:apply');
-    logger.log(t('smoke.step_ok', { step: 'locale:apply' }));
+    log(t('smoke.step_ok', { step: 'locale:apply' }));
 
     const agentsResult = await runAgentsList({
       args: [projectDir],
@@ -185,7 +187,7 @@ async function runSmokeTest({ args, options, logger, t }) {
     });
     assertStep(agentsResult.count >= 7, 'agents command returned unexpected agent count');
     steps.push('agents');
-    logger.log(t('smoke.step_ok', { step: 'agents' }));
+    log(t('smoke.step_ok', { step: 'agents' }));
 
     const promptResult = await runAgentPrompt({
       args: ['setup', projectDir],
@@ -198,7 +200,7 @@ async function runSmokeTest({ args, options, logger, t }) {
       'agent:prompt did not include expected path information'
     );
     steps.push('agent:prompt');
-    logger.log(t('smoke.step_ok', { step: 'agent:prompt' }));
+    log(t('smoke.step_ok', { step: 'agent:prompt' }));
 
     const contextResult = await runContextValidate({
       args: [projectDir],
@@ -208,7 +210,7 @@ async function runSmokeTest({ args, options, logger, t }) {
     });
     assertStep(contextResult.ok, 'context:validate failed');
     steps.push('context:validate');
-    logger.log(t('smoke.step_ok', { step: 'context:validate' }));
+    log(t('smoke.step_ok', { step: 'context:validate' }));
 
     if (web3Profile) {
       const parsedContext = await validateProjectContextFile(projectDir);
@@ -220,13 +222,13 @@ async function runSmokeTest({ args, options, logger, t }) {
         'context web3_networks does not include expected target'
       );
       steps.push(`verify:web3-context:${web3Profile.target}`);
-      logger.log(t('smoke.web3_context_verified', { network: web3Profile.network }));
+      log(t('smoke.web3_context_verified', { network: web3Profile.network }));
     }
 
     const doctorResult = await runDoctor(projectDir);
     assertStep(doctorResult.ok, 'doctor check failed');
     steps.push('doctor');
-    logger.log(t('smoke.step_ok', { step: 'doctor' }));
+    log(t('smoke.step_ok', { step: 'doctor' }));
 
     await runUpdate({
       args: [projectDir],
@@ -235,25 +237,37 @@ async function runSmokeTest({ args, options, logger, t }) {
       t
     });
     steps.push('update');
-    logger.log(t('smoke.step_ok', { step: 'update' }));
+    log(t('smoke.step_ok', { step: 'update' }));
 
+    const output = {
+      ok: true,
+      language,
+      targetDir: projectDir,
+      web3Target: web3Profile ? web3Profile.target : null,
+      steps,
+      stepCount: steps.length,
+      workspaceRoot,
+      projectDir,
+      kept: keep
+    };
+
+    if (jsonMode) {
+      return output;
+    }
     logger.log(t('smoke.completed'));
     logger.log(t('smoke.steps_count', { count: steps.length }));
 
-    return {
-      ok: true,
-      steps,
-      workspaceRoot,
-      projectDir,
-      kept: keep,
-      web3Target: web3Profile ? web3Profile.target : null
-    };
+    return output;
   } finally {
     if (!keep) {
       await fs.rm(workspaceRoot, { recursive: true, force: true });
-      logger.log(t('smoke.workspace_removed', { path: workspaceRoot }));
+      if (!jsonMode) {
+        logger.log(t('smoke.workspace_removed', { path: workspaceRoot }));
+      }
     } else {
-      logger.log(t('smoke.workspace_kept', { path: workspaceRoot }));
+      if (!jsonMode) {
+        logger.log(t('smoke.workspace_kept', { path: workspaceRoot }));
+      }
     }
   }
 }

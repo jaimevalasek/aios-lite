@@ -2,7 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
-## [0.1.6] - Unreleased
+## [0.1.7] - Unreleased
+### Added
+- JSON output mode (`--json`) for:
+  - `aios-lite info`
+  - `aios-lite doctor`
+  - `aios-lite context:validate`
+  - `aios-lite test:smoke`
+- New JSON output test suite: `tests/json-output.test.js`.
+
+### Changed
+- CLI now returns structured JSON errors for unknown commands and runtime failures when `--json` is enabled.
+- `setup:context` and setup templates now default `aios_lite_version` to `0.1.7`.
+
+## [0.1.6] - 2026-03-01
 ### Added
 - `test:smoke` now supports chain-specific Web3 profiles:
   - `--web3=ethereum`

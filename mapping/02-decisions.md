@@ -73,3 +73,7 @@
 ### D018 - Chain-specific smoke profiles
 - Decision: extend `test:smoke` with `--web3=ethereum|solana|cardano` profiles that seed representative project files and validate dApp context output.
 - Why: ensure Web3 support remains regression-safe across releases with one deterministic CLI check.
+
+### D019 - Structured CLI output mode
+- Decision: add `--json` machine-readable mode to core verification commands (`info`, `doctor`, `context:validate`, `test:smoke`) and structured JSON errors in CLI.
+- Why: unblock CI/CD and automation tooling without parsing localized text output.
