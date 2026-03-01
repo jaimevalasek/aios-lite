@@ -1,0 +1,51 @@
+{
+  "schema_version": "1.0.0",
+  "draft": "https://json-schema.org/draft/2020-12/schema",
+  "compatibility_policy": {
+    "stable_keys": "Keys listed in each schema's required array are considered stable for automation.",
+    "additive_changes": "New optional fields may be added without breaking compatibility.",
+    "breaking_changes": "Removing or renaming required keys is breaking and must be announced in release notes."
+  },
+  "schemas": [
+    {
+      "id": "info",
+      "command": "aios-lite info --json",
+      "file": "info.schema.json"
+    },
+    {
+      "id": "doctor",
+      "command": "aios-lite doctor --json",
+      "file": "doctor.schema.json"
+    },
+    {
+      "id": "context_validate",
+      "command": "aios-lite context:validate --json",
+      "file": "context-validate.schema.json"
+    },
+    {
+      "id": "smoke",
+      "command": "aios-lite test:smoke --json",
+      "file": "smoke.schema.json"
+    },
+    {
+      "id": "mcp_init",
+      "command": "aios-lite mcp:init --json",
+      "file": "mcp-init.schema.json"
+    },
+    {
+      "id": "package_test",
+      "command": "aios-lite test:package --json",
+      "file": "package-test.schema.json"
+    },
+    {
+      "id": "workflow_plan",
+      "command": "aios-lite workflow:plan --json",
+      "file": "workflow-plan.schema.json"
+    },
+    {
+      "id": "cli_error",
+      "command": "aios-lite <unknown> --json",
+      "file": "error.schema.json"
+    }
+  ]
+}

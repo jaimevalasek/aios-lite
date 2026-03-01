@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aios-lite.dev/schemas/package-test.schema.json",
+  "title": "AIOS Lite test:package --json output",
+  "type": "object",
+  "required": ["ok", "dryRun", "keep", "sourceDir", "workspaceRoot", "projectDir", "steps"],
+  "properties": {
+    "ok": { "type": "boolean", "const": true },
+    "dryRun": { "type": "boolean" },
+    "keep": { "type": "boolean" },
+    "sourceDir": { "type": "string" },
+    "workspaceRoot": { "type": "string" },
+    "projectDir": { "type": "string" },
+    "steps": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "tarballName": { "type": "string" },
+    "tarballPath": { "type": "string" },
+    "doctorOk": { "type": "boolean" },
+    "mcpServerCount": { "type": "integer", "minimum": 0 }
+  },
+  "additionalProperties": true
+}

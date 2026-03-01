@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aios-lite.dev/schemas/smoke.schema.json",
+  "title": "AIOS Lite test:smoke --json output",
+  "type": "object",
+  "required": ["ok", "language", "targetDir", "web3Target", "steps", "stepCount", "workspaceRoot", "projectDir", "kept"],
+  "properties": {
+    "ok": { "type": "boolean", "const": true },
+    "language": { "type": "string" },
+    "targetDir": { "type": "string" },
+    "web3Target": { "type": ["string", "null"] },
+    "steps": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "stepCount": { "type": "integer", "minimum": 0 },
+    "workspaceRoot": { "type": "string" },
+    "projectDir": { "type": "string" },
+    "kept": { "type": "boolean" }
+  },
+  "additionalProperties": true
+}

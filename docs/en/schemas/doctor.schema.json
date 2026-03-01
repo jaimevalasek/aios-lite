@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aios-lite.dev/schemas/doctor.schema.json",
+  "title": "AIOS Lite doctor --json output",
+  "type": "object",
+  "required": ["ok", "targetDir", "fix", "report"],
+  "properties": {
+    "ok": { "type": "boolean" },
+    "targetDir": { "type": "string" },
+    "fix": {
+      "type": "object",
+      "required": ["enabled", "dryRun"],
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "dryRun": { "type": "boolean" },
+        "changedCount": { "type": "integer", "minimum": 0 },
+        "actions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "applied", "count"],
+            "properties": {
+              "id": { "type": "string" },
+              "applied": { "type": "boolean" },
+              "count": { "type": "integer", "minimum": 0 },
+              "skipped": { "type": "boolean" },
+              "missingCount": { "type": "integer", "minimum": 0 },
+              "locale": { "type": "string" }
+            },
+            "additionalProperties": true
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "report": {
+      "type": "object",
+      "required": ["ok", "checks", "failedCount", "contextValidation"],
+      "properties": {
+        "ok": { "type": "boolean" },
+        "checks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "key", "params", "ok"],
+            "properties": {
+              "id": { "type": "string" },
+              "key": { "type": "string" },
+              "params": { "type": "object" },
+              "ok": { "type": "boolean" },
+              "hintKey": { "type": "string" }
+            },
+            "additionalProperties": true
+          }
+        },
+        "failedCount": { "type": "integer", "minimum": 0 },
+        "contextValidation": {
+          "type": "object",
+          "required": ["exists", "parsed", "valid", "filePath", "data", "issues"],
+          "properties": {
+            "exists": { "type": "boolean" },
+            "parsed": { "type": "boolean" },
+            "valid": { "type": "boolean" },
+            "filePath": { "type": "string" },
+            "data": { "type": ["object", "null"] },
+            "issues": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["id", "key", "params", "hintKey"],
+                "properties": {
+                  "id": { "type": "string" },
+                  "key": { "type": "string" },
+                  "params": { "type": "object" },
+                  "hintKey": { "type": "string" }
+                },
+                "additionalProperties": true
+              }
+            },
+            "parseError": { "type": "string" }
+          },
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}

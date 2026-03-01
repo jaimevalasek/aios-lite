@@ -1,0 +1,122 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aios-lite.dev/schemas/mcp-init.schema.json",
+  "title": "AIOS Lite mcp:init --json output",
+  "type": "object",
+  "required": ["ok", "targetDir", "filePath", "dryRun", "written", "contextExists", "contextParsed", "serverCount", "presetCount", "presetFiles", "plan", "presets"],
+  "properties": {
+    "ok": { "type": "boolean", "const": true },
+    "targetDir": { "type": "string" },
+    "filePath": { "type": "string" },
+    "dryRun": { "type": "boolean" },
+    "written": { "type": "boolean" },
+    "contextExists": { "type": "boolean" },
+    "contextParsed": { "type": "boolean" },
+    "serverCount": { "type": "integer", "minimum": 0 },
+    "presetCount": { "type": "integer", "minimum": 0 },
+    "presetFiles": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["tool", "path"],
+        "properties": {
+          "tool": { "type": "string" },
+          "path": { "type": "string" }
+        },
+        "additionalProperties": true
+      }
+    },
+    "plan": {
+      "type": "object",
+      "required": ["generated_at", "project", "database_engine", "web3_enabled", "web3_networks", "servers"],
+      "properties": {
+        "generated_at": { "type": "string" },
+        "project": {
+          "type": "object",
+          "required": ["path", "framework", "project_type", "conversation_language"],
+          "properties": {
+            "path": { "type": "string" },
+            "framework": { "type": "string" },
+            "project_type": { "type": "string" },
+            "conversation_language": { "type": "string" }
+          },
+          "additionalProperties": true
+        },
+        "database_engine": { "type": "string" },
+        "web3_enabled": { "type": "boolean" },
+        "web3_networks": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "servers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "enabled", "recommended", "reason", "env"],
+            "properties": {
+              "id": { "type": "string" },
+              "enabled": { "type": "boolean" },
+              "recommended": { "type": "boolean" },
+              "reason": { "type": "string" },
+              "env": {
+                "type": "array",
+                "items": { "type": "string" }
+              },
+              "engine": { "type": "string" },
+              "networks": {
+                "type": "array",
+                "items": { "type": "string" }
+              }
+            },
+            "additionalProperties": true
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "presets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["tool", "tool_label", "generated_at", "source_plan", "suggested_target_file", "notes", "env_required", "mcpServers"],
+        "properties": {
+          "tool": { "type": "string" },
+          "tool_label": { "type": "string" },
+          "generated_at": { "type": "string" },
+          "source_plan": { "type": "string" },
+          "suggested_target_file": { "type": "string" },
+          "notes": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "env_required": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "mcpServers": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object",
+              "required": ["transport", "command", "args", "env"],
+              "properties": {
+                "transport": { "type": "string" },
+                "command": { "type": "string" },
+                "args": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                },
+                "env": {
+                  "type": "object",
+                  "additionalProperties": { "type": "string" }
+                }
+              },
+              "additionalProperties": true
+            }
+          }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}

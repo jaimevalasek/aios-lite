@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aios-lite.dev/schemas/context-validate.schema.json",
+  "title": "AIOS Lite context:validate --json output",
+  "type": "object",
+  "required": ["ok", "reason", "targetDir", "exists", "parsed", "valid", "filePath", "data", "issues"],
+  "properties": {
+    "ok": { "type": "boolean" },
+    "reason": {
+      "type": "string",
+      "enum": ["missing_file", "invalid_frontmatter", "invalid_fields", "valid"]
+    },
+    "targetDir": { "type": "string" },
+    "exists": { "type": "boolean" },
+    "parsed": { "type": "boolean" },
+    "valid": { "type": "boolean" },
+    "filePath": { "type": "string" },
+    "data": { "type": ["object", "null"] },
+    "issues": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "key", "params", "hintKey"],
+        "properties": {
+          "id": { "type": "string" },
+          "key": { "type": "string" },
+          "params": { "type": "object" },
+          "hintKey": { "type": "string" }
+        },
+        "additionalProperties": true
+      }
+    },
+    "parseError": { "type": "string" }
+  },
+  "additionalProperties": true
+}

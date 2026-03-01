@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aios-lite.dev/schemas/info.schema.json",
+  "title": "AIOS Lite info --json output",
+  "type": "object",
+  "required": ["ok", "version", "targetDir", "installed", "detection"],
+  "properties": {
+    "ok": { "type": "boolean", "const": true },
+    "version": { "type": "string" },
+    "targetDir": { "type": "string" },
+    "installed": { "type": "boolean" },
+    "detection": {
+      "type": "object",
+      "required": ["framework", "installed", "evidence", "confidence", "matches"],
+      "properties": {
+        "framework": { "type": ["string", "null"] },
+        "installed": { "type": "boolean" },
+        "evidence": { "type": ["string", "null"] },
+        "confidence": { "type": "string" },
+        "matches": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["framework", "installed", "evidence", "confidence"],
+            "properties": {
+              "framework": { "type": "string" },
+              "installed": { "type": "boolean" },
+              "evidence": { "type": ["string", "null"] },
+              "confidence": { "type": "string" }
+            },
+            "additionalProperties": true
+          }
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}

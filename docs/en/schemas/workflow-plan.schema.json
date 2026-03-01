@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aios-lite.dev/schemas/workflow-plan.schema.json",
+  "title": "AIOS Lite workflow:plan --json output",
+  "type": "object",
+  "required": ["ok", "targetDir", "contextExists", "contextParsed", "classification", "sequence", "commands", "notes"],
+  "properties": {
+    "ok": { "type": "boolean", "const": true },
+    "targetDir": { "type": "string" },
+    "contextExists": { "type": "boolean" },
+    "contextParsed": { "type": "boolean" },
+    "classification": {
+      "type": "string",
+      "enum": ["MICRO", "SMALL", "MEDIUM"]
+    },
+    "sequence": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "commands": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "notes": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  },
+  "additionalProperties": true
+}

@@ -86,6 +86,7 @@ aios-lite i18n:add fr
 
 ## Docs
 - i18n guide: `docs/en/i18n.md`
+- JSON schemas: `docs/en/json-schemas.md`
 - web3 guide: `docs/en/web3.md`
 - release guide: `docs/en/release.md`
 - release flow: `docs/en/release-flow.md`

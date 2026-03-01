@@ -16,6 +16,10 @@ All notable changes to this project will be documented in this file.
   - `opencode.json`
 - Optional `mcp:init` tool filter:
   - `--tool=claude|codex|gemini|opencode`
+- Formal JSON schema documentation for automation:
+  - `docs/en/json-schemas.md`
+  - `docs/en/schemas/index.json`
+  - `docs/en/schemas/*.schema.json` for each JSON command contract
 
 ### Changed
 - Locale resolution now supports canonical fallback for Portuguese:
