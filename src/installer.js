@@ -3,6 +3,7 @@
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const { MANAGED_FILES } = require('./constants');
+const { getCliVersion } = require('./version');
 const { exists, ensureDir, copyFileWithDir, nowStamp, toRelativeSafe } = require('./utils');
 
 const ROOT_DIR = path.join(__dirname, '..');
@@ -37,19 +38,12 @@ function shouldSkipTemplatePath(rel) {
   return false;
 }
 
-async function readPackageVersion() {
-  const pkgPath = path.join(ROOT_DIR, 'package.json');
-  const text = await fs.readFile(pkgPath, 'utf8');
-  const pkg = JSON.parse(text);
-  return pkg.version;
-}
-
 async function writeInstallMetadata(targetDir, action, frameworkDetection) {
   const metaPath = path.join(targetDir, '.aios-lite/install.json');
   await ensureDir(path.dirname(metaPath));
   const existing = (await exists(metaPath)) ? JSON.parse(await fs.readFile(metaPath, 'utf8')) : {};
 
-  const version = await readPackageVersion();
+  const version = await getCliVersion();
   const data = {
     ...existing,
     managed_by: 'aios-lite',

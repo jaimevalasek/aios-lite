@@ -2,8 +2,8 @@
 
 const path = require('node:path');
 const readline = require('node:readline/promises');
-const packageJson = require('../../package.json');
 const { detectFramework } = require('../detector');
+const { getCliVersionSync } = require('../version');
 const {
   calculateClassification,
   normalizeBoolean,
@@ -461,7 +461,7 @@ async function runSetupContext({ args, options, logger, t }) {
     search: '',
     installCommands: '',
     notes: [],
-    aiosLiteVersion: packageJson.version || '0.1.8'
+    aiosLiteVersion: getCliVersionSync()
   };
 
   let userTypesCount = Number(options['user-types'] || 1);

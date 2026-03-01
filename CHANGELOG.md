@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [0.1.8] - Unreleased
+## [Unreleased]
 ### Added
 - Full `pt-BR` CLI dictionary at `src/i18n/messages/pt-BR.js`.
 - Localized agent prompt packs for:
@@ -44,6 +44,8 @@ All notable changes to this project will be documented in this file.
   - includes `docs/en/schemas/parallel-status.schema.json`
 
 ### Changed
+- Version resolution is now centralized via `src/version.js` and shared across `info`, `setup:context`, and installer metadata generation.
+- Removed remaining hardcoded `0.1.8` fallback in `setup:context` version assignment.
 - Locale resolution now supports canonical fallback for Portuguese:
   - `pt-BR` -> `pt-br`
   - `pt_br` -> `pt-br`
@@ -87,6 +89,7 @@ All notable changes to this project will be documented in this file.
   - `tests/init-install-guidance.test.js`
   - `tests/prompt-tool.test.js`
   - `tests/init-install-guidance.test.js` now validates locale pack auto-apply on `init/install --lang`
+  - `tests/version.test.js`
   - `tests/locales.test.js`
   - `tests/agent-contracts.test.js`
   - `tests/smoke.test.js` now verifies active agent prompt locale application for `--lang=es` and `--lang=fr`
