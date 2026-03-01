@@ -53,6 +53,11 @@
       "file": "parallel-init.schema.json"
     },
     {
+      "id": "parallel_assign",
+      "command": "aios-lite parallel:assign --json",
+      "file": "parallel-assign.schema.json"
+    },
+    {
       "id": "parallel_doctor",
       "command": "aios-lite parallel:doctor --json",
       "file": "parallel-doctor.schema.json"

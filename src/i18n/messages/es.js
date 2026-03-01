@@ -27,6 +27,8 @@ module.exports = {
       'aios-lite parallel:init [path] [--workers=2..6] [--force] [--dry-run] [--json] [--locale=es]',
     help_parallel_doctor:
       'aios-lite parallel:doctor [path] [--workers=2..6] [--fix] [--force] [--dry-run] [--json] [--locale=es]',
+    help_parallel_assign:
+      'aios-lite parallel:assign [path] [--source=auto|prd|architecture|discovery|<file>] [--workers=2..6] [--force] [--dry-run] [--json] [--locale=es]',
     help_mcp_init:
       'aios-lite mcp:init [path] [--tool=claude|codex|gemini|opencode] [--dry-run] [--json] [--locale=es]',
     help_mcp_doctor:
@@ -260,6 +262,25 @@ module.exports = {
     summary: 'Resumen: {passed} correctos, {failed} fallos, {warnings} advertencias.',
     fix_summary: 'Cambios de correccion paralela aplicados: {count}',
     fix_summary_dry_run: '[dry-run] Cambios de correccion paralela planificados: {count}'
+  },
+  parallel_assign: {
+    invalid_workers:
+      'Valor invalido para --workers. Usa un entero entre {min} y {max}.',
+    context_missing: 'Archivo de contexto no encontrado: {path}.',
+    context_invalid: 'Archivo de contexto invalido o no parseable: {path}.',
+    requires_medium:
+      'La asignacion paralela requiere clasificacion MEDIUM (actual: {classification}). Usa --force para forzar.',
+    parallel_missing:
+      'Directorio paralelo no encontrado: {path}. Ejecuta parallel:init primero.',
+    no_lanes: 'No se encontraron archivos de lanes en .aios-lite/context/parallel.',
+    missing_lanes: 'Faltan archivos de lanes para los workers solicitados: {lanes}.',
+    source_missing: 'No se pudo resolver el documento fuente con --source={source}.',
+    applied: 'Asignacion de alcance paralelo aplicada ({count} item(s) de alcance).',
+    dry_run_applied:
+      '[dry-run] Asignacion de alcance paralelo planificada ({count} item(s) de alcance).',
+    source_info: 'Documento fuente: {source}',
+    workers_count: 'Workers: {count}',
+    files_count: 'Archivos actualizados: {count}'
   },
   mcp_init: {
     context_missing:

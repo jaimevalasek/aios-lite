@@ -1,0 +1,371 @@
+'use strict';
+
+const fs = require('node:fs/promises');
+const path = require('node:path');
+const { validateProjectContextFile } = require('../context');
+const { exists, toRelativeSafe } = require('../utils');
+const { parseWorkers, normalizeClassification } = require('./parallel-init');
+
+const SOURCE_ALIAS = {
+  prd: '.aios-lite/context/prd.md',
+  architecture: '.aios-lite/context/architecture.md',
+  discovery: '.aios-lite/context/discovery.md'
+};
+
+const AUTO_SOURCE_ORDER = ['prd', 'architecture', 'discovery'];
+const MAX_SCOPES = 24;
+
+function parseLaneIndex(fileName) {
+  const match = String(fileName || '').match(/^agent-(\d+)\.status\.md$/);
+  if (!match) return null;
+  const value = Number(match[1]);
+  if (!Number.isFinite(value) || value <= 0) return null;
+  return Math.floor(value);
+}
+
+function sanitizeScopeLabel(value) {
+  return String(value || '')
+    .replace(/\[(.*?)\]\((.*?)\)/g, '$1')
+    .replace(/[`*_#]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/[:.;]+$/, '');
+}
+
+function shouldSkipScope(value) {
+  const text = String(value || '').trim().toLowerCase();
+  if (!text) return true;
+
+  const ignored = [
+    'overview',
+    'notes',
+    'out of scope',
+    'classification',
+    'risks',
+    'references',
+    'decision log',
+    'protocol',
+    'metadata',
+    'session',
+    'scope',
+    'dependencies',
+    'deliverables',
+    'blockers'
+  ];
+
+  return ignored.some((token) => text === token || text.includes(token));
+}
+
+function unique(values) {
+  return Array.from(new Set(values.filter(Boolean)));
+}
+
+function extractScopesFromContent(content) {
+  const text = String(content || '');
+  const lines = text.split(/\r?\n/);
+  const headings = [];
+
+  for (const line of lines) {
+    const match = line.match(/^#{2,3}\s+(.+)$/);
+    if (!match) continue;
+    const label = sanitizeScopeLabel(match[1]);
+    if (label.length < 3) continue;
+    if (shouldSkipScope(label)) continue;
+    headings.push(label);
+  }
+
+  const headingScopes = unique(headings).slice(0, MAX_SCOPES);
+  if (headingScopes.length > 0) {
+    return {
+      scopes: headingScopes,
+      method: 'headings',
+      fallbackUsed: false
+    };
+  }
+
+  const bullets = [];
+  for (const line of lines) {
+    const match = line.match(/^\s*[-*]\s+(?:\[[ xX]\]\s*)?(.+)$/);
+    if (!match) continue;
+    const label = sanitizeScopeLabel(match[1]);
+    if (label.length < 3) continue;
+    if (shouldSkipScope(label)) continue;
+    bullets.push(label);
+  }
+
+  const bulletScopes = unique(bullets).slice(0, MAX_SCOPES);
+  if (bulletScopes.length > 0) {
+    return {
+      scopes: bulletScopes,
+      method: 'bullets',
+      fallbackUsed: false
+    };
+  }
+
+  return {
+    scopes: ['Core implementation lane'],
+    method: 'fallback',
+    fallbackUsed: true
+  };
+}
+
+async function resolveSourceFile(targetDir, sourceOption) {
+  const source = String(sourceOption || 'auto').trim().toLowerCase();
+  if (!source || source === 'auto') {
+    for (const alias of AUTO_SOURCE_ORDER) {
+      const rel = SOURCE_ALIAS[alias];
+      const abs = path.join(targetDir, rel);
+      if (await exists(abs)) {
+        return {
+          id: alias,
+          relPath: rel,
+          absPath: abs
+        };
+      }
+    }
+    return null;
+  }
+
+  if (Object.prototype.hasOwnProperty.call(SOURCE_ALIAS, source)) {
+    const rel = SOURCE_ALIAS[source];
+    return {
+      id: source,
+      relPath: rel,
+      absPath: path.join(targetDir, rel)
+    };
+  }
+
+  const absPath = path.isAbsolute(sourceOption)
+    ? sourceOption
+    : path.resolve(targetDir, String(sourceOption || '').trim());
+  return {
+    id: 'custom',
+    relPath: toRelativeSafe(targetDir, absPath),
+    absPath
+  };
+}
+
+function distributeScopes(scopes, workers) {
+  const lanes = [];
+  for (let i = 1; i <= workers; i += 1) {
+    lanes.push({
+      lane: i,
+      items: []
+    });
+  }
+
+  for (let i = 0; i < scopes.length; i += 1) {
+    const lane = lanes[i % workers];
+    lane.items.push(scopes[i]);
+  }
+
+  return lanes;
+}
+
+function replaceScopeSection(content, items) {
+  const text = String(content || '');
+  const lines = text.split(/\r?\n/);
+  const start = lines.findIndex((line) => line.trim() === '## Scope');
+  const scopeLines = items.length > 0 ? items.map((item) => `- ${item}`) : ['- [unassigned]'];
+
+  if (start === -1) {
+    const suffix = lines.length > 0 && lines[lines.length - 1] === '' ? '' : '\n';
+    return `${text}${suffix}\n## Scope\n${scopeLines.join('\n')}\n`;
+  }
+
+  let end = lines.length;
+  for (let i = start + 1; i < lines.length; i += 1) {
+    if (lines[i].startsWith('## ')) {
+      end = i;
+      break;
+    }
+  }
+
+  const replaced = [
+    ...lines.slice(0, start + 1),
+    ...scopeLines,
+    ...lines.slice(end)
+  ];
+  return `${replaced.join('\n').replace(/\n*$/, '\n')}`;
+}
+
+function updateTimestamp(content, generatedAt) {
+  const text = String(content || '');
+  if (text.includes('- updated_at:')) {
+    return text.replace(/^- updated_at:\s*.*$/m, `- updated_at: ${generatedAt}`);
+  }
+  return text;
+}
+
+function appendSharedDecision(content, generatedAt, sourcePath, workers, scopeCount) {
+  const row =
+    `| ${generatedAt} | Scope assignment initialized | ` +
+    `Source: ${sourcePath} | workers=${workers}, scopes=${scopeCount} |`;
+  const text = String(content || '');
+
+  if (!text.includes('| time | decision | rationale | impact |')) {
+    const suffix = text.endsWith('\n') ? '' : '\n';
+    return `${text}${suffix}\n## Decision Log\n| time | decision | rationale | impact |\n|------|----------|-----------|--------|\n${row}\n`;
+  }
+
+  return `${text.replace(/\n*$/, '\n')}${row}\n`;
+}
+
+async function runParallelAssign({ args, options = {}, logger, t }) {
+  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const dryRun = Boolean(options['dry-run']);
+  const force = Boolean(options.force);
+  const workersOptionRaw = options.workers;
+  const workersOption = workersOptionRaw !== undefined ? parseWorkers(workersOptionRaw) : null;
+  if (workersOptionRaw !== undefined && workersOption === null) {
+    throw new Error(
+      t('parallel_assign.invalid_workers', {
+        min: 2,
+        max: 6
+      })
+    );
+  }
+
+  const context = await validateProjectContextFile(targetDir);
+  const contextPath = path.join(targetDir, '.aios-lite/context/project.context.md');
+  if (!context.exists) {
+    throw new Error(t('parallel_assign.context_missing', { path: contextPath }));
+  }
+  if (!context.parsed) {
+    throw new Error(t('parallel_assign.context_invalid', { path: contextPath }));
+  }
+
+  const classification = normalizeClassification(context.data && context.data.classification);
+  if (classification !== 'MEDIUM' && !force) {
+    throw new Error(
+      t('parallel_assign.requires_medium', {
+        classification: classification || 'unknown'
+      })
+    );
+  }
+
+  const parallelDir = path.join(targetDir, '.aios-lite/context/parallel');
+  if (!(await exists(parallelDir))) {
+    throw new Error(
+      t('parallel_assign.parallel_missing', {
+        path: parallelDir
+      })
+    );
+  }
+
+  const entries = await fs.readdir(parallelDir);
+  const laneIndices = entries
+    .map(parseLaneIndex)
+    .filter((value) => value !== null)
+    .sort((a, b) => a - b);
+
+  if (laneIndices.length === 0) {
+    throw new Error(t('parallel_assign.no_lanes'));
+  }
+
+  const workers = workersOption || Math.max(...laneIndices);
+  const expectedIndices = [];
+  for (let i = 1; i <= workers; i += 1) expectedIndices.push(i);
+  const missingLaneIndices = expectedIndices.filter((index) => !laneIndices.includes(index));
+  if (missingLaneIndices.length > 0) {
+    throw new Error(
+      t('parallel_assign.missing_lanes', {
+        lanes: missingLaneIndices.join(', ')
+      })
+    );
+  }
+
+  const sourceFile = await resolveSourceFile(targetDir, options.source);
+  if (!sourceFile || !(await exists(sourceFile.absPath))) {
+    throw new Error(
+      t('parallel_assign.source_missing', {
+        source: String(options.source || 'auto')
+      })
+    );
+  }
+
+  const sourceContent = await fs.readFile(sourceFile.absPath, 'utf8');
+  const extracted = extractScopesFromContent(sourceContent);
+  const assignments = distributeScopes(extracted.scopes, workers);
+  const generatedAt = new Date().toISOString();
+  const filesUpdated = [];
+
+  for (const lane of assignments) {
+    const rel = `.aios-lite/context/parallel/agent-${lane.lane}.status.md`;
+    const lanePath = path.join(targetDir, rel);
+    const current = await fs.readFile(lanePath, 'utf8');
+    let next = replaceScopeSection(current, lane.items);
+    next = updateTimestamp(next, generatedAt);
+    if (!dryRun) {
+      await fs.writeFile(lanePath, next, 'utf8');
+    }
+    filesUpdated.push(rel);
+  }
+
+  const sharedPath = path.join(parallelDir, 'shared-decisions.md');
+  if (await exists(sharedPath)) {
+    const sharedContent = await fs.readFile(sharedPath, 'utf8');
+    const nextShared = appendSharedDecision(
+      sharedContent,
+      generatedAt,
+      sourceFile.relPath,
+      workers,
+      extracted.scopes.length
+    );
+    if (!dryRun) {
+      await fs.writeFile(sharedPath, nextShared, 'utf8');
+    }
+    filesUpdated.push('.aios-lite/context/parallel/shared-decisions.md');
+  }
+
+  const output = {
+    ok: true,
+    targetDir,
+    classification: classification || 'MEDIUM',
+    workers,
+    dryRun,
+    force,
+    generatedAt,
+    source: sourceFile.id,
+    sourceFile: sourceFile.relPath,
+    extractionMethod: extracted.method,
+    fallbackUsed: extracted.fallbackUsed,
+    scopeCount: extracted.scopes.length,
+    assignments: assignments.map((item) => ({
+      lane: item.lane,
+      file: `.aios-lite/context/parallel/agent-${item.lane}.status.md`,
+      items: item.items
+    })),
+    filesUpdated
+  };
+
+  if (options.json) {
+    return output;
+  }
+
+  logger.log(
+    dryRun
+      ? t('parallel_assign.dry_run_applied', { count: output.scopeCount })
+      : t('parallel_assign.applied', { count: output.scopeCount })
+  );
+  logger.log(
+    t('parallel_assign.source_info', {
+      source: output.sourceFile
+    })
+  );
+  logger.log(t('parallel_assign.workers_count', { count: workers }));
+  logger.log(t('parallel_assign.files_count', { count: filesUpdated.length }));
+  for (const assignment of output.assignments) {
+    logger.log(`- lane ${assignment.lane}: ${assignment.items.length} scope item(s)`);
+  }
+
+  return output;
+}
+
+module.exports = {
+  runParallelAssign,
+  extractScopesFromContent,
+  parseLaneIndex,
+  distributeScopes,
+  resolveSourceFile
+};

@@ -28,6 +28,25 @@ The command reports whether these files are present:
 
 Missing prerequisites are reported but do not block file generation.
 
+## Scope assignment
+
+```bash
+aios-lite parallel:assign
+aios-lite parallel:assign --source=architecture --workers=3
+aios-lite parallel:assign --source=prd
+aios-lite parallel:assign --dry-run
+```
+
+Aliases:
+- `aios-lite orchestrator:assign`
+- `aios-lite parallel-assign`
+
+Behavior:
+- Reads scope candidates from `prd`, `architecture`, or `discovery` context docs.
+- Distributes scope items across lane files in round-robin mode.
+- Updates `## Scope` section and `updated_at` in each lane file.
+- Appends a decision-log entry to `shared-decisions.md` when present.
+
 ## Diagnose and repair
 
 ```bash

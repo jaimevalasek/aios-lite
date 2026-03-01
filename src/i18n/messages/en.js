@@ -27,6 +27,8 @@ module.exports = {
       'aios-lite parallel:init [path] [--workers=2..6] [--force] [--dry-run] [--json] [--locale=en]',
     help_parallel_doctor:
       'aios-lite parallel:doctor [path] [--workers=2..6] [--fix] [--force] [--dry-run] [--json] [--locale=en]',
+    help_parallel_assign:
+      'aios-lite parallel:assign [path] [--source=auto|prd|architecture|discovery|<file>] [--workers=2..6] [--force] [--dry-run] [--json] [--locale=en]',
     help_mcp_init:
       'aios-lite mcp:init [path] [--tool=claude|codex|gemini|opencode] [--dry-run] [--json] [--locale=en]',
     help_mcp_doctor:
@@ -253,6 +255,22 @@ module.exports = {
     summary: 'Summary: {passed} passed, {failed} failed, {warnings} warnings.',
     fix_summary: 'Parallel fix changes applied: {count}',
     fix_summary_dry_run: '[dry-run] Parallel fix changes planned: {count}'
+  },
+  parallel_assign: {
+    invalid_workers: 'Invalid --workers value. Use an integer between {min} and {max}.',
+    context_missing: 'Context file not found: {path}.',
+    context_invalid: 'Context file is invalid or not parseable: {path}.',
+    requires_medium:
+      'Parallel assignment requires MEDIUM classification (current: {classification}). Use --force to override.',
+    parallel_missing: 'Parallel directory not found: {path}. Run parallel:init first.',
+    no_lanes: 'No lane status files were found in .aios-lite/context/parallel.',
+    missing_lanes: 'Missing lane files for requested workers: {lanes}.',
+    source_missing: 'Could not resolve source document from --source={source}.',
+    applied: 'Parallel scope assignment applied ({count} scope item(s)).',
+    dry_run_applied: '[dry-run] Parallel scope assignment planned ({count} scope item(s)).',
+    source_info: 'Source document: {source}',
+    workers_count: 'Workers: {count}',
+    files_count: 'Files updated: {count}'
   },
   mcp_init: {
     context_missing:

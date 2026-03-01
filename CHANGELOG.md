@@ -23,6 +23,8 @@ All notable changes to this project will be documented in this file.
   - `aios-lite parallel:init [path] [--workers=2..6] [--force] [--dry-run] [--json]`
 - New parallel diagnosis/remediation command:
   - `aios-lite parallel:doctor [path] [--workers=2..6] [--fix] [--force] [--dry-run] [--json]`
+- New parallel scope assignment command:
+  - `aios-lite parallel:assign [path] [--source=auto|prd|architecture|discovery|<file>] [--workers=2..6] [--force] [--dry-run] [--json]`
 - Optional `mcp:init` tool filter:
   - `--tool=claude|codex|gemini|opencode`
 - `test:smoke` mixed monorepo profile:
@@ -34,6 +36,7 @@ All notable changes to this project will be documented in this file.
   - includes `docs/en/schemas/mcp-doctor.schema.json`
   - includes `docs/en/schemas/parallel-init.schema.json`
   - includes `docs/en/schemas/parallel-doctor.schema.json`
+  - includes `docs/en/schemas/parallel-assign.schema.json`
 
 ### Changed
 - Locale resolution now supports canonical fallback for Portuguese:
@@ -58,6 +61,7 @@ All notable changes to this project will be documented in this file.
   - `tests/mcp-doctor.test.js`
   - `tests/parallel-init.test.js`
   - `tests/parallel-doctor.test.js`
+  - `tests/parallel-assign.test.js`
   - `tests/json-output.test.js` now covers `mcp:doctor --json`
   - `tests/package-test.test.js`
   - `tests/workflow-plan.test.js`

@@ -28,6 +28,8 @@ module.exports = {
       'aios-lite parallel:init [path] [--workers=2..6] [--force] [--dry-run] [--json] [--locale=pt-BR]',
     help_parallel_doctor:
       'aios-lite parallel:doctor [path] [--workers=2..6] [--fix] [--force] [--dry-run] [--json] [--locale=pt-BR]',
+    help_parallel_assign:
+      'aios-lite parallel:assign [path] [--source=auto|prd|architecture|discovery|<file>] [--workers=2..6] [--force] [--dry-run] [--json] [--locale=pt-BR]',
     help_mcp_init:
       'aios-lite mcp:init [path] [--tool=claude|codex|gemini|opencode] [--dry-run] [--json] [--locale=pt-BR]',
     help_mcp_doctor:
@@ -262,6 +264,25 @@ module.exports = {
     summary: 'Resumo: {passed} aprovados, {failed} falhas, {warnings} avisos.',
     fix_summary: 'Mudancas de correcao paralela aplicadas: {count}',
     fix_summary_dry_run: '[dry-run] Mudancas de correcao paralela planejadas: {count}'
+  },
+  parallel_assign: {
+    invalid_workers:
+      'Valor invalido para --workers. Use um inteiro entre {min} e {max}.',
+    context_missing: 'Arquivo de contexto nao encontrado: {path}.',
+    context_invalid: 'Arquivo de contexto invalido ou nao parseavel: {path}.',
+    requires_medium:
+      'A atribuicao paralela requer classificacao MEDIUM (atual: {classification}). Use --force para sobrescrever.',
+    parallel_missing:
+      'Diretorio paralelo nao encontrado: {path}. Execute parallel:init primeiro.',
+    no_lanes: 'Nenhum arquivo de lane foi encontrado em .aios-lite/context/parallel.',
+    missing_lanes: 'Arquivos de lane ausentes para os workers solicitados: {lanes}.',
+    source_missing: 'Nao foi possivel resolver o documento de origem com --source={source}.',
+    applied: 'Atribuicao de escopo paralelo aplicada ({count} item(ns) de escopo).',
+    dry_run_applied:
+      '[dry-run] Atribuicao de escopo paralelo planejada ({count} item(ns) de escopo).',
+    source_info: 'Documento de origem: {source}',
+    workers_count: 'Workers: {count}',
+    files_count: 'Arquivos atualizados: {count}'
   },
   mcp_init: {
     context_missing:

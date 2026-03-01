@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aios-lite.dev/schemas/parallel-assign.schema.json",
+  "title": "AIOS Lite parallel:assign --json output",
+  "type": "object",
+  "required": [
+    "ok",
+    "targetDir",
+    "classification",
+    "workers",
+    "dryRun",
+    "force",
+    "generatedAt",
+    "source",
+    "sourceFile",
+    "extractionMethod",
+    "fallbackUsed",
+    "scopeCount",
+    "assignments",
+    "filesUpdated"
+  ],
+  "properties": {
+    "ok": { "type": "boolean", "const": true },
+    "targetDir": { "type": "string" },
+    "classification": { "type": "string" },
+    "workers": { "type": "integer", "minimum": 2, "maximum": 6 },
+    "dryRun": { "type": "boolean" },
+    "force": { "type": "boolean" },
+    "generatedAt": { "type": "string" },
+    "source": { "type": "string" },
+    "sourceFile": { "type": "string" },
+    "extractionMethod": { "type": "string" },
+    "fallbackUsed": { "type": "boolean" },
+    "scopeCount": { "type": "integer", "minimum": 0 },
+    "assignments": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["lane", "file", "items"],
+        "properties": {
+          "lane": { "type": "integer", "minimum": 1 },
+          "file": { "type": "string" },
+          "items": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "filesUpdated": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  },
+  "additionalProperties": true
+}

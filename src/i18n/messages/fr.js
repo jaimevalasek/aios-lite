@@ -27,6 +27,8 @@ module.exports = {
       'aios-lite parallel:init [path] [--workers=2..6] [--force] [--dry-run] [--json] [--locale=fr]',
     help_parallel_doctor:
       'aios-lite parallel:doctor [path] [--workers=2..6] [--fix] [--force] [--dry-run] [--json] [--locale=fr]',
+    help_parallel_assign:
+      'aios-lite parallel:assign [path] [--source=auto|prd|architecture|discovery|<file>] [--workers=2..6] [--force] [--dry-run] [--json] [--locale=fr]',
     help_mcp_init:
       'aios-lite mcp:init [path] [--tool=claude|codex|gemini|opencode] [--dry-run] [--json] [--locale=fr]',
     help_mcp_doctor:
@@ -260,6 +262,25 @@ module.exports = {
     summary: 'Resume : {passed} valides, {failed} echecs, {warnings} avertissements.',
     fix_summary: 'Corrections paralleles appliquees : {count}',
     fix_summary_dry_run: '[dry-run] Corrections paralleles planifiees : {count}'
+  },
+  parallel_assign: {
+    invalid_workers:
+      'Valeur --workers invalide. Utilisez un entier entre {min} et {max}.',
+    context_missing: 'Fichier de contexte introuvable : {path}.',
+    context_invalid: 'Fichier de contexte invalide ou non parseable : {path}.',
+    requires_medium:
+      'L attribution parallele exige la classification MEDIUM (actuelle : {classification}). Utilisez --force pour forcer.',
+    parallel_missing:
+      'Repertoire parallele introuvable : {path}. Executez parallel:init avant.',
+    no_lanes: 'Aucun fichier de lane trouve dans .aios-lite/context/parallel.',
+    missing_lanes: 'Fichiers de lane manquants pour les workers demandes : {lanes}.',
+    source_missing: 'Impossible de resoudre le document source avec --source={source}.',
+    applied: 'Attribution de scope parallele appliquee ({count} element(s) de scope).',
+    dry_run_applied:
+      '[dry-run] Attribution de scope parallele planifiee ({count} element(s) de scope).',
+    source_info: 'Document source : {source}',
+    workers_count: 'Workers : {count}',
+    files_count: 'Fichiers mis a jour : {count}'
   },
   mcp_init: {
     context_missing:
