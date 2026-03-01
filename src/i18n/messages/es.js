@@ -18,7 +18,7 @@ module.exports = {
       'aios-lite setup:context [path] [--defaults] [--project-type=web_app|api|site|script|dapp] [--language=es] [--web3-enabled=true|false] [--locale=es]',
     help_locale_apply: 'aios-lite locale:apply [path] [--lang=en|pt-BR|es|fr] [--dry-run] [--locale=es]',
     help_test_smoke:
-      'aios-lite test:smoke [workspace-path] [--lang=en|pt-BR|es|fr] [--web3=ethereum|solana|cardano] [--profile=standard|mixed] [--keep] [--json] [--locale=es]',
+      'aios-lite test:smoke [workspace-path] [--lang=en|pt-BR|es|fr] [--web3=ethereum|solana|cardano] [--profile=standard|mixed|parallel] [--keep] [--json] [--locale=es]',
     help_test_package:
       'aios-lite test:package [source-path] [--keep] [--dry-run] [--json] [--locale=es]',
     help_workflow_plan:
@@ -213,14 +213,17 @@ module.exports = {
     start: 'Ejecutando smoke test en: {projectDir}',
     using_web3_profile: 'Usando perfil Web3 de smoke: {target}',
     using_mixed_profile: 'Usando perfil mixto monorepo Web2+Web3 para smoke.',
+    using_parallel_profile: 'Usando perfil de smoke de orquestacion paralela.',
     seeded_web3_workspace: 'Workspace inicializado para objetivo Web3: {target}',
     seeded_mixed_workspace: 'Workspace inicializado para perfil mixto Web2+Web3.',
+    seeded_parallel_context: 'Contexto discovery/architecture/prd inicializado para perfil paralelo.',
     step_ok: 'OK: {step}',
     web3_detected: 'Framework Web3 detectado: {framework} ({network})',
     web3_context_verified: 'Contexto Web3 verificado para red: {network}',
     mixed_context_verified: 'Contexto de perfil mixto verificado (framework: {framework}).',
+    parallel_status_verified: 'Estado paralelo verificado para lanes: {count}',
     invalid_web3_target: 'Objetivo --web3 invalido: {target}. Usa ethereum, solana o cardano.',
-    invalid_profile: 'Valor invalido para --profile: {profile}. Usa standard o mixed.',
+    invalid_profile: 'Valor invalido para --profile: {profile}. Usa standard, mixed o parallel.',
     profile_conflict: 'No combines --profile=mixed con --web3. Elige un solo modo de perfil.',
     completed: 'Smoke test completado con exito.',
     steps_count: 'Pasos validados: {count}',

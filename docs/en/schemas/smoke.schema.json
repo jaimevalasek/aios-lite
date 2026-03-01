@@ -9,7 +9,7 @@
     "language": { "type": "string" },
     "targetDir": { "type": "string" },
     "web3Target": { "type": ["string", "null"] },
-    "profile": { "type": "string", "enum": ["standard", "mixed"] },
+    "profile": { "type": "string", "enum": ["standard", "mixed", "parallel"] },
     "steps": {
       "type": "array",
       "items": { "type": "string" }

@@ -13,9 +13,13 @@ const { runDoctor } = require('../doctor');
 const { runUpdate } = require('./update');
 const { detectFramework } = require('../detector');
 const { validateProjectContextFile } = require('../context');
+const { runParallelInit } = require('./parallel-init');
+const { runParallelAssign } = require('./parallel-assign');
+const { runParallelStatus } = require('./parallel-status');
+const { runParallelDoctor } = require('./parallel-doctor');
 
 const WEB3_SMOKE_TARGETS = ['ethereum', 'solana', 'cardano'];
-const SMOKE_PROFILES = ['standard', 'mixed'];
+const SMOKE_PROFILES = ['standard', 'mixed', 'parallel'];
 const WEB3_PROFILE_BY_TARGET = {
   ethereum: {
     framework: 'Hardhat',
@@ -115,6 +119,36 @@ async function seedMixedWorkspace(projectDir) {
   );
 }
 
+async function seedParallelContextDocs(projectDir) {
+  const contextDir = path.join(projectDir, '.aios-lite/context');
+  await ensureDir(contextDir);
+
+  const discovery = `# Discovery
+
+## Scope candidates
+- Authentication
+- Billing
+- Notifications
+`;
+  const architecture = `# Architecture
+
+## Authentication Module
+## Billing Module
+## Notification Pipeline
+`;
+  const prd = `# PRD
+
+## Modules
+- Authentication
+- Billing
+- Notifications
+`;
+
+  await fs.writeFile(path.join(contextDir, 'discovery.md'), discovery, 'utf8');
+  await fs.writeFile(path.join(contextDir, 'architecture.md'), architecture, 'utf8');
+  await fs.writeFile(path.join(contextDir, 'prd.md'), prd, 'utf8');
+}
+
 async function runSmokeTest({ args, options, logger, t }) {
   const language = String(options.language || options.lang || 'en');
   const keep = Boolean(options.keep);
@@ -154,6 +188,8 @@ async function runSmokeTest({ args, options, logger, t }) {
       await seedMixedWorkspace(projectDir);
       steps.push('seed:mixed');
       log(t('smoke.seeded_mixed_workspace'));
+    } else if (smokeProfile === 'parallel') {
+      log(t('smoke.using_parallel_profile'));
     }
 
     const installResult = await runInstall({
@@ -194,7 +230,12 @@ async function runSmokeTest({ args, options, logger, t }) {
               profile: 'developer',
               framework: 'Node',
               'framework-installed': true
-            })
+            }),
+        ...(smokeProfile === 'parallel'
+          ? {
+              classification: 'MEDIUM'
+            }
+          : {})
       },
       logger: quietLogger,
       t
@@ -280,6 +321,56 @@ async function runSmokeTest({ args, options, logger, t }) {
     assertStep(doctorResult.ok, 'doctor check failed');
     steps.push('doctor');
     log(t('smoke.step_ok', { step: 'doctor' }));
+
+    if (smokeProfile === 'parallel') {
+      await seedParallelContextDocs(projectDir);
+      steps.push('seed:parallel-context');
+      log(t('smoke.seeded_parallel_context'));
+
+      const parallelInit = await runParallelInit({
+        args: [projectDir],
+        options: { workers: 3 },
+        logger: quietLogger,
+        t
+      });
+      assertStep(parallelInit.ok, 'parallel:init failed');
+      assertStep(parallelInit.workers === 3, 'parallel:init workers mismatch');
+      steps.push('parallel:init');
+      log(t('smoke.step_ok', { step: 'parallel:init' }));
+
+      const parallelAssign = await runParallelAssign({
+        args: [projectDir],
+        options: { source: 'architecture', workers: 3 },
+        logger: quietLogger,
+        t
+      });
+      assertStep(parallelAssign.ok, 'parallel:assign failed');
+      assertStep(parallelAssign.scopeCount > 0, 'parallel:assign produced no scopes');
+      steps.push('parallel:assign');
+      log(t('smoke.step_ok', { step: 'parallel:assign' }));
+
+      const parallelStatus = await runParallelStatus({
+        args: [projectDir],
+        options: {},
+        logger: quietLogger,
+        t
+      });
+      assertStep(parallelStatus.ok, 'parallel:status failed');
+      assertStep(parallelStatus.laneCount === 3, 'parallel:status lane count mismatch');
+      steps.push('parallel:status');
+      log(t('smoke.parallel_status_verified', { count: parallelStatus.laneCount }));
+
+      const parallelDoctor = await runParallelDoctor({
+        args: [projectDir],
+        options: { workers: 3 },
+        logger: quietLogger,
+        t
+      });
+      assertStep(parallelDoctor.ok, 'parallel:doctor failed');
+      assertStep(parallelDoctor.summary.failed === 0, 'parallel:doctor reported failures');
+      steps.push('parallel:doctor');
+      log(t('smoke.step_ok', { step: 'parallel:doctor' }));
+    }
 
     await runUpdate({
       args: [projectDir],

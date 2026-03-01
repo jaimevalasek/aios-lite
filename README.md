@@ -22,7 +22,7 @@ npx aios-lite install
 - `aios-lite agent:prompt <agent> [--tool=codex|claude|gemini|opencode]`
 - `aios-lite context:validate [path] [--json]`
 - `aios-lite locale:apply [path] [--lang=en|pt-BR|es|fr]`
-- `aios-lite test:smoke [workspace-path] [--lang=en|pt-BR|es|fr] [--web3=ethereum|solana|cardano] [--profile=standard|mixed] [--keep] [--json]`
+- `aios-lite test:smoke [workspace-path] [--lang=en|pt-BR|es|fr] [--web3=ethereum|solana|cardano] [--profile=standard|mixed|parallel] [--keep] [--json]`
 - `aios-lite test:package [source-path] [--keep] [--dry-run] [--json]`
 - `aios-lite workflow:plan [path] [--classification=MICRO|SMALL|MEDIUM] [--json]`
 - `aios-lite parallel:init [path] [--workers=2..6] [--force] [--dry-run] [--json]`
@@ -43,6 +43,7 @@ aios-lite doctor --fix
 aios-lite test:smoke --lang=pt-BR
 aios-lite test:smoke --web3=ethereum
 aios-lite test:smoke --profile=mixed
+aios-lite test:smoke --profile=parallel
 aios-lite test:package --dry-run
 aios-lite workflow:plan --classification=SMALL
 aios-lite parallel:init --workers=3

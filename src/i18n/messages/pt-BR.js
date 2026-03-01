@@ -19,7 +19,7 @@ module.exports = {
     help_locale_apply:
       'aios-lite locale:apply [path] [--lang=en|pt-BR|es|fr] [--dry-run] [--locale=pt-BR]',
     help_test_smoke:
-      'aios-lite test:smoke [workspace-path] [--lang=en|pt-BR|es|fr] [--web3=ethereum|solana|cardano] [--profile=standard|mixed] [--keep] [--json] [--locale=pt-BR]',
+      'aios-lite test:smoke [workspace-path] [--lang=en|pt-BR|es|fr] [--web3=ethereum|solana|cardano] [--profile=standard|mixed|parallel] [--keep] [--json] [--locale=pt-BR]',
     help_test_package:
       'aios-lite test:package [source-path] [--keep] [--dry-run] [--json] [--locale=pt-BR]',
     help_workflow_plan:
@@ -215,14 +215,17 @@ module.exports = {
     start: 'Executando smoke test em: {projectDir}',
     using_web3_profile: 'Usando perfil Web3 de smoke: {target}',
     using_mixed_profile: 'Usando perfil misto Web2+Web3 para smoke test.',
+    using_parallel_profile: 'Usando perfil de smoke para orquestracao paralela.',
     seeded_web3_workspace: 'Workspace inicializado para alvo Web3: {target}',
     seeded_mixed_workspace: 'Workspace inicializado para perfil misto Web2+Web3.',
+    seeded_parallel_context: 'Contexto discovery/architecture/prd inicializado para perfil paralelo.',
     step_ok: 'OK: {step}',
     web3_detected: 'Framework Web3 detectado: {framework} ({network})',
     web3_context_verified: 'Contexto Web3 verificado para rede: {network}',
     mixed_context_verified: 'Contexto do perfil misto verificado (framework: {framework}).',
+    parallel_status_verified: 'Status paralelo verificado para lanes: {count}',
     invalid_web3_target: 'Alvo --web3 invalido: {target}. Use ethereum, solana ou cardano.',
-    invalid_profile: 'Valor invalido para --profile: {profile}. Use standard ou mixed.',
+    invalid_profile: 'Valor invalido para --profile: {profile}. Use standard, mixed ou parallel.',
     profile_conflict: 'Nao combine --profile=mixed com --web3. Escolha um modo de perfil.',
     completed: 'Smoke test concluido com sucesso.',
     steps_count: 'Etapas validadas: {count}',

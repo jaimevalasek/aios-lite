@@ -92,6 +92,28 @@ test('test:smoke supports mixed Web2+Web3 monorepo profile', async () => {
   await fs.rm(result.workspaceRoot, { recursive: true, force: true });
 });
 
+test('test:smoke supports parallel orchestration profile', async () => {
+  const baseDir = await makeTempDir();
+  const { t } = createTranslator('en');
+  const logger = { log() {}, error() {} };
+
+  const result = await runSmokeTest({
+    args: [baseDir],
+    options: { profile: 'parallel', keep: true },
+    logger,
+    t
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.profile, 'parallel');
+  assert.equal(result.steps.includes('parallel:init'), true);
+  assert.equal(result.steps.includes('parallel:assign'), true);
+  assert.equal(result.steps.includes('parallel:status'), true);
+  assert.equal(result.steps.includes('parallel:doctor'), true);
+
+  await fs.rm(result.workspaceRoot, { recursive: true, force: true });
+});
+
 test('test:smoke applies es/fr localized agent packs into active prompts', async () => {
   const baseDir = await makeTempDir();
   const { t } = createTranslator('en');

@@ -31,6 +31,8 @@ All notable changes to this project will be documented in this file.
   - `--tool=claude|codex|gemini|opencode`
 - `test:smoke` mixed monorepo profile:
   - `--profile=mixed` for combined Web2 + Web3 workspace validation
+- `test:smoke` parallel orchestration profile:
+  - `--profile=parallel` to validate `parallel:init/assign/status/doctor` in one flow
 - Formal JSON schema documentation for automation:
   - `docs/en/json-schemas.md`
   - `docs/en/schemas/index.json`
@@ -71,6 +73,7 @@ All notable changes to this project will be documented in this file.
   - `tests/workflow-plan.test.js`
   - extended `tests/mcp-init.test.js` and `tests/json-output.test.js`
   - smoke JSON e2e checks for `--locale=es` and `--locale=fr`
+  - smoke coverage for `--profile=parallel`
 
 ## [0.1.7] - 2026-03-01
 ### Added

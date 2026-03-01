@@ -86,6 +86,19 @@ test('test:smoke --json works with es and fr locales', async () => {
   }
 });
 
+test('test:smoke --json supports parallel profile', async () => {
+  const cli = await runCli(['test:smoke', '--json', '--profile=parallel']);
+  assert.equal(cli.code, 0);
+  assert.equal(cli.stderr.trim(), '');
+  const parsed = JSON.parse(cli.stdout);
+  assert.equal(parsed.ok, true);
+  assert.equal(parsed.profile, 'parallel');
+  assert.equal(parsed.steps.includes('parallel:init'), true);
+  assert.equal(parsed.steps.includes('parallel:assign'), true);
+  assert.equal(parsed.steps.includes('parallel:status'), true);
+  assert.equal(parsed.steps.includes('parallel:doctor'), true);
+});
+
 test('mcp:init --json returns structured plan payload', async () => {
   const dir = await makeTempDir();
   const cli = await runCli(['mcp:init', dir, '--json']);
