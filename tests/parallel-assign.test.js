@@ -20,6 +20,19 @@ function createQuietLogger() {
   };
 }
 
+function createCollectLogger() {
+  const lines = [];
+  return {
+    lines,
+    log(line) {
+      lines.push(String(line));
+    },
+    error(line) {
+      lines.push(String(line));
+    }
+  };
+}
+
 async function writeContext(dir, classification = 'MEDIUM') {
   const contextPath = path.join(dir, '.aios-lite/context/project.context.md');
   await fs.mkdir(path.dirname(contextPath), { recursive: true });
@@ -151,4 +164,28 @@ test('parallel:assign fails when parallel directory is missing', async () => {
     }),
     /Parallel directory not found/
   );
+});
+
+test('parallel:assign localizes lane scope summary in pt-BR', async () => {
+  const dir = await makeTempDir();
+  const { t } = createTranslator('pt-BR');
+  await writeContext(dir, 'MEDIUM');
+  await writeArchitecture(dir);
+
+  await runParallelInit({
+    args: [dir],
+    options: { workers: 2 },
+    logger: createQuietLogger(),
+    t
+  });
+
+  const logger = createCollectLogger();
+  await runParallelAssign({
+    args: [dir],
+    options: { workers: 2, source: 'architecture' },
+    logger,
+    t
+  });
+
+  assert.equal(logger.lines.some((line) => line.includes('item(ns) de escopo')), true);
 });

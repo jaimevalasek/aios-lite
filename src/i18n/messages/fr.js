@@ -386,7 +386,8 @@ module.exports = {
       '[dry-run] Attribution de scope parallele planifiee ({count} element(s) de scope).',
     source_info: 'Document source : {source}',
     workers_count: 'Workers : {count}',
-    files_count: 'Fichiers mis a jour : {count}'
+    files_count: 'Fichiers mis a jour : {count}',
+    lane_scope_line: '- lane {lane} : {count} element(s) de scope'
   },
   parallel_status: {
     parallel_missing:

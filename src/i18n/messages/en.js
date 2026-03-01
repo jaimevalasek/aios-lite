@@ -366,7 +366,8 @@ module.exports = {
     dry_run_applied: '[dry-run] Parallel scope assignment planned ({count} scope item(s)).',
     source_info: 'Source document: {source}',
     workers_count: 'Workers: {count}',
-    files_count: 'Files updated: {count}'
+    files_count: 'Files updated: {count}',
+    lane_scope_line: '- lane {lane}: {count} scope item(s)'
   },
   parallel_status: {
     parallel_missing: 'Parallel directory not found: {path}. Run parallel:init first.',

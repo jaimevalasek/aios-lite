@@ -356,7 +356,12 @@ async function runParallelAssign({ args, options = {}, logger, t }) {
   logger.log(t('parallel_assign.workers_count', { count: workers }));
   logger.log(t('parallel_assign.files_count', { count: filesUpdated.length }));
   for (const assignment of output.assignments) {
-    logger.log(`- lane ${assignment.lane}: ${assignment.items.length} scope item(s)`);
+    logger.log(
+      t('parallel_assign.lane_scope_line', {
+        lane: assignment.lane,
+        count: assignment.items.length
+      })
+    );
   }
 
   return output;

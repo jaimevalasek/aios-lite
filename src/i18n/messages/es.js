@@ -381,7 +381,8 @@ module.exports = {
       '[dry-run] Asignacion de alcance paralelo planificada ({count} item(s) de alcance).',
     source_info: 'Documento fuente: {source}',
     workers_count: 'Workers: {count}',
-    files_count: 'Archivos actualizados: {count}'
+    files_count: 'Archivos actualizados: {count}',
+    lane_scope_line: '- lane {lane}: {count} item(s) de alcance'
   },
   parallel_status: {
     parallel_missing:

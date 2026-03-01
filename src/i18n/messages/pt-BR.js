@@ -383,7 +383,8 @@ module.exports = {
       '[dry-run] Atribuicao de escopo paralelo planejada ({count} item(ns) de escopo).',
     source_info: 'Documento de origem: {source}',
     workers_count: 'Workers: {count}',
-    files_count: 'Arquivos atualizados: {count}'
+    files_count: 'Arquivos atualizados: {count}',
+    lane_scope_line: '- lane {lane}: {count} item(ns) de escopo'
   },
   parallel_status: {
     parallel_missing:

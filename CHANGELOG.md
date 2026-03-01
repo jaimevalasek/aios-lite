@@ -67,6 +67,7 @@ All notable changes to this project will be documented in this file.
 - `parallel:status` human-readable status rows and lane summaries are now localized (including status labels).
 - `mcp:doctor` severity prefixes are now localized per locale (`OK/WARN/FAIL` equivalents).
 - `test:package` now localizes fallback command failure detail when stderr/stdout are empty.
+- `parallel:assign` lane scope summary lines are now localized in human-readable output.
 - Setup templates now default `aios_lite_version` to `0.1.8`.
 - Expanded automated coverage:
   - `tests/i18n-cli.test.js`
