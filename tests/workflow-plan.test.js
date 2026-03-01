@@ -55,7 +55,7 @@ test('runWorkflowPlan reads context and applies dapp note', async () => {
   await fs.mkdir(path.dirname(contextPath), { recursive: true });
   await fs.writeFile(
     contextPath,
-    `---\nproject_name: \"demo\"\nproject_type: \"dapp\"\nprofile: \"developer\"\nframework: \"Hardhat\"\nframework_installed: true\nclassification: \"SMALL\"\nconversation_language: \"en\"\nweb3_enabled: true\nweb3_networks: \"ethereum\"\naios_lite_version: \"0.1.7\"\n---\n\n# Project Context\n`,
+    `---\nproject_name: \"demo\"\nproject_type: \"dapp\"\nprofile: \"developer\"\nframework: \"Hardhat\"\nframework_installed: true\nclassification: \"SMALL\"\nconversation_language: \"en\"\nweb3_enabled: true\nweb3_networks: \"ethereum\"\naios_lite_version: \"0.1.8\"\n---\n\n# Project Context\n`,
     'utf8'
   );
 

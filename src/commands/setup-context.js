@@ -355,7 +355,7 @@ async function runSetupContext({ args, options, logger, t }) {
     search: '',
     installCommands: '',
     notes: [],
-    aiosLiteVersion: packageJson.version || '0.1.7'
+    aiosLiteVersion: packageJson.version || '0.1.8'
   };
 
   let userTypesCount = Number(options['user-types'] || 1);

@@ -20,8 +20,8 @@ function createQuietLogger() {
 }
 
 test('parsePackResult returns last non-empty line', () => {
-  const output = '\nfoo\nbar\naios-lite-0.1.7.tgz\n\n';
-  assert.equal(parsePackResult(output), 'aios-lite-0.1.7.tgz');
+  const output = '\nfoo\nbar\naios-lite-0.1.8.tgz\n\n';
+  assert.equal(parsePackResult(output), 'aios-lite-0.1.8.tgz');
 });
 
 test('resolveTarballFromDir detects latest tgz in directory', async () => {

@@ -42,7 +42,7 @@ test('mcp:init writes plan from existing context', async () => {
   await fs.mkdir(path.dirname(contextPath), { recursive: true });
   await fs.writeFile(
     contextPath,
-    `---\nproject_name: \"demo\"\nproject_type: \"dapp\"\nprofile: \"developer\"\nframework: \"Anchor\"\nframework_installed: true\nclassification: \"SMALL\"\nconversation_language: \"en\"\nweb3_enabled: true\nweb3_networks: \"solana\"\ncontract_framework: \"Anchor\"\naios_lite_version: \"0.1.7\"\n---\n\n# Project Context\n\n## Stack\n- Backend: Anchor\n- Frontend: Next.js\n- Database: PostgreSQL\n- Auth: Custom\n- UI/UX: Tailwind\n`,
+    `---\nproject_name: \"demo\"\nproject_type: \"dapp\"\nprofile: \"developer\"\nframework: \"Anchor\"\nframework_installed: true\nclassification: \"SMALL\"\nconversation_language: \"en\"\nweb3_enabled: true\nweb3_networks: \"solana\"\ncontract_framework: \"Anchor\"\naios_lite_version: \"0.1.8\"\n---\n\n# Project Context\n\n## Stack\n- Backend: Anchor\n- Frontend: Next.js\n- Database: PostgreSQL\n- Auth: Custom\n- UI/UX: Tailwind\n`,
     'utf8'
   );
 
@@ -105,7 +105,7 @@ test('mcp:init supports --tool filter for a single preset', async () => {
   await fs.mkdir(path.dirname(contextPath), { recursive: true });
   await fs.writeFile(
     contextPath,
-    `---\nproject_name: \"demo\"\nproject_type: \"web_app\"\nprofile: \"developer\"\nframework: \"Node/Express\"\nframework_installed: true\nclassification: \"MICRO\"\nconversation_language: \"en\"\naios_lite_version: \"0.1.7\"\n---\n\n# Project Context\n\n## Stack\n- Database: SQLite\n`,
+    `---\nproject_name: \"demo\"\nproject_type: \"web_app\"\nprofile: \"developer\"\nframework: \"Node/Express\"\nframework_installed: true\nclassification: \"MICRO\"\nconversation_language: \"en\"\naios_lite_version: \"0.1.8\"\n---\n\n# Project Context\n\n## Stack\n- Database: SQLite\n`,
     'utf8'
   );
 

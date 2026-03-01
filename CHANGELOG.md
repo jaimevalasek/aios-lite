@@ -2,7 +2,35 @@
 
 All notable changes to this project will be documented in this file.
 
-## [0.1.7] - Unreleased
+## [0.1.8] - Unreleased
+### Added
+- Full `pt-BR` CLI dictionary at `src/i18n/messages/pt-BR.js`.
+- New package installation validation command:
+  - `aios-lite test:package [source-path] [--keep] [--dry-run] [--json]`
+- New workflow planning command:
+  - `aios-lite workflow:plan [path] [--classification=MICRO|SMALL|MEDIUM] [--json]`
+- `mcp:init` tool presets generation under `.aios-lite/mcp/presets/`:
+  - `claude.json`
+  - `codex.json`
+  - `gemini.json`
+  - `opencode.json`
+- Optional `mcp:init` tool filter:
+  - `--tool=claude|codex|gemini|opencode`
+
+### Changed
+- Locale resolution now supports canonical fallback for Portuguese:
+  - `pt-BR` -> `pt-br`
+  - `pt_br` -> `pt-br`
+  - `pt` -> `pt-br`
+- `mcp:init` now writes both shared plan and tool-specific preset templates.
+- Setup templates now default `aios_lite_version` to `0.1.8`.
+- Expanded automated coverage:
+  - `tests/i18n-cli.test.js`
+  - `tests/package-test.test.js`
+  - `tests/workflow-plan.test.js`
+  - extended `tests/mcp-init.test.js` and `tests/json-output.test.js`
+
+## [0.1.7] - 2026-03-01
 ### Added
 - JSON output mode (`--json`) for:
   - `aios-lite info`
