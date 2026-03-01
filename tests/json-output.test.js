@@ -99,6 +99,22 @@ test('mcp:init --json returns structured plan payload', async () => {
   assert.equal(Array.isArray(parsed.plan.servers), true);
 });
 
+test('mcp:doctor --json returns structured validation payload', async () => {
+  const dir = await makeTempDir();
+  const init = await runCli(['mcp:init', dir, '--json']);
+  assert.equal(init.code, 0);
+
+  const cli = await runCli(['mcp:doctor', dir, '--json']);
+  assert.equal(cli.code, 0);
+  assert.equal(cli.stderr.trim(), '');
+  const parsed = JSON.parse(cli.stdout);
+  assert.equal(parsed.ok, true);
+  assert.equal(typeof parsed.strictEnv, 'boolean');
+  assert.equal(Array.isArray(parsed.checks), true);
+  assert.equal(typeof parsed.summary.total, 'number');
+  assert.equal(typeof parsed.summary.failed, 'number');
+});
+
 test('test:package --dry-run --json returns plan payload', async () => {
   const cli = await runCli(['test:package', '--dry-run', '--json']);
   assert.equal(cli.code, 0);

@@ -12,6 +12,7 @@ This folder provides formal schemas for automation:
 - `aios-lite context:validate --json`
 - `aios-lite test:smoke --json`
 - `aios-lite mcp:init --json`
+- `aios-lite mcp:doctor --json`
 - `aios-lite test:package --json`
 - `aios-lite workflow:plan --json`
 - Generic CLI JSON errors (`unknown_command`, `command_error`)

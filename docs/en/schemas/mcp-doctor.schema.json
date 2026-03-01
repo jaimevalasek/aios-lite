@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aios-lite.dev/schemas/mcp-doctor.schema.json",
+  "title": "AIOS Lite mcp:doctor --json output",
+  "type": "object",
+  "required": ["ok", "targetDir", "strictEnv", "context", "plan", "env", "presets", "checks", "summary"],
+  "properties": {
+    "ok": { "type": "boolean" },
+    "targetDir": { "type": "string" },
+    "strictEnv": { "type": "boolean" },
+    "context": {
+      "type": "object",
+      "required": ["exists", "parsed", "filePath", "projectType", "framework", "conversationLanguage"],
+      "properties": {
+        "exists": { "type": "boolean" },
+        "parsed": { "type": "boolean" },
+        "filePath": { "type": "string" },
+        "projectType": { "type": "string" },
+        "framework": { "type": "string" },
+        "conversationLanguage": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "plan": {
+      "type": "object",
+      "required": ["filePath", "exists", "parsed", "serverCount", "enabledServers"],
+      "properties": {
+        "filePath": { "type": "string" },
+        "exists": { "type": "boolean" },
+        "parsed": { "type": "boolean" },
+        "serverCount": { "type": "integer", "minimum": 0 },
+        "enabledServers": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      },
+      "additionalProperties": true
+    },
+    "env": {
+      "type": "object",
+      "required": ["required", "missing"],
+      "properties": {
+        "required": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "missing": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      },
+      "additionalProperties": true
+    },
+    "presets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["tool", "path", "exists"],
+        "properties": {
+          "tool": { "type": "string" },
+          "path": { "type": "string" },
+          "exists": { "type": "boolean" }
+        },
+        "additionalProperties": true
+      }
+    },
+    "checks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "ok", "severity", "message", "hint"],
+        "properties": {
+          "id": { "type": "string" },
+          "ok": { "type": "boolean" },
+          "severity": { "type": "string", "enum": ["info", "warn", "error"] },
+          "message": { "type": "string" },
+          "hint": { "type": "string" }
+        },
+        "additionalProperties": true
+      }
+    },
+    "summary": {
+      "type": "object",
+      "required": ["total", "passed", "failed", "warnings"],
+      "properties": {
+        "total": { "type": "integer", "minimum": 0 },
+        "passed": { "type": "integer", "minimum": 0 },
+        "failed": { "type": "integer", "minimum": 0 },
+        "warnings": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}

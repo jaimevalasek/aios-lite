@@ -26,6 +26,8 @@ module.exports = {
       'aios-lite workflow:plan [path] [--classification=MICRO|SMALL|MEDIUM] [--json] [--locale=pt-BR]',
     help_mcp_init:
       'aios-lite mcp:init [path] [--tool=claude|codex|gemini|opencode] [--dry-run] [--json] [--locale=pt-BR]',
+    help_mcp_doctor:
+      'aios-lite mcp:doctor [path] [--strict-env] [--json] [--locale=pt-BR]',
     unknown_command: 'Comando desconhecido: {command}',
     error_prefix: 'Erro: {message}'
   },

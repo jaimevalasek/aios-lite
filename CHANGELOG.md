@@ -17,6 +17,8 @@ All notable changes to this project will be documented in this file.
   - `codex.json`
   - `gemini.json`
   - `opencode.json`
+- New MCP validation command:
+  - `aios-lite mcp:doctor [path] [--strict-env] [--json]`
 - Optional `mcp:init` tool filter:
   - `--tool=claude|codex|gemini|opencode`
 - `test:smoke` mixed monorepo profile:
@@ -25,6 +27,7 @@ All notable changes to this project will be documented in this file.
   - `docs/en/json-schemas.md`
   - `docs/en/schemas/index.json`
   - `docs/en/schemas/*.schema.json` for each JSON command contract
+  - includes `docs/en/schemas/mcp-doctor.schema.json`
 
 ### Changed
 - Locale resolution now supports canonical fallback for Portuguese:
@@ -45,6 +48,8 @@ All notable changes to this project will be documented in this file.
   - `tests/locales.test.js`
   - `tests/agent-contracts.test.js`
   - `tests/smoke.test.js` now verifies active agent prompt locale application for `--lang=es` and `--lang=fr`
+  - `tests/mcp-doctor.test.js`
+  - `tests/json-output.test.js` now covers `mcp:doctor --json`
   - `tests/package-test.test.js`
   - `tests/workflow-plan.test.js`
   - extended `tests/mcp-init.test.js` and `tests/json-output.test.js`

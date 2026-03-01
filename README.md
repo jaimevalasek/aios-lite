@@ -26,6 +26,7 @@ npx aios-lite install
 - `aios-lite test:package [source-path] [--keep] [--dry-run] [--json]`
 - `aios-lite workflow:plan [path] [--classification=MICRO|SMALL|MEDIUM] [--json]`
 - `aios-lite mcp:init [path] [--tool=claude|codex|gemini|opencode] [--dry-run] [--json]`
+- `aios-lite mcp:doctor [path] [--strict-env] [--json]`
 
 ## Agent usage helper
 If your AI CLI does not show a visual agent picker, use:
@@ -41,6 +42,7 @@ aios-lite test:smoke --profile=mixed
 aios-lite test:package --dry-run
 aios-lite workflow:plan --classification=SMALL
 aios-lite mcp:init --dry-run
+aios-lite mcp:doctor --strict-env
 ```
 
 ## JSON output for CI
@@ -49,6 +51,7 @@ Use `--json` on selected commands:
 - `aios-lite doctor --json`
 - `aios-lite context:validate --json`
 - `aios-lite test:smoke --json`
+- `aios-lite mcp:doctor --json`
 
 ## i18n
 CLI localization is supported with:
@@ -90,6 +93,7 @@ aios-lite i18n:add fr
 ## Docs
 - i18n guide: `docs/en/i18n.md`
 - JSON schemas: `docs/en/json-schemas.md`
+- MCP guide: `docs/en/mcp.md`
 - web3 guide: `docs/en/web3.md`
 - release guide: `docs/en/release.md`
 - release flow: `docs/en/release-flow.md`
@@ -102,11 +106,19 @@ Generate a local MCP server recommendation file from `project.context.md`:
 aios-lite mcp:init
 aios-lite mcp:init --dry-run
 aios-lite mcp:init --tool=codex
+aios-lite mcp:doctor
+aios-lite mcp:doctor --strict-env
 ```
 
 `mcp:init` generates:
 - `.aios-lite/mcp/servers.local.json` (project MCP plan)
 - `.aios-lite/mcp/presets/<tool>.json` (tool-specific preset templates)
+
+`mcp:doctor` validates:
+- core MCP servers (`filesystem`, `context7`)
+- preset coverage
+- required env vars from enabled servers
+- context compatibility for database and Web3 (`chain-rpc`)
 
 ## License
 MIT

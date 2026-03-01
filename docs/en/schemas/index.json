@@ -33,6 +33,11 @@
       "file": "mcp-init.schema.json"
     },
     {
+      "id": "mcp_doctor",
+      "command": "aios-lite mcp:doctor --json",
+      "file": "mcp-doctor.schema.json"
+    },
+    {
       "id": "package_test",
       "command": "aios-lite test:package --json",
       "file": "package-test.schema.json"

@@ -15,6 +15,7 @@ const { runSetupContext } = require('./commands/setup-context');
 const { runLocaleApply } = require('./commands/locale-apply');
 const { runSmokeTest } = require('./commands/smoke');
 const { runMcpInit } = require('./commands/mcp-init');
+const { runMcpDoctor } = require('./commands/mcp-doctor');
 const { runPackageTest } = require('./commands/package-e2e');
 const { runWorkflowPlan } = require('./commands/workflow-plan');
 
@@ -31,6 +32,8 @@ const JSON_SUPPORTED_COMMANDS = new Set([
   'workflow-plan',
   'mcp:init',
   'mcp-init',
+  'mcp:doctor',
+  'mcp-doctor',
   'version',
   '--version',
   '-v'
@@ -70,6 +73,7 @@ function printHelp(t, logger) {
   logger.log(`  ${t('cli.help_test_package')}`);
   logger.log(`  ${t('cli.help_workflow_plan')}`);
   logger.log(`  ${t('cli.help_mcp_init')}`);
+  logger.log(`  ${t('cli.help_mcp_doctor')}`);
 }
 
 function commandSupportsJson(command) {
@@ -134,6 +138,8 @@ async function main() {
       result = await runWorkflowPlan({ args, options, logger, t });
     } else if (command === 'mcp:init' || command === 'mcp-init') {
       result = await runMcpInit({ args, options, logger, t });
+    } else if (command === 'mcp:doctor' || command === 'mcp-doctor') {
+      result = await runMcpDoctor({ args, options, logger, t });
     } else {
       const message = t('cli.unknown_command', { command });
       if (jsonMode) {
