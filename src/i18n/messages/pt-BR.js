@@ -284,6 +284,7 @@ module.exports = {
     pack_done: 'Tarball do pacote criado: {tarball}',
     completed: 'Teste de pacote concluido com {count} etapas validadas.',
     workspace: 'Workspace do teste de pacote: {path}',
+    error_unknown_detail: 'erro desconhecido',
     error_npm_pack: 'Falha no npm pack: {detail}',
     error_tarball_missing: 'npm pack nao retornou o nome do tarball',
     error_npx_init: 'Falha no npx init: {detail}',
@@ -391,10 +392,17 @@ module.exports = {
     title: 'Relatorio de status paralelo: {path}',
     lanes_count: 'Lanes: {count}',
     statuses_title: 'Status:',
+    status_line: '- {status}: {count}',
+    status_pending: 'pendente',
+    status_in_progress: 'em_andamento',
+    status_completed: 'concluido',
+    status_blocked: 'bloqueado',
+    status_other: 'outro',
     scopes_count: 'Total de itens de escopo: {count}',
     deliverables_progress: 'Entregaveis: {completed}/{total} concluidos',
     blockers_count: 'Bloqueios em aberto: {count}',
-    shared_decisions: 'Entradas no log de decisoes compartilhadas: {count}'
+    shared_decisions: 'Entradas no log de decisoes compartilhadas: {count}',
+    lane_line: '- lane {lane}: status={status}, escopo={scope}, bloqueios={blockers}'
   },
   mcp_init: {
     context_missing:
@@ -408,6 +416,9 @@ module.exports = {
     preset_dry_run: '[dry-run] Preset seria escrito ({tool}): {path}'
   },
   mcp_doctor: {
+    prefix_ok: 'OK',
+    prefix_warn: 'AVISO',
+    prefix_fail: 'FALHA',
     context_missing: 'project.context.md nao foi encontrado.',
     context_missing_hint: 'Execute setup primeiro para validacao MCP orientada por contexto.',
     context_parse_invalid: 'project.context.md nao pode ser parseado ({reason}).',

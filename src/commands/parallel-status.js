@@ -107,6 +107,17 @@ function createStatusCounts() {
   };
 }
 
+function formatStatusLabel(status, t) {
+  const normalized = String(status || '')
+    .trim()
+    .toLowerCase();
+  if (normalized === 'pending') return t('parallel_status.status_pending');
+  if (normalized === 'in_progress') return t('parallel_status.status_in_progress');
+  if (normalized === 'completed') return t('parallel_status.status_completed');
+  if (normalized === 'blocked') return t('parallel_status.status_blocked');
+  return t('parallel_status.status_other');
+}
+
 async function parseLaneFile(parallelDir, index) {
   const fileName = `agent-${index}.status.md`;
   const absPath = path.join(parallelDir, fileName);
@@ -215,7 +226,12 @@ async function runParallelStatus({ args, options = {}, logger, t }) {
   logger.log(t('parallel_status.lanes_count', { count: output.laneCount }));
   logger.log(t('parallel_status.statuses_title'));
   for (const key of Object.keys(statusCounts)) {
-    logger.log(`- ${key}: ${statusCounts[key]}`);
+    logger.log(
+      t('parallel_status.status_line', {
+        status: formatStatusLabel(key, t),
+        count: statusCounts[key]
+      })
+    );
   }
   logger.log(t('parallel_status.scopes_count', { count: scopeCount }));
   logger.log(
@@ -232,7 +248,12 @@ async function runParallelStatus({ args, options = {}, logger, t }) {
   );
   for (const lane of output.lanes) {
     logger.log(
-      `- lane ${lane.lane}: status=${lane.status}, scope=${lane.scopeCount}, blockers=${lane.blockerCount}`
+      t('parallel_status.lane_line', {
+        lane: lane.lane,
+        status: formatStatusLabel(lane.status, t),
+        scope: lane.scopeCount,
+        blockers: lane.blockerCount
+      })
     );
   }
 

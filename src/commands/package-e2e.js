@@ -10,10 +10,10 @@ function toArg(value) {
   return typeof value === 'string' ? value : String(value);
 }
 
-function commandFailureDetail(result) {
+function commandFailureDetail(result, t) {
   const stderr = String((result && result.stderr) || '').trim();
   const stdout = String((result && result.stdout) || '').trim();
-  return stderr || stdout || 'unknown error';
+  return stderr || stdout || t('package_test.error_unknown_detail');
 }
 
 async function runCommand(cmd, args, options = {}) {
@@ -115,7 +115,7 @@ async function runPackageTest({ args, options = {}, logger, t }) {
     if (pack.code !== 0) {
       throw new Error(
         t('package_test.error_npm_pack', {
-          detail: commandFailureDetail(pack)
+          detail: commandFailureDetail(pack, t)
         })
       );
     }
@@ -143,7 +143,7 @@ async function runPackageTest({ args, options = {}, logger, t }) {
     if (init.code !== 0) {
       throw new Error(
         t('package_test.error_npx_init', {
-          detail: commandFailureDetail(init)
+          detail: commandFailureDetail(init, t)
         })
       );
     }
@@ -179,7 +179,7 @@ async function runPackageTest({ args, options = {}, logger, t }) {
     if (setup.code !== 0) {
       throw new Error(
         t('package_test.error_npx_setup_context', {
-          detail: commandFailureDetail(setup)
+          detail: commandFailureDetail(setup, t)
         })
       );
     }
@@ -199,7 +199,7 @@ async function runPackageTest({ args, options = {}, logger, t }) {
     if (doctor.code !== 0) {
       throw new Error(
         t('package_test.error_npx_doctor', {
-          detail: commandFailureDetail(doctor)
+          detail: commandFailureDetail(doctor, t)
         })
       );
     }
@@ -223,7 +223,7 @@ async function runPackageTest({ args, options = {}, logger, t }) {
     if (mcp.code !== 0) {
       throw new Error(
         t('package_test.error_npx_mcp_init', {
-          detail: commandFailureDetail(mcp)
+          detail: commandFailureDetail(mcp, t)
         })
       );
     }
@@ -267,6 +267,7 @@ async function runPackageTest({ args, options = {}, logger, t }) {
 module.exports = {
   runPackageTest,
   runCommand,
+  commandFailureDetail,
   parsePackResult,
   resolveTarballFromDir
 };

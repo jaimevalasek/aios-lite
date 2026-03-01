@@ -20,6 +20,19 @@ function createQuietLogger() {
   };
 }
 
+function createCollectLogger() {
+  const lines = [];
+  return {
+    lines,
+    log(line) {
+      lines.push(String(line));
+    },
+    error(line) {
+      lines.push(String(line));
+    }
+  };
+}
+
 async function writeDappContext(dir) {
   const contextPath = path.join(dir, '.aios-lite/context/project.context.md');
   await fs.mkdir(path.dirname(contextPath), { recursive: true });
@@ -150,4 +163,21 @@ test('mcp:doctor strict env mode passes when required variables exist', async ()
       assert.equal(result.summary.failed, 0);
     }
   );
+});
+
+test('mcp:doctor localizes check prefixes in pt-BR output', async () => {
+  const dir = await makeTempDir();
+  const { t } = createTranslator('pt-BR');
+  const logger = createCollectLogger();
+
+  const result = await runMcpDoctor({
+    args: [dir],
+    options: {},
+    logger,
+    t
+  });
+
+  assert.equal(result.ok, false);
+  assert.equal(logger.lines.some((line) => line.startsWith('[AVISO] context.exists')), true);
+  assert.equal(logger.lines.some((line) => line.startsWith('[FALHA] plan.exists')), true);
 });

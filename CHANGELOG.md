@@ -64,6 +64,9 @@ All notable changes to this project will be documented in this file.
 - `test:package` failure messages are now localized via i18n dictionaries.
 - `parallel:doctor` check/hint messages are now fully localized (including severity labels).
 - Internal validation failures inside `test:smoke` are now localized instead of hardcoded English.
+- `parallel:status` human-readable status rows and lane summaries are now localized (including status labels).
+- `mcp:doctor` severity prefixes are now localized per locale (`OK/WARN/FAIL` equivalents).
+- `test:package` now localizes fallback command failure detail when stderr/stdout are empty.
 - Setup templates now default `aios_lite_version` to `0.1.8`.
 - Expanded automated coverage:
   - `tests/i18n-cli.test.js`

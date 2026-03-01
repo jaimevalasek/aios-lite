@@ -8,6 +8,7 @@ const path = require('node:path');
 const { createTranslator } = require('../src/i18n');
 const {
   runPackageTest,
+  commandFailureDetail,
   parsePackResult,
   resolveTarballFromDir
 } = require('../src/commands/package-e2e');
@@ -22,6 +23,12 @@ function createQuietLogger() {
 test('parsePackResult returns last non-empty line', () => {
   const output = '\nfoo\nbar\naios-lite-0.1.8.tgz\n\n';
   assert.equal(parsePackResult(output), 'aios-lite-0.1.8.tgz');
+});
+
+test('commandFailureDetail returns localized fallback when command output is empty', () => {
+  const { t } = createTranslator('pt-BR');
+  const detail = commandFailureDetail({ stdout: '', stderr: '' }, t);
+  assert.equal(detail, 'erro desconhecido');
 });
 
 test('resolveTarballFromDir detects latest tgz in directory', async () => {

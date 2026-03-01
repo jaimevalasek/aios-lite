@@ -278,6 +278,7 @@ module.exports = {
     pack_done: 'Package tarball created: {tarball}',
     completed: 'Package test completed with {count} validated steps.',
     workspace: 'Package test workspace: {path}',
+    error_unknown_detail: 'unknown error',
     error_npm_pack: 'npm pack failed: {detail}',
     error_tarball_missing: 'npm pack did not return tarball name',
     error_npx_init: 'npx init failed: {detail}',
@@ -373,10 +374,17 @@ module.exports = {
     title: 'Parallel status report: {path}',
     lanes_count: 'Lanes: {count}',
     statuses_title: 'Statuses:',
+    status_line: '- {status}: {count}',
+    status_pending: 'pending',
+    status_in_progress: 'in_progress',
+    status_completed: 'completed',
+    status_blocked: 'blocked',
+    status_other: 'other',
     scopes_count: 'Total scope items: {count}',
     deliverables_progress: 'Deliverables: {completed}/{total} completed',
     blockers_count: 'Open blockers: {count}',
-    shared_decisions: 'Shared decision log entries: {count}'
+    shared_decisions: 'Shared decision log entries: {count}',
+    lane_line: '- lane {lane}: status={status}, scope={scope}, blockers={blockers}'
   },
   mcp_init: {
     context_missing:
@@ -390,6 +398,9 @@ module.exports = {
     preset_dry_run: '[dry-run] Preset would be written ({tool}): {path}'
   },
   mcp_doctor: {
+    prefix_ok: 'OK',
+    prefix_warn: 'WARN',
+    prefix_fail: 'FAIL',
     context_missing: 'project.context.md was not found.',
     context_missing_hint: 'Run setup first for context-aware MCP validation.',
     context_parse_invalid: 'project.context.md could not be parsed ({reason}).',

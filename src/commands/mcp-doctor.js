@@ -88,10 +88,10 @@ function isWeb3Context(contextData) {
   return Boolean(contextData.web3_enabled) || String(contextData.project_type) === 'dapp';
 }
 
-function formatCheckPrefix(check) {
-  if (check.ok) return 'OK';
-  if (check.severity === 'warn') return 'WARN';
-  return 'FAIL';
+function formatCheckPrefix(check, t) {
+  if (check.ok) return t('mcp_doctor.prefix_ok');
+  if (check.severity === 'warn') return t('mcp_doctor.prefix_warn');
+  return t('mcp_doctor.prefix_fail');
 }
 
 async function runMcpDoctor({ args, options = {}, logger, t }) {
@@ -377,7 +377,7 @@ async function runMcpDoctor({ args, options = {}, logger, t }) {
 
   logger.log(t('mcp_doctor.report_title', { path: targetDir }));
   for (const check of checks) {
-    logger.log(`[${formatCheckPrefix(check)}] ${check.id} - ${check.message}`);
+    logger.log(`[${formatCheckPrefix(check, t)}] ${check.id} - ${check.message}`);
     if (check.hint) {
       logger.log(`  -> ${check.hint}`);
     }

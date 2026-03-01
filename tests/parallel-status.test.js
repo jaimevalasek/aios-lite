@@ -20,6 +20,19 @@ function createQuietLogger() {
   };
 }
 
+function createCollectLogger() {
+  const lines = [];
+  return {
+    lines,
+    log(line) {
+      lines.push(String(line));
+    },
+    error(line) {
+      lines.push(String(line));
+    }
+  };
+}
+
 async function writeContext(dir, classification = 'MEDIUM') {
   const contextPath = path.join(dir, '.aios-lite/context/project.context.md');
   await fs.mkdir(path.dirname(contextPath), { recursive: true });
@@ -127,4 +140,27 @@ test('parallel:status fails when parallel directory is missing', async () => {
     }),
     /Parallel directory not found/
   );
+});
+
+test('parallel:status localizes status labels and lane lines in pt-BR', async () => {
+  const dir = await makeTempDir();
+  const { t } = createTranslator('pt-BR');
+  await writeContext(dir, 'MEDIUM');
+  await runParallelInit({
+    args: [dir],
+    options: { workers: 2 },
+    logger: createQuietLogger(),
+    t
+  });
+
+  const logger = createCollectLogger();
+  await runParallelStatus({
+    args: [dir],
+    options: {},
+    logger,
+    t
+  });
+
+  assert.equal(logger.lines.some((line) => line.includes('- pendente: 2')), true);
+  assert.equal(logger.lines.some((line) => line.includes('status=pendente')), true);
 });

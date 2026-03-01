@@ -286,6 +286,7 @@ module.exports = {
     pack_done: 'Tarball package cree : {tarball}',
     completed: 'Test package termine avec {count} etapes validees.',
     workspace: 'Workspace du test package : {path}',
+    error_unknown_detail: 'erreur inconnue',
     error_npm_pack: 'npm pack a echoue : {detail}',
     error_tarball_missing: 'npm pack n a pas retourne le nom du tarball',
     error_npx_init: 'npx init a echoue : {detail}',
@@ -394,10 +395,17 @@ module.exports = {
     title: 'Rapport de statut parallele : {path}',
     lanes_count: 'Lanes : {count}',
     statuses_title: 'Statuts :',
+    status_line: '- {status} : {count}',
+    status_pending: 'en_attente',
+    status_in_progress: 'en_cours',
+    status_completed: 'termine',
+    status_blocked: 'bloque',
+    status_other: 'autre',
     scopes_count: 'Total des elements de scope : {count}',
     deliverables_progress: 'Livrables : {completed}/{total} termines',
     blockers_count: 'Blocages ouverts : {count}',
-    shared_decisions: 'Entrees du journal de decisions partagees : {count}'
+    shared_decisions: 'Entrees du journal de decisions partagees : {count}',
+    lane_line: '- lane {lane} : status={status}, scope={scope}, blocages={blockers}'
   },
   mcp_init: {
     context_missing:
@@ -411,6 +419,9 @@ module.exports = {
     preset_dry_run: '[dry-run] Le preset serait ecrit ({tool}) : {path}'
   },
   mcp_doctor: {
+    prefix_ok: 'OK',
+    prefix_warn: 'AVERT',
+    prefix_fail: 'ECHEC',
     context_missing: 'project.context.md introuvable.',
     context_missing_hint: 'Executez setup d abord pour une validation MCP basee sur le contexte.',
     context_parse_invalid: 'project.context.md n a pas pu etre parse ({reason}).',
