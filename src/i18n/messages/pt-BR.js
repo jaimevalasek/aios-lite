@@ -21,7 +21,8 @@ module.exports = {
       'aios-lite test:smoke [workspace-path] [--lang=en|pt-BR] [--web3=ethereum|solana|cardano] [--keep] [--json] [--locale=pt-BR]',
     help_test_package:
       'aios-lite test:package [source-path] [--keep] [--dry-run] [--json] [--locale=pt-BR]',
-    help_mcp_init: 'aios-lite mcp:init [path] [--dry-run] [--json] [--locale=pt-BR]',
+    help_mcp_init:
+      'aios-lite mcp:init [path] [--tool=claude|codex|gemini|opencode] [--dry-run] [--json] [--locale=pt-BR]',
     unknown_command: 'Comando desconhecido: {command}',
     error_prefix: 'Erro: {message}'
   },
@@ -221,6 +222,9 @@ module.exports = {
       'Arquivo de contexto nao encontrado. Gerando plano MCP base com suposicoes genericas.',
     generated: 'Plano MCP escrito: {path}',
     dry_run_generated: '[dry-run] Plano MCP seria escrito: {path}',
-    server_count: 'Servidores MCP no plano: {count}'
+    server_count: 'Servidores MCP no plano: {count}',
+    preset_count: 'Presets de ferramentas gerados: {count}',
+    preset_written: 'Preset escrito ({tool}): {path}',
+    preset_dry_run: '[dry-run] Preset seria escrito ({tool}): {path}'
   }
 };

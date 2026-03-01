@@ -60,10 +60,22 @@ test('mcp:init writes plan from existing context', async () => {
   assert.equal(result.plan.database_engine, 'postgresql');
   assert.equal(result.plan.web3_enabled, true);
   assert.equal(result.plan.web3_networks.includes('solana'), true);
+  assert.equal(result.presetCount, 4);
+  assert.equal(result.presetFiles.length, 4);
+  assert.equal(
+    await fileExists(path.join(dir, '.aios-lite/mcp/presets/codex.json')),
+    true
+  );
 
   const chainRpc = result.plan.servers.find((server) => server.id === 'chain-rpc');
   assert.equal(chainRpc.enabled, true);
   assert.equal(chainRpc.networks.includes('solana'), true);
+
+  const codexPreset = JSON.parse(
+    await fs.readFile(path.join(dir, '.aios-lite/mcp/presets/codex.json'), 'utf8')
+  );
+  assert.equal(codexPreset.tool, 'codex');
+  assert.equal(Boolean(codexPreset.mcpServers.filesystem), true);
 });
 
 test('mcp:init dry-run does not write file and handles missing context', async () => {
@@ -81,4 +93,40 @@ test('mcp:init dry-run does not write file and handles missing context', async (
   assert.equal(result.written, false);
   assert.equal(result.contextExists, false);
   assert.equal(await fileExists(result.filePath), false);
+  assert.equal(
+    await fileExists(path.join(dir, '.aios-lite/mcp/presets/claude.json')),
+    false
+  );
+});
+
+test('mcp:init supports --tool filter for a single preset', async () => {
+  const dir = await makeTempDir();
+  const contextPath = path.join(dir, '.aios-lite/context/project.context.md');
+  await fs.mkdir(path.dirname(contextPath), { recursive: true });
+  await fs.writeFile(
+    contextPath,
+    `---\nproject_name: \"demo\"\nproject_type: \"web_app\"\nprofile: \"developer\"\nframework: \"Node/Express\"\nframework_installed: true\nclassification: \"MICRO\"\nconversation_language: \"en\"\naios_lite_version: \"0.1.7\"\n---\n\n# Project Context\n\n## Stack\n- Database: SQLite\n`,
+    'utf8'
+  );
+
+  const { t } = createTranslator('en');
+  const result = await runMcpInit({
+    args: [dir],
+    options: { tool: 'codex' },
+    logger: createQuietLogger(),
+    t
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.presetCount, 1);
+  assert.equal(result.presetFiles.length, 1);
+  assert.equal(result.presetFiles[0].tool, 'codex');
+  assert.equal(
+    await fileExists(path.join(dir, '.aios-lite/mcp/presets/codex.json')),
+    true
+  );
+  assert.equal(
+    await fileExists(path.join(dir, '.aios-lite/mcp/presets/claude.json')),
+    false
+  );
 });

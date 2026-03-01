@@ -80,6 +80,8 @@ test('mcp:init --json returns structured plan payload', async () => {
   const parsed = JSON.parse(cli.stdout);
   assert.equal(parsed.ok, true);
   assert.equal(parsed.serverCount >= 4, true);
+  assert.equal(parsed.presetCount >= 1, true);
+  assert.equal(Array.isArray(parsed.presetFiles), true);
   assert.equal(Array.isArray(parsed.plan.servers), true);
 });
 

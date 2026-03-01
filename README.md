@@ -24,7 +24,7 @@ npx aios-lite install
 - `aios-lite locale:apply [path] [--lang=en|pt-BR]`
 - `aios-lite test:smoke [workspace-path] [--lang=en|pt-BR] [--web3=ethereum|solana|cardano] [--keep] [--json]`
 - `aios-lite test:package [source-path] [--keep] [--dry-run] [--json]`
-- `aios-lite mcp:init [path] [--dry-run] [--json]`
+- `aios-lite mcp:init [path] [--tool=claude|codex|gemini|opencode] [--dry-run] [--json]`
 
 ## Agent usage helper
 If your AI CLI does not show a visual agent picker, use:
@@ -95,7 +95,12 @@ Generate a local MCP server recommendation file from `project.context.md`:
 ```bash
 aios-lite mcp:init
 aios-lite mcp:init --dry-run
+aios-lite mcp:init --tool=codex
 ```
+
+`mcp:init` generates:
+- `.aios-lite/mcp/servers.local.json` (project MCP plan)
+- `.aios-lite/mcp/presets/<tool>.json` (tool-specific preset templates)
 
 ## License
 MIT
