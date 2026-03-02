@@ -27,7 +27,7 @@ Ranges:
 - `project_type`
 - `profile`
 - `framework`
-- `framework_installed` (boolean)
+- `framework_installed` (boolean) — `true` means the framework was detected in the workspace; downstream agents skip installation commands. `false` means it was not detected; agents must include installation steps before any implementation.
 - `classification`
 - `conversation_language` (BCP-47, for example `en`, `pt-BR`)
 - `aios_lite_version`
