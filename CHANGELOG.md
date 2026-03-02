@@ -4,6 +4,38 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.1.12] - 2026-03-02
+### Added
+- New static skill: `template/.aios-lite/skills/static/interface-design.md` — a comprehensive UI/UX craft guide derived from the interface-design project, covering: Intent-First Framework (3 mandatory questions before any layout), Domain Exploration (4 required outputs: domain concepts, color world, signature element, defaults to avoid), 6 design directions with full token specs (Precision & Density, Warmth & Approachability, Data & Analysis, Editorial, Commerce, Minimal & Calm), complete token architecture (foreground/background/border/brand/semantic roles), depth strategy (commit to ONE), component state matrix, 4 quality checks (swap/squint/signature/token tests), self-critique process (composition → craft → content → structure).
+- Portuguese documentation at `docs/pt/`:
+  - `README.md`: index linking all guides.
+  - `inicio-rapido.md`: quick start with install commands, classification scoring, and 3-command setup.
+  - `agentes.md`: per-agent reference with when-to-use, activation command, what it delivers, and concrete examples.
+  - `cenarios.md`: 4 complete worked examples — MICRO (landing page), SMALL (Laravel clinic API with @analyst output, @architect folder structure, @dev code), MEDIUM (Next.js SaaS with 3-lane parallel orchestration), MEDIUM dApp (Ethereum NFT marketplace with Solidity contract example).
+  - `web3.md`: Portuguese Web3 guide covering setup flags for Ethereum/Solana/Cardano, monorepo structure, per-agent Web3 conventions, and skill reference.
+
+### Changed
+- `@ux-ui` agent (base + all 4 locales: en/pt-BR/es/fr): mandatory pre-work now references `interface-design.md` skill, adds Intent-First step, Domain Exploration step (4 required outputs), single design direction declaration, 4 quality checks (swap/squint/signature/token tests), and self-critique gate before delivery. Output contract expanded with focal point, reading order, full state matrix, and handoff notes for signature visual moves.
+- `workflow:plan` sequences corrected: `@ux-ui` now included in SMALL (`setup → analyst → architect → ux-ui → dev → qa`) and MEDIUM (`setup → analyst → architect → ux-ui → pm → orchestrator → dev → qa`), matching `config.md` and agent documentation.
+- 13 static skills expanded from 5–7 stub lines to 200–337 lines of production-grade, code-first references:
+  - `laravel-conventions`: controllers as orchestrators, Form Requests, Actions, Policies, Events+queued Listeners, Jobs, API Resources, N+1 prevention, Model conventions, Migrations, Pest tests.
+  - `tall-stack-patterns`: Livewire lifecycle + real-time validation, inter-component events, lazy loading, Alpine.js scope rules, Tailwind design system discipline, full Flux UI examples (button/modal/table/dropdown/sidebar).
+  - `filament-patterns`: Resource structure (form/table/filters/actions), custom Pages, Stats Widgets, Relation Managers, policy enforcement, advanced form fields (repeater, conditional, file upload), business logic delegation.
+  - `flux-ui-components`: full component inventory, buttons (all variants + loading states), form field group, modal with programmatic control, dropdown menus, table with sort + empty state, badges, sidebar navigation.
+  - `jetstream-setup`: Inertia vs Blade decision matrix, Teams with roles/permissions, API tokens, profile customization, 2FA, password confirmation middleware, post-install checklist.
+  - `git-conventions`: full Conventional Commits spec with type table + examples, Git Flow vs GitHub Flow, branch naming, PR template, tagging, protected history rules.
+  - `nextjs-patterns`: Server vs Client mental model, App Router structure, async Server Components, Server Actions with Zod, Client Components (when/why), Route Handlers for webhooks only, metadata/SEO, loading.tsx + error.tsx.
+  - `node-express-patterns`: layered architecture (routes/controllers/services/repositories), Zod validation middleware, typed auth + role checking, AppError class hierarchy, centralized error handler, rate limiting, graceful shutdown.
+  - `node-typescript-patterns`: strict tsconfig baseline, Zod at all external boundaries, env validation at startup, branded domain types for IDs, const-object enums, repository interface pattern, explicit return types, asyncHandler.
+  - `rails-conventions`: Service Objects with Result type, model scopes/enums/validations, Active Record N+1 prevention, async Jobs with retry, Mailer patterns, serializers, Pundit authorization, RSpec request + unit specs.
+  - `web3-ethereum-patterns`: CEI pattern, ReentrancyGuard, pull over push, AccessControl roles, gas optimization (struct packing, custom errors), Hardhat test patterns with loadFixture, wagmi v2 frontend integration, deployment scripts.
+  - `web3-solana-patterns`: eUTxO/account model, Anchor program structure, account data with LEN, PDA seeds + bump storage, CPI signing, Anchor constraints, compute budget management, full Anchor test suite.
+  - `web3-cardano-patterns`: eUTxO mental model, Aiken project structure, datum/redeemer type design, spending validator, minting policy, Aiken tests, off-chain with Lucid, datum versioning strategy, deployment checklist.
+  - `web3-security-checklist`: 7 critical vulnerabilities with code examples (reentrancy, access control, integer overflow, oracle manipulation, flash loans, front-running, signature replay), pre-deployment checklist (static analysis/fuzzing/invariant tests/multisig/timelock), emergency response protocol.
+
+### Fixed
+- `workflow:plan` was silently omitting `@ux-ui` from SMALL and MEDIUM sequences despite `config.md` and all agent documentation specifying it as a required step. Fixed in `src/commands/workflow-plan.js` and updated `tests/workflow-plan.test.js`.
+
 ## [0.1.11] - 2026-03-02
 ### Added
 - Agent prompt enrichment across all 8 agents:

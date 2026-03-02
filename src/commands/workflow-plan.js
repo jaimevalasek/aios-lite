@@ -5,8 +5,8 @@ const { validateProjectContextFile } = require('../context');
 
 const WORKFLOW_BY_CLASSIFICATION = {
   MICRO: ['setup', 'dev'],
-  SMALL: ['setup', 'analyst', 'architect', 'dev', 'qa'],
-  MEDIUM: ['setup', 'analyst', 'architect', 'pm', 'orchestrator', 'dev', 'qa']
+  SMALL: ['setup', 'analyst', 'architect', 'ux-ui', 'dev', 'qa'],
+  MEDIUM: ['setup', 'analyst', 'architect', 'ux-ui', 'pm', 'orchestrator', 'dev', 'qa']
 };
 
 function normalizeClassification(value, fallback = 'MICRO') {
