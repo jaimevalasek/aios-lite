@@ -258,6 +258,8 @@ module.exports = {
       'Team profile selected; preserve explicit team conventions and CI rules.',
     note_beginner_declined:
       'Starter recommendation declined; using custom stack from onboarding.',
+    note_monorepo:
+      'Monorepo detected: Web3 and application framework coexist. Confirm primary framework with user and document structure in Notes.',
     written: 'Context file written: {path}',
     classification_result: 'Classification: {classification} (score={score}/6)',
     locale_applied: 'Localized agent pack applied: {locale} ({count} files)'

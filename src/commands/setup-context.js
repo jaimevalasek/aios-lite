@@ -130,6 +130,9 @@ function localizeSetupNote(note, t) {
   if (raw === 'Starter recommendation declined; using custom stack from onboarding.') {
     return t('setup_context.note_beginner_declined');
   }
+  if (raw.startsWith('Monorepo detected:')) {
+    return t('setup_context.note_monorepo');
+  }
 
   return raw;
 }
@@ -481,11 +484,13 @@ async function runSetupContext({ args, options, logger, t }) {
     cache: '',
     search: '',
     installCommands: '',
-    notes: monorepoDetected
-      ? ['Monorepo detected: Web3 and application framework coexist. Confirm primary framework with user and document structure in Notes.']
-      : [],
+    notes: [],
     aiosLiteVersion: getCliVersionSync()
   };
+
+  if (monorepoDetected) {
+    data.notes.push(t('setup_context.note_monorepo'));
+  }
 
   let userTypesCount = Number(options['user-types'] || 1);
   let integrationsCount = Number(options.integrations || 0);

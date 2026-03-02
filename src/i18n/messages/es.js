@@ -268,6 +268,8 @@ module.exports = {
       'Perfil de equipo seleccionado; conserva convenciones explicitas del equipo y reglas de CI.',
     note_beginner_declined:
       'Recomendacion inicial rechazada; usando stack personalizado del onboarding.',
+    note_monorepo:
+      'Monorepo detectado: framework Web3 y framework de aplicacion coexisten. Confirmar el framework principal con el usuario y documentar la estructura en Notes.',
     written: 'Archivo de contexto escrito: {path}',
     classification_result: 'Clasificacion: {classification} (score={score}/6)',
     locale_applied: 'Paquete localizado de agentes aplicado: {locale} ({count} archivos)'

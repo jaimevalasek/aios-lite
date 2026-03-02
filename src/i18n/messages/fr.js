@@ -269,6 +269,8 @@ module.exports = {
       'Profil equipe selectionne ; preservez des conventions d equipe explicites et des regles CI.',
     note_beginner_declined:
       'Recommandation initiale refusee ; utilisation d une stack personnalisee issue de l onboarding.',
+    note_monorepo:
+      'Monorepo detecte : framework Web3 et framework applicatif coexistent. Confirmer le framework principal avec l utilisateur et documenter la structure dans Notes.',
     written: 'Fichier contexte ecrit : {path}',
     classification_result: 'Classification : {classification} (score={score}/6)',
     locale_applied: 'Pack d agents localise applique : {locale} ({count} fichiers)'
