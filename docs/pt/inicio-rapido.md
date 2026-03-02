@@ -76,9 +76,9 @@ O agente `@setup` vai ler o contexto e confirmar o plano.
 
 | Tamanho do projeto | Sequência de agentes |
 |---|---|
-| **MICRO** (landing page, script, prototipo) | `@setup → @dev` |
-| **SMALL** (web app com auth, API, MVP) | `@setup → @analyst → @architect → @ux-ui → @dev → @qa` |
-| **MEDIUM** (SaaS, plataforma, dApp complexo) | `@setup → @analyst → @architect → @ux-ui → @pm → @orchestrator → @dev → @qa` |
+| **MICRO** — 0–1 ponto | `@setup → @dev` |
+| **SMALL** — 2–3 pontos | `@setup → @analyst → @architect → @ux-ui → @dev → @qa` |
+| **MEDIUM** — 4–6 pontos | `@setup → @analyst → @architect → @ux-ui → @pm → @orchestrator → @dev → @qa` |
 
 **Não sabe o tamanho?** Responda 3 perguntas:
 1. Quantos tipos de usuário? (1=0pt, 2=1pt, 3+=2pt)

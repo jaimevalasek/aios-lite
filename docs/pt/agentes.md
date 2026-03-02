@@ -37,9 +37,12 @@ O AIOS Lite tem **8 agentes especializados**. Você não precisa usar todos — 
 ```
 
 **O que ele pergunta:**
-- Confirmar as informações do contexto
-- Se o framework já está instalado ou precisa ser instalado
-- Se o projeto é novo ou existente
+- O que o projeto precisa fazer e quem vai usar (sem pressuposições)
+- Detecta a stack automaticamente — se não reconhecer, pergunta e registra o que o usuário descrever
+- Confirma framework, classificação e idioma antes de finalizar
+
+> **Qualquer stack funciona.** @setup não força um framework da lista. Se você usa Django, Go, Rust,
+> FastAPI, SvelteKit ou qualquer outra tecnologia, ele registra o que você descrever.
 
 **Entrega:**
 - Confirmação do plano de agentes
@@ -206,14 +209,20 @@ npx aios-lite parallel:status
 /dev
 ```
 
-**Em projetos com Laravel, ele vai:**
-- Criar Form Requests para validação (nunca validar no controller)
-- Criar Actions para lógica de negócio
-- Usar Policies para autorização
-- Prevenir N+1 com eager loading
-- Usar eventos/listeners para side effects
+**Princípios que ele aplica em qualquer stack:**
+- Isolar lógica de negócio dos handlers de requisição
+- Validar input na fronteira do sistema (nunca depois)
+- Seguir as convenções nativas do framework do projeto
+- Verificar skills disponíveis em `.aios-lite/skills/static/` antes de implementar
 
-**Entrega:** Código implementado, seguindo os padrões definidos pelo @architect.
+**Em projetos com Laravel especificamente:**
+- Form Requests para validação (nunca inline no controller)
+- Actions para lógica de negócio
+- Policies para autorização
+- N+1 prevenido com eager loading
+- Events + Listeners para side effects
+
+**Entrega:** Código implementado seguindo os padrões definidos pelo @architect, para qualquer stack.
 
 ---
 

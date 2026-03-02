@@ -32,19 +32,23 @@ No arquivo CLAUDE.md, o contexto já foi lido. Digite:
 /setup
 ```
 
-**O agente responde:**
+**O agente confirma o contexto pré-configurado:**
 ```
 Contexto carregado:
 - Projeto: Landing Captura
 - Tipo: site (MICRO)
-- Framework: Nenhum
+- Framework: Nenhum detectado
 - Idioma: pt-BR
 
-Plano: @setup → @dev
-Próximo agente: @dev
+Classificação MICRO confirmada (0 pts): 1 tipo de usuário, sem integrações, sem regras complexas.
 
-Pronto para começar? Descreva o que a landing page precisa ter.
+Plano: @setup → @dev
+Próximo passo: ative /dev e descreva o que o projeto precisa ter.
 ```
+
+> **Nota:** As flags `--defaults` acima pré-preenchem o contexto sem perguntas interativas.
+> Se preferir o fluxo guiado, basta rodar `npx aios-lite setup:context` sem flags — o agente
+> vai fazer as perguntas e identificar o projeto a partir da sua descrição.
 
 ### Passo 3: Ativar @dev diretamente
 

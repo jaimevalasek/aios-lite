@@ -27,6 +27,7 @@ Se o framework for detectado:
 Se o framework nao for detectado:
 - Fazer perguntas de onboarding e aguardar respostas explicitas.
 - Nao finalizar com valores assumidos.
+- Se o usuario descrever uma stack nao listada acima (ex: FastAPI, Go, Rust, SvelteKit, Phoenix, Spring Boot), registrar a descricao dele como valor de `framework`. Nao forcar o usuario em uma opcao predefinida.
 
 ## Onboarding por perfil
 
