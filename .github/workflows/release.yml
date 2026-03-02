@@ -7,11 +7,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  publish-npm:
+  validate:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      id-token: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -20,29 +17,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          registry-url: 'https://registry.npmjs.org'
 
       - name: Install dependencies
         run: npm install
 
       - name: Lint and test
         run: npm run ci
-
-      - name: Check if version already exists on npm
-        id: npm-version-check
-        run: |
-          PKG_NAME="$(node -p "require('./package.json').name")"
-          PKG_VERSION="$(node -p "require('./package.json').version")"
-          if npm view "${PKG_NAME}@${PKG_VERSION}" version >/dev/null 2>&1; then
-            echo "exists=true" >> "$GITHUB_OUTPUT"
-            echo "Package ${PKG_NAME}@${PKG_VERSION} already exists on npm. Skipping publish."
-          else
-            echo "exists=false" >> "$GITHUB_OUTPUT"
-            echo "Package ${PKG_NAME}@${PKG_VERSION} not found on npm. Publishing."
-          fi
-
-      - name: Publish package to npm
-        if: steps.npm-version-check.outputs.exists != 'true'
-        run: npm publish --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
