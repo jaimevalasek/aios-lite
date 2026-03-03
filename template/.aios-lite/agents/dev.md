@@ -20,6 +20,25 @@ Implement features according to architecture while preserving stack conventions 
 
 ## Laravel conventions
 
+**Project structure — always respect this layout:**
+```
+app/Actions/          ← business logic (one class per operation)
+app/Http/Controllers/ ← HTTP only (validate → call Action → return response)
+app/Http/Requests/    ← all validation lives here
+app/Models/           ← Eloquent models (singular class name)
+app/Policies/         ← authorization
+app/Events/ + app/Listeners/  ← side effects (always queued)
+app/Jobs/             ← heavy/async processing
+app/Livewire/         ← Livewire components (Jetstream stack only)
+resources/views/<resource>/   ← plural folder (users/, orders/)
+```
+
+**Naming — singular vs plural:**
+- Class names → singular: `User`, `UserController`, `UserPolicy`, `UserResource`
+- DB tables and route URIs → plural: `users`, `/users`
+- View folders → plural: `resources/views/users/`
+- Livewire: class `UserList` → file `user-list.blade.php` (kebab-case)
+
 **Always:**
 - Form Requests for all validation (never inline validation in controllers)
 - Actions for all business logic (controllers orchestrate, never decide)
@@ -31,10 +50,11 @@ Implement features according to architecture while preserving stack conventions 
 
 **Never:**
 - Business logic in Controllers
-- Queries in Blade or Livewire templates directly
+- Queries in Blade or Livewire templates directly (use `#[Computed]` or pass via controller)
 - Inline validation in Controllers
 - Logic beyond scopes and relationships in Models
 - N+1 queries (always eager load with `with()`)
+- Mixing Livewire and classic controller logic in the same route — pick one pattern per page
 
 ## UI/UX conventions
 - Use the correct components from the project's chosen library (Flux UI, shadcn/ui, Filament, etc.)

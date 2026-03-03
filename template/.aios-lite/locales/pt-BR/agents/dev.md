@@ -22,6 +22,25 @@ Implementar funcionalidades conforme a arquitetura, preservando as convencoes da
 
 ## Convencoes Laravel
 
+**Estrutura de pastas — respeite sempre este layout:**
+```
+app/Actions/          ← logica de negocio (uma classe por operacao)
+app/Http/Controllers/ ← somente HTTP (validar → chamar Action → retornar resposta)
+app/Http/Requests/    ← toda validacao fica aqui
+app/Models/           ← Eloquent models (nome de classe no singular)
+app/Policies/         ← autorizacao
+app/Events/ + app/Listeners/  ← efeitos colaterais (sempre em fila)
+app/Jobs/             ← processamento pesado/assincrono
+app/Livewire/         ← componentes Livewire (somente stack Jetstream)
+resources/views/<resource>/   ← pasta no plural (users/, orders/)
+```
+
+**Nomenclatura — singular vs plural:**
+- Nomes de classe → singular: `User`, `UserController`, `UserPolicy`, `UserResource`
+- Tabelas BD e URIs de rota → plural: `users`, `/users`
+- Pastas de views → plural: `resources/views/users/`
+- Livewire: classe `UserList` → arquivo `user-list.blade.php` (kebab-case)
+
 **Sempre:**
 - Form Requests para toda validacao (nunca validacao inline no controller)
 - Actions para toda logica de negocio (controllers orquestram, nunca decidem)
@@ -33,10 +52,11 @@ Implementar funcionalidades conforme a arquitetura, preservando as convencoes da
 
 **Nunca:**
 - Logica de negocio em Controllers
-- Queries em templates Blade ou Livewire diretamente
+- Queries em templates Blade ou Livewire diretamente (use `#[Computed]` ou passe via controller)
 - Validacao inline em Controllers
 - Logica alem de scopes e relacionamentos em Models
 - Queries N+1 (sempre eager load com `with()`)
+- Misturar Livewire e controller classico na mesma rota — escolha um padrao por pagina
 
 ## Convencoes de UI/UX
 - Usar os componentes corretos da biblioteca escolhida no projeto (Flux UI, shadcn/ui, Filament, etc.)

@@ -4,6 +4,96 @@
 
 ---
 
+## Project structure
+
+```
+myproject/
+├── app/
+│   ├── Actions/              # Business logic — one class per operation
+│   ├── Console/
+│   │   └── Commands/
+│   ├── Events/
+│   ├── Exceptions/
+│   ├── Http/
+│   │   ├── Controllers/      # HTTP orchestration only
+│   │   ├── Middleware/
+│   │   └── Requests/         # Form Request classes (validation)
+│   ├── Jobs/
+│   ├── Listeners/
+│   ├── Mail/
+│   ├── Models/               # Eloquent models (singular class name)
+│   ├── Notifications/
+│   ├── Policies/
+│   ├── Providers/
+│   └── View/
+│       └── Components/       # Blade components
+├── database/
+│   ├── factories/
+│   ├── migrations/
+│   └── seeders/
+├── resources/
+│   ├── views/
+│   │   ├── users/            # Plural folder per resource
+│   │   │   ├── index.blade.php
+│   │   │   ├── show.blade.php
+│   │   │   ├── create.blade.php
+│   │   │   └── edit.blade.php
+│   │   ├── components/
+│   │   └── layouts/
+│   └── js/
+├── routes/
+│   ├── web.php
+│   └── api.php
+└── tests/
+    ├── Feature/
+    └── Unit/
+```
+
+**With Jetstream + Livewire** — additional folders:
+```
+app/
+└── Livewire/
+    ├── Auth/
+    └── Users/                # Group components by domain
+        ├── UserList.php
+        └── EditUser.php
+resources/views/
+└── livewire/
+    ├── auth/
+    └── users/
+        ├── user-list.blade.php   # kebab-case filename matches component
+        └── edit-user.blade.php
+```
+
+---
+
+## Naming conventions
+
+| Artifact | Convention | Example |
+|---|---|---|
+| Model | Singular, PascalCase | `User`, `BlogPost` |
+| Table | Plural, snake_case | `users`, `blog_posts` |
+| Controller | Singular model + `Controller` | `UserController`, `BlogPostController` |
+| Form Request | Action + model | `CreateUserRequest`, `UpdateUserRequest` |
+| Action | Verb + noun + `Action` | `CreateUserAction`, `SendWelcomeEmailAction` |
+| Policy | Singular model + `Policy` | `UserPolicy` |
+| Event | Past-tense noun phrase | `UserCreated`, `OrderShipped` |
+| Listener | Present verb phrase | `SendWelcomeEmail`, `NotifyAdminOfOrder` |
+| Job | Imperative verb phrase | `GenerateInvoice`, `ProcessPayment` |
+| API Resource | Singular model + `Resource` | `UserResource` |
+| Livewire component class | PascalCase, singular or descriptive | `UserList`, `EditUser` |
+| Livewire component file | kebab-case matching class | `user-list.blade.php` |
+| View folder | Plural, kebab-case | `users/`, `blog-posts/` |
+| Route URI | Plural, kebab-case | `/users`, `/blog-posts` |
+| Migration | `create_table_table`, `add_col_to_table` | `create_users_table` |
+
+**Singular vs plural rule of thumb:**
+- Class names → **singular** (represents one record: `User`, `Order`)
+- Folders grouping multiple files → **plural** (`Controllers/`, `Models/`, `views/users/`)
+- Database tables and route URIs → **plural** (`users`, `/orders`)
+
+---
+
 ## Controllers — HTTP orchestration only
 
 Controllers validate the request, call an Action, and return a response. Nothing else.
@@ -308,6 +398,81 @@ test('CreateAppointmentAction throws on conflict', function () {
 
 ---
 
+## Livewire components (Jetstream stack)
+
+Livewire replaces full-page controllers for interactive UI. Use it instead of writing separate Vue/React components when the project is on the Jetstream+Livewire stack.
+
+```php
+// app/Livewire/Users/UserList.php
+namespace App\Livewire\Users;
+
+use Livewire\Component;
+use Livewire\WithPagination;
+use Livewire\Attributes\Computed;
+
+class UserList extends Component
+{
+    use WithPagination;
+
+    public string $search = '';
+
+    // Computed property — recalculates automatically when $search changes
+    #[Computed]
+    public function users(): \Illuminate\Contracts\Pagination\LengthAwarePaginator
+    {
+        return User::query()
+            ->when($this->search, fn ($q) => $q->where('name', 'like', "%{$this->search}%"))
+            ->paginate(10);
+    }
+
+    public function render(): \Illuminate\View\View
+    {
+        return view('livewire.users.user-list');
+    }
+}
+```
+
+```blade
+{{-- resources/views/livewire/users/user-list.blade.php --}}
+<div>
+    <input wire:model.live="search" type="text" placeholder="Search…" />
+
+    @foreach ($this->users as $user)
+        <div>{{ $user->name }}</div>
+    @endforeach
+
+    {{ $this->users->links() }}
+</div>
+```
+
+**Livewire conventions:**
+- Class in `app/Livewire/<Domain>/ClassName.php` (PascalCase)
+- View in `resources/views/livewire/<domain>/class-name.blade.php` (kebab-case)
+- Use `#[Computed]` for derived data — never store computed values in public properties
+- Use `wire:model.live` for real-time search; `wire:model.lazy` for form inputs (debounce on blur)
+- Keep business logic in Actions — Livewire component only wires input → Action → response
+- Never query DB inside Blade template — use `#[Computed]` property
+
+**Classic controller variant (same project, non-Livewire views):**
+```php
+// app/Http/Controllers/UserController.php
+class UserController extends Controller
+{
+    public function index(Request $request): View
+    {
+        $users = User::query()
+            ->when($request->search, fn ($q) => $q->where('name', 'like', "%{$request->search}%"))
+            ->paginate(10);
+
+        return view('users.index', compact('users'));
+    }
+}
+```
+
+Both patterns coexist fine in a Jetstream project — Livewire for interactive pages, classic controllers for simple read-only or API routes.
+
+---
+
 ## ALWAYS
 - Form Requests for validation
 - Actions for business logic
@@ -315,6 +480,7 @@ test('CreateAppointmentAction throws on conflict', function () {
 - Events + queued Listeners for side effects
 - API Resources for JSON responses
 - Eager loading with `with()`
+- Follow naming conventions: singular classes, plural tables and view folders
 
 ## NEVER
 - Business logic in controllers
@@ -322,3 +488,4 @@ test('CreateAppointmentAction throws on conflict', function () {
 - `Auth::user()` inside an Action (inject `User` instead)
 - Raw `DB::table()` queries bypassing Eloquent in feature code
 - Exposing Eloquent models directly in API responses
+- Queries inside Blade or Livewire templates directly (use `#[Computed]` or pass via controller)

@@ -22,6 +22,25 @@ Implementer les fonctionnalites selon l'architecture, en preservant les conventi
 
 ## Conventions Laravel
 
+**Structure de dossiers — toujours respecter ce layout :**
+```
+app/Actions/          ← logique metier (une classe par operation)
+app/Http/Controllers/ ← HTTP uniquement (valider → appeler Action → retourner reponse)
+app/Http/Requests/    ← toute la validation va ici
+app/Models/           ← modeles Eloquent (nom de classe au singulier)
+app/Policies/         ← autorisation
+app/Events/ + app/Listeners/  ← effets de bord (toujours en file d'attente)
+app/Jobs/             ← traitement lourd/asynchrone
+app/Livewire/         ← composants Livewire (stack Jetstream uniquement)
+resources/views/<resource>/   ← dossier au pluriel (users/, orders/)
+```
+
+**Nomenclature — singulier vs pluriel :**
+- Noms de classe → singulier : `User`, `UserController`, `UserPolicy`, `UserResource`
+- Tables BD et URIs de route → pluriel : `users`, `/users`
+- Dossiers de views → pluriel : `resources/views/users/`
+- Livewire : classe `UserList` → fichier `user-list.blade.php` (kebab-case)
+
 **Toujours :**
 - Form Requests pour toute validation (jamais de validation inline dans le controller)
 - Actions pour toute logique metier (les controllers orchestrent, ne decidident jamais)
@@ -33,10 +52,11 @@ Implementer les fonctionnalites selon l'architecture, en preservant les conventi
 
 **Jamais :**
 - Logique metier dans les Controllers
-- Requetes dans les templates Blade ou Livewire directement
+- Requetes dans les templates Blade ou Livewire directement (utiliser `#[Computed]` ou passer via controller)
 - Validation inline dans les Controllers
 - Logique au-dela des scopes et relations dans les Models
 - Requetes N+1 (toujours eager load avec `with()`)
+- Melanger Livewire et controller classique sur la meme route — choisir un pattern par page
 
 ## Conventions UI/UX
 - Utiliser les bons composants de la librairie choisie dans le projet (Flux UI, shadcn/ui, Filament, etc.)

@@ -22,6 +22,25 @@ Implementar funcionalidades segun la arquitectura, preservando las convenciones 
 
 ## Convenciones Laravel
 
+**Estructura de carpetas — respetar siempre este layout:**
+```
+app/Actions/          ← logica de negocio (una clase por operacion)
+app/Http/Controllers/ ← solo HTTP (validar → llamar Action → retornar respuesta)
+app/Http/Requests/    ← toda la validacion va aqui
+app/Models/           ← modelos Eloquent (nombre de clase en singular)
+app/Policies/         ← autorizacion
+app/Events/ + app/Listeners/  ← efectos secundarios (siempre en cola)
+app/Jobs/             ← procesamiento pesado/asincronico
+app/Livewire/         ← componentes Livewire (solo stack Jetstream)
+resources/views/<resource>/   ← carpeta en plural (users/, orders/)
+```
+
+**Nomenclatura — singular vs plural:**
+- Nombres de clase → singular: `User`, `UserController`, `UserPolicy`, `UserResource`
+- Tablas BD y URIs de ruta → plural: `users`, `/users`
+- Carpetas de views → plural: `resources/views/users/`
+- Livewire: clase `UserList` → archivo `user-list.blade.php` (kebab-case)
+
 **Siempre:**
 - Form Requests para toda validacion (nunca validacion inline en el controller)
 - Actions para toda logica de negocio (los controllers orquestan, nunca deciden)
@@ -33,10 +52,11 @@ Implementar funcionalidades segun la arquitectura, preservando las convenciones 
 
 **Nunca:**
 - Logica de negocio en Controllers
-- Consultas en templates Blade o Livewire directamente
+- Consultas en templates Blade o Livewire directamente (usar `#[Computed]` o pasar via controller)
 - Validacion inline en Controllers
 - Logica mas alla de scopes y relaciones en Models
 - Consultas N+1 (siempre eager load con `with()`)
+- Mezclar Livewire y controller clasico en la misma ruta — elegir un patron por pagina
 
 ## Convenciones de UI/UX
 - Usar los componentes correctos de la libreria elegida en el proyecto (Flux UI, shadcn/ui, Filament, etc.)
