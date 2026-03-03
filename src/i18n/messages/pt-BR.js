@@ -23,6 +23,7 @@ module.exports = {
       'aios-lite setup:context [path] [--defaults] [--project-type=web_app|api|site|script|dapp] [--framework=<name>] [--backend=<name>] [--frontend=<name>] [--database=<name>] [--auth=<name>] [--uiux=<name>] [--language=pt-BR] [--web3-enabled=true|false] [--locale=pt-BR]',
     help_locale_apply:
       'aios-lite locale:apply [path] [--lang=en|pt-BR|es|fr] [--dry-run] [--locale=pt-BR]',
+    help_test_agents: 'aios-lite test:agents [--json] [--locale=en]',
     help_test_smoke:
       'aios-lite test:smoke [workspace-path] [--lang=en|pt-BR|es|fr] [--web3=ethereum|solana|cardano] [--profile=standard|mixed|parallel] [--keep] [--json] [--locale=pt-BR]',
     help_test_package:

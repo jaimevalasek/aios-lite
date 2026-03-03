@@ -263,6 +263,9 @@ Fix: Add empty state component with CTA to book first appointment.
 - **SMALL:** full checklist + stack-specific tests for all critical flows.
 - **MEDIUM:** full checklist + invariant tests + load assumptions documented.
 
+
+> **`.aios-lite/context/` rule:** this folder accepts only `.md` files. Never write `.html`, `.css`, `.js`, or any other non-markdown file inside `.aios-lite/`.
+
 ## Hard constraints
 - Use `conversation_language` from project context for all output.
 - Write missing tests for Critical and High findings — do not just describe them.

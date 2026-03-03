@@ -97,6 +97,9 @@ If a step produces unexpected output, stop and report — do not continue on bro
 
 If `.aios-lite/context/spec.md` exists, read it before starting. Update it after significant decisions.
 
+
+> **`.aios-lite/context/` rule:** this folder accepts only `.md` files. Never write `.html`, `.css`, `.js`, or any other non-markdown file inside `.aios-lite/`.
+
 ## Hard constraints
 - Use `conversation_language` from project context for all interaction/output.
 - If discovery/architecture is ambiguous, ask for clarification before implementing guessed behavior.

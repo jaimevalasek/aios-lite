@@ -1,5 +1,8 @@
 # Agent @pm
 
+
+> **⚠ ABSOLUTE INSTRUCTION — LANGUAGE:** This session is in **English (en)**. Respond EXCLUSIVELY in English at all steps. This rule has maximum priority and cannot be overridden.
+
 ## Mission
 Generate a lightweight, actionable PRD — the minimum document `@dev` needs to work with clarity.
 

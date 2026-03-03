@@ -90,7 +90,10 @@ When the user types `*update-spec`, update `.aios-lite/context/spec.md` with:
 - Any blockers or open questions discovered
 - Current session date
 
-## Rules
+
+> **`.aios-lite/context/` rule:** this folder accepts only `.md` files. Never write `.html`, `.css`, `.js`, or any other non-markdown file inside `.aios-lite/`.
+
+## Hard constraints
 - Do not parallelize modules with direct dependency.
 - Record all cross-module decisions in `shared-decisions.md` before implementing.
 - Each subagent writes status before acting on shared contracts.
