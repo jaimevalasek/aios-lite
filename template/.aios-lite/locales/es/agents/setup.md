@@ -205,7 +205,7 @@ contract_framework: ""
 wallet_provider: ""
 indexer: ""
 rpc_provider: ""
-aios_lite_version: "0.1.16"
+aios_lite_version: "0.1.17"
 generated_at: "ISO-8601"
 ---
 
@@ -299,6 +299,23 @@ updated: "<ISO-8601>"
 ## Notas
 - [Cualquier contexto importante, advertencias o restricciones para sesiones futuras]
 ```
+
+### 3. Informar al usuario el siguiente agente
+
+Tras completar el setup, siempre cerrar con el proximo paso recomendado. Usar el nombre exacto `@agente` para que el cliente AI (Codex, Claude Code, Gemini) pueda activarlo:
+
+| project_type | classification | Proximo agente |
+|---|---|---|
+| `site` | cualquiera | **@ux-ui** |
+| `web_app` / `api` / `script` | MICRO | **@dev** |
+| `web_app` / `api` | SMALL | **@analyst** |
+| `web_app` / `api` | MEDIUM | **@analyst** (luego @architect → @ux-ui → @orchestrator) |
+| `dapp` | cualquiera | **@analyst** |
+
+Ejemplo de cierre:
+> "Setup completado. Proximo paso: activa **@ux-ui** para disenar tu landing page."
+> o
+> "Setup completado. Proximo paso: activa **@analyst** para mapear los requisitos."
 
 ## Regla de idioma
 - Interactuar y responder en espanol.

@@ -16,19 +16,26 @@ Produce UI/UX that makes the user proud to show the result — intentional, mode
 
 ## Step 0 — Visual style intake
 
-Before any design work, ask the user ONE question:
+> **⚠ HARD STOP — blocking gate.**
+> Do not read context files. Do not write HTML, CSS, or any spec. Do not proceed to Step 1.
+> Ask ONLY this question and wait for the user's answer before doing anything else.
 
-> "Qual o estilo visual que você quer para este projeto? (ou: Which visual style do you want?)
+Ask the user:
+
+> "Which visual style do you want for this project?
 >
 > **A — Clean & Luminous** (Apple, Linear, Stripe)
-> Fundo branco ou claro, muito espaço em branco, uma cor de acento, tipografia que faz o trabalho pesado, animações sutis. O produto é tão bom que não precisa gritar.
+> White or light background, generous whitespace, single accent color, typography does the heavy lifting, subtle animations. The product is good enough that it doesn't need to shout.
 >
 > **B — Bold & Cinematic** (Framer, Vercel, Awwwards)
-> Hero com imagem forte ou gradiente escuro, cores ousadas e combinadas, animações de scroll, tipografia grande e impactante, fotografias de alta qualidade em destaque. O usuário cai da cadeira.
+> Animated dark hero, bold paired colors, scroll animations, large impactful typography, high-quality imagery. The user stops scrolling.
 >
-> Ou descreva sua preferência livremente."
+> Or describe your preference freely."
 
-Use the chosen style throughout all decisions. Do not mix styles.
+Wait for the answer. Once received:
+- Confirm the chosen style in one sentence.
+- Then proceed to Step 1.
+- Never mix styles after this point.
 
 ---
 
@@ -79,6 +86,23 @@ Identity test: remove the product name — can someone still identify what this 
 ## Landing page mode (project_type=site)
 
 When `project_type=site`, activate this mode after design direction is chosen.
+
+### Hero law (non-negotiable)
+
+> **The hero is NEVER a grid of cards or a list of steps.**
+> The hero is: **full viewport** — animated background (mesh OR full-bleed photo) — ONE large headline (with animated gradient on the key phrase for Bold & Cinematic) — 1–2 supporting lines — TWO buttons — optional social proof strip. Nothing else.
+>
+> Card grids, numbered steps, and feature lists belong in sections BELOW the hero.
+
+### Mandatory "wow" techniques (Bold & Cinematic — apply all three)
+
+These are required for every Bold & Cinematic landing page. Read Section 2a-extra and Section 14 of `static-html-patterns.md` for the complete code:
+
+1. **Animated mesh background** — the hero background gradient drifts slowly using `@keyframes meshDrift`. A static gradient is not enough.
+2. **Animated gradient text** — the headline key phrase (wrapped in `<em>`) has a shifting color gradient using `@keyframes textGradient 8s`. This is the single most-noticed premium detail.
+3. **3D card tilt on hover** — feature cards tilt toward the cursor with `perspective(700px) rotateY + rotateX` on `mousemove`. Skipped on touch devices and `prefers-reduced-motion`.
+
+For Clean & Luminous: apply `box-shadow` lift on cards and a subtle `scale(1.01)` hover instead of tilt.
 
 ### Content crafting (produce actual copy — no placeholders)
 Write real content based on the project description. Every section must have:

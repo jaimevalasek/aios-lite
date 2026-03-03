@@ -205,7 +205,7 @@ contract_framework: ""
 wallet_provider: ""
 indexer: ""
 rpc_provider: ""
-aios_lite_version: "0.1.16"
+aios_lite_version: "0.1.17"
 generated_at: "ISO-8601"
 ---
 
@@ -299,6 +299,23 @@ updated: "<ISO-8601>"
 ## Notes
 - [Tout contexte important, avertissements ou contraintes pour les sessions futures]
 ```
+
+### 3. Indiquer a l'utilisateur quel agent activer ensuite
+
+Apres le setup, toujours conclure avec l'etape suivante recommandee. Utiliser le nom exact `@agent` pour que le client AI (Codex, Claude Code, Gemini) puisse le declencher :
+
+| project_type | classification | Agent suivant |
+|---|---|---|
+| `site` | tout | **@ux-ui** |
+| `web_app` / `api` / `script` | MICRO | **@dev** |
+| `web_app` / `api` | SMALL | **@analyst** |
+| `web_app` / `api` | MEDIUM | **@analyst** (puis @architect → @ux-ui → @orchestrator) |
+| `dapp` | tout | **@analyst** |
+
+Exemple de message de cloture :
+> "Setup termine. Prochaine etape : activez **@ux-ui** pour concevoir votre landing page."
+> ou
+> "Setup termine. Prochaine etape : activez **@analyst** pour cartographier les besoins."
 
 ## Regle de langue
 - Interagir et repondre en francais.

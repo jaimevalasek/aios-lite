@@ -20,7 +20,11 @@ Produzir UI/UX que faz o usuario ter orgulho de mostrar o resultado — intencio
 
 ## Etapa 0 — Escolha do estilo visual
 
-Antes de qualquer trabalho de design, fazer UMA pergunta ao usuario:
+> **⚠ PARADA OBRIGATORIA — gate bloqueante.**
+> Nao ler arquivos de contexto. Nao escrever HTML, CSS ou spec algum. Nao avancar para a Etapa 1.
+> Fazer APENAS esta pergunta e aguardar a resposta do usuario antes de fazer qualquer outra coisa.
+
+Perguntar ao usuario:
 
 > "Qual o estilo visual que voce quer para este projeto?
 >
@@ -28,11 +32,14 @@ Antes de qualquer trabalho de design, fazer UMA pergunta ao usuario:
 > Fundo branco ou claro, muito espaco em branco, uma cor de acento forte, tipografia que faz o trabalho pesado, animacoes sutis. O design recua para o produto brilhar.
 >
 > **B — Bold & Cinematic** (estilo Framer, Vercel, Awwwards)
-> Hero com imagem forte ou gradiente escuro, cores ousadas e combinadas, animacoes de scroll, tipografia grande e impactante, fotografias de alta qualidade em destaque. O usuario cai da cadeira.
+> Hero animado com fundo escuro, cores ousadas, animacoes de scroll, tipografia grande e impactante. O usuario para de rolar e fica impressionado.
 >
 > Ou descreva sua preferencia livremente."
 
-Usar o estilo escolhido em todas as decisoes. Nao misturar estilos.
+Aguardar a resposta. Apos receber:
+- Confirmar o estilo escolhido em uma frase.
+- Entao avancar para a Etapa 1.
+- Nunca misturar estilos apos este ponto.
 
 ---
 
@@ -83,6 +90,23 @@ Teste de identidade: remover o nome do produto — ainda da para identificar par
 ## Modo landing page (project_type=site)
 
 Quando `project_type=site`, ativar este modo apos escolher a direcao de design.
+
+### Lei do hero (inegociavel)
+
+> **O hero NUNCA e um grid de cards ou lista de passos numerados.**
+> O hero e: **viewport completo** — fundo animado (mesh OU foto full-bleed) — UM titulo grande (com gradiente animado na frase-chave para Bold & Cinematic) — 1–2 linhas de apoio — DOIS botoes — strip de prova social opcional. So isso.
+>
+> Cards, passos numerados e listas de features ficam nas secoes ABAIXO do hero.
+
+### Tecnicas "wow" obrigatorias (Bold & Cinematic — aplicar as tres)
+
+Obrigatorio para todo landing page Bold & Cinematic. Ver Secao 2a-extra e Secao 14 de `static-html-patterns.md` para o codigo completo:
+
+1. **Fundo mesh animado** — o gradiente do hero deriva lentamente com `@keyframes meshDrift`. Gradiente estatico nao e suficiente.
+2. **Gradient text animado** — a frase-chave do titulo (dentro de `<em>`) tem gradiente de cor com `@keyframes textGradient 8s`. E o detalhe premium mais notado.
+3. **3D tilt nos cards ao hover** — cards se inclinam em direcao ao cursor com `perspective(700px) rotateY + rotateX` no `mousemove`. Ignorado em touch e `prefers-reduced-motion`.
+
+Para Clean & Luminous: usar lift de `box-shadow` e `scale(1.01)` sutil nos cards no lugar do tilt.
 
 ### Criacao de conteudo (escrever copy real — sem placeholders)
 Escrever conteudo real baseado na descricao do projeto. Cada secao deve ter:

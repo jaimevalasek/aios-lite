@@ -5,6 +5,18 @@
 
 ---
 
+## 0. THE HERO LAW (read this first, it overrides everything)
+
+> **The hero section is NEVER a grid of cards.**
+> The hero is: full viewport height — background (animated mesh OR full-bleed photograph) — ONE large headline — ONE or TWO supporting lines — TWO buttons — optional social proof strip below. That is it.
+>
+> Card grids belong in the Features or Tools section. A hero with cards looks like a dashboard, not a landing page.
+>
+> For Bold & Cinematic: the hero background must be ALIVE (animated mesh gradient or parallax image).
+> For Clean & Luminous: the hero background must have generous whitespace and a large, confident headline.
+
+---
+
 ## 1. HTML Structure — The Production Shell
 
 Every landing page follows this semantic skeleton:
@@ -605,6 +617,139 @@ Every landing page follows this semantic skeleton:
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
 ```
+
+### 2a-extra. Mandatory "Wow" Techniques for Bold & Cinematic
+
+These three techniques are **required** — not optional. They separate a premium landing page from a generic dark dashboard.
+
+#### Animated mesh background (background breathes)
+
+```css
+/* Replace the static mesh with an animated one */
+.hero__bg--mesh {
+  position: absolute; inset: 0; z-index: 0;
+  background:
+    radial-gradient(ellipse 120% 80% at -15% -10%, hsla(265,70%,55%,0.28), transparent 55%),
+    radial-gradient(ellipse 100% 70% at 115%  15%, hsla(190,70%,50%,0.25), transparent 50%),
+    radial-gradient(ellipse 120% 80% at  50% 110%, hsla(310,65%,55%,0.2),  transparent 52%),
+    linear-gradient(160deg, hsl(240,18%,6%) 0%, hsl(240,15%,10%) 100%);
+  background-size: 200% 200%;
+  animation: meshDrift 20s ease infinite alternate;
+}
+@keyframes meshDrift {
+  0%   { background-position: 0%   0%; }
+  33%  { background-position: 60%  40%; }
+  66%  { background-position: 40%  80%; }
+  100% { background-position: 100% 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero__bg--mesh { animation: none; }
+}
+```
+
+**HTML usage:**
+```html
+<section class="hero">
+  <div class="hero__bg--mesh" aria-hidden="true"></div>
+  <!-- orbs still work on top of this -->
+  <div class="hero__decor" aria-hidden="true">
+    <div class="orb orb--1"></div>
+    <div class="orb orb--2"></div>
+  </div>
+  <div class="container hero__content"> ... </div>
+</section>
+```
+
+---
+
+#### Animated gradient text (headline that breathes color)
+
+The headline `<em>` or key phrase has a gradient that slowly shifts — subtle but unmistakably premium.
+
+```css
+.gradient-text--animated {
+  background: linear-gradient(
+    135deg,
+    var(--accent-primary),
+    hsl(190, 80%, 55%),
+    hsl(310, 75%, 65%),
+    var(--accent-primary)
+  );
+  background-size: 300% 300%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  display: inline;
+  animation: textGradient 8s ease infinite;
+}
+@keyframes textGradient {
+  0%, 100% { background-position: 0%   50%; }
+  50%       { background-position: 100% 50%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gradient-text--animated { animation: none; }
+}
+```
+
+**HTML usage:**
+```html
+<h1 class="hero__title">
+  The fastest way to <em class="gradient-text--animated">ship AI products</em>
+</h1>
+```
+
+---
+
+#### 3D Card Tilt on hover (cards feel physical)
+
+Cards that tilt toward the cursor. One of the strongest single micro-interactions.
+
+```css
+/* CSS: enable GPU compositing and smooth reset */
+.feature-card {
+  transform-style: preserve-3d;
+  transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.3s ease;
+  will-change: transform;
+}
+```
+
+```js
+// JS: 3D tilt on mousemove, smooth reset on mouseleave
+function initCardTilt(selector = '.feature-card') {
+  document.querySelectorAll(selector).forEach(card => {
+    card.addEventListener('mousemove', e => {
+      const r = card.getBoundingClientRect();
+      const x = (e.clientX - r.left) / r.width  - 0.5; // -0.5 → +0.5
+      const y = (e.clientY - r.top)  / r.height - 0.5;
+      card.style.transition = 'none';
+      card.style.transform =
+        `perspective(700px) rotateY(${x * 14}deg) rotateX(${-y * 14}deg) translateZ(10px)`;
+    });
+    card.addEventListener('mouseleave', () => {
+      card.style.transition = 'transform 0.6s cubic-bezier(0.16, 1, 0.3, 1)';
+      card.style.transform = '';
+    });
+  });
+}
+
+// Initialize on DOM ready
+document.addEventListener('DOMContentLoaded', () => {
+  if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    initCardTilt('.feature-card');
+    initCardTilt('.tool-card');
+  }
+});
+```
+
+**Important:** do NOT apply tilt on touch devices:
+```js
+if (window.matchMedia('(hover: none)').matches) return; // skip on touch
+```
+
+---
 
 ### 2b. Clean & Luminous (Light, Apple-like)
 

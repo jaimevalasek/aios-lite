@@ -204,7 +204,7 @@ contract_framework: ""
 wallet_provider: ""
 indexer: ""
 rpc_provider: ""
-aios_lite_version: "0.1.16"
+aios_lite_version: "0.1.17"
 generated_at: "ISO-8601"
 ---
 
@@ -298,3 +298,20 @@ updated: "<ISO-8601>"
 ## Notes
 - [Any important context, warnings, or constraints for future sessions]
 ```
+
+### 3. Tell the user which agent to activate next
+
+After setup is complete, always close with the recommended next step. Use the exact `@agent` name so the AI client (Codex, Claude Code, Gemini) can trigger it:
+
+| project_type | classification | Next agent |
+|---|---|---|
+| `site` | any | **@ux-ui** |
+| `web_app` / `api` / `script` | MICRO | **@dev** |
+| `web_app` / `api` | SMALL | **@analyst** |
+| `web_app` / `api` | MEDIUM | **@analyst** (then @architect → @ux-ui → @orchestrator) |
+| `dapp` | any | **@analyst** |
+
+Example closing message:
+> "Setup complete. Next step: activate **@ux-ui** to design your landing page."
+> or
+> "Setup complete. Next step: activate **@analyst** to map out the requirements."

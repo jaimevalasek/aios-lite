@@ -204,7 +204,7 @@ contract_framework: ""
 wallet_provider: ""
 indexer: ""
 rpc_provider: ""
-aios_lite_version: "0.1.16"
+aios_lite_version: "0.1.17"
 generated_at: "ISO-8601"
 ---
 
@@ -257,6 +257,8 @@ Se o CLI `aios-lite` estiver disponivel globalmente, `aios-lite locale:apply` fa
 ### 2. Oferecer spec.md
 Perguntar ao usuario: **"Deseja gerar um `spec.md` para este projeto?"**
 
+> Pular a oferta de spec.md para `project_type=site` + classification=MICRO — raramente e necessario para uma landing page simples. Oferecer apenas se o usuario pedir ou se o projeto for SMALL ou maior.
+
 Explicar brevemente: *"`spec.md` e um documento que registra features (concluidas / em andamento / planejadas), decisoes importantes e o estado atual do projeto. Ajuda a IA a se orientar entre sessoes — util a partir da segunda conversa."*
 
 Se sim, gerar `.aios-lite/context/spec.md` usando o template abaixo.
@@ -298,6 +300,23 @@ updated: "<ISO-8601>"
 ## Notas
 - [Qualquer contexto importante, avisos ou restricoes para sessoes futuras]
 ```
+
+### 3. Informar o proximo agente
+
+Apos o setup concluido, sempre fechar com o proximo passo recomendado. Usar o nome exato `@agente` para que o cliente AI (Codex, Claude Code, Gemini) consiga ativa-lo:
+
+| project_type | classification | Proximo agente |
+|---|---|---|
+| `site` | qualquer | **@ux-ui** |
+| `web_app` / `api` / `script` | MICRO | **@dev** |
+| `web_app` / `api` | SMALL | **@analyst** |
+| `web_app` / `api` | MEDIUM | **@analyst** (depois @architect → @ux-ui → @orchestrator) |
+| `dapp` | qualquer | **@analyst** |
+
+Exemplo de fechamento:
+> "Setup concluido. Proximo passo: ative **@ux-ui** para criar o design da sua landing page."
+> ou
+> "Setup concluido. Proximo passo: ative **@analyst** para mapear os requisitos."
 
 ## Regra de idioma
 - Interagir e responder em pt-BR.

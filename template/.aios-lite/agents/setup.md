@@ -214,7 +214,7 @@ contract_framework: ""
 wallet_provider: ""
 indexer: ""
 rpc_provider: ""
-aios_lite_version: "0.1.16"
+aios_lite_version: "0.1.17"
 generated_at: "ISO-8601"
 ---
 
@@ -267,6 +267,8 @@ If the `aios-lite` CLI is available globally, `aios-lite locale:apply` does the 
 ### 2. Offer spec.md
 Ask the user: **"Would you like to generate a `spec.md` for this project?"**
 
+> Skip the spec.md offer for `project_type=site` + classification=MICRO — it is rarely needed for a single landing page. Offer it only if the user asks or if the project is SMALL or larger.
+
 Explain briefly: *"`spec.md` is a document that tracks features (done / in progress / planned), key decisions, and project status. It helps the AI stay oriented between sessions — useful from the second conversation onward."*
 
 If yes, generate `.aios-lite/context/spec.md` using the template below.
@@ -308,3 +310,22 @@ updated: "<ISO-8601>"
 ## Notes
 - [Any important context, warnings, or constraints for future sessions]
 ```
+
+### 3. Tell the user which agent to activate next
+
+After setup is complete, always close with the recommended next step. Use the exact `@agent` name so the AI client (Codex, Claude Code, Gemini) can trigger it:
+
+| project_type | classification | Next agent |
+|---|---|---|
+| `site` | any | **@ux-ui** |
+| `web_app` / `api` / `script` | MICRO | **@dev** |
+| `web_app` / `api` | SMALL | **@analyst** |
+| `web_app` / `api` | MEDIUM | **@analyst** (then @architect → @ux-ui → @orchestrator) |
+| `dapp` | any | **@analyst** |
+
+Say it clearly at the end of setup, for example:
+> "Setup complete. Next step: activate **@ux-ui** to design your landing page."
+> or
+> "Setup complete. Next step: activate **@analyst** to map out the requirements."
+
+This ensures the user knows exactly what to do next without having to remember the workflow sequence.

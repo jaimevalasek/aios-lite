@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.1.17] - 2026-03-03
+### Added
+- `static-html-patterns.md` Section 0 — **Hero Law**: explicit rule that the hero MUST be full-viewport animated background + ONE headline + TWO buttons. Cards in the hero are forbidden.
+- `static-html-patterns.md` Section 2a-extra — **Mandatory Wow Techniques** for Bold & Cinematic (three required, not optional):
+  - Animated mesh background (`@keyframes meshDrift 20s`) — static gradients replaced
+  - Animated gradient text (`@keyframes textGradient 8s`) on headline `<em>` key phrase
+  - 3D card tilt on hover (`perspective(700px) rotateX/rotateY` on `mousemove`, skipped on touch + reduced motion)
+- `@setup` agent (base + all 4 locales) — **Step 3: Next agent guidance** appended to Post-setup action. Agent now closes by explicitly naming the next `@agent` based on `project_type` + `classification`, using the exact `@name` format so AI clients (Codex, Claude Code, Gemini) can trigger it.
+- `@setup` pt-BR/es/fr/en locales — spec.md skip hint for `project_type=site` + MICRO classification.
+
+### Changed
+- `@ux-ui` Step 0 (base + en/pt-BR/es/fr locales) — upgraded from "ask one question" to **HARD STOP blocking gate**: agent must not read files, write HTML/CSS, or proceed to Step 1 until user answers the visual style question.
+- `@ux-ui` Landing page mode (base + all locales) — added **Hero Law** constraint and **Mandatory Wow Techniques** section explicitly referencing the three required animations.
+- `@ux-ui` es/fr locales — **full rewrite** to match the updated base agent: added Step 0 (visual style intake), landing page mode, hero law, mandatory wow techniques, full output contract.
+
 ## [0.1.16] - 2026-03-03
 ### Added
 - `template/.aios-lite/skills/static/static-html-patterns.md`: new **Section 14 — Premium Template Patterns (Aigocy-style)** with 10 production patterns extracted from a real AI-agency landing page (ThemeForest #61450410):
