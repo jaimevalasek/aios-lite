@@ -53,22 +53,24 @@ Isso gera `.aios-lite/context/project.context.md` — o arquivo que orienta todo
 
 ## 3. Abra seu AI IDE e comece
 
-No **Claude** (CLAUDE.md já configurado):
+No **Claude Code** (CLAUDE.md já configurado):
 ```
-/setup
-```
-
-No **Codex** (AGENTS.md já configurado):
-```
-@setup
+/aios-lite/setup
 ```
 
-No **Gemini** (`.gemini/GEMINI.md` já configurado):
+No **Codex** (AGENTS.md já configurado — sem slash commands):
+```
+use the @setup agent to onboard this project
+```
+
+No **Gemini CLI** (`.gemini/commands/` já configurado):
 ```
 /aios-setup
 ```
 
-O agente `@setup` vai ler o contexto e confirmar o plano.
+O agente `@setup` detecta o framework, faz as perguntas e gera o `project.context.md`.
+
+> Cada CLI tem uma forma diferente de invocar agentes. Consulte o [Guia de CLIs de IA](./clientes-ai.md) para exemplos detalhados de Claude Code, Codex e Gemini.
 
 ---
 
@@ -93,6 +95,7 @@ O agente `@setup` vai ler o contexto e confirmar o plano.
 
 ## Próximos passos
 
+- [Como usar com Claude Code, Codex e Gemini](./clientes-ai.md)
 - [Cenários completos com exemplos práticos](./cenarios.md)
 - [Guia de agentes: quando usar cada um](./agentes.md)
 - [Suporte a projetos Web3](./web3.md)
