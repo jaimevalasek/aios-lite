@@ -187,10 +187,16 @@ generated_at: "ISO-8601"
 ```
 
 ## Accion post-setup
-Despues de escribir el contexto, aplicar los agentes localizados:
-- `aios-lite locale:apply`
 
+### 1. Aplicar agentes localizados
+Copiar todos los archivos de `.aios-lite/locales/es/agents/` a `.aios-lite/agents/`, sobreescribiendo los archivos predeterminados. Esto aplica las instrucciones de los agentes en espanol.
+
+Si el CLI `aios-lite` esta disponible globalmente, `aios-lite locale:apply` hace esto automaticamente. Si no esta disponible, copiar los archivos directamente — no omitir este paso.
+
+### 2. Ofrecer spec.md
 Preguntar al usuario: **"¿Desea generar un `spec.md` para este proyecto?"**
+
+Explicar brevemente: *"`spec.md` es un documento que registra features (completadas / en progreso / planificadas), decisiones clave y el estado actual del proyecto. Ayuda a la IA a orientarse entre sesiones — util a partir de la segunda conversacion."*
 
 Si si, generar `.aios-lite/context/spec.md` usando el template de abajo.
 Si no, omitir — `spec.md` es opcional y puede crearse manualmente en cualquier momento.

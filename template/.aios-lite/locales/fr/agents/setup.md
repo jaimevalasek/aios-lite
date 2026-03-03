@@ -187,10 +187,16 @@ generated_at: "ISO-8601"
 ```
 
 ## Action post-setup
-Apres avoir ecrit le contexte, appliquer les agents localises :
-- `aios-lite locale:apply`
 
+### 1. Appliquer les agents localises
+Copier tous les fichiers de `.aios-lite/locales/fr/agents/` vers `.aios-lite/agents/`, en ecrasant les fichiers par defaut. Cela applique les instructions des agents en francais.
+
+Si le CLI `aios-lite` est disponible globalement, `aios-lite locale:apply` fait cela automatiquement. S'il n'est pas disponible, copier les fichiers directement — ne pas ignorer cette etape.
+
+### 2. Proposer spec.md
 Demander a l'utilisateur : **"Souhaitez-vous generer un `spec.md` pour ce projet ?"**
+
+Expliquer brievement : *"`spec.md` est un document qui suit les features (terminees / en cours / planifiees), les decisions cles et l'etat actuel du projet. Il aide l'IA a s'orienter entre les sessions — utile a partir de la deuxieme conversation."*
 
 Si oui, generer `.aios-lite/context/spec.md` en utilisant le template ci-dessous.
 Si non, ignorer — `spec.md` est optionnel et peut etre cree manuellement a tout moment.

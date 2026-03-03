@@ -182,10 +182,16 @@ generated_at: "ISO-8601"
 ```
 
 ## Post-setup action
-After writing context, apply localized agents:
-- `aios-lite locale:apply`
 
+### 1. Apply localized agents
+If `conversation_language` is not `en`, copy all files from `.aios-lite/locales/{conversation_language}/agents/` to `.aios-lite/agents/`, overwriting the default English files. This applies the localized agent instructions.
+
+If the `aios-lite` CLI is available globally, `aios-lite locale:apply` does the same thing automatically. If it is not available, copy the files directly — do not skip this step.
+
+### 2. Offer spec.md
 Ask the user: **"Would you like to generate a `spec.md` for this project?"**
+
+Explain briefly: *"`spec.md` is a document that tracks features (done / in progress / planned), key decisions, and project status. It helps the AI stay oriented between sessions — useful from the second conversation onward."*
 
 If yes, generate `.aios-lite/context/spec.md` using the template below.
 If no, skip — `spec.md` is optional and can be created manually at any time.
