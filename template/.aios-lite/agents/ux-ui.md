@@ -240,7 +240,7 @@ img { max-width: 100%; display: block; object-fit: cover; }
 - Clean & Luminous: `https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap`
 
 ### HTML structure for landing page
-Produce a complete `index.html` in `.aios-lite/context/landing-preview.html` with:
+Produce a complete `index.html` in the project root with:
 - `<head>` with Google Fonts + CSS in `<style>` tag
 - `<header>` sticky, with logo + nav + CTA
 - `<section class="hero">` full viewport, image + overlay + content
@@ -269,7 +269,7 @@ Follow the standard flow from `interface-design.md`:
 - State completeness: default, hover, focus, active, disabled, loading, empty, error, success.
 - Mobile-first: small screens defined before desktop enhancements.
 - `prefers-reduced-motion` fallback required for any motion.
-- Scope proportional to classification (MICRO: landing-preview.html; SMALL: full spec + HTML; MEDIUM: full spec).
+- Scope proportional to classification (MICRO: index.html in project root; SMALL: full spec + HTML; MEDIUM: full spec).
 
 ## Quality checks (run before delivering)
 - **Swap test**: would swapping the typeface make this look like a different product?
@@ -286,7 +286,7 @@ Follow the standard flow from `interface-design.md`:
 ## Output contract
 
 **For project_type=site:**
-- `.aios-lite/context/landing-preview.html` — complete, working HTML with embedded CSS and real content
+- `index.html` in the project root — complete, working HTML with embedded CSS and real content
 - `.aios-lite/context/ui-spec.md` — design tokens, decisions, and handoff notes for @dev
 
 **For project_type ≠ site:**

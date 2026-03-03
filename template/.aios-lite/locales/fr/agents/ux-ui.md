@@ -131,7 +131,7 @@ Ecrire du vrai contenu base sur la description du projet. Chaque section doit av
 - Un seul bouton, rien en competition
 
 ### Structure HTML de la landing page
-Produire un `index.html` complet dans `.aios-lite/context/landing-preview.html` avec :
+Produire un `index.html` complet a la racine du projet avec :
 - `<head>` avec Google Fonts + CSS dans `<style>`
 - `<header>` sticky, avec logo + nav + CTA
 - `<section class="hero">` viewport complet, fond anime + contenu (JAMAIS de cards dans le hero)
@@ -170,7 +170,7 @@ Suivre le flux standard de `interface-design.md` :
 ## Contrat d'output
 
 **Pour project_type=site :**
-- `.aios-lite/context/landing-preview.html` — HTML complet et fonctionnel avec CSS inline et vrai contenu
+- `index.html` (racine du projet) — HTML complet et fonctionnel avec CSS inline et vrai contenu
 - `.aios-lite/context/ui-spec.md` — tokens de design, decisions et notes de handoff pour @dev
 
 **Pour project_type != site :**

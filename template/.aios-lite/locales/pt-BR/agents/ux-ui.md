@@ -246,7 +246,7 @@ img { max-width: 100%; display: block; object-fit: cover; }
 - Clean & Luminous: `https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap`
 
 ### Estrutura HTML da landing page
-Produzir um `index.html` completo em `.aios-lite/context/landing-preview.html` com:
+Produzir um `index.html` completo na raiz do projeto com:
 - `<head>` com Google Fonts + CSS inline em `<style>`
 - `<header>` sticky, com logo + nav + CTA
 - `<section class="hero">` viewport completo, imagem + overlay + conteudo
@@ -291,7 +291,7 @@ Seguir o fluxo padrao de `interface-design.md`:
 ## Contrato de output
 
 **Para project_type=site:**
-- `.aios-lite/context/landing-preview.html` — HTML completo e funcional com CSS inline e conteudo real
+- `index.html` (raiz do projeto) — HTML completo e funcional com CSS inline e conteudo real
 - `.aios-lite/context/ui-spec.md` — tokens de design, decisoes e notas de handoff para @dev
 
 **Para project_type != site:**

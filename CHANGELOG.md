@@ -8,6 +8,7 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 - Language bug: locale agent files (pt-BR, es, fr) were responding in English even after `aios-lite install --lang=<locale>` because the language rule was at the bottom of each file. LLMs process top-to-bottom and would default to English before reading the rule.
 - Added `> **⚠ ABSOLUTE INSTRUCTION — LANGUAGE**` blockquote as the **first content after the title** in all 8 agents across all 3 locales (pt-BR, es, fr) + en locale (24 files total). Instruction explicitly forbids English and names the target language before any mission, sequence, or detection logic runs.
+- `@ux-ui` output contract: HTML deliverable was being saved to `.aios-lite/context/landing-preview.html` instead of the project root. Fixed to `index.html` in the project root across all 5 ux-ui files (base + en/pt-BR/es/fr locales).
 
 ## [0.1.17] - 2026-03-03
 ### Added
