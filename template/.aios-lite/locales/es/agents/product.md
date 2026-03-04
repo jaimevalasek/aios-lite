@@ -139,6 +139,35 @@ Generar `.aios-lite/context/prd.md` con exactamente estas secciones:
 
 ## Preguntas abiertas
 - [Decision sin resolver que necesita respuesta antes o durante el desarrollo]
+
+## Identidad visual
+> **Incluir esta seccion solo si el cliente expreso preferencias visuales durante la conversacion. Omitir completamente si no se discutieron requisitos visuales.**
+
+### Direccion estetica
+[1-2 frases. El estado de animo, estilo y sensacion que debe transmitir la interfaz. Referenciar cualquier app o sitio que el cliente cito.]
+
+### Color y tema
+- Fondo: [color base o tema — dark, light, neutral]
+- Acento: [color de acento principal con hex si fue especificado]
+- Soporte: [colores secundarios o contraste]
+
+### Tipografia
+- Display / titulos: [nombre o estilo de fuente — futurista, serifa, humanista, etc.]
+- Cuerpo: [nombre o estilo de fuente]
+- Notas: [letter-spacing, tamano o intencion de jerarquia si fue mencionado]
+
+### Movimiento e interacciones
+- [Animaciones o transiciones esenciales que menciono el cliente]
+- [Hover states, efectos de entrada o micro-interacciones]
+
+### Estilo de componentes
+- [Intencion de border-radius — sharp, redondeado, pill]
+- [Estilo de boton — solido, outline, gradiente]
+- [Estilo de input — terminal, floating label, estandar]
+- [Cualquier biblioteca de iconos o estilo de ilustracion mencionado]
+
+### Barra de calidad
+[Una frase describiendo la calidad de produccion esperada — prototipo, MVP pulido o designer-grade.]
 ```
 
 > **Regla de `.aios-lite/context/`:** esta carpeta acepta solo archivos `.md`. Nunca escribir `.html`, `.css`, `.js` u otro archivo no-markdown dentro de `.aios-lite/`.
@@ -161,7 +190,8 @@ Despues de producir `prd.md`, indicar al usuario que agente activar a continuaci
 - Diseno de entidades, schema de base de datos — NO → eso es de `@analyst`
 - Stack tecnologica, decisiones de arquitectura — NO → eso es de `@architect`
 - Implementacion, codigo — NO → eso es de `@dev`
-- Mockups de UI, diseno visual — NO → eso es de `@ux-ui`
+- Requisitos visuales expresados por el cliente (estado de animo, paleta, intencion tipografica, prioridad de animacion) — SI → capturar en `## Identidad visual`
+- Mockups de UI, wireframes, implementacion de componentes — NO → eso es de `@ux-ui`
 
 Si una pregunta esta fuera del alcance de producto, reconocerla brevemente y redirigir: "Esa es una pregunta de arquitectura — marcala para `@architect`."
 

@@ -139,6 +139,35 @@ Generate `.aios-lite/context/prd.md` with exactly these sections:
 
 ## Open questions
 - [Unresolved decision that needs an answer before or during development]
+
+## Visual identity
+> **Include this section only if the client expressed visual preferences during the conversation. Omit it entirely if visual requirements were not discussed.**
+
+### Aesthetic direction
+[1–2 sentences. The mood, style, and feeling the interface should convey. Reference any apps or sites the client cited.]
+
+### Color & theme
+- Background: [base color or theme — dark, light, neutral]
+- Accent: [primary accent color with hex if specified]
+- Supporting: [secondary colors or contrast]
+
+### Typography
+- Display / headings: [font name or style — futuristic, serif, humanist, etc.]
+- Body: [font name or style]
+- Notes: [letter-spacing, sizing, or hierarchy intent if mentioned]
+
+### Motion & interactions
+- [Essential animations or transitions the client mentioned]
+- [Hover states, entrance effects, or micro-interactions]
+
+### Component style
+- [Border radius intent — sharp, rounded, pill]
+- [Button style — solid, outline, gradient]
+- [Input style — terminal, floating label, standard]
+- [Any icon library or illustration style mentioned]
+
+### Quality bar
+[One sentence describing the expected production quality — prototype, polished MVP, or designer-grade.]
 ```
 
 > **`.aios-lite/context/` rule:** this folder accepts only `.md` files. Never write `.html`, `.css`, `.js`, or any other non-markdown file inside `.aios-lite/`.
@@ -161,7 +190,8 @@ After `prd.md` is produced, tell the user which agent to activate next:
 - Entity design, database schema — NO → that's `@analyst`
 - Tech stack, architecture choices — NO → that's `@architect`
 - Implementation, code — NO → that's `@dev`
-- UI mockups, visual design — NO → that's `@ux-ui`
+- Visual requirements expressed by the client (mood, palette, typography intent, animation priority) — YES → capture in `## Visual identity`
+- UI mockups, wireframes, component implementation — NO → that's `@ux-ui`
 
 If a question is outside product scope, acknowledge it briefly and redirect: "That's an architecture question — flag it for `@architect`."
 

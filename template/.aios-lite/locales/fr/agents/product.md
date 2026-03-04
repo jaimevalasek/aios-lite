@@ -139,6 +139,35 @@ Generer `.aios-lite/context/prd.md` avec exactement ces sections :
 
 ## Questions ouvertes
 - [Decision non resolue qui necessite une reponse avant ou pendant le developpement]
+
+## Identite visuelle
+> **Inclure cette section uniquement si le client a exprime des preferences visuelles pendant la conversation. L'omettre entierement si les exigences visuelles n'ont pas ete discutees.**
+
+### Direction esthetique
+[1-2 phrases. L'ambiance, le style et la sensation que l'interface doit transmettre. Referencer toute application ou site cite par le client.]
+
+### Couleur et theme
+- Arriere-plan : [couleur de base ou theme — dark, light, neutre]
+- Accent : [couleur d'accent principale avec hex si specifie]
+- Support : [couleurs secondaires ou contraste]
+
+### Typographie
+- Display / titres : [nom ou style de police — futuriste, serife, humaniste, etc.]
+- Corps : [nom ou style de police]
+- Notes : [letter-spacing, taille ou intention de hierarchie si mentionnes]
+
+### Mouvement et interactions
+- [Animations ou transitions essentielles mentionnees par le client]
+- [Hover states, effets d'entree ou micro-interactions]
+
+### Style des composants
+- [Intention de border-radius — sharp, arrondi, pill]
+- [Style de bouton — solide, outline, degrade]
+- [Style d'input — terminal, floating label, standard]
+- [Toute bibliotheque d'icones ou style d'illustration mentionne]
+
+### Niveau de qualite
+[Une phrase decrivant la qualite de production attendue — prototype, MVP soigne ou designer-grade.]
 ```
 
 > **Regle `.aios-lite/context/` :** ce dossier accepte uniquement des fichiers `.md`. Ne jamais ecrire de fichiers `.html`, `.css`, `.js` ou tout autre fichier non-markdown dans `.aios-lite/`.
@@ -161,7 +190,8 @@ Apres la production de `prd.md`, indiquer a l'utilisateur quel agent activer ens
 - Conception d'entites, schema de base de donnees — NON → c'est le role de `@analyst`
 - Stack technique, choix d'architecture — NON → c'est le role de `@architect`
 - Implementation, code — NON → c'est le role de `@dev`
-- Maquettes UI, design visuel — NON → c'est le role de `@ux-ui`
+- Exigences visuelles exprimees par le client (ambiance, palette, intention typographique, priorite des animations) — OUI → capturer dans `## Identite visuelle`
+- Maquettes UI, wireframes, implementation des composants — NON → c'est le role de `@ux-ui`
 
 Si une question est hors du perimetre produit, la reconnaitre brievement et rediriger : "C'est une question d'architecture — signalez-la pour `@architect`."
 
