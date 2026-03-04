@@ -74,7 +74,7 @@ module.exports = {
     existing_project_detected:
       '⚠ Projet existant detecte ({count} fichiers). Lancez le scanner avant de commencer :',
     existing_project_scan_hint:
-      '  python aios-lite-scan.py   (utilise un modele economique, economise des tokens dans votre session IA)'
+      '  aios-lite scan:project   (utilise un modele economique, economise des tokens dans votre session IA)'
   },
   update: {
     not_installed: 'Aucune installation AIOS Lite trouvee dans {targetDir}.',
@@ -630,5 +630,27 @@ module.exports = {
   qa_report: {
     not_found: 'Aucun rapport QA trouve. Executez : aios-lite qa:run ou aios-lite qa:scan',
     html_report_written: 'Rapport HTML ecrit : {path}'
+  },
+  scan_project: {
+    scanning: 'aios-lite scan:project — analyse de {dir}',
+    config_missing: '{file} introuvable. Copiez aios-lite-models.json et remplissez vos cles API.',
+    config_invalid: 'JSON invalide dans aios-lite-models.json : {error}',
+    provider_missing: 'Provider "{provider}" introuvable dans aios-lite-models.json. Disponibles : {available}',
+    provider_info: '  Provider : {provider}',
+    model_info: '  Modele   : {model}',
+    context_found: '  Contexte : project.context.md trouve',
+    context_missing: '  Contexte : project.context.md introuvable (executez aios-lite setup:context d\'abord)',
+    spec_found: '  Spec     : spec.md trouve — memoire de developpement incluse',
+    walking: '  Analyse de la structure du projet...',
+    walk_done: '  Fichiers : {files} entrees cartographiees | Fichiers cles : {keys} lus',
+    dry_run_done: '[dry-run] Analyserait {treeCount} entrees et {keyCount} fichiers cles — aucun appel LLM.',
+    calling_llm: '  Appel de {provider} ({model})...',
+    llm_error: 'Appel LLM echoue : {error}',
+    discovery_written: 'discovery.md ecrit : {path} ({chars} chars)',
+    skeleton_written: 'skeleton-system.md ecrit : {path} ({chars} chars)',
+    skeleton_missing: 'Delimiteur skeleton absent de la reponse LLM — skeleton-system.md non ecrit.',
+    next_steps: '\n  Etapes suivantes :',
+    step_analyst: '  1. Ouvrez votre session IA et lancez @analyst — lit discovery.md + skeleton-system.md automatiquement',
+    step_dev: '  2. Lancez @dev — lit skeleton-system.md d\'abord, puis discovery.md + spec.md'
   }
 };

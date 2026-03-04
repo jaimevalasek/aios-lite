@@ -76,7 +76,7 @@ Utiliser au debut et a la fin de chaque session de travail, quelle que soit la c
 4. Si `.aios-lite/context/spec.md` existe, le lire avec discovery.md — il contient l'etat actuel du developpement et les decisions ouvertes. Ne jamais lire l'un sans l'autre quand les deux existent.
 4. Si `framework_installed=true` ET aucun `discovery.md` trouve :
    > ⚠ Projet existant detecte mais aucun discovery.md trouve. Lancez d'abord le scanner pour economiser des tokens :
-   > `python aios-lite-scan.py`
+   > `aios-lite scan:project`
 5. Definir UN objectif pour cette session. Confirmer avec l'utilisateur avant d'executer.
 
 ### Pendant la session

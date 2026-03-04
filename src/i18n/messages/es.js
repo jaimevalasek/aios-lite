@@ -75,7 +75,7 @@ module.exports = {
     existing_project_detected:
       '⚠ Proyecto existente detectado ({count} archivos). Ejecuta el scanner antes de comenzar:',
     existing_project_scan_hint:
-      '  python aios-lite-scan.py   (usa modelo barato, ahorra tokens en tu sesion de IA)'
+      '  aios-lite scan:project   (usa modelo barato, ahorra tokens en tu sesion de IA)'
   },
   update: {
     not_installed: 'No se encontro instalacion de AIOS Lite en {targetDir}.',
@@ -623,5 +623,27 @@ module.exports = {
   qa_report: {
     not_found: 'No se encontro reporte QA. Ejecuta: aios-lite qa:run o aios-lite qa:scan',
     html_report_written: 'Reporte HTML escrito: {path}'
+  },
+  scan_project: {
+    scanning: 'aios-lite scan:project — escaneando {dir}',
+    config_missing: '{file} no encontrado. Copia aios-lite-models.json y completa tus claves de API.',
+    config_invalid: 'JSON invalido en aios-lite-models.json: {error}',
+    provider_missing: 'Provider "{provider}" no encontrado en aios-lite-models.json. Disponibles: {available}',
+    provider_info: '  Provider : {provider}',
+    model_info: '  Modelo   : {model}',
+    context_found: '  Contexto : project.context.md encontrado',
+    context_missing: '  Contexto : project.context.md no encontrado (ejecuta aios-lite setup:context primero)',
+    spec_found: '  Spec     : spec.md encontrado — memoria de desarrollo incluida',
+    walking: '  Escaneando estructura del proyecto...',
+    walk_done: '  Archivos : {files} entradas mapeadas | Archivos clave: {keys} leidos',
+    dry_run_done: '[dry-run] Escanearia {treeCount} entradas y {keyCount} archivos clave — sin llamada LLM.',
+    calling_llm: '  Llamando {provider} ({model})...',
+    llm_error: 'Llamada LLM fallo: {error}',
+    discovery_written: 'discovery.md escrito: {path} ({chars} chars)',
+    skeleton_written: 'skeleton-system.md escrito: {path} ({chars} chars)',
+    skeleton_missing: 'Delimitador skeleton no encontrado en respuesta LLM — skeleton-system.md no escrito.',
+    next_steps: '\n  Proximos pasos:',
+    step_analyst: '  1. Abre tu sesion de IA y ejecuta @analyst — lee discovery.md + skeleton-system.md automaticamente',
+    step_dev: '  2. Ejecuta @dev — lee skeleton-system.md primero, luego discovery.md + spec.md'
   }
 };

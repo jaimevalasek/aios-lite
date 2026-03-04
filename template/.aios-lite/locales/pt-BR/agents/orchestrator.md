@@ -76,7 +76,7 @@ Usar no inicio e fim de cada sessao de trabalho, independente da classificacao.
 4. Se `.aios-lite/context/spec.md` existir, ler junto com o discovery.md — contem o estado atual do desenvolvimento e decisoes em aberto. Nunca ler um sem o outro quando ambos existirem.
 4. Se `framework_installed=true` E sem `discovery.md`:
    > ⚠ Projeto existente detectado mas sem discovery.md. Rode o scanner primeiro para economizar tokens:
-   > `python aios-lite-scan.py`
+   > `aios-lite scan:project`
 5. Definir UM objetivo para a sessao. Confirmar com o usuario antes de executar.
 
 ### Durante a sessao

@@ -17,6 +17,10 @@ You can run AIOS Lite on existing/legacy projects (not only new projects).
 # inside an existing project
 npx aios-lite install .
 aios-lite setup:context . --defaults --framework="CodeIgniter 3" --backend="CodeIgniter 3" --database="MySQL"
+
+# generate discovery.md + skeleton-system.md using a cheap LLM (saves tokens in your AI session)
+# requires aios-lite-models.json with your API key
+aios-lite scan:project
 ```
 
 If your stack is not listed in menus, use free-text values via `--framework`, `--backend`, `--frontend`, `--database`, `--auth`, and `--uiux`.
@@ -31,6 +35,7 @@ If your stack is not listed in menus, use free-text values via `--framework`, `-
 - [`aios-lite doctor`](docs/en/cli-reference.md#doctor) `[path] [--fix] [--dry-run] [--json]`
 - [`aios-lite setup:context`](docs/en/cli-reference.md#setupcontext) `[path] [--defaults] [--framework=<name>] [--lang=en|pt-BR|es|fr]`
 - [`aios-lite context:validate`](docs/en/cli-reference.md#contextvalidate) `[path] [--json]`
+- [`aios-lite scan:project`](docs/en/cli-reference.md#scanproject) `[path] [--provider=<name>] [--dry-run] [--json]`
 
 **Agents**
 - [`aios-lite agents`](docs/en/cli-reference.md#agents)
@@ -130,6 +135,7 @@ Use `--json` on selected commands. See [JSON schemas](docs/en/json-schemas.md) f
 - `aios-lite qa:scan --json`
 - `aios-lite qa:doctor --json`
 - `aios-lite qa:report --json`
+- `aios-lite scan:project --json`
 
 ## i18n
 CLI localization is supported with:

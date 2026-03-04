@@ -51,6 +51,8 @@ module.exports = {
       'aios-lite qa:scan [path] [--url=<app-url>] [--depth=3] [--max-pages=50] [--headed] [--html] [--json] [--locale=en]',
     help_qa_report:
       'aios-lite qa:report [path] [--html] [--json] [--locale=en]',
+    help_scan_project:
+      'aios-lite scan:project [path] [--provider=<name>] [--dry-run] [--json] [--locale=en]',
     unknown_command: 'Unknown command: {command}',
     unknown_command_line: '{message}\n',
     error_prefix: 'Error: {message}'
@@ -79,7 +81,7 @@ module.exports = {
     step_agents: '2. If no visual picker appears, run: aios-lite agents',
     step_agent_prompt: '3. Generate setup prompt for your tool: aios-lite agent:prompt setup --tool={tool}',
     existing_project_detected: '⚠ Existing project detected ({count} files). Run the scanner before starting:',
-    existing_project_scan_hint: '  python aios-lite-scan.py   (uses a cheap model, saves tokens in your AI session)'
+    existing_project_scan_hint: '  aios-lite scan:project   (uses a cheap model, saves tokens in your AI session)'
   },
   update: {
     not_installed: 'No AIOS Lite installation found in {targetDir}.',
@@ -597,5 +599,27 @@ module.exports = {
   qa_report: {
     not_found: 'No QA report found. Run: aios-lite qa:run or aios-lite qa:scan',
     html_report_written: 'HTML report written: {path}'
+  },
+  scan_project: {
+    scanning: 'aios-lite scan:project — scanning {dir}',
+    config_missing: '{file} not found. Copy aios-lite-models.json and fill in your API keys.',
+    config_invalid: 'Invalid JSON in aios-lite-models.json: {error}',
+    provider_missing: 'Provider "{provider}" not found in aios-lite-models.json. Available: {available}',
+    provider_info: '  Provider : {provider}',
+    model_info: '  Model    : {model}',
+    context_found: '  Context  : project.context.md found',
+    context_missing: '  Context  : project.context.md not found (run aios-lite setup:context first)',
+    spec_found: '  Spec     : spec.md found — development memory included',
+    walking: '  Scanning project structure...',
+    walk_done: '  Files    : {files} entries mapped | Key files: {keys} read',
+    dry_run_done: '[dry-run] Would scan {treeCount} entries and {keyCount} key files — no LLM call made.',
+    calling_llm: '  Calling {provider} ({model})...',
+    llm_error: 'LLM call failed: {error}',
+    discovery_written: 'discovery.md written: {path} ({chars} chars)',
+    skeleton_written: 'skeleton-system.md written: {path} ({chars} chars)',
+    skeleton_missing: 'Skeleton delimiter not found in LLM response — skeleton-system.md not written.',
+    next_steps: '\n  Next steps:',
+    step_analyst: '  1. Open your AI coding session and run @analyst — reads discovery.md + skeleton-system.md automatically',
+    step_dev: '  2. Run @dev — reads skeleton-system.md first, then discovery.md + spec.md'
   }
 };

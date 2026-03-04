@@ -21,7 +21,7 @@ Verifier `framework_installed` dans `project.context.md` avant de demarrer toute
 **Si `framework_installed=true` ET aucun `discovery.md` n'existe :**
 > ⚠ Projet existant detecte mais aucun discovery.md trouve. Pour economiser des tokens, lancez d'abord le scanner :
 > ```
-> python aios-lite-scan.py
+> aios-lite scan:project
 > ```
 > Puis demarrez une nouvelle session et relancez @analyst.
 

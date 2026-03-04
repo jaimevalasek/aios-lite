@@ -74,7 +74,7 @@ Use this at the start and end of every working session, regardless of classifica
 4. If `.aios-lite/context/spec.md` exists, read it alongside discovery.md — it contains current development state and open decisions. Never read one without the other when both exist.
 4. If `framework_installed=true` AND no `discovery.md` found:
    > ⚠ Existing project detected but no discovery.md found. Run the scanner first to save tokens:
-   > `python aios-lite-scan.py`
+   > `aios-lite scan:project`
 5. State ONE objective for this session. Confirm with the user before executing.
 
 ### During session

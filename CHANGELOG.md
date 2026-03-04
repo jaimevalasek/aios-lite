@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.1.28] - 2026-03-04
+### Added
+- **`scan:project` command** (`aios-lite scan:project [path] [--provider=<name>] [--dry-run] [--json]`): Node.js port of the brownfield project scanner, replacing `aios-lite-scan.py`. Walks the project, reads key files, calls a cheap LLM (multi-provider), and generates `discovery.md` + `skeleton-system.md`. Zero npm dependencies — uses `node:fs`, `node:https`, `node:http` only.
+- Multi-provider HTTP client supporting OpenAI-compatible format (DeepSeek, OpenAI, Gemini, Groq, Together, Mistral) and Anthropic native format. Configured via `aios-lite-models.json` (same config file as before).
+- `--provider=<name>` flag to override `preferred_scan_provider` from config at runtime.
+- `--dry-run` mode: walks the project and reports file counts without calling the LLM.
+- i18n keys for `scan_project` section in all 4 locales (en, pt-BR, es, fr).
+- `install` hint message updated in all 4 locales: `python aios-lite-scan.py` → `aios-lite scan:project`.
+
+### Removed
+- `template/aios-lite-scan.py`: Python scanner removed from the template. `aios-lite scan:project` is the normalized replacement. The `aios-lite-models.json` config file (provider API keys) is unchanged.
+
+### Changed
+- All 15 template agent files (analyst, dev, orchestrator — base + 4 locales each): `python aios-lite-scan.py` replaced with `aios-lite scan:project` in brownfield detection hints.
+
 ## [0.1.27] - 2026-03-04
 ### Added
 - **HTML reports** for browser QA: `--html` flag added to `qa:run`, `qa:scan`, and `qa:report`. Generates a self-contained visual report in `reports/<date>_<time>_<mode>/index.html`. Screenshots embedded as base64 — fully portable for sharing. Existing `aios-qa-report.md` and `aios-qa-report.json` outputs are never modified; HTML is purely additive.

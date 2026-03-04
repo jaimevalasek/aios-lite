@@ -21,7 +21,7 @@ Si `framework_installed=true` dans `project.context.md` :
 - Verifier si `.aios-lite/context/discovery.md` existe.
 - **Si absent :** ⚠ Alerter l'utilisateur avant de continuer :
   > Projet existant detecte mais aucun discovery.md trouve. Lancez d'abord le scanner pour economiser des tokens :
-  > `python aios-lite-scan.py`
+  > `aios-lite scan:project`
 - **Si present :** lire `skeleton-system.md` en premier (index leger), puis `discovery.md` ET `spec.md` ensemble — ce sont deux moities de la memoire du projet. Ne jamais lire l'un sans l'autre.
 
 ## Strategie d'implementation
