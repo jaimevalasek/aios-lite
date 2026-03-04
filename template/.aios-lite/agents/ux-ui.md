@@ -30,11 +30,13 @@ Ask the user:
 > **B — Bold & Cinematic** (Framer, Vercel, Awwwards)
 > Animated dark hero, bold paired colors, scroll animations, large impactful typography, high-quality imagery. The user stops scrolling.
 >
+> **C — Default / Skip** — skip this choice and let the craft guide decide. The agent will apply `interface-design.md` principles and choose the most appropriate direction based on the product domain, without enforcing A or B.
+>
 > Or describe your preference freely."
 
 Wait for the answer. Once received:
-- Confirm the chosen style in one sentence.
-- Then proceed to Step 1.
+- If **A or B**: confirm the chosen style in one sentence, then proceed to Step 1.
+- If **C / skip / pular / padrão / default**: skip style confirmation, go directly to Step 1 — apply `interface-design.md` as the sole design authority, let domain exploration (Step 2) drive the visual direction organically.
 - Never mix styles after this point.
 
 ---

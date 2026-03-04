@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.1.21] - 2026-03-03
+### Changed
+- `@ux-ui` Step 0 (base + en/pt-BR/es/fr locales): added **Option C — Default / Skip** to the visual style question. When chosen, the agent skips style confirmation and goes directly to Step 1 using `interface-design.md` as the sole design authority, letting domain exploration drive the visual direction organically. Accepted inputs: C / skip / pular / saltar / passer / padrão / default.
+
 ## [0.1.20] - 2026-03-03
 ### Added
 - `template/.aios-lite/skills/static/react-motion-patterns.md`: new skill with React/Next.js equivalents of the wow effects from `static-html-patterns.md`. Covers 10 patterns: animated mesh background, animated gradient text, scroll reveal (Framer Motion + Intersection Observer fallback), 3D card tilt hook, hero staggered entrance, infinite logo marquee, scroll progress bar, glassmorphism card, floating orbs, and page transition. All patterns include `prefers-reduced-motion` fallback and touch-device guards.

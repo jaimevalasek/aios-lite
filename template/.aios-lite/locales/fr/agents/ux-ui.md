@@ -36,11 +36,13 @@ Demander a l'utilisateur :
 > **B — Bold & Cinematic** (Framer, Vercel, Awwwards)
 > Hero anime sombre, couleurs audacieuses, animations au scroll, grande typographie impactante, images de haute qualite. L'utilisateur arrete de scroller.
 >
+> **C — Par defaut / Passer** — passer ce choix et laisser le guide de craft decider. L'agent applique les principes de `interface-design.md` et choisit la direction la plus appropriee selon le domaine du produit, sans imposer A ou B.
+>
 > Ou decrivez votre preference librement."
 
 Attendre la reponse. Une fois recue :
-- Confirmer le style choisi en une phrase.
-- Ensuite passer a l'Etape 1.
+- Si **A ou B** : confirmer le style choisi en une phrase, puis passer a l'Etape 1.
+- Si **C / passer / par defaut / skip / default** : aller directement a l'Etape 1 sans confirmation de style — appliquer `interface-design.md` comme seule autorite de design, en laissant l'exploration du domaine (Etape 2) guider la direction visuelle organiquement.
 - Ne jamais melanger les styles apres ce point.
 
 ---

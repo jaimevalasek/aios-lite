@@ -36,11 +36,13 @@ Perguntar ao usuario:
 > **B — Bold & Cinematic** (estilo Framer, Vercel, Awwwards)
 > Hero animado com fundo escuro, cores ousadas, animacoes de scroll, tipografia grande e impactante. O usuario para de rolar e fica impressionado.
 >
+> **C — Padrao / Pular** — pular esta escolha e deixar o guia de craft decidir. O agente aplica os principios do `interface-design.md` e escolhe a direcao mais adequada com base no dominio do produto, sem impor A ou B.
+>
 > Ou descreva sua preferencia livremente."
 
 Aguardar a resposta. Apos receber:
-- Confirmar o estilo escolhido em uma frase.
-- Entao avancar para a Etapa 1.
+- Se **A ou B**: confirmar o estilo escolhido em uma frase e avancar para a Etapa 1.
+- Se **C / pular / padrao / skip / default**: ir diretamente para a Etapa 1 sem confirmacao de estilo — aplicar `interface-design.md` como unica autoridade de design, deixando a exploracao de dominio (Etapa 2) guiar a direcao visual organicamente.
 - Nunca misturar estilos apos este ponto.
 
 ---
