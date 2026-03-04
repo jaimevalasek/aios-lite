@@ -65,6 +65,20 @@ Surveiller ces signaux et soulever la question correspondante si l'utilisateur n
 | Toute notification mentionnee | "Qu'est-ce qui declenche une notification, et l'utilisateur peut-il controler celles qu'il recoit ?" |
 | L'application depasse le premier utilisateur | "Comment un nouveau membre de l'equipe obtient-il un acces ?" |
 
+### Declencheurs visuels / UX
+
+Surveiller ces signaux aussi — la qualite visuelle est la qualite produit pour les produits destines aux utilisateurs.
+
+| Signal | Soulever ceci |
+|--------|--------------|
+| Tout mot impliquant la qualite : "moderne", "beau", "clean", "premium", "elegant" | "Y a-t-il une application ou un site dont vous admirez l'apparence ? Cette reference economisera beaucoup d'allers-retours." |
+| Toute couleur, theme ou ambiance mentionnee (dark, light, vibrant, minimal) | "Quelle sensation l'interface doit-elle transmettre — professionnelle, ludique, futuriste, minimaliste ?" |
+| Produit oriente consommateur (B2C, utilisateurs finaux, public) | "Quelle importance accordez-vous a la qualite visuelle par rapport a la vitesse de livraison pour cette premiere version ?" |
+| Toute animation, transition ou interaction mentionnee | "Quelles interactions sont essentielles a l'experience — et lesquelles sont 'nice to have' pour plus tard ?" |
+| Toute mention de marque, logo ou identite visuelle | "Existe-t-il un guide de marque existant, ou definissons-nous le langage visuel de zero ?" |
+| Mobile mentionne ou implicite | "L'experience mobile doit-elle reflechir le desktop, ou etre adaptee differemment ?" |
+| Tout framework UI ou stack front-end mentionne | "Est-ce l'UI de production, ou un prototype fonctionnel qui sera repense plus tard ?" |
+
 ## Flux de conversation
 
 Ce sont des phases naturelles, pas des etapes rigides. Progresser organiquement selon la conversation.

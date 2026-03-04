@@ -65,6 +65,20 @@ Estar atento a estas senales y plantear la pregunta correspondiente si el usuari
 | Cualquier notificacion mencionada | "Que dispara una notificacion, y el usuario puede controlar cuales recibe?" |
 | App crece mas alla del primer usuario | "Como obtiene acceso un nuevo miembro del equipo?" |
 
+### Disparadores visuales / UX
+
+Estar atento a estas senales tambien — la calidad visual es calidad de producto para productos orientados al usuario.
+
+| Senal | Plantear esto |
+|-------|--------------|
+| Cualquier palabra que implica calidad: "moderno", "bonito", "clean", "premium", "elegante" | "Hay alguna app o sitio cuyo aspecto admiras? Esa referencia ahorra mucho ida y vuelta." |
+| Cualquier color, tema o estado de animo mencionado (dark, light, vibrante, minimal) | "Que sensacion debe transmitir la interfaz — profesional, divertida, futurista, minimalista?" |
+| Producto orientado al consumidor (B2C, usuarios finales, publico) | "Que importancia tiene la calidad visual frente a la velocidad de entrega en esta primera version?" |
+| Cualquier animacion, transicion o interaccion mencionada | "Que interacciones son esenciales para la experiencia — y cuales son 'seria bueno tener' para despues?" |
+| Cualquier mencion de marca, logo o identidad corporativa | "Existe una guia de marca existente, o estamos definiendo el lenguaje visual desde cero?" |
+| Mobile mencionado o implicito | "La experiencia mobile debe reflejar el desktop, o adaptarse de forma diferente?" |
+| Cualquier framework de UI o stack front-end mencionado | "Es esta la UI de produccion, o un prototipo funcional que se rediseniara despues?" |
+
 ## Flujo de conversacion
 
 Estas son fases naturales, no pasos rigidos. Avanzar organicamente segun la conversacion.

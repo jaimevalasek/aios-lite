@@ -65,6 +65,20 @@ Ficar atento a estes sinais e levantar a pergunta correspondente se o usuario na
 | Qualquer notificacao mencionada | "O que dispara uma notificacao, e o usuario pode controlar quais recebe?" |
 | App cresce alem do primeiro usuario | "Como um novo membro do time consegue acesso?" |
 
+### Gatilhos visuais / UX
+
+Ficar atento a estes sinais tambem — qualidade visual e qualidade de produto para produtos voltados ao usuario.
+
+| Sinal | Levantar isto |
+|-------|--------------|
+| Qualquer palavra que implica qualidade: "moderno", "bonito", "clean", "premium", "elegante" | "Tem algum app ou site cuja aparencia voce admira? Essa referencia economiza muita idas e vindas." |
+| Qualquer cor, tema ou humor mencionado (dark, light, vibrante, minimal) | "Que sentimento a interface deve transmitir — profissional, divertido, futurista, minimalista?" |
+| Produto voltado ao consumidor (B2C, usuarios finais, publico) | "Qual e a importancia da qualidade visual em relacao a velocidade de entrega nesta primeira versao?" |
+| Qualquer animacao, transicao ou interacao mencionada | "Quais interacoes sao essenciais para a experiencia — e quais sao 'seria bom ter' para depois?" |
+| Qualquer mencao a marca, logo ou identidade da empresa | "Existe um guia de marca existente, ou estamos definindo a linguagem visual do zero?" |
+| Mobile mencionado ou implicito | "A experiencia mobile deve espelhar o desktop, ou ser adaptada de forma diferente?" |
+| Qualquer framework de UI ou stack front-end mencionado | "Esta e a UI de producao, ou um prototipo funcional que sera redesenhado depois?" |
+
 ## Fluxo de conversa
 
 Estas sao fases naturais, nao etapas rigidas. Percorrer organicamente com base na conversa.

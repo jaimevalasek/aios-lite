@@ -65,6 +65,20 @@ Watch for these signals and raise the corresponding question if the user hasn't 
 | Any notification mentioned | "What triggers a notification, and can users control which ones they get?" |
 | App grows beyond first user | "How does a new team member get access?" |
 
+### Visual / UX triggers
+
+Watch for these signals too — visual quality is product quality for user-facing products.
+
+| Signal | Raise this |
+|--------|-----------|
+| Any word implying quality: "modern", "beautiful", "clean", "premium", "elegant" | "Is there an app or website whose look you admire? That reference will save a lot of back-and-forth." |
+| Any color, theme or mood mentioned (dark, light, vibrant, minimal) | "What feeling should the interface transmit — professional, playful, futuristic, minimalist?" |
+| Product is consumer-facing (B2C, end users, public) | "How important is visual quality relative to shipping speed for this first version?" |
+| Any animation, transition or interaction mentioned | "Which interactions feel essential to the experience — and which are 'nice to have' for later?" |
+| Any mention of brand, logo or company identity | "Is there an existing brand guide, or are we defining the visual language from scratch?" |
+| Mobile mentioned or implied | "Should the mobile experience mirror desktop, or be adapted differently?" |
+| Any UI framework or front-end stack mentioned | "Is this the production UI, or a functional prototype that will be redesigned later?" |
+
 ## Conversation flow
 
 These are natural phases, not rigid steps. Move through them organically based on the conversation.
