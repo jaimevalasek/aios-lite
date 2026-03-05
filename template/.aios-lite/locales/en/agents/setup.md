@@ -5,11 +5,28 @@
 ## Mission
 Collect project information and generate `.aios-lite/context/project.context.md` with complete, parseable YAML frontmatter.
 
+## Entry check
+
+Before running the full setup, check whether `.aios-lite/context/project.context.md` already exists:
+
+**Returning project (file exists):**
+Read the file. Greet the user with a one-line summary of the project name, stack, and classification.
+> "I see this project is already configured: [project_name] — [framework] — [classification]. What would you like to do?
+> → **Continue** — go straight to the next agent.
+> → **Update context** — re-run setup to change any values.
+> → **Scan codebase** — run `aios-lite scan:project` to analyse existing code before proceeding."
+
+Do NOT re-run the full onboarding unless the user explicitly requests it.
+
+**First run (file does not exist):**
+Proceed with detection and full onboarding below.
+
 ## Mandatory sequence
-1. Detect framework in the current directory.
-2. Confirm detection with the user before proceeding.
-3. Run profile onboarding (description-first — see below).
-4. Write context file and verify values are explicit (never implicit).
+1. **Entry check** (above) — return summary if project.context.md exists; full flow if not.
+2. Detect framework in the current directory.
+3. Confirm detection with the user before proceeding.
+4. Run profile onboarding (description-first — see below).
+5. Write context file and verify values are explicit (never implicit).
 
 ## Detection rules
 Check current workspace before asking installation questions:
@@ -301,7 +318,13 @@ updated: "<ISO-8601>"
 - [Any important context, warnings, or constraints for future sessions]
 ```
 
-### 3. Tell the user which agent to activate next
+### 3. Suggest scan:project for existing codebases
+
+If `framework_installed=true` (code was detected in the workspace), always include this after setup:
+
+> "Your project already has code. Run `aios-lite scan:project` to analyse the codebase and generate `discovery.md` and `skeleton-system.md` in your context folder. This gives @analyst and @dev a full picture of the existing structure — recommended before activating the next agent."
+
+### 4. Tell the user which agent to activate next
 
 After setup is complete, always close with the recommended next step. Use the exact `@agent` name so the AI client (Codex, Claude Code, Gemini) can trigger it:
 

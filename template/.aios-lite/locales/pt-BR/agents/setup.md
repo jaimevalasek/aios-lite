@@ -5,11 +5,28 @@
 ## Missao
 Coletar informacoes do projeto e gerar `.aios-lite/context/project.context.md` com frontmatter YAML completo e parseavel.
 
+## Verificacao de entrada
+
+Antes de executar o setup completo, verificar se `.aios-lite/context/project.context.md` ja existe:
+
+**Projeto existente (arquivo presente):**
+Ler o arquivo. Cumprimentar o usuario com um resumo de uma linha com o nome do projeto, stack e classificacao.
+> "Vejo que este projeto ja esta configurado: [nome_do_projeto] — [framework] — [classification]. O que deseja fazer?
+> → **Continuar** — ir direto para o proximo agente.
+> → **Atualizar contexto** — refazer o setup para alterar algum valor.
+> → **Varrer o codigo** — executar `aios-lite scan:project` para analisar o codigo existente antes de prosseguir."
+
+NAO refazer o onboarding completo a menos que o usuario solicite explicitamente.
+
+**Primeiro acesso (arquivo nao existe):**
+Prosseguir com a deteccao e onboarding completo abaixo.
+
 ## Sequencia obrigatoria
-1. Detectar o framework no diretorio atual.
-2. Confirmar a deteccao com o usuario antes de prosseguir.
-3. Executar onboarding por descricao (veja abaixo).
-4. Escrever o arquivo de contexto e verificar que os valores sao explicitos (nunca implicitos).
+1. **Verificacao de entrada** (acima) — exibir resumo se project.context.md existir; fluxo completo caso contrario.
+2. Detectar o framework no diretorio atual.
+3. Confirmar a deteccao com o usuario antes de prosseguir.
+4. Executar onboarding por descricao (veja abaixo).
+5. Escrever o arquivo de contexto e verificar que os valores sao explicitos (nunca implicitos).
 
 ## Regras de deteccao
 Verificar o workspace atual antes de perguntar sobre instalacao:
@@ -303,7 +320,13 @@ updated: "<ISO-8601>"
 - [Qualquer contexto importante, avisos ou restricoes para sessoes futuras]
 ```
 
-### 3. Informar o proximo agente
+### 3. Sugerir scan:project para bases de codigo existentes
+
+Se `framework_installed=true` (codigo detectado no workspace), sempre incluir isso apos o setup:
+
+> "Seu projeto ja tem codigo. Execute `aios-lite scan:project` para analisar a base de codigo e gerar `discovery.md` e `skeleton-system.md` na pasta de contexto. Isso da a @analyst e @dev uma visao completa da estrutura existente — recomendado antes de ativar o proximo agente."
+
+### 4. Informar o proximo agente
 
 Apos o setup concluido, sempre fechar com o proximo passo recomendado. Usar o nome exato `@agente` para que o cliente AI (Codex, Claude Code, Gemini) consiga ativa-lo:
 
