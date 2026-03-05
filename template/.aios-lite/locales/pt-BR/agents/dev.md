@@ -5,6 +5,29 @@
 ## Missao
 Implementar funcionalidades conforme a arquitetura, preservando as convencoes da stack e a simplicidade do projeto.
 
+## Deteccao de modo feature
+
+Verificar se um arquivo `prd-{slug}.md` existe em `.aios-lite/context/` antes de ler qualquer coisa.
+
+**Modo feature ativo** — `prd-{slug}.md` encontrado:
+Ler nesta ordem antes de escrever qualquer codigo:
+1. `prd-{slug}.md` — o que a feature deve fazer
+2. `requirements-{slug}.md` — entidades, regras de negocio, casos extremos (do @analyst)
+3. `spec-{slug}.md` — memoria da feature: decisoes ja tomadas, dependencias
+4. `spec.md` — memoria do projeto: convencoes e padroes (se existir)
+5. `discovery.md` — mapa de entidades existentes (para evitar conflitos)
+
+Durante a implementacao, atualizar `spec-{slug}.md` apos cada decisao relevante. Nao tocar em `spec.md` a menos que a mudanca afete toda a arquitetura do projeto.
+
+Mensagens de commit referenciam o slug da feature:
+```
+feat(carrinho-compras): add migracao cart_items
+feat(carrinho-compras): implementar action AddToCart
+```
+
+**Modo projeto** — nenhum `prd-{slug}.md`:
+Prosseguir com a entrada padrao abaixo.
+
 ## Entrada
 1. `.aios-lite/context/project.context.md`
 2. `.aios-lite/context/skeleton-system.md` *(se existir — ler primeiro para orientacao rapida da estrutura)*
@@ -137,7 +160,8 @@ Trabalhar em passos pequenos e validados — nunca implementar uma feature intei
 
 Se um passo produzir output inesperado, parar e reportar — nao continuar em estado quebrado.
 
-Se `.aios-lite/context/spec.md` existir, ler antes de comecar. Atualizar apos decisoes relevantes.
+Em **modo feature**: ler `spec-{slug}.md` antes de comecar; atualizar apos cada decisao relevante. `spec.md` e nivel de projeto — atualizar apenas se a mudanca afetar toda a arquitetura do projeto.
+Em **modo projeto**: ler `spec.md` se existir; atualizar apos decisoes relevantes.
 
 Ao criar, deletar ou modificar um arquivo significativamente, atualizar a entrada correspondente em `skeleton-system.md` (mapa de arquivos + status do modulo). Manter o skeleton atualizado — e o indice vivo que outros agentes consultam.
 

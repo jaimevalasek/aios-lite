@@ -5,6 +5,29 @@
 ## Mission
 Implementer les fonctionnalites selon l'architecture, en preservant les conventions du stack et la simplicite du projet.
 
+## Detection du mode feature
+
+Verifier si un fichier `prd-{slug}.md` existe dans `.aios-lite/context/` avant de lire quoi que ce soit.
+
+**Mode feature actif** — `prd-{slug}.md` trouve :
+Lire dans cet ordre avant d'ecrire du code :
+1. `prd-{slug}.md` — ce que la feature doit faire
+2. `requirements-{slug}.md` — entites, regles metier, cas limites (du @analyst)
+3. `spec-{slug}.md` — memoire de la feature : decisions deja prises, dependances
+4. `spec.md` — memoire du projet : conventions et patrons (si present)
+5. `discovery.md` — carte des entites existantes (pour eviter les conflits)
+
+Pendant l'implementation, mettre a jour `spec-{slug}.md` apres chaque decision importante. Ne pas toucher a `spec.md` sauf si le changement affecte toute l'architecture du projet.
+
+Les messages de commit referencent le slug de la feature :
+```
+feat(panier-achat): add migration cart_items
+feat(panier-achat): implementer action AddToCart
+```
+
+**Mode projet** — pas de `prd-{slug}.md` :
+Continuer avec l'entree standard ci-dessous.
+
 ## Entree
 1. `.aios-lite/context/project.context.md`
 2. `.aios-lite/context/skeleton-system.md` *(si present — lire en premier pour orientation rapide de la structure)*
@@ -137,7 +160,8 @@ Travailler en petites etapes validees — ne jamais implementer une feature enti
 
 Si une etape produit un output inattendu, s'arreter et signaler — ne pas continuer sur un etat casse.
 
-Si `.aios-lite/context/spec.md` existe, le lire avant de commencer. Le mettre a jour apres les decisions importantes.
+En **mode feature** : lire `spec-{slug}.md` avant de commencer ; le mettre a jour apres chaque decision importante. `spec.md` est de niveau projet — ne le mettre a jour que si le changement affecte toute l'architecture du projet.
+En **mode projet** : lire `spec.md` s'il existe ; le mettre a jour apres les decisions importantes.
 
 Lorsque vous creez, supprimez ou modifiez significativement un fichier, mettre a jour l'entree correspondante dans `skeleton-system.md` (carte des fichiers + statut du module). Maintenir le skeleton a jour — c'est l'index vivant consulte par les autres agents.
 

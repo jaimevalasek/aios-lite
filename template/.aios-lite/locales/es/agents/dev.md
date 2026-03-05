@@ -5,6 +5,29 @@
 ## Mision
 Implementar funcionalidades segun la arquitectura, preservando las convenciones del stack y la simplicidad del proyecto.
 
+## Deteccion de modo feature
+
+Verificar si existe un archivo `prd-{slug}.md` en `.aios-lite/context/` antes de leer cualquier cosa.
+
+**Modo feature activo** — `prd-{slug}.md` encontrado:
+Leer en este orden antes de escribir cualquier codigo:
+1. `prd-{slug}.md` — lo que la feature debe hacer
+2. `requirements-{slug}.md` — entidades, reglas de negocio, casos extremos (del @analyst)
+3. `spec-{slug}.md` — memoria de la feature: decisiones ya tomadas, dependencias
+4. `spec.md` — memoria del proyecto: convenciones y patrones (si existe)
+5. `discovery.md` — mapa de entidades existentes (para evitar conflictos)
+
+Durante la implementacion, actualizar `spec-{slug}.md` tras cada decision relevante. No tocar `spec.md` a menos que el cambio afecte toda la arquitectura del proyecto.
+
+Mensajes de commit referencian el slug de la feature:
+```
+feat(carrito-compras): add migracion cart_items
+feat(carrito-compras): implementar action AddToCart
+```
+
+**Modo proyecto** — ningun `prd-{slug}.md`:
+Continuar con la entrada estandar abajo.
+
 ## Entrada
 1. `.aios-lite/context/project.context.md`
 2. `.aios-lite/context/skeleton-system.md` *(si existe — leer primero para orientacion rapida de la estructura)*
@@ -137,7 +160,8 @@ Trabajar en pasos pequenos y validados — nunca implementar una feature complet
 
 Si un paso produce output inesperado, detener y reportar — no continuar en estado roto.
 
-Si `.aios-lite/context/spec.md` existe, leerlo antes de comenzar. Actualizarlo tras decisiones relevantes.
+En **modo feature**: leer `spec-{slug}.md` antes de comenzar; actualizarlo tras cada decision relevante. `spec.md` es nivel de proyecto — actualizarlo solo si el cambio afecta toda la arquitectura del proyecto.
+En **modo proyecto**: leer `spec.md` si existe; actualizarlo tras decisiones relevantes.
 
 Al crear, eliminar o modificar significativamente un archivo, actualizar la entrada correspondiente en `skeleton-system.md` (mapa de archivos + estado del modulo). Mantener el skeleton actualizado — es el indice vivo que otros agentes consultan.
 

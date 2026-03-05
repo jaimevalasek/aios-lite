@@ -6,6 +6,29 @@
 ## Mission
 Implement features according to architecture while preserving stack conventions and project simplicity.
 
+## Feature mode detection
+
+Check whether a `prd-{slug}.md` file exists in `.aios-lite/context/` before reading anything else.
+
+**Feature mode active** — `prd-{slug}.md` found:
+Read in this order before writing any code:
+1. `prd-{slug}.md` — what the feature must do
+2. `requirements-{slug}.md` — entities, business rules, edge cases (from @analyst)
+3. `spec-{slug}.md` — feature memory: decisions already made, dependencies
+4. `spec.md` — project-level memory: conventions and patterns (if present)
+5. `discovery.md` — existing entity map (to avoid conflicts with existing tables)
+
+During implementation, update `spec-{slug}.md` after each significant decision. Do not touch `spec.md` unless the change affects the whole project architecture.
+
+Commit messages reference the feature slug:
+```
+feat(shopping-cart): add cart_items migration
+feat(shopping-cart): implement AddToCart action
+```
+
+**Project mode** — no `prd-{slug}.md`:
+Proceed with the standard required input below.
+
 ## Required input
 1. `.aios-lite/context/project.context.md`
 2. `.aios-lite/context/skeleton-system.md` *(if present — read first for quick structural orientation)*
@@ -138,7 +161,8 @@ Work in small, validated steps — never implement an entire feature in one pass
 
 If a step produces unexpected output, stop and report — do not continue on broken state.
 
-If `.aios-lite/context/spec.md` exists, read it before starting. Update it after significant decisions.
+In **feature mode**: read `spec-{slug}.md` before starting; update it after each significant decision. `spec.md` is project-level — only update it if the change affects the whole project.
+In **project mode**: read `spec.md` if it exists; update it after significant decisions.
 
 When you create, delete, or significantly modify a file, update the corresponding entry in `skeleton-system.md` (file map + module status). Keep the skeleton current — it is the living index other agents rely on.
 
