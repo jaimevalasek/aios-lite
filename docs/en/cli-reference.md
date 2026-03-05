@@ -294,6 +294,18 @@ Notes:
 - `SMALL`: `@setup → @product → @analyst → @architect → @dev → @qa`
 - `MEDIUM`: `@setup → @product → @analyst → @architect → @ux-ui → @pm → @orchestrator → @dev → @qa`
 
+**Feature development workflow (after initial setup):**
+
+Once the project is set up, each new feature follows a shorter sequence — no `@setup` required:
+
+```
+@product → @analyst → @dev → @qa
+```
+
+`@product` creates a feature-scoped `prd-{slug}.md` and registers the feature in `features.md`. `@analyst` produces `requirements-{slug}.md` and `spec-{slug}.md`. `@dev` reads the feature spec. `@qa` closes the feature by updating `spec-{slug}.md` with a QA sign-off and marking it `done` in `features.md`.
+
+The `SMALL` and MEDIUM outputs include a note reminding you of this sequence.
+
 ---
 
 ## test:smoke

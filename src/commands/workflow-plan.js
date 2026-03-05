@@ -36,6 +36,9 @@ function buildWorkflowPlan(input = {}) {
     noteKeys.push('micro_scope');
     noteKeys.push('product_optional');
   }
+  if (classification === 'SMALL' || classification === 'MEDIUM') {
+    noteKeys.push('feature_flow');
+  }
 
   return {
     classification,

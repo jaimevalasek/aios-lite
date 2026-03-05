@@ -374,7 +374,9 @@ module.exports = {
     note_micro_scope:
       'Mantenha o escopo de implementacao minimo e evite agentes opcionais.',
     note_product_optional:
-      '@product e opcional para MICRO — pule e va direto ao @dev se a ideia ja esta clara.'
+      '@product e opcional para MICRO — pule e va direto ao @dev se a ideia ja esta clara.',
+    note_feature_flow:
+      'Fluxo para nova feature (apos configuracao inicial): @product → @analyst → @dev → @qa. Sem @setup.'
   },
   parallel_init: {
     context_missing:
