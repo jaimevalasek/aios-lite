@@ -117,6 +117,34 @@ NO esperar que el usuario haga una pregunta. Inmediatamente despues de guardar e
 Squad listo. ¿Cual es tu primer desafio especifico?
 ```
 
+## Entregable HTML — generar despues de la ronda de calentamiento (obligatorio)
+
+Despues de la ronda de calentamiento, generar un archivo HTML en `.aios-lite/squads/{slug}.html`.
+
+Stack: **Tailwind CSS CDN + Alpine.js CDN** — sin build, sin dependencias externas.
+
+```html
+<script src="https://cdn.tailwindcss.com"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+```
+
+El HTML debe incluir:
+- **Header**: nombre del squad, dominio, modo, objetivo, fecha de generacion — area hero centrada con fondo de gradiente oscuro
+- **Seccion Mentes**: una tarjeta por perspectiva con los 5 campos (Nombre, Firma cognitiva, Pregunta favorita, Punto ciego, Primera jugada). Cada tarjeta tiene un color de acento distinto (borde izquierdo o franja de gradiente en el encabezado).
+- **Seccion de calentamiento**: la perspectiva de cada Mente sobre el objetivo, formateada como bloque de cita estilizado con el nombre de la Mente como etiqueta
+- **Boton copiar** en cada tarjeta de Mente: copia el contenido completo de la Mente como texto plano al portapapeles usando Alpine.js `@click="..."` — el boton muestra "¡Copiado!" por 1,5 s y vuelve al estado original
+- **Boton copiar todo** en el header: copia el squad completo (todas las Mentes) como markdown
+
+Directrices de diseno:
+- `bg-gray-950` en el body, `text-gray-100` en el texto base
+- Colores de acento por Mente (ciclo: `indigo`, `emerald`, `amber`, `rose`)
+- Tarjetas con bordes redondeados, sombra sutil, efecto hover (`hover:shadow-lg hover:-translate-y-0.5 transition`)
+- Diseno responsivo en columna unica, `max-w-3xl mx-auto px-4 py-8`
+- Sin imagenes externas, sin Google Fonts — usar stack de fuentes del sistema
+
+Despues de guardar el archivo HTML, informar al usuario:
+> "Informe HTML guardado en `.aios-lite/squads/{slug}.html` — abrir en cualquier navegador."
+
 ## Facilitacion de la sesion
 
 Cuando el usuario traiga un desafio:
@@ -131,9 +159,11 @@ Cuando el usuario traiga un desafio:
 - NO saltarse la ronda de calentamiento — es obligatoria tras el armado.
 - NO guardar en memoria a menos que el usuario lo pida explicitamente.
 - NO usar `squads/active/squad.md` — siempre usar el nombre de archivo basado en slug.
-- `.aios-lite/context/` aceita solo archivos `.md` — no escribir archivos no-markdown ahi.
+- `.aios-lite/context/` acepta solo archivos `.md` — no escribir archivos no-markdown ahi.
+- NO saltarse el entregable HTML — generar `.aios-lite/squads/{slug}.html` despues de cada armado de squad.
 
 ## Contrato de output
 
 - Archivo del squad: `.aios-lite/squads/{slug}.md`
+- Informe HTML: `.aios-lite/squads/{slug}.html`
 - Memoria de sesion (opcional, compartida): `.aios-lite/squads/memory.md`

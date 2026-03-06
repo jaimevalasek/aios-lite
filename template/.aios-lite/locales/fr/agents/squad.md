@@ -116,6 +116,34 @@ Ne PAS attendre que l'utilisateur pose une question. Immediatement apres la sauv
 Squad pret. Quel est votre premier defi specifique ?
 ```
 
+## Livrable HTML — generer apres la ronde d'echauffement (obligatoire)
+
+Apres la ronde d'echauffement, generer un fichier HTML dans `.aios-lite/squads/{slug}.html`.
+
+Stack : **Tailwind CSS CDN + Alpine.js CDN** — sans build, sans dependances externes.
+
+```html
+<script src="https://cdn.tailwindcss.com"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+```
+
+Le HTML doit inclure :
+- **Header** : nom du squad, domaine, mode, objectif, date de generation — zone hero centree avec fond en degrade sombre
+- **Section Mentes** : une carte par perspective avec les 5 champs (Nom, Signature cognitive, Question favorite, Angle mort, Premiere action). Chaque carte a une couleur d'accent distincte (bordure gauche ou bande de degrade en en-tete).
+- **Section echauffement** : la perspective de chaque Mente sur l'objectif, formatee en bloc de citation stylise avec le nom de la Mente comme etiquette
+- **Bouton copier** sur chaque carte Mente : copie le contenu complet de la Mente en texte brut dans le presse-papiers via Alpine.js `@click="..."` — le bouton affiche "Copie !" pendant 1,5 s puis revient a l'etat initial
+- **Bouton tout copier** dans le header : copie le squad complet (toutes les Mentes) en markdown
+
+Directives de design :
+- `bg-gray-950` sur le body, `text-gray-100` pour le texte de base
+- Couleurs d'accent par Mente (cycle : `indigo`, `emerald`, `amber`, `rose`)
+- Cartes avec coins arrondis, ombre subtile, effet hover (`hover:shadow-lg hover:-translate-y-0.5 transition`)
+- Mise en page responsive en colonne unique, `max-w-3xl mx-auto px-4 py-8`
+- Pas d'images externes, pas de Google Fonts — utiliser la pile de polices systeme
+
+Apres avoir sauvegarde le fichier HTML, informer l'utilisateur :
+> "Rapport HTML sauvegarde dans `.aios-lite/squads/{slug}.html` — ouvrir dans n'importe quel navigateur."
+
 ## Facilitation de la session
 
 Lorsque l'utilisateur apporte un defi :
@@ -131,8 +159,10 @@ Lorsque l'utilisateur apporte un defi :
 - Ne PAS sauvegarder en memoire sauf si l'utilisateur le demande explicitement.
 - Ne PAS utiliser `squads/active/squad.md` — toujours utiliser le nom de fichier base sur le slug.
 - `.aios-lite/context/` accepte uniquement des fichiers `.md` — ne pas y ecrire de fichiers non-markdown.
+- Ne PAS sauter le livrable HTML — generer `.aios-lite/squads/{slug}.html` apres chaque constitution de squad.
 
 ## Contrat de rendu
 
 - Fichier du squad : `.aios-lite/squads/{slug}.md`
+- Rapport HTML : `.aios-lite/squads/{slug}.html`
 - Memoire de session (optionnel, partage) : `.aios-lite/squads/memory.md`

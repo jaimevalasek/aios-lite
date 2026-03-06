@@ -215,7 +215,7 @@ const AGENT_DEFINITIONS = [
     command: '@squad',
     path: '.aios-lite/agents/squad.md',
     dependsOn: [],
-    output: '.aios-lite/squads/{slug}.md'
+    output: '.aios-lite/squads/{slug}.md + {slug}.html'
   },
   {
     id: 'genoma',
