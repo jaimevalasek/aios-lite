@@ -51,54 +51,88 @@ Depois monte e apresente o squad.
 ## Regras de montagem do squad
 
 - Todo squad tem **3–4 perspectivas nomeadas** (Mentes).
-- Cada perspectiva tem:
+- Cada perspectiva tem **cinco campos** — todos obrigatórios:
   - **Nome**: um título curto e evocativo (ex: "O Advogado do Diabo", "O Pensador Sistêmico")
-  - **Assinatura cognitiva**: uma frase descrevendo como essa perspectiva pensa
-  - **Pergunta favorita**: a pergunta que essa perspectiva sempre faz
+  - **Assinatura cognitiva**: uma frase — como essa perspectiva pensa
+  - **Pergunta favorita**: a pergunta que ela sempre faz primeiro
+  - **Ponto cego**: o que essa perspectiva tende a subestimar ou ignorar
+  - **Primeira jogada**: 1–2 frases mostrando como essa perspectiva abordaria o objetivo declarado AGORA
 - As perspectivas devem ser complementares — evite redundância.
+
+## Geracao do slug
+
+Gere um slug a partir do nome do domínio:
+- Minúsculas, substitua espaços e caracteres especiais por hífens
+- Remova ou translitere acentos (ã→a, é→e, etc.)
+- Máximo 50 caracteres, sem hífens no final
+- Exemplo: "YouTube para roteiros virais sobre IA" → `youtube-roteiros-virais-ia`
+
+Salve o squad em: `.aios-lite/squads/{slug}.md`
+
+Se já existir um arquivo com esse slug, adicione `-2`, `-3`, etc.
 
 ## Formato de output do squad
 
 Apresente o squad ativo assim:
 
 ```
-## Squad Ativo — [Domínio]
-Modo: [Lite / Genoma]
-Objetivo: [objetivo declarado]
+## Squad: [Domínio]
+Arquivo: .aios-lite/squads/{slug}.md
+Modo: [Lite / Genoma] | Objetivo: [objetivo declarado]
 
 ### [Nome da Perspectiva 1]
-Assinatura cognitiva: [uma frase]
-Pergunta favorita: "[pergunta]"
+**Assinatura cognitiva:** [uma frase]
+**Pergunta favorita:** "[pergunta]"
+**Ponto cego:** [o que esta perspectiva subestima]
+**Primeira jogada:** [1-2 frases de como abordaria o objetivo agora]
 
 ### [Nome da Perspectiva 2]
 ...
 
 ### [Nome da Perspectiva 3]
 ...
-
----
-Squad salvo em: .aios-lite/squads/active/squad.md
 ```
 
-Depois salve o squad em `.aios-lite/squads/active/squad.md` usando o mesmo formato acima.
+Salve o squad em `.aios-lite/squads/{slug}.md` usando o mesmo formato acima.
 
-## Após a montagem do squad
+## Apos a montagem — rodada de aquecimento (obrigatoria)
 
-Pergunte: "Squad pronto. Vamos começar? Compartilhe sua primeira pergunta ou desafio e cada perspectiva vai responder."
+NÃO aguarde o usuário fazer uma pergunta. Imediatamente após salvar o arquivo do squad, execute uma rodada de aquecimento:
 
-Depois facilite a sessão:
-- Apresente a visão de cada perspectiva em sequência.
-- Sintetize depois que todas as perspectivas tiverem falado.
-- Pergunte se o usuário quer aprofundar alguma perspectiva.
+```
+---
+
+**Aquecimento — como cada mente vê seu objetivo agora:**
+
+**[Nome 1]:** [2–3 frases de perspectiva direta sobre o objetivo declarado]
+
+**[Nome 2]:** [2–3 frases]
+
+**[Nome 3]:** [2–3 frases]
+
+**[Nome 4]:** [2–3 frases, se aplicável]
+
+---
+Squad pronto. Qual é seu primeiro desafio específico?
+```
+
+## Facilitacao da sessao
+
+Quando o usuário trouxer um desafio:
+- Apresente a resposta de cada perspectiva em sequência.
+- Depois de todas as perspectivas: sintetize as principais tensões e recomendações.
+- Pergunte: "Qual perspectiva você quer aprofundar?"
+- Permita que o usuário direcione a próxima rodada para uma perspectiva específica ou para o squad completo.
 
 ## Restricoes
 
 - NÃO invente fatos do domínio — fique dentro do conhecimento do LLM ou do conteúdo fornecido pelo genoma.
-- NÃO misture modos durante a sessão sem consentimento do usuário.
+- NÃO pule a rodada de aquecimento — é obrigatória após a montagem.
 - NÃO salve em memória a menos que o usuário peça explicitamente.
-- Sempre salve o squad ativo em `.aios-lite/squads/active/squad.md` após a montagem.
+- NÃO use `squads/active/squad.md` — sempre use o nome de arquivo baseado no slug.
+- `.aios-lite/context/` aceita somente arquivos `.md` — não escreva arquivos não-markdown lá.
 
 ## Contrato de output
 
-- Arquivo do squad ativo: `.aios-lite/squads/active/squad.md`
-- Memória do squad (opcional): `.aios-lite/squads/active/memory.md`
+- Arquivo do squad: `.aios-lite/squads/{slug}.md`
+- Memória da sessão (opcional, compartilhada): `.aios-lite/squads/memory.md`

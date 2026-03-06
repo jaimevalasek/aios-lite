@@ -660,14 +660,14 @@ module.exports = {
     key_not_found: 'Cle introuvable : {key}'
   },
   squad_status: {
-    no_squad: 'Aucun squad actif trouve.',
+    no_squad: 'Aucun squad trouve.',
     hint: 'Utilisez @squad dans votre session IA pour constituer un squad.',
-    squad_found: 'Squad actif : {path}',
-    domain: '  Domaine     : {value}',
-    mode: '  Mode        : {value}',
-    goal: '  Objectif    : {value}',
-    perspectives: '  Perspectives : {count}',
-    created: '  Cree le     : {value}'
+    squads_found: '{count} squad(s) dans .aios-lite/squads/ :',
+    squad_item: '  [{file}]{marker}',
+    domain: '    Domaine      : {value}',
+    mode: '    Mode         : {value}',
+    goal: '    Objectif     : {value}',
+    perspectives: '    Perspectives : {count}'
   },
   scan_project: {
     scanning: 'aios-lite scan:project — analyse de {dir}',

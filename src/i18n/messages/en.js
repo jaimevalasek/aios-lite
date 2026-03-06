@@ -616,14 +616,14 @@ module.exports = {
     key_not_found: 'Key not found: {key}'
   },
   squad_status: {
-    no_squad: 'No active squad found.',
+    no_squad: 'No squads found.',
     hint: 'Use @squad in your AI session to assemble a squad.',
-    squad_found: 'Active squad: {path}',
-    domain: '  Domain    : {value}',
-    mode: '  Mode      : {value}',
-    goal: '  Goal      : {value}',
-    perspectives: '  Perspectives: {count}',
-    created: '  Created   : {value}'
+    squads_found: '{count} squad(s) in .aios-lite/squads/:',
+    squad_item: '  [{file}]{marker}',
+    domain: '    Domain      : {value}',
+    mode: '    Mode        : {value}',
+    goal: '    Goal        : {value}',
+    perspectives: '    Perspectives: {count}'
   },
   scan_project: {
     scanning: 'aios-lite scan:project — scanning {dir}',

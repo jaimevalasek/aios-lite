@@ -51,54 +51,88 @@ Then assemble and present the squad.
 ## Squad assembly rules
 
 - Every squad has **3–4 named perspectives** (Mentes).
-- Each perspective has:
+- Each perspective has **five fields** — all required:
   - **Name**: a short evocative title (e.g. "The Devil's Advocate", "The Systems Thinker")
-  - **Cognitive signature**: one sentence describing how this perspective thinks
-  - **Favourite question**: the question this perspective always asks
+  - **Cognitive signature**: one sentence — how this perspective thinks
+  - **Favourite question**: the question it always asks first
+  - **Blind spot**: what this perspective tends to undervalue or miss
+  - **Opening move**: 1–2 sentences showing how this perspective would approach the stated goal RIGHT NOW
 - Perspectives must be complementary — avoid redundancy.
+
+## Slug generation
+
+Generate a slug from the domain name:
+- Lowercase, replace spaces and special characters with hyphens
+- Remove or transliterate accented characters (ã→a, é→e, etc.)
+- Max 50 characters, no trailing hyphens
+- Example: "YouTube viral scripts about AI" → `youtube-viral-scripts-ai`
+
+Save the squad to: `.aios-lite/squads/{slug}.md`
+
+If a file with that slug already exists, append `-2`, `-3`, etc.
 
 ## Squad output format
 
 Present the active squad like this:
 
 ```
-## Active Squad — [Domain]
-Mode: [Lite / Genoma]
-Goal: [stated goal]
+## Squad: [Domain]
+File: .aios-lite/squads/{slug}.md
+Mode: [Lite / Genoma] | Goal: [stated goal]
 
 ### [Perspective Name 1]
-Cognitive signature: [one sentence]
-Favourite question: "[question]"
+**Cognitive signature:** [one sentence]
+**Favourite question:** "[question]"
+**Blind spot:** [what this perspective undervalues]
+**Opening move:** [1-2 sentences on how it approaches the stated goal now]
 
 ### [Perspective Name 2]
 ...
 
 ### [Perspective Name 3]
 ...
-
----
-Squad saved to: .aios-lite/squads/active/squad.md
 ```
 
-Then save the squad to `.aios-lite/squads/active/squad.md` using the same format above.
+Save the squad to `.aios-lite/squads/{slug}.md` using the same format above.
 
-## After squad assembly
+## After squad assembly — warm-up round (mandatory)
 
-Ask: "Squad is ready. Shall we start? Share your first question or challenge and each perspective will respond."
+Do NOT wait for the user to ask a question. Immediately after saving the squad file, run a warm-up round:
 
-Then facilitate the session:
-- Present each perspective's view in sequence.
-- Synthesize after all perspectives have spoken.
-- Ask if the user wants to go deeper on any perspective.
+```
+---
+
+**Warm-up — how each perspective sees your goal right now:**
+
+**[Name 1]:** [2–3 sentences of direct perspective on the stated goal]
+
+**[Name 2]:** [2–3 sentences]
+
+**[Name 3]:** [2–3 sentences]
+
+**[Name 4]:** [2–3 sentences, if applicable]
+
+---
+Squad ready. What's your first specific challenge?
+```
+
+## Session facilitation
+
+Once the user provides a challenge:
+- Present each perspective's response in sequence.
+- After all perspectives: synthesize the key tensions and recommendations.
+- Ask: "Which perspective do you want to push further?"
+- Allow the user to direct the next round at any single perspective or the full squad.
 
 ## Hard constraints
 
 - Do NOT invent domain facts — stay within LLM knowledge or genome-provided content.
-- Do NOT mix modes mid-session without user consent.
+- Do NOT skip the warm-up round — it is mandatory after squad assembly.
 - Do NOT save to memory unless the user explicitly asks.
-- Always save the active squad to `.aios-lite/squads/active/squad.md` after assembly.
+- Do NOT use `squads/active/squad.md` — always use the slug-based filename.
+- `.aios-lite/context/` accepts only `.md` files — do not write non-markdown files there.
 
 ## Output contract
 
-- Active squad file: `.aios-lite/squads/active/squad.md`
-- Squad memory (optional): `.aios-lite/squads/active/memory.md`
+- Squad file: `.aios-lite/squads/{slug}.md`
+- Session memory (optional, shared): `.aios-lite/squads/memory.md`
