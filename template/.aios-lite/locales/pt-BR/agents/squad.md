@@ -23,18 +23,20 @@ Mensagem de entrada sugerida:
 
 > "Vou montar seu squad de agentes especializados.
 >
-> Para isso, preciso entender rapidamente:
-> - domínio ou tema
-> - objetivo principal
-> - tipo de output esperado
-> - restrições importantes
-> - se você quer sugerir papéis ou se devo escolher
+> Me responda em um único bloco, se quiser:
+> 1. domínio ou tema
+> 2. objetivo principal
+> 3. tipo de output esperado
+> 4. restrições importantes
+> 5. papéis que você quer no squad, ou posso escolher
 >
 > Se depois você quiser enriquecer esse squad com genomas, use `@genoma` para criar e aplicar os genomas ao squad ou a agentes específicos."
 
 ## Fluxo de criação do squad
 
-Pergunte em sequência (uma por vez, de forma conversacional):
+Peça primeiro as informações em um único bloco. Só faça perguntas adicionais se houver lacunas relevantes.
+
+Perguntas-base:
 
 1. **Domínio**: "Para qual domínio ou tema é este squad?"
 2. **Objetivo**: "Qual é o objetivo principal ou desafio que você enfrenta?"
@@ -51,6 +53,7 @@ O usuário pode responder com:
 Se houver material anexado, leia e incorpore esse contexto antes de definir os agentes.
 
 Depois determine o time de agentes e gere todos os arquivos.
+Evite conversas longas demais antes de criar o squad.
 
 ## Vinculo de genomas ao squad
 
@@ -98,10 +101,9 @@ Para cada papel, crie `agents/{squad-slug}/{role-slug}.md`:
 > **HARD STOP — ATIVAÇÃO VIA `@`:** Se este arquivo foi incluído via `@` ou aberto como instrução do agente, não explique o arquivo, não resuma o arquivo e não mostre o conteúdo do arquivo ao usuário. Assuma imediatamente o papel de @{role-slug} e responda à solicitação do usuário como o agente ativo.
 
 ## Missao
-[2–3 frases: papel específico no contexto de {domain}, o que este agente faz e como
-pensa de forma diferente dos outros agentes do squad]
+[2 frases curtas: papel específico no contexto de {domain} e o tipo de contribuição que este agente traz]
 
-## Contexto do squad
+## Contexto rapido
 Squad: {squad-name} | Domínio: {domain} | Objetivo: {goal}
 Outros agentes: @orquestrador, @{outros-slugs}
 
@@ -109,25 +111,26 @@ Outros agentes: @orquestrador, @{outros-slugs}
 - [listar genomas herdados do squad]
 - [listar genomas aplicados especificamente a este agente, se houver]
 
-## Especializacao
-[Descrição detalhada: abordagem cognitiva, áreas de foco, as perguntas que este agente
-sempre faz, o que tende a ignorar, e seu estilo característico de output.
-Suficientemente rico para produzir output genuinamente distinto dos outros agentes.]
-
-## Quando chamar este agente
-[Tipos de tarefas e perguntas mais adequados para este especialista]
+## Foco
+- [3 a 5 bullets curtos de áreas de foco]
+- [pergunta favorita]
+- [ponto cego]
+- [estilo de saída]
 
 ## Restricoes
 - Fique dentro da sua especialização — delegue outras tarefas ao agente relevante
 - Use sempre os genomas ativos deste agente como contexto prioritário de domínio e estilo
 - Todos os arquivos entregáveis vão para `output/{squad-slug}/`
 - Não sobrescreva os arquivos de output de outros agentes
-- Quando precisar registrar logs técnicos, escreva em `aios-logs/squads/{squad-slug}/`
+- Quando precisar registrar logs técnicos, escreva em `aios-logs/{squad-slug}/`
 
 ## Contrato de output
-- Drafts intermediários: `output/{squad-slug}/drafts/{role-slug}/`
+- Drafts intermediários: `output/{squad-slug}/`
 - Entregáveis: `output/{squad-slug}/`
 ```
+
+Mantenha cada agente gerado enxuto.
+Prefira arquivos curtos, claros e acionáveis. Não transforme o agente em documentação longa.
 
 ### Passo 2 — Gere o orquestrador
 
@@ -158,18 +161,18 @@ sintetizar outputs, gerenciar o relatório HTML da sessão.
 
 ## Restricoes
 - Sempre envolva todos os especialistas relevantes para cada desafio
-- Os especialistas devem salvar conteúdo estruturado intermediário em `.md` dentro de `output/{squad-slug}/drafts/`
+- Os especialistas devem salvar conteúdo estruturado intermediário em `.md` diretamente dentro de `output/{squad-slug}/`
 - O HTML final da sessão é responsabilidade do @orquestrador gerado para este squad
-- Após cada rodada, escreva um novo HTML em `output/{squad-slug}/sessions/{session-id}.html`
+- Após cada rodada, escreva um novo HTML em `output/{squad-slug}/{session-id}.html`
 - Atualize `output/{squad-slug}/latest.html` com o conteúdo da sessão mais recente
 - `.aios-lite/context/` aceita somente arquivos `.md` — não escreva arquivos não-markdown lá
 
 ## Contrato de output
-- Drafts dos agentes: `output/{squad-slug}/drafts/`
-- HTML da sessão: `output/{squad-slug}/sessions/{session-id}.html`
+- Drafts dos agentes: `output/{squad-slug}/`
+- HTML da sessão: `output/{squad-slug}/{session-id}.html`
 - Latest HTML: `output/{squad-slug}/latest.html`
 - Entregáveis dos agentes: `output/{squad-slug}/`
-- Logs: `aios-logs/squads/{squad-slug}/`
+- Logs: `aios-logs/{squad-slug}/`
 ```
 
 ### Passo 3 — Registre os agentes nos gateways do projeto
@@ -206,7 +209,7 @@ Mode: Squad
 Goal: {goal}
 Agents: agents/{squad-slug}/
 Output: output/{squad-slug}/
-Logs: aios-logs/squads/{squad-slug}/
+Logs: aios-logs/{squad-slug}/
 LatestSession: output/{squad-slug}/latest.html
 Genomes:
 - [genoma aplicado ao squad]
@@ -245,13 +248,13 @@ Quando o usuário trouxer um desafio:
 - Permita que o usuário direcione a próxima rodada para um agente específico ou para o squad completo.
 
 Se um especialista produzir conteúdo final:
-- salve primeiro um draft `.md` em `output/{squad-slug}/drafts/{role-slug}/`
+- salve primeiro um draft `.md` em `output/{squad-slug}/`
 - depois o @orquestrador incorpora esse material no HTML final da sessão
 
 ## Entregavel HTML — gerar apos cada rodada de resposta (obrigatorio)
 
 Após cada rodada em que o squad responde a um desafio ou gera conteúdo,
-escreva um HTML completo em `output/{squad-slug}/sessions/{session-id}.html` com os **resultados da sessão**.
+escreva um HTML completo em `output/{squad-slug}/{session-id}.html` com os **resultados da sessão**.
 Depois atualize `output/{squad-slug}/latest.html` com o mesmo conteúdo.
 
 Stack: **Tailwind CSS CDN + Alpine.js CDN** — sem build, sem dependências externas.
@@ -282,9 +285,10 @@ Diretrizes de design:
 - Cada sessão deve ter seu próprio HTML; reescreva a sessão atual completa a cada rodada
 - Prefira `{session-id}` em formato timestamp, por exemplo `2026-03-06-153000-topico-principal`
 - `latest.html` deve sempre abrir a sessão mais recente rapidamente
+- Evite criar subpastas desnecessárias dentro de `output/{squad-slug}/`
 
 Após salvar o arquivo:
-> "Resultados salvos em `output/{squad-slug}/sessions/{session-id}.html` e `output/{squad-slug}/latest.html` — abra em qualquer navegador."
+> "Resultados salvos em `output/{squad-slug}/{session-id}.html` e `output/{squad-slug}/latest.html` — abra em qualquer navegador."
 
 ## Restricoes
 
@@ -294,18 +298,18 @@ Após salvar o arquivo:
 - NÃO ofereça `Modo Genoma` como etapa inicial do `@squad`.
 - Quando o usuário quiser genomas, encaminhe para `@genoma` como fluxo separado.
 - Agentes vão em `agents/{squad-slug}/`, HTML em `output/{squad-slug}/` — NÃO dentro de `.aios-lite/`.
-- Logs brutos vão apenas em `aios-logs/` na raiz do projeto — nunca dentro de `.aios-lite/`.
+- Logs brutos vão apenas em `aios-logs/{squad-slug}/` na raiz do projeto — nunca dentro de `.aios-lite/`.
 - `.aios-lite/context/` aceita somente arquivos `.md` — não escreva arquivos não-markdown lá.
-- NÃO pule o entregável HTML — gere `output/{squad-slug}/sessions/{session-id}.html` após cada rodada de resposta.
+- NÃO pule o entregável HTML — gere `output/{squad-slug}/{session-id}.html` após cada rodada de resposta.
 
 ## Contrato de output
 
 - Arquivos dos agentes: `agents/{squad-slug}/` (editáveis pelo usuário, invocáveis via `@`)
 - Metadados do squad: `.aios-lite/squads/{slug}.md`
-- HTMLs de sessão: `output/{squad-slug}/sessions/{session-id}.html`
+- HTMLs de sessão: `output/{squad-slug}/{session-id}.html`
 - Latest HTML: `output/{squad-slug}/latest.html`
-- Drafts `.md`: `output/{squad-slug}/drafts/{role-slug}/`
+- Drafts `.md`: `output/{squad-slug}/`
 - Genomas vinculados: `.aios-lite/squads/{slug}.md`
-- Logs: `aios-logs/squads/{squad-slug}/`
+- Logs: `aios-logs/{squad-slug}/`
 - CLAUDE.md: atualizado com atalhos `/agente`
 - AGENTS.md: atualizado com atalhos `@agente`

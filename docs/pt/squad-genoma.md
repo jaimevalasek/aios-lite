@@ -80,7 +80,7 @@ Mode: Squad
 Goal: Criar conteúdos virais com retenção forte
 Agents: agents/youtube-creator/
 Output: output/youtube-creator/
-Logs: aios-logs/squads/youtube-creator/
+Logs: aios-logs/youtube-creator/
 LatestSession: output/youtube-creator/latest.html
 
 Genomes:
@@ -172,7 +172,7 @@ O agente já deve operar com os genomas vinculados, sem o usuário repetir tudo.
 agents/{squad-slug}/
 output/{squad-slug}/
 .aios-lite/squads/{squad-slug}.md
-aios-logs/squads/{squad-slug}/
+aios-logs/{squad-slug}/
 ```
 
 ### Registro nos gateways
@@ -223,13 +223,9 @@ Exemplo:
 
 ```text
 output/youtube-creator/
-  drafts/
-    roteirista-viral/
-      2026-03-06-153000-roteiro.md
-    copywriter-thumbnail/
-      2026-03-06-153000-copy.md
-  sessions/
-    2026-03-06-153000-video-ingles.html
+  2026-03-06-153000-roteiro-roteirista-viral.md
+  2026-03-06-153000-copy-copywriter-thumbnail.md
+  2026-03-06-153000-video-ingles.html
   latest.html
 ```
 
@@ -300,6 +296,16 @@ Exemplo:
 O agente ainda responde na sessão.
 
 O HTML é o entregável persistido e organizado para consulta e cópia.
+
+### 6. Estrutura de pastas deve ser leve
+
+Prefira:
+
+- `agents/{squad-slug}/`
+- `output/{squad-slug}/`
+- `aios-logs/{squad-slug}/`
+
+Evite criar subpastas demais sem necessidade.
 
 ---
 
@@ -412,8 +418,8 @@ Na prática, os agentes continuam sendo arquivos reais em `agents/`. Os gateways
 
 Não. O ideal é:
 
-- especialista gera Markdown
-- orquestrador do squad gera HTML
+- especialista gera Markdown em `output/{squad-slug}/`
+- orquestrador do squad gera HTML em `output/{squad-slug}/`
 
 ### O HTML fica gigante?
 

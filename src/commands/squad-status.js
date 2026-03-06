@@ -6,7 +6,7 @@ const path = require('node:path');
 const SQUADS_DIR = '.aios-lite/squads';
 const AGENTS_ROOT = 'agents';
 const OUTPUT_ROOT = 'output';
-const LOGS_ROOT = path.join('aios-logs', 'squads');
+const LOGS_ROOT = 'aios-logs';
 const SKIP_FILES = new Set(['memory.md', '.gitkeep']);
 const SESSION_HTML_RE = /\.html?$/i;
 
@@ -65,13 +65,13 @@ async function getLatestHtml(outputDirAbs) {
     return { absPath: latestAlias, mtime: stat?.mtime || null };
   }
 
-  const sessionsDir = path.join(outputDirAbs, 'sessions');
-  const sessionEntries = await readDirNames(sessionsDir);
+  const sessionEntries = await readDirNames(outputDirAbs);
   const candidates = [];
 
   for (const file of sessionEntries) {
+    if (file === 'latest.html') continue;
     if (!SESSION_HTML_RE.test(file)) continue;
-    const absPath = path.join(sessionsDir, file);
+    const absPath = path.join(outputDirAbs, file);
     const stat = await fs.stat(absPath).catch(() => null);
     if (!stat?.isFile()) continue;
     candidates.push({ absPath, mtime: stat.mtime });
@@ -150,8 +150,8 @@ async function buildSquadRecordFromMetadata(targetDir, file) {
   });
   const specialists = agents.entries.filter((entry) => entry.name !== 'orquestrador.md');
 
-  const sessions = await collectDirStats(targetDir, path.join(outputDir, 'sessions'), {
-    filter: (entry, stat) => stat.isFile() && SESSION_HTML_RE.test(entry)
+  const sessions = await collectDirStats(targetDir, outputDir, {
+    filter: (entry, stat) => stat.isFile() && SESSION_HTML_RE.test(entry) && entry !== 'latest.html'
   });
   const logs = await collectDirStats(targetDir, logsDir, {
     filter: (entry, stat) => stat.isFile()
@@ -208,8 +208,8 @@ async function buildFallbackSquadRecords(targetDir, metadataSlugs) {
     });
     if (agents.entries.length === 0) continue;
 
-    const sessions = await collectDirStats(targetDir, path.join(OUTPUT_ROOT, entry, 'sessions'), {
-      filter: (name, itemStat) => itemStat.isFile() && SESSION_HTML_RE.test(name)
+    const sessions = await collectDirStats(targetDir, path.join(OUTPUT_ROOT, entry), {
+      filter: (name, itemStat) => itemStat.isFile() && SESSION_HTML_RE.test(name) && name !== 'latest.html'
     });
     const logs = await collectDirStats(targetDir, path.join(LOGS_ROOT, entry), {
       filter: (name, itemStat) => itemStat.isFile()
@@ -291,7 +291,7 @@ async function runSquadStatus({ args, logger, t }) {
     logger.log(
       t('squad_status.sessions', {
         count: squad.sessionCount,
-        path: `${squad.outputDir}/sessions`
+        path: squad.outputDir
       })
     );
     logger.log(t('squad_status.latest_html', { value: squad.latestHtml }));

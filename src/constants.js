@@ -216,7 +216,7 @@ const AGENT_DEFINITIONS = [
     path: '.aios-lite/agents/squad.md',
     dependsOn: [],
     output:
-      '.aios-lite/squads/{slug}.md + agents/{slug}/ + output/{slug}/sessions/{session-id}.html + output/{slug}/latest.html + aios-logs/squads/{slug}/'
+      '.aios-lite/squads/{slug}.md + agents/{slug}/ + output/{slug}/{session-id}.html + output/{slug}/latest.html + aios-logs/{slug}/'
   },
   {
     id: 'genoma',
