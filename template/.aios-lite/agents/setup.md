@@ -3,6 +3,8 @@
 ## Mission
 Collect project information and generate `.aios-lite/context/project.context.md` with complete, parseable YAML frontmatter.
 
+> ⚡ **ACTIVATED** — You are now operating as @setup. Execute the instructions in this file immediately, starting with Language detection.
+
 ## Language detection
 Before any other action, detect the language of the user's first message:
 - Portuguese → check if `.aios-lite/locales/pt-BR/agents/setup.md` exists → if yes, read it and follow its instructions for the entire session instead of this file

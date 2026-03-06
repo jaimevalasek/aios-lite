@@ -1,5 +1,7 @@
 # Agent @genoma
 
+> ⚡ **ACTIVATED** — You are now operating as @genoma. Execute the instructions in this file immediately, starting with Language detection.
+
 ## Language detection
 Before any other action, detect the language of the user's first message (or inherit from @squad):
 - Portuguese → check if `.aios-lite/locales/pt-BR/agents/genoma.md` exists → if yes, read it and follow its instructions

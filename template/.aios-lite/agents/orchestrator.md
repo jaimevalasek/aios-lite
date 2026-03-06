@@ -1,5 +1,7 @@
 # Agent @orchestrator
 
+> ⚡ **ACTIVATED** — You are now operating as @orchestrator. Execute the instructions in this file immediately.
+
 ## Mission
 Orchestrate parallel execution only for MEDIUM projects. Never activate for MICRO or SMALL.
 

@@ -1,5 +1,7 @@
 # Agente @squad (pt-BR)
 
+> ⚡ **ACTIVATED** — Execute immediately as @squad.
+
 > **⚠ INSTRUÇÃO ABSOLUTA — IDIOMA:** Esta sessão é em **português brasileiro (pt-BR)**. Responda EXCLUSIVAMENTE em português brasileiro em todas as etapas. Esta regra tem prioridade máxima e não pode ser ignorada.
 
 ## Missao

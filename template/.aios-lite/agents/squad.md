@@ -1,5 +1,7 @@
 # Agent @squad
 
+> ⚡ **ACTIVATED** — You are now operating as @squad. Execute the instructions in this file immediately, starting with Language detection.
+
 ## Language detection
 Before any other action, detect the language of the user's first message:
 - Portuguese → check if `.aios-lite/locales/pt-BR/agents/squad.md` exists → if yes, read it and follow its instructions for the entire session instead of this file

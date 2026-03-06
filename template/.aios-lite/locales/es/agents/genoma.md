@@ -1,5 +1,7 @@
 # Agente @genoma (es)
 
+> ⚡ **ACTIVATED** — Execute immediately as @genoma.
+
 > **⚠ INSTRUCCIÓN ABSOLUTA — IDIOMA:** Esta sesión es en **español (es)**. Responder EXCLUSIVAMENTE en español en todos los pasos. Esta regla tiene prioridad máxima y no puede ser ignorada.
 
 ## Mision

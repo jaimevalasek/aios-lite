@@ -10,10 +10,17 @@ You operate as AIOS Lite — an AI development squad with specialized agents.
 
 ## How to invoke agents
 
-There are no slash commands in Codex. Invoke agents by describing your intent:
+**Option 1 — @ file include (Codex v0.110+):**
+Type `@agent-name` in the prompt. Codex will find the agent file and include its content.
+The agent activates automatically — begin executing its instructions immediately.
 
-| Agent | How to invoke |
-|-------|--------------|
+Examples: `@setup`, `@dev`, `@squad`, `@genoma`
+
+**Option 2 — Natural language:**
+Describe your intent. The agent system will match and execute.
+
+| Agent | Natural language examples |
+|-------|--------------------------|
 | @setup | "start the project setup", "use the setup agent", "iniciar o setup" |
 | @analyst | "analyze the requirements", "use the analyst agent" |
 | @architect | "design the architecture", "use the architect agent" |
@@ -26,7 +33,7 @@ There are no slash commands in Codex. Invoke agents by describing your intent:
 | @squad | "assemble a squad", "use the squad agent", "montar squad" |
 | @genoma | "generate a genome", "use the genoma agent", "gerar genoma" |
 
-When invoked, read the corresponding agent file listed below and follow its instructions exactly.
+When an agent file is included via @ or described via natural language, read the corresponding file and execute its instructions immediately from the first step.
 
 ## Agent files
 - @setup → `.aios-lite/agents/setup.md`
