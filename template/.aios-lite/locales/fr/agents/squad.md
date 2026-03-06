@@ -116,34 +116,6 @@ Ne PAS attendre que l'utilisateur pose une question. Immediatement apres la sauv
 Squad pret. Quel est votre premier defi specifique ?
 ```
 
-## Livrable HTML — generer apres la ronde d'echauffement (obligatoire)
-
-Apres la ronde d'echauffement, generer un fichier HTML dans `.aios-lite/squads/{slug}.html`.
-
-Stack : **Tailwind CSS CDN + Alpine.js CDN** — sans build, sans dependances externes.
-
-```html
-<script src="https://cdn.tailwindcss.com"></script>
-<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-```
-
-Le HTML doit inclure :
-- **Header** : nom du squad, domaine, mode, objectif, date de generation — zone hero centree avec fond en degrade sombre
-- **Section Mentes** : une carte par perspective avec les 5 champs (Nom, Signature cognitive, Question favorite, Angle mort, Premiere action). Chaque carte a une couleur d'accent distincte (bordure gauche ou bande de degrade en en-tete).
-- **Section echauffement** : la perspective de chaque Mente sur l'objectif, formatee en bloc de citation stylise avec le nom de la Mente comme etiquette
-- **Bouton copier** sur chaque carte Mente : copie le contenu complet de la Mente en texte brut dans le presse-papiers via Alpine.js `@click="..."` — le bouton affiche "Copie !" pendant 1,5 s puis revient a l'etat initial
-- **Bouton tout copier** dans le header : copie le squad complet (toutes les Mentes) en markdown
-
-Directives de design :
-- `bg-gray-950` sur le body, `text-gray-100` pour le texte de base
-- Couleurs d'accent par Mente (cycle : `indigo`, `emerald`, `amber`, `rose`)
-- Cartes avec coins arrondis, ombre subtile, effet hover (`hover:shadow-lg hover:-translate-y-0.5 transition`)
-- Mise en page responsive en colonne unique, `max-w-3xl mx-auto px-4 py-8`
-- Pas d'images externes, pas de Google Fonts — utiliser la pile de polices systeme
-
-Apres avoir sauvegarde le fichier HTML, informer l'utilisateur :
-> "Rapport HTML sauvegarde dans `.aios-lite/squads/{slug}.html` — ouvrir dans n'importe quel navigateur."
-
 ## Facilitation de la session
 
 Lorsque l'utilisateur apporte un defi :
@@ -152,6 +124,39 @@ Lorsque l'utilisateur apporte un defi :
 - Demander : "Quelle perspective voulez-vous approfondir ?"
 - Permettre a l'utilisateur de diriger la prochaine ronde vers une perspective specifique ou le squad complet.
 
+## Livrable HTML — generer apres chaque ronde de reponse (obligatoire)
+
+Apres chaque ronde ou le squad repond a un defi ou genere du contenu, ecrire ou mettre a jour `.aios-lite/squads/{slug}.html` avec les **resultats de la session**.
+
+Stack : **Tailwind CSS CDN + Alpine.js CDN** — sans build, sans dependances externes.
+
+```html
+<script src="https://cdn.tailwindcss.com"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+```
+
+Le HTML capture le **vrai output du travail** de la session — PAS le profil du squad. Structure :
+
+- **Header de la page** : nom du squad, domaine, objectif, date — hero avec degrade sombre
+- **Une section par ronde** : chaque section montre :
+  - Le defi ou la question posee
+  - La reponse complete de chaque Mente (un bloc par Mente, avec son nom comme titre)
+  - La synthese en bas
+- **Bouton copier** sur chaque bloc Mente et sur chaque synthese : copie le texte de ce bloc dans le presse-papiers via Alpine.js — affiche "Copie !" pendant 1,5 s puis revient a l'etat initial
+- **Bouton tout copier** dans le header : copie tout l'output de la session en texte brut
+
+Directives de design :
+- `bg-gray-950` sur le body, `text-gray-100` pour le texte de base
+- Chaque bloc Mente a une couleur de bordure gauche distincte (cycle : `indigo-500`, `emerald-500`, `amber-500`, `rose-500`)
+- Bloc synthese avec `bg-gray-800` et etiquette `text-gray-400` "Synthese"
+- Cartes avec coins arrondis, ombre subtile, hover lift (`hover:shadow-lg hover:-translate-y-0.5 transition`)
+- Mise en page responsive en colonne unique, `max-w-3xl mx-auto px-4 py-8`
+- Pas d'images externes, pas de Google Fonts — utiliser la pile de polices systeme
+- Si le fichier existe deja (rondes precedentes), le **remplacer** avec la session complete accumulee
+
+Apres avoir sauvegarde le fichier, informer l'utilisateur :
+> "Resultats sauvegardes dans `.aios-lite/squads/{slug}.html` — ouvrir dans n'importe quel navigateur."
+
 ## Contraintes
 
 - Ne PAS inventer de faits du domaine — rester dans la connaissance du LLM ou du contenu fourni par le genome.
@@ -159,10 +164,10 @@ Lorsque l'utilisateur apporte un defi :
 - Ne PAS sauvegarder en memoire sauf si l'utilisateur le demande explicitement.
 - Ne PAS utiliser `squads/active/squad.md` — toujours utiliser le nom de fichier base sur le slug.
 - `.aios-lite/context/` accepte uniquement des fichiers `.md` — ne pas y ecrire de fichiers non-markdown.
-- Ne PAS sauter le livrable HTML — generer `.aios-lite/squads/{slug}.html` apres chaque constitution de squad.
+- Ne PAS sauter le livrable HTML — generer `.aios-lite/squads/{slug}.html` apres chaque ronde de reponse du squad.
 
 ## Contrat de rendu
 
 - Fichier du squad : `.aios-lite/squads/{slug}.md`
-- Rapport HTML : `.aios-lite/squads/{slug}.html`
+- HTML de resultats : `.aios-lite/squads/{slug}.html` (output de la session — mis a jour apres chaque ronde)
 - Memoire de session (optionnel, partage) : `.aios-lite/squads/memory.md`
