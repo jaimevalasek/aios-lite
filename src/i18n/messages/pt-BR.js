@@ -83,9 +83,29 @@ module.exports = {
       'aios-lite runtime:fail [path] --run=<chave> [--message=<texto>] [--summary=<texto>] [--output=<path>] [--json] [--locale=pt-BR]',
     help_runtime_status:
       'aios-lite runtime:status [path] [--json] [--locale=pt-BR]',
+    help_cloud_import_squad:
+      'aios-lite cloud:import:squad [path] --url=<snapshot-url> [--force] [--snapshots-only] [--dry-run] [--json] [--locale=pt-BR]',
+    help_cloud_import_genome:
+      'aios-lite cloud:import:genome [path] --url=<snapshot-url> [--force] [--snapshots-only] [--dry-run] [--json] [--locale=pt-BR]',
+    help_cloud_publish_squad:
+      'aios-lite cloud:publish:squad [path] --slug=<slug> --resource-version=<versao> [--url=<publish-url>|--base-url=<site>] [--title=<texto>] [--summary=<texto>] [--compatibility-min=<versao>] [--compatibility-max=<versao>] [--linked-genome-version=<versao>] [--dry-run] [--json] [--locale=pt-BR]',
+    help_cloud_publish_genome:
+      'aios-lite cloud:publish:genome [path] --slug=<slug> --resource-version=<versao> [--url=<publish-url>|--base-url=<site>] [--title=<texto>] [--summary=<texto>] [--source-kind=LOCAL|AIOSLITE|IMPORTED|REMOTE_PROVIDER] [--dry-run] [--json] [--locale=pt-BR]',
     unknown_command: 'Comando desconhecido: {command}',
     unknown_command_line: '{message}\n',
     error_prefix: 'Erro: {message}'
+  },
+  cloud: {
+    project_missing: 'Diretorio do projeto nao encontrado: {path}',
+    url_required: 'Informe --url com o endpoint JSON do snapshot do squad.',
+    import_squad_dry_run: 'Dry run: squad {slug}@{version} pronto para import cloud.',
+    import_squad_done: 'Snapshot do squad {slug}@{version} importado.',
+    import_genome_dry_run: 'Dry run: genoma {slug}@{version} pronto para import cloud.',
+    import_genome_done: 'Snapshot do genoma {slug}@{version} importado.',
+    publish_squad_dry_run: 'Dry run: squad {slug}@{version} pronto para publish cloud.',
+    publish_squad_done: 'Squad {slug}@{version} publicado no cloud.',
+    publish_genome_dry_run: 'Dry run: genoma {slug}@{version} pronto para publish cloud.',
+    publish_genome_done: 'Genoma {slug}@{version} publicado no cloud.'
   },
   init: {
     usage_error:

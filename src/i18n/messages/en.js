@@ -81,9 +81,29 @@ module.exports = {
       'aios-lite runtime:fail [path] --run=<key> [--message=<text>] [--summary=<text>] [--output=<path>] [--json] [--locale=en]',
     help_runtime_status:
       'aios-lite runtime:status [path] [--json] [--locale=en]',
+    help_cloud_import_squad:
+      'aios-lite cloud:import:squad [path] --url=<snapshot-url> [--force] [--snapshots-only] [--dry-run] [--json] [--locale=en]',
+    help_cloud_import_genome:
+      'aios-lite cloud:import:genome [path] --url=<snapshot-url> [--force] [--snapshots-only] [--dry-run] [--json] [--locale=en]',
+    help_cloud_publish_squad:
+      'aios-lite cloud:publish:squad [path] --slug=<slug> --resource-version=<version> [--url=<publish-url>|--base-url=<site>] [--title=<text>] [--summary=<text>] [--compatibility-min=<version>] [--compatibility-max=<version>] [--linked-genome-version=<version>] [--dry-run] [--json] [--locale=en]',
+    help_cloud_publish_genome:
+      'aios-lite cloud:publish:genome [path] --slug=<slug> --resource-version=<version> [--url=<publish-url>|--base-url=<site>] [--title=<text>] [--summary=<text>] [--source-kind=LOCAL|AIOSLITE|IMPORTED|REMOTE_PROVIDER] [--dry-run] [--json] [--locale=en]',
     unknown_command: 'Unknown command: {command}',
     unknown_command_line: '{message}\n',
     error_prefix: 'Error: {message}'
+  },
+  cloud: {
+    project_missing: 'Project directory not found: {path}',
+    url_required: 'Provide --url with the squad snapshot JSON endpoint.',
+    import_squad_dry_run: 'Dry run: squad {slug}@{version} ready for cloud import.',
+    import_squad_done: 'Imported squad snapshot {slug}@{version}.',
+    import_genome_dry_run: 'Dry run: genome {slug}@{version} ready for cloud import.',
+    import_genome_done: 'Imported genome snapshot {slug}@{version}.',
+    publish_squad_dry_run: 'Dry run: squad {slug}@{version} ready for cloud publish.',
+    publish_squad_done: 'Published squad {slug}@{version} to the cloud.',
+    publish_genome_dry_run: 'Dry run: genome {slug}@{version} ready for cloud publish.',
+    publish_genome_done: 'Published genome {slug}@{version} to the cloud.'
   },
   init: {
     usage_error:

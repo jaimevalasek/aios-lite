@@ -48,6 +48,12 @@ const {
   runRuntimeFail,
   runRuntimeStatus
 } = require('./commands/runtime');
+const {
+  runCloudImportSquad,
+  runCloudImportGenome,
+  runCloudPublishGenome,
+  runCloudPublishSquad
+} = require('./commands/cloud');
 
 const JSON_SUPPORTED_COMMANDS = new Set([
   'init',
@@ -135,6 +141,14 @@ const JSON_SUPPORTED_COMMANDS = new Set([
   'runtime-fail',
   'runtime:status',
   'runtime-status',
+  'cloud:import:squad',
+  'cloud-import-squad',
+  'cloud:import:genome',
+  'cloud-import-genome',
+  'cloud:publish:squad',
+  'cloud-publish-squad',
+  'cloud:publish:genome',
+  'cloud-publish-genome',
   'version',
   '--version',
   '-v'
@@ -212,6 +226,10 @@ function printHelp(t, logger) {
   logHelpLine(t, logger, 'cli.help_runtime_task_fail');
   logHelpLine(t, logger, 'cli.help_runtime_fail');
   logHelpLine(t, logger, 'cli.help_runtime_status');
+  logHelpLine(t, logger, 'cli.help_cloud_import_squad');
+  logHelpLine(t, logger, 'cli.help_cloud_import_genome');
+  logHelpLine(t, logger, 'cli.help_cloud_publish_squad');
+  logHelpLine(t, logger, 'cli.help_cloud_publish_genome');
 }
 
 function commandSupportsJson(command) {
@@ -353,6 +371,14 @@ async function main() {
       result = await runRuntimeFail({ args, options, logger: commandLogger, t });
     } else if (command === 'runtime:status' || command === 'runtime-status') {
       result = await runRuntimeStatus({ args, options, logger: commandLogger, t });
+    } else if (command === 'cloud:import:squad' || command === 'cloud-import-squad') {
+      result = await runCloudImportSquad({ args, options, logger: commandLogger, t });
+    } else if (command === 'cloud:import:genome' || command === 'cloud-import-genome') {
+      result = await runCloudImportGenome({ args, options, logger: commandLogger, t });
+    } else if (command === 'cloud:publish:squad' || command === 'cloud-publish-squad') {
+      result = await runCloudPublishSquad({ args, options, logger: commandLogger, t });
+    } else if (command === 'cloud:publish:genome' || command === 'cloud-publish-genome') {
+      result = await runCloudPublishGenome({ args, options, logger: commandLogger, t });
     } else {
       const message = t('cli.unknown_command', { command });
       if (jsonMode) {

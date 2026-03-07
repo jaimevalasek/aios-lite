@@ -31,6 +31,75 @@ function runCli(args, cwd = process.cwd()) {
   });
 }
 
+function createSquadSnapshot() {
+  return {
+    kind: 'aioslite.squad',
+    exportVersion: 1,
+    squad: {
+      id: 'sq_123',
+      name: 'YouTube Creator',
+      slug: 'youtube-creator',
+      description: 'Squad para roteiros e assets.',
+      goal: 'Criar conteudo de video.',
+      visibility: 'FREE',
+      status: 'PUBLISHED',
+      ownerUsername: 'jaime',
+      projectName: 'YT Lab'
+    },
+    version: {
+      id: 'sv_123',
+      versionNumber: '1.0.0',
+      versionCode: 1,
+      title: 'Initial release',
+      summary: 'Primeiro snapshot',
+      changeLog: null,
+      compatibilityMin: '1.1.1',
+      compatibilityMax: '1.x',
+      schemaVersion: '1',
+      sourceType: 'dashboard_publish',
+      isCurrent: true,
+      createdAt: new Date().toISOString(),
+      manifestJson: null,
+      agentsManifestJson: null,
+      genomesManifestJson: null
+    },
+    appliedGenomes: []
+  };
+}
+
+function createGenomeSnapshot() {
+  return {
+    kind: 'aioslite.genome',
+    exportVersion: 1,
+    genome: {
+      id: 'gn_cloud_1',
+      name: 'Storytelling BR',
+      slug: 'storytelling-br',
+      description: 'Genoma para storytelling em portugues.',
+      visibility: 'FREE',
+      status: 'PUBLISHED',
+      sourceKind: 'AIOSLITE',
+      ownerUsername: 'jaime'
+    },
+    version: {
+      id: 'gv_cloud_1',
+      versionNumber: '2.0.0',
+      versionCode: 2,
+      title: 'Refined',
+      summary: 'Heuristicas refinadas',
+      schemaVersion: '1',
+      isCurrent: true,
+      createdAt: new Date().toISOString(),
+      contentMarkdown: '# O que saber\n\n- Ritmo\n- Gancho\n- Retencao',
+      manifestJson: null
+    }
+  };
+}
+
+function createDataUrl(payload) {
+  return `data:application/json,${encodeURIComponent(JSON.stringify(payload))}`;
+}
+
 test('info --json returns structured payload', async () => {
   const dir = await makeTempDir();
   const cli = await runCli(['info', dir, '--json']);
@@ -120,6 +189,110 @@ test('dashboard:init --dry-run --json returns structured payload without human l
   assert.equal(parsed.dryRun, true);
   assert.equal(parsed.dashboardDir, path.resolve(dashboardDir));
   assert.equal(parsed.repo, 'https://example.com/aios-lite-dashboard.git');
+});
+
+test('cloud:import:squad --dry-run --json returns structured payload without human logs', async () => {
+  const dir = await makeTempDir();
+  const snapshot = createSquadSnapshot();
+  const url = createDataUrl(snapshot);
+  const cli = await runCli(['cloud:import:squad', dir, `--url=${url}`, '--dry-run', '--json']);
+  assert.equal(cli.code, 0);
+  assert.equal(cli.stderr.trim(), '');
+  const parsed = JSON.parse(cli.stdout);
+  assert.equal(parsed.ok, true);
+  assert.equal(parsed.resource, 'squad');
+  assert.equal(parsed.slug, 'youtube-creator');
+  assert.equal(parsed.versionNumber, '1.0.0');
+  assert.equal(parsed.dryRun, true);
+});
+
+test('cloud:import:genome --dry-run --json returns structured payload without human logs', async () => {
+  const dir = await makeTempDir();
+  const snapshot = createGenomeSnapshot();
+  const url = createDataUrl(snapshot);
+  const cli = await runCli(['cloud:import:genome', dir, `--url=${url}`, '--dry-run', '--json']);
+  assert.equal(cli.code, 0);
+  assert.equal(cli.stderr.trim(), '');
+  const parsed = JSON.parse(cli.stdout);
+  assert.equal(parsed.ok, true);
+  assert.equal(parsed.resource, 'genome');
+  assert.equal(parsed.slug, 'storytelling-br');
+  assert.equal(parsed.versionNumber, '2.0.0');
+  assert.equal(parsed.dryRun, true);
+});
+
+test('cloud:publish:genome --dry-run --json returns structured payload without human logs', async () => {
+  const dir = await makeTempDir();
+  const genomeDir = path.join(dir, '.aios-lite', 'genomas');
+  await fs.mkdir(genomeDir, { recursive: true });
+  await fs.writeFile(path.join(genomeDir, 'storytelling-br.md'), '# Storytelling BR\n\nHeuristicas.\n', 'utf8');
+
+  const cli = await runCli([
+    'cloud:publish:genome',
+    dir,
+    '--slug=storytelling-br',
+    '--resource-version=2.0.0',
+    '--base-url=https://aioslite.com',
+    '--dry-run',
+    '--json'
+  ]);
+  assert.equal(cli.code, 0);
+  assert.equal(cli.stderr.trim(), '');
+  const parsed = JSON.parse(cli.stdout);
+  assert.equal(parsed.ok, true);
+  assert.equal(parsed.resource, 'genome');
+  assert.equal(parsed.slug, 'storytelling-br');
+  assert.equal(parsed.versionNumber, '2.0.0');
+  assert.equal(parsed.dryRun, true);
+});
+
+test('cloud:publish:squad --dry-run --json returns structured payload without human logs', async () => {
+  const dir = await makeTempDir();
+  await fs.mkdir(path.join(dir, '.aios-lite', 'squads'), { recursive: true });
+  await fs.mkdir(path.join(dir, '.aios-lite', 'genomas'), { recursive: true });
+  await fs.mkdir(path.join(dir, 'agents', 'youtube-creator'), { recursive: true });
+
+  await fs.writeFile(
+    path.join(dir, '.aios-lite', 'squads', 'youtube-creator.md'),
+    [
+      'Squad: YouTube Creator',
+      'Goal: Criar roteiros e assets',
+      'Agents: agents/youtube-creator/',
+      '',
+      'Genomes:',
+      '- .aios-lite/genomas/storytelling-retencao.md',
+      ''
+    ].join('\n'),
+    'utf8'
+  );
+  await fs.writeFile(
+    path.join(dir, 'agents', 'youtube-creator', 'orquestrador.md'),
+    '# Orquestrador\n\nCoordena o squad.\n',
+    'utf8'
+  );
+  await fs.writeFile(
+    path.join(dir, '.aios-lite', 'genomas', 'storytelling-retencao.md'),
+    '# Storytelling Retencao\n\nGancho e retencao.\n',
+    'utf8'
+  );
+
+  const cli = await runCli([
+    'cloud:publish:squad',
+    dir,
+    '--slug=youtube-creator',
+    '--resource-version=1.0.0',
+    '--base-url=https://aioslite.com',
+    '--dry-run',
+    '--json'
+  ]);
+  assert.equal(cli.code, 0);
+  assert.equal(cli.stderr.trim(), '');
+  const parsed = JSON.parse(cli.stdout);
+  assert.equal(parsed.ok, true);
+  assert.equal(parsed.resource, 'squad');
+  assert.equal(parsed.slug, 'youtube-creator');
+  assert.equal(parsed.versionNumber, '1.0.0');
+  assert.equal(parsed.dryRun, true);
 });
 
 test('locale:apply --json returns structured payload without human logs', async () => {
