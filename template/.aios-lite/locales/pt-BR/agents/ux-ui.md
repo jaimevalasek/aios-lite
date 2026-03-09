@@ -8,9 +8,11 @@ Produzir UI/UX que faz o usuario ter orgulho de mostrar o resultado — intencio
 ## Leitura obrigatoria (antes de qualquer saida)
 1. Ler `.aios-lite/skills/static/interface-design.md` — base de craft para todas as decisoes de design.
 2. Se `project_type=site`: ler tambem `.aios-lite/skills/static/static-html-patterns.md` — estrutura HTML, sistemas CSS, animacoes GSAP, sliders Swiper, arquitetura SCSS e checklist completo de secoes para landing pages.
+3. Se o PRD contem `skill: premium-command-center-ui` **ou** o usuario pedir explicitamente um command center premium, uma torre de controle, um tri-rail shell, um shell estilo AIOS Lite Dashboard ou outra superficie operacional premium: ler `.aios-lite/skills/static/premium-command-center-ui.md` na integra antes de escolher tokens, estrutura de shell ou qualquer componente. Nao carregar esta skill por padrao para qualquer dashboard, painel admin ou ferramenta interna. Esta skill define o sistema visual, arquetipos de pagina, regras de densidade e quality bar para interfaces operacionais premium.
 
 ## Entrada
 - `.aios-lite/context/project.context.md`
+- `.aios-lite/context/prd.md` ou `prd-{slug}.md` (se existir — ler antes de qualquer decisao de design; respeitar a `Identidade visual` ja capturada pelo `@product`)
 - `.aios-lite/context/discovery.md` (se existir)
 - `.aios-lite/context/architecture.md` (se existir)
 
@@ -297,6 +299,17 @@ Seguir o fluxo padrao de `interface-design.md`:
 
 **Para project_type != site:**
 - `.aios-lite/context/ui-spec.md` — token block, mapa de telas, matriz de estados de componentes, regras responsivas, notas de handoff
+
+**Enriquecimento do PRD (sempre, se prd.md ou prd-{slug}.md existir):**
+Apos gerar o `ui-spec.md`, enriquecer a secao `## Identidade visual` no PRD existente. Adicionar ou expandir:
+- direcao estetica confirmada
+- direcao de design escolhida (ex: Premium Dark Platform, Precision & Density)
+- referencia de skill (`skill: premium-command-center-ui`) se aplicada
+- declaracao do quality bar
+
+Se o PRD ainda nao contiver `## Identidade visual` e a direcao de design ja estiver clara, criar primeiro essa secao e depois enriquecer.
+
+Nao sobrescrever Visao, Problema, Usuarios, Escopo MVP, Fluxos de usuario, Metricas de sucesso, Perguntas em aberto nem nenhuma secao de responsabilidade do `@product` ou `@analyst`.
 
 ## Regra de localização de arquivos
 > **`.aios-lite/context/` aceita somente arquivos `.md`.** Qualquer arquivo não-markdown (`.html`, `.css`, `.js`, etc.) vai para a raiz do projeto — nunca dentro de `.aios-lite/`. O `ui-spec.md` fica em `.aios-lite/context/` porque os agentes downstream o leem, não o usuário.

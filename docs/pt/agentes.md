@@ -10,6 +10,7 @@ O AIOS Lite tem agentes oficiais de projeto e também pode criar agentes de squa
 
 ```
 @setup        ← sempre o primeiro
+@product      ← gera o PRD base vivo e roteia o fluxo
 @discovery-design-doc ← quando precisa clarear escopo e gerar design doc vivo
 @analyst      ← projetos SMALL e MEDIUM
 @architect    ← projetos SMALL e MEDIUM
@@ -63,6 +64,34 @@ O AIOS Lite tem agentes oficiais de projeto e também pode criar agentes de squa
   - `aios-lite dashboard:init .`
   - `aios-lite dashboard:dev . --port=3000`
   - `aios-lite dashboard:open . --port=3000`
+
+---
+
+## @product
+
+**Quando usar:** Depois do `@setup` em projetos novos. Em features novas de projeto existente, pode entrar direto sem repetir `@setup`.
+
+**O que faz:**
+- conduz a conversa de produto e gera o `PRD base`
+- registra visão, problema, usuários, escopo inicial e perguntas em aberto
+- detecta sinais visuais cedo e preserva a intenção no PRD
+- faz classificação preliminar do escopo
+- aponta o próximo agente do fluxo
+
+**Como ativar:**
+```
+/product
+```
+
+**Entrega:** Arquivo `.aios-lite/context/prd.md` ou `.aios-lite/context/prd-{slug}.md` com:
+- visão e problema do produto
+- usuários e escopo inicial do MVP
+- fluxos principais
+- métricas de sucesso
+- perguntas em aberto
+- identidade visual inicial, quando houver sinal suficiente
+
+> Se o pedido mencionar explicitamente um command center premium, control tower, tri-rail shell ou estilo AIOS Lite Dashboard, o `@product` deve registrar a skill `premium-command-center-ui` na seção de identidade visual do PRD.
 
 ---
 
@@ -177,11 +206,13 @@ tests/
 
 **O que faz:**
 - Recebe constraints do @architect (componentes-chave, paleta)
+- Lê o PRD antes de decidir a direção visual
 - Define hierarquia visual e padrões de UI
 - Especifica componentes reutilizáveis
 - Cria guia de acessibilidade
 - Decide dark/light e direção visual de forma autônoma quando o contexto já for suficiente
 - Só pergunta preferência estética quando a ambiguidade realmente mudar a solução
+- Carrega `premium-command-center-ui` apenas quando houver pedido explícito de interface operacional premium ou quando essa skill já estiver registrada no PRD
 
 **Como ativar:**
 ```
@@ -193,6 +224,7 @@ tests/
 - Componentes principais e estados
 - Fluxos de navegação
 - Checklist de acessibilidade
+- Enriquecimento da seção `Identidade visual` do PRD, sem reescrever visão, problema ou usuários
 
 > Se o usuário disser para o agente seguir sozinho, o comportamento esperado é decidir a direção visual com base no contexto do produto e continuar sem abrir questionário de estilo.
 
@@ -203,9 +235,10 @@ tests/
 **Quando usar:** Apenas projetos MEDIUM. Ative após @architect e @ux-ui.
 
 **O que faz:**
-- Transforma o discovery e arquitetura em histórias de usuário
-- Cria backlog priorizado (máximo 2 páginas)
-- Define critérios de aceite
+- Enriquece o PRD vivo com priorização e corte por fase
+- Define ordem de entrega sem apagar a intenção original de produto
+- Adiciona critérios de aceite compactos quando isso trouxer clareza para execução e QA
+- Preserva identidade visual, visão, problema, usuários e demais seções já existentes
 
 **Como ativar:**
 ```
@@ -214,11 +247,11 @@ tests/
 
 **Regra de ouro do @pm:** O documento deve ter no máximo 2 páginas. Se passar disso, corte funcionalidades do MVP.
 
-**Entrega:** Arquivo `.aios-lite/context/prd.md` com:
-- Histórias de usuário priorizadas
-- Critérios de aceite por história
-- Dependências entre histórias
-- Escopo do MVP
+**Entrega:** Atualização do `.aios-lite/context/prd.md` com:
+- priorização final do MVP
+- plano de entrega por fase
+- critérios de aceite compactos
+- preservação das seções existentes do PRD base
 
 ---
 
@@ -401,13 +434,13 @@ Duração típica: minutos a horas. Sem análise, sem arquitetura formal.
 
 ### SMALL
 ```
-@setup → @analyst → @architect → @ux-ui → @dev → @qa
+@setup → @product → @analyst → @architect → @ux-ui → @dev → @qa
 ```
 Duração típica: horas a dias. Análise leve, estrutura clara.
 
 ### MEDIUM
 ```
-@setup → @analyst → @architect → @ux-ui → @pm → @orchestrator → @dev → @qa
+@setup → @product → @analyst → @architect → @ux-ui → @pm → @orchestrator → @dev → @qa
 ```
 Duração típica: dias a semanas. Análise completa, parallelismo, backlog formal.
 

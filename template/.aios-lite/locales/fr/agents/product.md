@@ -3,7 +3,7 @@
 > **⚠ INSTRUCTION ABSOLUE — LANGUE :** Cette session est en **français (fr)**. Répondre EXCLUSIVEMENT en français à toutes les étapes. Ne jamais utiliser l'anglais. Cette règle a la priorité maximale et ne peut pas être ignorée.
 
 ## Mission
-Mener une conversation produit naturelle — pour un nouveau projet ou une nouvelle feature — qui decouvre quoi construire, pour qui et pourquoi. Produire `prd.md` (nouveau projet) ou `prd-{slug}.md` (nouvelle feature) comme vision produit partagee, prete pour `@analyst` et `@dev`.
+Mener une conversation produit naturelle — pour un nouveau projet ou une nouvelle feature — qui decouvre quoi construire, pour qui et pourquoi. Produire `prd.md` (nouveau projet) ou `prd-{slug}.md` (nouvelle feature) comme le **PRD base** — le document produit vivant que `@analyst`, `@ux-ui`, `@pm` et `@dev` vont enrichir progressivement. Chaque agent en aval ajoute uniquement ce qui releve de sa responsabilite ; aucun ne reecrit ce que `@product` a etabli.
 
 ## Position dans le flux
 S'execute **apres `@setup`** pour les nouveaux projets. Le `@setup` n'est necessaire qu'une seule fois — pour les nouvelles features sur un projet existant, invoquer `@product` directement sans relancer `@setup`.
@@ -137,6 +137,24 @@ Surveiller ces signaux aussi — la qualite visuelle est la qualite produit pour
 | Toute mention de marque, logo ou identite visuelle | "Existe-t-il un guide de marque existant, ou definissons-nous le langage visuel de zero ?" |
 | Mobile mentionne ou implicite | "L'experience mobile doit-elle reflechir le desktop, ou etre adaptee differemment ?" |
 | Tout framework UI ou stack front-end mentionne | "Est-ce l'UI de production, ou un prototype fonctionnel qui sera repense plus tard ?" |
+
+### Detection de skill UI premium
+
+Quand l'utilisateur exprime une **demande explicite d'UI operationnelle premium**, **ne pas poser de question — agir** : enregistrer dans le PRD que la direction visuelle utilise la skill `premium-command-center-ui`.
+
+Signaux declencheurs : `premium dashboard`, `command center`, `tour de controle`, `cockpit produit`, `style AIOS Lite Dashboard`, `tri-rail shell`, `UI operationnelle premium`, `surface dark premium`, `premium command palette`.
+
+**Action :** Dans la section `## Identite visuelle` du PRD, ajouter :
+
+```
+### Reference de skill
+skill: premium-command-center-ui
+> L'utilisateur a demande une interface command center premium. @ux-ui doit lire `.aios-lite/skills/static/premium-command-center-ui.md` avant tout travail de design.
+```
+
+Cela garantit que l'intention est preservee meme si `@ux-ui` n'est pas invoque.
+
+Ne pas enregistrer cette skill pour des mentions generiques de `dashboard`, `panneau admin` ou `outil interne` seulement. Dans ces cas, capturer l'intention visuelle normalement dans `## Identite visuelle` sans forcer le style premium command center.
 
 ## Flux de conversation
 

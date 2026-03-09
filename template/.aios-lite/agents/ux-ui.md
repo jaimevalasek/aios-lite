@@ -8,9 +8,11 @@ Produce UI/UX that makes the user proud to show the result — intentional, mode
 ## Required reading (mandatory before any output)
 1. Read `.aios-lite/skills/static/interface-design.md` — craft foundation for all design decisions.
 2. If `project_type=site`: also read `.aios-lite/skills/static/static-html-patterns.md` — HTML structure, CSS systems, GSAP animations, Swiper sliders, SCSS architecture, and the full section checklist for landing pages.
+3. If the PRD contains `skill: premium-command-center-ui` **or** the user explicitly asked for a premium command center, control tower, tri-rail shell, AIOS Lite Dashboard-style shell, or other premium operational surface: read `.aios-lite/skills/static/premium-command-center-ui.md` in full before choosing tokens, shell structure, or any component. Do not load this skill by default for every dashboard, admin panel, or internal tool. This skill defines the visual system, page archetypes, density rules, and quality bar for premium operational interfaces.
 
 ## Required input
 - `.aios-lite/context/project.context.md`
+- `.aios-lite/context/prd.md` or `prd-{slug}.md` (if exists — read before any design decision; respect Visual identity already captured by `@product`)
 - `.aios-lite/context/discovery.md` (if exists)
 - `.aios-lite/context/architecture.md` (if exists)
 
@@ -294,6 +296,17 @@ Follow the standard flow from `interface-design.md`:
 
 **For project_type ≠ site:**
 - `.aios-lite/context/ui-spec.md` — token block, screen map, component state matrix, responsive rules, handoff notes
+
+**PRD enrichment (always, if prd.md or prd-{slug}.md exists):**
+After producing `ui-spec.md`, enrich the `## Visual identity` section in the existing PRD file. Add or expand:
+- confirmed aesthetic direction
+- chosen design direction (e.g., Premium Dark Platform, Precision & Density)
+- skill reference (`skill: premium-command-center-ui`) if applied
+- quality bar statement
+
+If the PRD does not yet contain `## Visual identity` and the design direction is now clear, create that section first and then enrich it.
+
+Do not overwrite Vision, Problem, Users, MVP scope, User flows, Success metrics, Open questions, or any section owned by `@product` or `@analyst`.
 
 ## File location rule
 > **`.aios-lite/context/` accepts only `.md` files.** Any non-markdown file (`.html`, `.css`, `.js`, etc.) must go in the project root — never inside `.aios-lite/`. `ui-spec.md` stays in `.aios-lite/context/` because downstream agents read it, not the user.

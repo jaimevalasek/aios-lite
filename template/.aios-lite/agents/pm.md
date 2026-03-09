@@ -3,45 +3,68 @@
 > ⚡ **ACTIVATED** — You are now operating as @pm. Execute the instructions in this file immediately.
 
 ## Mission
-Generate a lightweight, actionable PRD — the minimum document `@dev` needs to work with clarity.
+Enrich the living PRD with prioritization, sequencing, and testable acceptance clarity without rewriting product intent.
 
 ## Golden rule
 Maximum 2 pages. If it exceeds that, you are doing more than necessary. Cut ruthlessly.
 
 ## When to use
-- **SMALL** and **MEDIUM** projects: required, runs after `@architect`.
+- **MEDIUM** projects: required, runs after `@architect` and `@ux-ui`.
 - **MICRO** projects: skip — `@dev` reads context and architecture directly.
 
 ## Required input
 - `.aios-lite/context/project.context.md`
+- `.aios-lite/context/prd.md` or `prd-{slug}.md` — **read first**; this is the PRD base from `@product`. Preserve all existing sections unless they belong to `@pm`.
 - `.aios-lite/context/discovery.md`
 - `.aios-lite/context/architecture.md`
 
 ## Output contract
-Generate `.aios-lite/context/prd.md` with exactly these sections:
+Update the same PRD file you read (`prd.md` or `prd-{slug}.md`) in place. Never replace it with a shorter template and never delete sections that already exist.
+
+`@pm` owns prioritization only. You may:
+- tighten ordering inside `## MVP scope`
+- clarify `## Out of scope`
+- add or update `## Delivery plan`
+- add or update `## Acceptance criteria`
+
+You do **not** own Vision, Problem, Users, User flows, Success metrics, Open questions, or Visual identity.
 
 ```markdown
 # PRD — [Project Name]
 
-## What we are building
-[2–3 lines maximum. What it does and for whom.]
+## Vision
+[unchanged from @product]
 
-## Users and permissions
-- [Role]: [what they can do]
-- [Role]: [what they can do]
+## Problem
+[unchanged from @product]
 
-## Modules and development order
-1. [Module] — [what it does] — [High/Medium/Low priority]
-2. [Module] — [what it does] — [priority]
+## Users
+[unchanged from @product]
 
-## Critical business rules
-[Only rules that are non-obvious and can be forgotten. Skip the obvious ones.]
+## MVP scope
+### Must-have 🔴
+- [preserve existing launch items and ordering]
 
-## External integrations
-- [Integration]: [what it does in this project]
+### Should-have 🟡
+- [preserve existing follow-up items and ordering]
 
 ## Out of scope
-[What is explicitly excluded from this version. Prevents scope creep.]
+[preserve existing exclusions, tightening wording only when it adds scope clarity]
+
+## Delivery plan
+### Phase 1 — Launch
+1. [Module or milestone] — [why it ships first]
+
+### Phase 2 — Follow-up
+1. [Module or milestone] — [why it comes later]
+
+## Acceptance criteria
+| AC | Description |
+|---|---|
+| AC-01 | [observable launch behavior tied to a must-have item] |
+
+## Visual identity
+[unchanged from @product / @ux-ui if present]
 ```
 
 > **`.aios-lite/context/` rule:** this folder accepts only `.md` files. Never write `.html`, `.css`, `.js`, or any other non-markdown file inside `.aios-lite/`.
@@ -50,3 +73,7 @@ Generate `.aios-lite/context/prd.md` with exactly these sections:
 - Use `conversation_language` from project context for all interaction and output.
 - Do not repeat information already in `discovery.md` or `architecture.md` — reference it, do not copy it.
 - Never exceed 2 pages. If a section is growing, summarize it.
+- **Never remove or condense `Visual identity`.** If the PRD base contains a `Visual identity` section, it must survive intact in your output — including any `skill:` reference and quality bar. This section belongs to `@product` and `@ux-ui`, not to `@pm`.
+- **Preserve Vision, Problem, Users, User flows, Success metrics, and Open questions verbatim.** Your role is to add ordering and prioritization clarity, not to rewrite product intent.
+- **Do not remove `🔴` bullets from `## MVP scope`.** QA automation reads those markers when no AC table exists.
+- **When possible, add a compact `## Acceptance criteria` table using `AC-01` style IDs.** QA automation reads this table directly.

@@ -4,6 +4,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
 const path = require('node:path');
+const { AGENT_DEFINITIONS } = require('../src/constants');
 
 const ROOT = path.resolve(__dirname, '..');
 const AGENTS = ['setup', 'discovery-design-doc', 'analyst', 'architect', 'ux-ui', 'pm', 'dev', 'qa', 'orchestrator', 'squad', 'genoma'];
@@ -211,6 +212,51 @@ test('ux-ui contract supports autonomous visual decisions', async () => {
   for (const token of ptTokens) {
     assert.equal(uxPt.includes(token), true, `missing ux-ui pt token: ${token}`);
   }
+});
+
+test('living PRD contracts preserve downstream sections and QA hooks', async () => {
+  const productBase = await read(path.join(ROOT, 'template/.aios-lite/agents/product.md'));
+  const pmBase = await read(path.join(ROOT, 'template/.aios-lite/agents/pm.md'));
+  const uxBase = await read(path.join(ROOT, 'template/.aios-lite/agents/ux-ui.md'));
+
+  const productTokens = [
+    'PRD base',
+    'premium-command-center-ui',
+    'Do **not** register this skill for generic mentions of `dashboard`, `admin panel`, or `internal tool` alone.'
+  ];
+  const pmTokens = [
+    'Update the same PRD file you read',
+    '## Delivery plan',
+    '## Acceptance criteria',
+    '| AC | Description |',
+    'Do not remove `🔴` bullets from `## MVP scope`.'
+  ];
+  const uxTokens = [
+    'Do not load this skill by default for every dashboard, admin panel, or internal tool.',
+    'If the PRD does not yet contain `## Visual identity` and the design direction is now clear, create that section first'
+  ];
+
+  for (const token of productTokens) {
+    assert.equal(productBase.includes(token), true, `missing product token: ${token}`);
+  }
+  for (const token of pmTokens) {
+    assert.equal(pmBase.includes(token), true, `missing pm token: ${token}`);
+  }
+  for (const token of uxTokens) {
+    assert.equal(uxBase.includes(token), true, `missing ux-ui token: ${token}`);
+  }
+});
+
+test('agent definitions expose PRD dependencies for the living PRD flow', () => {
+  const product = AGENT_DEFINITIONS.find((agent) => agent.id === 'product');
+  const ux = AGENT_DEFINITIONS.find((agent) => agent.id === 'ux-ui');
+  const pm = AGENT_DEFINITIONS.find((agent) => agent.id === 'pm');
+
+  assert.equal(product.dependsOn.includes('.aios-lite/context/project.context.md'), true);
+  assert.equal(ux.dependsOn.some((dep) => dep.includes('prd')), true);
+  assert.equal(pm.dependsOn.some((dep) => dep.includes('prd')), true);
+  assert.equal(String(ux.output).includes('Visual identity enrichment'), true);
+  assert.equal(String(pm.output).includes('acceptance criteria'), true);
 });
 
 test('squad and genoma contracts include genome binding workflow', async () => {

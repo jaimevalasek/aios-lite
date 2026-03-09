@@ -116,13 +116,25 @@ Contexto carregado:
 - Framework: Laravel 11 (instalado ✓)
 - Classificação: SMALL
 
-Plano: @setup → @analyst → @architect → @dev → @qa
+Plano: @setup → @product → @analyst → @architect → @dev → @qa
 
-Próximo passo: /analyst
-Objetivo: mapear pacientes, médicos, agendamentos e regras de negócio.
+Próximo passo: /product
+Objetivo: gerar o PRD base antes de mapear pacientes, médicos, agendamentos e regras de negócio.
 ```
 
-### Passo 4: @analyst — Descoberta do domínio
+### Passo 4: @product — PRD base
+
+```
+/product
+```
+
+**O @product registra no `prd.md`:**
+- visão do produto
+- usuários principais
+- escopo inicial do MVP
+- perguntas em aberto
+
+### Passo 5: @analyst — Descoberta do domínio
 
 ```
 /analyst
@@ -339,18 +351,27 @@ npx aios-lite setup:context . --defaults \
 **O agente confirma o plano MEDIUM completo:**
 ```
 Plano de execução:
-1. /analyst   → discovery e modelagem de domínio
-2. /architect → estrutura de pastas Next.js MEDIUM + decisões técnicas
-3. /ux-ui     → sistema de design e componentes
-4. /pm        → backlog priorizado (máx 2 páginas)
-5. /orchestrator → lanes de desenvolvimento paralelo
-6. /dev       → implementação por lane
-7. /qa        → revisão e testes
+1. /product   → PRD base vivo
+2. /analyst   → discovery e modelagem de domínio
+3. /architect → estrutura de pastas Next.js MEDIUM + decisões técnicas
+4. /ux-ui     → sistema de design e componentes
+5. /pm        → priorização e critérios de aceite no PRD vivo
+6. /orchestrator → lanes de desenvolvimento paralelo
+7. /dev       → implementação por lane
+8. /qa        → revisão e testes
 
-Próximo: /analyst
+Próximo: /product
 ```
 
-### Passo 3: @analyst
+### Passo 3: @product
+
+```
+/product
+```
+
+**O @product gera o PRD base** com visão, problema, usuários, MVP inicial e direção visual.
+
+### Passo 4: @analyst
 
 O analista descobre:
 - **Entidades:** Organization, Project, Task, User, Invoice, Subscription
@@ -358,7 +379,7 @@ O analista descobre:
 - **Integrações:** Stripe (billing), GitHub (integração de commits), Slack (notificações), S3 (uploads)
 - **Regras:** Plano free = máx 3 projetos, Plano pro = ilimitado; cobrança proporcional por membro
 
-### Passo 4: @architect
+### Passo 5: @architect
 
 Para MEDIUM com Next.js App Router:
 
@@ -387,7 +408,7 @@ src/
   types/
 ```
 
-### Passo 5: @ux-ui
+### Passo 6: @ux-ui
 
 ```
 /ux-ui
@@ -405,44 +426,41 @@ Precisamos de:
 - Estados: loading skeleton, empty state, error state para cada componente
 - Acessibilidade: foco visível, ARIA labels em boards interativos
 
-### Passo 6: @pm
+### Passo 7: @pm
 
 ```
 /pm
 ```
 
-**O @pm entrega** `.aios-lite/context/prd.md` (2 páginas):
+**O @pm enriquece** `.aios-lite/context/prd.md` preservando visão, usuários e identidade visual. O foco passa a ser priorização, fases e critérios de aceite compactos:
 
 ```markdown
-## MVP — Sprint 1 (núcleo)
+## Escopo do MVP
+### Must-have 🔴
+- Criar e gerenciar projetos
+- Operar board Kanban com atribuição
+- Convidar membros por e-mail
 
-US-01: Como admin, posso criar e gerenciar projetos
-  - AC: criar projeto com nome, descrição e deadline
-  - AC: arquivar projeto (soft delete)
-  - AC: apenas membros da organização veem os projetos
+## Plano de entrega
+### Fase 1 — Núcleo
+1. Projetos e permissões
+2. Board Kanban
+3. Convites e limites do plano
 
-US-02: Como gerente, posso criar tarefas em um board Kanban
-  - AC: colunas: To Do / In Progress / Done
-  - AC: arrastar tarefa entre colunas
-  - AC: atribuir tarefa a um membro
+### Fase 2 — Monetização
+1. Billing e Stripe
+2. Regras de bloqueio por plano
 
-US-03: Como admin, posso convidar membros via e-mail
-  - AC: link de convite com expiração de 48h
-  - AC: bloquear acesso se plano free atingir limite
-
-## Sprint 2 (monetização)
-
-US-04: Como admin, posso gerenciar assinatura
-  - AC: integração Stripe com upgrade/downgrade
-  - AC: webhook de pagamento recusado bloqueia conta
-
-## Fora do MVP
-- Integração GitHub
-- Notificações Slack
-- Relatórios avançados
+## Criterios de aceite
+| AC | Descricao |
+|---|---|
+| AC-01 | Admin cria projeto com nome, descricao e deadline |
+| AC-02 | Board possui colunas To Do / In Progress / Done |
+| AC-03 | Convite por e-mail expira em 48h |
+| AC-04 | Conta free respeita limite de projetos |
 ```
 
-### Passo 7: @orchestrator
+### Passo 8: @orchestrator
 
 ```
 /orchestrator
@@ -677,11 +695,19 @@ npx aios-lite setup:context . --defaults \
 Framework detectado: Node.js (package.json ✓)
 Projeto: Restaurante API (SMALL)
 
-Plano: @setup → @analyst → @architect → @dev → @qa
-Próximo: /analyst
+Plano: @setup → @product → @analyst → @architect → @dev → @qa
+Próximo: /product
 ```
 
-### Passo 3: @analyst
+### Passo 3: @product
+
+```
+/product
+```
+
+**O @product gera o PRD base** com visão, usuários, escopo do MVP e fora do escopo.
+
+### Passo 4: @analyst
 
 ```
 /analyst
@@ -882,11 +908,19 @@ npx aios-lite setup:context . --defaults \
 Framework detectado: Rails (config/application.rb ✓)
 Versão: Rails 7.x
 
-Plano: @setup → @analyst → @architect → @dev → @qa
-Próximo: /analyst
+Plano: @setup → @product → @analyst → @architect → @dev → @qa
+Próximo: /product
 ```
 
-### Passo 3: @analyst
+### Passo 3: @product
+
+```
+/product
+```
+
+**O @product gera o PRD base** com visão, usuários, escopo do MVP e fora do escopo.
+
+### Passo 4: @analyst
 
 *Você responde às perguntas:*
 

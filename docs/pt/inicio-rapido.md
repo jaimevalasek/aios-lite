@@ -79,8 +79,8 @@ O agente `@setup` detecta o framework, faz as perguntas e gera o `project.contex
 | Tamanho do projeto | Sequência de agentes |
 |---|---|
 | **MICRO** — 0–1 ponto | `@setup → @dev` |
-| **SMALL** — 2–3 pontos | `@setup → @analyst → @architect → @ux-ui → @dev → @qa` |
-| **MEDIUM** — 4–6 pontos | `@setup → @analyst → @architect → @ux-ui → @pm → @orchestrator → @dev → @qa` |
+| **SMALL** — 2–3 pontos | `@setup → @product → @analyst → @architect → @ux-ui → @dev → @qa` |
+| **MEDIUM** — 4–6 pontos | `@setup → @product → @analyst → @architect → @ux-ui → @pm → @orchestrator → @dev → @qa` |
 
 ### Atalho recomendado quando o escopo ainda está nebuloso
 

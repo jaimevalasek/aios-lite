@@ -88,6 +88,11 @@ const MANAGED_FILES = [
   '.aios-lite/skills/static/web3-cardano-patterns.md',
   '.aios-lite/skills/static/web3-security-checklist.md',
   '.aios-lite/skills/static/git-conventions.md',
+  '.aios-lite/skills/static/premium-command-center-ui.md',
+  '.aios-lite/skills/references/premium-command-center-ui/visual-system-and-component-patterns.md',
+  '.aios-lite/skills/references/premium-command-center-ui/operational-ux-playbook.md',
+  '.aios-lite/skills/references/premium-command-center-ui/master-application-prompt.md',
+  '.aios-lite/skills/references/premium-command-center-ui/quality-validation-checklist.md',
   '.aios-lite/skills/dynamic/laravel-docs.md',
   '.aios-lite/skills/dynamic/flux-ui-docs.md',
   '.aios-lite/skills/dynamic/npm-packages.md',
@@ -154,8 +159,8 @@ const AGENT_DEFINITIONS = [
     id: 'product',
     command: '@product',
     path: '.aios-lite/agents/product.md',
-    dependsOn: [],
-    output: '.aios-lite/context/prd.md'
+    dependsOn: ['.aios-lite/context/project.context.md'],
+    output: '.aios-lite/context/prd.md or .aios-lite/context/prd-{slug}.md (PRD base)'
   },
   {
     id: 'analyst',
@@ -180,10 +185,11 @@ const AGENT_DEFINITIONS = [
     path: '.aios-lite/agents/ux-ui.md',
     dependsOn: [
       '.aios-lite/context/project.context.md',
+      '.aios-lite/context/prd.md or .aios-lite/context/prd-{slug}.md',
       '.aios-lite/context/discovery.md',
       '.aios-lite/context/architecture.md'
     ],
-    output: '.aios-lite/context/ui-spec.md'
+    output: '.aios-lite/context/ui-spec.md + Visual identity enrichment in prd.md or prd-{slug}.md'
   },
   {
     id: 'pm',
@@ -191,10 +197,11 @@ const AGENT_DEFINITIONS = [
     path: '.aios-lite/agents/pm.md',
     dependsOn: [
       '.aios-lite/context/project.context.md',
+      '.aios-lite/context/prd.md or .aios-lite/context/prd-{slug}.md',
       '.aios-lite/context/discovery.md',
       '.aios-lite/context/architecture.md'
     ],
-    output: '.aios-lite/context/prd.md'
+    output: '.aios-lite/context/prd.md or prd-{slug}.md (enriched with delivery plan and acceptance criteria)'
   },
   {
     id: 'dev',
