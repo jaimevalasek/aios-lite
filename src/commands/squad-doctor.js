@@ -4,6 +4,7 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const { openRuntimeDb } = require('../runtime-store');
 const { exists } = require('../utils');
+const { runSquadValidate } = require('./squad-validate');
 
 function normalizeRel(value) {
   return String(value || '')
@@ -271,6 +272,29 @@ async function runSquadDoctor({ args, options = {}, logger, t }) {
     } finally {
       db.close();
     }
+  }
+
+  // Formal validation via squad-validate
+  const silentLogger = { log() {}, error() {} };
+  const validateResult = await runSquadValidate({
+    args: [targetDir],
+    options: { squad: slug },
+    logger: silentLogger
+  });
+  if (!validateResult.valid || validateResult.warnings.length > 0) {
+    checks.push(
+      makeCheck(
+        'formal_validation',
+        validateResult.valid,
+        validateResult.valid ? 'warn' : 'error',
+        validateResult.valid
+          ? `Manifest valid with ${validateResult.warnings.length} warning(s)`
+          : `Manifest invalid: ${validateResult.errors[0] || 'see details'}`,
+        { validateErrors: validateResult.errors, validateWarnings: validateResult.warnings }
+      )
+    );
+  } else {
+    checks.push(makeCheck('formal_validation', true, 'info', 'Manifest formally valid'));
   }
 
   const summary = {

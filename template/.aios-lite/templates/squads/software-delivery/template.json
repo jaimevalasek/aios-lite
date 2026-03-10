@@ -1,0 +1,21 @@
+{
+  "slug": "software-delivery",
+  "name": "Software Delivery",
+  "description": "Squad de desenvolvimento: features, arquitetura, QA",
+  "mode": "software",
+  "suggestedExecutors": [
+    { "slug": "developer", "role": "Implements features, writes code" },
+    { "slug": "architect", "role": "Designs system structure, makes technical decisions" },
+    { "slug": "qa-engineer", "role": "Tests, validates, finds edge cases" }
+  ],
+  "defaultContentBlueprint": {
+    "slug": "feature-delivery",
+    "contentType": "feature",
+    "layoutType": "tabs",
+    "sections": [
+      { "key": "spec", "label": "Specification", "blockTypes": ["rich-text"] },
+      { "key": "implementation", "label": "Implementation", "blockTypes": ["rich-text", "copy-block"] },
+      { "key": "tests", "label": "Test Plan", "blockTypes": ["bullet-list"] }
+    ]
+  }
+}

@@ -105,3 +105,96 @@ test('fails on missing executor file', async () => {
   assert.ok(!result.valid);
   assert.ok(result.errors.some(e => e.includes('ghost')));
 });
+
+// --- Fase 2: Semantic deep tests ---
+
+test('semantic deep - slug mismatch', async () => {
+  const dir = await makeTempDir();
+  const slug = 'correct-slug';
+  const squadDir = path.join(dir, '.aios-lite', 'squads', slug);
+  await fs.mkdir(path.join(squadDir, 'agents'), { recursive: true });
+  await fs.mkdir(path.join(dir, 'output', slug), { recursive: true });
+
+  const manifest = {
+    schemaVersion: '1.0.0', slug: 'wrong-slug', name: 'Test',
+    mode: 'content', mission: 'Test', goal: 'Test', executors: [
+      { slug: 'orquestrador', role: 'Coord', file: `.aios-lite/squads/${slug}/agents/orquestrador.md`, skills: ['s1'] }
+    ]
+  };
+  await fs.writeFile(path.join(squadDir, 'squad.manifest.json'), JSON.stringify(manifest));
+  await fs.writeFile(path.join(squadDir, 'agents', 'agents.md'), '# Squad\n');
+  await fs.writeFile(path.join(squadDir, 'agents', 'orquestrador.md'), '# Orch\n');
+  const logger = createCollectLogger();
+  const result = await runSquadValidate({ args: [dir], options: { squad: slug }, logger });
+  assert.ok(!result.valid);
+  assert.ok(result.errors.some(e => e.includes('Slug mismatch')));
+});
+
+test('semantic deep - executor references undeclared skill', async () => {
+  const dir = await makeTempDir();
+  const slug = 'skill-ref-squad';
+  const squadDir = path.join(dir, '.aios-lite', 'squads', slug);
+  await fs.mkdir(path.join(squadDir, 'agents'), { recursive: true });
+  await fs.mkdir(path.join(dir, 'output', slug), { recursive: true });
+
+  const manifest = {
+    schemaVersion: '1.0.0', slug, name: 'Test',
+    mode: 'content', mission: 'Test', goal: 'Test',
+    skills: [{ slug: 'declared-skill' }],
+    executors: [
+      { slug: 'orquestrador', role: 'Coord', file: `.aios-lite/squads/${slug}/agents/orquestrador.md`, skills: ['undeclared-skill'] }
+    ]
+  };
+  await fs.writeFile(path.join(squadDir, 'squad.manifest.json'), JSON.stringify(manifest));
+  await fs.writeFile(path.join(squadDir, 'agents', 'agents.md'), '# Squad\n');
+  await fs.writeFile(path.join(squadDir, 'agents', 'orquestrador.md'), '# Orch\n');
+  const logger = createCollectLogger();
+  const result = await runSquadValidate({ args: [dir], options: { squad: slug }, logger });
+  assert.ok(result.warnings.some(w => w.includes('undeclared-skill')));
+});
+
+test('semantic deep - content blueprint with no sections warns', async () => {
+  const dir = await makeTempDir();
+  const slug = 'no-sections-squad';
+  const squadDir = path.join(dir, '.aios-lite', 'squads', slug);
+  await fs.mkdir(path.join(squadDir, 'agents'), { recursive: true });
+  await fs.mkdir(path.join(dir, 'output', slug), { recursive: true });
+
+  const manifest = {
+    schemaVersion: '1.0.0', slug, name: 'Test',
+    mode: 'content', mission: 'Test', goal: 'Test',
+    executors: [
+      { slug: 'orquestrador', role: 'Coord', file: `.aios-lite/squads/${slug}/agents/orquestrador.md`, skills: ['s1'] }
+    ],
+    contentBlueprints: [{ slug: 'empty-bp', contentType: 'article', layoutType: 'document', sections: [] }]
+  };
+  await fs.writeFile(path.join(squadDir, 'squad.manifest.json'), JSON.stringify(manifest));
+  await fs.writeFile(path.join(squadDir, 'agents', 'agents.md'), '# Squad\n');
+  await fs.writeFile(path.join(squadDir, 'agents', 'orquestrador.md'), '# Orch\n');
+  const logger = createCollectLogger();
+  const result = await runSquadValidate({ args: [dir], options: { squad: slug }, logger });
+  assert.ok(result.warnings.some(w => w.includes('no sections')));
+});
+
+test('semantic deep - readiness contradiction warns', async () => {
+  const dir = await makeTempDir();
+  const slug = 'readiness-squad';
+  const squadDir = path.join(dir, '.aios-lite', 'squads', slug);
+  await fs.mkdir(path.join(squadDir, 'agents'), { recursive: true });
+  await fs.mkdir(path.join(dir, 'output', slug), { recursive: true });
+
+  const manifest = {
+    schemaVersion: '1.0.0', slug, name: 'Test',
+    mode: 'content', mission: 'Test', goal: 'Test',
+    executors: [
+      { slug: 'orquestrador', role: 'Coord', file: `.aios-lite/squads/${slug}/agents/orquestrador.md`, skills: ['s1'] }
+    ],
+    readiness: { contextReady: { status: 'ready', blocker: 'missing docs' } }
+  };
+  await fs.writeFile(path.join(squadDir, 'squad.manifest.json'), JSON.stringify(manifest));
+  await fs.writeFile(path.join(squadDir, 'agents', 'agents.md'), '# Squad\n');
+  await fs.writeFile(path.join(squadDir, 'agents', 'orquestrador.md'), '# Orch\n');
+  const logger = createCollectLogger();
+  const result = await runSquadValidate({ args: [dir], options: { squad: slug }, logger });
+  assert.ok(result.warnings.some(w => w.includes('blocker')));
+});

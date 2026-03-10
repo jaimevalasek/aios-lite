@@ -1,0 +1,22 @@
+{
+  "slug": "research-analysis",
+  "name": "Research & Analysis",
+  "description": "Squad de pesquisa, benchmarks, relatórios e comparações",
+  "mode": "research",
+  "suggestedExecutors": [
+    { "slug": "researcher", "role": "Gathers data, finds sources, maps landscape" },
+    { "slug": "analyst", "role": "Interprets data, finds patterns, draws conclusions" },
+    { "slug": "reviewer", "role": "Validates methodology, challenges assumptions" }
+  ],
+  "defaultContentBlueprint": {
+    "slug": "research-report",
+    "contentType": "report",
+    "layoutType": "accordion",
+    "sections": [
+      { "key": "findings", "label": "Key Findings", "blockTypes": ["rich-text", "bullet-list"] },
+      { "key": "methodology", "label": "Methodology", "blockTypes": ["rich-text"] },
+      { "key": "data", "label": "Data & Sources", "blockTypes": ["bullet-list", "tags"] },
+      { "key": "recommendations", "label": "Recommendations", "blockTypes": ["numbered-list"] }
+    ]
+  }
+}

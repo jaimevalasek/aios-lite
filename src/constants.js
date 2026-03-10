@@ -102,6 +102,8 @@ const MANAGED_FILES = [
   '.aios-lite/mcp/servers.md',
   '.aios-lite/schemas/squad-manifest.schema.json',
   '.aios-lite/schemas/squad-blueprint.schema.json',
+  '.aios-lite/schemas/readiness.schema.json',
+  '.aios-lite/schemas/content-blueprint.schema.json',
   '.aios-lite/tasks/squad-design.md',
   '.aios-lite/tasks/squad-create.md',
   '.aios-lite/tasks/squad-validate.md'

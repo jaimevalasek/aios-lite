@@ -96,6 +96,64 @@ async function validateSemantics(manifest) {
   return { errors, warnings };
 }
 
+async function validateSemanticDeep(projectDir, slug, manifest) {
+  const errors = [];
+  const warnings = [];
+
+  // 1. Slug do manifesto bate com diretório
+  if (manifest.slug && manifest.slug !== slug) {
+    errors.push(`Slug mismatch: manifest says "${manifest.slug}" but directory is "${slug}"`);
+  }
+
+  // 2. Skills referenciadas pelos executores estão declaradas no manifesto
+  const declaredSkills = Array.isArray(manifest.skills) ? manifest.skills.map(s => s.slug) : [];
+  const executors = Array.isArray(manifest.executors) ? manifest.executors : [];
+  for (const exec of executors) {
+    const execSkills = Array.isArray(exec.skills) ? exec.skills : [];
+    for (const skillSlug of execSkills) {
+      if (!declaredSkills.includes(skillSlug)) {
+        warnings.push(`Executor "${exec.slug}" references skill "${skillSlug}" not declared in manifest.skills`);
+      }
+    }
+  }
+
+  // 3. Content blueprints têm sections válidas
+  const blueprints = Array.isArray(manifest.contentBlueprints) ? manifest.contentBlueprints : [];
+  for (const bp of blueprints) {
+    if (!bp.sections || bp.sections.length === 0) {
+      warnings.push(`Content blueprint "${bp.slug}" has no sections defined`);
+    }
+  }
+
+  // 4. CLAUDE.md e AGENTS.md mencionam o squad
+  const claudeMd = path.join(projectDir, 'CLAUDE.md');
+  const agentsMd = path.join(projectDir, 'AGENTS.md');
+  try {
+    const claudeContent = await fs.readFile(claudeMd, 'utf8');
+    if (!claudeContent.includes(slug)) {
+      warnings.push(`CLAUDE.md does not reference squad "${slug}"`);
+    }
+  } catch { warnings.push('CLAUDE.md not found'); }
+
+  try {
+    const agentsContent = await fs.readFile(agentsMd, 'utf8');
+    if (!agentsContent.includes(slug)) {
+      warnings.push(`AGENTS.md does not reference squad "${slug}"`);
+    }
+  } catch { warnings.push('AGENTS.md not found'); }
+
+  // 5. Readiness não contradiz blockers
+  if (manifest.readiness) {
+    for (const [dim, val] of Object.entries(manifest.readiness)) {
+      if (val && val.status === 'ready' && val.blocker) {
+        warnings.push(`Readiness "${dim}" is "ready" but has blocker: "${val.blocker}"`);
+      }
+    }
+  }
+
+  return { errors, warnings };
+}
+
 async function runSquadValidate({ args = [], options = {}, logger = console } = {}) {
   const projectDir = path.resolve(process.cwd(), args[0] || '.');
   const slug = options.squad || args[1];
@@ -126,10 +184,15 @@ async function runSquadValidate({ args = [], options = {}, logger = console } = 
   allErrors.push(...structure.errors);
   allWarnings.push(...structure.warnings);
 
-  // Layer 3: Semantics
+  // Layer 3: Semantics (basic)
   const semantics = await validateSemantics(manifest);
   allErrors.push(...semantics.errors);
   allWarnings.push(...semantics.warnings);
+
+  // Layer 4: Semantic deep
+  const semanticDeep = await validateSemanticDeep(projectDir, slug, manifest);
+  allErrors.push(...semanticDeep.errors);
+  allWarnings.push(...semanticDeep.warnings);
 
   // Report
   const valid = allErrors.length === 0;
@@ -140,9 +203,10 @@ async function runSquadValidate({ args = [], options = {}, logger = console } = 
   logger.log('');
   logger.log(`\u2550\u2550 Squad Validation: ${slug} \u2550\u2550`);
   logger.log('');
-  logger.log(`  Schema:     ${schema.errors.length === 0 ? '\u2705 PASS' : '\u274c FAIL'}`);
-  logger.log(`  Structure:  ${structure.errors.length === 0 ? '\u2705 PASS' : '\u274c FAIL'}`);
-  logger.log(`  Semantics:  ${semantics.errors.length === 0 ? (semantics.warnings.length > 0 ? '\u26a0\ufe0f  WARNINGS' : '\u2705 PASS') : '\u274c FAIL'}`);
+  logger.log(`  Schema:         ${schema.errors.length === 0 ? '\u2705 PASS' : '\u274c FAIL'}`);
+  logger.log(`  Structure:      ${structure.errors.length === 0 ? '\u2705 PASS' : '\u274c FAIL'}`);
+  logger.log(`  Semantics:      ${semantics.errors.length === 0 ? (semantics.warnings.length > 0 ? '\u26a0\ufe0f  WARNINGS' : '\u2705 PASS') : '\u274c FAIL'}`);
+  logger.log(`  Semantic deep:  ${semanticDeep.errors.length === 0 ? (semanticDeep.warnings.length > 0 ? '\u26a0\ufe0f  WARNINGS' : '\u2705 PASS') : '\u274c FAIL'}`);
 
   if (allErrors.length > 0) {
     logger.log('');

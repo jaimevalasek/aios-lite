@@ -13,6 +13,11 @@
 
 ## Processo
 
+### Passo 0 — Verificar templates disponíveis
+Verifique se existe `.aios-lite/templates/squads/`. Se existir, liste os templates disponíveis e pergunte:
+"Quer partir de um template? Opções: content-basic, research-analysis, software-delivery, media-channel — ou começar do zero."
+Se o usuário escolher um template, leia o `template.json` e use como base para o blueprint (executores, content blueprints, mode).
+
 ### Passo 1 — Coletar contexto mínimo
 Pergunte em um bloco só (não faça múltiplas rodadas):
 1. Domínio ou tópico do squad

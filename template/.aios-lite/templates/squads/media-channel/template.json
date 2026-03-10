@@ -1,0 +1,24 @@
+{
+  "slug": "media-channel",
+  "name": "Media Channel",
+  "description": "Squad para canal de mídia: YouTube, podcast, newsletter, social",
+  "mode": "content",
+  "suggestedExecutors": [
+    { "slug": "scriptwriter", "role": "Writes scripts, outlines, narratives" },
+    { "slug": "title-generator", "role": "Creates titles, hooks, angles" },
+    { "slug": "copywriter", "role": "Writes descriptions, CTAs, social copy" },
+    { "slug": "trend-analyst", "role": "Researches trends, competitors, opportunities" }
+  ],
+  "defaultContentBlueprint": {
+    "slug": "media-package",
+    "contentType": "media-package",
+    "layoutType": "tabs",
+    "sections": [
+      { "key": "script", "label": "Script/Outline", "blockTypes": ["rich-text"] },
+      { "key": "titles", "label": "Title Options", "blockTypes": ["bullet-list"] },
+      { "key": "description", "label": "Description", "blockTypes": ["rich-text"] },
+      { "key": "tags", "label": "Tags & Keywords", "blockTypes": ["tags"] },
+      { "key": "thumbnail", "label": "Thumbnail Brief", "blockTypes": ["rich-text"] }
+    ]
+  }
+}

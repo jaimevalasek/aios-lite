@@ -1,0 +1,21 @@
+{
+  "slug": "content-basic",
+  "name": "Content Basic",
+  "description": "Squad genérico de conteúdo: artigos, scripts, copy, estratégia",
+  "mode": "content",
+  "suggestedExecutors": [
+    { "slug": "writer", "role": "Creates written content, articles, scripts" },
+    { "slug": "strategist", "role": "Defines content strategy, angles, positioning" },
+    { "slug": "editor", "role": "Reviews, improves clarity, fact-checks" }
+  ],
+  "defaultContentBlueprint": {
+    "slug": "content-piece",
+    "contentType": "article",
+    "layoutType": "document",
+    "sections": [
+      { "key": "main-content", "label": "Content", "blockTypes": ["rich-text"] },
+      { "key": "summary", "label": "Summary", "blockTypes": ["rich-text"] },
+      { "key": "tags", "label": "Tags", "blockTypes": ["tags"] }
+    ]
+  }
+}

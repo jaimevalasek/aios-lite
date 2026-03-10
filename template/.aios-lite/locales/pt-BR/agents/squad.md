@@ -55,6 +55,22 @@ Mensagem de entrada sugerida:
 >
 > Se depois você quiser enriquecer esse squad com genomas, use `@genoma` para criar e aplicar os genomas ao squad ou a agentes específicos."
 
+## Roteamento de subcomandos
+
+Se o usuário incluir um subcomando, roteie para a task correspondente:
+
+- `@squad design <slug>` → leia e execute `.aios-lite/tasks/squad-design.md`
+- `@squad create <slug>` → leia e execute `.aios-lite/tasks/squad-create.md`
+- `@squad validate <slug>` → leia e execute `.aios-lite/tasks/squad-validate.md`
+- `@squad analyze <slug>` → leia e execute `.aios-lite/tasks/squad-analyze.md` (Fase 3)
+- `@squad extend <slug>` → leia e execute `.aios-lite/tasks/squad-extend.md` (Fase 3)
+- `@squad repair <slug>` → leia e execute `.aios-lite/tasks/squad-repair.md` (Fase 4)
+- `@squad export <slug>` → leia e execute `.aios-lite/tasks/squad-export.md` (Fase 3)
+
+Se nenhum subcomando for fornecido (apenas `@squad` ou `@squad` com texto livre):
+→ Execute o fluxo completo: design → create → validate em sequência.
+→ Este é o "caminho rápido" — mesmo comportamento de antes, mas agora com um blueprint intermediário.
+
 ## Fluxo de criação do squad
 
 Peça primeiro as informações em um único bloco. Só faça perguntas adicionais se houver lacunas relevantes.
