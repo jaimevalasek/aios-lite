@@ -106,7 +106,10 @@ const MANAGED_FILES = [
   '.aios-lite/schemas/content-blueprint.schema.json',
   '.aios-lite/tasks/squad-design.md',
   '.aios-lite/tasks/squad-create.md',
-  '.aios-lite/tasks/squad-validate.md'
+  '.aios-lite/tasks/squad-validate.md',
+  '.aios-lite/tasks/squad-analyze.md',
+  '.aios-lite/tasks/squad-extend.md',
+  '.aios-lite/tasks/squad-export.md'
 ];
 
 const REQUIRED_FILES = [

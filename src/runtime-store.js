@@ -208,6 +208,18 @@ async function openRuntimeDb(targetDir, options = {}) {
     CREATE INDEX IF NOT EXISTS idx_artifacts_task ON artifacts(task_key, created_at DESC);
     CREATE INDEX IF NOT EXISTS idx_content_items_squad ON content_items(squad_slug, updated_at DESC);
     CREATE INDEX IF NOT EXISTS idx_content_items_task ON content_items(task_key, updated_at DESC);
+
+    CREATE TABLE IF NOT EXISTS squad_analyses (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      squad_slug TEXT NOT NULL,
+      coverage_json TEXT,
+      suggestions_json TEXT,
+      metrics_json TEXT,
+      created_at TEXT NOT NULL,
+      FOREIGN KEY (squad_slug) REFERENCES squads(squad_slug)
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_squad_analyses_squad ON squad_analyses(squad_slug, created_at DESC);
   `);
 
   ensureLegacyColumns(db);
@@ -585,6 +597,20 @@ function upsertSquadManifest(db, options) {
   }
 
   return slug;
+}
+
+function insertSquadAnalysis(db, options) {
+  const now = nowIso();
+  db.prepare(`
+    INSERT INTO squad_analyses (squad_slug, coverage_json, suggestions_json, metrics_json, created_at)
+    VALUES (@squad_slug, @coverage_json, @suggestions_json, @metrics_json, @created_at)
+  `).run({
+    squad_slug: String(options.slug).trim(),
+    coverage_json: JSON.stringify(options.coverage || {}),
+    suggestions_json: JSON.stringify(options.suggestions || []),
+    metrics_json: JSON.stringify(options.metrics || {}),
+    created_at: now
+  });
 }
 
 function inferArtifactKind(filePath) {
@@ -987,6 +1013,7 @@ module.exports = {
   runtimeStoreExists,
   openRuntimeDb,
   upsertSquadManifest,
+  insertSquadAnalysis,
   startTask,
   updateTask,
   startRun,
