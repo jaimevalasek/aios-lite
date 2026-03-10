@@ -1,11 +1,13 @@
 'use strict';
 
+const fs = require('node:fs/promises');
 const path = require('node:path');
 const Database = require('better-sqlite3');
 const { ensureDir, exists } = require('./utils');
 
 const RUNTIME_DIR = path.join('.aios-lite', 'runtime');
 const DB_FILE = 'aios.sqlite';
+const SESSIONS_DIR = '.sessions';
 const VALID_STATUSES = new Set(['queued', 'running', 'completed', 'failed']);
 const VALID_TASK_STATUSES = new Set(['queued', 'running', 'completed', 'failed']);
 
@@ -824,6 +826,162 @@ function getStatusSnapshot(db) {
   };
 }
 
+// ─── Agent Log Session helpers ───────────────────────────────────────────────
+
+function resolveSessionsDir(runtimeDir) {
+  return path.join(runtimeDir, SESSIONS_DIR);
+}
+
+function resolveSessionFile(runtimeDir, agentName) {
+  return path.join(resolveSessionsDir(runtimeDir), `${agentName}.json`);
+}
+
+async function readAgentSession(runtimeDir, agentName) {
+  const filePath = resolveSessionFile(runtimeDir, agentName);
+  try {
+    const raw = await fs.readFile(filePath, 'utf8');
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+async function writeAgentSession(runtimeDir, agentName, data) {
+  const sessionsDir = resolveSessionsDir(runtimeDir);
+  await ensureDir(sessionsDir);
+  const filePath = resolveSessionFile(runtimeDir, agentName);
+  await fs.writeFile(filePath, JSON.stringify(data, null, 2), 'utf8');
+}
+
+async function clearAgentSession(runtimeDir, agentName) {
+  const filePath = resolveSessionFile(runtimeDir, agentName);
+  try { await fs.unlink(filePath); } catch { /* noop */ }
+}
+
+/**
+ * Core function for `aios-lite runtime-log`.
+ *
+ * Squad agents (--squad): state is stored in SQLite, not in session files.
+ *   This avoids race conditions when the orquestrador calls runtime-log in
+ *   parallel bash commands — SQLite serializes concurrent writes automatically.
+ *   Logic: find the most-recent running task for the squad → find or create a
+ *   run for this agent → add event. If no running task exists, create one.
+ *
+ * Official agents (no --squad): state is stored in .sessions/{agent}.json.
+ *   Single-process by design, no race condition.
+ */
+async function logAgentEvent(db, runtimeDir, options) {
+  const agentName = String(options.agentName || 'unknown').trim();
+  const squadSlug = options.squadSlug ? String(options.squadSlug).trim() : null;
+  const isFinish = Boolean(options.finish);
+  const now = nowIso();
+
+  let runKey = null;
+  let taskKey = null;
+
+  if (squadSlug) {
+    // ── Squad agent: look up active task from SQLite ──────────────────────────
+    const activeTask = db.prepare(
+      `SELECT task_key FROM tasks WHERE squad_slug = ? AND status IN ('running', 'queued') ORDER BY created_at DESC LIMIT 1`
+    ).get(squadSlug);
+
+    if (activeTask) {
+      taskKey = activeTask.task_key;
+    } else {
+      // No active task — create one (only the first concurrent call wins; the
+      // second will find the task on its next read because SQLite is serialized)
+      const taskTitle = options.taskTitle || `${squadSlug} — sessão`;
+      taskKey = startTask(db, {
+        title: taskTitle,
+        squadSlug,
+        status: 'running',
+        createdBy: agentName
+      });
+    }
+
+    // Find existing running run for this specific agent under the task
+    const activeRun = db.prepare(
+      `SELECT run_key FROM agent_runs WHERE task_key = ? AND agent_name = ? AND status = 'running' LIMIT 1`
+    ).get(taskKey, agentName);
+
+    if (activeRun) {
+      runKey = activeRun.run_key;
+      if (!isFinish) {
+        insertEvent(db, {
+          run_key: runKey,
+          event_type: options.type || 'status',
+          message: String(options.message || ''),
+          payload_json: options.meta ? JSON.stringify(options.meta) : null,
+          created_at: now
+        });
+      }
+    } else {
+      // First call for this agent — create a run (and emit start event via startRun)
+      // Use taskTitle from --title only if provided, otherwise use agent name
+      const runTitle = options.taskTitle || `@${agentName}`;
+      runKey = startRun(db, {
+        taskKey,
+        agentName,
+        agentKind: 'squad',
+        squadSlug,
+        title: runTitle,
+        message: options.message || 'Iniciando'
+      });
+    }
+  } else {
+    // ── Official agent: session-file based ───────────────────────────────────
+    const session = await readAgentSession(runtimeDir, agentName);
+    runKey = session && !session.finished ? session.runKey : null;
+    taskKey = session && !session.finished ? session.taskKey : null;
+
+    if (!runKey) {
+      const taskTitle = options.taskTitle || `@${agentName}`;
+      taskKey = startTask(db, {
+        title: taskTitle,
+        squadSlug: null,
+        status: 'running',
+        createdBy: agentName
+      });
+      runKey = startRun(db, {
+        taskKey,
+        agentName,
+        agentKind: 'official',
+        squadSlug: null,
+        title: taskTitle,
+        message: options.message || 'Iniciando'
+      });
+      await writeAgentSession(runtimeDir, agentName, { runKey, taskKey, startedAt: now, finished: false });
+    } else {
+      insertEvent(db, {
+        run_key: runKey,
+        event_type: options.type || 'status',
+        message: String(options.message || ''),
+        payload_json: options.meta ? JSON.stringify(options.meta) : null,
+        created_at: now
+      });
+    }
+  }
+
+  if (isFinish) {
+    const finalStatus = normalizeStatus(options.status, 'completed');
+    updateRun(db, {
+      runKey,
+      status: finalStatus,
+      summary: options.summary,
+      eventType: finalStatus === 'completed' ? 'finished' : 'failed',
+      message: options.message || (finalStatus === 'completed' ? 'Concluído' : 'Falhou')
+    });
+    // For squad: only finish the task when orquestrador calls --finish
+    const isOrquestrador = agentName === 'orquestrador';
+    if (taskKey && (!squadSlug || isOrquestrador)) {
+      updateTask(db, { taskKey, status: finalStatus });
+      if (!squadSlug) await clearAgentSession(runtimeDir, agentName);
+    }
+  }
+
+  return { runKey, taskKey };
+}
+
 module.exports = {
   resolveRuntimePaths,
   runtimeStoreExists,
@@ -837,5 +995,8 @@ module.exports = {
   upsertContentItem,
   getStatusSnapshot,
   createRunKey,
-  createTaskKey
+  createTaskKey,
+  logAgentEvent,
+  readAgentSession,
+  clearAgentSession
 };

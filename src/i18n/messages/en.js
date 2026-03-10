@@ -85,6 +85,8 @@ module.exports = {
       'aios-lite runtime:fail [path] --run=<key> [--message=<text>] [--summary=<text>] [--output=<path>] [--json] [--locale=en]',
     help_runtime_status:
       'aios-lite runtime:status [path] [--json] [--locale=en]',
+    help_runtime_log:
+      'aios-lite runtime:log [path] --agent=<name> --message=<text> [--type=<event>] [--finish] [--status=completed|failed] [--summary=<text>] [--title=<task-title>] [--json] [--locale=en]',
     help_cloud_import_squad:
       'aios-lite cloud:import:squad [path] --url=<snapshot-url> [--force] [--snapshots-only] [--dry-run] [--json] [--locale=en]',
     help_cloud_import_genome:
@@ -697,6 +699,9 @@ module.exports = {
     finish_ok: 'Run completed: {run} ({path})',
     task_fail_ok: 'Task failed: {task} ({path})',
     fail_ok: 'Run failed: {run} ({path})',
+    log_ok: 'Event logged: {agent} / {run} ({path})',
+    log_finish_ok: 'Run finished: {agent} / {run} ({path})',
+    log_agent_required: 'Missing required option: --agent',
     status_title: 'Runtime status: {path}',
     status_db: 'DB: {path}',
     status_task_counts:

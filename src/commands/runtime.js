@@ -12,7 +12,8 @@ const {
   updateRun,
   attachArtifact,
   upsertContentItem,
-  getStatusSnapshot
+  getStatusSnapshot,
+  logAgentEvent
 } = require('../runtime-store');
 
 const ALLOWED_LAYOUTS = new Set(['document', 'tabs', 'accordion', 'stack', 'mixed']);
@@ -880,6 +881,57 @@ async function runRuntimeStatus({ args, options = {}, logger, t }) {
   }
 }
 
+/**
+ * aios-lite runtime-log --agent=<name> --message=<text> [--type=<event>] [--finish] [--status=completed|failed] [--summary=<text>] [--title=<task-title>]
+ *
+ * Stateful single-command logger for official AIOS Lite agents.
+ * First call creates task + run in SQLite; subsequent calls add events.
+ * --finish closes the run and clears the session.
+ */
+async function runRuntimeLog({ args, options = {}, logger, t }) {
+  const targetDir = resolveTargetDir(args);
+  const { db, dbPath, runtimeDir } = await openRuntimeDb(targetDir);
+
+  try {
+    const agentName = options.agent;
+    if (!agentName) {
+      throw new Error(t('runtime.log_agent_required'));
+    }
+
+    const { runKey, taskKey } = await logAgentEvent(db, runtimeDir, {
+      agentName,
+      squadSlug: options.squad || null,
+      message: options.message || '',
+      type: options.type || 'status',
+      taskTitle: options.title,
+      finish: Boolean(options.finish),
+      status: options.status,
+      summary: options.summary,
+      meta: options.meta ? (() => { try { return JSON.parse(options.meta); } catch { return { raw: options.meta }; } })() : undefined
+    });
+
+    if (!options.json) {
+      const isFinish = Boolean(options.finish);
+      logger.log(isFinish
+        ? t('runtime.log_finish_ok', { agent: agentName, run: runKey, path: dbPath })
+        : t('runtime.log_ok', { agent: agentName, run: runKey, path: dbPath })
+      );
+    }
+
+    return {
+      ok: true,
+      targetDir,
+      dbPath,
+      runKey,
+      taskKey,
+      agent: agentName,
+      finished: Boolean(options.finish)
+    };
+  } finally {
+    db.close();
+  }
+}
+
 module.exports = {
   runRuntimeInit,
   runRuntimeIngest,
@@ -890,5 +942,6 @@ module.exports = {
   runRuntimeFinish,
   runRuntimeTaskFail,
   runRuntimeFail,
-  runRuntimeStatus
+  runRuntimeStatus,
+  runRuntimeLog
 };

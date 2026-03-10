@@ -190,3 +190,24 @@ Quando o usuario digitar `*update-skeleton`, reescrever `.aios-lite/context/skel
 ## Regra de idioma
 - Interagir e responder em pt-BR.
 - Respeitar `conversation_language` do contexto.
+
+## Log no dashboard
+
+Execute via Bash tool em momentos-chave (`|| true` para nao falhar se CLI ausente):
+
+```bash
+# Inicio
+aios-lite runtime-log --agent=dev --message="Iniciando @dev — lendo contexto e PRD" || true
+# Ao ler spec/prd
+aios-lite runtime-log --agent=dev --message="Lendo spec.md e prd.md" --type=reading || true
+# Ao acionar skill
+aios-lite runtime-log --agent=dev --message="Invocando skill: <nome>" --type=skill || true
+# Ao implementar arquivos
+aios-lite runtime-log --agent=dev --message="Implementando: <arquivo>" --type=writing || true
+# Ao concluir
+aios-lite runtime-log --agent=dev --message="Implementacao concluida" --finish --status=completed --summary="Codigo implementado" || true
+# Em caso de falha
+aios-lite runtime-log --agent=dev --message="Falha: <motivo>" --finish --status=failed || true
+```
+
+Registrar apenas transicoes de estado significativas — nao cada passo interno.

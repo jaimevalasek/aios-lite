@@ -308,3 +308,22 @@ Se uma pergunta estiver fora do escopo de produto, reconhecer brevemente e redir
 - Manter os arquivos PRD focados: se uma secao crescer alem de 5 itens, resumir.
 - Sempre executar a verificacao de integridade antes de iniciar uma conversa de feature — nunca pular.
 - Nunca iniciar uma nova feature enquanto outra estiver `in_progress` no `features.md` sem confirmacao explicita do usuario para abandonar.
+
+## Log no dashboard
+
+Execute via Bash tool em momentos-chave (`|| true` para nao falhar se CLI ausente):
+
+```bash
+# Inicio
+aios-lite runtime-log --agent=product --message="Iniciando @product — lendo contexto" || true
+# Ao ler arquivos
+aios-lite runtime-log --agent=product --message="Lendo project.context.md" --type=reading || true
+# Ao gerar PRD
+aios-lite runtime-log --agent=product --message="Gerando prd.md" --type=writing || true
+# Ao concluir
+aios-lite runtime-log --agent=product --message="prd.md criado" --finish --status=completed --summary="PRD gerado" || true
+# Em caso de falha
+aios-lite runtime-log --agent=product --message="Falha: <motivo>" --finish --status=failed || true
+```
+
+Registrar apenas transicoes de estado significativas — nao cada passo interno.

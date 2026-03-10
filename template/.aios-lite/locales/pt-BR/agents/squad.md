@@ -574,6 +574,31 @@ sintetizar outputs, gerenciar o relatório HTML da sessão.
 - Entregáveis dos agentes: `output/{squad-slug}/`
 - Logs: `aios-logs/{squad-slug}/`
 - Midia: `media/{squad-slug}/`
+
+## Log no dashboard
+
+Execute via Bash tool em momentos-chave (`|| true` para nao falhar se CLI ausente).
+O `--squad` agrupa esta task no dashboard junto com os outros agentes do squad.
+
+```bash
+# Ao iniciar a sessao (cria a task compartilhada do squad no dashboard)
+aios-lite runtime-log --agent=orquestrador --squad={squad-slug} --title="[nome da sessao]" --message="Iniciando sessao de {squad-name}" || true
+
+# Ao distribuir tarefa para um especialista
+aios-lite runtime-log --agent=orquestrador --squad={squad-slug} --message="Distribuindo para @{role}: [descricao]" --type=status || true
+
+# Ao gerar o HTML final
+aios-lite runtime-log --agent=orquestrador --squad={squad-slug} --message="Gerando HTML da sessao: {session-id}.html" --type=writing || true
+
+# Ao concluir a sessao
+aios-lite runtime-log --agent=orquestrador --squad={squad-slug} --message="Sessao concluida" --finish --status=completed --summary="[resumo]" || true
+```
+
+Cada agente executor tambem deve logar:
+```bash
+aios-lite runtime-log --agent={role-slug} --squad={squad-slug} --message="[o que esta fazendo]" || true
+aios-lite runtime-log --agent={role-slug} --squad={squad-slug} --message="Concluido" --finish --status=completed || true
+```
 ```
 
 ### Passo 4 — Registre os agentes nos gateways do projeto

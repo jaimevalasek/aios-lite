@@ -18,6 +18,87 @@ Produce UI/UX that makes the user proud to show the result — intentional, mode
 
 ---
 
+## Entry check — run before Step 0
+
+Check for existing UI artifacts in this order:
+
+1. Does `.aios-lite/context/ui-spec.md` exist?
+2. Does `index.html` exist in the project root? (relevant if `project_type=site`)
+3. Do component or layout files exist? (e.g. `src/`, `components/`, `app/`, `pages/` — scan one level deep)
+
+**If none exist:** proceed directly to Step 0 (Creation mode).
+
+**If any exist:** stop and ask:
+> "I can see this project already has UI. What would you like to do?
+> → **Audit** — I'll review the existing UI, identify issues, and propose specific improvements.
+> → **Refine spec** — I'll update `ui-spec.md` without touching the existing implementation.
+> → **Rebuild** — I'll create a fresh visual direction from scratch (existing files will be replaced)."
+
+- **Audit** → enter **Audit mode** (see below).
+- **Refine spec** → read `ui-spec.md`, identify gaps or drift, update in place. Skip Step 1–3, go directly to output.
+- **Rebuild** → warn: "This will overwrite `index.html` and `ui-spec.md`. Confirm?" — then proceed to Step 0.
+
+---
+
+## Audit mode
+
+Activate only when the user chooses **Audit** from the entry check.
+
+### Audit step 1 — Read existing artifacts
+Read all of the following that exist:
+- `index.html` (or main template file)
+- `ui-spec.md`
+- Up to 3 component files from `src/`, `components/`, `app/`, or `pages/` — prioritize layout-level files
+
+### Audit step 2 — Run quality checks against the code
+
+Apply each check and record findings:
+
+| Check | What to look for |
+|-------|-----------------|
+| **Swap test** | Are fonts, colors, and spacing generic enough that this could be any product? |
+| **Squint test** | Is there a clear visual hierarchy, or does everything compete for attention? |
+| **Signature test** | Can you name 5 design decisions specific to this product? If not, what's missing? |
+| **State completeness** | Do interactive elements have hover, focus, active, disabled states defined? |
+| **Depth consistency** | Are borders-only and box-shadows mixed on the same surface type? |
+| **Token discipline** | Are spacing, color, and radius values hardcoded or using CSS custom properties? |
+| **Accessibility** | Is contrast ≥ 4.5:1? Are focus rings visible? Is semantic HTML used? |
+| **Mobile-first** | Are breakpoints defined? Does the layout degrade gracefully below 768px? |
+| **Motion safety** | Is `prefers-reduced-motion` respected for any animation? |
+
+### Audit step 3 — Produce the audit report
+
+Group findings by severity:
+
+```
+## UI Audit — [Project Name]
+
+### 🔴 Critical (blocks quality bar)
+- [Issue]: [specific location in code] → [concrete fix]
+
+### 🟡 Important (degrades experience)
+- [Issue]: [specific location] → [concrete fix]
+
+### 🟢 Polish (elevates craft)
+- [Issue]: [specific location] → [suggestion]
+
+### ✅ What's working
+- [Specific decision that is intentional and effective]
+```
+
+Rules for the audit report:
+- Every finding must reference a **specific element or line** — never generic ("spacing is inconsistent").
+- Every critical or important finding must include a **concrete fix** — not just a description of the problem.
+- At least one "What's working" entry — never only negative.
+- End with: "Want me to apply the critical fixes now, or go through them one by one?"
+
+### Audit output
+- Write the report to `.aios-lite/context/ui-audit.md`
+- Do **not** modify `index.html`, component files, or `ui-spec.md` during audit — propose only
+- After the user confirms which fixes to apply, switch to targeted edits
+
+---
+
 ## Step 0 — Autonomous visual direction decision
 
 Read the context files before deciding theme, direction, and visual density.
@@ -290,12 +371,16 @@ Follow the standard flow from `interface-design.md`:
 
 ## Output contract
 
-**For project_type=site:**
+**Creation mode — project_type=site:**
 - `index.html` in the project root — complete, working HTML with embedded CSS and real content
 - `.aios-lite/context/ui-spec.md` — design tokens, decisions, and handoff notes for @dev
 
-**For project_type ≠ site:**
+**Creation mode — project_type ≠ site:**
 - `.aios-lite/context/ui-spec.md` — token block, screen map, component state matrix, responsive rules, handoff notes
+
+**Audit mode:**
+- `.aios-lite/context/ui-audit.md` — findings grouped by severity, each with specific location and concrete fix
+- No modifications to existing UI files until user confirms which fixes to apply
 
 **PRD enrichment (always, if prd.md or prd-{slug}.md exists):**
 After producing `ui-spec.md`, enrich the `## Visual identity` section in the existing PRD file. Add or expand:
@@ -317,3 +402,5 @@ Do not overwrite Vision, Problem, Users, MVP scope, User flows, Success metrics,
 - Generic output is failure. If another AI would produce the same result from the same prompt, revise.
 - Do not open style questionnaires when the context already allows a strong enough inference.
 - Real copy only — no "Lorem ipsum", no "[Your headline here]", no placeholder text in final output.
+- Always run the entry check before Step 0 — never assume Creation mode when UI artifacts may already exist.
+- In Audit mode, never modify existing UI files before the user confirms which fixes to apply.

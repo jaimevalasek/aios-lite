@@ -87,6 +87,8 @@ module.exports = {
       'aios-lite runtime:fail [path] --run=<chave> [--message=<texto>] [--summary=<texto>] [--output=<path>] [--json] [--locale=pt-BR]',
     help_runtime_status:
       'aios-lite runtime:status [path] [--json] [--locale=pt-BR]',
+    help_runtime_log:
+      'aios-lite runtime:log [path] --agent=<nome> --message=<texto> [--type=<evento>] [--finish] [--status=completed|failed] [--summary=<texto>] [--title=<titulo-task>] [--json] [--locale=pt-BR]',
     help_cloud_import_squad:
       'aios-lite cloud:import:squad [path] --url=<snapshot-url> [--force] [--snapshots-only] [--dry-run] [--json] [--locale=pt-BR]',
     help_cloud_import_genome:
@@ -732,6 +734,9 @@ module.exports = {
     finish_ok: 'Execucao concluida: {run} ({path})',
     task_fail_ok: 'Task marcada como falha: {task} ({path})',
     fail_ok: 'Execucao marcada como falha: {run} ({path})',
+    log_ok: 'Evento registrado: {agent} / {run} ({path})',
+    log_finish_ok: 'Execucao encerrada: {agent} / {run} ({path})',
+    log_agent_required: 'Opcao obrigatoria ausente: --agent',
     status_title: 'Status do runtime: {path}',
     status_db: 'Banco: {path}',
     status_task_counts:
