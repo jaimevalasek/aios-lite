@@ -67,6 +67,8 @@ module.exports = {
       'aios-lite squad:status [path] [--json] [--locale=pt-BR]',
     help_squad_doctor:
       'aios-lite squad:doctor [path] [--squad=<slug>] [--stale-minutes=5] [--json] [--locale=pt-BR]',
+    help_squad_validate:
+      'aios-lite squad:validate [path] --squad=<slug> [--locale=pt-BR]',
     help_runtime_init:
       'aios-lite runtime:init [path] [--json] [--locale=pt-BR]',
     help_runtime_ingest:

@@ -33,6 +33,7 @@ const { runScanProject } = require('./commands/scan-project');
 const { runConfig } = require('./commands/config');
 const { runSquadStatus } = require('./commands/squad-status');
 const { runSquadDoctor } = require('./commands/squad-doctor');
+const { runSquadValidate } = require('./commands/squad-validate');
 const {
   runDashboardInit,
   runDashboardDev,
@@ -128,6 +129,8 @@ const JSON_SUPPORTED_COMMANDS = new Set([
   'squad-status',
   'squad:doctor',
   'squad-doctor',
+  'squad:validate',
+  'squad-validate',
   'runtime:init',
   'runtime-init',
   'runtime:ingest',
@@ -227,6 +230,7 @@ function printHelp(t, logger) {
   logHelpLine(t, logger, 'cli.help_dashboard_open');
   logHelpLine(t, logger, 'cli.help_squad_status');
   logHelpLine(t, logger, 'cli.help_squad_doctor');
+  logHelpLine(t, logger, 'cli.help_squad_validate');
   logHelpLine(t, logger, 'cli.help_runtime_init');
   logHelpLine(t, logger, 'cli.help_runtime_ingest');
   logHelpLine(t, logger, 'cli.help_runtime_task_start');
@@ -366,6 +370,8 @@ async function main() {
       result = await runSquadStatus({ args, options, logger: commandLogger, t });
     } else if (command === 'squad:doctor' || command === 'squad-doctor') {
       result = await runSquadDoctor({ args, options, logger: commandLogger, t });
+    } else if (command === 'squad:validate' || command === 'squad-validate') {
+      result = await runSquadValidate({ args, options, logger: commandLogger, t });
     } else if (command === 'runtime:init' || command === 'runtime-init') {
       result = await runRuntimeInit({ args, options, logger: commandLogger, t });
     } else if (command === 'runtime:ingest' || command === 'runtime-ingest') {

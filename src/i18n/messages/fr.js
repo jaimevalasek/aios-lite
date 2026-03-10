@@ -58,6 +58,8 @@ module.exports = {
       'aios-lite config <set KEY=value|show|get KEY> [--json] [--locale=fr]',
     help_squad_status:
       'aios-lite squad:status [path] [--json] [--locale=fr]',
+    help_squad_validate:
+      'aios-lite squad:validate [path] --squad=<slug> [--locale=fr]',
     unknown_command: 'Commande inconnue : {command}',
     unknown_command_line: '{message}\n',
     error_prefix: 'Erreur : {message}'

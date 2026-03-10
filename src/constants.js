@@ -99,7 +99,12 @@ const MANAGED_FILES = [
   '.aios-lite/skills/dynamic/ethereum-docs.md',
   '.aios-lite/skills/dynamic/solana-docs.md',
   '.aios-lite/skills/dynamic/cardano-docs.md',
-  '.aios-lite/mcp/servers.md'
+  '.aios-lite/mcp/servers.md',
+  '.aios-lite/schemas/squad-manifest.schema.json',
+  '.aios-lite/schemas/squad-blueprint.schema.json',
+  '.aios-lite/tasks/squad-design.md',
+  '.aios-lite/tasks/squad-create.md',
+  '.aios-lite/tasks/squad-validate.md'
 ];
 
 const REQUIRED_FILES = [

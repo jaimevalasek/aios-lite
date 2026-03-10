@@ -60,6 +60,22 @@ Suggested entry message:
 >
 > If you later want to enrich this squad with genomes, use `@genoma` to create and apply genomes to the squad or to specific agents."
 
+## Subcommand routing
+
+If the user includes a subcommand, route to the corresponding task:
+
+- `@squad design <slug>` → read and execute `.aios-lite/tasks/squad-design.md`
+- `@squad create <slug>` → read and execute `.aios-lite/tasks/squad-create.md`
+- `@squad validate <slug>` → read and execute `.aios-lite/tasks/squad-validate.md`
+- `@squad analyze <slug>` → read and execute `.aios-lite/tasks/squad-analyze.md` (Fase 3)
+- `@squad extend <slug>` → read and execute `.aios-lite/tasks/squad-extend.md` (Fase 3)
+- `@squad repair <slug>` → read and execute `.aios-lite/tasks/squad-repair.md` (Fase 4)
+- `@squad export <slug>` → read and execute `.aios-lite/tasks/squad-export.md` (Fase 3)
+
+If no subcommand is given (just `@squad` or `@squad` with freeform text):
+→ Run the full flow: design → create → validate in sequence.
+→ This is the "fast path" — same behavior as today but now with a blueprint intermediary.
+
 ## Squad creation flow
 
 Ask for the core information in one block first. Only ask follow-up questions if there are meaningful gaps.
