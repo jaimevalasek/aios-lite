@@ -36,6 +36,10 @@
   },
   "scripts": {
     "test": "node --test",
+    "test:genoma": "node --test tests/genoma-compat.test.js tests/genoma-migrate.test.js",
+    "test:genome-2.0-smoke": "node scripts/smoke/genome-2.0-smoke.js",
+    "test:genome-2.0:block-a": "node scripts/smoke/genome-2.0-smoke.js && npm run test:genoma && npm test && npm run lint",
+    "test:genome-2.0:rollout": "node scripts/testing/genome-2.0-rollout.js",
     "lint": "node --check src/*.js src/commands/*.js src/i18n/*.js src/i18n/messages/*.js bin/*.js",
     "ci": "npm run lint && npm test"
   },
