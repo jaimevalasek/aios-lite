@@ -1,0 +1,98 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://aios-lite.dev/schemas/genome-meta.schema.json",
+  "title": "AIOS Lite Genome Metadata",
+  "description": "Schema dos metadados operacionais do Genoma 2.0",
+  "type": "object",
+  "required": ["schemaVersion", "format", "slug", "domain", "type", "language", "depth", "evidenceMode", "sourceCount", "counts", "origin", "compat", "bindings", "createdAt", "updatedAt"],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 2
+    },
+    "format": {
+      "type": "string",
+      "const": "genome-v2"
+    },
+    "slug": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$"
+    },
+    "domain": {
+      "type": "string",
+      "minLength": 1
+    },
+    "type": {
+      "type": "string",
+      "enum": ["domain", "function", "persona", "hybrid"]
+    },
+    "language": {
+      "type": "string",
+      "minLength": 2
+    },
+    "depth": {
+      "type": "string",
+      "enum": ["surface", "standard", "deep"]
+    },
+    "evidenceMode": {
+      "type": "string",
+      "enum": ["inferred", "evidenced", "hybrid"]
+    },
+    "sourceCount": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "counts": {
+      "type": "object",
+      "required": ["knowledgeNodes", "philosophies", "mentalModels", "heuristics", "frameworks", "methodologies", "mentes", "skills", "evidence", "applicationNotes"],
+      "properties": {
+        "knowledgeNodes": { "type": "integer", "minimum": 0 },
+        "philosophies": { "type": "integer", "minimum": 0 },
+        "mentalModels": { "type": "integer", "minimum": 0 },
+        "heuristics": { "type": "integer", "minimum": 0 },
+        "frameworks": { "type": "integer", "minimum": 0 },
+        "methodologies": { "type": "integer", "minimum": 0 },
+        "mentes": { "type": "integer", "minimum": 0 },
+        "skills": { "type": "integer", "minimum": 0 },
+        "evidence": { "type": "integer", "minimum": 0 },
+        "applicationNotes": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "origin": {
+      "type": "object",
+      "properties": {
+        "mode": { "type": "string" },
+        "sourceFiles": { "type": "array", "items": { "type": "string" } },
+        "sourceUrls": { "type": "array", "items": { "type": "string" } }
+      },
+      "required": ["mode", "sourceFiles", "sourceUrls"],
+      "additionalProperties": false
+    },
+    "compat": {
+      "type": "object",
+      "properties": {
+        "legacyMarkdownCompatible": { "type": "boolean" },
+        "synthesizedFromLegacy": { "type": "boolean" }
+      },
+      "required": ["legacyMarkdownCompatible", "synthesizedFromLegacy"],
+      "additionalProperties": false
+    },
+    "bindings": {
+      "type": "object",
+      "properties": {
+        "squads": { "type": "array", "items": { "type": "string" } },
+        "agents": { "type": "array", "items": { "type": "string" } }
+      },
+      "required": ["squads", "agents"],
+      "additionalProperties": false
+    },
+    "createdAt": {
+      "type": "string"
+    },
+    "updatedAt": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": true
+}

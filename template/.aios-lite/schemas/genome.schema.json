@@ -1,0 +1,67 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://aios-lite.dev/schemas/genome.schema.json",
+  "title": "AIOS Lite Genome",
+  "description": "Schema do objeto normalizado do Genoma 2.0",
+  "type": "object",
+  "required": ["slug", "domain", "type", "language", "depth", "version", "format", "evidenceMode", "sections"],
+  "properties": {
+    "slug": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$"
+    },
+    "domain": {
+      "type": "string",
+      "minLength": 1
+    },
+    "type": {
+      "type": "string",
+      "enum": ["domain", "function", "persona", "hybrid"]
+    },
+    "language": {
+      "type": "string",
+      "minLength": 2
+    },
+    "depth": {
+      "type": "string",
+      "enum": ["surface", "standard", "deep"]
+    },
+    "version": {
+      "type": "integer",
+      "const": 2
+    },
+    "format": {
+      "type": "string",
+      "const": "genome-v2"
+    },
+    "evidenceMode": {
+      "type": "string",
+      "enum": ["inferred", "evidenced", "hybrid"]
+    },
+    "sourceCount": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "generated": {
+      "type": "string"
+    },
+    "sections": {
+      "type": "object",
+      "required": ["knowledge", "philosophies", "mentalModels", "heuristics", "frameworks", "methodologies", "mentes", "skills", "evidence", "applicationNotes"],
+      "properties": {
+        "knowledge": { "type": "array", "items": { "type": "string" } },
+        "philosophies": { "type": "array", "items": { "type": "string" } },
+        "mentalModels": { "type": "array", "items": { "type": "string" } },
+        "heuristics": { "type": "array", "items": { "type": "string" } },
+        "frameworks": { "type": "array", "items": { "type": "string" } },
+        "methodologies": { "type": "array", "items": { "type": "string" } },
+        "mentes": { "type": "array", "items": { "type": "string" } },
+        "skills": { "type": "array", "items": { "type": "string" } },
+        "evidence": { "type": "array", "items": { "type": "string" } },
+        "applicationNotes": { "type": "array", "items": { "type": "string" } }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": true
+}

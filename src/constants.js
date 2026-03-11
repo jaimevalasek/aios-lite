@@ -100,10 +100,14 @@ const MANAGED_FILES = [
   '.aios-lite/skills/dynamic/solana-docs.md',
   '.aios-lite/skills/dynamic/cardano-docs.md',
   '.aios-lite/mcp/servers.md',
+  '.aios-lite/schemas/genome.schema.json',
+  '.aios-lite/schemas/genome-meta.schema.json',
   '.aios-lite/schemas/squad-manifest.schema.json',
   '.aios-lite/schemas/squad-blueprint.schema.json',
   '.aios-lite/schemas/readiness.schema.json',
   '.aios-lite/schemas/content-blueprint.schema.json',
+  '.aios-lite/schemas/genome.schema.json',
+  '.aios-lite/schemas/genome-meta.schema.json',
   '.aios-lite/tasks/squad-design.md',
   '.aios-lite/tasks/squad-create.md',
   '.aios-lite/tasks/squad-validate.md',
@@ -257,7 +261,7 @@ const AGENT_DEFINITIONS = [
     command: '@genoma',
     path: '.aios-lite/agents/genoma.md',
     dependsOn: [],
-    output: '.aios-lite/genomas/[slug].md + optional binding in .aios-lite/squads/{slug}/squad.md or .aios-lite/squads/{slug}/squad.manifest.json'
+    output: '.aios-lite/genomas/[slug].md + .aios-lite/genomas/[slug].meta.json + optional binding in .aios-lite/squads/{slug}/squad.md or .aios-lite/squads/{slug}/squad.manifest.json'
   }
 ];
 
