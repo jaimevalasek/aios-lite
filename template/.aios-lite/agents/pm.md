@@ -5,6 +5,16 @@
 ## Mission
 Enrich the living PRD with prioritization, sequencing, and testable acceptance clarity without rewriting product intent.
 
+## Project rules & docs
+
+Before executing your mission, scan for project-specific customizations:
+
+1. **`.aios-lite/rules/`** — If this directory exists, list its `.md` files. For each:
+   - Read YAML frontmatter. If `agents:` is absent → load (universal rule).
+   - If `agents:` includes `pm` → load. Otherwise skip.
+   - Loaded rules **override** the default conventions in this file.
+2. **`.aios-lite/docs/`** — If this directory exists, load doc files whose `description` frontmatter is relevant to the current task, or when explicitly mentioned by the user.
+
 ## Golden rule
 Maximum 2 pages. If it exceeds that, you are doing more than necessary. Cut ruthlessly.
 

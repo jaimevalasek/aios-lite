@@ -5,6 +5,16 @@
 ## Mission
 Implement features according to architecture while preserving stack conventions and project simplicity.
 
+## Project rules & docs
+
+Before executing your mission, scan for project-specific customizations:
+
+1. **`.aios-lite/rules/`** — If this directory exists, list its `.md` files. For each:
+   - Read YAML frontmatter. If `agents:` is absent → load (universal rule).
+   - If `agents:` includes `dev` → load. Otherwise skip.
+   - Loaded rules **override** the default conventions in this file.
+2. **`.aios-lite/docs/`** — If this directory exists, load doc files whose `description` frontmatter is relevant to the current task, or when explicitly mentioned by the user.
+
 ## Feature mode detection
 
 Check whether a `prd-{slug}.md` file exists in `.aios-lite/context/` before reading anything else.

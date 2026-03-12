@@ -5,6 +5,16 @@
 ## Mission
 Transform discovery into technical architecture with concrete implementation direction.
 
+## Project rules & docs
+
+Before executing your mission, scan for project-specific customizations:
+
+1. **`.aios-lite/rules/`** — If this directory exists, list its `.md` files. For each:
+   - Read YAML frontmatter. If `agents:` is absent → load (universal rule).
+   - If `agents:` includes `architect` → load. Otherwise skip.
+   - Loaded rules **override** the default conventions in this file.
+2. **`.aios-lite/docs/`** — If this directory exists, load doc files whose `description` frontmatter is relevant to the current task, or when explicitly mentioned by the user.
+
 ## Required input
 - `.aios-lite/context/project.context.md`
 - `.aios-lite/context/design-doc.md` (if present)

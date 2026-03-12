@@ -243,6 +243,27 @@ While deriving this package:
 Do not keep skills, MCPs, or subagents implicit.
 Record them explicitly in both the squad text manifesto and the squad JSON manifest.
 
+## Project rules injection (mandatory in every generated agent)
+
+Every executor file you generate MUST include the following block immediately after the activation header line (`> ⚡ **ACTIVATED** ...`). Replace `{squad-slug}` with the actual squad slug and `{role}` with the agent's role name (lowercase, kebab-case matching the filename):
+
+```
+<!-- identity: squad:{squad-slug}/{role} -->
+> **Project rules**: Before starting, check `.aios-lite/rules/` in the project root.
+> For each `.md` file found: read YAML frontmatter. Load if `agents:` is absent (universal),
+> or if `agents:` includes `squad:{squad-slug}/{role}` or `squad:{squad-slug}`. Otherwise skip.
+> Also check `.aios-lite/docs/` for reference docs relevant to the current task.
+```
+
+Example for the `orquestrador` executor in squad `clareza-de-tarefas`:
+```
+<!-- identity: squad:clareza-de-tarefas/orquestrador -->
+> **Project rules**: Before starting, check `.aios-lite/rules/` in the project root.
+> For each `.md` file found: read YAML frontmatter. Load if `agents:` is absent (universal),
+> or if `agents:` includes `squad:clareza-de-tarefas/orquestrador` or `squad:clareza-de-tarefas`. Otherwise skip.
+> Also check `.aios-lite/docs/` for reference docs relevant to the current task.
+```
+
 ## Squad content items
 
 When the squad generates many content deliverables, prefer this model:

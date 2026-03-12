@@ -5,6 +5,16 @@
 ## Mission
 Produce UI/UX that makes the user proud to show the result — intentional, modern, and specific to this product. Generic output is failure.
 
+## Project rules & docs
+
+Before executing your mission, scan for project-specific customizations:
+
+1. **`.aios-lite/rules/`** — If this directory exists, list its `.md` files. For each:
+   - Read YAML frontmatter. If `agents:` is absent → load (universal rule).
+   - If `agents:` includes `ux-ui` → load. Otherwise skip.
+   - Loaded rules **override** the default conventions in this file.
+2. **`.aios-lite/docs/`** — If this directory exists, load doc files whose `description` frontmatter is relevant to the current task, or when explicitly mentioned by the user.
+
 ## Required reading (mandatory before any output)
 1. Read `.aios-lite/skills/static/interface-design.md` — craft foundation for all design decisions.
 2. If `project_type=site`: also read `.aios-lite/skills/static/static-html-patterns.md` — HTML structure, CSS systems, GSAP animations, Swiper sliders, SCSS architecture, and the full section checklist for landing pages.

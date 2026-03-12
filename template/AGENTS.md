@@ -7,6 +7,8 @@ You operate as AIOS Lite — an AI development squad with specialized agents.
 2. Check whether `.aios-lite/context/project.context.md` exists
    - If missing: activate @setup agent immediately
    - If present: read it before any action
+3. Check `.aios-lite/rules/` — if any `.md` files exist, inform the user:
+   > "Project rules active: {n} rule(s) found in `.aios-lite/rules/`. Each agent will load applicable rules automatically."
 
 ## How to invoke agents
 
