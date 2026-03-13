@@ -184,8 +184,6 @@ aios-forge locale:apply . --lang=pt-BR
 aios-forge locale:diff ux-ui --lang=pt-BR
 ```
 
-Explicando do jeito mais simples possível:
-
 - `locale:apply` muda o idioma dos agentes do AIOS Forge
 - ou seja: muda o idioma em que o framework espera que os agentes conversem e trabalhem no projeto
 
@@ -195,7 +193,7 @@ Pense assim:
 - `locale:apply --lang=pt-BR` = idioma do **agente do AIOS Forge**
 - i18n do app do cliente = idioma do **produto final do usuário**
 
-Exemplo bem simples:
+Exemplo:
 
 - se você usar `--locale=pt-BR`, o CLI mostra mensagens em português
 - se você usar `locale:apply --lang=pt-BR`, os agentes do AIOS Forge passam a operar em português
@@ -213,8 +211,6 @@ Use `locale:diff` para checar se algum agente ficou diferente do pack de idioma 
 aios-forge i18n:add fr --dry-run
 aios-forge i18n:add fr
 ```
-
-Explicando como para uma criança:
 
 - `i18n:add` **não** adiciona idiomas ao app do cliente
 - `i18n:add` adiciona um idioma novo ao **próprio AIOS Forge**
