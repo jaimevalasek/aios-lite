@@ -8,6 +8,27 @@ const { exists, ensureDir, copyFileWithDir, nowStamp, toRelativeSafe } = require
 
 const ROOT_DIR = path.join(__dirname, '..');
 const TEMPLATE_DIR = path.join(ROOT_DIR, 'template');
+const PROJECT_LOCAL_FILES = new Set(['aios-forge-models.json']);
+const GITIGNORE_POLICY_LINES = [
+  '# AIOS Forge — keep shared project memory and tool contracts',
+  '!AGENTS.md',
+  '!CLAUDE.md',
+  '!OPENCODE.md',
+  '!.claude/',
+  '!.claude/**',
+  '!.gemini/',
+  '!.gemini/**',
+  '!.aios-forge/',
+  '!.aios-forge/**',
+  '# AIOS Forge — local-only artifacts',
+  'aios-forge-models.json',
+  '.aios-forge/backups/',
+  '.aios-forge/cloud-imports/',
+  '.aios-forge/runtime/',
+  '.aios-forge/mcp/presets/',
+  '.aios-forge/install.json',
+  '.aios-forge/mcp/servers.local.json'
+];
 
 async function detectExistingInstall(targetDir) {
   return exists(path.join(targetDir, '.aios-forge/config.md'));
@@ -23,6 +44,22 @@ async function ensureGitignoreEntry(targetDir, entry) {
   const separator = content.length > 0 && !content.endsWith('\n') ? '\n' : '';
   await fs.writeFile(gitignorePath, `${content}${separator}${entry}\n`, 'utf8');
   return true;
+}
+
+async function ensureGitignoreEntries(targetDir, entries) {
+  const gitignorePath = path.join(targetDir, '.gitignore');
+  let content = '';
+  if (await exists(gitignorePath)) {
+    content = await fs.readFile(gitignorePath, 'utf8');
+  }
+
+  const existing = new Set(content.split('\n').map((line) => line.trim()));
+  const missing = entries.filter((entry) => !existing.has(entry));
+  if (missing.length === 0) return 0;
+
+  const separator = content.length > 0 && !content.endsWith('\n') ? '\n' : '';
+  await fs.writeFile(gitignorePath, `${content}${separator}${missing.join('\n')}\n`, 'utf8');
+  return missing.length;
 }
 
 async function countProjectFiles(targetDir) {
@@ -125,6 +162,11 @@ async function installTemplate(targetDir, options = {}) {
     const dest = path.join(targetDir, rel);
     const destExists = await exists(dest);
 
+    if (destExists && PROJECT_LOCAL_FILES.has(rel)) {
+      skipped.push({ path: rel, reason: 'project-local' });
+      continue;
+    }
+
     if (destExists && !overwrite && mode !== 'update') {
       skipped.push({ path: rel, reason: 'already-exists' });
       continue;
@@ -156,8 +198,7 @@ async function installTemplate(targetDir, options = {}) {
 
     await writeInstallMetadata(targetDir, mode, frameworkDetection);
 
-    // Always gitignore the models config (contains API keys)
-    await ensureGitignoreEntry(targetDir, 'aios-forge-models.json');
+    await ensureGitignoreEntries(targetDir, GITIGNORE_POLICY_LINES);
   }
 
   // Detect if this is an existing project with many files
@@ -181,5 +222,6 @@ module.exports = {
   installTemplate,
   listFilesRecursive,
   ensureGitignoreEntry,
+  ensureGitignoreEntries,
   countProjectFiles
 };

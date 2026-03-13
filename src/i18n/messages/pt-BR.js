@@ -54,7 +54,7 @@ module.exports = {
     help_qa_report:
       'aios-forge qa:report [path] [--html] [--json] [--locale=pt-BR]',
     help_scan_project:
-      'aios-forge scan:project [path] [--provider=<name>] [--dry-run] [--json] [--locale=pt-BR]',
+      'aios-forge scan:project [path] --folder=<pasta[,pasta2]> [--summary-mode=titles|summaries|raw] [--with-llm] [--provider=<name>] [--llm-model=<name>] [--dry-run] [--json] [--locale=pt-BR]',
     help_config:
       'aios-forge config <set KEY=value|show|get KEY> [--json] [--locale=pt-BR]',
     help_genome_doctor:
@@ -150,7 +150,7 @@ module.exports = {
     existing_project_detected:
       '⚠ Projeto existente detectado ({count} arquivos). Rode o scanner antes de comecar:',
     existing_project_scan_hint:
-      '  aios-forge scan:project   (usa modelo barato, economiza tokens na sua sessao de IA)'
+      '  aios-forge scan:project --folder=src   (gera scan-index.md localmente; adicione --with-llm para discovery.md)'
   },
   update: {
     not_installed: 'Nenhuma instalacao do AIOS Forge encontrada em {targetDir}.',
@@ -773,18 +773,29 @@ module.exports = {
   },
   scan_project: {
     scanning: 'aios-forge scan:project — escaneando {dir}',
-    config_missing: '{file} nao encontrado. Copie aios-forge-models.json e preencha suas chaves de API.',
+    folder_required:
+      'Informe --folder=<pasta[,pasta2]> para gerar o mapa completo das pastas desejadas. Exemplo: --folder=src ou --folder=app.',
+    folder_not_found: 'A pasta "{folder}" nao foi encontrada neste projeto. Pastas de nivel superior detectadas: {available}',
+    config_missing: '{file} nao encontrado. Para usar o modo com LLM, copie aios-forge-models.json e preencha suas chaves de API.',
     config_invalid: 'JSON invalido em aios-forge-models.json: {error}',
-    provider_missing: 'Provider "{provider}" nao encontrado em aios-forge-models.json. Disponiveis: {available}',
+    provider_missing: 'Provider de LLM "{provider}" nao encontrado em aios-forge-models.json. Disponiveis: {available}',
     provider_info: '  Provider : {provider}',
     model_info: '  Modelo   : {model}',
     context_found: '  Contexto : project.context.md encontrado',
     context_missing: '  Contexto : project.context.md nao encontrado (execute aios-forge setup:context primeiro)',
     spec_found: '  Spec     : spec.md encontrado — memoria de desenvolvimento incluida',
+    local_only: '  LLM      : desativada por padrao — scan local apenas (use --with-llm para gerar discovery.md + skeleton-system.md)',
     walking: '  Escaneando estrutura do projeto...',
     walk_done: '  Arquivos : {files} entradas mapeadas | Arquivos chave: {keys} lidos',
+    index_written: '  Indice   : scan local escrito em {path} (modo: {mode})',
+    folders_written: '  Pastas   : mapa de pastas escrito em {path}',
+    folder_written: '  Pasta    : mapa completo de {folder} escrito em {path}',
+    forge_written: '  AIOS     : mapa util do .aios-forge escrito em {path}',
     dry_run_done: '[dry-run] Escanearia {treeCount} entradas e {keyCount} arquivos chave — nenhuma chamada LLM feita.',
+    local_done: '  Resultado: scan local concluido — index, mapa de pastas, scans solicitados e .aios-forge estao prontos.',
     calling_llm: '  Chamando {provider} ({model})...',
+    llm_missing_api_key:
+      'A chave de API do provider "{provider}" ainda nao foi configurada em {file}. Preencha providers.{provider}.api_key ou escolha outro provider com --provider=...',
     llm_error: 'Chamada LLM falhou: {error}',
     discovery_written: 'discovery.md escrito: {path} ({chars} chars)',
     skeleton_written: 'skeleton-system.md escrito: {path} ({chars} chars)',

@@ -22,9 +22,46 @@ const { ensureDir, exists } = require('../utils');
 const CONFIG_FILE    = 'aios-forge-models.json';
 const OUTPUT_FILE    = '.aios-forge/context/discovery.md';
 const SKELETON_FILE  = '.aios-forge/context/skeleton-system.md';
+const INDEX_FILE     = '.aios-forge/context/scan-index.md';
+const FOLDERS_FILE   = '.aios-forge/context/scan-folders.md';
+const FORGE_FILE     = '.aios-forge/context/scan-aios-forge.md';
 const CONTEXT_FILE   = '.aios-forge/context/project.context.md';
 const SPEC_FILE      = '.aios-forge/context/spec.md';
 const DELIMITER      = '<<<SKELETON>>>';
+const SUMMARY_MODES  = new Set(['titles', 'summaries', 'raw']);
+const FORGE_SCAN_ROOTS = [
+  '.aios-forge/context',
+  '.aios-forge/squads',
+  '.aios-forge/genomas',
+  '.aios-forge/mcp'
+];
+const FORGE_SECTION_ROOTS = [
+  {
+    root: '.aios-forge/context',
+    title: 'Context Pages',
+    empty: '_No generated context pages detected yet_'
+  },
+  {
+    root: '.aios-forge/squads',
+    title: 'Squads',
+    empty: '_No squads detected yet_'
+  },
+  {
+    root: '.aios-forge/genomas',
+    title: 'Genomas',
+    empty: '_No genomas detected yet_'
+  },
+  {
+    root: '.aios-forge/mcp',
+    title: 'MCP',
+    empty: '_No project-specific MCP artifacts detected yet_'
+  }
+];
+const FORGE_SKIP_GENERATED_FILES = new Set([
+  '.aios-forge/context/.gitkeep',
+  '.aios-forge/context/spec.md.template',
+  '.aios-forge/install.json'
+]);
 
 const SKIP_DIRS = new Set([
   '.git', 'node_modules', 'vendor', '.next', 'dist', 'build',
@@ -69,7 +106,6 @@ const KEY_FILE_PATHS = new Set([
 ]);
 
 const MAX_KEY_FILE_CHARS = 3000;
-const MAX_TREE_FILES     = 300;
 
 const PROVIDER_BASE_URLS = {
   deepseek:  'https://api.deepseek.com/v1',
@@ -80,6 +116,8 @@ const PROVIDER_BASE_URLS = {
   mistral:   'https://api.mistral.ai/v1',
   anthropic: null, // uses its own format
 };
+
+let managedForgePathCache = null;
 
 // ── File system helpers ──────────────────────────────────────────────────────
 
@@ -117,14 +155,44 @@ function shouldSkip(relPath, ext, gitignorePatterns) {
   return false;
 }
 
+async function walkRelativeFiles(rootDir, prefix = '') {
+  const out = [];
+  let entries;
+  try {
+    entries = await fs.readdir(rootDir, { withFileTypes: true });
+  } catch {
+    return out;
+  }
+
+  for (const entry of entries) {
+    const fullPath = path.join(rootDir, entry.name);
+    const relPath = prefix ? `${prefix}/${entry.name}` : entry.name;
+    if (entry.isDirectory()) {
+      out.push(...await walkRelativeFiles(fullPath, relPath));
+    } else {
+      out.push(relPath.replace(/\\/g, '/'));
+    }
+  }
+  return out;
+}
+
+async function loadManagedForgePaths() {
+  if (managedForgePathCache) return managedForgePathCache;
+
+  const templateForgeDir = path.join(__dirname, '..', '..', 'template', '.aios-forge');
+  const relPaths = await walkRelativeFiles(templateForgeDir);
+  managedForgePathCache = new Set(relPaths.map((relPath) => `.aios-forge/${relPath}`));
+  return managedForgePathCache;
+}
+
 async function walkProject(root) {
   const gitignore = await loadGitignorePatterns(root);
-  const treeLines = [];
   const keyContents = {};
-  let fileCount = 0;
+  const keyFiles = [];
+  const topLevelStats = new Map();
+  const mappedEntries = [];
 
   async function walk(dir, depth) {
-    if (fileCount >= MAX_TREE_FILES) return;
     let entries;
     try {
       entries = await fs.readdir(dir, { withFileTypes: true });
@@ -145,28 +213,44 @@ async function walkProject(root) {
       if (shouldSkip(relPath, ext, gitignore)) continue;
 
       if (entry.isDirectory()) {
-        treeLines.push(`${indent}${entry.name}/`);
+        mappedEntries.push({ type: 'dir', relPath, depth, sizeBytes: 0 });
         await walk(fullPath, depth + 1);
       } else {
-        if (fileCount >= MAX_TREE_FILES) {
-          treeLines.push(`${indent}... [more files omitted]`);
-          return;
-        }
-        treeLines.push(`${indent}${entry.name}`);
-        fileCount++;
+        let sizeBytes = 0;
+        try {
+          const stat = await fs.stat(fullPath);
+          sizeBytes = Number(stat.size || 0);
+        } catch {}
+
+        mappedEntries.push({ type: 'file', relPath, depth, sizeBytes });
+
+        const parts = relPath.split('/');
+        const topLevel = parts.length > 1 ? parts[0] : '[root files]';
+        const currentStat = topLevelStats.get(topLevel) || { files: 0, sizeBytes: 0 };
+        currentStat.files += 1;
+        currentStat.sizeBytes += sizeBytes;
+        topLevelStats.set(topLevel, currentStat);
 
         const isKeyName = KEY_FILE_NAMES.has(entry.name);
         const isKeyPath = KEY_FILE_PATHS.has(relPath) || [...KEY_FILE_PATHS].some((p) => relPath.endsWith(p));
         if ((isKeyName || isKeyPath) && !(relPath in keyContents)) {
           const content = await readFileSafe(fullPath, MAX_KEY_FILE_CHARS);
-          if (content) keyContents[relPath] = content;
+          if (content) {
+            keyContents[relPath] = content;
+            keyFiles.push({
+              path: relPath,
+              sizeBytes,
+              title: inferKeyFileTitle(relPath, content),
+              summary: inferKeyFileSummary(relPath, content)
+            });
+          }
         }
       }
     }
   }
 
   await walk(root, 0);
-  return { treeLines, keyContents };
+  return { keyContents, keyFiles, topLevelStats, entries: mappedEntries };
 }
 
 // ── HTTP helper (zero external deps) ────────────────────────────────────────
@@ -232,7 +316,9 @@ async function callLLM(providerName, providerCfg, prompt) {
   const baseUrl = providerCfg.base_url || PROVIDER_BASE_URLS[providerName] || '';
 
   if (!apiKey || apiKey.startsWith('YOUR_')) {
-    throw new Error(`API key not configured for provider '${providerName}'`);
+    const error = new Error(`API key not configured for provider '${providerName}'`);
+    error.code = 'MISSING_API_KEY';
+    throw error;
   }
   if (!model) {
     throw new Error(`Model not configured for provider '${providerName}'`);
@@ -245,16 +331,414 @@ async function callLLM(providerName, providerCfg, prompt) {
 
 // ── Prompt builder ───────────────────────────────────────────────────────────
 
-function buildPrompt(treeLines, keyContents, projectContext, specContent) {
+function resolveSummaryMode(value) {
+  const normalized = String(value || '').trim().toLowerCase();
+  return SUMMARY_MODES.has(normalized) ? normalized : 'summaries';
+}
+
+function formatBytesCompact(sizeBytes) {
+  const bytes = Number(sizeBytes || 0);
+  const kb = bytes / 1024;
+  const mb = kb / 1024;
+  if (mb >= 1) return `${mb.toFixed(mb >= 10 ? 1 : 2)} MB`;
+  return `${kb.toFixed(kb >= 10 ? 1 : 2)} KB`;
+}
+
+function humanizeName(value) {
+  return String(value || '')
+    .replace(/\.[^.]+$/, '')
+    .replace(/[_-]+/g, ' ')
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function firstMeaningfulLine(content) {
+  const lines = String(content || '')
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  for (const line of lines) {
+    if (line.startsWith('#')) return line.replace(/^#+\s*/, '').slice(0, 120);
+    if (line.startsWith('{') || line.startsWith('[') || line.startsWith('<') || line.startsWith('---')) continue;
+    if (line.length < 4) continue;
+    return line.slice(0, 120);
+  }
+  return '';
+}
+
+function inferFrameworkClues(pkg) {
+  const deps = {
+    ...(pkg.dependencies || {}),
+    ...(pkg.devDependencies || {})
+  };
+  const clues = [];
+  if (deps.next) clues.push('Next.js');
+  if (deps.react) clues.push('React');
+  if (deps.vue) clues.push('Vue');
+  if (deps.nuxt) clues.push('Nuxt');
+  if (deps.express) clues.push('Express');
+  if (deps.nestjs || deps['@nestjs/core']) clues.push('NestJS');
+  return clues;
+}
+
+function inferKeyFileTitle(relPath, content) {
+  const base = path.basename(relPath).toLowerCase();
+
+  if (base === 'package.json') {
+    try {
+      const pkg = JSON.parse(content);
+      if (pkg && pkg.name) return `${pkg.name} package manifest`;
+    } catch {}
+    return 'NPM package manifest';
+  }
+  if (base === 'composer.json') return 'Composer package manifest';
+  if (base === 'readme.md') {
+    const headline = firstMeaningfulLine(content);
+    return headline || 'Project overview';
+  }
+  if (base === 'dockerfile') return 'Container build recipe';
+  if (base.startsWith('next.config')) return 'Next.js runtime configuration';
+  if (base.startsWith('vite.config')) return 'Vite build configuration';
+  if (base.startsWith('tailwind.config')) return 'Tailwind theme configuration';
+  if (base === 'tsconfig.json') return 'TypeScript compiler configuration';
+  if (relPath.includes('routes/')) return `${humanizeName(base)} route map`;
+  if (relPath.includes('schema.prisma') || base === 'schema.rb') return 'Database schema definition';
+  return humanizeName(base || relPath);
+}
+
+function inferKeyFileSummary(relPath, content) {
+  const base = path.basename(relPath).toLowerCase();
+
+  if (base === 'package.json') {
+    try {
+      const pkg = JSON.parse(content);
+      const scripts = Object.keys(pkg.scripts || {}).length;
+      const depsCount = Object.keys(pkg.dependencies || {}).length + Object.keys(pkg.devDependencies || {}).length;
+      const clues = inferFrameworkClues(pkg);
+      const pieces = [`Scripts: ${scripts}`, `Dependencies: ${depsCount}`];
+      if (clues.length > 0) pieces.push(`Framework clues: ${clues.join(', ')}`);
+      return pieces.join(' | ');
+    } catch {
+      return 'Package metadata, scripts and dependency graph.';
+    }
+  }
+
+  if (base === 'composer.json') return 'PHP dependencies, autoload rules and package metadata.';
+  if (base === 'requirements.txt' || base === 'pyproject.toml') return 'Python dependencies and project metadata.';
+  if (base === 'readme.md') return firstMeaningfulLine(content) || 'Project overview, setup notes and developer guidance.';
+  if (base === 'dockerfile' || base.startsWith('docker-compose')) return 'Container runtime and service topology.';
+  if (base.startsWith('next.config')) return 'Next.js configuration for routing, build and runtime behavior.';
+  if (base.startsWith('vite.config')) return 'Bundler and development server configuration.';
+  if (base.startsWith('tailwind.config')) return 'Design tokens, theme extensions and content scan paths.';
+  if (base === 'tsconfig.json') return 'TypeScript path aliases, compiler options and module targets.';
+  if (relPath.includes('routes/')) return 'Entry points and HTTP route declarations.';
+  if (relPath.includes('schema.prisma') || base === 'schema.rb') return 'Entities, fields and relationship structure for the data model.';
+  if (base === '.env.example' || base === '.env.sample') return 'Environment variable template and required secrets.';
+
+  return firstMeaningfulLine(content) || `Key implementation or configuration file detected at ${relPath}.`;
+}
+
+function renderEntryTreeLines(entries, predicate) {
+  const lines = [];
+  for (const entry of entries) {
+    if (!predicate(entry)) continue;
+    const indent = '  '.repeat(entry.depth);
+    const label = `${path.basename(entry.relPath)}${entry.type === 'dir' ? '/' : ''}`;
+    lines.push(`${indent}${label}`);
+  }
+  return lines;
+}
+
+function normalizeFolderPath(value) {
+  const normalized = String(value || '')
+    .trim()
+    .replace(/\\/g, '/')
+    .replace(/^\.\/+/, '')
+    .replace(/\/+/g, '/')
+    .replace(/\/$/, '');
+
+  if (!normalized || normalized === '.') return '.';
+  return normalized;
+}
+
+function resolveRequestedFolders(value) {
+  const rawValues = Array.isArray(value) ? value : [value];
+  const folders = [];
+  const seen = new Set();
+
+  for (const rawValue of rawValues) {
+    const parts = String(rawValue || '')
+      .split(',')
+      .map((part) => normalizeFolderPath(part))
+      .filter((part) => part && part !== '.');
+
+    for (const folder of parts) {
+      if (seen.has(folder)) continue;
+      seen.add(folder);
+      folders.push(folder);
+    }
+  }
+
+  return folders;
+}
+
+function isWithinPrefix(relPath, prefix) {
+  return relPath === prefix || relPath.startsWith(`${prefix}/`);
+}
+
+function isWithinAnyPrefix(relPath, prefixes) {
+  return prefixes.some((prefix) => isWithinPrefix(relPath, prefix));
+}
+
+function collectForgeArtifactPaths(entries, managedForgePaths) {
+  const included = new Set();
+
+  for (const entry of entries) {
+    if (!isWithinAnyPrefix(entry.relPath, FORGE_SCAN_ROOTS)) continue;
+
+    if (entry.type === 'file') {
+      if (managedForgePaths.has(entry.relPath)) continue;
+      if (FORGE_SKIP_GENERATED_FILES.has(entry.relPath)) continue;
+      included.add(entry.relPath);
+      continue;
+    }
+
+    if (entry.type === 'dir' && !FORGE_SCAN_ROOTS.includes(entry.relPath)) {
+      included.add(entry.relPath);
+    }
+  }
+
+  if (included.size === 0) return included;
+
+  const withAncestors = new Set(included);
+  for (const relPath of included) {
+    let current = relPath;
+    while (current && current.includes('/')) {
+      current = current.slice(0, current.lastIndexOf('/'));
+      if (!current) break;
+      withAncestors.add(current);
+      if (current === '.aios-forge') break;
+    }
+  }
+  return withAncestors;
+}
+
+function buildFolderMapMarkdown({ entries, generatedAt }) {
+  const lines = [
+    '# Folder Map',
+    `_Generated by aios-forge scan:project — ${generatedAt}_`,
+    '',
+    '## Scope',
+    '- Project directories only.',
+    '- `.aios-forge/` internals are intentionally omitted here and tracked in `scan-aios-forge.md`.',
+    '',
+    '## Tree'
+  ];
+
+  const treeLines = renderEntryTreeLines(entries, (entry) => {
+    if (entry.type !== 'dir') return false;
+    if (entry.relPath === '.aios-forge') return true;
+    return !entry.relPath.startsWith('.aios-forge/');
+  });
+
+  if (treeLines.length === 0) {
+    lines.push('_No directories mapped_');
+    return lines.join('\n');
+  }
+
+  lines.push('```text', ...treeLines, '```');
+  return lines.join('\n');
+}
+
+function sanitizeScanFileSegment(folder) {
+  const normalized = normalizeFolderPath(folder);
+  if (normalized === '.') return 'root';
+  return normalized
+    .replace(/[/.]+/g, '-')
+    .replace(/[^a-zA-Z0-9_-]+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '') || 'folder';
+}
+
+function buildFolderScanRelativePath(folder) {
+  return `.aios-forge/context/scan-${sanitizeScanFileSegment(folder)}.md`;
+}
+
+function renderRequestedFolderTree(entries, folder) {
+  const normalized = normalizeFolderPath(folder);
+  const lines = [];
+
+  if (normalized === '.') {
+    return renderEntryTreeLines(entries, () => true);
+  }
+
+  lines.push(`${normalized}/`);
+  for (const entry of entries) {
+    if (!isWithinPrefix(entry.relPath, normalized) || entry.relPath === normalized) continue;
+    const relativePath = entry.relPath.slice(normalized.length + 1);
+    const depth = relativePath.split('/').length;
+    const label = `${path.basename(entry.relPath)}${entry.type === 'dir' ? '/' : ''}`;
+    lines.push(`${'  '.repeat(depth)}${label}`);
+  }
+  return lines;
+}
+
+function buildRequestedFolderMarkdown({ entries, generatedAt, folder }) {
+  const normalized = normalizeFolderPath(folder);
+  const lines = [
+    `# Folder Scan: ${normalized}`,
+    `_Generated by aios-forge scan:project — ${generatedAt}_`,
+    '',
+    '## Scope',
+    `- Requested folder: \`${normalized}/\``,
+    '- Includes all mapped directories and files under this folder.',
+    '',
+    '## Tree'
+  ];
+
+  const treeLines = renderRequestedFolderTree(entries, normalized);
+  if (treeLines.length === 0) {
+    lines.push('_No mapped entries for this folder_');
+    return lines.join('\n');
+  }
+
+  lines.push('```text', ...treeLines, '```');
+  return lines.join('\n');
+}
+
+function renderForgeSectionTree(entries, root, artifactPaths) {
+  const sectionEntries = entries.filter((entry) => artifactPaths.has(entry.relPath) && isWithinPrefix(entry.relPath, root));
+  if (sectionEntries.length === 0) return [];
+
+  const lines = [`${root}/`];
+  for (const entry of sectionEntries) {
+    if (entry.relPath === root) continue;
+    const relativePath = entry.relPath.slice(root.length + 1);
+    const depth = relativePath.split('/').length;
+    const label = `${path.basename(entry.relPath)}${entry.type === 'dir' ? '/' : ''}`;
+    lines.push(`${'  '.repeat(depth)}${label}`);
+  }
+  return lines;
+}
+
+function buildForgeArtifactsMarkdown({ entries, generatedAt, managedForgePaths }) {
+  const lines = [
+    '# AIOS Forge Generated Map',
+    `_Generated by aios-forge scan:project — ${generatedAt}_`,
+    '',
+    '## Scope',
+    '- Shows generated or project-specific artifacts inside `.aios-forge/`.',
+    '- Groups what matters for client analysis, especially context pages, squads, genomas and local MCP artifacts.',
+    '- Hides framework-managed defaults such as agents, locales, schemas, static skills and task docs.'
+  ];
+
+  const artifactPaths = collectForgeArtifactPaths(entries, managedForgePaths);
+  if (artifactPaths.size === 0) {
+    lines.push('', '_No generated AIOS Forge artifacts detected yet_');
+    return { markdown: lines.join('\n'), artifactCount: 0 };
+  }
+
+  let artifactCount = 0;
+  for (const section of FORGE_SECTION_ROOTS) {
+    lines.push('', `## ${section.title}`);
+    const treeLines = renderForgeSectionTree(entries, section.root, artifactPaths);
+    if (treeLines.length === 0) {
+      lines.push(section.empty);
+      continue;
+    }
+    artifactCount += treeLines.length;
+    lines.push('```text', ...treeLines, '```');
+  }
+
+  return { markdown: lines.join('\n'), artifactCount };
+}
+
+function buildScanIndexMarkdown({
+  keyFiles,
+  topLevelStats,
+  generatedAt,
+  includeSummaries = true,
+  foldersPath,
+  folderScans = [],
+  forgePath,
+  forgeArtifactCount = 0
+}) {
+  const lines = [
+    '# Scan Index',
+    `_Generated by aios-forge scan:project — ${generatedAt}_`,
+    '',
+    '## Scan outputs',
+    '| File | Purpose |',
+    '|------|---------|',
+    `| ${INDEX_FILE} | Summary index with footprint, key files and links to specialized scan maps |`,
+    `| ${FOLDERS_FILE} | Directory-only map of the project |`,
+    ...folderScans.map((scan) =>
+      `| ${scan.relativePath} | Full folder and file map for requested folder \`${scan.folder}/\` |`
+    ),
+    `| ${FORGE_FILE} | Generated or project-specific artifacts inside .aios-forge/ |`,
+    '',
+    `- Folder map: \`${foldersPath}\``,
+    ...(
+      folderScans.length === 0
+        ? ['- Requested folder scans: none']
+        : folderScans.map((scan) => `- Folder \`${scan.folder}/\`: \`${scan.absolutePath}\``)
+    ),
+    `- AIOS Forge generated map: \`${forgePath}\``,
+    `- AIOS Forge generated entries: ${forgeArtifactCount}`,
+    '',
+    '## Top-level footprint',
+    '| Path | Files | Approx size |',
+    '|------|-------|-------------|'
+  ];
+
+  const topLevelRows = [...topLevelStats.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+  if (topLevelRows.length === 0) {
+    lines.push('| [root files] | 0 | 0 KB |');
+  } else {
+    for (const [name, stat] of topLevelRows) {
+      lines.push(`| ${name} | ${stat.files} | ${formatBytesCompact(stat.sizeBytes)} |`);
+    }
+  }
+
+  lines.push('', '## Key files');
+  if (!keyFiles || keyFiles.length === 0) {
+    lines.push('- No key files detected.');
+  } else {
+    for (const file of keyFiles.slice(0, 20)) {
+      lines.push(`### ${file.path}`);
+      lines.push(`- Title: ${file.title}`);
+      if (includeSummaries) lines.push(`- Summary: ${file.summary}`);
+      lines.push(`- Approx size: ${formatBytesCompact(file.sizeBytes)}`);
+      lines.push('');
+    }
+  }
+  return lines.join('\n');
+}
+
+function buildPrompt({
+  scanIndexMarkdown,
+  folderMapMarkdown,
+  folderScans = [],
+  forgeMapMarkdown,
+  keyContents,
+  projectContext,
+  specContent,
+  summaryMode
+}) {
   const now = new Date().toISOString().replace(/\.\d+Z$/, 'Z');
   const parts = ['You are analyzing a software project to generate a structured discovery document.\n'];
 
   if (projectContext) {
     parts.push(`## Project Context (aios-forge)\n\`\`\`\n${projectContext}\n\`\`\`\n`);
   }
-  parts.push(`## Project Structure\n\`\`\`\n${treeLines.join('\n')}\n\`\`\`\n`);
+  parts.push(`## Scan Index\n\`\`\`md\n${scanIndexMarkdown}\n\`\`\`\n`);
+  parts.push(`## Folder Map\n\`\`\`md\n${folderMapMarkdown}\n\`\`\`\n`);
+  for (const scan of folderScans) {
+    parts.push(`## Folder Scan: ${scan.folder}\n\`\`\`md\n${scan.markdown}\n\`\`\`\n`);
+  }
+  parts.push(`## AIOS Forge Generated Map\n\`\`\`md\n${forgeMapMarkdown}\n\`\`\`\n`);
 
-  if (Object.keys(keyContents).length > 0) {
+  if (summaryMode === 'raw' && Object.keys(keyContents).length > 0) {
     parts.push('## Key Files\n');
     for (const [filePath, content] of Object.entries(keyContents).slice(0, 12)) {
       parts.push(`### ${filePath}\n\`\`\`\n${content}\n\`\`\`\n`);
@@ -344,43 +828,71 @@ If no models/schema found: _No entities detected_
   return parts.join('\n');
 }
 
+function listTopLevelDirectories(entries) {
+  const names = new Set();
+  for (const entry of entries) {
+    if (entry.type !== 'dir') continue;
+    const topLevel = entry.relPath.split('/')[0];
+    if (topLevel) names.add(topLevel);
+  }
+  return [...names].sort((a, b) => a.localeCompare(b));
+}
+
 // ── Main ─────────────────────────────────────────────────────────────────────
 
 async function runScanProject({ args, options = {}, logger, t }) {
   const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const summaryMode = resolveSummaryMode(options['summary-mode']);
+  const requestedFolders = resolveRequestedFolders(options.folder);
+  const llmRequested = Boolean(options['with-llm']);
+  const llmModelOverride = String(options['llm-model'] || options.model || '').trim();
 
   logger.log(t('scan_project.scanning', { dir: targetDir }));
 
-  // Load config
-  const configPath = path.join(targetDir, CONFIG_FILE);
-  if (!(await exists(configPath))) {
-    logger.error(t('scan_project.config_missing', { file: CONFIG_FILE }));
+  if (requestedFolders.length === 0) {
+    logger.error(t('scan_project.folder_required'));
     process.exitCode = 1;
-    return { ok: false, error: 'config_not_found' };
+    return { ok: false, error: 'folder_required' };
   }
 
-  let config;
-  try {
-    config = JSON.parse(await fs.readFile(configPath, 'utf8'));
-  } catch (err) {
-    logger.error(t('scan_project.config_invalid', { error: err.message }));
-    process.exitCode = 1;
-    return { ok: false, error: 'config_invalid' };
+  let providerName = null;
+  let providerCfg = null;
+  let model = null;
+
+  if (!llmRequested) {
+    logger.log(t('scan_project.local_only'));
+  } else if (!options['dry-run']) {
+    const configPath = path.join(targetDir, CONFIG_FILE);
+    if (!(await exists(configPath))) {
+      logger.error(t('scan_project.config_missing', { file: CONFIG_FILE }));
+      process.exitCode = 1;
+      return { ok: false, error: 'config_not_found' };
+    }
+
+    let config;
+    try {
+      config = JSON.parse(await fs.readFile(configPath, 'utf8'));
+    } catch (err) {
+      logger.error(t('scan_project.config_invalid', { error: err.message }));
+      process.exitCode = 1;
+      return { ok: false, error: 'config_invalid' };
+    }
+
+    providerName = String(options.provider || config.preferred_scan_provider || '');
+    const providers = config.providers || {};
+
+    if (!providerName || !providers[providerName]) {
+      const available = Object.keys(providers).join(', ') || '(none)';
+      logger.error(t('scan_project.provider_missing', { provider: providerName, available }));
+      process.exitCode = 1;
+      return { ok: false, error: 'provider_not_found' };
+    }
+
+    providerCfg = { ...providers[providerName] };
+    if (llmModelOverride) providerCfg.model = llmModelOverride;
+    model = providerCfg.model || '?';
+    logger.log(t('scan_project.provider_info', { provider: providerName, model }));
   }
-
-  const providerName = String(options.provider || config.preferred_scan_provider || '');
-  const providers    = config.providers || {};
-
-  if (!providerName || !providers[providerName]) {
-    const available = Object.keys(providers).join(', ') || '(none)';
-    logger.error(t('scan_project.provider_missing', { provider: providerName, available }));
-    process.exitCode = 1;
-    return { ok: false, error: 'provider_not_found' };
-  }
-
-  const providerCfg = providers[providerName];
-  const model = providerCfg.model || '?';
-  logger.log(t('scan_project.provider_info', { provider: providerName, model }));
 
   // Read context files
   const projectContext = await readFileSafe(path.join(targetDir, CONTEXT_FILE));
@@ -392,25 +904,144 @@ async function runScanProject({ args, options = {}, logger, t }) {
 
   // Walk project
   logger.log(t('scan_project.walking'));
-  const { treeLines, keyContents } = await walkProject(targetDir);
-  logger.log(t('scan_project.walk_done', { files: treeLines.filter((l) => !l.endsWith('/')).length, keys: Object.keys(keyContents).length }));
+  const { keyContents, keyFiles, topLevelStats, entries } = await walkProject(targetDir);
+  logger.log(t('scan_project.walk_done', {
+    files: entries.filter((entry) => entry.type === 'file').length,
+    keys: Object.keys(keyContents).length
+  }));
+
+  const generatedAt = new Date().toISOString().replace(/\.\d+Z$/, 'Z');
+  const managedForgePaths = await loadManagedForgePaths();
+  const folderMapMarkdown = buildFolderMapMarkdown({
+    entries,
+    generatedAt
+  });
+  const forgeArtifacts = buildForgeArtifactsMarkdown({
+    entries,
+    generatedAt,
+    managedForgePaths
+  });
+
+  const availableTopLevelDirs = listTopLevelDirectories(entries);
+  for (const folder of requestedFolders) {
+    if (folder === '.') continue;
+    const existsAsDirectory = entries.some((entry) => entry.type === 'dir' && entry.relPath === folder);
+    if (!existsAsDirectory) {
+      logger.error(t('scan_project.folder_not_found', {
+        folder,
+        available: availableTopLevelDirs.join(', ') || '(none)'
+      }));
+      process.exitCode = 1;
+      return { ok: false, error: 'folder_not_found' };
+    }
+  }
+
+  const folderScans = requestedFolders.map((folder) => {
+    const relativePath = buildFolderScanRelativePath(folder);
+    return {
+      folder,
+      relativePath,
+      absolutePath: path.join(targetDir, relativePath),
+      markdown: buildRequestedFolderMarkdown({
+        entries,
+        generatedAt,
+        folder
+      })
+    };
+  });
+
+  const scanIndexMarkdown = buildScanIndexMarkdown({
+    keyFiles,
+    topLevelStats,
+    generatedAt,
+    includeSummaries: summaryMode !== 'titles',
+    foldersPath: path.join(targetDir, FOLDERS_FILE),
+    folderScans,
+    forgePath: path.join(targetDir, FORGE_FILE),
+    forgeArtifactCount: forgeArtifacts.artifactCount
+  });
+
+  const scanIndexPath = path.join(targetDir, INDEX_FILE);
+  const scanFoldersPath = path.join(targetDir, FOLDERS_FILE);
+  const scanForgePath = path.join(targetDir, FORGE_FILE);
+  if (!options['dry-run']) {
+    await ensureDir(path.dirname(scanIndexPath));
+    await fs.writeFile(scanIndexPath, scanIndexMarkdown, 'utf8');
+    await fs.writeFile(scanFoldersPath, folderMapMarkdown, 'utf8');
+    for (const scan of folderScans) {
+      await fs.writeFile(scan.absolutePath, scan.markdown, 'utf8');
+    }
+    await fs.writeFile(scanForgePath, forgeArtifacts.markdown, 'utf8');
+    logger.log(t('scan_project.index_written', { path: scanIndexPath, mode: summaryMode }));
+    logger.log(t('scan_project.folders_written', { path: scanFoldersPath }));
+    for (const scan of folderScans) {
+      logger.log(t('scan_project.folder_written', { folder: `${scan.folder}/`, path: scan.absolutePath }));
+    }
+    logger.log(t('scan_project.forge_written', { path: scanForgePath }));
+  }
 
   if (options['dry-run']) {
-    const output = { ok: true, dryRun: true, treeLines: treeLines.length, keyFiles: Object.keys(keyContents).length, provider: providerName, model };
+    const output = {
+      ok: true,
+      dryRun: true,
+      treeLines: entries.length,
+      keyFiles: Object.keys(keyContents).length,
+      provider: providerName,
+      model,
+      llmRequested,
+      summaryMode,
+      requestedFolders,
+      scanIndexPath,
+      scanFoldersPath,
+      scanFolderPaths: folderScans.map((scan) => scan.absolutePath),
+      scanForgePath
+    };
     if (options.json) return output;
-    logger.log(t('scan_project.dry_run_done', { treeCount: treeLines.length, keyCount: Object.keys(keyContents).length }));
+    logger.log(t('scan_project.dry_run_done', { treeCount: entries.length, keyCount: Object.keys(keyContents).length }));
     return output;
   }
 
+  if (!llmRequested) {
+    logger.log(t('scan_project.local_done', { path: scanIndexPath }));
+    return {
+      ok: true,
+      targetDir,
+      provider: null,
+      model: null,
+      llmRequested: false,
+      summaryMode,
+      requestedFolders,
+      scanIndexPath,
+      scanFoldersPath,
+      scanFolderPaths: folderScans.map((scan) => scan.absolutePath),
+      scanForgePath,
+      discoveryPath: null,
+      skeletonPath: null
+    };
+  }
+
   // Build prompt and call LLM
-  const prompt = buildPrompt(treeLines, keyContents, projectContext, specContent);
+  const prompt = buildPrompt({
+    scanIndexMarkdown,
+    folderMapMarkdown,
+    folderScans,
+    forgeMapMarkdown: forgeArtifacts.markdown,
+    keyContents,
+    projectContext,
+    specContent,
+    summaryMode
+  });
   logger.log(t('scan_project.calling_llm', { provider: providerName, model }));
 
   let result;
   try {
     result = await callLLM(providerName, providerCfg, prompt);
   } catch (err) {
-    logger.error(t('scan_project.llm_error', { error: err.message }));
+    if (err && err.code === 'MISSING_API_KEY') {
+      logger.error(t('scan_project.llm_missing_api_key', { provider: providerName, file: CONFIG_FILE }));
+    } else {
+      logger.error(t('scan_project.llm_error', { error: err.message }));
+    }
     process.exitCode = 1;
     return { ok: false, error: err.message };
   }
@@ -445,9 +1076,29 @@ async function runScanProject({ args, options = {}, logger, t }) {
   logger.log(t('scan_project.step_analyst'));
   logger.log(t('scan_project.step_dev'));
 
-  const output = { ok: true, targetDir, provider: providerName, model, discoveryPath: outputPath, skeletonPath: skeletonContent ? skeletonPath : null };
+  const output = {
+    ok: true,
+    targetDir,
+    provider: providerName,
+    model,
+    llmRequested: true,
+    summaryMode,
+    requestedFolders,
+    scanIndexPath,
+    scanFoldersPath,
+    scanFolderPaths: folderScans.map((scan) => scan.absolutePath),
+    scanForgePath,
+    discoveryPath: outputPath,
+    skeletonPath: skeletonContent ? skeletonPath : null
+  };
   if (options.json) return output;
   return output;
 }
 
-module.exports = { runScanProject };
+module.exports = {
+  runScanProject,
+  resolveSummaryMode,
+  resolveRequestedFolders,
+  buildScanIndexMarkdown,
+  buildPrompt
+};

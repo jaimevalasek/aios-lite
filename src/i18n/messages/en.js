@@ -52,7 +52,7 @@ module.exports = {
     help_qa_report:
       'aios-forge qa:report [path] [--html] [--json] [--locale=en]',
     help_scan_project:
-      'aios-forge scan:project [path] [--provider=<name>] [--dry-run] [--json] [--locale=en]',
+      'aios-forge scan:project [path] --folder=<path[,path2]> [--summary-mode=titles|summaries|raw] [--with-llm] [--provider=<name>] [--llm-model=<name>] [--dry-run] [--json] [--locale=en]',
     help_config:
       'aios-forge config <set KEY=value|show|get KEY> [--json] [--locale=en]',
     help_genome_doctor:
@@ -144,7 +144,8 @@ module.exports = {
     step_agents: '2. If no visual picker appears, run: aios-forge agents',
     step_agent_prompt: '3. Generate setup prompt for your tool: aios-forge agent:prompt setup --tool={tool}',
     existing_project_detected: '⚠ Existing project detected ({count} files). Run the scanner before starting:',
-    existing_project_scan_hint: '  aios-forge scan:project   (uses a cheap model, saves tokens in your AI session)'
+    existing_project_scan_hint:
+      '  aios-forge scan:project --folder=src   (builds scan-index.md locally; add --with-llm to generate discovery.md)'
   },
   update: {
     not_installed: 'No AIOS Forge installation found in {targetDir}.',
@@ -738,18 +739,29 @@ module.exports = {
   },
   scan_project: {
     scanning: 'aios-forge scan:project — scanning {dir}',
-    config_missing: '{file} not found. Copy aios-forge-models.json and fill in your API keys.',
+    folder_required:
+      'Pass --folder=<path[,path2]> to generate full scans for specific folders. Example: --folder=src or --folder=app.',
+    folder_not_found: 'Folder "{folder}" was not found in this project. Top-level directories detected: {available}',
+    config_missing: '{file} not found. To use LLM mode, copy aios-forge-models.json and fill in your API keys.',
     config_invalid: 'Invalid JSON in aios-forge-models.json: {error}',
-    provider_missing: 'Provider "{provider}" not found in aios-forge-models.json. Available: {available}',
+    provider_missing: 'LLM provider "{provider}" not found in aios-forge-models.json. Available: {available}',
     provider_info: '  Provider : {provider}',
     model_info: '  Model    : {model}',
     context_found: '  Context  : project.context.md found',
     context_missing: '  Context  : project.context.md not found (run aios-forge setup:context first)',
     spec_found: '  Spec     : spec.md found — development memory included',
+    local_only: '  LLM      : disabled by default — local scan only (use --with-llm to generate discovery.md + skeleton-system.md)',
     walking: '  Scanning project structure...',
     walk_done: '  Files    : {files} entries mapped | Key files: {keys} read',
+    index_written: '  Index    : local scan index written to {path} (mode: {mode})',
+    folders_written: '  Folders  : folder map written to {path}',
+    folder_written: '  Folder   : full map for {folder} written to {path}',
+    forge_written: '  AIOS     : useful .aios-forge map written to {path}',
     dry_run_done: '[dry-run] Would scan {treeCount} entries and {keyCount} key files — no LLM call made.',
+    local_done: '  Result   : local scan completed — index, folder map, requested folder scans and .aios-forge map are ready.',
     calling_llm: '  Calling {provider} ({model})...',
+    llm_missing_api_key:
+      'The API key for provider "{provider}" is still missing in {file}. Fill providers.{provider}.api_key or choose another provider with --provider=...',
     llm_error: 'LLM call failed: {error}',
     discovery_written: 'discovery.md written: {path} ({chars} chars)',
     skeleton_written: 'skeleton-system.md written: {path} ({chars} chars)',

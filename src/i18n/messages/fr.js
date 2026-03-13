@@ -53,7 +53,7 @@ module.exports = {
     help_qa_report:
       'aios-forge qa:report [path] [--html] [--json] [--locale=fr]',
     help_scan_project:
-      'aios-forge scan:project [path] [--provider=<name>] [--dry-run] [--json] [--locale=fr]',
+      'aios-forge scan:project [path] --folder=<chemin[,chemin2]> [--summary-mode=titles|summaries|raw] [--with-llm] [--provider=<name>] [--llm-model=<name>] [--dry-run] [--json] [--locale=fr]',
     help_config:
       'aios-forge config <set KEY=value|show|get KEY> [--json] [--locale=fr]',
     help_genome_doctor:
@@ -105,7 +105,7 @@ module.exports = {
     existing_project_detected:
       '⚠ Projet existant detecte ({count} fichiers). Lancez le scanner avant de commencer :',
     existing_project_scan_hint:
-      '  aios-forge scan:project   (utilise un modele economique, economise des tokens dans votre session IA)'
+      '  aios-forge scan:project --folder=src   (genere scan-index.md localement ; ajoutez --with-llm pour discovery.md)'
   },
   update: {
     not_installed: 'Aucune installation AIOS Forge trouvee dans {targetDir}.',
@@ -691,18 +691,29 @@ module.exports = {
   },
   scan_project: {
     scanning: 'aios-forge scan:project — analyse de {dir}',
-    config_missing: '{file} introuvable. Copiez aios-forge-models.json et remplissez vos cles API.',
+    folder_required:
+      'Passez --folder=<chemin[,chemin2]> pour generer des scans complets de dossiers precis. Exemple : --folder=src ou --folder=app.',
+    folder_not_found: 'Le dossier "{folder}" est introuvable dans ce projet. Dossiers de premier niveau detectes : {available}',
+    config_missing: '{file} introuvable. Pour utiliser le mode LLM, copiez aios-forge-models.json et renseignez vos cles API.',
     config_invalid: 'JSON invalide dans aios-forge-models.json : {error}',
-    provider_missing: 'Provider "{provider}" introuvable dans aios-forge-models.json. Disponibles : {available}',
+    provider_missing: 'Provider LLM "{provider}" introuvable dans aios-forge-models.json. Disponibles : {available}',
     provider_info: '  Provider : {provider}',
     model_info: '  Modele   : {model}',
     context_found: '  Contexte : project.context.md trouve',
     context_missing: '  Contexte : project.context.md introuvable (executez aios-forge setup:context d\'abord)',
     spec_found: '  Spec     : spec.md trouve — memoire de developpement incluse',
+    local_only: '  LLM      : desactivee par defaut — scan local uniquement (utilisez --with-llm pour generer discovery.md + skeleton-system.md)',
     walking: '  Analyse de la structure du projet...',
     walk_done: '  Fichiers : {files} entrees cartographiees | Fichiers cles : {keys} lus',
+    index_written: '  Index    : scan local ecrit dans {path} (mode: {mode})',
+    folders_written: '  Dossiers : carte des dossiers ecrite dans {path}',
+    folder_written: '  Dossier  : carte complete de {folder} ecrite dans {path}',
+    forge_written: '  AIOS     : carte utile de .aios-forge ecrite dans {path}',
     dry_run_done: '[dry-run] Analyserait {treeCount} entrees et {keyCount} fichiers cles — aucun appel LLM.',
+    local_done: '  Resultat : scan local termine — index, carte des dossiers, scans demandes et .aios-forge prets.',
     calling_llm: '  Appel de {provider} ({model})...',
+    llm_missing_api_key:
+      'La cle API du provider "{provider}" n est pas encore configuree dans {file}. Renseignez providers.{provider}.api_key ou choisissez un autre provider avec --provider=...',
     llm_error: 'Appel LLM echoue : {error}',
     discovery_written: 'discovery.md ecrit : {path} ({chars} chars)',
     skeleton_written: 'skeleton-system.md ecrit : {path} ({chars} chars)',

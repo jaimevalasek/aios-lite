@@ -59,6 +59,33 @@ test('context folder is preserved during update', async () => {
   assert.equal(readBack, customContext);
 });
 
+test('project-local models config is preserved during update', async () => {
+  const dir = await makeTempDir();
+  await installTemplate(dir, { mode: 'install' });
+
+  const configPath = path.join(dir, 'aios-forge-models.json');
+  const customConfig = `${JSON.stringify({
+    preferred_scan_provider: 'deepseek',
+    providers: {
+      deepseek: {
+        api_key: 'sk-custom',
+        model: 'deepseek-chat',
+        base_url: 'https://api.deepseek.com/v1'
+      }
+    }
+  }, null, 2)}\n`;
+  await fs.writeFile(configPath, customConfig, 'utf8');
+
+  await installTemplate(dir, {
+    mode: 'update',
+    overwrite: true,
+    backupOnOverwrite: true
+  });
+
+  const readBack = await fs.readFile(configPath, 'utf8');
+  assert.equal(readBack, customConfig);
+});
+
 test('installTemplate writes Forge metadata and gitignore entry', async () => {
   const dir = await makeTempDir();
 
@@ -72,6 +99,33 @@ test('installTemplate writes Forge metadata and gitignore entry', async () => {
   assert.equal(installMeta.managed_by, 'aios-forge');
   assert.equal(typeof installMeta.template_version, 'string');
   assert.equal(gitignore.includes('aios-forge-models.json'), true);
+  assert.equal(gitignore.includes('!AGENTS.md'), true);
+  assert.equal(gitignore.includes('!.claude/**'), true);
+  assert.equal(gitignore.includes('!.gemini/**'), true);
+  assert.equal(gitignore.includes('!.aios-forge/**'), true);
+  assert.equal(gitignore.includes('.aios-forge/runtime/'), true);
+  assert.equal(gitignore.includes('.aios-forge/cloud-imports/'), true);
+  assert.equal(gitignore.includes('.aios-forge/mcp/servers.local.json'), true);
+});
+
+test('installTemplate appends keep rules for shared AIOS files even when project already ignores broad folders', async () => {
+  const dir = await makeTempDir();
+  await fs.writeFile(
+    path.join(dir, '.gitignore'),
+    '.aios-forge/\n.claude/\n.gemini/\nAGENTS.md\nCLAUDE.md\nOPENCODE.md\n',
+    'utf8'
+  );
+
+  await installTemplate(dir, { mode: 'install' });
+
+  const gitignore = await fs.readFile(path.join(dir, '.gitignore'), 'utf8');
+  assert.equal(gitignore.includes('.aios-forge/\n'), true);
+  assert.equal(gitignore.includes('!.aios-forge/**'), true);
+  assert.equal(gitignore.includes('!.claude/**'), true);
+  assert.equal(gitignore.includes('!.gemini/**'), true);
+  assert.equal(gitignore.includes('!AGENTS.md'), true);
+  assert.equal(gitignore.includes('!CLAUDE.md'), true);
+  assert.equal(gitignore.includes('!OPENCODE.md'), true);
 });
 
 async function fileExists(filePath) {

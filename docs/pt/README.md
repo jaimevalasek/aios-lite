@@ -39,6 +39,7 @@ Depois, abra seu AI IDE e digite `/setup` para começar.
 
 Fluxo recomendado:
 - `@setup` primeiro
+- em projeto existente sem documentação, rode `scan:project --folder=src` ou `scan:project --folder=app` para gerar `scan-index.md`, `scan-folders.md`, `scan-<pasta>.md` e `scan-aios-forge.md`; adicione `--with-llm` se quiser `discovery.md` e `skeleton-system.md`
 - `@discovery-design-doc` quando o escopo ainda estiver vago ou a feature for grande
 - `@analyst` / `@architect` / `@dev` conforme a clareza e o tipo do trabalho
 

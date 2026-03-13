@@ -47,7 +47,7 @@
 | `test:agents` | Valida contratos e arquivos críticos dos agentes | Quando mexeu no sistema de agentes |
 | `test:smoke` | Roda um smoke test em workspace temporário | Quando quer validar o pacote de forma ampla |
 | `test:package` | Testa o pacote instalado a partir de uma origem local | Quando vai validar release ou empacotamento |
-| `scan:project` | Faz varredura brownfield e gera contexto inicial | Quando o projeto já existe e falta documentação |
+| `scan:project` | Faz varredura brownfield, gera índice local e produz contexto inicial | Quando o projeto já existe e falta documentação |
 
 ### Orquestração paralela
 
@@ -268,11 +268,65 @@ Use quando você alterou templates, agentes, contratos ou empacotamento e quer u
 ### 11. Fazer scanner brownfield
 
 ```bash
-aios-forge scan:project . --provider=openai
-aios-forge scan:project . --dry-run
+aios-forge scan:project . --folder=src
+aios-forge scan:project . --folder=app --summary-mode=titles
+aios-forge scan:project . --folder=src --with-llm --provider=openai
+aios-forge scan:project . --folder=src,app --dry-run
 ```
 
 Use em sistemas legados ou repositórios que ainda não têm `discovery.md` e `skeleton-system.md`.
+
+O comando agora trabalha em duas etapas:
+
+1. O JavaScript faz uma análise local do projeto e gera `.aios-forge/context/scan-index.md`.
+2. Se você ativar `--with-llm`, a LLM usa esse índice compacto para produzir `discovery.md` e `skeleton-system.md`.
+
+O parâmetro `--folder` agora é obrigatório. Ele define quais pastas do projeto devem ganhar um mapa completo com pastas e arquivos. Você pode informar uma pasta ou várias separadas por vírgula.
+
+Artefatos locais gerados pelo scan:
+
+- `scan-index.md`: índice geral com footprint, arquivos-chave e referência para os mapas especializados
+- `scan-folders.md`: mapa somente de pastas do projeto
+- `scan-<pasta>.md`: mapa completo da pasta pedida em `--folder`, incluindo toda a estrutura de pastas e arquivos
+- `scan-aios-forge.md`: mapa útil do `.aios-forge/`, mostrando só artefatos gerados no uso do projeto
+
+No caso de `.aios-forge/`, o scanner oculta o que é padrão do framework:
+
+- agentes padrão
+- locales
+- schemas
+- skills estáticas
+- tasks internas
+
+E mostra o que importa para operação do projeto, por exemplo:
+
+- páginas de contexto geradas
+- squads criadas
+- genomas criados
+- arquivos locais de MCP
+- outros artefatos específicos do uso real do cliente
+
+Modos de resumo:
+
+- `--summary-mode=titles`: envia só títulos, tamanhos e estrutura. É o modo mais leve.
+- `--summary-mode=summaries`: envia títulos + resumos curtos. É o modo padrão.
+- `--summary-mode=raw`: além do índice, envia também o conteúdo bruto dos arquivos-chave. É o modo mais pesado.
+- `--with-llm`: ativa a etapa opcional de enriquecimento por LLM.
+- `--llm-model=<name>`: sobrescreve o modelo configurado para esta execução.
+
+Quando usar cada modo:
+
+- Se o provider estiver lento ou com timeout, comece por `titles`.
+- Se quiser mais contexto sem mandar arquivos brutos, use `summaries`.
+- Se quiser máxima riqueza de contexto e aceitar um prompt maior, use `raw`.
+
+Exemplo prático para reduzir carga no provider:
+
+```bash
+aios-forge scan:project . --folder=src --with-llm --provider=deepseek --summary-mode=titles
+```
+
+Nesse fluxo, providers como DeepSeek servem melhor como sintetizadores da arquitetura, relações e riscos do sistema, enquanto o trabalho pesado de mapear pastas solicitadas e filtrar o `.aios-forge/` fica no próprio CLI.
 
 ### 12. Preparar orquestração paralela
 

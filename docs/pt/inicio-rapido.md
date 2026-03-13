@@ -28,6 +28,25 @@ npx aios-forge install
 
 Isso cria a pasta `.aios-forge/` com todos os arquivos de configuração, agentes e contexto.
 
+Se o projeto já for brownfield e você quiser gerar um panorama inicial da base, rode depois:
+
+```bash
+npx aios-forge scan:project . --folder=src
+```
+
+O scanner cria estes arquivos localmente:
+
+- `.aios-forge/context/scan-index.md`
+- `.aios-forge/context/scan-folders.md`
+- `.aios-forge/context/scan-<pasta>.md`
+- `.aios-forge/context/scan-aios-forge.md`
+
+Se você também quiser gerar `discovery.md` e `skeleton-system.md`, ative a etapa opcional com LLM:
+
+```bash
+npx aios-forge scan:project . --folder=src --with-llm --provider=openai
+```
+
 ---
 
 ## 2. Configure o contexto do projeto
