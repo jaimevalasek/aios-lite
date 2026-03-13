@@ -12,6 +12,34 @@ Generic is the enemy. Defaults disguise themselves as infrastructure. Every spac
 
 ---
 
+## AIOS rule — design memory and continuity
+
+If `.interface-design/system.md` exists, treat it as the visual source of truth:
+- Load it before changing direction, tokens, or component patterns.
+- Respect it unless the user explicitly wants a redesign.
+- Update it when you introduce a reusable pattern, token rule, or layout decision.
+
+If the file does not exist and the task covers more than one screen or component family, create it with:
+- Product context and UI intent
+- Chosen design direction and anti-goals
+- Token decisions (color, type, spacing, radius, depth, motion)
+- Core component patterns (navigation, card, table, form, modal, empty state)
+- Open constraints or decisions still pending
+
+The point is simple: one product should not look like it was designed from scratch on every screen.
+
+---
+
+## If the UI already exists
+
+When refining an existing product:
+- Identify the current visual direction before proposing a new one.
+- Diagnose token drift first: off-grid spacing, repeated hardcoded colors, mixed radii, mixed depth strategies, missing interactive states.
+- Improve consistency before re-theming.
+- Replace the direction only when the current system blocks the product intent or the user explicitly asked for a redesign.
+
+---
+
 ## Phase 0 — Intent first (mandatory, cannot skip)
 
 Before touching layout or tokens, answer three questions with specificity:
@@ -88,11 +116,74 @@ Rationale  : subtle shadows add approachable depth; generous spacing enables
              focused tasks; warm tones feel human and inviting.
 ```
 
+### Sophistication & Trust
+*For: fintech, enterprise SaaS, operational products where clarity and trust matter more than novelty.*
+
+```
+Foundation : Cool mineral (restrained layers)
+Spacing    : 4px base — scale: 4, 8, 12, 16, 24, 32
+Colors     : foreground=slate-950, secondary=slate-700, muted=slate-500,
+             surface=white, border=rgba(15,23,42,0.10), accent=blue-700
+Radius     : 8px / 10px / 12px  (firm, not playful)
+Typography : IBM Plex Sans or Public Sans, 12–20px, weights 400/500/600
+Components :
+  Button   → 38px height, 12px/18px padding, 10px radius
+  Card     → 16px padding, 10px radius, subtle border, rare soft shadow
+  Table    → 10px/14px cell padding, tabular-nums, quiet row dividers
+Rationale  : trust comes from control, not decoration; a restrained palette and
+             firm typography make the product feel expensive and dependable.
+```
+
+### Premium Dark Platform
+*For: premium dashboards, media/catalog products, command surfaces, high-density apps with persistent navigation.*
+
+```
+Foundation : Graphite layers (borders-first)
+Spacing    : 4px base — scale: 4, 8, 12, 16, 24, 32
+Colors     : base=#0b1015, surface=#10161d, elevated=#151c24,
+             foreground=#f3f7fb, secondary=#b7c2cf, muted=#7f8b99,
+             border=rgba(255,255,255,0.08), accent=desaturated blue
+Radius     : 12px / 14px / 16px  (premium, controlled)
+Typography : Manrope, Geist, or IBM Plex Sans, 12–22px, weights 400/500/600
+Components :
+  Button   → 40px height, 12px/18px padding, 12px radius
+  Card     → layered surfaces, 16px padding, 14px radius, no heavy glow
+  Sidebar  → quiet active state, compact icon rhythm, clean section grouping
+Rationale  : premium dark works when contrast is controlled, surfaces are few,
+             and borders quietly separate the system without turning neon.
+```
+
 ### Other directions (adapt token specs above)
 - **Data & Analysis** — cool blue, high-density tables, monospace for numbers, minimal chrome
 - **Editorial** — strong typographic hierarchy, generous white space, restrained color
 - **Commerce** — aspirational photography support, high contrast CTAs, smooth transitions
 - **Minimal & Calm** — near-monochrome, whitespace as design element, hairline borders only
+- **Boldness & Clarity** — stronger accent, harder contrast, one dominant focal move
+- **Utility & Function** — minimal decoration, maximum legibility, near-invisible chrome
+
+---
+
+## Phase 3 — Decision checkpoint before components
+
+Before building any screen or component family, write a short checkpoint that locks:
+- Depth strategy
+- Surface levels
+- Border recipe (including alpha)
+- Spacing base
+- Radius ladder
+- Control height
+- Typography anchor
+- Motion posture
+
+Example:
+
+> Depth: borders-only • Surfaces: base / surface / elevated • Borders: rgba(15,23,42,0.08) • Spacing: 8px • Radius: 10/12 • Controls: 38px • Type: IBM Plex Sans 14/16/24 • Motion: 120ms ease-out
+
+Premium dark example:
+
+> Depth: borders-first • Surfaces: #0b1015 / #10161d / #151c24 • Borders: rgba(255,255,255,0.08) • Spacing: 8px • Radius: 12/14 • Controls: 40px • Type: Geist 14/16/28 • Motion: 140ms ease-out
+
+If you cannot state the checkpoint clearly, the system is not ready to build.
 
 ---
 
@@ -240,6 +331,18 @@ Walk through each section before handing off:
 4. **Structure** — Are there any hacks? Negative-margin workarounds? Arbitrary pixel values? Fix them.
 
 **Ask yourself: "If a design lead reviewed this, what would they call out?" Fix that thing. Then ask again.**
+
+---
+
+## Update design memory
+
+When the work introduces or changes reusable design decisions, update `.interface-design/system.md` with:
+- Final direction and anti-goals
+- Token block
+- Component pattern notes
+- New exceptions or constraints
+
+This file is the continuity layer between screens, agents, and future sessions.
 
 ---
 
