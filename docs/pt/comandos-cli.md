@@ -33,9 +33,9 @@
 |---|---|---|
 | `setup:context` | Cria ou atualiza `.aios-forge/context/project.context.md` | Logo após instalar o framework |
 | `context:validate` | Valida o `project.context.md` | Depois de editar o contexto manualmente |
-| `locale:apply` | Reaplica um pack de idioma nos agentes gerenciados | Quando quer trocar o idioma do projeto |
+| `locale:apply` | Reaplica um pack de idioma nos agentes gerenciados pelo AIOS Forge | Quando quer trocar o idioma em que os agentes do framework operam no projeto |
 | `locale:diff` | Compara um agente com o pack de idioma esperado | Quando quer detectar drift de tradução |
-| `i18n:add` | Gera a base de um novo locale para o CLI e agentes | Quando vai adicionar outro idioma oficial |
+| `i18n:add` | Gera o scaffold de um novo locale do próprio AIOS Forge | Quando vai adicionar outro idioma oficial ao CLI do framework |
 
 ### Agentes, fluxo e testes
 
@@ -184,16 +184,71 @@ aios-forge locale:apply . --lang=pt-BR
 aios-forge locale:diff ux-ui --lang=pt-BR
 ```
 
-Use `locale:apply` para reaplicar o pack atual e `locale:diff` para descobrir se algum agente ficou diferente do pack esperado.
+Explicando do jeito mais simples possível:
 
-### 8. Adicionar um novo locale ao framework
+- `locale:apply` muda o idioma dos agentes do AIOS Forge
+- ou seja: muda o idioma em que o framework espera que os agentes conversem e trabalhem no projeto
+
+Pense assim:
+
+- `--locale=pt-BR` = idioma do **menu/comando do AIOS Forge**
+- `locale:apply --lang=pt-BR` = idioma do **agente do AIOS Forge**
+- i18n do app do cliente = idioma do **produto final do usuário**
+
+Exemplo bem simples:
+
+- se você usar `--locale=pt-BR`, o CLI mostra mensagens em português
+- se você usar `locale:apply --lang=pt-BR`, os agentes do AIOS Forge passam a operar em português
+- isso **não** traduz o site, sistema ou app do cliente
+
+Em uma frase:
+
+> `locale:apply` troca o idioma do **AIOS Forge dentro do projeto**, não o idioma do **produto do cliente**.
+
+Use `locale:diff` para checar se algum agente ficou diferente do pack de idioma esperado.
+
+### 8. Adicionar um novo locale ao próprio AIOS Forge
 
 ```bash
 aios-forge i18n:add fr --dry-run
 aios-forge i18n:add fr
 ```
 
-Use quando você está expandindo o CLI para um novo idioma oficial e quer gerar a base dos arquivos.
+Explicando como para uma criança:
+
+- `i18n:add` **não** adiciona idiomas ao app do cliente
+- `i18n:add` adiciona um idioma novo ao **próprio AIOS Forge**
+
+Pense assim:
+
+- o AIOS Forge é a “ferramenta”
+- o projeto do cliente é a “coisa que você está construindo”
+- esse comando mexe na **ferramenta**
+- esse comando não mexe na **coisa construída**
+
+Hoje esse comando cria a base de um arquivo de idioma do CLI em:
+
+```text
+src/i18n/messages/<locale>.js
+```
+
+Então ele serve para coisas como:
+
+- traduzir mensagens do CLI do AIOS Forge
+- ajudar o framework a falar outro idioma
+- expandir o próprio AIOS Forge
+
+Ele não serve para:
+- adicionar i18n ao app do usuário
+- criar feature multilíngue no projeto do cliente
+- traduzir automaticamente telas, textos ou rotas do produto final
+
+Resumo sem dúvida:
+
+- quer mudar o idioma do **CLI**? use `--locale`
+- quer mudar o idioma dos **agentes do AIOS Forge**? use `locale:apply`
+- quer adicionar um idioma novo ao **próprio AIOS Forge**? use `i18n:add`
+- quer deixar o **app do cliente** multilíngue? isso é trabalho do projeto, não do `i18n:add`
 
 ### 9. Inspecionar agentes e gerar prompt pronto
 
