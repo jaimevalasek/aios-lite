@@ -211,10 +211,10 @@ Você pode começar um projeto com Claude Code, continuar com Codex no dia segui
 
 ## Atualizar para nova versão
 
-Após `npx aioson@latest update` no projeto, os arquivos de configuração de todos os CLIs são atualizados:
+Após `npx @jaimevalasek/aioson@latest update` no projeto, os arquivos de configuração de todos os CLIs são atualizados:
 
 ```bash
-npx aioson@latest update
+npx @jaimevalasek/aioson@latest update
 ```
 
 Isso atualiza:

@@ -14,8 +14,8 @@
 
 ```bash
 mkdir landing-captura && cd landing-captura
-npx aioson install
-npx aioson setup:context . --defaults \
+npx @jaimevalasek/aioson install
+npx @jaimevalasek/aioson setup:context . --defaults \
   --project-name="Landing Captura" \
   --project-type=site \
   --framework="None" \
@@ -47,7 +47,7 @@ Próximo passo: ative /dev e descreva o que o projeto precisa ter.
 ```
 
 > **Nota:** As flags `--defaults` acima pré-preenchem o contexto sem perguntas interativas.
-> Se preferir o fluxo guiado, basta rodar `npx aioson setup:context` sem flags — o agente
+> Se preferir o fluxo guiado, basta rodar `npx @jaimevalasek/aioson setup:context` sem flags — o agente
 > vai fazer as perguntas e identificar o projeto a partir da sua descrição.
 
 ### Passo 3: Ativar @dev diretamente
@@ -87,8 +87,8 @@ Não precisa de @analyst (domínio simples), não precisa de @architect (estrutu
 ```bash
 # Laravel já está instalado e configurado
 cd minha-clinica-api
-npx aioson install
-npx aioson setup:context . --defaults \
+npx @jaimevalasek/aioson install
+npx @jaimevalasek/aioson setup:context . --defaults \
   --project-name="Clinica API" \
   --project-type=api \
   --framework=Laravel \
@@ -100,7 +100,7 @@ npx aioson setup:context . --defaults \
 ### Passo 2: Verificar saúde
 
 ```bash
-npx aioson doctor
+npx @jaimevalasek/aioson doctor
 ```
 
 ### Passo 3: @setup
@@ -332,8 +332,8 @@ Revise a CreateAppointmentAction e escreva os testes para:
 ```bash
 npx create-next-app@latest saas-agencia --typescript
 cd saas-agencia
-npx aioson install
-npx aioson setup:context . --defaults \
+npx @jaimevalasek/aioson install
+npx @jaimevalasek/aioson setup:context . --defaults \
   --project-name="Agency SaaS" \
   --project-type=web_app \
   --framework="Next.js" \
@@ -468,8 +468,8 @@ Precisamos de:
 
 Ou via CLI:
 ```bash
-npx aioson parallel:init --workers=3
-npx aioson parallel:assign --source=prd --workers=3
+npx @jaimevalasek/aioson parallel:init --workers=3
+npx @jaimevalasek/aioson parallel:assign --source=prd --workers=3
 ```
 
 **O orquestrador cria 3 lanes:**
@@ -498,7 +498,7 @@ Lane 3: /dev Implemente o escopo do agent-3.status.md
 
 **Monitorar progresso:**
 ```bash
-npx aioson parallel:status
+npx @jaimevalasek/aioson parallel:status
 ```
 
 ### Passo 8: @qa
@@ -526,8 +526,8 @@ Revise as implementações das 3 lanes e escreva testes para:
 mkdir nft-marketplace && cd nft-marketplace
 npx create-next-app@latest frontend --typescript
 npx hardhat init  # no mesmo diretório raiz
-npx aioson install
-npx aioson setup:context . --defaults \
+npx @jaimevalasek/aioson install
+npx @jaimevalasek/aioson setup:context . --defaults \
   --project-name="NFT Marketplace" \
   --project-type=dapp \
   --framework=Hardhat \
@@ -674,8 +674,8 @@ mkdir restaurante-api && cd restaurante-api
 npm init -y
 npm install fastify @prisma/client
 npm install -D prisma
-npx aioson install
-npx aioson setup:context . --defaults \
+npx @jaimevalasek/aioson install
+npx @jaimevalasek/aioson setup:context . --defaults \
   --project-name="Restaurante API" \
   --project-type=api \
   --framework="Node" \
@@ -887,8 +887,8 @@ Escreva testes para o OrderService:
 ```bash
 rails new task-app --database=postgresql --css=tailwind
 cd task-app
-npx aioson install
-npx aioson setup:context . --defaults \
+npx @jaimevalasek/aioson install
+npx @jaimevalasek/aioson setup:context . --defaults \
   --project-name="Task App" \
   --project-type=web_app \
   --framework="Rails" \
@@ -1082,8 +1082,8 @@ Escreva testes para:
 ```bash
 mkdir estoque-api && cd estoque-api
 pip install fastapi uvicorn sqlalchemy pydantic
-npx aioson install
-npx aioson setup:context . --defaults \
+npx @jaimevalasek/aioson install
+npx @jaimevalasek/aioson setup:context . --defaults \
   --project-name="Estoque API" \
   --project-type=api \
   --framework="FastAPI" \
@@ -1207,7 +1207,7 @@ O agente vai incorporar a nova informação antes de gerar a entrega final.
 
 Se durante o desenvolvimento o projeto crescer e mudar de SMALL para MEDIUM:
 ```bash
-npx aioson setup:context . --defaults --classification=MEDIUM
+npx @jaimevalasek/aioson setup:context . --defaults --classification=MEDIUM
 ```
 
 Então ative @pm e @orchestrator antes de continuar com @dev.
@@ -1215,9 +1215,9 @@ Então ative @pm e @orchestrator antes de continuar com @dev.
 ### Verificar estado atual
 
 ```bash
-npx aioson doctor          # valida saúde dos arquivos
-npx aioson context:validate # valida o project.context.md
-npx aioson parallel:status  # progresso das lanes (MEDIUM)
+npx @jaimevalasek/aioson doctor          # valida saúde dos arquivos
+npx @jaimevalasek/aioson context:validate # valida o project.context.md
+npx @jaimevalasek/aioson parallel:status  # progresso das lanes (MEDIUM)
 ```
 
 ---

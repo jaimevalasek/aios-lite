@@ -18,6 +18,5 @@
 7. Publish GitHub release using `.github/release-notes-template.md`.
 
 ## Verify publication
-- `npm view aioson version`
-- `npx aioson@latest info`
-
+- `npm view @jaimevalasek/aioson version`
+- `npx @jaimevalasek/aioson@latest info`

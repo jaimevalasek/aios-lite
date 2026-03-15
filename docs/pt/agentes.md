@@ -273,9 +273,9 @@ tests/
 
 **Ou via CLI para preparar os arquivos:**
 ```bash
-npx aioson parallel:init
-npx aioson parallel:assign --source=prd --workers=3
-npx aioson parallel:status
+npx @jaimevalasek/aioson parallel:init
+npx @jaimevalasek/aioson parallel:assign --source=prd --workers=3
+npx @jaimevalasek/aioson parallel:status
 ```
 
 **Entrega:**

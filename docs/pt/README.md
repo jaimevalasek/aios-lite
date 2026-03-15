@@ -26,13 +26,13 @@ Para referências técnicas completas, consulte `docs/en/`:
 
 ```bash
 # 1. Instalar em um projeto existente
-npx aioson install
+npx @jaimevalasek/aioson install
 
 # 2. Configurar contexto do projeto
-npx aioson setup:context
+npx @jaimevalasek/aioson setup:context
 
 # 3. Verificar saúde
-npx aioson doctor
+npx @jaimevalasek/aioson doctor
 ```
 
 Depois, abra seu AI IDE e digite `/setup` para começar.

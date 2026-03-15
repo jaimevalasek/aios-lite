@@ -1,6 +1,6 @@
 # AIOSON
 
-Lightweight AI agent framework for software projects.
+AI operating framework for hyper-personalized software.
 
 ## Requirements
 
@@ -23,9 +23,14 @@ Lightweight AI agent framework for software projects.
 ## Install
 
 ```bash
-npx aioson init my-project
+npm install -g @jaimevalasek/aioson
+# then use:
+aioson init my-project
+
+# one-off execution without global install
+npx @jaimevalasek/aioson init my-project
 # or
-npx aioson install
+npx @jaimevalasek/aioson install
 ```
 
 ## Legacy projects and custom stacks
@@ -33,7 +38,7 @@ You can run AIOSON on existing/legacy projects (not only new projects).
 
 ```bash
 # inside an existing project
-npx aioson install .
+npx @jaimevalasek/aioson install .
 aioson setup:context . --defaults --framework="CodeIgniter 3" --backend="CodeIgniter 3" --database="MySQL"
 
 # generate discovery.md + skeleton-system.md using a cheap LLM (saves tokens in your AI session)
@@ -42,6 +47,8 @@ aioson scan:project
 ```
 
 If your stack is not listed in menus, use free-text values via `--framework`, `--backend`, `--frontend`, `--database`, `--auth`, and `--uiux`.
+
+The npm package is scoped as `@jaimevalasek/aioson`, but the installed CLI commands remain `aioson` and `aios`.
 
 ## Commands
 

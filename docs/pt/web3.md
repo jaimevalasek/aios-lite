@@ -22,7 +22,7 @@ O AIOSON detecta sua stack Web3 ao rodar `setup:context` ou `doctor`:
 ### Setup interativo
 
 ```bash
-npx aioson setup:context
+npx @jaimevalasek/aioson setup:context
 ```
 
 Responda `dapp` quando perguntado sobre o tipo de projeto.
@@ -31,7 +31,7 @@ Responda `dapp` quando perguntado sobre o tipo de projeto.
 
 **Ethereum com Hardhat:**
 ```bash
-npx aioson setup:context . --defaults \
+npx @jaimevalasek/aioson setup:context . --defaults \
   --project-name="Meu DApp" \
   --project-type=dapp \
   --framework=Hardhat \
@@ -47,7 +47,7 @@ npx aioson setup:context . --defaults \
 
 **Solana com Anchor:**
 ```bash
-npx aioson setup:context . --defaults \
+npx @jaimevalasek/aioson setup:context . --defaults \
   --project-name="Meu Programa Solana" \
   --project-type=dapp \
   --framework=Anchor \
@@ -62,7 +62,7 @@ npx aioson setup:context . --defaults \
 
 **Cardano com Aiken:**
 ```bash
-npx aioson setup:context . --defaults \
+npx @jaimevalasek/aioson setup:context . --defaults \
   --project-name="Meu Contrato Cardano" \
   --project-type=dapp \
   --framework=Cardano \
@@ -76,7 +76,7 @@ npx aioson setup:context . --defaults \
 
 **Midnight Network com Compact:**
 ```bash
-npx aioson setup:context . --defaults \
+npx @jaimevalasek/aioson setup:context . --defaults \
   --project-name="Meu DApp Midnight" \
   --project-type=dapp \
   --framework=Midnight \
@@ -259,16 +259,16 @@ Valide sua configuração de dApp:
 
 ```bash
 # Verificar configuração Ethereum
-npx aioson test:smoke --web3=ethereum
+npx @jaimevalasek/aioson test:smoke --web3=ethereum
 
 # Verificar configuração Solana
-npx aioson test:smoke --web3=solana
+npx @jaimevalasek/aioson test:smoke --web3=solana
 
 # Verificar configuração Cardano
-npx aioson test:smoke --web3=cardano
+npx @jaimevalasek/aioson test:smoke --web3=cardano
 
 # Monorepo Web3 + frontend
-npx aioson test:smoke --profile=mixed
+npx @jaimevalasek/aioson test:smoke --profile=mixed
 ```
 
 ---
@@ -424,8 +424,8 @@ function test_HarvestOnlyByRole() public {
 ```bash
 anchor init staking-program --template=typescript
 cd staking-program
-npx aioson install
-npx aioson setup:context . --defaults \
+npx @jaimevalasek/aioson install
+npx @jaimevalasek/aioson setup:context . --defaults \
   --project-name="Staking Program" \
   --project-type=dapp \
   --framework=Anchor \
@@ -591,8 +591,8 @@ mkdir midnight-board && cd midnight-board
 npm install @midnight-ntwrk/compact-runtime \
             @midnight-ntwrk/midnight-js-contracts \
             @midnight-ntwrk/midnight-js-node-provider
-npx aioson install
-npx aioson setup:context . --defaults \
+npx @jaimevalasek/aioson install
+npx @jaimevalasek/aioson setup:context . --defaults \
   --project-name="Midnight Board" \
   --project-type=dapp \
   --framework=Midnight \

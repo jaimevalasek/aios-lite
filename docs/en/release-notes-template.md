@@ -29,7 +29,7 @@
 
 ### Upgrade notes
 1. Update package:
-   - `npx aioson@latest update`
+   - `npx @jaimevalasek/aioson@latest update`
 2. Run health check:
    - `aioson doctor`
 3. Verify local customizations in `.aioson/backups/` if applicable.

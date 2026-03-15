@@ -10,21 +10,17 @@
 - Triggers: `v*` git tags or manual dispatch
 - Required secret: `NPM_TOKEN`
 
-## Name availability snapshot (2026-03-01)
-The following names returned `404 Not Found` from npm registry lookup and were therefore available at the time of check:
-- `aioson`
-- `aioson-cli`
-- `create-aioson`
-- `@aioson/create`
-- `@synkra-ai/aioson`
-- `@synkra-ai/create-aioson`
+## npm package name
+The published package name is `@jaimevalasek/aioson`.
+
+The unscoped name `aioson` was rejected by npm because it is considered too similar to an existing package, so releases should use the scoped package.
 
 ## Recommended release flow
 1. Update `CHANGELOG.md`.
 2. Bump version in `package.json`.
 3. Commit and push to `main`.
 4. Create and push a tag like `v0.1.1`.
-5. Verify publish logs in GitHub Actions.
+5. Verify publish logs in GitHub Actions or in the local npm publish output.
 
 ## Templates
 - Release notes template: `.github/release-notes-template.md`

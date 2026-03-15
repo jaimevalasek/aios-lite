@@ -16,14 +16,14 @@
 
 ```bash
 mkdir meu-projeto && cd meu-projeto
-npx aioson init
+npx @jaimevalasek/aioson init
 ```
 
 ### Projeto existente
 
 ```bash
 cd meu-projeto
-npx aioson install
+npx @jaimevalasek/aioson install
 ```
 
 Isso cria a pasta `.aioson/` com todos os arquivos de configuração, agentes e contexto.
@@ -31,7 +31,7 @@ Isso cria a pasta `.aioson/` com todos os arquivos de configuração, agentes e 
 Se o projeto já for brownfield e você quiser gerar um panorama inicial da base, rode depois:
 
 ```bash
-npx aioson scan:project . --folder=src
+npx @jaimevalasek/aioson scan:project . --folder=src
 ```
 
 O scanner cria estes arquivos localmente:
@@ -44,7 +44,7 @@ O scanner cria estes arquivos localmente:
 Se você também quiser gerar `discovery.md` e `skeleton-system.md`, ative a etapa opcional com LLM:
 
 ```bash
-npx aioson scan:project . --folder=src --with-llm --provider=openai
+npx @jaimevalasek/aioson scan:project . --folder=src --with-llm --provider=openai
 ```
 
 ---
@@ -52,7 +52,7 @@ npx aioson scan:project . --folder=src --with-llm --provider=openai
 ## 2. Configure o contexto do projeto
 
 ```bash
-npx aioson setup:context
+npx @jaimevalasek/aioson setup:context
 ```
 
 O CLI vai fazer perguntas sobre seu projeto:
