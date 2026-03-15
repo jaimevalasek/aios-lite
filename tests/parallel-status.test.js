@@ -8,6 +8,7 @@ const path = require('node:path');
 const { createTranslator } = require('../src/i18n');
 const { runParallelInit } = require('../src/commands/parallel-init');
 const { runParallelStatus } = require('../src/commands/parallel-status');
+const { openRuntimeDb } = require('../src/runtime-store');
 
 async function makeTempDir() {
   return fs.mkdtemp(path.join(os.tmpdir(), 'aios-forge-parallel-status-'));
@@ -82,6 +83,20 @@ test('parallel:status reports baseline lane summary', async () => {
   assert.equal(result.deliverables.total, 9);
   assert.equal(result.sharedDecisions.exists, true);
   assert.equal(result.sharedDecisions.entries, 1);
+
+  const runtime = await openRuntimeDb(dir, { mustExist: true });
+  try {
+    const run = runtime.db.prepare("SELECT agent_name, source, title, status FROM agent_runs WHERE title = 'parallel:status' ORDER BY updated_at DESC LIMIT 1").get();
+    const event = runtime.db.prepare("SELECT event_type, phase FROM execution_events WHERE event_type = 'parallel.status_reported' ORDER BY created_at DESC, id DESC LIMIT 1").get();
+
+    assert.equal(run.agent_name, '@orchestrator');
+    assert.equal(run.source, 'orchestration');
+    assert.equal(run.status, 'completed');
+    assert.equal(event.event_type, 'parallel.status_reported');
+    assert.equal(event.phase, 'parallel');
+  } finally {
+    runtime.db.close();
+  }
 });
 
 test('parallel:status reflects lane progress and blockers', async () => {

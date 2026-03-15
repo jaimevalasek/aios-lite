@@ -5,6 +5,7 @@ const path = require('node:path');
 const { validateProjectContextFile } = require('../context');
 const { exists, toRelativeSafe } = require('../utils');
 const { parseWorkers, normalizeClassification } = require('./parallel-init');
+const { recordRuntimeOperation } = require('../execution-gateway');
 
 const SOURCE_ALIAS = {
   prd: '.aios-forge/context/prd.md',
@@ -338,6 +339,32 @@ async function runParallelAssign({ args, options = {}, logger, t }) {
     })),
     filesUpdated
   };
+
+  if (!dryRun) {
+    output.runtime = await recordRuntimeOperation(targetDir, {
+      agentName: 'orchestrator',
+      source: 'orchestration',
+      sessionKey: 'parallel:workspace',
+      title: 'Parallel orchestration workspace',
+      goal: 'Prepare and manage parallel development lanes',
+      runTitle: 'parallel:assign',
+      message: 'Parallel scope assignment started',
+      summary: `Parallel scope assignment updated ${output.scopeCount} scopes across ${workers} lanes`,
+      eventType: 'parallel.assigned',
+      phase: 'parallel',
+      payload: {
+        command: 'parallel:assign',
+        classification: output.classification,
+        workers,
+        source: output.source,
+        sourceFile: output.sourceFile,
+        extractionMethod: output.extractionMethod,
+        fallbackUsed: output.fallbackUsed,
+        scopeCount: output.scopeCount,
+        filesUpdated
+      }
+    });
+  }
 
   if (options.json) {
     return output;

@@ -137,10 +137,16 @@ test('runtime flow initializes store and tracks start/update/finish lifecycle', 
   assert.equal(status.recentRuns[0].agent_name, '@roteirista-viral');
   assert.equal(status.recentRuns[0].task_key, task.taskKey);
   assert.equal(status.recentRuns[0].squad_slug, 'youtube-creator');
+  assert.equal(status.recentRuns[0].source, 'direct');
   assert.equal(status.recentRuns[0].output_path, 'output/youtube-creator/2026-03-06-video.html');
   assert.deepEqual(status.recentRuns[0].used_skills, ['hook-clarity', 'retention-outline', 'story-flow']);
   assert.equal(status.recentArtifacts[0].task_key, task.taskKey);
   assert.equal(status.recentArtifacts[0].file_path, 'output/youtube-creator/2026-03-06-video.html');
+  assert.equal(Array.isArray(status.recentExecutionEvents), true);
+  assert.equal(status.recentExecutionEvents.length > 0, true);
+  assert.equal(status.recentExecutionEvents.some((event) => event.run_key === start.runKey && event.event_type === 'start'), true);
+  assert.equal(status.recentExecutionEvents.some((event) => event.run_key === start.runKey && event.event_type === 'progress'), true);
+  assert.equal(status.recentExecutionEvents.some((event) => event.run_key === start.runKey && event.event_type === 'finish'), true);
 });
 
 test('runtime finish auto-registers content item when output package has index.html and content.json', async () => {

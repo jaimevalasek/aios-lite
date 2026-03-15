@@ -141,6 +141,10 @@ async function openRuntimeDb(targetDir, options = {}) {
       agent_kind TEXT NOT NULL DEFAULT 'official',
       squad_slug TEXT,
       session_key TEXT,
+      source TEXT NOT NULL DEFAULT 'direct',
+      workflow_id TEXT,
+      workflow_stage TEXT,
+      parent_run_key TEXT,
       title TEXT,
       status TEXT NOT NULL,
       summary TEXT,
@@ -159,6 +163,31 @@ async function openRuntimeDb(targetDir, options = {}) {
       message TEXT NOT NULL DEFAULT '',
       payload_json TEXT,
       created_at TEXT NOT NULL,
+      FOREIGN KEY (run_key) REFERENCES agent_runs(run_key) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS execution_events (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      task_key TEXT,
+      run_key TEXT,
+      agent_name TEXT,
+      agent_kind TEXT,
+      squad_slug TEXT,
+      session_key TEXT,
+      source TEXT,
+      workflow_id TEXT,
+      workflow_stage TEXT,
+      parent_run_key TEXT,
+      event_type TEXT NOT NULL,
+      phase TEXT,
+      status TEXT,
+      tool_name TEXT,
+      message TEXT NOT NULL DEFAULT '',
+      payload_json TEXT,
+      sequence_no INTEGER NOT NULL DEFAULT 1,
+      parent_event_id INTEGER,
+      created_at TEXT NOT NULL,
+      FOREIGN KEY (task_key) REFERENCES tasks(task_key) ON DELETE SET NULL,
       FOREIGN KEY (run_key) REFERENCES agent_runs(run_key) ON DELETE CASCADE
     );
 
@@ -210,6 +239,9 @@ async function openRuntimeDb(targetDir, options = {}) {
     CREATE INDEX IF NOT EXISTS idx_agent_runs_task ON agent_runs(task_key, updated_at DESC);
     CREATE INDEX IF NOT EXISTS idx_agent_runs_squad ON agent_runs(squad_slug, updated_at DESC);
     CREATE INDEX IF NOT EXISTS idx_agent_events_run ON agent_events(run_key, created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_execution_events_run ON execution_events(run_key, sequence_no DESC, created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_execution_events_task ON execution_events(task_key, created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_execution_events_created ON execution_events(created_at DESC);
     CREATE INDEX IF NOT EXISTS idx_artifacts_task ON artifacts(task_key, created_at DESC);
     CREATE INDEX IF NOT EXISTS idx_content_items_squad ON content_items(squad_slug, updated_at DESC);
     CREATE INDEX IF NOT EXISTS idx_content_items_task ON content_items(task_key, updated_at DESC);
@@ -360,6 +392,22 @@ function ensureLegacyColumns(db) {
     db.exec('ALTER TABLE agent_runs ADD COLUMN used_skills_json TEXT');
   }
 
+  if (!agentRunColumnNames.has('source')) {
+    db.exec("ALTER TABLE agent_runs ADD COLUMN source TEXT NOT NULL DEFAULT 'direct'");
+  }
+
+  if (!agentRunColumnNames.has('workflow_id')) {
+    db.exec('ALTER TABLE agent_runs ADD COLUMN workflow_id TEXT');
+  }
+
+  if (!agentRunColumnNames.has('workflow_stage')) {
+    db.exec('ALTER TABLE agent_runs ADD COLUMN workflow_stage TEXT');
+  }
+
+  if (!agentRunColumnNames.has('parent_run_key')) {
+    db.exec('ALTER TABLE agent_runs ADD COLUMN parent_run_key TEXT');
+  }
+
   const squadColumns = db.prepare('PRAGMA table_info(squads)').all();
   const squadColumnNames = new Set(squadColumns.map((column) => column.name));
 
@@ -392,6 +440,93 @@ function insertEvent(db, record) {
     INSERT INTO agent_events (run_key, event_type, message, payload_json, created_at)
     VALUES (@run_key, @event_type, @message, @payload_json, @created_at)
   `).run(record);
+}
+
+function getRunContext(db, runKey) {
+  return db
+    .prepare(`
+      SELECT
+        run_key,
+        task_key,
+        agent_name,
+        agent_kind,
+        squad_slug,
+        session_key,
+        source,
+        workflow_id,
+        workflow_stage,
+        parent_run_key,
+        status,
+        summary,
+        title
+      FROM agent_runs
+      WHERE run_key = ?
+    `)
+    .get(runKey);
+}
+
+function nextExecutionSequence(db, runKey) {
+  if (!runKey) return 1;
+  const row = db
+    .prepare('SELECT COALESCE(MAX(sequence_no), 0) AS max_sequence FROM execution_events WHERE run_key = ?')
+    .get(runKey);
+  return Number(row?.max_sequence || 0) + 1;
+}
+
+function insertExecutionEvent(db, record) {
+  db.prepare(`
+    INSERT INTO execution_events (
+      task_key, run_key, agent_name, agent_kind, squad_slug, session_key,
+      source, workflow_id, workflow_stage, parent_run_key,
+      event_type, phase, status, tool_name, message, payload_json,
+      sequence_no, parent_event_id, created_at
+    ) VALUES (
+      @task_key, @run_key, @agent_name, @agent_kind, @squad_slug, @session_key,
+      @source, @workflow_id, @workflow_stage, @parent_run_key,
+      @event_type, @phase, @status, @tool_name, @message, @payload_json,
+      @sequence_no, @parent_event_id, @created_at
+    )
+  `).run(record);
+}
+
+function appendRunEvent(db, options) {
+  const run = getRunContext(db, options.runKey);
+  if (!run) {
+    throw new Error(`Run not found: ${options.runKey}`);
+  }
+
+  const now = options.createdAt || nowIso();
+  const payloadJson = options.payload ? JSON.stringify(options.payload) : null;
+
+  insertEvent(db, {
+    run_key: run.run_key,
+    event_type: String(options.eventType || 'update'),
+    message: String(options.message || ''),
+    payload_json: payloadJson,
+    created_at: now
+  });
+
+  insertExecutionEvent(db, {
+    task_key: run.task_key,
+    run_key: run.run_key,
+    agent_name: run.agent_name,
+    agent_kind: run.agent_kind,
+    squad_slug: run.squad_slug,
+    session_key: run.session_key,
+    source: run.source,
+    workflow_id: run.workflow_id,
+    workflow_stage: run.workflow_stage,
+    parent_run_key: run.parent_run_key,
+    event_type: String(options.eventType || 'update'),
+    phase: options.phase ? String(options.phase).trim() : null,
+    status: options.status ? String(options.status).trim() : run.status || null,
+    tool_name: options.toolName ? String(options.toolName).trim() : null,
+    message: String(options.message || ''),
+    payload_json: payloadJson,
+    sequence_no: nextExecutionSequence(db, run.run_key),
+    parent_event_id: options.parentEventId || null,
+    created_at: now
+  });
 }
 
 function startTask(db, options) {
@@ -932,6 +1067,7 @@ function startRun(db, options) {
   const status = normalizeStatus(options.status, 'running');
   const agentKind = String(options.agentKind || (options.squadSlug ? 'squad' : 'official')).trim();
   const taskKey = options.taskKey ? String(options.taskKey).trim() : null;
+  const source = String(options.source || 'direct').trim() || 'direct';
   const usedSkillsJson = normalizeStringArray(options.usedSkills).length > 0 ? JSON.stringify(normalizeStringArray(options.usedSkills)) : null;
 
   if (taskKey) {
@@ -943,10 +1079,12 @@ function startRun(db, options) {
 
   db.prepare(`
     INSERT INTO agent_runs (
-      run_key, task_key, agent_name, agent_kind, squad_slug, session_key, title,
+      run_key, task_key, agent_name, agent_kind, squad_slug, session_key, source,
+      workflow_id, workflow_stage, parent_run_key, title,
       status, summary, used_skills_json, output_path, started_at, updated_at, finished_at
     ) VALUES (
-      @run_key, @task_key, @agent_name, @agent_kind, @squad_slug, @session_key, @title,
+      @run_key, @task_key, @agent_name, @agent_kind, @squad_slug, @session_key, @source,
+      @workflow_id, @workflow_stage, @parent_run_key, @title,
       @status, @summary, @used_skills_json, @output_path, @started_at, @updated_at, @finished_at
     )
   `).run({
@@ -956,6 +1094,10 @@ function startRun(db, options) {
     agent_kind: agentKind,
     squad_slug: options.squadSlug ? String(options.squadSlug).trim() : null,
     session_key: options.sessionKey ? String(options.sessionKey).trim() : null,
+    source,
+    workflow_id: options.workflowId ? String(options.workflowId).trim() : null,
+    workflow_stage: options.workflowStage ? String(options.workflowStage).trim() : null,
+    parent_run_key: options.parentRunKey ? String(options.parentRunKey).trim() : null,
     title: options.title ? String(options.title).trim() : null,
     status,
     summary: options.summary ? String(options.summary).trim() : null,
@@ -966,12 +1108,14 @@ function startRun(db, options) {
     finished_at: status === 'completed' || status === 'failed' ? now : null
   });
 
-  insertEvent(db, {
-    run_key: runKey,
-    event_type: 'start',
+  appendRunEvent(db, {
+    runKey,
+    eventType: 'start',
+    phase: options.phase || 'run',
+    status,
     message: String(options.message || options.title || 'Agent started'),
-    payload_json: options.payload ? JSON.stringify(options.payload) : null,
-    created_at: now
+    payload: options.payload,
+    createdAt: now
   });
 
   return runKey;
@@ -979,7 +1123,9 @@ function startRun(db, options) {
 
 function updateRun(db, options) {
   const now = nowIso();
-  const existing = db.prepare('SELECT run_key, status, used_skills_json FROM agent_runs WHERE run_key = ?').get(options.runKey);
+  const existing = db
+    .prepare('SELECT run_key, status, used_skills_json, source, workflow_id, workflow_stage, parent_run_key FROM agent_runs WHERE run_key = ?')
+    .get(options.runKey);
   if (!existing) {
     throw new Error(`Run not found: ${options.runKey}`);
   }
@@ -1003,6 +1149,10 @@ function updateRun(db, options) {
       used_skills_json = COALESCE(@used_skills_json, used_skills_json),
       output_path = COALESCE(@output_path, output_path),
       task_key = COALESCE(@task_key, task_key),
+      source = COALESCE(@source, source),
+      workflow_id = COALESCE(@workflow_id, workflow_id),
+      workflow_stage = COALESCE(@workflow_stage, workflow_stage),
+      parent_run_key = COALESCE(@parent_run_key, parent_run_key),
       updated_at = @updated_at,
       finished_at = CASE
         WHEN @status IN ('completed', 'failed') THEN @updated_at
@@ -1016,15 +1166,22 @@ function updateRun(db, options) {
     used_skills_json: nextUsedSkills.length > 0 ? JSON.stringify(nextUsedSkills) : null,
     output_path: options.outputPath ? String(options.outputPath).trim() : null,
     task_key: taskKey,
+    source: options.source ? String(options.source).trim() : null,
+    workflow_id: options.workflowId ? String(options.workflowId).trim() : null,
+    workflow_stage: options.workflowStage ? String(options.workflowStage).trim() : null,
+    parent_run_key: options.parentRunKey ? String(options.parentRunKey).trim() : null,
     updated_at: now
   });
 
-  insertEvent(db, {
-    run_key: String(options.runKey),
-    event_type: String(options.eventType || 'update'),
+  appendRunEvent(db, {
+    runKey: String(options.runKey),
+    eventType: String(options.eventType || 'update'),
+    phase: options.phase || 'run',
+    status: nextStatus,
+    toolName: options.toolName,
     message: String(options.message || options.summary || 'Run updated'),
-    payload_json: options.payload ? JSON.stringify(options.payload) : null,
-    created_at: now
+    payload: options.payload,
+    createdAt: now
   });
 
   return nextStatus;
@@ -1070,14 +1227,14 @@ function getStatusSnapshot(db) {
   }
 
   const activeRuns = db.prepare(`
-    SELECT run_key, task_key, agent_name, agent_kind, squad_slug, session_key, title, status, summary, used_skills_json, output_path, started_at, updated_at
+    SELECT run_key, task_key, agent_name, agent_kind, squad_slug, session_key, source, workflow_id, workflow_stage, parent_run_key, title, status, summary, used_skills_json, output_path, started_at, updated_at
     FROM agent_runs
     WHERE status IN ('queued', 'running')
     ORDER BY updated_at DESC, started_at DESC
   `).all();
 
   const recentRuns = db.prepare(`
-    SELECT run_key, task_key, agent_name, agent_kind, squad_slug, session_key, title, status, summary, used_skills_json, output_path, started_at, updated_at, finished_at
+    SELECT run_key, task_key, agent_name, agent_kind, squad_slug, session_key, source, workflow_id, workflow_stage, parent_run_key, title, status, summary, used_skills_json, output_path, started_at, updated_at, finished_at
     FROM agent_runs
     ORDER BY updated_at DESC, started_at DESC
     LIMIT 20
@@ -1135,6 +1292,16 @@ function getStatusSnapshot(db) {
     LIMIT 20
   `).all();
 
+  const recentExecutionEvents = db.prepare(`
+    SELECT
+      id, task_key, run_key, agent_name, agent_kind, squad_slug, session_key, source,
+      workflow_id, workflow_stage, parent_run_key, event_type, phase, status,
+      tool_name, message, payload_json, sequence_no, parent_event_id, created_at
+    FROM execution_events
+    ORDER BY created_at DESC, id DESC
+    LIMIT 40
+  `).all();
+
   for (const row of activeRuns) {
     row.used_skills = parseJsonArray(row.used_skills_json);
   }
@@ -1155,7 +1322,8 @@ function getStatusSnapshot(db) {
     activeRuns,
     recentRuns,
     recentArtifacts,
-    recentContentItems
+    recentContentItems,
+    recentExecutionEvents
   };
 }
 
@@ -1240,12 +1408,14 @@ async function logAgentEvent(db, runtimeDir, options) {
     if (activeRun) {
       runKey = activeRun.run_key;
       if (!isFinish) {
-        insertEvent(db, {
-          run_key: runKey,
-          event_type: options.type || 'status',
+        appendRunEvent(db, {
+          runKey,
+          eventType: options.type || 'status',
+          phase: options.type || 'run',
+          status: 'running',
           message: String(options.message || ''),
-          payload_json: options.meta ? JSON.stringify(options.meta) : null,
-          created_at: now
+          payload: options.meta,
+          createdAt: now
         });
       }
     } else {
@@ -1285,12 +1455,14 @@ async function logAgentEvent(db, runtimeDir, options) {
       });
       await writeAgentSession(runtimeDir, agentName, { runKey, taskKey, startedAt: now, finished: false });
     } else {
-      insertEvent(db, {
-        run_key: runKey,
-        event_type: options.type || 'status',
+      appendRunEvent(db, {
+        runKey,
+        eventType: options.type || 'status',
+        phase: options.type || 'run',
+        status: 'running',
         message: String(options.message || ''),
-        payload_json: options.meta ? JSON.stringify(options.meta) : null,
-        created_at: now
+        payload: options.meta,
+        createdAt: now
       });
     }
   }
@@ -1330,6 +1502,7 @@ module.exports = {
   getStatusSnapshot,
   createRunKey,
   createTaskKey,
+  appendRunEvent,
   logAgentEvent,
   readAgentSession,
   clearAgentSession,

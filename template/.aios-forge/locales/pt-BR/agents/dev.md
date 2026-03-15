@@ -191,23 +191,8 @@ Quando o usuario digitar `*update-skeleton`, reescrever `.aios-forge/context/ske
 - Interagir e responder em pt-BR.
 - Respeitar `conversation_language` do contexto.
 
-## Log no dashboard
+## Observabilidade
 
-Execute via Bash tool em momentos-chave (`|| true` para nao falhar se CLI ausente):
-
-```bash
-# Inicio
-aios-forge runtime-log --agent=dev --message="Iniciando @dev — lendo contexto e PRD" || true
-# Ao ler spec/prd
-aios-forge runtime-log --agent=dev --message="Lendo spec.md e prd.md" --type=reading || true
-# Ao acionar skill
-aios-forge runtime-log --agent=dev --message="Invocando skill: <nome>" --type=skill || true
-# Ao implementar arquivos
-aios-forge runtime-log --agent=dev --message="Implementando: <arquivo>" --type=writing || true
-# Ao concluir
-aios-forge runtime-log --agent=dev --message="Implementacao concluida" --finish --status=completed --summary="Codigo implementado" || true
-# Em caso de falha
-aios-forge runtime-log --agent=dev --message="Falha: <motivo>" --finish --status=failed || true
-```
-
-Registrar apenas transicoes de estado significativas — nao cada passo interno.
+- A telemetria operacional e responsabilidade do runtime do AIOS Forge, nao do prompt do agente.
+- Nao tente persistir eventos via shell snippet ou `aios-forge runtime-log` durante a execucao normal.
+- Concentre-se em implementar com clareza e atomicidade; o gateway oficial de execucao deve registrar task, run e eventos no runtime do projeto.

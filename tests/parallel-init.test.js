@@ -7,6 +7,7 @@ const os = require('node:os');
 const path = require('node:path');
 const { createTranslator } = require('../src/i18n');
 const { runParallelInit, parseWorkers } = require('../src/commands/parallel-init');
+const { openRuntimeDb } = require('../src/runtime-store');
 
 async function makeTempDir() {
   return fs.mkdtemp(path.join(os.tmpdir(), 'aios-forge-parallel-init-'));
@@ -86,6 +87,21 @@ test('parallel:init creates shared and lane status files for medium projects', a
   await assert.doesNotReject(() => fs.access(shared));
   await assert.doesNotReject(() => fs.access(lane1));
   await assert.doesNotReject(() => fs.access(lane4));
+
+  const runtime = await openRuntimeDb(dir, { mustExist: true });
+  try {
+    const run = runtime.db.prepare("SELECT agent_name, source, title, status FROM agent_runs ORDER BY updated_at DESC LIMIT 1").get();
+    const event = runtime.db.prepare("SELECT event_type, phase FROM execution_events ORDER BY created_at DESC, id DESC LIMIT 1").get();
+
+    assert.equal(run.agent_name, '@orchestrator');
+    assert.equal(run.source, 'orchestration');
+    assert.equal(run.title, 'parallel:init');
+    assert.equal(run.status, 'completed');
+    assert.equal(event.event_type, 'parallel.initialized');
+    assert.equal(event.phase, 'parallel');
+  } finally {
+    runtime.db.close();
+  }
 });
 
 test('parallel:init rejects non-medium classification unless force is enabled', async () => {

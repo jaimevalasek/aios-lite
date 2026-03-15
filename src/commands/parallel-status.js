@@ -3,6 +3,7 @@
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const { exists } = require('../utils');
+const { recordRuntimeOperation } = require('../execution-gateway');
 
 const KNOWN_STATUSES = ['pending', 'in_progress', 'completed', 'blocked'];
 
@@ -217,6 +218,28 @@ async function runParallelStatus({ args, options = {}, logger, t }) {
       deliverables: lane.deliverables
     }))
   };
+
+  output.runtime = await recordRuntimeOperation(targetDir, {
+    agentName: 'orchestrator',
+    source: 'orchestration',
+    sessionKey: 'parallel:workspace',
+    title: 'Parallel orchestration workspace',
+    goal: 'Prepare and manage parallel development lanes',
+    runTitle: 'parallel:status',
+    message: 'Parallel status inspection started',
+    summary: `Parallel status inspected for ${output.laneCount} lanes`,
+    eventType: 'parallel.status_reported',
+    phase: 'parallel',
+    payload: {
+      command: 'parallel:status',
+      laneCount: output.laneCount,
+      statusCounts,
+      scopeCount,
+      blockerCount,
+      deliverables: output.deliverables,
+      sharedDecisions: output.sharedDecisions
+    }
+  });
 
   if (options.json) {
     return output;

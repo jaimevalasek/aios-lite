@@ -821,7 +821,8 @@ async function runRuntimeStatus({ args, options = {}, logger, t }) {
       activeRuns: snapshot.activeRuns,
       recentRuns: snapshot.recentRuns,
       recentArtifacts: snapshot.recentArtifacts,
-      recentContentItems: snapshot.recentContentItems
+      recentContentItems: snapshot.recentContentItems,
+      recentExecutionEvents: snapshot.recentExecutionEvents
     };
 
     if (!options.json) {

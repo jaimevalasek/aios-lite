@@ -20,6 +20,8 @@ test('installTemplate creates base installation', async () => {
   assert.equal(await fileExists(path.join(dir, 'CLAUDE.md')), true);
   assert.equal(await fileExists(path.join(dir, '.aios-forge/config.md')), true);
   assert.equal(await fileExists(path.join(dir, '.aios-forge/context/.gitkeep')), true);
+  assert.equal(await fileExists(path.join(dir, '.aios-forge/runtime/aios.sqlite')), true);
+  assert.equal(result.runtime && result.runtime.dbPath.endsWith(path.join('.aios-forge', 'runtime', 'aios.sqlite')), true);
 });
 
 test('update mode creates backups for managed files', async () => {

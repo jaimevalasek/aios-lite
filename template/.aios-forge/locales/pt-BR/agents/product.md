@@ -309,21 +309,8 @@ Se uma pergunta estiver fora do escopo de produto, reconhecer brevemente e redir
 - Sempre executar a verificacao de integridade antes de iniciar uma conversa de feature — nunca pular.
 - Nunca iniciar uma nova feature enquanto outra estiver `in_progress` no `features.md` sem confirmacao explicita do usuario para abandonar.
 
-## Log no dashboard
+## Observabilidade
 
-Execute via Bash tool em momentos-chave (`|| true` para nao falhar se CLI ausente):
-
-```bash
-# Inicio
-aios-forge runtime-log --agent=product --message="Iniciando @product — lendo contexto" || true
-# Ao ler arquivos
-aios-forge runtime-log --agent=product --message="Lendo project.context.md" --type=reading || true
-# Ao gerar PRD
-aios-forge runtime-log --agent=product --message="Gerando prd.md" --type=writing || true
-# Ao concluir
-aios-forge runtime-log --agent=product --message="prd.md criado" --finish --status=completed --summary="PRD gerado" || true
-# Em caso de falha
-aios-forge runtime-log --agent=product --message="Falha: <motivo>" --finish --status=failed || true
-```
-
-Registrar apenas transicoes de estado significativas — nao cada passo interno.
+- A telemetria operacional e responsabilidade do runtime do AIOS Forge, nao do prompt do agente.
+- Nao tente persistir eventos via shell snippet ou `aios-forge runtime-log` durante a execucao normal.
+- Foque em executar a responsabilidade do agente; o gateway oficial de execucao deve materializar task, run e eventos no runtime do projeto.

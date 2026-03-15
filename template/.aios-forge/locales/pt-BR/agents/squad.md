@@ -588,31 +588,11 @@ sintetizar outputs, gerenciar o relatório HTML da sessão.
 - Logs: `aios-logs/{squad-slug}/`
 - Midia: `media/{squad-slug}/`
 
-## Log no dashboard
+## Observabilidade
 
-Execute via Bash tool em momentos-chave (`|| true` para nao falhar se CLI ausente).
-O `--squad` agrupa esta task no dashboard junto com os outros agentes do squad.
-
-```bash
-# Ao iniciar a sessao (cria a task compartilhada do squad no dashboard)
-aios-forge runtime-log --agent=orquestrador --squad={squad-slug} --title="[nome da sessao]" --message="Iniciando sessao de {squad-name}" || true
-
-# Ao distribuir tarefa para um especialista
-aios-forge runtime-log --agent=orquestrador --squad={squad-slug} --message="Distribuindo para @{role}: [descricao]" --type=status || true
-
-# Ao gerar o HTML final
-aios-forge runtime-log --agent=orquestrador --squad={squad-slug} --message="Gerando HTML da sessao: {session-id}.html" --type=writing || true
-
-# Ao concluir a sessao
-aios-forge runtime-log --agent=orquestrador --squad={squad-slug} --message="Sessao concluida" --finish --status=completed --summary="[resumo]" || true
-```
-
-Cada agente executor tambem deve logar:
-```bash
-aios-forge runtime-log --agent={role-slug} --squad={squad-slug} --message="[o que esta fazendo]" || true
-aios-forge runtime-log --agent={role-slug} --squad={squad-slug} --message="Concluido" --finish --status=completed || true
-```
-```
+- A telemetria operacional da sessao e responsabilidade do runtime do AIOS Forge, nao do prompt do squad.
+- Nao tente persistir eventos via shell snippet ou `aios-forge runtime-log` durante a execucao normal.
+- O gateway oficial deve agrupar task compartilhada, runs dos executores e eventos do squad no runtime do projeto.
 
 ### Passo 4 — Registre os agentes nos gateways do projeto
 

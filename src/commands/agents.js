@@ -2,6 +2,7 @@
 
 const path = require('node:path');
 const {
+  normalizeAgentName,
   listAgentDefinitions,
   getAgentDefinition,
   resolveInstructionPath,
@@ -10,6 +11,11 @@ const {
 const { resolveAgentLocale } = require('../locales');
 const { validateProjectContextFile } = require('../context');
 const { exists } = require('../utils');
+const { loadOrCreateState, runWorkflowNext } = require('./workflow-next');
+const {
+  bootstrapDirectAgentPrompt,
+  classifyDirectAgentRuntime
+} = require('../execution-gateway');
 
 async function resolveLocaleForTarget(targetDir, options) {
   const fromOption = options.language || options.lang;
@@ -61,14 +67,73 @@ async function runAgentPrompt({ args, options, logger, t }) {
 
   const targetDir = path.resolve(process.cwd(), args[1] || '.');
   const locale = await resolveLocaleForTarget(targetDir, options);
-  const instructionPath = await resolveExistingInstructionPath(targetDir, agent, locale);
   const tool = options.tool || 'codex';
-  const prompt = buildAgentPrompt(agent, tool, { instructionPath });
 
-  logger.log(t('agents.prompt_title', { agent: agent.id, tool, locale }));
+  let routed = false;
+  let requestedAgent = normalizeAgentName(agent.id);
+  let runtime = null;
+  let promptAgent = agent;
+  let instructionPath = null;
+  let prompt = null;
+
+  const context = await validateProjectContextFile(targetDir);
+  if (context.valid) {
+    const loaded = await loadOrCreateState(targetDir, options);
+    if (loaded.state.sequence.includes(requestedAgent)) {
+      const workflowResult = await runWorkflowNext({
+        args: [targetDir],
+        options: {
+          ...options,
+          tool,
+          requestedAgent
+        },
+        logger: { log() {}, error() {} },
+        t
+      });
+
+      routed = workflowResult.agent !== requestedAgent;
+      runtime = workflowResult.runtime || null;
+      promptAgent = getAgentDefinition(workflowResult.agent) || agent;
+      instructionPath = workflowResult.instructionPath;
+      prompt = workflowResult.prompt;
+    }
+  }
+
+  if (!prompt) {
+    instructionPath = await resolveExistingInstructionPath(targetDir, promptAgent, locale);
+    prompt = buildAgentPrompt(promptAgent, tool, { instructionPath });
+    const runtimeClass = classifyDirectAgentRuntime(promptAgent.id);
+    const handoffLabel = runtimeClass.source === 'squad_session'
+      ? 'Squad session handoff'
+      : runtimeClass.source === 'orchestration'
+        ? 'Orchestration handoff'
+        : 'Direct agent handoff';
+    runtime = await bootstrapDirectAgentPrompt(targetDir, {
+      agentName: promptAgent.id,
+      tool,
+      locale,
+      instructionPath,
+      prompt,
+      title: `${handoffLabel}: @${promptAgent.id}`,
+      message: `Prompt generated for @${promptAgent.id}`
+    });
+  }
+
+  logger.log(t('agents.prompt_title', { agent: promptAgent.id, tool, locale }));
   logger.log(prompt);
 
-  return { ok: true, targetDir, agent: agent.id, tool, locale, instructionPath, prompt };
+  return {
+    ok: true,
+    targetDir,
+    agent: promptAgent.id,
+    requestedAgent,
+    routed,
+    tool,
+    locale,
+    instructionPath,
+    prompt,
+    runtime
+  };
 }
 
 module.exports = {

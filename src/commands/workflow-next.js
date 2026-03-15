@@ -6,6 +6,7 @@ const { getAgentDefinition, resolveInstructionPath, buildAgentPrompt } = require
 const { resolveAgentLocale } = require('../locales');
 const { validateProjectContextFile } = require('../context');
 const { exists, ensureDir } = require('../utils');
+const { syncWorkflowRuntime } = require('../execution-gateway');
 
 const STATE_RELATIVE_PATH = '.aios-forge/context/workflow.state.json';
 const CONFIG_RELATIVE_PATH = '.aios-forge/context/workflow.config.json';
@@ -81,6 +82,10 @@ async function appendJsonLine(filePath, payload) {
 }
 
 function buildWorkflowEventMessage({ created, state, activation, completedStage, options }) {
+  const requestedAgent = options.requestedAgent ? normalizeAgentName(options.requestedAgent) : null;
+  if (requestedAgent && activation.agent && requestedAgent !== activation.agent) {
+    return `Workflow enforced @${activation.agent} after direct request for @${requestedAgent}.`;
+  }
   if (completedStage && activation.agent) {
     return `Completed @${completedStage}. Next stage ready: @${activation.agent}.`;
   }
@@ -104,6 +109,8 @@ function buildWorkflowEventMessage({ created, state, activation, completedStage,
 }
 
 function buildWorkflowEventType({ completedStage, state, activation, options }) {
+  const requestedAgent = options.requestedAgent ? normalizeAgentName(options.requestedAgent) : null;
+  if (requestedAgent && activation.agent && requestedAgent !== activation.agent) return 'routed';
   if (completedStage) return 'completed';
   if (state.detour && state.detour.active) return 'workflow';
   if (options.skip) return 'workflow';
@@ -507,11 +514,18 @@ async function runWorkflowNext({ args, options, logger, t }) {
     next: state.detour && state.detour.active ? state.detour.returnTo : state.next,
     completedStage,
     detour: state.detour,
+    requestedAgent: options.requestedAgent ? normalizeAgentName(options.requestedAgent) : null,
     completed: state.completed,
     skipped: state.skipped,
     sequence: state.sequence
   };
   await appendWorkflowEvent(targetDir, eventPayload);
+  const runtime = await syncWorkflowRuntime(targetDir, {
+    state,
+    eventPayload,
+    activationAgent: activation.agent,
+    completedStage
+  });
 
   const payload = {
     ok: true,
@@ -530,6 +544,7 @@ async function runWorkflowNext({ args, options, logger, t }) {
     skipped: state.skipped,
     completedStage,
     featureSlug: state.featureSlug,
+    runtime,
     agent: activation.agent,
     instructionPath: activation.instructionPath,
     prompt: activation.prompt

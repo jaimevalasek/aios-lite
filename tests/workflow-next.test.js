@@ -10,6 +10,7 @@ const {
   runWorkflowNext,
   EVENTS_RELATIVE_PATH
 } = require('../src/commands/workflow-next');
+const { openRuntimeDb } = require('../src/runtime-store');
 
 async function makeTempDir() {
   return fs.mkdtemp(path.join(os.tmpdir(), 'aios-forge-workflow-next-'));
@@ -171,4 +172,43 @@ test('workflow:next appends workflow events for dashboard visibility', async () 
   assert.equal(event.current, 'analyst');
   assert.equal(event.next, 'analyst');
   assert.match(event.message, /Stage @analyst is active|Workflow initialized at @analyst/);
+});
+
+test('workflow:next syncs workflow task, runs, and canonical events into runtime sqlite', async () => {
+  const dir = await makeTempDir();
+  await writeProjectContext(dir, 'SMALL');
+  await writeFileEnsured(path.join(dir, '.aios-forge/context/prd.md'), '# PRD\n');
+
+  const { t } = createTranslator('en');
+  const result = await runWorkflowNext({
+    args: [dir],
+    options: { tool: 'codex' },
+    logger: createQuietLogger(),
+    t
+  });
+
+  assert.equal(result.runtime.ok, true);
+
+  const runtime = await openRuntimeDb(dir, { mustExist: true });
+  try {
+    const task = runtime.db.prepare('SELECT task_key, session_key, status FROM tasks ORDER BY updated_at DESC LIMIT 1').get();
+    const workflowRun = runtime.db.prepare("SELECT agent_name, agent_kind, source, workflow_id FROM agent_runs WHERE agent_name = '@workflow' ORDER BY updated_at DESC LIMIT 1").get();
+    const stageRun = runtime.db.prepare("SELECT agent_name, agent_kind, source, workflow_stage, parent_run_key, status FROM agent_runs WHERE agent_name = '@analyst' ORDER BY updated_at DESC LIMIT 1").get();
+    const events = runtime.db.prepare('SELECT event_type, phase, source, workflow_stage FROM execution_events ORDER BY created_at DESC, id DESC LIMIT 10').all();
+
+    assert.equal(task.session_key, 'workflow:project:project:default');
+    assert.equal(task.status, 'running');
+    assert.equal(workflowRun.agent_kind, 'workflow');
+    assert.equal(workflowRun.source, 'workflow');
+    assert.equal(workflowRun.workflow_id, 'workflow:project:project:default');
+    assert.equal(stageRun.agent_kind, 'official');
+    assert.equal(stageRun.source, 'workflow');
+    assert.equal(stageRun.workflow_stage, 'analyst');
+    assert.equal(stageRun.status, 'running');
+    assert.equal(typeof stageRun.parent_run_key, 'string');
+    assert.equal(events.some((event) => event.source === 'workflow'), true);
+    assert.equal(events.some((event) => event.workflow_stage === 'analyst'), true);
+  } finally {
+    runtime.db.close();
+  }
 });

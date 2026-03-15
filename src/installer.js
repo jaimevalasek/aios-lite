@@ -5,6 +5,7 @@ const path = require('node:path');
 const { MANAGED_FILES } = require('./constants');
 const { getCliVersion } = require('./version');
 const { exists, ensureDir, copyFileWithDir, nowStamp, toRelativeSafe } = require('./utils');
+const { ensureProjectRuntime } = require('./execution-gateway');
 
 const ROOT_DIR = path.join(__dirname, '..');
 const TEMPLATE_DIR = path.join(ROOT_DIR, 'template');
@@ -146,6 +147,7 @@ async function installTemplate(targetDir, options = {}) {
   const copied = [];
   const skipped = [];
   const backedUp = [];
+  let runtime = null;
 
   let backupRoot = null;
   if (backupOnOverwrite) {
@@ -199,6 +201,8 @@ async function installTemplate(targetDir, options = {}) {
     await writeInstallMetadata(targetDir, mode, frameworkDetection);
 
     await ensureGitignoreEntries(targetDir, GITIGNORE_POLICY_LINES);
+
+    runtime = await ensureProjectRuntime(targetDir);
   }
 
   // Detect if this is an existing project with many files
@@ -210,6 +214,7 @@ async function installTemplate(targetDir, options = {}) {
     copied,
     skipped,
     backedUp,
+    runtime,
     dryRun,
     projectFileCount,
     isExistingProject

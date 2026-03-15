@@ -4,6 +4,7 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const { validateProjectContextFile } = require('../context');
 const { ensureDir, exists, toRelativeSafe } = require('../utils');
+const { recordRuntimeOperation } = require('../execution-gateway');
 
 const MIN_WORKERS = 2;
 const MAX_WORKERS = 6;
@@ -190,6 +191,28 @@ async function runParallelInit({ args, options = {}, logger, t }) {
     prerequisites: prerequisiteChecks,
     missingPrerequisites
   };
+
+  if (!dryRun) {
+    output.runtime = await recordRuntimeOperation(targetDir, {
+      agentName: 'orchestrator',
+      source: 'orchestration',
+      sessionKey: 'parallel:workspace',
+      title: 'Parallel orchestration workspace',
+      goal: 'Prepare and manage parallel development lanes',
+      runTitle: 'parallel:init',
+      message: 'Parallel workspace initialization started',
+      summary: `Parallel workspace initialized with ${workers} lanes`,
+      eventType: 'parallel.initialized',
+      phase: 'parallel',
+      payload: {
+        command: 'parallel:init',
+        classification: output.classification,
+        workers,
+        files: output.files,
+        missingPrerequisites
+      }
+    });
+  }
 
   if (options.json) {
     return output;
