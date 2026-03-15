@@ -81,8 +81,8 @@ async function runTestAgents({ options, logger }) {
   const jsonMode = Boolean(options.json);
   const log = jsonMode ? () => {} : logger.log.bind(logger);
 
-  const baseAgentsDir = path.join(TEMPLATE_DIR, '.aios-forge', 'agents');
-  const localesDir    = path.join(TEMPLATE_DIR, '.aios-forge', 'locales');
+  const baseAgentsDir = path.join(TEMPLATE_DIR, '.aioson', 'agents');
+  const localesDir    = path.join(TEMPLATE_DIR, '.aioson', 'locales');
 
   const checks = [];
   let passed = 0;
@@ -124,8 +124,8 @@ async function runTestAgents({ options, logger }) {
 
     // .md-only context rule
     addCheck(
-      `@${agent} has .aios-forge/context/ .md-only rule`,
-      content.includes('.aios-forge/context/') &&
+      `@${agent} has .aioson/context/ .md-only rule`,
+      content.includes('.aioson/context/') &&
       (content.includes('only `.md`') || content.includes('somente arquivos `.md`') ||
        content.includes('solo archivos `.md`') || content.includes('uniquement des fichiers `.md`') ||
        content.includes('accepts only `.md`') || content.includes('context/` rule'))
@@ -161,7 +161,7 @@ async function runTestAgents({ options, logger }) {
   log('');
   log('Key skills:');
   const criticalSkills = ['interface-design.md', 'static-html-patterns.md', 'git-conventions.md'];
-  const skillsDir = path.join(TEMPLATE_DIR, '.aios-forge', 'skills', 'static');
+  const skillsDir = path.join(TEMPLATE_DIR, '.aioson', 'skills', 'static');
   for (const skill of criticalSkills) {
     const content = await readFile(path.join(skillsDir, skill));
     addCheck(`skill: ${skill}`, content !== null && content.length > 100);

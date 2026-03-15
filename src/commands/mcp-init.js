@@ -282,7 +282,7 @@ function buildToolPresets(plan, options = {}) {
       tool: tool.id,
       tool_label: tool.label,
       generated_at: new Date().toISOString(),
-      source_plan: '.aios-forge/mcp/servers.local.json',
+      source_plan: '.aioson/mcp/servers.local.json',
       suggested_target_file: tool.suggestedTargetFile,
       notes: [
         translate('mcp_init.note_workspace_local'),
@@ -302,14 +302,14 @@ async function runMcpInit({ args, options = {}, logger, t }) {
   const requestedTool = normalizeTool(options.tool);
   const contextResult = await validateProjectContextFile(targetDir);
   const contextMarkdown = await readTextIfExists(
-    path.join(targetDir, '.aios-forge/context/project.context.md')
+    path.join(targetDir, '.aioson/context/project.context.md')
   );
   const contextData = contextResult.parsed && contextResult.data ? contextResult.data : {};
 
   const plan = buildMcpPlan(targetDir, contextData, contextMarkdown || '', t);
-  const filePath = path.join(targetDir, '.aios-forge/mcp/servers.local.json');
+  const filePath = path.join(targetDir, '.aioson/mcp/servers.local.json');
   const presets = buildToolPresets(plan, { tool: requestedTool, t });
-  const presetDir = path.join(targetDir, '.aios-forge/mcp/presets');
+  const presetDir = path.join(targetDir, '.aioson/mcp/presets');
   const presetFiles = presets.map((preset) => ({
     tool: preset.tool,
     path: path.join(presetDir, `${preset.tool}.json`)

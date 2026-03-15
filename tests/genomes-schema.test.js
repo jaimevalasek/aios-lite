@@ -92,7 +92,7 @@ function createValidGenomeV3() {
     bigFive: 'O:H C:M E:L A:L N:L',
     mbti: 'INTJ',
     confidence: 'medium',
-    profilerReport: '.aios-forge/profiler-reports/naval-ravikant/enriched-profile.md',
+    profilerReport: '.aioson/profiler-reports/naval-ravikant/enriched-profile.md',
     sections: {
       knowledge: ['Leverage compounds through code and media.'],
       philosophies: ['Play long-term games with long-term people.'],

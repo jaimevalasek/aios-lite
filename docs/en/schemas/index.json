@@ -9,107 +9,107 @@
   "schemas": [
     {
       "id": "init",
-      "command": "aios-forge init <project-name> --json",
+      "command": "aioson init <project-name> --json",
       "file": "init.schema.json"
     },
     {
       "id": "install",
-      "command": "aios-forge install [path] --json",
+      "command": "aioson install [path] --json",
       "file": "install.schema.json"
     },
     {
       "id": "update",
-      "command": "aios-forge update [path] --json",
+      "command": "aioson update [path] --json",
       "file": "update.schema.json"
     },
     {
       "id": "info",
-      "command": "aios-forge info --json",
+      "command": "aioson info --json",
       "file": "info.schema.json"
     },
     {
       "id": "agents",
-      "command": "aios-forge agents [path] --json",
+      "command": "aioson agents [path] --json",
       "file": "agents.schema.json"
     },
     {
       "id": "agent_prompt",
-      "command": "aios-forge agent:prompt <agent> [path] --json",
+      "command": "aioson agent:prompt <agent> [path] --json",
       "file": "agent-prompt.schema.json"
     },
     {
       "id": "locale_apply",
-      "command": "aios-forge locale:apply [path] --json",
+      "command": "aioson locale:apply [path] --json",
       "file": "locale-apply.schema.json"
     },
     {
       "id": "setup_context",
-      "command": "aios-forge setup:context [path] --defaults --json",
+      "command": "aioson setup:context [path] --defaults --json",
       "file": "setup-context.schema.json"
     },
     {
       "id": "i18n_add",
-      "command": "aios-forge i18n:add <locale> --dry-run --json",
+      "command": "aioson i18n:add <locale> --dry-run --json",
       "file": "i18n-add.schema.json"
     },
     {
       "id": "doctor",
-      "command": "aios-forge doctor --json",
+      "command": "aioson doctor --json",
       "file": "doctor.schema.json"
     },
     {
       "id": "context_validate",
-      "command": "aios-forge context:validate --json",
+      "command": "aioson context:validate --json",
       "file": "context-validate.schema.json"
     },
     {
       "id": "smoke",
-      "command": "aios-forge test:smoke --json",
+      "command": "aioson test:smoke --json",
       "file": "smoke.schema.json"
     },
     {
       "id": "mcp_init",
-      "command": "aios-forge mcp:init --json",
+      "command": "aioson mcp:init --json",
       "file": "mcp-init.schema.json"
     },
     {
       "id": "mcp_doctor",
-      "command": "aios-forge mcp:doctor --json",
+      "command": "aioson mcp:doctor --json",
       "file": "mcp-doctor.schema.json"
     },
     {
       "id": "package_test",
-      "command": "aios-forge test:package --json",
+      "command": "aioson test:package --json",
       "file": "package-test.schema.json"
     },
     {
       "id": "workflow_plan",
-      "command": "aios-forge workflow:plan --json",
+      "command": "aioson workflow:plan --json",
       "file": "workflow-plan.schema.json"
     },
     {
       "id": "parallel_init",
-      "command": "aios-forge parallel:init --json",
+      "command": "aioson parallel:init --json",
       "file": "parallel-init.schema.json"
     },
     {
       "id": "parallel_assign",
-      "command": "aios-forge parallel:assign --json",
+      "command": "aioson parallel:assign --json",
       "file": "parallel-assign.schema.json"
     },
     {
       "id": "parallel_status",
-      "command": "aios-forge parallel:status --json",
+      "command": "aioson parallel:status --json",
       "file": "parallel-status.schema.json"
     },
     {
       "id": "parallel_doctor",
-      "command": "aios-forge parallel:doctor --json",
+      "command": "aioson parallel:doctor --json",
       "file": "parallel-doctor.schema.json"
     },
     {
       "id": "cli_error",
-      "command": "aios-forge <unknown> --json",
+      "command": "aioson <unknown> --json",
       "file": "error.schema.json"
     }
   ]

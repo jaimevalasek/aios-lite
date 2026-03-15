@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://aiosforge.dev/schemas/i18n-add.schema.json",
-  "title": "AIOS Forge i18n:add --json output",
+  "title": "AIOSON i18n:add --json output",
   "type": "object",
   "required": ["ok", "locale", "filePath", "overwritten", "dryRun"],
   "properties": {

@@ -1,24 +1,24 @@
-# AIOS Forge - OpenCode
+# AIOSON - OpenCode
 
 ## Boot
-1. Read `.aios-forge/config.md`
-2. Check `.aios-forge/context/project.context.md`
+1. Read `.aioson/config.md`
+2. Check `.aioson/context/project.context.md`
 3. If missing, start with `setup`
 
 ## Available agents
-- setup -> `.aios-forge/agents/setup.md`
-- analyst -> `.aios-forge/agents/analyst.md`
-- architect -> `.aios-forge/agents/architect.md`
-- ux-ui -> `.aios-forge/agents/ux-ui.md`
-- pm -> `.aios-forge/agents/pm.md`
-- dev -> `.aios-forge/agents/dev.md`
-- qa -> `.aios-forge/agents/qa.md`
-- orchestrator -> `.aios-forge/agents/orchestrator.md`
-- squad -> `.aios-forge/agents/squad.md`
-- genoma -> `.aios-forge/agents/genoma.md`
-- profiler-researcher -> `.aios-forge/agents/profiler-researcher.md`
-- profiler-enricher -> `.aios-forge/agents/profiler-enricher.md`
-- profiler-forge -> `.aios-forge/agents/profiler-forge.md`
+- setup -> `.aioson/agents/setup.md`
+- analyst -> `.aioson/agents/analyst.md`
+- architect -> `.aioson/agents/architect.md`
+- ux-ui -> `.aioson/agents/ux-ui.md`
+- pm -> `.aioson/agents/pm.md`
+- dev -> `.aioson/agents/dev.md`
+- qa -> `.aioson/agents/qa.md`
+- orchestrator -> `.aioson/agents/orchestrator.md`
+- squad -> `.aioson/agents/squad.md`
+- genoma -> `.aioson/agents/genoma.md`
+- profiler-researcher -> `.aioson/agents/profiler-researcher.md`
+- profiler-enricher -> `.aioson/agents/profiler-enricher.md`
+- profiler-forge -> `.aioson/agents/profiler-forge.md`
 
 ## Rule
-Do not duplicate rules outside `.aios-forge/`.
+Do not duplicate rules outside `.aioson/`.

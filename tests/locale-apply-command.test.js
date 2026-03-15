@@ -10,7 +10,7 @@ const { installTemplate } = require('../src/installer');
 const { runLocaleApply } = require('../src/commands/locale-apply');
 
 async function makeTempDir() {
-  return fs.mkdtemp(path.join(os.tmpdir(), 'aios-forge-locale-apply-cmd-'));
+  return fs.mkdtemp(path.join(os.tmpdir(), 'aioson-locale-apply-cmd-'));
 }
 
 function createCollectLogger() {

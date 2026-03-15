@@ -11,7 +11,7 @@ const { runParallelAssign, extractScopesFromContent } = require('../src/commands
 const { openRuntimeDb } = require('../src/runtime-store');
 
 async function makeTempDir() {
-  return fs.mkdtemp(path.join(os.tmpdir(), 'aios-forge-parallel-assign-'));
+  return fs.mkdtemp(path.join(os.tmpdir(), 'aioson-parallel-assign-'));
 }
 
 function createQuietLogger() {
@@ -35,7 +35,7 @@ function createCollectLogger() {
 }
 
 async function writeContext(dir, classification = 'MEDIUM') {
-  const contextPath = path.join(dir, '.aios-forge/context/project.context.md');
+  const contextPath = path.join(dir, '.aioson/context/project.context.md');
   await fs.mkdir(path.dirname(contextPath), { recursive: true });
   await fs.writeFile(
     contextPath,
@@ -47,7 +47,7 @@ framework: "Node"
 framework_installed: true
 classification: "${classification}"
 conversation_language: "en"
-aios_forge_version: "0.1.9"
+aioson_version: "0.1.9"
 ---
 
 # Project Context
@@ -57,7 +57,7 @@ aios_forge_version: "0.1.9"
 }
 
 async function writeArchitecture(dir) {
-  const filePath = path.join(dir, '.aios-forge/context/architecture.md');
+  const filePath = path.join(dir, '.aioson/context/architecture.md');
   await fs.mkdir(path.dirname(filePath), { recursive: true });
   await fs.writeFile(
     filePath,
@@ -104,15 +104,15 @@ test('parallel:assign distributes scopes across lane files', async () => {
   assert.equal(result.assignments.length, 3);
 
   const lane1 = await fs.readFile(
-    path.join(dir, '.aios-forge/context/parallel/agent-1.status.md'),
+    path.join(dir, '.aioson/context/parallel/agent-1.status.md'),
     'utf8'
   );
   const lane2 = await fs.readFile(
-    path.join(dir, '.aios-forge/context/parallel/agent-2.status.md'),
+    path.join(dir, '.aioson/context/parallel/agent-2.status.md'),
     'utf8'
   );
   const lane3 = await fs.readFile(
-    path.join(dir, '.aios-forge/context/parallel/agent-3.status.md'),
+    path.join(dir, '.aioson/context/parallel/agent-3.status.md'),
     'utf8'
   );
 
@@ -149,7 +149,7 @@ test('parallel:assign dry-run does not mutate lane files', async () => {
     t
   });
 
-  const lanePath = path.join(dir, '.aios-forge/context/parallel/agent-1.status.md');
+  const lanePath = path.join(dir, '.aioson/context/parallel/agent-1.status.md');
   const before = await fs.readFile(lanePath, 'utf8');
 
   const result = await runParallelAssign({

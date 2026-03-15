@@ -79,7 +79,7 @@ function resolveExpectedWorkers(state, workersOption) {
 }
 
 async function inspectParallelState(targetDir, workersOption) {
-  const parallelDir = path.join(targetDir, '.aios-forge/context/parallel');
+  const parallelDir = path.join(targetDir, '.aioson/context/parallel');
   const dirExists = await exists(parallelDir);
   const entries = dirExists ? await fs.readdir(parallelDir) : [];
   const sharedExists = entries.includes('shared-decisions.md');

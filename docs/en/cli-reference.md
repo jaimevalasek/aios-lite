@@ -1,18 +1,18 @@
 # CLI Reference
 
-Complete reference for all `aios-forge` commands.
+Complete reference for all `aioson` commands.
 
 ---
 
 ## init
 
-Create a new project directory and install AIOS Forge inside it.
+Create a new project directory and install AIOSON inside it.
 
 ```bash
-aios-forge init <project-name>
-aios-forge init my-app --lang=pt-BR
-aios-forge init my-app --tool=codex
-aios-forge init my-app --lang=es --tool=gemini --json
+aioson init <project-name>
+aioson init my-app --lang=pt-BR
+aioson init my-app --tool=codex
+aioson init my-app --lang=es --tool=gemini --json
 ```
 
 **Options:**
@@ -30,19 +30,19 @@ aios-forge init my-app --lang=es --tool=gemini --json
 
 ## install
 
-Install AIOS Forge in an existing directory (or the current directory).
+Install AIOSON in an existing directory (or the current directory).
 
 ```bash
-aios-forge install
-aios-forge install ./my-project
-aios-forge install --lang=pt-BR --tool=claude
+aioson install
+aioson install ./my-project
+aioson install --lang=pt-BR --tool=claude
 ```
 
 **Options:** same as `init`.
 
 **Use this when:**
 - The project already exists (legacy codebase, existing repo).
-- You want to add AIOS Forge to a monorepo package.
+- You want to add AIOSON to a monorepo package.
 
 ---
 
@@ -51,9 +51,9 @@ aios-forge install --lang=pt-BR --tool=claude
 Update managed files to the latest template version. Preserves context files and anything not in the managed file list.
 
 ```bash
-aios-forge update
-aios-forge update ./my-project
-aios-forge update --lang=pt-BR
+aioson update
+aioson update ./my-project
+aioson update --lang=pt-BR
 ```
 
 **Options:**
@@ -69,14 +69,14 @@ aios-forge update --lang=pt-BR
 Show CLI version, installation status, and detected framework for a directory.
 
 ```bash
-aios-forge info
-aios-forge info ./my-project
-aios-forge info --json
+aioson info
+aioson info ./my-project
+aioson info --json
 ```
 
 **Output:**
 ```
-aios-forge v0.1.25
+aioson v0.1.25
 Directory: /path/to/my-project
 Installed here: yes
 Framework detected: Laravel
@@ -104,11 +104,11 @@ Evidence: composer.json, artisan
 Verify that all managed files are present and valid. Use `--fix` to restore any missing files.
 
 ```bash
-aios-forge doctor
-aios-forge doctor ./my-project
-aios-forge doctor --fix
-aios-forge doctor --fix --dry-run
-aios-forge doctor --json
+aioson doctor
+aioson doctor ./my-project
+aioson doctor --fix
+aioson doctor --fix --dry-run
+aioson doctor --json
 ```
 
 **Options:**
@@ -119,29 +119,29 @@ aios-forge doctor --json
 **Checks performed:**
 - All files in `MANAGED_FILES` exist.
 - Gateway files (`CLAUDE.md`, `AGENTS.md`, `OPENCODE.md`, `.gemini/GEMINI.md`) are present.
-- `.aios-forge/agents/` directory is populated.
-- `.aios-forge/context/` directory exists.
+- `.aioson/agents/` directory is populated.
+- `.aioson/context/` directory exists.
 
 **Typical workflow after an update:**
 ```bash
-aios-forge update
-aios-forge doctor --fix
+aioson update
+aioson doctor --fix
 ```
 
 ---
 
 ## setup:context
 
-Interactive wizard that creates `.aios-forge/context/project.context.md`. This is the main context file that all agents read.
+Interactive wizard that creates `.aioson/context/project.context.md`. This is the main context file that all agents read.
 
 ```bash
 # Interactive mode
-aios-forge setup:context
+aioson setup:context
 
 # Non-interactive (CI / scripted)
-aios-forge setup:context --defaults
-aios-forge setup:context --defaults --framework="Laravel" --backend="PHP" --database="MySQL"
-aios-forge setup:context --defaults --framework="Next.js" --frontend="React" --lang=pt-BR
+aioson setup:context --defaults
+aioson setup:context --defaults --framework="Laravel" --backend="PHP" --database="MySQL"
+aioson setup:context --defaults --framework="Next.js" --frontend="React" --lang=pt-BR
 ```
 
 **Non-interactive flags:**
@@ -167,8 +167,8 @@ aios-forge setup:context --defaults --framework="Next.js" --frontend="React" --l
 
 **Brownfield / legacy project example:**
 ```bash
-aios-forge install .
-aios-forge setup:context --defaults --framework="CodeIgniter 3" --backend="PHP" --database="MySQL"
+aioson install .
+aioson setup:context --defaults --framework="CodeIgniter 3" --backend="PHP" --database="MySQL"
 ```
 
 ---
@@ -178,15 +178,15 @@ aios-forge setup:context --defaults --framework="CodeIgniter 3" --backend="PHP" 
 Validate the existing `project.context.md` file — checks YAML frontmatter structure, required fields, and allowed values.
 
 ```bash
-aios-forge context:validate
-aios-forge context:validate ./my-project
-aios-forge context:validate --json
+aioson context:validate
+aioson context:validate ./my-project
+aioson context:validate --json
 ```
 
 **What it validates:**
-- File exists at `.aios-forge/context/project.context.md`.
+- File exists at `.aioson/context/project.context.md`.
 - YAML frontmatter is parseable.
-- All required fields are present: `project_name`, `project_type`, `profile`, `framework`, `framework_installed`, `classification`, `conversation_language`, `aios_forge_version`.
+- All required fields are present: `project_name`, `project_type`, `profile`, `framework`, `framework_installed`, `classification`, `conversation_language`, `aioson_version`.
 - `project_type` is one of: `web_app`, `api`, `site`, `script`, `dapp`.
 - `classification` is one of: `MICRO`, `SMALL`, `MEDIUM`.
 - `profile` is one of: `developer`, `beginner`, `team`.
@@ -195,7 +195,7 @@ aios-forge context:validate --json
 
 ```bash
 # edit project.context.md
-aios-forge context:validate
+aioson context:validate
 # ✓ project.context.md is valid
 ```
 
@@ -206,25 +206,25 @@ aios-forge context:validate
 List all registered agents with their paths, dependencies, and outputs.
 
 ```bash
-aios-forge agents
-aios-forge agents ./my-project
-aios-forge agents --json
+aioson agents
+aioson agents ./my-project
+aioson agents --json
 ```
 
 **Output example:**
 ```
 Agents (locale: en):
 @setup (setup)
-  Path: .aios-forge/locales/en/agents/setup.md
-  Active: .aios-forge/agents/setup.md
+  Path: .aioson/locales/en/agents/setup.md
+  Active: .aioson/agents/setup.md
   Depends on: none
-  Output: .aios-forge/context/project.context.md
+  Output: .aioson/context/project.context.md
 
 @product (product)
-  Path: .aios-forge/locales/en/agents/product.md
-  Active: .aios-forge/agents/product.md
+  Path: .aioson/locales/en/agents/product.md
+  Active: .aioson/agents/product.md
   Depends on: none
-  Output: .aios-forge/context/prd.md
+  Output: .aioson/context/prd.md
 ...
 ```
 
@@ -237,10 +237,10 @@ The locale shown reflects the active agent locale pack (from `project.context.md
 Print the activation prompt for a specific agent, ready to paste into any AI CLI that does not support slash commands.
 
 ```bash
-aios-forge agent:prompt setup
-aios-forge agent:prompt setup --tool=codex
-aios-forge agent:prompt ux-ui --tool=claude
-aios-forge agent:prompt dev --tool=gemini --json
+aioson agent:prompt setup
+aioson agent:prompt setup --tool=codex
+aioson agent:prompt ux-ui --tool=claude
+aioson agent:prompt dev --tool=gemini --json
 ```
 
 **Arguments:**
@@ -254,7 +254,7 @@ aios-forge agent:prompt dev --tool=gemini --json
 
 ```bash
 # Copy the prompt for @analyst in Gemini
-aios-forge agent:prompt analyst --tool=gemini
+aioson agent:prompt analyst --tool=gemini
 # → paste the output into Gemini CLI
 ```
 
@@ -265,10 +265,10 @@ aios-forge agent:prompt analyst --tool=gemini
 Show the recommended agent sequence for the current project based on its `classification`.
 
 ```bash
-aios-forge workflow:plan
-aios-forge workflow:plan ./my-project
-aios-forge workflow:plan --classification=SMALL
-aios-forge workflow:plan --json
+aioson workflow:plan
+aioson workflow:plan ./my-project
+aioson workflow:plan --classification=SMALL
+aioson workflow:plan --json
 ```
 
 **Options:**
@@ -313,41 +313,41 @@ The `SMALL` and MEDIUM outputs include a note reminding you of this sequence.
 Advance the active workflow, complete the current stage, trigger a controlled detour, or skip ahead until `@dev`.
 
 ```bash
-aios-forge workflow:next
-aios-forge workflow:next ./my-project --tool=codex
-aios-forge workflow:next ./my-project --complete
-aios-forge workflow:next ./my-project --agent=ux-ui
-aios-forge workflow:next ./my-project --skip=dev
+aioson workflow:next
+aioson workflow:next ./my-project --tool=codex
+aioson workflow:next ./my-project --complete
+aioson workflow:next ./my-project --agent=ux-ui
+aioson workflow:next ./my-project --skip=dev
 ```
 
 **What it does:**
-- initializes `.aios-forge/context/workflow.state.json` if it does not exist
+- initializes `.aioson/context/workflow.state.json` if it does not exist
 - infers the current project stage from existing artifacts like `project.context.md`, `prd.md`, `discovery.md`, and `architecture.md`
-- follows the default sequence by classification, or a custom `.aios-forge/context/workflow.config.json` if the project defines one
+- follows the default sequence by classification, or a custom `.aioson/context/workflow.config.json` if the project defines one
 - supports detours such as `--agent=ux-ui`, then returns to the saved next stage automatically
 - allows skipping ahead only until `@dev`; it never allows skipping past `@dev`
 
 **Notes:**
 - `workflow:next` is the canonical command
 - `agent:next` is an alias for compatibility
-- `workflow.config.json` and `workflow.state.json` live under `.aios-forge/context/`, so normal framework updates preserve them
+- `workflow.config.json` and `workflow.state.json` live under `.aioson/context/`, so normal framework updates preserve them
 
 ---
 
 ## test:smoke
 
-End-to-end integration test that installs AIOS Forge in a temporary directory, runs all major commands, and verifies the output. Used for CI and release validation.
+End-to-end integration test that installs AIOSON in a temporary directory, runs all major commands, and verifies the output. Used for CI and release validation.
 
 ```bash
-aios-forge test:smoke
-aios-forge test:smoke --lang=pt-BR
-aios-forge test:smoke --web3=ethereum
-aios-forge test:smoke --web3=solana
-aios-forge test:smoke --web3=cardano
-aios-forge test:smoke --profile=mixed
-aios-forge test:smoke --profile=parallel
-aios-forge test:smoke --keep
-aios-forge test:smoke --json
+aioson test:smoke
+aioson test:smoke --lang=pt-BR
+aioson test:smoke --web3=ethereum
+aioson test:smoke --web3=solana
+aioson test:smoke --web3=cardano
+aioson test:smoke --profile=mixed
+aioson test:smoke --profile=parallel
+aioson test:smoke --keep
+aioson test:smoke --json
 ```
 
 **Options:**
@@ -377,11 +377,11 @@ aios-forge test:smoke --json
 Simulate `npm pack` in a temporary directory to verify what would be published and that the package installs correctly.
 
 ```bash
-aios-forge test:package
-aios-forge test:package ./path/to/source
-aios-forge test:package --keep
-aios-forge test:package --dry-run
-aios-forge test:package --json
+aioson test:package
+aioson test:package ./path/to/source
+aioson test:package --keep
+aioson test:package --dry-run
+aioson test:package --json
 ```
 
 **Options:**

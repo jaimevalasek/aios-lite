@@ -10,7 +10,7 @@ const { runParallelInit } = require('../src/commands/parallel-init');
 const { runParallelDoctor } = require('../src/commands/parallel-doctor');
 
 async function makeTempDir() {
-  return fs.mkdtemp(path.join(os.tmpdir(), 'aios-forge-parallel-doctor-'));
+  return fs.mkdtemp(path.join(os.tmpdir(), 'aioson-parallel-doctor-'));
 }
 
 function createQuietLogger() {
@@ -34,7 +34,7 @@ function createCollectLogger() {
 }
 
 async function writeContext(dir, classification = 'MEDIUM') {
-  const contextPath = path.join(dir, '.aios-forge/context/project.context.md');
+  const contextPath = path.join(dir, '.aioson/context/project.context.md');
   await fs.mkdir(path.dirname(contextPath), { recursive: true });
   await fs.writeFile(
     contextPath,
@@ -46,7 +46,7 @@ framework: "Node"
 framework_installed: true
 classification: "${classification}"
 conversation_language: "en"
-aios_forge_version: "0.1.9"
+aioson_version: "0.1.9"
 ---
 
 # Project Context
@@ -119,8 +119,8 @@ test('parallel:doctor --fix restores missing shared and lane files', async () =>
     t
   });
 
-  await fs.rm(path.join(dir, '.aios-forge/context/parallel/shared-decisions.md'));
-  await fs.rm(path.join(dir, '.aios-forge/context/parallel/agent-2.status.md'));
+  await fs.rm(path.join(dir, '.aioson/context/parallel/shared-decisions.md'));
+  await fs.rm(path.join(dir, '.aioson/context/parallel/agent-2.status.md'));
 
   const result = await runParallelDoctor({
     args: [dir],
@@ -134,10 +134,10 @@ test('parallel:doctor --fix restores missing shared and lane files', async () =>
   assert.equal(result.fix.changedCount >= 2, true);
 
   await assert.doesNotReject(() =>
-    fs.access(path.join(dir, '.aios-forge/context/parallel/shared-decisions.md'))
+    fs.access(path.join(dir, '.aioson/context/parallel/shared-decisions.md'))
   );
   await assert.doesNotReject(() =>
-    fs.access(path.join(dir, '.aios-forge/context/parallel/agent-2.status.md'))
+    fs.access(path.join(dir, '.aioson/context/parallel/agent-2.status.md'))
   );
 });
 

@@ -56,7 +56,7 @@ function countAcItems(prdContent) {
 async function runQaDoctor({ args, options = {}, logger, t }) {
   const targetDir = path.resolve(process.cwd(), args[0] || '.');
   const configPath = path.join(targetDir, 'aios-qa.config.json');
-  const prdPath = path.join(targetDir, '.aios-forge/context/prd.md');
+  const prdPath = path.join(targetDir, '.aioson/context/prd.md');
   const checks = [];
 
   // Check 1 — Playwright installed

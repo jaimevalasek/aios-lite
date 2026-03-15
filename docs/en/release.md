@@ -12,12 +12,12 @@
 
 ## Name availability snapshot (2026-03-01)
 The following names returned `404 Not Found` from npm registry lookup and were therefore available at the time of check:
-- `aios-forge`
-- `aios-forge-cli`
-- `create-aios-forge`
-- `@aios-forge/create`
-- `@synkra-ai/aios-forge`
-- `@synkra-ai/create-aios-forge`
+- `aioson`
+- `aioson-cli`
+- `create-aioson`
+- `@aioson/create`
+- `@synkra-ai/aioson`
+- `@synkra-ai/create-aioson`
 
 ## Recommended release flow
 1. Update `CHANGELOG.md`.

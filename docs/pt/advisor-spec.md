@@ -3,7 +3,7 @@
 > Versão: 1.0  
 > Status: Ativo  
 > Gerado por: `@profiler-forge`  
-> Localização: `.aios-forge/advisors/{slug}-advisor.md`
+> Localização: `.aioson/advisors/{slug}-advisor.md`
 
 ---
 
@@ -30,7 +30,7 @@ Capacidades esperadas:
 | Web search | Não | Sim |
 | Memória | Não | Sim |
 | Uso principal | Enriquecer executores | Opinar, desafiar, aconselhar |
-| Localização | `.aios-forge/genomas/` | `.aios-forge/advisors/` |
+| Localização | `.aioson/genomas/` | `.aioson/advisors/` |
 
 ---
 
@@ -52,8 +52,8 @@ big_five: "[summary]"
 mbti: "[XXXX]"
 confidence: [low|medium|high]
 
-profiler_report: ".aios-forge/profiler-reports/[slug]/enriched-profile.md"
-genome: ".aios-forge/genomas/[slug].md"
+profiler_report: ".aioson/profiler-reports/[slug]/enriched-profile.md"
+genome: ".aioson/genomas/[slug].md"
 
 web_search: true
 memory: true

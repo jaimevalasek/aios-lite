@@ -9,9 +9,9 @@ const { ensureProjectRuntime } = require('./execution-gateway');
 
 const ROOT_DIR = path.join(__dirname, '..');
 const TEMPLATE_DIR = path.join(ROOT_DIR, 'template');
-const PROJECT_LOCAL_FILES = new Set(['aios-forge-models.json']);
+const PROJECT_LOCAL_FILES = new Set(['aioson-models.json']);
 const GITIGNORE_POLICY_LINES = [
-  '# AIOS Forge — keep shared project memory and tool contracts',
+  '# AIOSON — keep shared project memory and tool contracts',
   '!AGENTS.md',
   '!CLAUDE.md',
   '!OPENCODE.md',
@@ -19,20 +19,20 @@ const GITIGNORE_POLICY_LINES = [
   '!.claude/**',
   '!.gemini/',
   '!.gemini/**',
-  '!.aios-forge/',
-  '!.aios-forge/**',
-  '# AIOS Forge — local-only artifacts',
-  'aios-forge-models.json',
-  '.aios-forge/backups/',
-  '.aios-forge/cloud-imports/',
-  '.aios-forge/runtime/',
-  '.aios-forge/mcp/presets/',
-  '.aios-forge/install.json',
-  '.aios-forge/mcp/servers.local.json'
+  '!.aioson/',
+  '!.aioson/**',
+  '# AIOSON — local-only artifacts',
+  'aioson-models.json',
+  '.aioson/backups/',
+  '.aioson/cloud-imports/',
+  '.aioson/runtime/',
+  '.aioson/mcp/presets/',
+  '.aioson/install.json',
+  '.aioson/mcp/servers.local.json'
 ];
 
 async function detectExistingInstall(targetDir) {
-  return exists(path.join(targetDir, '.aios-forge/config.md'));
+  return exists(path.join(targetDir, '.aioson/config.md'));
 }
 
 async function ensureGitignoreEntry(targetDir, entry) {
@@ -64,7 +64,7 @@ async function ensureGitignoreEntries(targetDir, entries) {
 }
 
 async function countProjectFiles(targetDir) {
-  const SKIP = new Set(['.git', 'node_modules', 'vendor', '.aios-forge', 'dist', 'build', '__pycache__']);
+  const SKIP = new Set(['.git', 'node_modules', 'vendor', '.aioson', 'dist', 'build', '__pycache__']);
   let count = 0;
   async function walk(dir) {
     let entries;
@@ -99,20 +99,20 @@ async function listFilesRecursive(dir) {
 }
 
 function shouldSkipTemplatePath(rel) {
-  if (rel.startsWith('.aios-forge/context/')) return true;
-  if (rel === '.aios-forge/context/.gitkeep') return false;
+  if (rel.startsWith('.aioson/context/')) return true;
+  if (rel === '.aioson/context/.gitkeep') return false;
   return false;
 }
 
 async function writeInstallMetadata(targetDir, action, frameworkDetection) {
-  const metaPath = path.join(targetDir, '.aios-forge/install.json');
+  const metaPath = path.join(targetDir, '.aioson/install.json');
   await ensureDir(path.dirname(metaPath));
   const existing = (await exists(metaPath)) ? JSON.parse(await fs.readFile(metaPath, 'utf8')) : {};
 
   const version = await getCliVersion();
   const data = {
     ...existing,
-    managed_by: 'aios-forge',
+    managed_by: 'aioson',
     template_version: version,
     last_action: action,
     last_action_at: new Date().toISOString(),
@@ -151,7 +151,7 @@ async function installTemplate(targetDir, options = {}) {
 
   let backupRoot = null;
   if (backupOnOverwrite) {
-    backupRoot = path.join(targetDir, '.aios-forge/backups', nowStamp());
+    backupRoot = path.join(targetDir, '.aioson/backups', nowStamp());
   }
 
   for (const absPath of templateFiles) {
@@ -191,9 +191,9 @@ async function installTemplate(targetDir, options = {}) {
   }
 
   if (!dryRun) {
-    await ensureDir(path.join(targetDir, '.aios-forge/context/parallel'));
-    await ensureDir(path.join(targetDir, '.aios-forge/context'));
-    const gitkeep = path.join(targetDir, '.aios-forge/context/.gitkeep');
+    await ensureDir(path.join(targetDir, '.aioson/context/parallel'));
+    await ensureDir(path.join(targetDir, '.aioson/context'));
+    const gitkeep = path.join(targetDir, '.aioson/context/.gitkeep');
     if (!(await exists(gitkeep))) {
       await fs.writeFile(gitkeep, '', 'utf8');
     }

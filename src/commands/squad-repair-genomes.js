@@ -6,7 +6,7 @@ const { repairSquadManifestGenomeBindings } = require('../lib/squads/genome-repa
 async function runSquadRepairGenomes({ args, options = {}, logger }) {
   const target = args[0];
   if (!target) {
-    throw new Error('Usage: aios-forge squad:repair-genomes <manifest.json> [--write] [--no-backup]');
+    throw new Error('Usage: aioson squad:repair-genomes <manifest.json> [--write] [--no-backup]');
   }
 
   const manifestPath = path.resolve(process.cwd(), target);

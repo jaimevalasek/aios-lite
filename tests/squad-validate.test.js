@@ -8,7 +8,7 @@ const path = require('node:path');
 const { runSquadValidate } = require('../src/commands/squad-validate');
 
 async function makeTempDir() {
-  return fs.mkdtemp(path.join(os.tmpdir(), 'aios-forge-squad-validate-'));
+  return fs.mkdtemp(path.join(os.tmpdir(), 'aioson-squad-validate-'));
 }
 
 function createCollectLogger() {
@@ -17,7 +17,7 @@ function createCollectLogger() {
 }
 
 async function createValidSquad(dir, slug) {
-  const squadDir = path.join(dir, '.aios-forge', 'squads', slug);
+  const squadDir = path.join(dir, '.aioson', 'squads', slug);
   await fs.mkdir(path.join(squadDir, 'agents'), { recursive: true });
   await fs.mkdir(path.join(dir, 'output', slug), { recursive: true });
 
@@ -30,8 +30,8 @@ async function createValidSquad(dir, slug) {
     mission: 'Test mission',
     goal: 'Test goal',
     executors: [
-      { slug: 'orquestrador', role: 'Coordinates', file: `.aios-forge/squads/${slug}/agents/orquestrador.md` },
-      { slug: 'writer', role: 'Writes content', file: `.aios-forge/squads/${slug}/agents/writer.md`, skills: ['copywriting'] }
+      { slug: 'orquestrador', role: 'Coordinates', file: `.aioson/squads/${slug}/agents/orquestrador.md` },
+      { slug: 'writer', role: 'Writes content', file: `.aioson/squads/${slug}/agents/writer.md`, skills: ['copywriting'] }
     ]
   };
 
@@ -60,7 +60,7 @@ test('fails on missing manifest', async () => {
 
 test('fails on missing required fields', async () => {
   const dir = await makeTempDir();
-  const squadDir = path.join(dir, '.aios-forge', 'squads', 'bad');
+  const squadDir = path.join(dir, '.aioson', 'squads', 'bad');
   await fs.mkdir(path.join(squadDir, 'agents'), { recursive: true });
   await fs.writeFile(path.join(squadDir, 'squad.manifest.json'), JSON.stringify({ slug: 'bad' }));
   await fs.writeFile(path.join(squadDir, 'agents', 'agents.md'), '# Squad\n');
@@ -83,7 +83,7 @@ test('warns on executor without skills', async () => {
 
 test('fails on missing executor file', async () => {
   const dir = await makeTempDir();
-  const squadDir = path.join(dir, '.aios-forge', 'squads', 'missing-exec');
+  const squadDir = path.join(dir, '.aioson', 'squads', 'missing-exec');
   await fs.mkdir(path.join(squadDir, 'agents'), { recursive: true });
   await fs.mkdir(path.join(dir, 'output', 'missing-exec'), { recursive: true });
 
@@ -91,8 +91,8 @@ test('fails on missing executor file', async () => {
     schemaVersion: '1.0.0', slug: 'missing-exec', name: 'Test',
     mode: 'content', mission: 'Test', goal: 'Test',
     executors: [
-      { slug: 'orquestrador', role: 'Coord', file: `.aios-forge/squads/missing-exec/agents/orquestrador.md` },
-      { slug: 'ghost', role: 'Missing', file: `.aios-forge/squads/missing-exec/agents/ghost.md` }
+      { slug: 'orquestrador', role: 'Coord', file: `.aioson/squads/missing-exec/agents/orquestrador.md` },
+      { slug: 'ghost', role: 'Missing', file: `.aioson/squads/missing-exec/agents/ghost.md` }
     ]
   };
 
@@ -111,14 +111,14 @@ test('fails on missing executor file', async () => {
 test('semantic deep - slug mismatch', async () => {
   const dir = await makeTempDir();
   const slug = 'correct-slug';
-  const squadDir = path.join(dir, '.aios-forge', 'squads', slug);
+  const squadDir = path.join(dir, '.aioson', 'squads', slug);
   await fs.mkdir(path.join(squadDir, 'agents'), { recursive: true });
   await fs.mkdir(path.join(dir, 'output', slug), { recursive: true });
 
   const manifest = {
     schemaVersion: '1.0.0', slug: 'wrong-slug', name: 'Test',
     mode: 'content', mission: 'Test', goal: 'Test', executors: [
-      { slug: 'orquestrador', role: 'Coord', file: `.aios-forge/squads/${slug}/agents/orquestrador.md`, skills: ['s1'] }
+      { slug: 'orquestrador', role: 'Coord', file: `.aioson/squads/${slug}/agents/orquestrador.md`, skills: ['s1'] }
     ]
   };
   await fs.writeFile(path.join(squadDir, 'squad.manifest.json'), JSON.stringify(manifest));
@@ -133,7 +133,7 @@ test('semantic deep - slug mismatch', async () => {
 test('semantic deep - executor references undeclared skill', async () => {
   const dir = await makeTempDir();
   const slug = 'skill-ref-squad';
-  const squadDir = path.join(dir, '.aios-forge', 'squads', slug);
+  const squadDir = path.join(dir, '.aioson', 'squads', slug);
   await fs.mkdir(path.join(squadDir, 'agents'), { recursive: true });
   await fs.mkdir(path.join(dir, 'output', slug), { recursive: true });
 
@@ -142,7 +142,7 @@ test('semantic deep - executor references undeclared skill', async () => {
     mode: 'content', mission: 'Test', goal: 'Test',
     skills: [{ slug: 'declared-skill' }],
     executors: [
-      { slug: 'orquestrador', role: 'Coord', file: `.aios-forge/squads/${slug}/agents/orquestrador.md`, skills: ['undeclared-skill'] }
+      { slug: 'orquestrador', role: 'Coord', file: `.aioson/squads/${slug}/agents/orquestrador.md`, skills: ['undeclared-skill'] }
     ]
   };
   await fs.writeFile(path.join(squadDir, 'squad.manifest.json'), JSON.stringify(manifest));
@@ -156,7 +156,7 @@ test('semantic deep - executor references undeclared skill', async () => {
 test('semantic deep - content blueprint with no sections warns', async () => {
   const dir = await makeTempDir();
   const slug = 'no-sections-squad';
-  const squadDir = path.join(dir, '.aios-forge', 'squads', slug);
+  const squadDir = path.join(dir, '.aioson', 'squads', slug);
   await fs.mkdir(path.join(squadDir, 'agents'), { recursive: true });
   await fs.mkdir(path.join(dir, 'output', slug), { recursive: true });
 
@@ -164,7 +164,7 @@ test('semantic deep - content blueprint with no sections warns', async () => {
     schemaVersion: '1.0.0', slug, name: 'Test',
     mode: 'content', mission: 'Test', goal: 'Test',
     executors: [
-      { slug: 'orquestrador', role: 'Coord', file: `.aios-forge/squads/${slug}/agents/orquestrador.md`, skills: ['s1'] }
+      { slug: 'orquestrador', role: 'Coord', file: `.aioson/squads/${slug}/agents/orquestrador.md`, skills: ['s1'] }
     ],
     contentBlueprints: [{ slug: 'empty-bp', contentType: 'article', layoutType: 'document', sections: [] }]
   };
@@ -179,7 +179,7 @@ test('semantic deep - content blueprint with no sections warns', async () => {
 test('semantic deep - readiness contradiction warns', async () => {
   const dir = await makeTempDir();
   const slug = 'readiness-squad';
-  const squadDir = path.join(dir, '.aios-forge', 'squads', slug);
+  const squadDir = path.join(dir, '.aioson', 'squads', slug);
   await fs.mkdir(path.join(squadDir, 'agents'), { recursive: true });
   await fs.mkdir(path.join(dir, 'output', slug), { recursive: true });
 
@@ -187,7 +187,7 @@ test('semantic deep - readiness contradiction warns', async () => {
     schemaVersion: '1.0.0', slug, name: 'Test',
     mode: 'content', mission: 'Test', goal: 'Test',
     executors: [
-      { slug: 'orquestrador', role: 'Coord', file: `.aios-forge/squads/${slug}/agents/orquestrador.md`, skills: ['s1'] }
+      { slug: 'orquestrador', role: 'Coord', file: `.aioson/squads/${slug}/agents/orquestrador.md`, skills: ['s1'] }
     ],
     readiness: { contextReady: { status: 'ready', blocker: 'missing docs' } }
   };
@@ -205,7 +205,7 @@ test('validate handles squad without manifest gracefully', async () => {
   const dir = await makeTempDir();
   const slug = 'legacy-squad';
   // Create squad directory structure without manifest
-  const squadDir = path.join(dir, '.aios-forge', 'squads', slug);
+  const squadDir = path.join(dir, '.aioson', 'squads', slug);
   await fs.mkdir(path.join(squadDir, 'agents'), { recursive: true });
   await fs.writeFile(path.join(squadDir, 'agents', 'agents.md'), '# Squad\n');
   await fs.writeFile(path.join(squadDir, 'agents', 'writer.md'), '# Writer\n');

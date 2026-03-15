@@ -1,6 +1,6 @@
 # Sistema Profiler — Guia Rápido
 
-> Pipeline oficial para pesquisa, enriquecimento e geração de Genoma 3.0 e Advisors no AIOS Forge.
+> Pipeline oficial para pesquisa, enriquecimento e geração de Genoma 3.0 e Advisors no AIOSON.
 
 ---
 
@@ -26,9 +26,9 @@ O pipeline gera dois outputs principais:
 O fluxo oficial é sequencial:
 
 1. `@profiler-researcher`
-   Coleta material público e organiza evidências em `.aios-forge/profiler-reports/{person-slug}/research-report.md`
+   Coleta material público e organiza evidências em `.aioson/profiler-reports/{person-slug}/research-report.md`
 2. `@profiler-enricher`
-   Consolida a pesquisa com materiais extras do usuário e produz `.aios-forge/profiler-reports/{person-slug}/enriched-profile.md`
+   Consolida a pesquisa com materiais extras do usuário e produz `.aioson/profiler-reports/{person-slug}/enriched-profile.md`
 3. `@profiler-forge`
    Transforma o perfil enriquecido em Genoma 3.0, Advisor Agent ou ambos
 
@@ -112,7 +112,7 @@ Todos os perfis psicométricos devem ser tratados como `INFERIDOS`.
 ### Relatórios intermediários
 
 ```text
-.aios-forge/profiler-reports/{person-slug}/
+.aioson/profiler-reports/{person-slug}/
   research-report.md
   enriched-profile.md
 ```
@@ -120,9 +120,9 @@ Todos os perfis psicométricos devem ser tratados como `INFERIDOS`.
 ### Outputs finais
 
 ```text
-.aios-forge/genomas/{person-slug}-{domain-slug}.md
-.aios-forge/genomas/{person-slug}-{domain-slug}.meta.json
-.aios-forge/advisors/{person-slug}-advisor.md
+.aioson/genomas/{person-slug}-{domain-slug}.md
+.aioson/genomas/{person-slug}-{domain-slug}.meta.json
+.aioson/advisors/{person-slug}-advisor.md
 ```
 
 ---

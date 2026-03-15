@@ -8,7 +8,7 @@ const path = require('node:path');
 const { detectFramework, isMonorepoDetection } = require('../src/detector');
 
 async function makeTempDir() {
-  return fs.mkdtemp(path.join(os.tmpdir(), 'aios-forge-detector-'));
+  return fs.mkdtemp(path.join(os.tmpdir(), 'aioson-detector-'));
 }
 
 test('detects Laravel by artisan file', async () => {

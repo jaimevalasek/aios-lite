@@ -1,6 +1,6 @@
 # Release Notes Template
 
-## AIOS Forge vX.Y.Z
+## AIOSON vX.Y.Z
 
 ### Highlights
 - [short summary 1]
@@ -29,10 +29,10 @@
 
 ### Upgrade notes
 1. Update package:
-   - `npx aios-forge@latest update`
+   - `npx aioson@latest update`
 2. Run health check:
-   - `aios-forge doctor`
-3. Verify local customizations in `.aios-forge/backups/` if applicable.
+   - `aioson doctor`
+3. Verify local customizations in `.aioson/backups/` if applicable.
 
 ### Checks
 - [ ] Lint passed

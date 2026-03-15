@@ -87,12 +87,12 @@ function patchReadiness(content, genomeBindings) {
 
 function getSquadPaths(projectRoot, squadSlug) {
   const slug = normalizeSlug(squadSlug, 'squad');
-  const packageRoot = path.join(projectRoot, '.aios-forge', 'squads', slug);
+  const packageRoot = path.join(projectRoot, '.aioson', 'squads', slug);
   return {
     squadSlug: slug,
     squadRoot: packageRoot,
     manifestPath: path.join(packageRoot, 'squad.manifest.json'),
-    blueprintPath: path.join(projectRoot, '.aios-forge', 'squads', '.designs', `${slug}.blueprint.json`),
+    blueprintPath: path.join(projectRoot, '.aioson', 'squads', '.designs', `${slug}.blueprint.json`),
     legacyBlueprintPath: path.join(packageRoot, 'docs', 'blueprint.json'),
     readinessPath: path.join(packageRoot, 'docs', 'readiness.md')
   };

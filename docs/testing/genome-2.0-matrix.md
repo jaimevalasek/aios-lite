@@ -4,10 +4,10 @@
 
 | Scenario | Layer | Expected Result |
 | --- | --- | --- |
-| 1. Legacy genome is readable by the core | `aios-forge` core | Markdown without v2 frontmatter is normalized and receives synthesized compat metadata |
-| 2. Genome 2.0 is generated and saved | `aios-forge` core | Markdown and `.meta.json` are persisted together with v2 schema |
-| 3. New squad receives genome | `aios-forge` squad binding | Manifest, blueprint and readiness get synchronized bindings |
-| 4. Existing squad receives binding | `aios-forge` squad binding | Executor and squad scopes merge without breaking legacy executor genomes |
+| 1. Legacy genome is readable by the core | `aioson` core | Markdown without v2 frontmatter is normalized and receives synthesized compat metadata |
+| 2. Genome 2.0 is generated and saved | `aioson` core | Markdown and `.meta.json` are persisted together with v2 schema |
+| 3. New squad receives genome | `aioson` squad binding | Manifest, blueprint and readiness get synchronized bindings |
+| 4. Existing squad receives binding | `aioson` squad binding | Executor and squad scopes merge without breaking legacy executor genomes |
 | 5. Artisan generates Genome Brief | `aios-dashboard` Artisan API | Genome brief result returns markdown, confidence and fallback file write remains non-fatal |
 | 6. `/genomes` lists metadata | `aios-dashboard` catalog | Catalog returns local genome metadata, origin and binding counts |
 | 7. `/squads` shows bindings | `aios-dashboard` squads | Squad payload and UI consumers expose squad and executor bindings |
@@ -25,7 +25,7 @@
 ## Rollout Entry Point
 
 - Full gated rollout: `npm run test:genome-2.0:rollout -- --dashboard-root ../aios-dashboard`
-- Operational runbook: [genome-2.0-rollout.md](/home/jaime/MyProjects/aios-forge/docs/testing/genome-2.0-rollout.md)
+- Operational runbook: `genome-2.0-rollout.md`
 
 ## Shared Fixtures
 

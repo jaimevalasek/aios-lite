@@ -67,7 +67,7 @@ enneagram: 5w6
 big_five: O:H C:M E:L A:L N:L
 mbti: INTJ
 confidence: medium
-profiler_report: .aios-forge/profiler-reports/naval-ravikant/enriched-profile.md
+profiler_report: .aioson/profiler-reports/naval-ravikant/enriched-profile.md
 ---
 
 # Genome: Naval Ravikant - Leverage

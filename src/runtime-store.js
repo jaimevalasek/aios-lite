@@ -10,7 +10,7 @@ const {
   mergeGenomeBindings
 } = require('./genomes/bindings');
 
-const RUNTIME_DIR = path.join('.aios-forge', 'runtime');
+const RUNTIME_DIR = path.join('.aioson', 'runtime');
 const DB_FILE = 'aios.sqlite';
 const SESSIONS_DIR = '.sessions';
 const VALID_STATUSES = new Set(['queued', 'running', 'completed', 'failed']);
@@ -1360,7 +1360,7 @@ async function clearAgentSession(runtimeDir, agentName) {
 }
 
 /**
- * Core function for `aios-forge runtime-log`.
+ * Core function for `aioson runtime-log`.
  *
  * Squad agents (--squad): state is stored in SQLite, not in session files.
  *   This avoids race conditions when the orquestrador calls runtime-log in

@@ -9,7 +9,7 @@ const { createTranslator } = require('../src/i18n');
 const { runMcpInit, normalizeDatabaseEngine } = require('../src/commands/mcp-init');
 
 async function makeTempDir() {
-  return fs.mkdtemp(path.join(os.tmpdir(), 'aios-forge-mcp-init-'));
+  return fs.mkdtemp(path.join(os.tmpdir(), 'aioson-mcp-init-'));
 }
 
 async function fileExists(filePath) {
@@ -39,11 +39,11 @@ test('normalizeDatabaseEngine maps common providers', () => {
 
 test('mcp:init writes plan from existing context', async () => {
   const dir = await makeTempDir();
-  const contextPath = path.join(dir, '.aios-forge/context/project.context.md');
+  const contextPath = path.join(dir, '.aioson/context/project.context.md');
   await fs.mkdir(path.dirname(contextPath), { recursive: true });
   await fs.writeFile(
     contextPath,
-    `---\nproject_name: \"demo\"\nproject_type: \"dapp\"\nprofile: \"developer\"\nframework: \"Anchor\"\nframework_installed: true\nclassification: \"SMALL\"\nconversation_language: \"en\"\nweb3_enabled: true\nweb3_networks: \"solana\"\ncontract_framework: \"Anchor\"\naios_forge_version: \"0.1.8\"\n---\n\n# Project Context\n\n## Stack\n- Backend: Anchor\n- Frontend: Next.js\n- Database: PostgreSQL\n- Auth: Custom\n- UI/UX: Tailwind\n`,
+    `---\nproject_name: \"demo\"\nproject_type: \"dapp\"\nprofile: \"developer\"\nframework: \"Anchor\"\nframework_installed: true\nclassification: \"SMALL\"\nconversation_language: \"en\"\nweb3_enabled: true\nweb3_networks: \"solana\"\ncontract_framework: \"Anchor\"\naioson_version: \"0.1.8\"\n---\n\n# Project Context\n\n## Stack\n- Backend: Anchor\n- Frontend: Next.js\n- Database: PostgreSQL\n- Auth: Custom\n- UI/UX: Tailwind\n`,
     'utf8'
   );
 
@@ -64,7 +64,7 @@ test('mcp:init writes plan from existing context', async () => {
   assert.equal(result.presetCount, 4);
   assert.equal(result.presetFiles.length, 4);
   assert.equal(
-    await fileExists(path.join(dir, '.aios-forge/mcp/presets/codex.json')),
+    await fileExists(path.join(dir, '.aioson/mcp/presets/codex.json')),
     true
   );
 
@@ -77,7 +77,7 @@ test('mcp:init writes plan from existing context', async () => {
   assert.equal(context7.env.includes('CONTEXT7_MCP_URL'), true);
 
   const codexPreset = JSON.parse(
-    await fs.readFile(path.join(dir, '.aios-forge/mcp/presets/codex.json'), 'utf8')
+    await fs.readFile(path.join(dir, '.aioson/mcp/presets/codex.json'), 'utf8')
   );
   assert.equal(codexPreset.tool, 'codex');
   assert.equal(Boolean(codexPreset.mcpServers.filesystem), true);
@@ -101,18 +101,18 @@ test('mcp:init dry-run does not write file and handles missing context', async (
   assert.equal(result.contextExists, false);
   assert.equal(await fileExists(result.filePath), false);
   assert.equal(
-    await fileExists(path.join(dir, '.aios-forge/mcp/presets/claude.json')),
+    await fileExists(path.join(dir, '.aioson/mcp/presets/claude.json')),
     false
   );
 });
 
 test('mcp:init supports --tool filter for a single preset', async () => {
   const dir = await makeTempDir();
-  const contextPath = path.join(dir, '.aios-forge/context/project.context.md');
+  const contextPath = path.join(dir, '.aioson/context/project.context.md');
   await fs.mkdir(path.dirname(contextPath), { recursive: true });
   await fs.writeFile(
     contextPath,
-    `---\nproject_name: \"demo\"\nproject_type: \"web_app\"\nprofile: \"developer\"\nframework: \"Node/Express\"\nframework_installed: true\nclassification: \"MICRO\"\nconversation_language: \"en\"\naios_forge_version: \"0.1.8\"\n---\n\n# Project Context\n\n## Stack\n- Database: SQLite\n`,
+    `---\nproject_name: \"demo\"\nproject_type: \"web_app\"\nprofile: \"developer\"\nframework: \"Node/Express\"\nframework_installed: true\nclassification: \"MICRO\"\nconversation_language: \"en\"\naioson_version: \"0.1.8\"\n---\n\n# Project Context\n\n## Stack\n- Database: SQLite\n`,
     'utf8'
   );
 
@@ -129,16 +129,16 @@ test('mcp:init supports --tool filter for a single preset', async () => {
   assert.equal(result.presetFiles.length, 1);
   assert.equal(result.presetFiles[0].tool, 'codex');
   assert.equal(
-    await fileExists(path.join(dir, '.aios-forge/mcp/presets/codex.json')),
+    await fileExists(path.join(dir, '.aioson/mcp/presets/codex.json')),
     true
   );
   assert.equal(
-    await fileExists(path.join(dir, '.aios-forge/mcp/presets/claude.json')),
+    await fileExists(path.join(dir, '.aioson/mcp/presets/claude.json')),
     false
   );
 
   const codexPreset = JSON.parse(
-    await fs.readFile(path.join(dir, '.aios-forge/mcp/presets/codex.json'), 'utf8')
+    await fs.readFile(path.join(dir, '.aioson/mcp/presets/codex.json'), 'utf8')
   );
   assert.equal(codexPreset.mcpServers.context7.args.includes('$CONTEXT7_MCP_URL'), true);
   assert.equal(codexPreset.mcpServers.database.args.includes('$DATABASE_MCP_URL'), true);
@@ -189,11 +189,11 @@ test('mcp:init invalid --tool fallback works without translator argument', async
 
 test('mcp:init localizes plan reasons and preset notes in pt-BR', async () => {
   const dir = await makeTempDir();
-  const contextPath = path.join(dir, '.aios-forge/context/project.context.md');
+  const contextPath = path.join(dir, '.aioson/context/project.context.md');
   await fs.mkdir(path.dirname(contextPath), { recursive: true });
   await fs.writeFile(
     contextPath,
-    `---\nproject_name: \"demo\"\nproject_type: \"dapp\"\nprofile: \"developer\"\nframework: \"Hardhat\"\nframework_installed: true\nclassification: \"SMALL\"\nconversation_language: \"pt-BR\"\nweb3_enabled: true\nweb3_networks: \"ethereum\"\ncontract_framework: \"Hardhat\"\naios_forge_version: \"0.1.9\"\n---\n\n# Project Context\n\n## Stack\n- Database: PostgreSQL\n`,
+    `---\nproject_name: \"demo\"\nproject_type: \"dapp\"\nprofile: \"developer\"\nframework: \"Hardhat\"\nframework_installed: true\nclassification: \"SMALL\"\nconversation_language: \"pt-BR\"\nweb3_enabled: true\nweb3_networks: \"ethereum\"\ncontract_framework: \"Hardhat\"\naioson_version: \"0.1.9\"\n---\n\n# Project Context\n\n## Stack\n- Database: PostgreSQL\n`,
     'utf8'
   );
 

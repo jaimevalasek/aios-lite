@@ -13,7 +13,7 @@ const {
 const { installTemplate } = require('../src/installer');
 
 async function makeTempDir() {
-  return fs.mkdtemp(path.join(os.tmpdir(), 'aios-forge-locales-'));
+  return fs.mkdtemp(path.join(os.tmpdir(), 'aioson-locales-'));
 }
 
 test('resolveAgentLocale maps base language and fallback correctly', () => {
@@ -28,7 +28,7 @@ test('resolveAgentLocale maps base language and fallback correctly', () => {
 test('getLocalizedAgentPath builds expected path', () => {
   assert.equal(
     getLocalizedAgentPath('setup', 'pt-BR'),
-    '.aios-forge/locales/pt-BR/agents/setup.md'
+    '.aioson/locales/pt-BR/agents/setup.md'
   );
 });
 
@@ -40,7 +40,7 @@ test('applyAgentLocale copies localized files into active agents directory', asy
   assert.equal(result.locale, 'pt-BR');
   assert.equal(result.copied.length > 0, true);
 
-  const setupPath = path.join(dir, '.aios-forge/agents/setup.md');
+  const setupPath = path.join(dir, '.aioson/agents/setup.md');
   const content = await fs.readFile(setupPath, 'utf8');
   assert.equal(content.includes('(pt-BR)'), true);
 });
@@ -52,7 +52,7 @@ test('applyAgentLocale copies spanish and french localized files', async () => {
   const esResult = await applyAgentLocale(esDir, 'es-MX');
   assert.equal(esResult.locale, 'es');
   assert.equal(esResult.copied.length > 0, true);
-  const esSetupPath = path.join(esDir, '.aios-forge/agents/setup.md');
+  const esSetupPath = path.join(esDir, '.aioson/agents/setup.md');
   const esContent = await fs.readFile(esSetupPath, 'utf8');
   assert.equal(esContent.includes('(es)'), true);
 
@@ -62,7 +62,7 @@ test('applyAgentLocale copies spanish and french localized files', async () => {
   const frResult = await applyAgentLocale(frDir, 'fr-CA');
   assert.equal(frResult.locale, 'fr');
   assert.equal(frResult.copied.length > 0, true);
-  const frSetupPath = path.join(frDir, '.aios-forge/agents/setup.md');
+  const frSetupPath = path.join(frDir, '.aioson/agents/setup.md');
   const frContent = await fs.readFile(frSetupPath, 'utf8');
   assert.equal(frContent.includes('(fr)'), true);
 });

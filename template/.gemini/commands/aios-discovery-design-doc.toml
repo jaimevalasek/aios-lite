@@ -1,4 +1,4 @@
 name = "aios-discovery-design-doc"
 description = "Discovery and living design doc"
-instruction_file = ".aios-forge/agents/discovery-design-doc.md"
-requires_context = [".aios-forge/context/project.context.md"]
+instruction_file = ".aioson/agents/discovery-design-doc.md"
+requires_context = [".aioson/context/project.context.md"]

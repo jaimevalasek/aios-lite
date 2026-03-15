@@ -13,7 +13,7 @@ const {
 } = require('../src/context');
 
 async function makeTempDir() {
-  return fs.mkdtemp(path.join(os.tmpdir(), 'aios-forge-context-'));
+  return fs.mkdtemp(path.join(os.tmpdir(), 'aioson-context-'));
 }
 
 test('parseYamlFrontmatter parses valid context frontmatter', () => {
@@ -38,11 +38,11 @@ test('isValidLanguageTag validates BCP-47-like values', () => {
 
 test('validateProjectContextFile returns valid true for complete context', async () => {
   const dir = await makeTempDir();
-  const file = path.join(dir, '.aios-forge/context/project.context.md');
+  const file = path.join(dir, '.aioson/context/project.context.md');
   await fs.mkdir(path.dirname(file), { recursive: true });
   await fs.writeFile(
     file,
-    `---\nproject_name: "demo"\nproject_type: "dapp"\nprofile: "developer"\nframework: "Hardhat"\nframework_installed: true\nclassification: "MICRO"\nconversation_language: "en"\nweb3_enabled: true\nweb3_networks: "ethereum"\ncontract_framework: "Hardhat"\naios_forge_version: "0.1.5"\n---\n\n# Project Context\n`,
+    `---\nproject_name: "demo"\nproject_type: "dapp"\nprofile: "developer"\nframework: "Hardhat"\nframework_installed: true\nclassification: "MICRO"\nconversation_language: "en"\nweb3_enabled: true\nweb3_networks: "ethereum"\ncontract_framework: "Hardhat"\naioson_version: "0.1.5"\n---\n\n# Project Context\n`,
     'utf8'
   );
 
@@ -60,7 +60,7 @@ test('validateContextData accepts project_type dapp', () => {
     framework_installed: true,
     classification: 'MICRO',
     conversation_language: 'en',
-    aios_forge_version: '0.1.5'
+    aioson_version: '0.1.5'
   });
   assert.equal(issues.length, 0);
 });

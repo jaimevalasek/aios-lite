@@ -1,0 +1,115 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://aiosforge.dev/schemas/genome.schema.json",
+  "title": "AIOSON Genome",
+  "description": "Schema do objeto normalizado do Genoma 2.0 e 3.0",
+  "type": "object",
+  "required": ["slug", "domain", "type", "language", "depth", "version", "format", "evidenceMode", "sections"],
+  "properties": {
+    "slug": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$"
+    },
+    "domain": {
+      "type": "string",
+      "minLength": 1
+    },
+    "type": {
+      "type": "string",
+      "enum": ["domain", "function", "persona", "hybrid"]
+    },
+    "language": {
+      "type": "string",
+      "minLength": 2
+    },
+    "depth": {
+      "type": "string",
+      "enum": ["surface", "standard", "deep"]
+    },
+    "version": {
+      "type": "integer",
+      "enum": [2, 3]
+    },
+    "format": {
+      "type": "string",
+      "enum": ["genome-v2", "genome-v3"]
+    },
+    "evidenceMode": {
+      "type": "string",
+      "enum": ["inferred", "evidenced", "hybrid"]
+    },
+    "sourceCount": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "generated": {
+      "type": "string"
+    },
+    "personaSource": {
+      "type": "string"
+    },
+    "personaSources": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "disc": {
+      "type": "string"
+    },
+    "enneagram": {
+      "type": "string"
+    },
+    "bigFive": {
+      "type": "string"
+    },
+    "mbti": {
+      "type": "string"
+    },
+    "confidence": {
+      "type": "string",
+      "enum": ["", "low", "medium", "high"]
+    },
+    "profilerReport": {
+      "type": "string"
+    },
+    "hybridMode": {
+      "type": "string",
+      "enum": ["", "domain-function", "single-persona", "multi-persona"]
+    },
+    "sections": {
+      "type": "object",
+      "required": ["knowledge", "philosophies", "mentalModels", "heuristics", "frameworks", "methodologies", "mentes", "skills", "cognitiveProfile", "communicationStyle", "biases", "conflictResolution", "evidence", "applicationNotes"],
+      "properties": {
+        "knowledge": { "type": "array", "items": { "type": "string" } },
+        "philosophies": { "type": "array", "items": { "type": "string" } },
+        "mentalModels": { "type": "array", "items": { "type": "string" } },
+        "heuristics": { "type": "array", "items": { "type": "string" } },
+        "frameworks": { "type": "array", "items": { "type": "string" } },
+        "methodologies": { "type": "array", "items": { "type": "string" } },
+        "mentes": { "type": "array", "items": { "type": "string" } },
+        "skills": { "type": "array", "items": { "type": "string" } },
+        "cognitiveProfile": { "type": "array", "items": { "type": "string" } },
+        "communicationStyle": { "type": "array", "items": { "type": "string" } },
+        "biases": { "type": "array", "items": { "type": "string" } },
+        "conflictResolution": { "type": "array", "items": { "type": "string" } },
+        "evidence": { "type": "array", "items": { "type": "string" } },
+        "applicationNotes": { "type": "array", "items": { "type": "string" } }
+      },
+      "additionalProperties": false
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "type": { "const": "persona" },
+          "version": { "const": 3 }
+        },
+        "required": ["type", "version"]
+      },
+      "then": {
+        "required": ["personaSource", "disc", "enneagram", "bigFive", "mbti", "confidence", "profilerReport"]
+      }
+    }
+  ],
+  "additionalProperties": true
+}

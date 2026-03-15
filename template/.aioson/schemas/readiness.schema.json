@@ -1,0 +1,27 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "AIOSON Readiness",
+  "type": "object",
+  "properties": {
+    "contextReady": { "$ref": "#/$defs/dimension" },
+    "blueprintReady": { "$ref": "#/$defs/dimension" },
+    "generationReady": { "$ref": "#/$defs/dimension" },
+    "validationReady": { "$ref": "#/$defs/dimension" },
+    "integrationReady": { "$ref": "#/$defs/dimension" },
+    "releaseReady": { "$ref": "#/$defs/dimension" }
+  },
+  "$defs": {
+    "dimension": {
+      "type": "object",
+      "required": ["status"],
+      "properties": {
+        "status": { "type": "string", "enum": ["ready", "partial", "blocked"] },
+        "reason": { "type": "string" },
+        "blocker": { "type": "string" },
+        "suggestedAction": { "type": "string" },
+        "owner": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      }
+    }
+  }
+}

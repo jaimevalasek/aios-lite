@@ -7,7 +7,7 @@ const { migrateGenomeDirectory, migrateGenomeFile } = require('../lib/genomes/mi
 async function runGenomeMigrate({ args, options = {}, logger }) {
   const target = args[0];
   if (!target) {
-    throw new Error('Usage: aios-forge genome:migrate <file-or-dir> [--write] [--no-backup]');
+    throw new Error('Usage: aioson genome:migrate <file-or-dir> [--write] [--no-backup]');
   }
 
   const resolvedTarget = path.resolve(process.cwd(), target);

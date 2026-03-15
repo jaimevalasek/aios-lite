@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://aiosforge.dev/schemas/agent-prompt.schema.json",
-  "title": "AIOS Forge agent:prompt --json output",
+  "title": "AIOSON agent:prompt --json output",
   "type": "object",
   "required": ["ok", "targetDir", "agent", "tool", "locale", "instructionPath", "prompt"],
   "properties": {

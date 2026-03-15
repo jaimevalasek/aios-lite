@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://aiosforge.dev/schemas/locale-apply.schema.json",
-  "title": "AIOS Forge locale:apply --json output",
+  "title": "AIOSON locale:apply --json output",
   "type": "object",
   "required": ["ok", "targetDir", "locale", "copied", "missing", "dryRun"],
   "properties": {

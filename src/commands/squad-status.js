@@ -4,7 +4,7 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const { flattenGenomeBindings, mergeGenomeBindings } = require('../genomes/bindings');
 
-const SQUADS_DIR = '.aios-forge/squads';
+const SQUADS_DIR = '.aioson/squads';
 const AGENTS_ROOT = 'agents';
 const OUTPUT_ROOT = 'output';
 const LOGS_ROOT = 'aios-logs';

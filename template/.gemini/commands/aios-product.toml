@@ -1,4 +1,4 @@
 name = "aios-product"
 description = "Conversational product wizard — prd.md"
-instruction_file = ".aios-forge/agents/product.md"
+instruction_file = ".aioson/agents/product.md"
 requires_context = []

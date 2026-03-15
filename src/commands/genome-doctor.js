@@ -7,7 +7,7 @@ const { loadCompatibleGenome } = require('../lib/genomes/compat');
 async function runGenomeDoctor({ args, options = {}, logger }) {
   const target = args[0];
   if (!target) {
-    throw new Error('Usage: aios-forge genome:doctor <file>');
+    throw new Error('Usage: aioson genome:doctor <file>');
   }
 
   const filePath = path.resolve(process.cwd(), target);

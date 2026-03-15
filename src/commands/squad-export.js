@@ -9,12 +9,12 @@ async function runSquadExport({ args = [], options = {}, logger = console } = {}
   const slug = options.squad || args[1];
 
   if (!slug) {
-    logger.error('Usage: aios-forge squad:export [path] --squad=<slug>');
+    logger.error('Usage: aioson squad:export [path] --squad=<slug>');
     return { ok: false, error: 'No slug provided' };
   }
 
-  const squadDir = path.join(projectDir, '.aios-forge', 'squads', slug);
-  const exportsDir = path.join(projectDir, '.aios-forge', 'squads', 'exports');
+  const squadDir = path.join(projectDir, '.aioson', 'squads', slug);
+  const exportsDir = path.join(projectDir, '.aioson', 'squads', 'exports');
   const outputFile = path.join(exportsDir, `${slug}.aios-squad.tar.gz`);
 
   try {

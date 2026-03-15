@@ -8,12 +8,12 @@ const path = require('node:path');
 const { spawn } = require('node:child_process');
 
 async function makeTempDir() {
-  return fs.mkdtemp(path.join(os.tmpdir(), 'aios-forge-json-cli-'));
+  return fs.mkdtemp(path.join(os.tmpdir(), 'aioson-json-cli-'));
 }
 
 function runCli(args, cwd = process.cwd()) {
   return new Promise((resolve) => {
-    const child = spawn(process.execPath, [path.join(process.cwd(), 'bin/aios-forge.js'), ...args], {
+    const child = spawn(process.execPath, [path.join(process.cwd(), 'bin/aioson.js'), ...args], {
       cwd,
       env: process.env
     });
@@ -173,13 +173,13 @@ test('agent:prompt --json returns structured payload without human logs', async 
 
 test('workflow:next --json returns structured payload without human logs', async () => {
   const dir = await makeTempDir();
-  await fs.mkdir(path.join(dir, '.aios-forge/context'), { recursive: true });
+  await fs.mkdir(path.join(dir, '.aioson/context'), { recursive: true });
   await fs.writeFile(
-    path.join(dir, '.aios-forge/context/project.context.md'),
-    `---\nproject_name: "demo"\nproject_type: "web_app"\nprofile: "developer"\nframework: "Next.js"\nframework_installed: true\nclassification: "SMALL"\nconversation_language: "en"\naios_forge_version: "1.2.1"\n---\n\n# Project Context\n`,
+    path.join(dir, '.aioson/context/project.context.md'),
+    `---\nproject_name: "demo"\nproject_type: "web_app"\nprofile: "developer"\nframework: "Next.js"\nframework_installed: true\nclassification: "SMALL"\nconversation_language: "en"\naioson_version: "1.2.1"\n---\n\n# Project Context\n`,
     'utf8'
   );
-  await fs.writeFile(path.join(dir, '.aios-forge/context/prd.md'), '# PRD\n', 'utf8');
+  await fs.writeFile(path.join(dir, '.aioson/context/prd.md'), '# PRD\n', 'utf8');
 
   const cli = await runCli(['workflow:next', dir, '--tool=codex', '--json']);
   assert.equal(cli.code, 0);
@@ -188,7 +188,7 @@ test('workflow:next --json returns structured payload without human logs', async
   assert.equal(parsed.ok, true);
   assert.equal(parsed.agent, 'analyst');
   assert.equal(parsed.current, 'analyst');
-  assert.equal(parsed.statePath, '.aios-forge/context/workflow.state.json');
+  assert.equal(parsed.statePath, '.aioson/context/workflow.state.json');
 });
 
 test('legacy dashboard commands return a structured migration error with --json', async () => {
@@ -204,7 +204,7 @@ test('legacy dashboard commands return a structured migration error with --json'
   assert.equal(parsed.ok, false);
   assert.equal(parsed.error.code, 'dashboard_moved');
   assert.equal(parsed.error.command, 'dashboard:init');
-  assert.equal(parsed.error.message.includes('.aios-forge/'), true);
+  assert.equal(parsed.error.message.includes('.aioson/'), true);
 });
 
 test('cloud:import:squad --dry-run --json returns structured payload without human logs', async () => {
@@ -239,7 +239,7 @@ test('cloud:import:genome --dry-run --json returns structured payload without hu
 
 test('cloud:publish:genome --dry-run --json returns structured payload without human logs', async () => {
   const dir = await makeTempDir();
-  const genomeDir = path.join(dir, '.aios-forge', 'genomas');
+  const genomeDir = path.join(dir, '.aioson', 'genomas');
   await fs.mkdir(genomeDir, { recursive: true });
   await fs.writeFile(path.join(genomeDir, 'storytelling-br.md'), '# Storytelling BR\n\nHeuristicas.\n', 'utf8');
 
@@ -264,7 +264,7 @@ test('cloud:publish:genome --dry-run --json returns structured payload without h
 
 test('genome:doctor --json returns compatible genome diagnosis', async () => {
   const dir = await makeTempDir();
-  const genomeDir = path.join(dir, '.aios-forge', 'genomas');
+  const genomeDir = path.join(dir, '.aioson', 'genomas');
   await fs.mkdir(genomeDir, { recursive: true });
   await fs.writeFile(
     path.join(genomeDir, 'legacy-copy.md'),
@@ -288,7 +288,7 @@ test('genome:doctor --json returns compatible genome diagnosis', async () => {
 
 test('genome:migrate --json returns dry-run payload without mutating files', async () => {
   const dir = await makeTempDir();
-  const genomeDir = path.join(dir, '.aios-forge', 'genomas');
+  const genomeDir = path.join(dir, '.aioson', 'genomas');
   const target = path.join(genomeDir, 'legacy-copy.md');
   await fs.mkdir(genomeDir, { recursive: true });
   const original = '---\ngenome: legacy-copy\ntype: domain\n---\n\n# Genome: Legacy Copy\n\n## O que saber\n\n- Oferta\n';
@@ -347,19 +347,19 @@ test('squad:repair-genomes --json returns dry-run payload without mutating manif
 
 test('cloud:publish:squad --dry-run --json returns structured payload without human logs', async () => {
   const dir = await makeTempDir();
-  await fs.mkdir(path.join(dir, '.aios-forge', 'squads'), { recursive: true });
-  await fs.mkdir(path.join(dir, '.aios-forge', 'genomas'), { recursive: true });
+  await fs.mkdir(path.join(dir, '.aioson', 'squads'), { recursive: true });
+  await fs.mkdir(path.join(dir, '.aioson', 'genomas'), { recursive: true });
   await fs.mkdir(path.join(dir, 'agents', 'youtube-creator'), { recursive: true });
 
   await fs.writeFile(
-    path.join(dir, '.aios-forge', 'squads', 'youtube-creator.md'),
+    path.join(dir, '.aioson', 'squads', 'youtube-creator.md'),
     [
       'Squad: YouTube Creator',
       'Goal: Criar roteiros e assets',
       'Agents: agents/youtube-creator/',
       '',
       'Genomes:',
-      '- .aios-forge/genomas/storytelling-retencao.md',
+      '- .aioson/genomas/storytelling-retencao.md',
       ''
     ].join('\n'),
     'utf8'
@@ -370,7 +370,7 @@ test('cloud:publish:squad --dry-run --json returns structured payload without hu
     'utf8'
   );
   await fs.writeFile(
-    path.join(dir, '.aios-forge', 'genomas', 'storytelling-retencao.md'),
+    path.join(dir, '.aioson', 'genomas', 'storytelling-retencao.md'),
     '# Storytelling Retencao\n\nGancho e retencao.\n',
     'utf8'
   );
@@ -420,7 +420,7 @@ test('setup:context --defaults --json returns structured payload', async () => {
   assert.equal(typeof parsed.classificationScore, 'number');
   assert.equal(typeof parsed.data, 'object');
   assert.equal(typeof parsed.data.projectName, 'string');
-  assert.equal(typeof parsed.data.aiosForgeVersion, 'string');
+  assert.equal(typeof parsed.data.aiosonVersion, 'string');
 });
 
 test('i18n:add --dry-run --json returns scaffold plan payload', async () => {
@@ -544,11 +544,11 @@ test('workflow:plan --json returns workflow payload', async () => {
 
 test('parallel:init --json returns structured parallel workspace payload', async () => {
   const dir = await makeTempDir();
-  const contextPath = path.join(dir, '.aios-forge/context/project.context.md');
+  const contextPath = path.join(dir, '.aioson/context/project.context.md');
   await fs.mkdir(path.dirname(contextPath), { recursive: true });
   await fs.writeFile(
     contextPath,
-    `---\nproject_name: \"demo\"\nproject_type: \"web_app\"\nprofile: \"developer\"\nframework: \"Node\"\nframework_installed: true\nclassification: \"MEDIUM\"\nconversation_language: \"en\"\naios_forge_version: \"0.1.9\"\n---\n\n# Project Context\n`,
+    `---\nproject_name: \"demo\"\nproject_type: \"web_app\"\nprofile: \"developer\"\nframework: \"Node\"\nframework_installed: true\nclassification: \"MEDIUM\"\nconversation_language: \"en\"\naioson_version: \"0.1.9\"\n---\n\n# Project Context\n`,
     'utf8'
   );
 
@@ -565,11 +565,11 @@ test('parallel:init --json returns structured parallel workspace payload', async
 
 test('parallel:doctor --json returns structured diagnosis payload', async () => {
   const dir = await makeTempDir();
-  const contextPath = path.join(dir, '.aios-forge/context/project.context.md');
+  const contextPath = path.join(dir, '.aioson/context/project.context.md');
   await fs.mkdir(path.dirname(contextPath), { recursive: true });
   await fs.writeFile(
     contextPath,
-    `---\nproject_name: \"demo\"\nproject_type: \"web_app\"\nprofile: \"developer\"\nframework: \"Node\"\nframework_installed: true\nclassification: \"MEDIUM\"\nconversation_language: \"en\"\naios_forge_version: \"0.1.9\"\n---\n\n# Project Context\n`,
+    `---\nproject_name: \"demo\"\nproject_type: \"web_app\"\nprofile: \"developer\"\nframework: \"Node\"\nframework_installed: true\nclassification: \"MEDIUM\"\nconversation_language: \"en\"\naioson_version: \"0.1.9\"\n---\n\n# Project Context\n`,
     'utf8'
   );
 
@@ -589,12 +589,12 @@ test('parallel:doctor --json returns structured diagnosis payload', async () => 
 
 test('parallel:assign --json returns structured assignment payload', async () => {
   const dir = await makeTempDir();
-  const contextPath = path.join(dir, '.aios-forge/context/project.context.md');
-  const architecturePath = path.join(dir, '.aios-forge/context/architecture.md');
+  const contextPath = path.join(dir, '.aioson/context/project.context.md');
+  const architecturePath = path.join(dir, '.aioson/context/architecture.md');
   await fs.mkdir(path.dirname(contextPath), { recursive: true });
   await fs.writeFile(
     contextPath,
-    `---\nproject_name: \"demo\"\nproject_type: \"web_app\"\nprofile: \"developer\"\nframework: \"Node\"\nframework_installed: true\nclassification: \"MEDIUM\"\nconversation_language: \"en\"\naios_forge_version: \"0.1.9\"\n---\n\n# Project Context\n`,
+    `---\nproject_name: \"demo\"\nproject_type: \"web_app\"\nprofile: \"developer\"\nframework: \"Node\"\nframework_installed: true\nclassification: \"MEDIUM\"\nconversation_language: \"en\"\naioson_version: \"0.1.9\"\n---\n\n# Project Context\n`,
     'utf8'
   );
   await fs.writeFile(
@@ -625,11 +625,11 @@ test('parallel:assign --json returns structured assignment payload', async () =>
 
 test('parallel:status --json returns consolidated lane report payload', async () => {
   const dir = await makeTempDir();
-  const contextPath = path.join(dir, '.aios-forge/context/project.context.md');
+  const contextPath = path.join(dir, '.aioson/context/project.context.md');
   await fs.mkdir(path.dirname(contextPath), { recursive: true });
   await fs.writeFile(
     contextPath,
-    `---\nproject_name: \"demo\"\nproject_type: \"web_app\"\nprofile: \"developer\"\nframework: \"Node\"\nframework_installed: true\nclassification: \"MEDIUM\"\nconversation_language: \"en\"\naios_forge_version: \"0.1.9\"\n---\n\n# Project Context\n`,
+    `---\nproject_name: \"demo\"\nproject_type: \"web_app\"\nprofile: \"developer\"\nframework: \"Node\"\nframework_installed: true\nclassification: \"MEDIUM\"\nconversation_language: \"en\"\naioson_version: \"0.1.9\"\n---\n\n# Project Context\n`,
     'utf8'
   );
 

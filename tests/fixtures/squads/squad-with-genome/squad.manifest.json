@@ -27,7 +27,7 @@
     {
       "slug": "strategist",
       "role": "Defines strategic direction",
-      "file": ".aios-forge/squads/squad-with-genome/agents/strategist.md",
+      "file": ".aioson/squads/squad-with-genome/agents/strategist.md",
       "genomes": [
         {
           "slug": "legacy-genome",

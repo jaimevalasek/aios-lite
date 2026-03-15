@@ -10,7 +10,7 @@ const { runDoctorCommand } = require('../src/commands/doctor');
 const { installTemplate } = require('../src/installer');
 
 async function makeTempDir() {
-  return fs.mkdtemp(path.join(os.tmpdir(), 'aios-forge-doctor-cmd-'));
+  return fs.mkdtemp(path.join(os.tmpdir(), 'aioson-doctor-cmd-'));
 }
 
 function createCollectLogger() {
@@ -47,8 +47,8 @@ test('doctor --fix localizes action/detail line wrappers in pt-BR', async () => 
   const dir = await makeTempDir();
   await installTemplate(dir, { mode: 'install' });
   await fs.writeFile(
-    path.join(dir, '.aios-forge/context/project.context.md'),
-    `---\nproject_name: "demo"\nproject_type: "web_app"\nprofile: "developer"\nframework: "Node"\nframework_installed: true\nclassification: "MICRO"\nconversation_language: "pt-BR"\naios_forge_version: "0.1.9"\n---\n\n# Project Context\n`,
+    path.join(dir, '.aioson/context/project.context.md'),
+    `---\nproject_name: "demo"\nproject_type: "web_app"\nprofile: "developer"\nframework: "Node"\nframework_installed: true\nclassification: "MICRO"\nconversation_language: "pt-BR"\naioson_version: "0.1.9"\n---\n\n# Project Context\n`,
     'utf8'
   );
   await fs.unlink(path.join(dir, 'AGENTS.md'));
@@ -71,13 +71,13 @@ test('doctor localizes Gemini command mapping hint with file parameter in pt-BR'
   const dir = await makeTempDir();
   await installTemplate(dir, { mode: 'install' });
   await fs.writeFile(
-    path.join(dir, '.aios-forge/context/project.context.md'),
-    `---\nproject_name: "demo"\nproject_type: "web_app"\nprofile: "developer"\nframework: "Node"\nframework_installed: true\nclassification: "MICRO"\nconversation_language: "pt-BR"\naios_forge_version: "0.1.9"\n---\n\n# Project Context\n`,
+    path.join(dir, '.aioson/context/project.context.md'),
+    `---\nproject_name: "demo"\nproject_type: "web_app"\nprofile: "developer"\nframework: "Node"\nframework_installed: true\nclassification: "MICRO"\nconversation_language: "pt-BR"\naioson_version: "0.1.9"\n---\n\n# Project Context\n`,
     'utf8'
   );
   await fs.writeFile(
     path.join(dir, '.gemini/commands/aios-dev.toml'),
-    'name = "aios-dev"\ninstruction_file = ".aios-forge/agents/setup.md"\n',
+    'name = "aios-dev"\ninstruction_file = ".aioson/agents/setup.md"\n',
     'utf8'
   );
 
@@ -99,8 +99,8 @@ test('doctor --fix localizes gateway contract fix action in pt-BR', async () => 
   const dir = await makeTempDir();
   await installTemplate(dir, { mode: 'install' });
   await fs.writeFile(
-    path.join(dir, '.aios-forge/context/project.context.md'),
-    `---\nproject_name: "demo"\nproject_type: "web_app"\nprofile: "developer"\nframework: "Node"\nframework_installed: true\nclassification: "MICRO"\nconversation_language: "pt-BR"\naios_forge_version: "0.1.9"\n---\n\n# Project Context\n`,
+    path.join(dir, '.aioson/context/project.context.md'),
+    `---\nproject_name: "demo"\nproject_type: "web_app"\nprofile: "developer"\nframework: "Node"\nframework_installed: true\nclassification: "MICRO"\nconversation_language: "pt-BR"\naioson_version: "0.1.9"\n---\n\n# Project Context\n`,
     'utf8'
   );
   await fs.writeFile(path.join(dir, 'AGENTS.md'), '# broken gateway\n', 'utf8');

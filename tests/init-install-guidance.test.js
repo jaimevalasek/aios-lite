@@ -10,7 +10,7 @@ const { runInit } = require('../src/commands/init');
 const { runInstall } = require('../src/commands/install');
 
 async function makeTempDir() {
-  return fs.mkdtemp(path.join(os.tmpdir(), 'aios-forge-guidance-'));
+  return fs.mkdtemp(path.join(os.tmpdir(), 'aioson-guidance-'));
 }
 
 function createCollectLogger() {
@@ -41,10 +41,10 @@ test('init prints agent onboarding hints and defaults tool to codex', async () =
       t
     });
 
-    assert.equal(logger.lines.some((line) => line.includes('aios-forge agents')), true);
+    assert.equal(logger.lines.some((line) => line.includes('aioson agents')), true);
     assert.equal(
       logger.lines.some((line) =>
-        line.includes('aios-forge agent:prompt setup --tool=codex')
+        line.includes('aioson agent:prompt setup --tool=codex')
       ),
       true
     );
@@ -66,13 +66,13 @@ test('install prints agent onboarding hints and honors explicit --tool', async (
   });
 
   assert.equal(
-    logger.lines.some((line) => line.includes('aios-forge setup:context --defaults')),
+    logger.lines.some((line) => line.includes('aioson setup:context --defaults')),
     true
   );
-  assert.equal(logger.lines.some((line) => line.includes('aios-forge agents')), true);
+  assert.equal(logger.lines.some((line) => line.includes('aioson agents')), true);
   assert.equal(
     logger.lines.some((line) =>
-      line.includes('aios-forge agent:prompt setup --tool=claude')
+      line.includes('aioson agent:prompt setup --tool=claude')
     ),
     true
   );
@@ -97,7 +97,7 @@ test('init applies localized agent pack when --lang is provided', async () => {
     assert.equal(result.localeApply.locale, 'es');
     assert.equal(logger.lines.some((line) => line.includes('Locale pack applied: es')), true);
 
-    const setupPath = path.join(tempDir, 'demo-lang/.aios-forge/agents/setup.md');
+    const setupPath = path.join(tempDir, 'demo-lang/.aioson/agents/setup.md');
     const setupContent = await fs.readFile(setupPath, 'utf8');
     assert.equal(setupContent.includes('(es)'), true);
   } finally {
@@ -120,7 +120,7 @@ test('install applies localized agent pack when --lang is provided', async () =>
   assert.equal(result.localeApply.locale, 'pt-BR');
   assert.equal(logger.lines.some((line) => line.includes('Locale pack applied: pt-BR')), true);
 
-  const setupPath = path.join(tempDir, '.aios-forge/agents/setup.md');
+  const setupPath = path.join(tempDir, '.aioson/agents/setup.md');
   const setupContent = await fs.readFile(setupPath, 'utf8');
   assert.equal(setupContent.includes('(pt-BR)'), true);
 });

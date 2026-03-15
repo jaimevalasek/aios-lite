@@ -2,22 +2,22 @@
 
 ## Goal
 
-Bring the full Genome 2.0 package into `aios-forge` and `aios-dashboard` with explicit gates, repeatable checks, and a non-destructive fallback path.
+Bring the full Genome 2.0 package into `aioson` and `aios-dashboard` with explicit gates, repeatable checks, and a non-destructive fallback path.
 
 This document operationalizes Phase 09 from `notes-local/plano-genoma-2/09-rollout-checklist.md`.
 
 ## Recommended implementation order
 
-1. Block A: `aios-forge` core, bindings, compatibility.
+1. Block A: `aioson` core, bindings, compatibility.
 2. Block B: dashboard Artisan genome incubation and `/genomes` catalog.
 3. Block C: dashboard squad bindings and pipeline contextual badges.
 4. Block D: integration, regression, and manual close-out.
 
 ## Recommended merge order
 
-1. `aios-forge` Phase 01
-2. `aios-forge` Phase 02
-3. `aios-forge` Phase 03
+1. `aioson` Phase 01
+2. `aioson` Phase 02
+3. `aioson` Phase 03
 4. `aios-dashboard` Phase 04
 5. `aios-dashboard` Phase 05
 6. `aios-dashboard` Phase 06
@@ -29,7 +29,7 @@ This document operationalizes Phase 09 from `notes-local/plano-genoma-2/09-rollo
 
 ### Block A
 
-Run from `aios-forge`:
+Run from `aioson`:
 
 ```bash
 npm run test:genome-2.0:block-a
@@ -86,7 +86,7 @@ This executes the full dashboard gate:
 
 ### Full rollout from the core repo
 
-Run from `aios-forge`:
+Run from `aioson`:
 
 ```bash
 npm run test:genome-2.0:rollout -- --dashboard-root ../aios-dashboard
@@ -131,7 +131,7 @@ Useful options:
 
 ## Manual close-out
 
-Use the manual regression guide in [genome-2.0-manual-regression.md](/home/jaime/MyProjects/aios-forge/docs/testing/genome-2.0-manual-regression.md) after the automated rollout checks pass.
+Use the manual regression guide in `genome-2.0-manual-regression.md` after the automated rollout checks pass.
 
 Recommended sequence:
 

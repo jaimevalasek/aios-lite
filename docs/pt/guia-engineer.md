@@ -23,7 +23,7 @@ A IA é como um programador extremamente esforçado que:
 
 ## Squad mode vs Engineer mode
 
-O AIOS Forge oferece dois modos de trabalho. Escolha o que se encaixa no momento:
+O AIOSON oferece dois modos de trabalho. Escolha o que se encaixa no momento:
 
 | | Squad mode | Engineer mode |
 |---|---|---|
@@ -59,7 +59,7 @@ O `spec.md` é o documento mais importante para projetos que duram mais de uma s
 2. Atualize ao final de cada sessão com `*update-spec`
 3. Releia no início de cada sessão antes de qualquer prompt
 
-O `spec.md` fica em `.aios-forge/context/spec.md` e **não é obrigatório** — para projetos MICRO e sessões curtas, não precisa.
+O `spec.md` fica em `.aioson/context/spec.md` e **não é obrigatório** — para projetos MICRO e sessões curtas, não precisa.
 
 ---
 

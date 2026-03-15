@@ -10,7 +10,7 @@ const { runSquadDoctor } = require('../src/commands/squad-doctor');
 const { openRuntimeDb, startRun, upsertContentItem } = require('../src/runtime-store');
 
 async function makeTempDir() {
-  return fs.mkdtemp(path.join(os.tmpdir(), 'aios-forge-squad-doctor-'));
+  return fs.mkdtemp(path.join(os.tmpdir(), 'aioson-squad-doctor-'));
 }
 
 function createCollectLogger() {
@@ -27,7 +27,7 @@ function createCollectLogger() {
 }
 
 async function createSquadSkeleton(dir, slug) {
-  const squadDir = path.join(dir, '.aios-forge', 'squads', slug);
+  const squadDir = path.join(dir, '.aioson', 'squads', slug);
   await fs.mkdir(path.join(squadDir, 'agents'), { recursive: true });
   await fs.mkdir(path.join(squadDir, 'docs'), { recursive: true });
   await fs.mkdir(path.join(dir, 'output', slug), { recursive: true });
@@ -37,7 +37,7 @@ async function createSquadSkeleton(dir, slug) {
 
   await fs.writeFile(
     path.join(squadDir, 'squad.md'),
-    `Squad: ${slug}\nMode: Squad\nGoal: Gerar conteudos\nAgents: .aios-forge/squads/${slug}/agents/\nOutput: output/${slug}/\nLogs: aios-logs/${slug}/\n`,
+    `Squad: ${slug}\nMode: Squad\nGoal: Gerar conteudos\nAgents: .aioson/squads/${slug}/agents/\nOutput: output/${slug}/\nLogs: aios-logs/${slug}/\n`,
     'utf8'
   );
   await fs.writeFile(path.join(squadDir, 'agents', 'agents.md'), '# Rules\n', 'utf8');
@@ -70,7 +70,7 @@ async function createSquadSkeleton(dir, slug) {
             slug: 'orquestrador',
             title: 'Orquestrador',
             role: 'Coordena a squad',
-            file: `.aios-forge/squads/${slug}/agents/orquestrador.md`,
+            file: `.aioson/squads/${slug}/agents/orquestrador.md`,
             skills: ['coord']
           }
         ]

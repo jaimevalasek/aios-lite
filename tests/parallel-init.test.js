@@ -10,7 +10,7 @@ const { runParallelInit, parseWorkers } = require('../src/commands/parallel-init
 const { openRuntimeDb } = require('../src/runtime-store');
 
 async function makeTempDir() {
-  return fs.mkdtemp(path.join(os.tmpdir(), 'aios-forge-parallel-init-'));
+  return fs.mkdtemp(path.join(os.tmpdir(), 'aioson-parallel-init-'));
 }
 
 function createQuietLogger() {
@@ -34,7 +34,7 @@ function createCollectLogger() {
 }
 
 async function writeContext(dir, classification = 'MEDIUM') {
-  const contextPath = path.join(dir, '.aios-forge/context/project.context.md');
+  const contextPath = path.join(dir, '.aioson/context/project.context.md');
   await fs.mkdir(path.dirname(contextPath), { recursive: true });
   await fs.writeFile(
     contextPath,
@@ -46,7 +46,7 @@ framework: "Node"
 framework_installed: true
 classification: "${classification}"
 conversation_language: "en"
-aios_forge_version: "0.1.9"
+aioson_version: "0.1.9"
 ---
 
 # Project Context
@@ -81,9 +81,9 @@ test('parallel:init creates shared and lane status files for medium projects', a
   assert.equal(result.workers, 4);
   assert.equal(result.files.length, 5);
 
-  const shared = path.join(dir, '.aios-forge/context/parallel/shared-decisions.md');
-  const lane1 = path.join(dir, '.aios-forge/context/parallel/agent-1.status.md');
-  const lane4 = path.join(dir, '.aios-forge/context/parallel/agent-4.status.md');
+  const shared = path.join(dir, '.aioson/context/parallel/shared-decisions.md');
+  const lane1 = path.join(dir, '.aioson/context/parallel/agent-1.status.md');
+  const lane4 = path.join(dir, '.aioson/context/parallel/agent-4.status.md');
   await assert.doesNotReject(() => fs.access(shared));
   await assert.doesNotReject(() => fs.access(lane1));
   await assert.doesNotReject(() => fs.access(lane4));
@@ -161,7 +161,7 @@ test('parallel:init dry-run does not write files', async () => {
   assert.equal(result.dryRun, true);
   assert.equal(result.files.length, 3);
   await assert.rejects(() =>
-    fs.access(path.join(dir, '.aios-forge/context/parallel/shared-decisions.md'))
+    fs.access(path.join(dir, '.aioson/context/parallel/shared-decisions.md'))
   );
 });
 
@@ -181,7 +181,7 @@ test('parallel:init localizes file listing lines in pt-BR', async () => {
   assert.equal(result.ok, true);
   assert.equal(
     logger.lines.some((line) =>
-      line.includes('Arquivo: .aios-forge/context/parallel/shared-decisions.md')
+      line.includes('Arquivo: .aioson/context/parallel/shared-decisions.md')
     ),
     true
   );

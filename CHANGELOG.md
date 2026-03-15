@@ -4,26 +4,26 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 ### Added
-- `docs/pt/comandos-cli.md`: first Portuguese-first CLI reference page covering all public `aios-forge` commands with grouped descriptions, command map, examples, and practical usage recipes. Linked from `docs/pt/README.md` and `docs/pt/inicio-rapido.md`.
+- `docs/pt/comandos-cli.md`: first Portuguese-first CLI reference page covering all public `aioson` commands with grouped descriptions, command map, examples, and practical usage recipes. Linked from `docs/pt/README.md` and `docs/pt/inicio-rapido.md`.
 
 ### Changed
-- Legacy `dashboard:*` CLI flow removed from the public surface. `aios-forge dashboard:init|dev|open` no longer appear in help or docs; if called, the CLI now returns a migration error instructing users to open the separately installed dashboard app and select the project folder that already contains `.aios-forge/`. Updated pt docs and agent guidance to match the new app-first dashboard flow.
-- `template/.aios-forge/skills/static/interface-design.md`: upgraded the interface-design craft guide by merging strengths from the upstream `interface-design` skill without losing AIOS Forge workflow fit. Added persistent design memory via `.interface-design/system.md`, existing-UI refinement rules (diagnose drift before re-theme), two fully specified directions (`Sophistication & Trust`, `Premium Dark Platform`), a mandatory pre-component decision checkpoint, and explicit memory update guidance for reusable UI patterns.
+- Legacy `dashboard:*` CLI flow removed from the public surface. `aioson dashboard:init|dev|open` no longer appear in help or docs; if called, the CLI now returns a migration error instructing users to open the separately installed dashboard app and select the project folder that already contains `.aioson/`. Updated pt docs and agent guidance to match the new app-first dashboard flow.
+- `template/.aioson/skills/static/interface-design.md`: upgraded the interface-design craft guide by merging strengths from the upstream `interface-design` skill without losing AIOSON workflow fit. Added persistent design memory via `.interface-design/system.md`, existing-UI refinement rules (diagnose drift before re-theme), two fully specified directions (`Sophistication & Trust`, `Premium Dark Platform`), a mandatory pre-component decision checkpoint, and explicit memory update guidance for reusable UI patterns.
 
 ## [0.1.28] - 2026-03-04
 ### Added
-- **`scan:project` command** (`aios-forge scan:project [path] [--provider=<name>] [--dry-run] [--json]`): Node.js port of the brownfield project scanner, replacing `aios-forge-scan.py`. Walks the project, reads key files, calls a cheap LLM (multi-provider), and generates `discovery.md` + `skeleton-system.md`. Zero npm dependencies — uses `node:fs`, `node:https`, `node:http` only.
-- Multi-provider HTTP client supporting OpenAI-compatible format (DeepSeek, OpenAI, Gemini, Groq, Together, Mistral) and Anthropic native format. Configured via `aios-forge-models.json` (same config file as before).
+- **`scan:project` command** (`aioson scan:project [path] [--provider=<name>] [--dry-run] [--json]`): Node.js port of the brownfield project scanner, replacing `aioson-scan.py`. Walks the project, reads key files, calls a cheap LLM (multi-provider), and generates `discovery.md` + `skeleton-system.md`. Zero npm dependencies — uses `node:fs`, `node:https`, `node:http` only.
+- Multi-provider HTTP client supporting OpenAI-compatible format (DeepSeek, OpenAI, Gemini, Groq, Together, Mistral) and Anthropic native format. Configured via `aioson-models.json` (same config file as before).
 - `--provider=<name>` flag to override `preferred_scan_provider` from config at runtime.
 - `--dry-run` mode: walks the project and reports file counts without calling the LLM.
 - i18n keys for `scan_project` section in all 4 locales (en, pt-BR, es, fr).
-- `install` hint message updated in all 4 locales: `python aios-forge-scan.py` → `aios-forge scan:project`.
+- `install` hint message updated in all 4 locales: `python aioson-scan.py` → `aioson scan:project`.
 
 ### Removed
-- `template/aios-forge-scan.py`: Python scanner removed from the template. `aios-forge scan:project` is the normalized replacement. The `aios-forge-models.json` config file (provider API keys) is unchanged.
+- `template/aioson-scan.py`: Python scanner removed from the template. `aioson scan:project` is the normalized replacement. The `aioson-models.json` config file (provider API keys) is unchanged.
 
 ### Changed
-- All 15 template agent files (analyst, dev, orchestrator — base + 4 locales each): `python aios-forge-scan.py` replaced with `aios-forge scan:project` in brownfield detection hints.
+- All 15 template agent files (analyst, dev, orchestrator — base + 4 locales each): `python aioson-scan.py` replaced with `aioson scan:project` in brownfield detection hints.
 
 ## [0.1.27] - 2026-03-04
 ### Added
@@ -39,7 +39,7 @@ All notable changes to this project will be documented in this file.
 
 ## [0.1.26] - 2026-03-04
 ### Added
-- **Browser QA engine** (`qa:init`, `qa:doctor`, `qa:run`, `qa:scan`, `qa:report`): full Playwright-powered browser testing built into aios-forge. No LLM required. No separate tool. Playwright is an optional runtime dependency — zero impact on users who don't need browser testing.
+- **Browser QA engine** (`qa:init`, `qa:doctor`, `qa:run`, `qa:scan`, `qa:report`): full Playwright-powered browser testing built into aioson. No LLM required. No separate tool. Playwright is an optional runtime dependency — zero impact on users who don't need browser testing.
 - `qa:init`: generates `aios-qa.config.json` by reading `prd.md` (acceptance criteria → test scenarios) and `discovery.md` (business rules). URL auto-resolved from `project.context.md`.
 - `qa:doctor`: validates all prerequisites (Playwright installed, Chromium binary, config valid, URL reachable, context and prd.md present).
 - `qa:run`: full QA session with 4 personas: **naive** (empty forms, 10K strings, ghost clickables), **hacker** (8 secret patterns against window globals and HTML source, 10 sensitive file paths, XSS, open redirect, SQL injection, IDOR ±1, debug routes), **power** (keyboard navigation focus visibility, boundary values on numeric/date inputs), **mobile** (375px viewport, horizontal overflow, touch targets < 44px, fonts < 12px). Post-persona: network-level probes (console stack traces, sensitive GET params, mixed content). Accessibility audit (5 WCAG checks). Performance capture (TTFB, load time, request count, transfer size). AC coverage from `prd.md` with screenshots. Output: `aios-qa-report.md` + `aios-qa-report.json` + `aios-qa-screenshots/`.
@@ -52,9 +52,9 @@ All notable changes to this project will be documented in this file.
 
 ## [0.1.25] - 2026-03-04
 ### Added
-- `@product` agent: conversational product wizard that runs between `@setup` and `@analyst`. Starts from a raw idea and leads a natural back-and-forth conversation (8 strict conversation rules: one question at a time, no filler words, reflect before advancing, surface forgotten requirements, challenge assumptions gently, prioritize ruthlessly, draft early after 5–7 exchanges). Supports two modes: creation (no prd.md) and enrichment (prd.md exists). Produces `.aios-forge/context/prd.md` with 8 sections: vision, problem, users, MVP scope (🔴 must-have / 🟡 should-have), out-of-scope, user flows, success metrics, open questions.
-- `template/.aios-forge/agents/product.md`: base agent file.
-- `template/.aios-forge/locales/en/agents/product.md`, `pt-BR/agents/product.md`, `es/agents/product.md`, `fr/agents/product.md`: localized variants with absolute language instruction at top.
+- `@product` agent: conversational product wizard that runs between `@setup` and `@analyst`. Starts from a raw idea and leads a natural back-and-forth conversation (8 strict conversation rules: one question at a time, no filler words, reflect before advancing, surface forgotten requirements, challenge assumptions gently, prioritize ruthlessly, draft early after 5–7 exchanges). Supports two modes: creation (no prd.md) and enrichment (prd.md exists). Produces `.aioson/context/prd.md` with 8 sections: vision, problem, users, MVP scope (🔴 must-have / 🟡 should-have), out-of-scope, user flows, success metrics, open questions.
+- `template/.aioson/agents/product.md`: base agent file.
+- `template/.aioson/locales/en/agents/product.md`, `pt-BR/agents/product.md`, `es/agents/product.md`, `fr/agents/product.md`: localized variants with absolute language instruction at top.
 - `template/.gemini/commands/aios-product.toml`: Gemini command registration.
 - Workflow chains updated in `config.md`: MICRO = `@setup → @product (optional) → @dev`; SMALL = `@setup → @product → @analyst → @architect → @dev → @qa`; MEDIUM = `@setup → @product → @analyst → @architect → @ux-ui → @pm → @orchestrator → @dev → @qa`.
 - `@product` added to `CLAUDE.md` agent routing, `AGENTS.md` invocation table and file list.
@@ -63,7 +63,7 @@ All notable changes to this project will be documented in this file.
 
 ## [0.1.24] - 2026-03-04
 ### Added
-- `skeleton-system.md`: new lightweight living index generated by `aios-forge-scan.py` alongside `discovery.md`. Contains file map with status indicators (✓/◑/○), key routes, module status table, and entity relationships. Designed to be read first as a cheap orientation before loading heavier context files.
+- `skeleton-system.md`: new lightweight living index generated by `aioson-scan.py` alongside `discovery.md`. Contains file map with status indicators (✓/◑/○), key routes, module status table, and entity relationships. Designed to be read first as a cheap orientation before loading heavier context files.
 - Scanner now generates both `discovery.md` and `skeleton-system.md` in a single LLM call, split by `<<<SKELETON>>>` delimiter. If the delimiter is missing, only `discovery.md` is written with a warning.
 - `@dev` (base + en/pt-BR/es/fr): `skeleton-system.md` added to required input (read first). Auto-update rule: update skeleton entries when creating/deleting/modifying files. New `*update-skeleton` command to rewrite the full skeleton after a development session.
 - `@analyst` (base + en/pt-BR/es/fr): brownfield pre-flight now reads `skeleton-system.md` first for quick orientation before diving into `discovery.md`.
@@ -71,16 +71,16 @@ All notable changes to this project will be documented in this file.
 
 ## [0.1.23] - 2026-03-04
 ### Added
-- `template/aios-forge-scan.py`: standalone Python scanner (zero external dependencies, stdlib only). Walks the project tree, reads up to 12 key files (package.json, composer.json, schema.prisma, routes/web.php, etc.), reads `project.context.md` and `spec.md` if present, then calls a cheap LLM API (DeepSeek, Gemini, OpenAI, Anthropic, Groq, Together, or Mistral) to generate `.aios-forge/context/discovery.md` with 9 structured sections. Saves main-session tokens on brownfield projects.
-- `template/aios-forge-models.json`: API key config template for 7 providers. Auto-added to `.gitignore` on install to prevent key commits.
-- Brownfield project detection in installer: when `framework_installed` is detected and the project has >20 files, `install` and `update` now emit an alert with instructions to run `aios-forge-scan.py` first.
+- `template/aioson-scan.py`: standalone Python scanner (zero external dependencies, stdlib only). Walks the project tree, reads up to 12 key files (package.json, composer.json, schema.prisma, routes/web.php, etc.), reads `project.context.md` and `spec.md` if present, then calls a cheap LLM API (DeepSeek, Gemini, OpenAI, Anthropic, Groq, Together, or Mistral) to generate `.aioson/context/discovery.md` with 9 structured sections. Saves main-session tokens on brownfield projects.
+- `template/aioson-models.json`: API key config template for 7 providers. Auto-added to `.gitignore` on install to prevent key commits.
+- Brownfield project detection in installer: when `framework_installed` is detected and the project has >20 files, `install` and `update` now emit an alert with instructions to run `aioson-scan.py` first.
 - `@analyst` (base + en/pt-BR/es/fr): **Brownfield pre-flight** section — checks `framework_installed`, skips Phases 1–3 if `discovery.md` already exists, alerts the user to run the scanner if it is missing. Rule enforced: always read `spec.md` alongside `discovery.md`.
-- `@dev` (base + en/pt-BR/es/fr): **Brownfield alert** section — if `framework_installed=true` and `discovery.md` is missing, alerts the user to run `aios-forge-scan.py` before proceeding.
+- `@dev` (base + en/pt-BR/es/fr): **Brownfield alert** section — if `framework_installed=true` and `discovery.md` is missing, alerts the user to run `aioson-scan.py` before proceeding.
 - `@orchestrator` (base + en/pt-BR/es/fr): session start now reads `discovery.md` AND `spec.md` together at session open, with brownfield alert when `discovery.md` is absent.
 
 ## [0.1.22] - 2026-03-04
 ### Fixed
-- `setup:context` command: `--lang=pt-BR` (and any `--lang` alias) was silently ignored — `applyExplicitOverrides` only read `options.language` but the parser stores the flag as `options.lang`. Fixed by reading `options.language ?? options.lang`, consistent with all other commands (`install`, `update`, `init`, `locale-apply`, etc.). Running `npx aios-forge setup:context . --defaults --lang=pt-BR` now correctly installs the pt-BR locale agents.
+- `setup:context` command: `--lang=pt-BR` (and any `--lang` alias) was silently ignored — `applyExplicitOverrides` only read `options.language` but the parser stores the flag as `options.lang`. Fixed by reading `options.language ?? options.lang`, consistent with all other commands (`install`, `update`, `init`, `locale-apply`, etc.). Running `npx aioson setup:context . --defaults --lang=pt-BR` now correctly installs the pt-BR locale agents.
 
 ## [0.1.21] - 2026-03-03
 ### Changed
@@ -88,11 +88,11 @@ All notable changes to this project will be documented in this file.
 
 ## [0.1.20] - 2026-03-03
 ### Added
-- `template/.aios-forge/skills/static/react-motion-patterns.md`: new skill with React/Next.js equivalents of the wow effects from `static-html-patterns.md`. Covers 10 patterns: animated mesh background, animated gradient text, scroll reveal (Framer Motion + Intersection Observer fallback), 3D card tilt hook, hero staggered entrance, infinite logo marquee, scroll progress bar, glassmorphism card, floating orbs, and page transition. All patterns include `prefers-reduced-motion` fallback and touch-device guards.
+- `template/.aioson/skills/static/react-motion-patterns.md`: new skill with React/Next.js equivalents of the wow effects from `static-html-patterns.md`. Covers 10 patterns: animated mesh background, animated gradient text, scroll reveal (Framer Motion + Intersection Observer fallback), 3D card tilt hook, hero staggered entrance, infinite logo marquee, scroll progress bar, glassmorphism card, floating orbs, and page transition. All patterns include `prefers-reduced-motion` fallback and touch-device guards.
 - Laravel installation links to `skills/dynamic/laravel-docs.md`: three-path table (Herd/standard, Sail/Docker, Jetstream+Livewire) with specific URLs, detection signals per stack, and Livewire v3 MCP fetch example.
 
 ### Changed
-- `template/.aios-forge/skills/static/laravel-conventions.md`: added project folder structure tree, naming convention table (13 artefacts, singular/plural rules), and Livewire component section with `#[Computed]`, `wire:model.live`, classic controller variant, and coexistence rule.
+- `template/.aioson/skills/static/laravel-conventions.md`: added project folder structure tree, naming convention table (13 artefacts, singular/plural rules), and Livewire component section with `#[Computed]`, `wire:model.live`, classic controller variant, and coexistence rule.
 - `@dev` agent (base + en/pt-BR/es/fr locales): added **Motion and animation** section — when `framework=React|Next.js`, agent now reads `react-motion-patterns.md` before implementing animations. Framer Motion as primary, CSS `@keyframes` as fallback. Hard rule against heavy motion in admin/CRUD interfaces.
 - `@dev` agent (base + en/pt-BR/es/fr locales): added Laravel project structure layout block and singular/plural naming rules to the Laravel conventions section.
 
@@ -100,9 +100,9 @@ All notable changes to this project will be documented in this file.
 ### Added
 - `src/commands/test-agents.js`: new `test:agents` CLI command — 99 structural checks across all 8 base agents and all locale files (32 base checks + 64 locale checks + 3 critical skill checks). Validates: file existence, `## Mission` section, `## Hard constraints` section, `.md-only` context rule, and language instruction within first 15 lines of each locale agent.
 - `src/commands/locale-diff.js`: new `locale:diff` CLI command — compares `##` heading structure of base agent files vs locale translations, normalizes headings (strips accents for cross-language comparison), and reports sections present in base but missing in locale. Supports `--lang` filter and single-agent argument.
-- `template/.aios-forge/skills/static/django-patterns.md`: comprehensive Django conventions skill (342 lines) — project structure, `TimestampMixin`, service layer, DRF serializers, URL namespacing, settings split (base/dev/prod), Admin registration, `pytest-django` test patterns, N+1 prevention rules.
-- `template/.aios-forge/skills/static/fastapi-patterns.md`: comprehensive FastAPI conventions skill (344 lines) — async project structure, `pydantic-settings`, SQLAlchemy async engine, Pydantic input/output schema separation, service layer, JWT via `HTTPBearer`, Alembic migrations, `pytest + httpx AsyncClient` patterns.
-- `template/.aios-forge/skills/dynamic/README.md`: explains static vs dynamic skills pattern and lists all 6 dynamic skill files with their source URLs.
+- `template/.aioson/skills/static/django-patterns.md`: comprehensive Django conventions skill (342 lines) — project structure, `TimestampMixin`, service layer, DRF serializers, URL namespacing, settings split (base/dev/prod), Admin registration, `pytest-django` test patterns, N+1 prevention rules.
+- `template/.aioson/skills/static/fastapi-patterns.md`: comprehensive FastAPI conventions skill (344 lines) — async project structure, `pydantic-settings`, SQLAlchemy async engine, Pydantic input/output schema separation, service layer, JWT via `HTTPBearer`, Alembic migrations, `pytest + httpx AsyncClient` patterns.
+- `template/.aioson/skills/dynamic/README.md`: explains static vs dynamic skills pattern and lists all 6 dynamic skill files with their source URLs.
 
 ### Changed
 - `@dev` agent (base + en/pt-BR/es/fr locales): `architecture.md` and `discovery.md` now marked as `*(SMALL/MEDIUM only)*` in Required input. Added explicit MICRO callout — only `project.context.md` is guaranteed for MICRO projects.
@@ -113,9 +113,9 @@ All notable changes to this project will be documented in this file.
 
 ## [0.1.18] - 2026-03-03
 ### Fixed
-- Language bug: locale agent files (pt-BR, es, fr) were responding in English even after `aios-forge install --lang=<locale>` because the language rule was at the bottom of each file. LLMs process top-to-bottom and would default to English before reading the rule.
+- Language bug: locale agent files (pt-BR, es, fr) were responding in English even after `aioson install --lang=<locale>` because the language rule was at the bottom of each file. LLMs process top-to-bottom and would default to English before reading the rule.
 - Added `> **⚠ ABSOLUTE INSTRUCTION — LANGUAGE**` blockquote as the **first content after the title** in all 8 agents across all 3 locales (pt-BR, es, fr) + en locale (24 files total). Instruction explicitly forbids English and names the target language before any mission, sequence, or detection logic runs.
-- `@ux-ui` output contract: HTML deliverable was being saved to `.aios-forge/context/landing-preview.html` instead of the project root. Fixed to `index.html` in the project root across all 5 ux-ui files (base + en/pt-BR/es/fr locales).
+- `@ux-ui` output contract: HTML deliverable was being saved to `.aioson/context/landing-preview.html` instead of the project root. Fixed to `index.html` in the project root across all 5 ux-ui files (base + en/pt-BR/es/fr locales).
 
 ## [0.1.17] - 2026-03-03
 ### Added
@@ -134,7 +134,7 @@ All notable changes to this project will be documented in this file.
 
 ## [0.1.16] - 2026-03-03
 ### Added
-- `template/.aios-forge/skills/static/static-html-patterns.md`: new **Section 14 — Premium Template Patterns (Aigocy-style)** with 10 production patterns extracted from a real AI-agency landing page (ThemeForest #61450410):
+- `template/.aioson/skills/static/static-html-patterns.md`: new **Section 14 — Premium Template Patterns (Aigocy-style)** with 10 production patterns extracted from a real AI-agency landing page (ThemeForest #61450410):
   - **14a. effectFade animations**: `fadeUp` and `fadeRotateX` (3D perspective entrance) with `data-delay` stagger pattern for GSAP
   - **14b. Infinite logo marquee**: CSS-only `@keyframes infiniteSlide` with auto-clone JS and hover-pause for accessibility
   - **14c. SVG animated paths**: SMIL `<animateMotion>` hub-and-spoke diagram connecting icons to a center product image
@@ -148,11 +148,11 @@ All notable changes to this project will be documented in this file.
 - Section 13 pre-delivery checklist: added "No placeholder text remains" item
 
 ### Changed
-- `@setup` agent output template (`aios_forge_version`) bumped to `0.1.16` across all locales (en, pt-BR, es, fr) and base agent file
+- `@setup` agent output template (`aioson_version`) bumped to `0.1.16` across all locales (en, pt-BR, es, fr) and base agent file
 
 ## [0.1.12] - 2026-03-02
 ### Added
-- New static skill: `template/.aios-forge/skills/static/interface-design.md` — a comprehensive UI/UX craft guide derived from the interface-design project, covering: Intent-First Framework (3 mandatory questions before any layout), Domain Exploration (4 required outputs: domain concepts, color world, signature element, defaults to avoid), 6 design directions with full token specs (Precision & Density, Warmth & Approachability, Data & Analysis, Editorial, Commerce, Minimal & Calm), complete token architecture (foreground/background/border/brand/semantic roles), depth strategy (commit to ONE), component state matrix, 4 quality checks (swap/squint/signature/token tests), self-critique process (composition → craft → content → structure).
+- New static skill: `template/.aioson/skills/static/interface-design.md` — a comprehensive UI/UX craft guide derived from the interface-design project, covering: Intent-First Framework (3 mandatory questions before any layout), Domain Exploration (4 required outputs: domain concepts, color world, signature element, defaults to avoid), 6 design directions with full token specs (Precision & Density, Warmth & Approachability, Data & Analysis, Editorial, Commerce, Minimal & Calm), complete token architecture (foreground/background/border/brand/semantic roles), depth strategy (commit to ONE), component state matrix, 4 quality checks (swap/squint/signature/token tests), self-critique process (composition → craft → content → structure).
 - Portuguese documentation at `docs/pt/`:
   - `README.md`: index linking all guides.
   - `inicio-rapido.md`: quick start with install commands, classification scoring, and 3-command setup.
@@ -200,41 +200,41 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 - `setup:context` now prepends a localized monorepo warning note when Web3 and application framework signals coexist in the project directory.
-- `template/.aios-forge/config.md` context contract updated with explicit `framework_installed` semantics.
-- `aios_forge_version` example in `@setup` output template corrected from `0.1.8` to `0.1.10`.
+- `template/.aioson/config.md` context contract updated with explicit `framework_installed` semantics.
+- `aioson_version` example in `@setup` output template corrected from `0.1.8` to `0.1.10`.
 - `tests/agent-contracts.test.js` updated to reflect new `@dev` section names (`Laravel conventions`, `Responsibility boundary`).
 
 ### Added
 - Full `pt-BR` CLI dictionary at `src/i18n/messages/pt-BR.js`.
 - Localized agent prompt packs for:
-  - `es` at `template/.aios-forge/locales/es/agents/*.md`
-  - `fr` at `template/.aios-forge/locales/fr/agents/*.md`
+  - `es` at `template/.aioson/locales/es/agents/*.md`
+  - `fr` at `template/.aioson/locales/fr/agents/*.md`
 - New `@ux-ui` agent contract and template set:
-  - `.aios-forge/agents/ux-ui.md`
-  - `.aios-forge/locales/{en,pt-BR,es,fr}/agents/ux-ui.md`
+  - `.aioson/agents/ux-ui.md`
+  - `.aioson/locales/{en,pt-BR,es,fr}/agents/ux-ui.md`
   - `.gemini/commands/aios-ux-ui.toml`
 - Legacy framework detection support:
   - `CodeIgniter 3`
   - `CodeIgniter 4`
 - New package installation validation command:
-  - `aios-forge test:package [source-path] [--keep] [--dry-run] [--json]`
+  - `aioson test:package [source-path] [--keep] [--dry-run] [--json]`
 - New workflow planning command:
-  - `aios-forge workflow:plan [path] [--classification=MICRO|SMALL|MEDIUM] [--json]`
-- `mcp:init` tool presets generation under `.aios-forge/mcp/presets/`:
+  - `aioson workflow:plan [path] [--classification=MICRO|SMALL|MEDIUM] [--json]`
+- `mcp:init` tool presets generation under `.aioson/mcp/presets/`:
   - `claude.json`
   - `codex.json`
   - `gemini.json`
   - `opencode.json`
 - New MCP validation command:
-  - `aios-forge mcp:doctor [path] [--strict-env] [--json]`
+  - `aioson mcp:doctor [path] [--strict-env] [--json]`
 - New parallel orchestration bootstrap command:
-  - `aios-forge parallel:init [path] [--workers=2..6] [--force] [--dry-run] [--json]`
+  - `aioson parallel:init [path] [--workers=2..6] [--force] [--dry-run] [--json]`
 - New parallel diagnosis/remediation command:
-  - `aios-forge parallel:doctor [path] [--workers=2..6] [--fix] [--force] [--dry-run] [--json]`
+  - `aioson parallel:doctor [path] [--workers=2..6] [--fix] [--force] [--dry-run] [--json]`
 - New parallel scope assignment command:
-  - `aios-forge parallel:assign [path] [--source=auto|prd|architecture|discovery|<file>] [--workers=2..6] [--force] [--dry-run] [--json]`
+  - `aioson parallel:assign [path] [--source=auto|prd|architecture|discovery|<file>] [--workers=2..6] [--force] [--dry-run] [--json]`
 - New parallel consolidated status command:
-  - `aios-forge parallel:status [path] [--json]`
+  - `aioson parallel:status [path] [--json]`
 - Optional `mcp:init` tool filter:
   - `--tool=claude|codex|gemini|opencode`
 - `test:smoke` mixed monorepo profile:
@@ -291,7 +291,7 @@ All notable changes to this project will be documented in this file.
 - `init` and `install` now print explicit multi-IDE onboarding hints (`agents` + `agent:prompt setup`) with optional `--tool=codex|claude|gemini|opencode` guidance.
 - Agent flow now supports explicit UI/UX handoff:
   - `@architect` may hand off key screens/component constraints to `@ux-ui`
-  - `@dev` now consumes `.aios-forge/context/ui-spec.md` when present
+  - `@dev` now consumes `.aioson/context/ui-spec.md` when present
   - `SMALL`/`MEDIUM` default sequence includes `@ux-ui`
 - `doctor` now enforces multi-IDE gateway contracts (Claude/Codex/Gemini/OpenCode) and validates required Gemini/OpenCode files.
 - `doctor` now also validates each Gemini command file (`.gemini/commands/aios-*.toml`) maps to the expected shared agent instruction file.
@@ -310,7 +310,7 @@ All notable changes to this project will be documented in this file.
   - `setup:context`
   - `i18n:add`
 - `init` and `install` now support `--lang=en|pt-BR|es|fr` to auto-apply localized agent packs during bootstrap.
-- Setup templates now default `aios_forge_version` to `0.1.8`.
+- Setup templates now default `aioson_version` to `0.1.8`.
 - `ui-ux-modern` static skill was expanded to a production-ready checklist with token, state, accessibility, responsive, and handoff guidance.
 - Developer onboarding now handles `Other` backend/frontend choices as true free-text custom values (legacy/custom stacks).
 - Expanded automated coverage:
@@ -344,15 +344,15 @@ All notable changes to this project will be documented in this file.
 ## [0.1.7] - 2026-03-01
 ### Added
 - JSON output mode (`--json`) for:
-  - `aios-forge info`
-  - `aios-forge doctor`
-  - `aios-forge context:validate`
-  - `aios-forge test:smoke`
+  - `aioson info`
+  - `aioson doctor`
+  - `aioson context:validate`
+  - `aioson test:smoke`
 - New JSON output test suite: `tests/json-output.test.js`.
 
 ### Changed
 - CLI now returns structured JSON errors for unknown commands and runtime failures when `--json` is enabled.
-- `setup:context` and setup templates now default `aios_forge_version` to `0.1.7`.
+- `setup:context` and setup templates now default `aioson_version` to `0.1.7`.
 
 ## [0.1.6] - 2026-03-01
 ### Added
@@ -366,7 +366,7 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 - CLI help and docs updated for `test:smoke --web3`.
-- `setup:context` and setup templates now default `aios_forge_version` to `0.1.6`.
+- `setup:context` and setup templates now default `aioson_version` to `0.1.6`.
 
 ## [0.1.5] - 2026-03-01
 ### Added
@@ -382,27 +382,27 @@ All notable changes to this project will be documented in this file.
 ### Changed
 - `project_type` now accepts `dapp`.
 - `setup:context` now supports Web3 context fields (`web3_enabled`, `web3_networks`, `contract_framework`, `wallet_provider`, `indexer`, `rpc_provider`).
-- `setup:context` and setup templates now default `aios_forge_version` to `0.1.5`.
+- `setup:context` and setup templates now default `aioson_version` to `0.1.5`.
 
 ## [0.1.4] - 2026-03-01
 ### Added
 - New command:
-  - `aios-forge test:smoke [workspace-path] [--lang=en|pt-BR] [--keep]`
+  - `aioson test:smoke [workspace-path] [--lang=en|pt-BR] [--keep]`
 - New smoke test suite: `tests/smoke.test.js`.
 
 ### Changed
 - `doctor` now supports safe remediation mode:
-  - `aios-forge doctor --fix`
-  - `aios-forge doctor --fix --dry-run`
-- `setup:context` and setup templates now default `aios_forge_version` to `0.1.4`.
+  - `aioson doctor --fix`
+  - `aioson doctor --fix --dry-run`
+- `setup:context` and setup templates now default `aioson_version` to `0.1.4`.
 
 ## [0.1.3] - 2026-03-01
 ### Added
 - Localized agent prompt packs:
-  - `.aios-forge/locales/en/agents/*.md`
-  - `.aios-forge/locales/pt-BR/agents/*.md`
+  - `.aioson/locales/en/agents/*.md`
+  - `.aioson/locales/pt-BR/agents/*.md`
 - New command:
-  - `aios-forge locale:apply [path] [--lang=en|pt-BR] [--dry-run]`
+  - `aioson locale:apply [path] [--lang=en|pt-BR] [--dry-run]`
 - Agent path resolution now supports locale-aware prompts with fallback to active agent paths.
 - New locale test suite: `tests/locales.test.js`.
 
@@ -413,10 +413,10 @@ All notable changes to this project will be documented in this file.
 ## [0.1.2] - 2026-03-01
 ### Added
 - New commands:
-  - `aios-forge agents`
-  - `aios-forge agent:prompt <agent> [--tool=...]`
-  - `aios-forge context:validate [path]`
-  - `aios-forge setup:context [path]` (interactive or defaults mode)
+  - `aioson agents`
+  - `aioson agent:prompt <agent> [--tool=...]`
+  - `aioson context:validate [path]`
+  - `aioson setup:context [path]` (interactive or defaults mode)
 - New modules:
   - `src/context.js` for frontmatter parsing and context contract validation
   - `src/agents.js` for agent metadata and prompt generation
@@ -431,7 +431,7 @@ All notable changes to this project will be documented in this file.
 
 ## [0.1.1] - 2026-03-01
 ### Changed
-- Converted remaining template files to English (`.aios-forge` agents/config and Gemini command descriptions).
+- Converted remaining template files to English (`.aioson` agents/config and Gemini command descriptions).
 - Hardened `@setup` instructions to prevent silent defaults for `project_type`, `profile`, `classification`, and language.
 - Added explicit `conversation_language` to context contract so agent interaction language can be enforced.
 

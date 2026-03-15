@@ -9,13 +9,13 @@ const { runDoctor, applyDoctorFixes } = require('../src/doctor');
 const { installTemplate } = require('../src/installer');
 
 async function makeTempDir() {
-  return fs.mkdtemp(path.join(os.tmpdir(), 'aios-forge-doctor-'));
+  return fs.mkdtemp(path.join(os.tmpdir(), 'aioson-doctor-'));
 }
 
 async function writeValidContext(dir, language = 'en') {
   await fs.writeFile(
-    path.join(dir, '.aios-forge/context/project.context.md'),
-    `---\nproject_name: "demo"\nproject_type: "web_app"\nprofile: "developer"\nframework: "Node"\nframework_installed: true\nclassification: "MICRO"\nconversation_language: "${language}"\naios_forge_version: "0.1.9"\n---\n\n# Project Context\n`,
+    path.join(dir, '.aioson/context/project.context.md'),
+    `---\nproject_name: "demo"\nproject_type: "web_app"\nprofile: "developer"\nframework: "Node"\nframework_installed: true\nclassification: "MICRO"\nconversation_language: "${language}"\naioson_version: "0.1.9"\n---\n\n# Project Context\n`,
     'utf8'
   );
 }
@@ -40,7 +40,7 @@ test('doctor fails when context exists but misses required frontmatter fields', 
   const dir = await makeTempDir();
   await installTemplate(dir, { mode: 'install' });
   await fs.writeFile(
-    path.join(dir, '.aios-forge/context/project.context.md'),
+    path.join(dir, '.aioson/context/project.context.md'),
     `---\nproject_name: "demo"\nframework_installed: true\n---\n\n# Project Context\n`,
     'utf8'
   );
@@ -115,7 +115,7 @@ test('doctor validates Gemini command instruction mappings', async () => {
 
   await fs.writeFile(
     path.join(dir, '.gemini/commands/aios-dev.toml'),
-    'name = "aios-dev"\ninstruction_file = ".aios-forge/agents/setup.md"\n',
+    'name = "aios-dev"\ninstruction_file = ".aioson/agents/setup.md"\n',
     'utf8'
   );
 

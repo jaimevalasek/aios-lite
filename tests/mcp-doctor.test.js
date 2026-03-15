@@ -10,7 +10,7 @@ const { runMcpInit } = require('../src/commands/mcp-init');
 const { runMcpDoctor } = require('../src/commands/mcp-doctor');
 
 async function makeTempDir() {
-  return fs.mkdtemp(path.join(os.tmpdir(), 'aios-forge-mcp-doctor-'));
+  return fs.mkdtemp(path.join(os.tmpdir(), 'aioson-mcp-doctor-'));
 }
 
 function createQuietLogger() {
@@ -34,7 +34,7 @@ function createCollectLogger() {
 }
 
 async function writeDappContext(dir) {
-  const contextPath = path.join(dir, '.aios-forge/context/project.context.md');
+  const contextPath = path.join(dir, '.aioson/context/project.context.md');
   await fs.mkdir(path.dirname(contextPath), { recursive: true });
   await fs.writeFile(
     contextPath,
@@ -52,7 +52,7 @@ contract_framework: "Hardhat"
 wallet_provider: ""
 indexer: ""
 rpc_provider: ""
-aios_forge_version: "0.1.9"
+aioson_version: "0.1.9"
 ---
 
 # Project Context
@@ -167,7 +167,7 @@ test('mcp:doctor strict env mode passes when required variables exist', async ()
 
 test('mcp:doctor localizes context parse reason when context frontmatter is invalid', async () => {
   const dir = await makeTempDir();
-  const contextPath = path.join(dir, '.aios-forge/context/project.context.md');
+  const contextPath = path.join(dir, '.aioson/context/project.context.md');
   await fs.mkdir(path.dirname(contextPath), { recursive: true });
   await fs.writeFile(
     contextPath,

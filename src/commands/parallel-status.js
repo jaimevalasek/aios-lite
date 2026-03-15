@@ -133,7 +133,7 @@ async function parseLaneFile(parallelDir, index) {
 
   return {
     lane: index,
-    file: path.join('.aios-forge/context/parallel', fileName).replace(/\\/g, '/'),
+    file: path.join('.aioson/context/parallel', fileName).replace(/\\/g, '/'),
     status,
     owner,
     priority,
@@ -148,7 +148,7 @@ async function parseLaneFile(parallelDir, index) {
 
 async function runParallelStatus({ args, options = {}, logger, t }) {
   const targetDir = path.resolve(process.cwd(), args[0] || '.');
-  const parallelDir = path.join(targetDir, '.aios-forge/context/parallel');
+  const parallelDir = path.join(targetDir, '.aioson/context/parallel');
 
   if (!(await exists(parallelDir))) {
     throw new Error(t('parallel_status.parallel_missing', { path: parallelDir }));

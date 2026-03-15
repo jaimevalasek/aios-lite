@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://aiosforge.dev/schemas/agents.schema.json",
-  "title": "AIOS Forge agents --json output",
+  "title": "AIOSON agents --json output",
   "type": "object",
   "required": ["ok", "targetDir", "count", "agents", "locale"],
   "properties": {

@@ -1,12 +1,12 @@
 # Suporte Web3
 
-> Como usar o AIOS Forge para projetos de blockchain e contratos inteligentes.
+> Como usar o AIOSON para projetos de blockchain e contratos inteligentes.
 
 ---
 
 ## Frameworks detectados automaticamente
 
-O AIOS Forge detecta sua stack Web3 ao rodar `setup:context` ou `doctor`:
+O AIOSON detecta sua stack Web3 ao rodar `setup:context` ou `doctor`:
 
 | Chain | Frameworks detectados | Sinais de detecção |
 |---|---|---|
@@ -22,7 +22,7 @@ O AIOS Forge detecta sua stack Web3 ao rodar `setup:context` ou `doctor`:
 ### Setup interativo
 
 ```bash
-npx aios-forge setup:context
+npx aioson setup:context
 ```
 
 Responda `dapp` quando perguntado sobre o tipo de projeto.
@@ -31,7 +31,7 @@ Responda `dapp` quando perguntado sobre o tipo de projeto.
 
 **Ethereum com Hardhat:**
 ```bash
-npx aios-forge setup:context . --defaults \
+npx aioson setup:context . --defaults \
   --project-name="Meu DApp" \
   --project-type=dapp \
   --framework=Hardhat \
@@ -47,7 +47,7 @@ npx aios-forge setup:context . --defaults \
 
 **Solana com Anchor:**
 ```bash
-npx aios-forge setup:context . --defaults \
+npx aioson setup:context . --defaults \
   --project-name="Meu Programa Solana" \
   --project-type=dapp \
   --framework=Anchor \
@@ -62,7 +62,7 @@ npx aios-forge setup:context . --defaults \
 
 **Cardano com Aiken:**
 ```bash
-npx aios-forge setup:context . --defaults \
+npx aioson setup:context . --defaults \
   --project-name="Meu Contrato Cardano" \
   --project-type=dapp \
   --framework=Cardano \
@@ -76,7 +76,7 @@ npx aios-forge setup:context . --defaults \
 
 **Midnight Network com Compact:**
 ```bash
-npx aios-forge setup:context . --defaults \
+npx aioson setup:context . --defaults \
   --project-name="Meu DApp Midnight" \
   --project-type=dapp \
   --framework=Midnight \
@@ -94,7 +94,7 @@ npx aios-forge setup:context . --defaults \
 
 ## Monorepo: contratos + frontend no mesmo repositório
 
-Se você tem contratos inteligentes E um frontend no mesmo repositório (exemplo comum: Hardhat na raiz + Next.js em `/frontend`), o AIOS Forge detecta isso automaticamente como **monorepo** e exibe um aviso:
+Se você tem contratos inteligentes E um frontend no mesmo repositório (exemplo comum: Hardhat na raiz + Next.js em `/frontend`), o AIOSON detecta isso automaticamente como **monorepo** e exibe um aviso:
 
 ```
 ⚠ Monorepo detectado: framework Web3 (Hardhat) e framework de aplicação (Next.js)
@@ -114,7 +114,7 @@ meu-dapp/
         contracts.ts ← ABIs e endereços deployados
   hardhat.config.js
   package.json
-  .aios-forge/        ← contexto AIOS Forge
+  .aioson/        ← contexto AIOSON
 ```
 
 ---
@@ -259,16 +259,16 @@ Valide sua configuração de dApp:
 
 ```bash
 # Verificar configuração Ethereum
-npx aios-forge test:smoke --web3=ethereum
+npx aioson test:smoke --web3=ethereum
 
 # Verificar configuração Solana
-npx aios-forge test:smoke --web3=solana
+npx aioson test:smoke --web3=solana
 
 # Verificar configuração Cardano
-npx aios-forge test:smoke --web3=cardano
+npx aioson test:smoke --web3=cardano
 
 # Monorepo Web3 + frontend
-npx aios-forge test:smoke --profile=mixed
+npx aioson test:smoke --profile=mixed
 ```
 
 ---
@@ -424,8 +424,8 @@ function test_HarvestOnlyByRole() public {
 ```bash
 anchor init staking-program --template=typescript
 cd staking-program
-npx aios-forge install
-npx aios-forge setup:context . --defaults \
+npx aioson install
+npx aioson setup:context . --defaults \
   --project-name="Staking Program" \
   --project-type=dapp \
   --framework=Anchor \
@@ -591,8 +591,8 @@ mkdir midnight-board && cd midnight-board
 npm install @midnight-ntwrk/compact-runtime \
             @midnight-ntwrk/midnight-js-contracts \
             @midnight-ntwrk/midnight-js-node-provider
-npx aios-forge install
-npx aios-forge setup:context . --defaults \
+npx aioson install
+npx aioson setup:context . --defaults \
   --project-name="Midnight Board" \
   --project-type=dapp \
   --framework=Midnight \

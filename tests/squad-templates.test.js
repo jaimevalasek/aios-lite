@@ -5,7 +5,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
 const path = require('node:path');
 
-const TEMPLATES_DIR = path.join(__dirname, '..', 'template', '.aios-forge', 'templates', 'squads');
+const TEMPLATES_DIR = path.join(__dirname, '..', 'template', '.aioson', 'templates', 'squads');
 
 async function listTemplateDirs() {
   const entries = await fs.readdir(TEMPLATES_DIR, { withFileTypes: true });

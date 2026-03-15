@@ -1,6 +1,6 @@
 # Genome 2.0 Manual Regression
 
-Run this only after the gated rollout in [genome-2.0-rollout.md](/home/jaime/MyProjects/aios-forge/docs/testing/genome-2.0-rollout.md) finishes green.
+Run this only after the gated rollout in `genome-2.0-rollout.md` finishes green.
 
 ## Core
 

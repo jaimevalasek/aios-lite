@@ -1,6 +1,6 @@
 # Squad e Genoma
 
-> Guia prático para usar `@squad` e `@genoma` no AIOS Forge sem confundir time operacional, skill e camada cognitiva.
+> Guia prático para usar `@squad` e `@genoma` no AIOSON sem confundir time operacional, skill e camada cognitiva.
 
 ---
 
@@ -8,8 +8,8 @@
 
 `@squad` e `@genoma` resolvem problemas diferentes:
 
-- `@squad` cria uma **squad modular em pacote** sob `.aios-forge/squads/{squad-slug}/`
-- `@genoma` cria uma **base estruturada de conhecimento e lentes cognitivas** em `.aios-forge/genomas/{slug}.md`
+- `@squad` cria uma **squad modular em pacote** sob `.aioson/squads/{squad-slug}/`
+- `@genoma` cria uma **base estruturada de conhecimento e lentes cognitivas** em `.aioson/genomas/{slug}.md`
 
 Em termos simples:
 
@@ -89,7 +89,7 @@ Não use subagente como substituto de:
 
 Um squad é uma unidade operacional modular criada para um objetivo específico.
 
-O AIOS Forge suporta varias squads paralelas no mesmo projeto.
+O AIOSON suporta varias squads paralelas no mesmo projeto.
 
 Regra pratica:
 
@@ -99,12 +99,12 @@ Regra pratica:
 
 Ela não é só uma pasta com agentes. Uma squad bem formada tem:
 
-- manifesto curto em `.aios-forge/squads/{squad-slug}/agents/agents.md`
-- manifesto estruturado em `.aios-forge/squads/{squad-slug}/squad.manifest.json`
-- `design-doc` local em `.aios-forge/squads/{squad-slug}/docs/design-doc.md`
-- `readiness` local em `.aios-forge/squads/{squad-slug}/docs/readiness.md`
-- executores permanentes em `.aios-forge/squads/{squad-slug}/agents/`
-- metadata em `.aios-forge/squads/{slug}/squad.md`
+- manifesto curto em `.aioson/squads/{squad-slug}/agents/agents.md`
+- manifesto estruturado em `.aioson/squads/{squad-slug}/squad.manifest.json`
+- `design-doc` local em `.aioson/squads/{squad-slug}/docs/design-doc.md`
+- `readiness` local em `.aioson/squads/{squad-slug}/docs/readiness.md`
+- executores permanentes em `.aioson/squads/{squad-slug}/agents/`
+- metadata em `.aioson/squads/{slug}/squad.md`
 - outputs em `output/{squad-slug}/`
 - logs em `aios-logs/{squad-slug}/`
 - mídia em `media/{squad-slug}/`
@@ -117,7 +117,7 @@ O modelo recomendado e:
 
 Assim o runtime e o dashboard podem tratar cada entrega como um conteudo real, e nao so como um arquivo solto.
 
-O importante aqui e: o AIOS Forge **nao fixa os campos internos** desse conteudo.
+O importante aqui e: o AIOSON **nao fixa os campos internos** desse conteudo.
 Ele fixa apenas a casca:
 
 - `content_key`
@@ -153,7 +153,7 @@ Use uma heurística simples:
 - derive `sections` do objetivo real da squad
 - use a linguagem do domínio do usuário quando ela fizer sentido
 - aproveite skills e docs locais que já apontem entregáveis recorrentes
-- aproveite tambem skills instaladas em `.aios-forge/squads/{squad-slug}/skills/`
+- aproveite tambem skills instaladas em `.aioson/squads/{squad-slug}/skills/`
 - prefira 1 blueprint principal forte antes de criar vários superficiais
 - escolha `blockTypes` pelo padrão de leitura esperado, não pelo efeito visual
 
@@ -165,8 +165,8 @@ Antes de escrever essa estrutura, o `@squad` deve consolidar um mini pacote de:
 
 Quando esse pacote e materializado, ele passa a existir como parte da squad:
 
-- `.aios-forge/squads/{squad-slug}/docs/design-doc.md`
-- `.aios-forge/squads/{squad-slug}/docs/readiness.md`
+- `.aioson/squads/{squad-slug}/docs/design-doc.md`
+- `.aioson/squads/{squad-slug}/docs/readiness.md`
 
 Esse passo existe para evitar squads montadas em cima de contexto vago demais.
 Na pratica, o `@squad` decide:
@@ -178,7 +178,7 @@ Na pratica, o `@squad` decide:
 Exemplo:
 
 ```text
-.aios-forge/squads/youtube-creator/agents/
+.aioson/squads/youtube-creator/agents/
   agents.md
   squad.manifest.json
   roteirista-viral.md
@@ -188,7 +188,7 @@ Exemplo:
   orquestrador.md
 ```
 
-Esses agentes não são os agentes oficiais da aios-forge. Eles são executores do seu projeto.
+Esses agentes não são os agentes oficiais da aioson. Eles são executores do seu projeto.
 
 ---
 
@@ -204,7 +204,7 @@ Um genoma é um artefato de domínio e cognição. Ele descreve:
 Exemplo:
 
 ```text
-.aios-forge/genomas/storytelling-retencao-youtube.md
+.aioson/genomas/storytelling-retencao-youtube.md
 ```
 
 Esse genoma não faz trabalho sozinho. Ele não substitui o agente. Ele não substitui skill. Ele enriquece a forma como os agentes executam suas skills.
@@ -234,7 +234,7 @@ Então, para o sistema:
 Quando uma skill vier do catálogo online ou de outro pacote, ela deve ser salva em:
 
 ```text
-.aios-forge/squads/{squad-slug}/skills/{dominio}/{skill-slug}.md
+.aioson/squads/{squad-slug}/skills/{dominio}/{skill-slug}.md
 ```
 
 Depois disso, essa skill passa a ser parte real do pacote local da squad e deve ser considerada pelos agentes sob demanda.
@@ -279,26 +279,26 @@ O vínculo precisa ficar salvo no metadata do squad e refletido no manifesto da 
 Exemplo:
 
 ```text
-.aios-forge/squads/youtube-creator.md
+.aioson/squads/youtube-creator.md
 ```
 
 ```md
 Squad: YouTube Creator
 Mode: Squad
 Goal: Criar conteúdos virais com retenção forte
-Agents: .aios-forge/squads/youtube-creator/agents/
-Manifest: .aios-forge/squads/youtube-creator/squad.manifest.json
+Agents: .aioson/squads/youtube-creator/agents/
+Manifest: .aioson/squads/youtube-creator/squad.manifest.json
 Output: output/youtube-creator/
 Logs: aios-logs/youtube-creator/
 Media: media/youtube-creator/
 LatestSession: output/youtube-creator/latest.html
 
 Genomes:
-- .aios-forge/genomas/storytelling-retencao-youtube.md
+- .aioson/genomas/storytelling-retencao-youtube.md
 
 AgentGenomes:
-- roteirista-viral: .aios-forge/genomas/redacao-emocional-youtube.md
-- copywriter-thumbnail: .aios-forge/genomas/copy-ctr-youtube.md
+- roteirista-viral: .aioson/genomas/redacao-emocional-youtube.md
+- copywriter-thumbnail: .aioson/genomas/copy-ctr-youtube.md
 ```
 
 ---
@@ -308,7 +308,7 @@ AgentGenomes:
 O contrato atual esperado de uma squad é este:
 
 ```text
-.aios-forge/squads/{squad-slug}/
+.aioson/squads/{squad-slug}/
   squad.manifest.json
   squad.md
   agents/
@@ -467,10 +467,10 @@ Papéis: pode escolher
 
 Resultado esperado:
 
-- criação de manifesto em `.aios-forge/squads/youtube-creator/agents/agents.md`
-- criação de manifesto JSON em `.aios-forge/squads/youtube-creator/squad.manifest.json`
-- criação de executores em `.aios-forge/squads/youtube-creator/agents/`
-- criação de resumo em `.aios-forge/squads/youtube-creator/squad.md`
+- criação de manifesto em `.aioson/squads/youtube-creator/agents/agents.md`
+- criação de manifesto JSON em `.aioson/squads/youtube-creator/squad.manifest.json`
+- criação de executores em `.aioson/squads/youtube-creator/agents/`
+- criação de resumo em `.aioson/squads/youtube-creator/squad.md`
 - criação de `output/youtube-creator/`, `aios-logs/youtube-creator/` e `media/youtube-creator/`
 - geração de `output/youtube-creator/latest.html`
 
@@ -490,7 +490,7 @@ Aplicar especialmente ao agente @roteirista-viral.
 
 Resultado esperado:
 
-- genoma salvo em `.aios-forge/genomas/...`
+- genoma salvo em `.aioson/genomas/...`
 - vínculo salvo no metadata do squad
 - manifesto da squad refletindo o vínculo
 - agente `roteirista-viral.md` reescrito com `## Genomas ativos`
@@ -511,9 +511,9 @@ O agente já deve operar com os genomas vinculados, sem o usuário repetir tudo.
 ### Squad
 
 ```text
-.aios-forge/squads/{squad-slug}/agents/
+.aioson/squads/{squad-slug}/agents/
 output/{squad-slug}/
-.aios-forge/squads/{squad-slug}.md
+.aioson/squads/{squad-slug}.md
 aios-logs/{squad-slug}/
 media/{squad-slug}/
 ```
@@ -521,7 +521,7 @@ media/{squad-slug}/
 ### Genoma
 
 ```text
-.aios-forge/genomas/{genoma-slug}.md
+.aioson/genomas/{genoma-slug}.md
 ```
 
 ### Registro nos gateways
@@ -566,22 +566,22 @@ Regra prática:
 
 ### 1. O orquestrador responsável pelo HTML é o do squad
 
-Não é o `@orchestrator` oficial da aios-forge.
+Não é o `@orchestrator` oficial da aioson.
 
-É o `@orquestrador` gerado dentro de `.aios-forge/squads/{squad-slug}/agents/`.
+É o `@orquestrador` gerado dentro de `.aioson/squads/{squad-slug}/agents/`.
 
-### 2. Genoma não deve alterar agentes oficiais da aios-forge
+### 2. Genoma não deve alterar agentes oficiais da aioson
 
 Não aplique genomas customizados do usuário em:
 
 ```text
-.aios-forge/agents/
+.aioson/agents/
 ```
 
 Os genomas devem ser aplicados aos agentes criados em:
 
 ```text
-.aios-forge/squads/{squad-slug}/agents/
+.aioson/squads/{squad-slug}/agents/
 ```
 
 ### 3. O usuário pode mandar contexto grande
@@ -611,7 +611,7 @@ O HTML é o entregável persistido e organizado para consulta e cópia.
 
 Prefira:
 
-- `.aios-forge/squads/{squad-slug}/agents/`
+- `.aioson/squads/{squad-slug}/agents/`
 - `output/{squad-slug}/`
 - `aios-logs/{squad-slug}/`
 - `media/{squad-slug}/`
@@ -682,8 +682,8 @@ O Genoma 3.0 estende o formato 2.0 com suporte a profiling de personas baseado e
 
 | Output | O que é | Onde vive |
 |--------|---------|-----------|
-| Genoma 3.0 | Conhecimento destilado + perfil cognitivo | `.aios-forge/genomas/` |
-| Advisor Agent | Conselheiro ativo com a lente da persona | `.aios-forge/advisors/` |
+| Genoma 3.0 | Conhecimento destilado + perfil cognitivo | `.aioson/genomas/` |
+| Advisor Agent | Conselheiro ativo com a lente da persona | `.aioson/advisors/` |
 
 ### O pipeline profiler
 
@@ -754,7 +754,7 @@ Squad: youtube-creator
 ### Relatórios intermediários do profiler
 
 ```text
-.aios-forge/profiler-reports/{person-slug}/
+.aioson/profiler-reports/{person-slug}/
   research-report.md
   enriched-profile.md
 ```

@@ -11,12 +11,12 @@
     {
       "slug": "writer",
       "role": "Writes the first draft",
-      "file": ".aios-forge/squads/squad-without-genome/agents/writer.md"
+      "file": ".aioson/squads/squad-without-genome/agents/writer.md"
     },
     {
       "slug": "reviewer",
       "role": "Reviews quality gates",
-      "file": ".aios-forge/squads/squad-without-genome/agents/reviewer.md"
+      "file": ".aioson/squads/squad-without-genome/agents/reviewer.md"
     }
   ]
 }

@@ -1,8 +1,8 @@
 name = "aios-ux-ui"
 description = "Frontend design and UX specification"
-instruction_file = ".aios-forge/agents/ux-ui.md"
+instruction_file = ".aioson/agents/ux-ui.md"
 requires_context = [
-  ".aios-forge/context/project.context.md",
-  ".aios-forge/context/discovery.md",
-  ".aios-forge/context/architecture.md"
+  ".aioson/context/project.context.md",
+  ".aioson/context/discovery.md",
+  ".aioson/context/architecture.md"
 ]

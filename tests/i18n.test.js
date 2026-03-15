@@ -21,14 +21,14 @@ test('normalizeLocale resolves base locale when region variant is requested', ()
 
 test('translator returns english messages and key fallback', () => {
   const { t } = createTranslator('en');
-  assert.equal(t('cli.title'), 'AIOS Forge CLI');
+  assert.equal(t('cli.title'), 'AIOSON CLI');
   assert.equal(t('not.exists.key'), 'not.exists.key');
 });
 
 test('translator resolves pt-BR dictionary', () => {
   const { locale, t } = createTranslator('pt-BR');
   assert.equal(locale, 'pt-br');
-  assert.equal(t('cli.title'), 'CLI do AIOS Forge');
+  assert.equal(t('cli.title'), 'CLI do AIOSON');
   assert.equal(t('cli.usage'), 'Uso:');
 });
 
@@ -154,10 +154,10 @@ test('translator exposes localized init/install onboarding guidance keys', () =>
     true
   );
   assert.equal(
-    pt.t('install.step_setup_context').includes('aios-forge setup:context --defaults'),
+    pt.t('install.step_setup_context').includes('aioson setup:context --defaults'),
     true
   );
-  assert.equal(es.t('init.step_agents').includes('aios-forge agents'), true);
+  assert.equal(es.t('init.step_agents').includes('aioson agents'), true);
   assert.equal(fr.t('install.step_agent_prompt', { tool: 'gemini' }).includes('--tool=gemini'), true);
   assert.equal(en.t('cli.help_update').includes('--lang=en|pt-BR|es|fr'), true);
 });

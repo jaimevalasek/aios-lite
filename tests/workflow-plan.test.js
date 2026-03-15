@@ -13,7 +13,7 @@ const {
 } = require('../src/commands/workflow-plan');
 
 async function makeTempDir() {
-  return fs.mkdtemp(path.join(os.tmpdir(), 'aios-forge-workflow-plan-'));
+  return fs.mkdtemp(path.join(os.tmpdir(), 'aioson-workflow-plan-'));
 }
 
 function createQuietLogger() {
@@ -66,11 +66,11 @@ test('buildWorkflowPlan maps classifications to agent sequence', () => {
 
 test('runWorkflowPlan reads context and applies dapp note', async () => {
   const dir = await makeTempDir();
-  const contextPath = path.join(dir, '.aios-forge/context/project.context.md');
+  const contextPath = path.join(dir, '.aioson/context/project.context.md');
   await fs.mkdir(path.dirname(contextPath), { recursive: true });
   await fs.writeFile(
     contextPath,
-    `---\nproject_name: \"demo\"\nproject_type: \"dapp\"\nprofile: \"developer\"\nframework: \"Hardhat\"\nframework_installed: true\nclassification: \"SMALL\"\nconversation_language: \"en\"\nweb3_enabled: true\nweb3_networks: \"ethereum\"\naios_forge_version: \"0.1.8\"\n---\n\n# Project Context\n`,
+    `---\nproject_name: \"demo\"\nproject_type: \"dapp\"\nprofile: \"developer\"\nframework: \"Hardhat\"\nframework_installed: true\nclassification: \"SMALL\"\nconversation_language: \"en\"\nweb3_enabled: true\nweb3_networks: \"ethereum\"\naioson_version: \"0.1.8\"\n---\n\n# Project Context\n`,
     'utf8'
   );
 

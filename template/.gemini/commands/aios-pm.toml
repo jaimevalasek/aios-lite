@@ -1,8 +1,8 @@
 name = "aios-pm"
 description = "Lightweight PRD"
-instruction_file = ".aios-forge/agents/pm.md"
+instruction_file = ".aioson/agents/pm.md"
 requires_context = [
-  ".aios-forge/context/project.context.md",
-  ".aios-forge/context/discovery.md",
-  ".aios-forge/context/architecture.md"
+  ".aioson/context/project.context.md",
+  ".aioson/context/discovery.md",
+  ".aioson/context/architecture.md"
 ]

@@ -77,7 +77,7 @@ async function runPackageTest({ args, options = {}, logger, t }) {
   const dryRun = Boolean(options['dry-run']);
   const jsonMode = Boolean(options.json);
 
-  const workspaceRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'aios-forge-package-test-'));
+  const workspaceRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'aioson-package-test-'));
   const projectName = 'sample-app';
   const projectDir = path.join(workspaceRoot, projectName);
   const packDir = path.join(workspaceRoot, 'dist');
@@ -131,7 +131,7 @@ async function runPackageTest({ args, options = {}, logger, t }) {
 
     const init = await runCommand(
       'npx',
-      ['--yes', '--package', tarballPath, 'aios-forge', 'init', projectName, '--locale=en'],
+      ['--yes', '--package', tarballPath, 'aioson', 'init', projectName, '--locale=en'],
       {
         cwd: workspaceRoot,
         env: {
@@ -155,7 +155,7 @@ async function runPackageTest({ args, options = {}, logger, t }) {
         '--yes',
         '--package',
         tarballPath,
-        'aios-forge',
+        'aioson',
         'setup:context',
         projectDir,
         '--defaults',
@@ -187,7 +187,7 @@ async function runPackageTest({ args, options = {}, logger, t }) {
 
     const doctor = await runCommand(
       'npx',
-      ['--yes', '--package', tarballPath, 'aios-forge', 'doctor', projectDir, '--json'],
+      ['--yes', '--package', tarballPath, 'aioson', 'doctor', projectDir, '--json'],
       {
         cwd: workspaceRoot,
         env: {
@@ -211,7 +211,7 @@ async function runPackageTest({ args, options = {}, logger, t }) {
 
     const mcp = await runCommand(
       'npx',
-      ['--yes', '--package', tarballPath, 'aios-forge', 'mcp:init', projectDir, '--json'],
+      ['--yes', '--package', tarballPath, 'aioson', 'mcp:init', projectDir, '--json'],
       {
         cwd: workspaceRoot,
         env: {

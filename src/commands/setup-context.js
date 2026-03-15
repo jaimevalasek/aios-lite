@@ -227,7 +227,7 @@ function applyExplicitOverrides(data, options, detectedInstalled) {
   if (hasOption(options, 'cache')) output.cache = String(options.cache);
   if (hasOption(options, 'search')) output.search = String(options.search);
   if (hasOption(options, 'install-commands')) output.installCommands = String(options['install-commands']);
-  if (hasOption(options, 'aios-forge-version')) output.aiosForgeVersion = String(options['aios-forge-version']);
+  if (hasOption(options, 'aioson-version')) output.aiosonVersion = String(options['aioson-version']);
 
   return output;
 }
@@ -486,7 +486,7 @@ async function runSetupContext({ args, options, logger, t }) {
     search: '',
     installCommands: '',
     notes: [],
-    aiosForgeVersion: getCliVersionSync()
+    aiosonVersion: getCliVersionSync()
   };
 
   if (monorepoDetected) {

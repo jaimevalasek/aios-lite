@@ -8,9 +8,9 @@ const { validateProjectContextFile } = require('../context');
 const { exists, ensureDir } = require('../utils');
 const { syncWorkflowRuntime } = require('../execution-gateway');
 
-const STATE_RELATIVE_PATH = '.aios-forge/context/workflow.state.json';
-const CONFIG_RELATIVE_PATH = '.aios-forge/context/workflow.config.json';
-const EVENTS_RELATIVE_PATH = '.aios-forge/context/workflow.events.jsonl';
+const STATE_RELATIVE_PATH = '.aioson/context/workflow.state.json';
+const CONFIG_RELATIVE_PATH = '.aioson/context/workflow.config.json';
+const EVENTS_RELATIVE_PATH = '.aioson/context/workflow.events.jsonl';
 
 const DEFAULT_FEATURE_WORKFLOW_BY_CLASSIFICATION = {
   MICRO: ['product', 'dev', 'qa'],
@@ -172,8 +172,8 @@ async function resolveExistingInstructionPath(targetDir, agent, locale) {
 }
 
 async function detectWorkflowMode(targetDir) {
-  const prdPath = path.join(targetDir, '.aios-forge/context/prd.md');
-  const featuresPath = path.join(targetDir, '.aios-forge/context/features.md');
+  const prdPath = path.join(targetDir, '.aioson/context/prd.md');
+  const featuresPath = path.join(targetDir, '.aioson/context/features.md');
   const hasProjectPrd = await exists(prdPath);
   const featuresMarkdown = await fs.readFile(featuresPath, 'utf8').catch(() => '');
   const features = parseFeaturesMarkdown(featuresMarkdown);
@@ -201,7 +201,7 @@ function getSequenceForMode(config, mode, classification) {
 }
 
 async function validateStageArtifacts(targetDir, state, stage) {
-  const base = path.join(targetDir, '.aios-forge/context');
+  const base = path.join(targetDir, '.aioson/context');
   const slug = state.featureSlug;
 
   if (stage === 'setup') {

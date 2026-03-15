@@ -1,6 +1,6 @@
-# Usando AIOS Forge com diferentes CLIs de IA
+# Usando AIOSON com diferentes CLIs de IA
 
-O AIOS Forge funciona com **Claude Code**, **Codex CLI** e **Gemini CLI**. Cada um tem uma forma diferente de ativar agentes — este guia explica como usar cada um sem confusão.
+O AIOSON funciona com **Claude Code**, **Codex CLI** e **Gemini CLI**. Cada um tem uma forma diferente de ativar agentes — este guia explica como usar cada um sem confusão.
 
 ---
 
@@ -10,8 +10,8 @@ O AIOS Forge funciona com **Claude Code**, **Codex CLI** e **Gemini CLI**. Cada 
 |---|---|---|---|
 | Arquivo de config | `CLAUDE.md` | `AGENTS.md` | `.gemini/GEMINI.md` |
 | Comandos personalizados | `.claude/commands/` | ❌ não suporta | `.gemini/commands/*.toml` |
-| Autocomplete de agentes | `/aios-forge/` + Tab | ❌ não suporta | `/aios-` + Tab |
-| Como ativar agente | `/aios-forge/setup` | linguagem natural | `/aios-setup` |
+| Autocomplete de agentes | `/aioson/` + Tab | ❌ não suporta | `/aios-` + Tab |
+| Como ativar agente | `/aioson/setup` | linguagem natural | `/aios-setup` |
 | Lê contexto automático | Sim (CLAUDE.md injeta) | Sim (AGENTS.md injeta) | Sim (GEMINI.md injeta) |
 
 ---
@@ -20,43 +20,43 @@ O AIOS Forge funciona com **Claude Code**, **Codex CLI** e **Gemini CLI**. Cada 
 
 ### Como funciona
 
-O Claude Code lê `CLAUDE.md` automaticamente ao iniciar. Os agentes do AIOS Forge ficam em `.claude/commands/aios-forge/` — isso cria o namespace `/aios-forge/*` no autocomplete.
+O Claude Code lê `CLAUDE.md` automaticamente ao iniciar. Os agentes do AIOSON ficam em `.claude/commands/aioson/` — isso cria o namespace `/aioson/*` no autocomplete.
 
 ### Ativando agentes
 
-Digite `/` para abrir o autocomplete e depois `aios-forge/`:
+Digite `/` para abrir o autocomplete e depois `aioson/`:
 
 ```
-/aios-forge/setup
-/aios-forge/analyst
-/aios-forge/architect
-/aios-forge/ux-ui
-/aios-forge/pm
-/aios-forge/dev
-/aios-forge/qa
-/aios-forge/orchestrator
+/aioson/setup
+/aioson/analyst
+/aioson/architect
+/aioson/ux-ui
+/aioson/pm
+/aioson/dev
+/aioson/qa
+/aioson/orchestrator
 ```
 
 ### Exemplos de uso
 
 ```
-/aios-forge/setup
+/aioson/setup
 ```
 > O agente @setup detecta o framework, faz as perguntas de onboarding e gera o `project.context.md`.
 
 ```
-/aios-forge/dev implementar autenticação JWT com refresh token
+/aioson/dev implementar autenticação JWT com refresh token
 ```
 > O agente @dev recebe o argumento como contexto extra e começa a implementação em steps atômicos.
 
 ```
-/aios-forge/qa
+/aioson/qa
 ```
 > O agente @qa lê o contexto e sugere um plano de testes para as features implementadas.
 
 ### Primeira vez no projeto
 
-Se `project.context.md` não existir, o CLAUDE.md instrui o Claude a rodar `/aios-forge/setup` automaticamente antes de qualquer outra ação.
+Se `project.context.md` não existir, o CLAUDE.md instrui o Claude a rodar `/aioson/setup` automaticamente antes de qualquer outra ação.
 
 ---
 
@@ -64,7 +64,7 @@ Se `project.context.md` não existir, o CLAUDE.md instrui o Claude a rodar `/aio
 
 ### Como funciona
 
-O Codex não suporta slash commands personalizados nem autocomplete de comandos. Em vez disso, o AIOS Forge usa o `AGENTS.md` para injetar contexto — o Codex lê esse arquivo automaticamente e entende quais agentes existem.
+O Codex não suporta slash commands personalizados nem autocomplete de comandos. Em vez disso, o AIOSON usa o `AGENTS.md` para injetar contexto — o Codex lê esse arquivo automaticamente e entende quais agentes existem.
 
 **Não espere `/` para aparecer agentes AIOS no Codex** — isso não acontece. Os agentes são invocados via linguagem natural.
 
@@ -115,8 +115,8 @@ activate @orchestrator to plan this session — I want to implement the checkout
 O `AGENTS.md` na raiz do projeto mapeia cada `@agente` para o caminho do arquivo:
 
 ```markdown
-- @setup → `.aios-forge/agents/setup.md`
-- @dev → `.aios-forge/agents/dev.md`
+- @setup → `.aioson/agents/setup.md`
+- @dev → `.aioson/agents/dev.md`
 ...
 ```
 
@@ -135,7 +135,7 @@ Quando você menciona `@setup`, o Codex lê o arquivo correspondente e segue tod
 
 ### Como funciona
 
-O Gemini CLI lê `.gemini/GEMINI.md` ao iniciar e reconhece comandos definidos em `.gemini/commands/*.toml`. Os agentes do AIOS Forge são registrados com o prefixo `aios-`.
+O Gemini CLI lê `.gemini/GEMINI.md` ao iniciar e reconhece comandos definidos em `.gemini/commands/*.toml`. Os agentes do AIOSON são registrados com o prefixo `aios-`.
 
 ### Ativando agentes
 
@@ -176,7 +176,7 @@ Cada arquivo `.gemini/commands/aios-*.toml` aponta para o agente correspondente:
 ```toml
 name = "aios-setup"
 description = "Project onboarding"
-instruction_file = ".aios-forge/agents/setup.md"
+instruction_file = ".aioson/agents/setup.md"
 ```
 
 ---
@@ -187,17 +187,17 @@ Não há uma resposta única — depende do seu fluxo de trabalho. Algumas consi
 
 | Cenário | Recomendação |
 |---|---|
-| Quer autocomplete preciso com namespace isolado | Claude Code — `/aios-forge/*` |
+| Quer autocomplete preciso com namespace isolado | Claude Code — `/aioson/*` |
 | Prefere conversa natural sem memória de comandos | Codex — `use @dev to...` |
 | Já usa Gemini CLI como ferramenta principal | Gemini — `/aios-*` |
-| Projeto em equipe com múltiplos CLIs | Todos funcionam — o contexto em `.aios-forge/` é compartilhado |
+| Projeto em equipe com múltiplos CLIs | Todos funcionam — o contexto em `.aioson/` é compartilhado |
 
 ### O contexto é o mesmo independente do CLI
 
 Independente de qual CLI você usa, todos leem os mesmos arquivos:
 
 ```
-.aios-forge/
+.aioson/
   config.md              ← configuração global
   agents/                ← agentes (lidos por qualquer CLI)
   context/
@@ -211,14 +211,14 @@ Você pode começar um projeto com Claude Code, continuar com Codex no dia segui
 
 ## Atualizar para nova versão
 
-Após `npx aios-forge@latest update` no projeto, os arquivos de configuração de todos os CLIs são atualizados:
+Após `npx aioson@latest update` no projeto, os arquivos de configuração de todos os CLIs são atualizados:
 
 ```bash
-npx aios-forge@latest update
+npx aioson@latest update
 ```
 
 Isso atualiza:
-- `CLAUDE.md` e `.claude/commands/aios-forge/`
+- `CLAUDE.md` e `.claude/commands/aioson/`
 - `AGENTS.md`
 - `.gemini/GEMINI.md` e `.gemini/commands/`
-- Todos os agentes em `.aios-forge/agents/`
+- Todos os agentes em `.aioson/agents/`

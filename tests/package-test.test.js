@@ -21,8 +21,8 @@ function createQuietLogger() {
 }
 
 test('parsePackResult returns last non-empty line', () => {
-  const output = '\nfoo\nbar\naios-forge-0.1.8.tgz\n\n';
-  assert.equal(parsePackResult(output), 'aios-forge-0.1.8.tgz');
+  const output = '\nfoo\nbar\naioson-0.1.8.tgz\n\n';
+  assert.equal(parsePackResult(output), 'aioson-0.1.8.tgz');
 });
 
 test('commandFailureDetail returns localized fallback when command output is empty', () => {
@@ -32,7 +32,7 @@ test('commandFailureDetail returns localized fallback when command output is emp
 });
 
 test('resolveTarballFromDir detects latest tgz in directory', async () => {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'aios-forge-pack-dir-'));
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'aioson-pack-dir-'));
   await fs.writeFile(path.join(dir, 'old.tgz'), 'x', 'utf8');
   await new Promise((resolve) => setTimeout(resolve, 20));
   await fs.writeFile(path.join(dir, 'new.tgz'), 'x', 'utf8');

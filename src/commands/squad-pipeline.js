@@ -16,7 +16,7 @@ async function runSquadPipeline({ args = [], options = {}, logger = console } = 
 
   const hasDb = await runtimeStoreExists(projectDir);
   if (!hasDb) {
-    logger.error('Runtime store not initialized. Run: aios-forge runtime:init .');
+    logger.error('Runtime store not initialized. Run: aioson runtime:init .');
     return { ok: false, error: 'runtime_not_initialized' };
   }
 
@@ -31,7 +31,7 @@ async function runSquadPipeline({ args = [], options = {}, logger = console } = 
     if (subcommand === 'list') {
       const pipelines = listPipelines(db);
       if (pipelines.length === 0) {
-        logger.log('No pipelines found. Create one with: aios-forge squad:pipeline show --sub=create');
+        logger.log('No pipelines found. Create one with: aioson squad:pipeline show --sub=create');
         return { ok: true, pipelines: [] };
       }
       logger.log(`Pipelines (${pipelines.length}):`);
@@ -43,7 +43,7 @@ async function runSquadPipeline({ args = [], options = {}, logger = console } = 
 
     if (subcommand === 'show') {
       if (!slugArg) {
-        logger.error('Usage: aios-forge squad:pipeline [path] --sub=show --pipeline=<slug>');
+        logger.error('Usage: aioson squad:pipeline [path] --sub=show --pipeline=<slug>');
         return { ok: false, error: 'missing_slug' };
       }
       const dag = getPipelineDAG(db, slugArg);
@@ -68,7 +68,7 @@ async function runSquadPipeline({ args = [], options = {}, logger = console } = 
 
     if (subcommand === 'status') {
       if (!slugArg) {
-        logger.error('Usage: aios-forge squad:pipeline [path] --sub=status --pipeline=<slug>');
+        logger.error('Usage: aioson squad:pipeline [path] --sub=status --pipeline=<slug>');
         return { ok: false, error: 'missing_slug' };
       }
       const dag = getPipelineDAG(db, slugArg);

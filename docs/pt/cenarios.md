@@ -1,6 +1,6 @@
 # Cenários de Uso
 
-> Exemplos completos e práticos de como usar o AIOS Forge em projetos reais.
+> Exemplos completos e práticos de como usar o AIOSON em projetos reais.
 
 ---
 
@@ -14,8 +14,8 @@
 
 ```bash
 mkdir landing-captura && cd landing-captura
-npx aios-forge install
-npx aios-forge setup:context . --defaults \
+npx aioson install
+npx aioson setup:context . --defaults \
   --project-name="Landing Captura" \
   --project-type=site \
   --framework="None" \
@@ -47,7 +47,7 @@ Próximo passo: ative /dev e descreva o que o projeto precisa ter.
 ```
 
 > **Nota:** As flags `--defaults` acima pré-preenchem o contexto sem perguntas interativas.
-> Se preferir o fluxo guiado, basta rodar `npx aios-forge setup:context` sem flags — o agente
+> Se preferir o fluxo guiado, basta rodar `npx aioson setup:context` sem flags — o agente
 > vai fazer as perguntas e identificar o projeto a partir da sua descrição.
 
 ### Passo 3: Ativar @dev diretamente
@@ -87,8 +87,8 @@ Não precisa de @analyst (domínio simples), não precisa de @architect (estrutu
 ```bash
 # Laravel já está instalado e configurado
 cd minha-clinica-api
-npx aios-forge install
-npx aios-forge setup:context . --defaults \
+npx aioson install
+npx aioson setup:context . --defaults \
   --project-name="Clinica API" \
   --project-type=api \
   --framework=Laravel \
@@ -100,7 +100,7 @@ npx aios-forge setup:context . --defaults \
 ### Passo 2: Verificar saúde
 
 ```bash
-npx aios-forge doctor
+npx aioson doctor
 ```
 
 ### Passo 3: @setup
@@ -175,7 +175,7 @@ Objetivo: gerar o PRD base antes de mapear pacientes, médicos, agendamentos e r
 ```
 *Você responde:* Dados de saúde dos pacientes (LGPD)
 
-**O @analyst entrega** `.aios-forge/context/discovery.md`:
+**O @analyst entrega** `.aioson/context/discovery.md`:
 ```markdown
 ## Entidades principais
 
@@ -223,7 +223,7 @@ Isso ajuda especialmente quando o projeto já existe e a clínica quer adicionar
 /architect
 ```
 
-**O @architect lê o discovery e entrega** `.aios-forge/context/architecture.md`:
+**O @architect lê o discovery e entrega** `.aioson/context/architecture.md`:
 
 ```
 Classificação: SMALL → estrutura Laravel padrão, sem sub-pastas excessivas
@@ -332,8 +332,8 @@ Revise a CreateAppointmentAction e escreva os testes para:
 ```bash
 npx create-next-app@latest saas-agencia --typescript
 cd saas-agencia
-npx aios-forge install
-npx aios-forge setup:context . --defaults \
+npx aioson install
+npx aioson setup:context . --defaults \
   --project-name="Agency SaaS" \
   --project-type=web_app \
   --framework="Next.js" \
@@ -420,7 +420,7 @@ Precisamos de:
 - Página de configurações de billing
 ```
 
-**O @ux-ui entrega** `.aios-forge/context/ui-spec.md`:
+**O @ux-ui entrega** `.aioson/context/ui-spec.md`:
 - Tokens: primary=#6366F1, gray scale, radius-md=8px
 - Componentes: ProjectCard, TaskCard, KanbanBoard, Sidebar, BillingModal
 - Estados: loading skeleton, empty state, error state para cada componente
@@ -432,7 +432,7 @@ Precisamos de:
 /pm
 ```
 
-**O @pm enriquece** `.aios-forge/context/prd.md` preservando visão, usuários e identidade visual. O foco passa a ser priorização, fases e critérios de aceite compactos:
+**O @pm enriquece** `.aioson/context/prd.md` preservando visão, usuários e identidade visual. O foco passa a ser priorização, fases e critérios de aceite compactos:
 
 ```markdown
 ## Escopo do MVP
@@ -468,8 +468,8 @@ Precisamos de:
 
 Ou via CLI:
 ```bash
-npx aios-forge parallel:init --workers=3
-npx aios-forge parallel:assign --source=prd --workers=3
+npx aioson parallel:init --workers=3
+npx aioson parallel:assign --source=prd --workers=3
 ```
 
 **O orquestrador cria 3 lanes:**
@@ -498,7 +498,7 @@ Lane 3: /dev Implemente o escopo do agent-3.status.md
 
 **Monitorar progresso:**
 ```bash
-npx aios-forge parallel:status
+npx aioson parallel:status
 ```
 
 ### Passo 8: @qa
@@ -526,8 +526,8 @@ Revise as implementações das 3 lanes e escreva testes para:
 mkdir nft-marketplace && cd nft-marketplace
 npx create-next-app@latest frontend --typescript
 npx hardhat init  # no mesmo diretório raiz
-npx aios-forge install
-npx aios-forge setup:context . --defaults \
+npx aioson install
+npx aioson setup:context . --defaults \
   --project-name="NFT Marketplace" \
   --project-type=dapp \
   --framework=Hardhat \
@@ -540,7 +540,7 @@ npx aios-forge setup:context . --defaults \
   --lang=pt-BR
 ```
 
-> **Nota:** Se Hardhat e Next.js coexistem no mesmo diretório, o AIOS Forge detecta automaticamente como **monorepo** e exibe um aviso de configuração.
+> **Nota:** Se Hardhat e Next.js coexistem no mesmo diretório, o AIOSON detecta automaticamente como **monorepo** e exibe um aviso de configuração.
 
 ### Passo 2: @analyst
 
@@ -674,8 +674,8 @@ mkdir restaurante-api && cd restaurante-api
 npm init -y
 npm install fastify @prisma/client
 npm install -D prisma
-npx aios-forge install
-npx aios-forge setup:context . --defaults \
+npx aioson install
+npx aioson setup:context . --defaults \
   --project-name="Restaurante API" \
   --project-type=api \
   --framework="Node" \
@@ -723,7 +723,7 @@ Próximo: /product
   - Mesa só pode ter 1 pedido aberto por vez
 - **Integrações:** WhatsApp (aviso ao garçom quando prato fica pronto), impressora fiscal
 
-**O @analyst entrega** `.aios-forge/context/discovery.md`:
+**O @analyst entrega** `.aioson/context/discovery.md`:
 
 ```markdown
 ## Entidades principais
@@ -752,7 +752,7 @@ Próximo: /product
 /architect
 ```
 
-**O @architect entrega** `.aios-forge/context/architecture.md`:
+**O @architect entrega** `.aioson/context/architecture.md`:
 
 ```
 Classificação: SMALL → estrutura Fastify por domínio
@@ -887,8 +887,8 @@ Escreva testes para o OrderService:
 ```bash
 rails new task-app --database=postgresql --css=tailwind
 cd task-app
-npx aios-forge install
-npx aios-forge setup:context . --defaults \
+npx aioson install
+npx aioson setup:context . --defaults \
   --project-name="Task App" \
   --project-type=web_app \
   --framework="Rails" \
@@ -932,7 +932,7 @@ Próximo: /product
   - Membros recebem e-mail ao serem atribuídos a uma tarefa
 - **Integrações:** ActionMailer (e-mails de notificação)
 
-**O @analyst entrega** `.aios-forge/context/discovery.md`:
+**O @analyst entrega** `.aioson/context/discovery.md`:
 
 ```markdown
 ## Entidades
@@ -1082,8 +1082,8 @@ Escreva testes para:
 ```bash
 mkdir estoque-api && cd estoque-api
 pip install fastapi uvicorn sqlalchemy pydantic
-npx aios-forge install
-npx aios-forge setup:context . --defaults \
+npx aioson install
+npx aioson setup:context . --defaults \
   --project-name="Estoque API" \
   --project-type=api \
   --framework="FastAPI" \
@@ -1207,7 +1207,7 @@ O agente vai incorporar a nova informação antes de gerar a entrega final.
 
 Se durante o desenvolvimento o projeto crescer e mudar de SMALL para MEDIUM:
 ```bash
-npx aios-forge setup:context . --defaults --classification=MEDIUM
+npx aioson setup:context . --defaults --classification=MEDIUM
 ```
 
 Então ative @pm e @orchestrator antes de continuar com @dev.
@@ -1215,9 +1215,9 @@ Então ative @pm e @orchestrator antes de continuar com @dev.
 ### Verificar estado atual
 
 ```bash
-npx aios-forge doctor          # valida saúde dos arquivos
-npx aios-forge context:validate # valida o project.context.md
-npx aios-forge parallel:status  # progresso das lanes (MEDIUM)
+npx aioson doctor          # valida saúde dos arquivos
+npx aioson context:validate # valida o project.context.md
+npx aioson parallel:status  # progresso das lanes (MEDIUM)
 ```
 
 ---

@@ -13,7 +13,7 @@ const {
 const { openRuntimeDb } = require('../src/runtime-store');
 
 async function makeTempDir() {
-  return fs.mkdtemp(path.join(os.tmpdir(), 'aios-forge-workflow-next-'));
+  return fs.mkdtemp(path.join(os.tmpdir(), 'aioson-workflow-next-'));
 }
 
 function createQuietLogger() {
@@ -29,17 +29,17 @@ async function writeFileEnsured(filePath, content) {
 }
 
 async function writeProjectContext(dir, classification = 'SMALL') {
-  const contextPath = path.join(dir, '.aios-forge/context/project.context.md');
+  const contextPath = path.join(dir, '.aioson/context/project.context.md');
   await writeFileEnsured(
     contextPath,
-    `---\nproject_name: "demo"\nproject_type: "web_app"\nprofile: "developer"\nframework: "Next.js"\nframework_installed: true\nclassification: "${classification}"\nconversation_language: "en"\naios_forge_version: "1.2.1"\n---\n\n# Context\n`
+    `---\nproject_name: "demo"\nproject_type: "web_app"\nprofile: "developer"\nframework: "Next.js"\nframework_installed: true\nclassification: "${classification}"\nconversation_language: "en"\naioson_version: "1.2.1"\n---\n\n# Context\n`
   );
 }
 
 test('workflow:next infers project progress from existing artifacts', async () => {
   const dir = await makeTempDir();
   await writeProjectContext(dir, 'SMALL');
-  await writeFileEnsured(path.join(dir, '.aios-forge/context/prd.md'), '# PRD\n');
+  await writeFileEnsured(path.join(dir, '.aioson/context/prd.md'), '# PRD\n');
 
   const { t } = createTranslator('en');
   const result = await runWorkflowNext({
@@ -59,12 +59,12 @@ test('workflow:next infers project progress from existing artifacts', async () =
 test('workflow:next infers active feature and routes to analyst after product', async () => {
   const dir = await makeTempDir();
   await writeProjectContext(dir, 'SMALL');
-  await writeFileEnsured(path.join(dir, '.aios-forge/context/prd.md'), '# PRD\n');
+  await writeFileEnsured(path.join(dir, '.aioson/context/prd.md'), '# PRD\n');
   await writeFileEnsured(
-    path.join(dir, '.aios-forge/context/features.md'),
+    path.join(dir, '.aioson/context/features.md'),
     '# Features\n\n| slug | status | started | completed |\n|------|--------|---------|-----------|\n| compact-layout | in_progress | 2026-03-13 | — |\n'
   );
-  await writeFileEnsured(path.join(dir, '.aios-forge/context/prd-compact-layout.md'), '# Feature PRD\n');
+  await writeFileEnsured(path.join(dir, '.aioson/context/prd-compact-layout.md'), '# Feature PRD\n');
 
   const { t } = createTranslator('en');
   const result = await runWorkflowNext({
@@ -83,12 +83,12 @@ test('workflow:next infers active feature and routes to analyst after product', 
 test('workflow:next supports detours and returns to the saved stage', async () => {
   const dir = await makeTempDir();
   await writeProjectContext(dir, 'SMALL');
-  await writeFileEnsured(path.join(dir, '.aios-forge/context/prd.md'), '# PRD\n');
+  await writeFileEnsured(path.join(dir, '.aioson/context/prd.md'), '# PRD\n');
   await writeFileEnsured(
-    path.join(dir, '.aios-forge/context/features.md'),
+    path.join(dir, '.aioson/context/features.md'),
     '# Features\n\n| slug | status | started | completed |\n|------|--------|---------|-----------|\n| compact-layout | in_progress | 2026-03-13 | — |\n'
   );
-  await writeFileEnsured(path.join(dir, '.aios-forge/context/prd-compact-layout.md'), '# Feature PRD\n');
+  await writeFileEnsured(path.join(dir, '.aioson/context/prd-compact-layout.md'), '# Feature PRD\n');
 
   const { t } = createTranslator('en');
 
@@ -106,7 +106,7 @@ test('workflow:next supports detours and returns to the saved stage', async () =
     returnTo: 'analyst'
   });
 
-  await writeFileEnsured(path.join(dir, '.aios-forge/context/ui-spec.md'), '# UI Spec\n');
+  await writeFileEnsured(path.join(dir, '.aioson/context/ui-spec.md'), '# UI Spec\n');
 
   const resumed = await runWorkflowNext({
     args: [dir],
@@ -123,7 +123,7 @@ test('workflow:next supports detours and returns to the saved stage', async () =
 test('workflow:next allows skip until dev but not past dev', async () => {
   const dir = await makeTempDir();
   await writeProjectContext(dir, 'SMALL');
-  await writeFileEnsured(path.join(dir, '.aios-forge/context/prd.md'), '# PRD\n');
+  await writeFileEnsured(path.join(dir, '.aioson/context/prd.md'), '# PRD\n');
 
   const { t } = createTranslator('en');
   const skipped = await runWorkflowNext({
@@ -151,7 +151,7 @@ test('workflow:next allows skip until dev but not past dev', async () => {
 test('workflow:next appends workflow events for dashboard visibility', async () => {
   const dir = await makeTempDir();
   await writeProjectContext(dir, 'SMALL');
-  await writeFileEnsured(path.join(dir, '.aios-forge/context/prd.md'), '# PRD\n');
+  await writeFileEnsured(path.join(dir, '.aioson/context/prd.md'), '# PRD\n');
 
   const { t } = createTranslator('en');
   await runWorkflowNext({
@@ -177,7 +177,7 @@ test('workflow:next appends workflow events for dashboard visibility', async () 
 test('workflow:next syncs workflow task, runs, and canonical events into runtime sqlite', async () => {
   const dir = await makeTempDir();
   await writeProjectContext(dir, 'SMALL');
-  await writeFileEnsured(path.join(dir, '.aios-forge/context/prd.md'), '# PRD\n');
+  await writeFileEnsured(path.join(dir, '.aioson/context/prd.md'), '# PRD\n');
 
   const { t } = createTranslator('en');
   const result = await runWorkflowNext({

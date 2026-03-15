@@ -9,7 +9,7 @@ async function updateInstallation(targetDir, options = {}) {
     return {
       ok: false,
       reason: 'not-installed',
-      message: `No AIOS Forge installation found in ${path.resolve(targetDir)}.`
+      message: `No AIOSON installation found in ${path.resolve(targetDir)}.`
     };
   }
 

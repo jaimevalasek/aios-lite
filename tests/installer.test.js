@@ -8,7 +8,7 @@ const path = require('node:path');
 const { installTemplate, detectExistingInstall } = require('../src/installer');
 
 async function makeTempDir() {
-  return fs.mkdtemp(path.join(os.tmpdir(), 'aios-forge-installer-'));
+  return fs.mkdtemp(path.join(os.tmpdir(), 'aioson-installer-'));
 }
 
 test('installTemplate creates base installation', async () => {
@@ -18,10 +18,10 @@ test('installTemplate creates base installation', async () => {
   assert.equal(result.copied.length > 0, true);
   assert.equal(await detectExistingInstall(dir), true);
   assert.equal(await fileExists(path.join(dir, 'CLAUDE.md')), true);
-  assert.equal(await fileExists(path.join(dir, '.aios-forge/config.md')), true);
-  assert.equal(await fileExists(path.join(dir, '.aios-forge/context/.gitkeep')), true);
-  assert.equal(await fileExists(path.join(dir, '.aios-forge/runtime/aios.sqlite')), true);
-  assert.equal(result.runtime && result.runtime.dbPath.endsWith(path.join('.aios-forge', 'runtime', 'aios.sqlite')), true);
+  assert.equal(await fileExists(path.join(dir, '.aioson/config.md')), true);
+  assert.equal(await fileExists(path.join(dir, '.aioson/context/.gitkeep')), true);
+  assert.equal(await fileExists(path.join(dir, '.aioson/runtime/aios.sqlite')), true);
+  assert.equal(result.runtime && result.runtime.dbPath.endsWith(path.join('.aioson', 'runtime', 'aios.sqlite')), true);
 });
 
 test('update mode creates backups for managed files', async () => {
@@ -39,7 +39,7 @@ test('update mode creates backups for managed files', async () => {
 
   assert.equal(result.backedUp.length > 0, true);
 
-  const backupsDir = path.join(dir, '.aios-forge/backups');
+  const backupsDir = path.join(dir, '.aioson/backups');
   assert.equal(await fileExists(backupsDir), true);
 });
 
@@ -47,7 +47,7 @@ test('context folder is preserved during update', async () => {
   const dir = await makeTempDir();
   await installTemplate(dir, { mode: 'install' });
 
-  const contextFile = path.join(dir, '.aios-forge/context/project.context.md');
+  const contextFile = path.join(dir, '.aioson/context/project.context.md');
   const customContext = 'custom-context';
   await fs.writeFile(contextFile, customContext, 'utf8');
 
@@ -65,7 +65,7 @@ test('project-local models config is preserved during update', async () => {
   const dir = await makeTempDir();
   await installTemplate(dir, { mode: 'install' });
 
-  const configPath = path.join(dir, 'aios-forge-models.json');
+  const configPath = path.join(dir, 'aioson-models.json');
   const customConfig = `${JSON.stringify({
     preferred_scan_provider: 'deepseek',
     providers: {
@@ -94,35 +94,35 @@ test('installTemplate writes Forge metadata and gitignore entry', async () => {
   await installTemplate(dir, { mode: 'install' });
 
   const installMeta = JSON.parse(
-    await fs.readFile(path.join(dir, '.aios-forge', 'install.json'), 'utf8')
+    await fs.readFile(path.join(dir, '.aioson', 'install.json'), 'utf8')
   );
   const gitignore = await fs.readFile(path.join(dir, '.gitignore'), 'utf8');
 
-  assert.equal(installMeta.managed_by, 'aios-forge');
+  assert.equal(installMeta.managed_by, 'aioson');
   assert.equal(typeof installMeta.template_version, 'string');
-  assert.equal(gitignore.includes('aios-forge-models.json'), true);
+  assert.equal(gitignore.includes('aioson-models.json'), true);
   assert.equal(gitignore.includes('!AGENTS.md'), true);
   assert.equal(gitignore.includes('!.claude/**'), true);
   assert.equal(gitignore.includes('!.gemini/**'), true);
-  assert.equal(gitignore.includes('!.aios-forge/**'), true);
-  assert.equal(gitignore.includes('.aios-forge/runtime/'), true);
-  assert.equal(gitignore.includes('.aios-forge/cloud-imports/'), true);
-  assert.equal(gitignore.includes('.aios-forge/mcp/servers.local.json'), true);
+  assert.equal(gitignore.includes('!.aioson/**'), true);
+  assert.equal(gitignore.includes('.aioson/runtime/'), true);
+  assert.equal(gitignore.includes('.aioson/cloud-imports/'), true);
+  assert.equal(gitignore.includes('.aioson/mcp/servers.local.json'), true);
 });
 
 test('installTemplate appends keep rules for shared AIOS files even when project already ignores broad folders', async () => {
   const dir = await makeTempDir();
   await fs.writeFile(
     path.join(dir, '.gitignore'),
-    '.aios-forge/\n.claude/\n.gemini/\nAGENTS.md\nCLAUDE.md\nOPENCODE.md\n',
+    '.aioson/\n.claude/\n.gemini/\nAGENTS.md\nCLAUDE.md\nOPENCODE.md\n',
     'utf8'
   );
 
   await installTemplate(dir, { mode: 'install' });
 
   const gitignore = await fs.readFile(path.join(dir, '.gitignore'), 'utf8');
-  assert.equal(gitignore.includes('.aios-forge/\n'), true);
-  assert.equal(gitignore.includes('!.aios-forge/**'), true);
+  assert.equal(gitignore.includes('.aioson/\n'), true);
+  assert.equal(gitignore.includes('!.aioson/**'), true);
   assert.equal(gitignore.includes('!.claude/**'), true);
   assert.equal(gitignore.includes('!.gemini/**'), true);
   assert.equal(gitignore.includes('!AGENTS.md'), true);

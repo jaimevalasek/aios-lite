@@ -18,6 +18,6 @@
 7. Publish GitHub release using `.github/release-notes-template.md`.
 
 ## Verify publication
-- `npm view aios-forge version`
-- `npx aios-forge@latest info`
+- `npm view aioson version`
+- `npx aioson@latest info`
 

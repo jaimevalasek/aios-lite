@@ -60,7 +60,7 @@ test('renderProjectContext writes required frontmatter fields', () => {
     cache: 'Redis',
     search: 'Meilisearch',
     notes: ['Example note'],
-    aiosForgeVersion: '0.1.5'
+    aiosonVersion: '0.1.5'
   });
 
   assert.equal(markdown.includes('conversation_language: "en"'), true);
@@ -76,7 +76,7 @@ test('renderProjectContext writes required frontmatter fields', () => {
 });
 
 test('writeProjectContext persists file on disk', async () => {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'aios-forge-context-writer-'));
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'aioson-context-writer-'));
   const filePath = await writeProjectContext(dir, '# context');
   const content = await fs.readFile(filePath, 'utf8');
   assert.equal(content, '# context');

@@ -1,7 +1,7 @@
 name = "aios-architect"
 description = "Project architecture"
-instruction_file = ".aios-forge/agents/architect.md"
+instruction_file = ".aioson/agents/architect.md"
 requires_context = [
-  ".aios-forge/context/project.context.md",
-  ".aios-forge/context/discovery.md"
+  ".aioson/context/project.context.md",
+  ".aioson/context/discovery.md"
 ]

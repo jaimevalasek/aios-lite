@@ -39,7 +39,7 @@ function validateManifestFields(manifest) {
 async function validateStructure(projectDir, slug, manifest) {
   const errors = [];
   const warnings = [];
-  const squadDir = path.join(projectDir, '.aios-forge', 'squads', slug);
+  const squadDir = path.join(projectDir, '.aioson', 'squads', slug);
 
   const requiredFiles = [
     { rel: 'squad.manifest.json', label: 'Manifest' },
@@ -159,11 +159,11 @@ async function runSquadValidate({ args = [], options = {}, logger = console } = 
   const slug = options.squad || args[1];
 
   if (!slug) {
-    logger.error('Usage: aios-forge squad:validate [path] --squad=<slug>');
+    logger.error('Usage: aioson squad:validate [path] --squad=<slug>');
     return { valid: false, errors: ['No slug provided'], warnings: [] };
   }
 
-  const manifestPath = path.join(projectDir, '.aios-forge', 'squads', slug, 'squad.manifest.json');
+  const manifestPath = path.join(projectDir, '.aioson', 'squads', slug, 'squad.manifest.json');
   const manifest = await readJsonIfExists(manifestPath);
 
   if (!manifest) {

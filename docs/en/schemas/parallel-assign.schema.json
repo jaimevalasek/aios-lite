@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://aiosforge.dev/schemas/parallel-assign.schema.json",
-  "title": "AIOS Forge parallel:assign --json output",
+  "title": "AIOSON parallel:assign --json output",
   "type": "object",
   "required": [
     "ok",

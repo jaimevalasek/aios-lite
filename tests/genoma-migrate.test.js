@@ -21,7 +21,7 @@ type: domain
 `;
 
 test('migrateGenomeFile in dry-run does not change the file', async () => {
-  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'aios-forge-genome-migrate-'));
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'aioson-genome-migrate-'));
   const target = path.join(tempDir, 'legacy.md');
   await fs.writeFile(target, LEGACY_FIXTURE, 'utf8');
 
@@ -34,7 +34,7 @@ test('migrateGenomeFile in dry-run does not change the file', async () => {
 });
 
 test('repairSquadManifestGenomeBindings in dry-run does not rewrite manifest', async () => {
-  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'aios-forge-squad-repair-'));
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'aioson-squad-repair-'));
   const manifestPath = path.join(tempDir, 'squad.manifest.json');
   const raw = JSON.stringify(
     {

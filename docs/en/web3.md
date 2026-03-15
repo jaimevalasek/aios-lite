@@ -1,6 +1,6 @@
 # Web3 Support
 
-AIOS Forge includes lightweight Web3 support for small and medium teams using JavaScript/TypeScript workflows.
+AIOSON includes lightweight Web3 support for small and medium teams using JavaScript/TypeScript workflows.
 
 ## Supported framework detection
 - Ethereum: `Hardhat`, `Foundry`, `Truffle`
@@ -19,10 +19,10 @@ AIOS Forge includes lightweight Web3 support for small and medium teams using Ja
 ## Setup examples
 ```bash
 # Interactive
-aios-forge setup:context
+aioson setup:context
 
 # Defaults with explicit Web3 options
-aios-forge setup:context . \
+aioson setup:context . \
   --defaults \
   --project-type=dapp \
   --framework=Hardhat \
@@ -36,9 +36,9 @@ aios-forge setup:context . \
 
 ## Web3 smoke checks
 ```bash
-aios-forge test:smoke --web3=ethereum
-aios-forge test:smoke --web3=solana
-aios-forge test:smoke --web3=cardano
+aioson test:smoke --web3=ethereum
+aioson test:smoke --web3=solana
+aioson test:smoke --web3=cardano
 ```
 
 ## Skills bundled in templates

@@ -1,4 +1,4 @@
 name = "aios-analyst"
 description = "Requirements analysis"
-instruction_file = ".aios-forge/agents/analyst.md"
-requires_context = [".aios-forge/context/project.context.md"]
+instruction_file = ".aioson/agents/analyst.md"
+requires_context = [".aioson/context/project.context.md"]

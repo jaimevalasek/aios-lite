@@ -164,7 +164,7 @@ function validateContextData(data) {
 }
 
 async function validateProjectContextFile(targetDir) {
-  const filePath = path.join(targetDir, '.aios-forge/context/project.context.md');
+  const filePath = path.join(targetDir, '.aioson/context/project.context.md');
   if (!(await exists(filePath))) {
     return {
       exists: false,

@@ -1,8 +1,8 @@
 name = "aios-orchestrator"
 description = "Multi-agent orchestration"
-instruction_file = ".aios-forge/agents/orchestrator.md"
+instruction_file = ".aioson/agents/orchestrator.md"
 requires_context = [
-  ".aios-forge/context/discovery.md",
-  ".aios-forge/context/architecture.md",
-  ".aios-forge/context/prd.md"
+  ".aioson/context/discovery.md",
+  ".aioson/context/architecture.md",
+  ".aioson/context/prd.md"
 ]

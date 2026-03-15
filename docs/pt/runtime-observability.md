@@ -14,7 +14,7 @@ O prompt do agente nao e mais responsavel por persistir telemetria.
 ## Principios
 
 1. Toda execucao relevante deve passar por um gateway oficial.
-2. O SQLite em `.aios-forge/runtime/aios.sqlite` e a fonte primaria de runtime por projeto.
+2. O SQLite em `.aioson/runtime/aios.sqlite` e a fonte primaria de runtime por projeto.
 3. `execution_events` e o event store canonico.
 4. `tasks` e `agent_runs` permanecem como projecoes operacionais para UI e consultas simples.
 5. Workflow obrigatorio deve ser aplicado no runtime, nao em convencoes textuais de prompt.

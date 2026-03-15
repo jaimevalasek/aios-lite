@@ -24,14 +24,14 @@ test('getAgentDefinition resolves ux-ui agent', () => {
   const agent = getAgentDefinition('ux-ui');
   assert.equal(Boolean(agent), true);
   assert.equal(agent.id, 'ux-ui');
-  assert.equal(agent.output.includes('.aios-forge/context/ui-spec.md'), true);
+  assert.equal(agent.output.includes('.aioson/context/ui-spec.md'), true);
 });
 
 test('getAgentDefinition resolves profiler-forge agent', () => {
   const agent = getAgentDefinition('profiler-forge');
   assert.equal(Boolean(agent), true);
   assert.equal(agent.id, 'profiler-forge');
-  assert.equal(agent.output.includes('.aios-forge/advisors/{person-slug}-advisor.md'), true);
+  assert.equal(agent.output.includes('.aioson/advisors/{person-slug}-advisor.md'), true);
 });
 
 test('buildAgentPrompt includes target output', () => {
@@ -40,7 +40,7 @@ test('buildAgentPrompt includes target output', () => {
     instructionPath: resolveInstructionPath(agent, 'pt-BR')
   });
   assert.equal(prompt.includes(agent.output), true);
-  assert.equal(prompt.includes('.aios-forge/locales/pt-BR/agents/analyst.md'), true);
+  assert.equal(prompt.includes('.aioson/locales/pt-BR/agents/analyst.md'), true);
 });
 
 test('listAgentDefinitions returns non-empty list', () => {

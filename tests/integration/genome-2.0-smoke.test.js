@@ -8,7 +8,7 @@ const path = require('node:path');
 const { runGenome20SmokeTest } = require('../../scripts/smoke/genome-2.0-smoke');
 
 async function makeTempDir() {
-  return fs.mkdtemp(path.join(os.tmpdir(), 'aios-forge-genome-2-smoke-test-'));
+  return fs.mkdtemp(path.join(os.tmpdir(), 'aioson-genome-2-smoke-test-'));
 }
 
 test('genome 2.0 smoke script validates legacy read, v2 write and squad binding', async () => {

@@ -10,7 +10,7 @@ const { localizeContextParseReason } = require('../src/context-parse-reason');
 const { runContextValidate } = require('../src/commands/context-validate');
 
 async function makeTempDir() {
-  return fs.mkdtemp(path.join(os.tmpdir(), 'aios-forge-context-validate-cmd-'));
+  return fs.mkdtemp(path.join(os.tmpdir(), 'aioson-context-validate-cmd-'));
 }
 
 function createCollectLogger() {
@@ -45,7 +45,7 @@ test('localizeParseReason maps known parser reasons for pt-BR', () => {
 
 test('context:validate prints localized parse reason details in pt-BR', async () => {
   const dir = await makeTempDir();
-  const filePath = path.join(dir, '.aios-forge/context/project.context.md');
+  const filePath = path.join(dir, '.aioson/context/project.context.md');
   await fs.mkdir(path.dirname(filePath), { recursive: true });
 
   await fs.writeFile(
@@ -73,7 +73,7 @@ test('context:validate prints localized parse reason details in pt-BR', async ()
 
 test('context:validate renders localized issue list lines for invalid fields', async () => {
   const dir = await makeTempDir();
-  const filePath = path.join(dir, '.aios-forge/context/project.context.md');
+  const filePath = path.join(dir, '.aioson/context/project.context.md');
   await fs.mkdir(path.dirname(filePath), { recursive: true });
 
   await fs.writeFile(

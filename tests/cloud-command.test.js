@@ -15,7 +15,7 @@ const {
 } = require('../src/commands/cloud');
 
 async function makeTempDir() {
-  return fs.mkdtemp(path.join(os.tmpdir(), 'aios-forge-cloud-command-'));
+  return fs.mkdtemp(path.join(os.tmpdir(), 'aioson-cloud-command-'));
 }
 
 function createLogger() {
@@ -179,7 +179,7 @@ function createDataUrl(payload) {
   return `data:application/json,${encodeURIComponent(JSON.stringify(payload))}`;
 }
 
-test('cloud:import:squad imports snapshot into .aios-forge/cloud-imports', async () => {
+test('cloud:import:squad imports snapshot into .aioson/cloud-imports', async () => {
   const projectDir = await makeTempDir();
   const logger = createLogger();
   const { t } = createTranslator('pt-BR');
@@ -204,64 +204,64 @@ test('cloud:import:squad imports snapshot into .aios-forge/cloud-imports', async
   assert.equal(imported.version.versionNumber, '1.0.0');
 
   const metadataRaw = await fs.readFile(
-    path.join(projectDir, '.aios-forge', 'squads', 'youtube-creator', 'squad.md'),
+    path.join(projectDir, '.aioson', 'squads', 'youtube-creator', 'squad.md'),
     'utf8'
   );
-  assert.match(metadataRaw, /Package: \.aios-forge\/squads\/youtube-creator\//);
-  assert.match(metadataRaw, /Agents: \.aios-forge\/squads\/youtube-creator\/agents\//);
+  assert.match(metadataRaw, /Package: \.aioson\/squads\/youtube-creator\//);
+  assert.match(metadataRaw, /Agents: \.aioson\/squads\/youtube-creator\/agents\//);
   assert.match(metadataRaw, /storytelling-retencao\.md/);
-  assert.match(metadataRaw, /roteirista-viral: \.aios-forge\/genomas\/copy-ctr\.md/);
+  assert.match(metadataRaw, /roteirista-viral: \.aioson\/genomas\/copy-ctr\.md/);
 
   const orchestratorRaw = await fs.readFile(
-    path.join(projectDir, '.aios-forge', 'squads', 'youtube-creator', 'agents', 'orquestrador.md'),
+    path.join(projectDir, '.aioson', 'squads', 'youtube-creator', 'agents', 'orquestrador.md'),
     'utf8'
   );
   assert.match(orchestratorRaw, /Coordene as tarefas do squad/);
 
   const agentsManifestRaw = await fs.readFile(
-    path.join(projectDir, '.aios-forge', 'squads', 'youtube-creator', 'agents', 'agents.md'),
+    path.join(projectDir, '.aioson', 'squads', 'youtube-creator', 'agents', 'agents.md'),
     'utf8'
   );
   assert.match(agentsManifestRaw, /## Squad skills/);
   assert.match(agentsManifestRaw, /## Squad MCPs/);
 
   const squadManifestRaw = await fs.readFile(
-    path.join(projectDir, '.aios-forge', 'squads', 'youtube-creator', 'squad.manifest.json'),
+    path.join(projectDir, '.aioson', 'squads', 'youtube-creator', 'squad.manifest.json'),
     'utf8'
   );
   const squadManifest = JSON.parse(squadManifestRaw);
   assert.equal(squadManifest.slug, 'youtube-creator');
   assert.equal(squadManifest.rules.mediaDir, 'media/youtube-creator');
   assert.equal(Array.isArray(squadManifest.executors), true);
-  assert.equal(squadManifest.context.designDocPath, '.aios-forge/squads/youtube-creator/docs/design-doc.md');
+  assert.equal(squadManifest.context.designDocPath, '.aioson/squads/youtube-creator/docs/design-doc.md');
   assert.equal(squadManifest.contentBlueprints[0].slug, 'pacote-editorial');
   assert.equal(squadManifest.contentBlueprints[0].sections[0].key, 'roteiro');
   assert.deepEqual(squadManifest.contentBlueprints[0].sections[1].blockTypes, ['bullet-list', 'tags', 'accordion']);
 
   await assert.doesNotReject(() => fs.access(path.join(projectDir, 'media', 'youtube-creator')));
-  await assert.doesNotReject(() => fs.access(path.join(projectDir, '.aios-forge', 'squads', 'youtube-creator', 'docs', 'design-doc.md')));
-  await assert.doesNotReject(() => fs.access(path.join(projectDir, '.aios-forge', 'squads', 'youtube-creator', 'docs', 'readiness.md')));
+  await assert.doesNotReject(() => fs.access(path.join(projectDir, '.aioson', 'squads', 'youtube-creator', 'docs', 'design-doc.md')));
+  await assert.doesNotReject(() => fs.access(path.join(projectDir, '.aioson', 'squads', 'youtube-creator', 'docs', 'readiness.md')));
 
   const designDocRaw = await fs.readFile(
-    path.join(projectDir, '.aios-forge', 'squads', 'youtube-creator', 'docs', 'design-doc.md'),
+    path.join(projectDir, '.aioson', 'squads', 'youtube-creator', 'docs', 'design-doc.md'),
     'utf8'
   );
   assert.match(designDocRaw, /Design Doc - YouTube Creator/);
 
   const stubRaw = await fs.readFile(
-    path.join(projectDir, '.aios-forge', 'squads', 'youtube-creator', 'agents', 'roteirista-viral.md'),
+    path.join(projectDir, '.aioson', 'squads', 'youtube-creator', 'agents', 'roteirista-viral.md'),
     'utf8'
   );
-  assert.match(stubRaw, /Imported from AIOS Forge Cloud/);
+  assert.match(stubRaw, /Imported from AIOSON Cloud/);
   assert.match(stubRaw, /The cloud snapshot did not include a full prompt body/);
 
   const genomeRaw = await fs.readFile(
-    path.join(projectDir, '.aios-forge', 'genomas', 'storytelling-retencao.md'),
+    path.join(projectDir, '.aioson', 'genomas', 'storytelling-retencao.md'),
     'utf8'
   );
   assert.match(genomeRaw, /# O que saber/);
 
-  const db = new Database(path.join(projectDir, '.aios-forge', 'runtime', 'aios.sqlite'), { readonly: true });
+  const db = new Database(path.join(projectDir, '.aioson', 'runtime', 'aios.sqlite'), { readonly: true });
   const indexedSquad = db
     .prepare('SELECT squad_slug, media_dir, manifest_json, context_json FROM squads WHERE squad_slug = ?')
     .get('youtube-creator');
@@ -288,12 +288,12 @@ test('cloud:import:squad --dry-run validates remote snapshot without writing fil
 
   assert.equal(result.ok, true);
   assert.equal(result.dryRun, true);
-  const importDir = path.join(projectDir, '.aios-forge', 'cloud-imports', 'squads', 'youtube-creator');
+  const importDir = path.join(projectDir, '.aioson', 'cloud-imports', 'squads', 'youtube-creator');
   const stat = await fs.stat(importDir).catch(() => null);
   assert.equal(stat, null);
 });
 
-test('cloud:import:genome imports snapshot into .aios-forge/cloud-imports and materializes local genome', async () => {
+test('cloud:import:genome imports snapshot into .aioson/cloud-imports and materializes local genome', async () => {
   const projectDir = await makeTempDir();
   const logger = createLogger();
   const { t } = createTranslator('pt-BR');
@@ -318,13 +318,13 @@ test('cloud:import:genome imports snapshot into .aios-forge/cloud-imports and ma
   assert.equal(imported.genome.slug, 'storytelling-br');
 
   const genomeRaw = await fs.readFile(
-    path.join(projectDir, '.aios-forge', 'genomas', 'storytelling-br.md'),
+    path.join(projectDir, '.aioson', 'genomas', 'storytelling-br.md'),
     'utf8'
   );
   assert.match(genomeRaw, /# O que saber/);
 
   const manifestRaw = await fs.readFile(
-    path.join(projectDir, '.aios-forge', 'cloud-imports', 'installed', 'genomes', 'storytelling-br', 'manifest.json'),
+    path.join(projectDir, '.aioson', 'cloud-imports', 'installed', 'genomes', 'storytelling-br', 'manifest.json'),
     'utf8'
   );
   const manifest = JSON.parse(manifestRaw);
@@ -348,7 +348,7 @@ test('cloud:import:genome --dry-run validates remote snapshot without writing fi
 
   assert.equal(result.ok, true);
   assert.equal(result.dryRun, true);
-  const importDir = path.join(projectDir, '.aios-forge', 'cloud-imports', 'genomes', 'storytelling-br');
+  const importDir = path.join(projectDir, '.aioson', 'cloud-imports', 'genomes', 'storytelling-br');
   const stat = await fs.stat(importDir).catch(() => null);
   assert.equal(stat, null);
 });
@@ -357,7 +357,7 @@ test('cloud:publish:genome posts local genome snapshot to cloud endpoint', async
   const projectDir = await makeTempDir();
   const logger = createLogger();
   const { t } = createTranslator('en');
-  const genomePath = path.join(projectDir, '.aios-forge', 'genomas', 'storytelling-br.md');
+  const genomePath = path.join(projectDir, '.aioson', 'genomas', 'storytelling-br.md');
   await fs.mkdir(path.dirname(genomePath), { recursive: true });
   await fs.writeFile(genomePath, '# Storytelling BR\n\nHeuristicas para videos.\n', 'utf8');
 
@@ -395,18 +395,18 @@ test('cloud:publish:squad posts local squad snapshot to cloud endpoint', async (
   const logger = createLogger();
   const { t } = createTranslator('pt-BR');
 
-  await fs.mkdir(path.join(projectDir, '.aios-forge', 'squads', 'youtube-creator', 'agents'), { recursive: true });
-  await fs.mkdir(path.join(projectDir, '.aios-forge', 'squads', 'youtube-creator', 'docs'), { recursive: true });
-  await fs.mkdir(path.join(projectDir, '.aios-forge', 'genomas'), { recursive: true });
+  await fs.mkdir(path.join(projectDir, '.aioson', 'squads', 'youtube-creator', 'agents'), { recursive: true });
+  await fs.mkdir(path.join(projectDir, '.aioson', 'squads', 'youtube-creator', 'docs'), { recursive: true });
+  await fs.mkdir(path.join(projectDir, '.aioson', 'genomas'), { recursive: true });
   await fs.mkdir(path.join(projectDir, 'media', 'youtube-creator'), { recursive: true });
 
   await fs.writeFile(
-    path.join(projectDir, '.aios-forge', 'squads', 'youtube-creator', 'squad.md'),
+    path.join(projectDir, '.aioson', 'squads', 'youtube-creator', 'squad.md'),
     [
       'Squad: YouTube Creator',
       'Goal: Criar roteiros e assets',
-      'Package: .aios-forge/squads/youtube-creator/',
-      'Agents: .aios-forge/squads/youtube-creator/agents/',
+      'Package: .aioson/squads/youtube-creator/',
+      'Agents: .aioson/squads/youtube-creator/agents/',
       'Output: output/youtube-creator/',
       'Logs: aios-logs/youtube-creator/',
       'Media: media/youtube-creator/'
@@ -415,7 +415,7 @@ test('cloud:publish:squad posts local squad snapshot to cloud endpoint', async (
   );
 
   await fs.writeFile(
-    path.join(projectDir, '.aios-forge', 'squads', 'youtube-creator', 'agents', 'agents.md'),
+    path.join(projectDir, '.aioson', 'squads', 'youtube-creator', 'agents', 'agents.md'),
     [
       '# Squad YouTube Creator',
       '',
@@ -431,17 +431,17 @@ test('cloud:publish:squad posts local squad snapshot to cloud endpoint', async (
     'utf8'
   );
   await fs.writeFile(
-    path.join(projectDir, '.aios-forge', 'squads', 'youtube-creator', 'docs', 'design-doc.md'),
+    path.join(projectDir, '.aioson', 'squads', 'youtube-creator', 'docs', 'design-doc.md'),
     '# Design Doc - YouTube Creator\n\n## Objective\nCriar roteiros e assets.\n',
     'utf8'
   );
   await fs.writeFile(
-    path.join(projectDir, '.aios-forge', 'squads', 'youtube-creator', 'docs', 'readiness.md'),
+    path.join(projectDir, '.aioson', 'squads', 'youtube-creator', 'docs', 'readiness.md'),
     '# Readiness - YouTube Creator\n\n- Readiness score total: 20\n- Readiness level: high\n',
     'utf8'
   );
   await fs.writeFile(
-    path.join(projectDir, '.aios-forge', 'squads', 'youtube-creator', 'squad.manifest.json'),
+    path.join(projectDir, '.aioson', 'squads', 'youtube-creator', 'squad.manifest.json'),
     JSON.stringify(
       {
         schemaVersion: '1.0.0',
@@ -500,8 +500,8 @@ test('cloud:publish:squad posts local squad snapshot to cloud endpoint', async (
         context: {
           mode: 'project',
           summary: 'Squad para ativos editoriais do YouTube.',
-          designDocPath: '.aios-forge/squads/youtube-creator/docs/design-doc.md',
-          readinessPath: '.aios-forge/squads/youtube-creator/docs/readiness.md',
+          designDocPath: '.aioson/squads/youtube-creator/docs/design-doc.md',
+          readinessPath: '.aioson/squads/youtube-creator/docs/readiness.md',
           docsPackage: ['project.context.md', 'design-doc.md', 'readiness.md'],
           readiness: {
             level: 'high',
@@ -514,7 +514,7 @@ test('cloud:publish:squad posts local squad snapshot to cloud endpoint', async (
             slug: 'orquestrador',
             title: 'Orquestrador',
             role: 'Coordena o squad.',
-            file: '.aios-forge/squads/youtube-creator/agents/orquestrador.md',
+            file: '.aioson/squads/youtube-creator/agents/orquestrador.md',
             skills: [],
             genomes: []
           },
@@ -522,7 +522,7 @@ test('cloud:publish:squad posts local squad snapshot to cloud endpoint', async (
             slug: 'roteirista-viral',
             title: 'Roteirista Viral',
             role: 'Cria roteiros fortes.',
-            file: '.aios-forge/squads/youtube-creator/agents/roteirista-viral.md',
+            file: '.aioson/squads/youtube-creator/agents/roteirista-viral.md',
             skills: ['roteiro-short-form'],
             genomes: [{ slug: 'copy-ctr', type: 'function', priority: 120 }]
           }
@@ -552,22 +552,22 @@ test('cloud:publish:squad posts local squad snapshot to cloud endpoint', async (
     'utf8'
   );
   await fs.writeFile(
-    path.join(projectDir, '.aios-forge', 'squads', 'youtube-creator', 'agents', 'orquestrador.md'),
+    path.join(projectDir, '.aioson', 'squads', 'youtube-creator', 'agents', 'orquestrador.md'),
     '# Orquestrador\n\nCoordena o squad.\n',
     'utf8'
   );
   await fs.writeFile(
-    path.join(projectDir, '.aios-forge', 'squads', 'youtube-creator', 'agents', 'roteirista-viral.md'),
+    path.join(projectDir, '.aioson', 'squads', 'youtube-creator', 'agents', 'roteirista-viral.md'),
     '# Roteirista Viral\n\nCria roteiros fortes.\n',
     'utf8'
   );
   await fs.writeFile(
-    path.join(projectDir, '.aios-forge', 'genomas', 'storytelling-retencao.md'),
+    path.join(projectDir, '.aioson', 'genomas', 'storytelling-retencao.md'),
     '# Storytelling Retencao\n\nGancho e retencao.\n',
     'utf8'
   );
   await fs.writeFile(
-    path.join(projectDir, '.aios-forge', 'genomas', 'copy-ctr.md'),
+    path.join(projectDir, '.aioson', 'genomas', 'copy-ctr.md'),
     '# Copy CTR\n\nTitulos com CTR.\n',
     'utf8'
   );
@@ -609,7 +609,7 @@ test('cloud:publish:squad posts local squad snapshot to cloud endpoint', async (
   assert.equal(result.response.received.version.manifestJson.contentBlueprints[0].slug, 'pacote-editorial');
   assert.equal(result.response.received.version.manifestJson.contentBlueprints[0].sections[0].key, 'roteiro');
   assert.deepEqual(result.response.received.version.manifestJson.contentBlueprints[0].sections[1].blockTypes, ['bullet-list', 'tags', 'accordion']);
-  assert.equal(result.response.received.version.manifestJson.context.designDocPath, '.aios-forge/squads/youtube-creator/docs/design-doc.md');
+  assert.equal(result.response.received.version.manifestJson.context.designDocPath, '.aioson/squads/youtube-creator/docs/design-doc.md');
   assert.equal(result.response.received.version.manifestJson.executors[1].genomes[0].slug, 'copy-ctr');
   assert.match(result.response.received.version.designDocMarkdown, /Design Doc - YouTube Creator/);
   assert.match(result.response.received.version.readinessMarkdown, /Readiness score total: 20/);
@@ -623,28 +623,28 @@ test('cloud:publish:squad falls back to textual genome sections when manifest bi
   const logger = createLogger();
   const { t } = createTranslator('pt-BR');
 
-  await fs.mkdir(path.join(projectDir, '.aios-forge', 'squads', 'legacy-creator', 'agents'), { recursive: true });
-  await fs.mkdir(path.join(projectDir, '.aios-forge', 'squads', 'legacy-creator', 'docs'), { recursive: true });
-  await fs.mkdir(path.join(projectDir, '.aios-forge', 'genomas'), { recursive: true });
+  await fs.mkdir(path.join(projectDir, '.aioson', 'squads', 'legacy-creator', 'agents'), { recursive: true });
+  await fs.mkdir(path.join(projectDir, '.aioson', 'squads', 'legacy-creator', 'docs'), { recursive: true });
+  await fs.mkdir(path.join(projectDir, '.aioson', 'genomas'), { recursive: true });
 
   await fs.writeFile(
-    path.join(projectDir, '.aios-forge', 'squads', 'legacy-creator', 'squad.md'),
+    path.join(projectDir, '.aioson', 'squads', 'legacy-creator', 'squad.md'),
     [
       'Squad: Legacy Creator',
       'Goal: Criar roteiros legados',
-      'Agents: .aios-forge/squads/legacy-creator/agents/',
+      'Agents: .aioson/squads/legacy-creator/agents/',
       '',
       'Genomes:',
-      '- .aios-forge/genomas/storytelling-retencao.md',
+      '- .aioson/genomas/storytelling-retencao.md',
       '',
       'AgentGenomes:',
-      '- roteirista-viral: .aios-forge/genomas/copy-ctr.md',
+      '- roteirista-viral: .aioson/genomas/copy-ctr.md',
       ''
     ].join('\n'),
     'utf8'
   );
   await fs.writeFile(
-    path.join(projectDir, '.aios-forge', 'squads', 'legacy-creator', 'squad.manifest.json'),
+    path.join(projectDir, '.aioson', 'squads', 'legacy-creator', 'squad.manifest.json'),
     JSON.stringify(
       {
         schemaVersion: '1.0.0',
@@ -659,7 +659,7 @@ test('cloud:publish:squad falls back to textual genome sections when manifest bi
             slug: 'roteirista-viral',
             title: 'Roteirista Viral',
             role: 'Cria roteiros',
-            file: '.aios-forge/squads/legacy-creator/agents/roteirista-viral.md'
+            file: '.aioson/squads/legacy-creator/agents/roteirista-viral.md'
           }
         ]
       },
@@ -669,27 +669,27 @@ test('cloud:publish:squad falls back to textual genome sections when manifest bi
     'utf8'
   );
   await fs.writeFile(
-    path.join(projectDir, '.aios-forge', 'squads', 'legacy-creator', 'docs', 'design-doc.md'),
+    path.join(projectDir, '.aioson', 'squads', 'legacy-creator', 'docs', 'design-doc.md'),
     '# Design Doc - Legacy Creator\n',
     'utf8'
   );
   await fs.writeFile(
-    path.join(projectDir, '.aios-forge', 'squads', 'legacy-creator', 'docs', 'readiness.md'),
+    path.join(projectDir, '.aioson', 'squads', 'legacy-creator', 'docs', 'readiness.md'),
     '# Readiness - Legacy Creator\n',
     'utf8'
   );
   await fs.writeFile(
-    path.join(projectDir, '.aios-forge', 'squads', 'legacy-creator', 'agents', 'roteirista-viral.md'),
+    path.join(projectDir, '.aioson', 'squads', 'legacy-creator', 'agents', 'roteirista-viral.md'),
     '# Roteirista Viral\n\nCria roteiros.\n',
     'utf8'
   );
   await fs.writeFile(
-    path.join(projectDir, '.aios-forge', 'genomas', 'storytelling-retencao.md'),
+    path.join(projectDir, '.aioson', 'genomas', 'storytelling-retencao.md'),
     '# Storytelling Retencao\n\nGancho e retencao.\n',
     'utf8'
   );
   await fs.writeFile(
-    path.join(projectDir, '.aios-forge', 'genomas', 'copy-ctr.md'),
+    path.join(projectDir, '.aioson', 'genomas', 'copy-ctr.md'),
     '# Copy CTR\n\nTitulos com CTR.\n',
     'utf8'
   );

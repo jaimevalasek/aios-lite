@@ -1,15 +1,15 @@
 # Comandos do CLI
 
-> Referência em português para os comandos públicos do `aios-forge`.
+> Referência em português para os comandos públicos do `aioson`.
 
 ## Antes de começar
 
-- Você pode usar `aios-forge` ou o alias curto `aios`.
+- Você pode usar `aioson` ou o alias curto `aios`.
 - Quando o comando aceita `[path]`, omitir esse argumento significa usar o diretório atual.
 - Muitos comandos aceitam `--json` para integração com scripts e CI.
 - Os comandos `parallel:*` também aceitam os aliases `orchestrator:*`.
 - Nesta página usei a forma canônica com `:` para evitar duplicação.
-- O dashboard do AIOS Forge não é mais instalado por este CLI. Para usar o painel, abra o app do dashboard já instalado no computador e selecione a pasta do projeto que contém `.aios-forge/`.
+- O dashboard do AIOSON não é mais instalado por este CLI. Para usar o painel, abra o app do dashboard já instalado no computador e selecione a pasta do projeto que contém `.aioson/`.
 
 ---
 
@@ -19,8 +19,8 @@
 
 | Comando | O que faz | Quando usar |
 |---|---|---|
-| `init` | Cria um projeto novo e instala o template do AIOS Forge | Quando você vai começar do zero |
-| `install` | Instala o AIOS Forge em um projeto já existente | Quando o repositório já existe |
+| `init` | Cria um projeto novo e instala o template do AIOSON | Quando você vai começar do zero |
+| `install` | Instala o AIOSON em um projeto já existente | Quando o repositório já existe |
 | `update` | Atualiza apenas os arquivos gerenciados pelo framework | Quando você quer puxar melhorias da versão atual |
 | `info` | Mostra versão, diretório-alvo, status da instalação e framework detectado | Quando quer inspecionar rapidamente um projeto |
 | `version` / `--version` / `-v` | Mostra a versão atual do CLI | Quando quer validar a versão instalada |
@@ -31,11 +31,11 @@
 
 | Comando | O que faz | Quando usar |
 |---|---|---|
-| `setup:context` | Cria ou atualiza `.aios-forge/context/project.context.md` | Logo após instalar o framework |
+| `setup:context` | Cria ou atualiza `.aioson/context/project.context.md` | Logo após instalar o framework |
 | `context:validate` | Valida o `project.context.md` | Depois de editar o contexto manualmente |
-| `locale:apply` | Reaplica um pack de idioma nos agentes gerenciados pelo AIOS Forge | Quando quer trocar o idioma em que os agentes do framework operam no projeto |
+| `locale:apply` | Reaplica um pack de idioma nos agentes gerenciados pelo AIOSON | Quando quer trocar o idioma em que os agentes do framework operam no projeto |
 | `locale:diff` | Compara um agente com o pack de idioma esperado | Quando quer detectar drift de tradução |
-| `i18n:add` | Gera o scaffold de um novo locale do próprio AIOS Forge | Quando vai adicionar outro idioma oficial ao CLI do framework |
+| `i18n:add` | Gera o scaffold de um novo locale do próprio AIOSON | Quando vai adicionar outro idioma oficial ao CLI do framework |
 
 ### Agentes, fluxo e testes
 
@@ -121,10 +121,10 @@
 ### 1. Começar um projeto novo
 
 ```bash
-aios-forge init meu-saas --lang=pt-BR --tool=codex
+aioson init meu-saas --lang=pt-BR --tool=codex
 cd meu-saas
-aios-forge setup:context
-aios-forge doctor
+aioson setup:context
+aioson doctor
 ```
 
 Use esse fluxo quando o projeto ainda não existe e você quer sair com template, contexto e checagem básica já prontos.
@@ -133,18 +133,18 @@ Use esse fluxo quando o projeto ainda não existe e você quer sair com template
 
 ```bash
 cd meu-legado
-aios-forge install . --lang=pt-BR
-aios-forge info .
-aios-forge workflow:plan .
+aioson install . --lang=pt-BR
+aioson info .
+aioson workflow:plan .
 ```
 
-Use esse fluxo quando o código já existe e você quer colocar o AIOS Forge sem recriar o projeto.
+Use esse fluxo quando o código já existe e você quer colocar o AIOSON sem recriar o projeto.
 
 ### 3. Atualizar sem perder contexto
 
 ```bash
-aios-forge update .
-aios-forge doctor . --fix
+aioson update .
+aioson doctor . --fix
 ```
 
 Use depois de atualizar a versão do pacote. O `update` mexe só nos arquivos gerenciados e o `doctor --fix` recoloca o que estiver faltando.
@@ -152,9 +152,9 @@ Use depois de atualizar a versão do pacote. O `update` mexe só nos arquivos ge
 ### 4. Ver e ajustar configurações globais
 
 ```bash
-aios-forge config show
-aios-forge config get preferred_scan_provider
-aios-forge config set preferred_scan_provider=openai
+aioson config show
+aioson config get preferred_scan_provider
+aioson config set preferred_scan_provider=openai
 ```
 
 Use quando você quer persistir defaults e preferências globais do CLI.
@@ -162,9 +162,9 @@ Use quando você quer persistir defaults e preferências globais do CLI.
 ### 5. Validar versão e diagnóstico rápido
 
 ```bash
-aios-forge --version
-aios-forge info .
-aios-forge doctor . --json
+aioson --version
+aioson info .
+aioson doctor . --json
 ```
 
 Use para troubleshooting rápido, CI e automações.
@@ -172,8 +172,8 @@ Use para troubleshooting rápido, CI e automações.
 ### 6. Criar ou corrigir o contexto do projeto
 
 ```bash
-aios-forge setup:context --defaults --framework="Laravel" --backend="PHP" --database="MySQL" --lang=pt-BR
-aios-forge context:validate .
+aioson setup:context --defaults --framework="Laravel" --backend="PHP" --database="MySQL" --lang=pt-BR
+aioson context:validate .
 ```
 
 Use quando o projeto já está claro e você quer gerar o contexto sem passar pelo wizard interativo.
@@ -181,44 +181,44 @@ Use quando o projeto já está claro e você quer gerar o contexto sem passar pe
 ### 7. Trocar idioma do projeto
 
 ```bash
-aios-forge locale:apply . --lang=pt-BR
-aios-forge locale:diff ux-ui --lang=pt-BR
+aioson locale:apply . --lang=pt-BR
+aioson locale:diff ux-ui --lang=pt-BR
 ```
 
-- `locale:apply` muda o idioma dos agentes do AIOS Forge
+- `locale:apply` muda o idioma dos agentes do AIOSON
 - ou seja: muda o idioma em que o framework espera que os agentes conversem e trabalhem no projeto
 
 Pense assim:
 
-- `--locale=pt-BR` = idioma do **menu/comando do AIOS Forge**
-- `locale:apply --lang=pt-BR` = idioma do **agente do AIOS Forge**
+- `--locale=pt-BR` = idioma do **menu/comando do AIOSON**
+- `locale:apply --lang=pt-BR` = idioma do **agente do AIOSON**
 - i18n do app do cliente = idioma do **produto final do usuário**
 
 Exemplo:
 
 - se você usar `--locale=pt-BR`, o CLI mostra mensagens em português
-- se você usar `locale:apply --lang=pt-BR`, os agentes do AIOS Forge passam a operar em português
+- se você usar `locale:apply --lang=pt-BR`, os agentes do AIOSON passam a operar em português
 - isso **não** traduz o site, sistema ou app do cliente
 
 Em uma frase:
 
-> `locale:apply` troca o idioma do **AIOS Forge dentro do projeto**, não o idioma do **produto do cliente**.
+> `locale:apply` troca o idioma do **AIOSON dentro do projeto**, não o idioma do **produto do cliente**.
 
 Use `locale:diff` para checar se algum agente ficou diferente do pack de idioma esperado.
 
-### 8. Adicionar um novo locale ao próprio AIOS Forge
+### 8. Adicionar um novo locale ao próprio AIOSON
 
 ```bash
-aios-forge i18n:add fr --dry-run
-aios-forge i18n:add fr
+aioson i18n:add fr --dry-run
+aioson i18n:add fr
 ```
 
 - `i18n:add` **não** adiciona idiomas ao app do cliente
-- `i18n:add` adiciona um idioma novo ao **próprio AIOS Forge**
+- `i18n:add` adiciona um idioma novo ao **próprio AIOSON**
 
 Pense assim:
 
-- o AIOS Forge é a “ferramenta”
+- o AIOSON é a “ferramenta”
 - o projeto do cliente é a “coisa que você está construindo”
 - esse comando mexe na **ferramenta**
 - esse comando não mexe na **coisa construída**
@@ -231,9 +231,9 @@ src/i18n/messages/<locale>.js
 
 Então ele serve para coisas como:
 
-- traduzir mensagens do CLI do AIOS Forge
+- traduzir mensagens do CLI do AIOSON
 - ajudar o framework a falar outro idioma
-- expandir o próprio AIOS Forge
+- expandir o próprio AIOSON
 
 Ele não serve para:
 - adicionar i18n ao app do usuário
@@ -243,15 +243,15 @@ Ele não serve para:
 Resumo sem dúvida:
 
 - quer mudar o idioma do **CLI**? use `--locale`
-- quer mudar o idioma dos **agentes do AIOS Forge**? use `locale:apply`
-- quer adicionar um idioma novo ao **próprio AIOS Forge**? use `i18n:add`
+- quer mudar o idioma dos **agentes do AIOSON**? use `locale:apply`
+- quer adicionar um idioma novo ao **próprio AIOSON**? use `i18n:add`
 - quer deixar o **app do cliente** multilíngue? isso é trabalho do projeto, não do `i18n:add`
 
 ### 9. Inspecionar agentes e gerar prompt pronto
 
 ```bash
-aios-forge agents . --lang=pt-BR
-aios-forge agent:prompt architect . --tool=codex
+aioson agents . --lang=pt-BR
+aioson agent:prompt architect . --tool=codex
 ```
 
 Use `agents` para ver quem existe e `agent:prompt` quando o cliente de IA não entende `/setup`, `@dev` ou slash commands.
@@ -259,9 +259,9 @@ Use `agents` para ver quem existe e `agent:prompt` quando o cliente de IA não e
 ### 10. Validar agentes e pacote antes de release
 
 ```bash
-aios-forge test:agents
-aios-forge test:smoke /tmp --lang=pt-BR --profile=standard
-aios-forge test:package . --dry-run
+aioson test:agents
+aioson test:smoke /tmp --lang=pt-BR --profile=standard
+aioson test:package . --dry-run
 ```
 
 Use quando você alterou templates, agentes, contratos ou empacotamento e quer uma validação mais segura antes de publicar.
@@ -269,17 +269,17 @@ Use quando você alterou templates, agentes, contratos ou empacotamento e quer u
 ### 11. Fazer scanner brownfield
 
 ```bash
-aios-forge scan:project . --folder=src
-aios-forge scan:project . --folder=app --summary-mode=titles
-aios-forge scan:project . --folder=src --with-llm --provider=openai
-aios-forge scan:project . --folder=src,app --dry-run
+aioson scan:project . --folder=src
+aioson scan:project . --folder=app --summary-mode=titles
+aioson scan:project . --folder=src --with-llm --provider=openai
+aioson scan:project . --folder=src,app --dry-run
 ```
 
 Use em sistemas legados ou repositórios que ainda não têm `discovery.md` e `skeleton-system.md`.
 
 O comando agora trabalha em duas etapas:
 
-1. O JavaScript faz uma análise local do projeto e gera `.aios-forge/context/scan-index.md`.
+1. O JavaScript faz uma análise local do projeto e gera `.aioson/context/scan-index.md`.
 2. Se você ativar `--with-llm`, a LLM usa esse índice compacto para produzir `discovery.md` e `skeleton-system.md`.
 
 O parâmetro `--folder` agora é obrigatório. Ele define quais pastas do projeto devem ganhar um mapa completo com pastas e arquivos. Você pode informar uma pasta ou várias separadas por vírgula.
@@ -289,9 +289,9 @@ Artefatos locais gerados pelo scan:
 - `scan-index.md`: índice geral com footprint, arquivos-chave e referência para os mapas especializados
 - `scan-folders.md`: mapa somente de pastas do projeto
 - `scan-<pasta>.md`: mapa completo da pasta pedida em `--folder`, incluindo toda a estrutura de pastas e arquivos
-- `scan-aios-forge.md`: mapa útil do `.aios-forge/`, mostrando só artefatos gerados no uso do projeto
+- `scan-aioson.md`: mapa útil do `.aioson/`, mostrando só artefatos gerados no uso do projeto
 
-No caso de `.aios-forge/`, o scanner oculta o que é padrão do framework:
+No caso de `.aioson/`, o scanner oculta o que é padrão do framework:
 
 - agentes padrão
 - locales
@@ -324,25 +324,25 @@ Quando usar cada modo:
 Exemplo prático para reduzir carga no provider:
 
 ```bash
-aios-forge scan:project . --folder=src --with-llm --provider=deepseek --summary-mode=titles
+aioson scan:project . --folder=src --with-llm --provider=deepseek --summary-mode=titles
 ```
 
-Nesse fluxo, providers como DeepSeek servem melhor como sintetizadores da arquitetura, relações e riscos do sistema, enquanto o trabalho pesado de mapear pastas solicitadas e filtrar o `.aios-forge/` fica no próprio CLI.
+Nesse fluxo, providers como DeepSeek servem melhor como sintetizadores da arquitetura, relações e riscos do sistema, enquanto o trabalho pesado de mapear pastas solicitadas e filtrar o `.aioson/` fica no próprio CLI.
 
 ### 12. Avancar o workflow real entre agentes
 
 ```bash
-aios-forge workflow:next .
-aios-forge workflow:next . --complete
-aios-forge workflow:next . --agent=ux-ui
-aios-forge workflow:next . --skip=dev
+aioson workflow:next .
+aioson workflow:next . --complete
+aioson workflow:next . --agent=ux-ui
+aioson workflow:next . --skip=dev
 ```
 
 Use quando quiser que o CLI acompanhe a etapa atual e decida o proximo agente de forma consistente.
 
 Regras:
-- cria `.aios-forge/context/workflow.state.json` se ainda nao existir
-- usa `.aios-forge/context/workflow.config.json` se o projeto tiver uma orquestracao customizada
+- cria `.aioson/context/workflow.state.json` se ainda nao existir
+- usa `.aioson/context/workflow.config.json` se o projeto tiver uma orquestracao customizada
 - aceita desvio temporario com `--agent=<agente>` e depois retorna para a trilha principal
 - aceita `--skip=<agente>` so ate chegar no `@dev`
 - nunca permite pular o `@dev`
@@ -353,10 +353,10 @@ Alias compativel:
 ### 13. Preparar orquestração paralela
 
 ```bash
-aios-forge parallel:init . --workers=3
-aios-forge parallel:assign . --source=architecture --workers=3
-aios-forge parallel:status .
-aios-forge parallel:doctor . --fix
+aioson parallel:init . --workers=3
+aioson parallel:assign . --source=architecture --workers=3
+aioson parallel:status .
+aioson parallel:doctor . --fix
 ```
 
 Use em projetos `MEDIUM` quando o `@orchestrator` vai dividir trabalho em lanes.  
@@ -369,8 +369,8 @@ Alias equivalentes:
 ### 14. Inicializar e diagnosticar MCP
 
 ```bash
-aios-forge mcp:init . --tool=codex
-aios-forge mcp:doctor . --strict-env
+aioson mcp:init . --tool=codex
+aioson mcp:doctor . --strict-env
 ```
 
 Use quando você quer preparar integrações MCP e confirmar se as variáveis e arquivos estão corretos.
@@ -378,11 +378,11 @@ Use quando você quer preparar integrações MCP e confirmar se as variáveis e 
 ### 15. Rodar Browser QA
 
 ```bash
-aios-forge qa:init . --url=http://localhost:8000
-aios-forge qa:doctor .
-aios-forge qa:run . --persona=power --html
-aios-forge qa:scan . --depth=2 --max-pages=20 --html
-aios-forge qa:report . --html
+aioson qa:init . --url=http://localhost:8000
+aioson qa:doctor .
+aioson qa:run . --persona=power --html
+aioson qa:scan . --depth=2 --max-pages=20 --html
+aioson qa:report . --html
 ```
 
 Use:
@@ -392,22 +392,22 @@ Use:
 - `qa:scan` para cobertura mais ampla de rotas
 - `qa:report` para rever o último relatório sem rodar tudo de novo
 
-### 16. Abrir o dashboard do AIOS Forge
+### 16. Abrir o dashboard do AIOSON
 
 O dashboard agora é instalado separadamente do CLI.
 
 Use este fluxo:
 - abra o app do dashboard já instalado no computador
 - clique em criar projeto ou adicionar projeto
-- selecione a pasta do projeto que já contém `.aios-forge/`
+- selecione a pasta do projeto que já contém `.aioson/`
 
 Use isso quando quiser um painel local para acompanhar squads, runtime e entregas do projeto.
 
 ### 16. Validar e migrar genomas
 
 ```bash
-aios-forge genome:doctor .aios-forge/genomas/fintech.md
-aios-forge genome:migrate .aios-forge/genomas --write
+aioson genome:doctor .aioson/genomas/fintech.md
+aioson genome:migrate .aioson/genomas --write
 ```
 
 Use `genome:doctor` para validar um arquivo individual e `genome:migrate` para atualizar um conjunto legado para o formato novo.
@@ -415,13 +415,13 @@ Use `genome:doctor` para validar um arquivo individual e `genome:migrate` para a
 ### 17. Operar squads locais
 
 ```bash
-aios-forge squad:status .
-aios-forge squad:doctor . --squad=marketing
-aios-forge squad:validate . --squad=marketing
-aios-forge squad:export . --squad=marketing
-aios-forge squad:pipeline . --sub=list
-aios-forge squad:pipeline . --sub=show --pipeline=conteudo-semanal
-aios-forge squad:pipeline . --sub=status --pipeline=conteudo-semanal
+aioson squad:status .
+aioson squad:doctor . --squad=marketing
+aioson squad:validate . --squad=marketing
+aioson squad:export . --squad=marketing
+aioson squad:pipeline . --sub=list
+aioson squad:pipeline . --sub=show --pipeline=conteudo-semanal
+aioson squad:pipeline . --sub=status --pipeline=conteudo-semanal
 ```
 
 Use:
@@ -434,7 +434,7 @@ Use:
 ### 18. Reparar bindings de genoma em squads
 
 ```bash
-aios-forge squad:repair-genomes .aios-forge/squads/marketing/squad.manifest.json --write
+aioson squad:repair-genomes .aioson/squads/marketing/squad.manifest.json --write
 ```
 
 Use quando o manifesto da squad perdeu referências corretas para genomas ou ficou incompatível com a estrutura atual.
@@ -442,9 +442,9 @@ Use quando o manifesto da squad perdeu referências corretas para genomas ou fic
 ### 19. Inicializar o runtime e indexar entregas
 
 ```bash
-aios-forge runtime:init .
-aios-forge runtime:ingest . --squad=marketing
-aios-forge runtime:status .
+aioson runtime:init .
+aioson runtime:ingest . --squad=marketing
+aioson runtime:status .
 ```
 
 Use para preparar o SQLite de runtime e puxar arquivos de `output/` para o índice consultável.
@@ -452,11 +452,11 @@ Use para preparar o SQLite de runtime e puxar arquivos de `output/` para o índi
 ### 20. Rastrear uma task e uma execução completas
 
 ```bash
-aios-forge runtime:task:start . --task=task-001 --title="Landing page do produto" --squad=marketing --by=orchestrator
-aios-forge runtime:start . --run=run-001 --task=task-001 --agent=ux-ui --title="Criacao da UI"
-aios-forge runtime:update . --run=run-001 --message="Hero e secoes principais definidos"
-aios-forge runtime:finish . --run=run-001 --summary="UI pronta para handoff" --output=output/marketing/landing/index.html
-aios-forge runtime:task:finish . --task=task-001 --goal="Landing entregue"
+aioson runtime:task:start . --task=task-001 --title="Landing page do produto" --squad=marketing --by=orchestrator
+aioson runtime:start . --run=run-001 --task=task-001 --agent=ux-ui --title="Criacao da UI"
+aioson runtime:update . --run=run-001 --message="Hero e secoes principais definidos"
+aioson runtime:finish . --run=run-001 --summary="UI pronta para handoff" --output=output/marketing/landing/index.html
+aioson runtime:task:finish . --task=task-001 --goal="Landing entregue"
 ```
 
 Use esse fluxo quando você quer rastreamento explícito de task, run, progresso e artefatos finais.
@@ -464,8 +464,8 @@ Use esse fluxo quando você quer rastreamento explícito de task, run, progresso
 ### 21. Registrar eventos rápidos com `runtime:log`
 
 ```bash
-aios-forge runtime:log . --agent=ux-ui --message="Comecei a revisar a landing"
-aios-forge runtime:log . --agent=ux-ui --message="Entreguei a UI final" --finish --status=completed --summary="Tela pronta"
+aioson runtime:log . --agent=ux-ui --message="Comecei a revisar a landing"
+aioson runtime:log . --agent=ux-ui --message="Entreguei a UI final" --finish --status=completed --summary="Tela pronta"
 ```
 
 Use quando quer um logger stateful de uma linha, sem precisar chamar manualmente `task:start`, `start`, `update` e `finish`.
@@ -473,8 +473,8 @@ Use quando quer um logger stateful de uma linha, sem precisar chamar manualmente
 ### 22. Fechar falhas de task ou run
 
 ```bash
-aios-forge runtime:task:fail . --task=task-001 --goal="Bloqueio em requisitos"
-aios-forge runtime:fail . --run=run-001 --message="Dependencia externa indisponivel" --summary="Execucao interrompida"
+aioson runtime:task:fail . --task=task-001 --goal="Bloqueio em requisitos"
+aioson runtime:fail . --run=run-001 --message="Dependencia externa indisponivel" --summary="Execucao interrompida"
 ```
 
 Use quando a task ou a run precisa ser encerrada como falha, mantendo histórico no runtime.
@@ -482,8 +482,8 @@ Use quando a task ou a run precisa ser encerrada como falha, mantendo histórico
 ### 23. Publicar squads e genomas
 
 ```bash
-aios-forge cloud:publish:squad . --slug=marketing --resource-version=1.0.0 --base-url=https://aiosforge.com
-aios-forge cloud:publish:genome . --slug=fintech --resource-version=1.0.0 --base-url=https://aiosforge.com
+aioson cloud:publish:squad . --slug=marketing --resource-version=1.0.0 --base-url=https://aiosforge.com
+aioson cloud:publish:genome . --slug=fintech --resource-version=1.0.0 --base-url=https://aiosforge.com
 ```
 
 Use quando você quer transformar artefatos locais em snapshots publicáveis e versionados.
@@ -491,8 +491,8 @@ Use quando você quer transformar artefatos locais em snapshots publicáveis e v
 ### 24. Importar squads e genomas publicados
 
 ```bash
-aios-forge cloud:import:squad . --url=https://aiosforge.com/snapshots/squads/marketing/1.0.0.json
-aios-forge cloud:import:genome . --url=https://aiosforge.com/snapshots/genomes/fintech/1.0.0.json
+aioson cloud:import:squad . --url=https://aiosforge.com/snapshots/squads/marketing/1.0.0.json
+aioson cloud:import:genome . --url=https://aiosforge.com/snapshots/genomes/fintech/1.0.0.json
 ```
 
 Use quando vai instalar, atualizar ou sincronizar recursos publicados em outro projeto.
@@ -502,10 +502,10 @@ Use quando vai instalar, atualizar ou sincronizar recursos publicados em outro p
 ## Atalhos úteis
 
 ```bash
-aios-forge --help --locale=pt-BR
-aios-forge agents --json
-aios-forge runtime:status --json
-aios-forge qa:report --json
+aioson --help --locale=pt-BR
+aioson agents --json
+aioson runtime:status --json
+aioson qa:report --json
 ```
 
 Esses atalhos ajudam quando você quer explorar o CLI, integrar com scripts ou depurar estado sem depender de saída humana.

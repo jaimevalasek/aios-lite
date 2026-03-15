@@ -4,7 +4,7 @@ const fs = require('node:fs/promises');
 const os = require('node:os');
 const path = require('node:path');
 
-const CONFIG_DIR = path.join(os.homedir(), '.aios-forge');
+const CONFIG_DIR = path.join(os.homedir(), '.aioson');
 const CONFIG_FILE = path.join(CONFIG_DIR, 'config.json');
 
 async function readConfig() {

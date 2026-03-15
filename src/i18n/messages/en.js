@@ -2,109 +2,109 @@
 
 module.exports = {
   cli: {
-    title: 'AIOS Forge CLI',
+    title: 'AIOSON CLI',
     title_line: '{title}\n',
     usage: 'Usage:',
     help_item_line: '  {text}',
     help_init:
-      'aios-forge init <project-name> [--force] [--dry-run] [--lang=en|pt-BR|es|fr] [--tool=codex|claude|gemini|opencode] [--locale=en]',
+      'aioson init <project-name> [--force] [--dry-run] [--lang=en|pt-BR|es|fr] [--tool=codex|claude|gemini|opencode] [--locale=en]',
     help_install:
-      'aios-forge install [path] [--force] [--dry-run] [--lang=en|pt-BR|es|fr] [--tool=codex|claude|gemini|opencode] [--locale=en]',
-    help_update: 'aios-forge update [path] [--dry-run] [--lang=en|pt-BR|es|fr] [--locale=en]',
-    help_info: 'aios-forge info [path] [--json] [--locale=en]',
-    help_doctor: 'aios-forge doctor [path] [--fix] [--dry-run] [--json] [--locale=en]',
-    help_i18n_add: 'aios-forge i18n:add <locale> [--force] [--dry-run] [--locale=en]',
-    help_agents: 'aios-forge agents [path] [--lang=en|pt-BR|es|fr] [--locale=en]',
+      'aioson install [path] [--force] [--dry-run] [--lang=en|pt-BR|es|fr] [--tool=codex|claude|gemini|opencode] [--locale=en]',
+    help_update: 'aioson update [path] [--dry-run] [--lang=en|pt-BR|es|fr] [--locale=en]',
+    help_info: 'aioson info [path] [--json] [--locale=en]',
+    help_doctor: 'aioson doctor [path] [--fix] [--dry-run] [--json] [--locale=en]',
+    help_i18n_add: 'aioson i18n:add <locale> [--force] [--dry-run] [--locale=en]',
+    help_agents: 'aioson agents [path] [--lang=en|pt-BR|es|fr] [--locale=en]',
     help_agent_prompt:
-      'aios-forge agent:prompt <agent> [path] [--tool=codex|claude|gemini|opencode] [--lang=en|pt-BR|es|fr] [--locale=en]',
-    help_context_validate: 'aios-forge context:validate [path] [--json] [--locale=en]',
+      'aioson agent:prompt <agent> [path] [--tool=codex|claude|gemini|opencode] [--lang=en|pt-BR|es|fr] [--locale=en]',
+    help_context_validate: 'aioson context:validate [path] [--json] [--locale=en]',
     help_setup_context:
-      'aios-forge setup:context [path] [--defaults] [--project-type=web_app|api|site|script|dapp] [--framework=<name>] [--backend=<name>] [--frontend=<name>] [--database=<name>] [--auth=<name>] [--uiux=<name>] [--language=en] [--web3-enabled=true|false] [--locale=en]',
-    help_locale_apply: 'aios-forge locale:apply [path] [--lang=en|pt-BR|es|fr] [--dry-run] [--locale=en]',
-    help_locale_diff: 'aios-forge locale:diff [agent] [--lang=en|pt-BR|es|fr] [--json] [--locale=en]',
-    help_test_agents: 'aios-forge test:agents [--json] [--locale=en]',
+      'aioson setup:context [path] [--defaults] [--project-type=web_app|api|site|script|dapp] [--framework=<name>] [--backend=<name>] [--frontend=<name>] [--database=<name>] [--auth=<name>] [--uiux=<name>] [--language=en] [--web3-enabled=true|false] [--locale=en]',
+    help_locale_apply: 'aioson locale:apply [path] [--lang=en|pt-BR|es|fr] [--dry-run] [--locale=en]',
+    help_locale_diff: 'aioson locale:diff [agent] [--lang=en|pt-BR|es|fr] [--json] [--locale=en]',
+    help_test_agents: 'aioson test:agents [--json] [--locale=en]',
     help_test_smoke:
-      'aios-forge test:smoke [workspace-path] [--lang=en|pt-BR|es|fr] [--web3=ethereum|solana|cardano] [--profile=standard|mixed|parallel] [--keep] [--json] [--locale=en]',
+      'aioson test:smoke [workspace-path] [--lang=en|pt-BR|es|fr] [--web3=ethereum|solana|cardano] [--profile=standard|mixed|parallel] [--keep] [--json] [--locale=en]',
     help_test_package:
-      'aios-forge test:package [source-path] [--keep] [--dry-run] [--json] [--locale=en]',
+      'aioson test:package [source-path] [--keep] [--dry-run] [--json] [--locale=en]',
     help_workflow_plan:
-      'aios-forge workflow:plan [path] [--classification=MICRO|SMALL|MEDIUM] [--json] [--locale=en]',
+      'aioson workflow:plan [path] [--classification=MICRO|SMALL|MEDIUM] [--json] [--locale=en]',
     help_workflow_next:
-      'aios-forge workflow:next [path] [--complete[=<agent>]] [--agent=<agent>] [--skip=<agent>] [--tool=codex|claude|gemini|opencode] [--json] [--locale=en]',
+      'aioson workflow:next [path] [--complete[=<agent>]] [--agent=<agent>] [--skip=<agent>] [--tool=codex|claude|gemini|opencode] [--json] [--locale=en]',
     help_parallel_init:
-      'aios-forge parallel:init [path] [--workers=2..6] [--force] [--dry-run] [--json] [--locale=en]',
+      'aioson parallel:init [path] [--workers=2..6] [--force] [--dry-run] [--json] [--locale=en]',
     help_parallel_doctor:
-      'aios-forge parallel:doctor [path] [--workers=2..6] [--fix] [--force] [--dry-run] [--json] [--locale=en]',
+      'aioson parallel:doctor [path] [--workers=2..6] [--fix] [--force] [--dry-run] [--json] [--locale=en]',
     help_parallel_assign:
-      'aios-forge parallel:assign [path] [--source=auto|prd|architecture|discovery|<file>] [--workers=2..6] [--force] [--dry-run] [--json] [--locale=en]',
+      'aioson parallel:assign [path] [--source=auto|prd|architecture|discovery|<file>] [--workers=2..6] [--force] [--dry-run] [--json] [--locale=en]',
     help_parallel_status:
-      'aios-forge parallel:status [path] [--json] [--locale=en]',
+      'aioson parallel:status [path] [--json] [--locale=en]',
     help_mcp_init:
-      'aios-forge mcp:init [path] [--tool=claude|codex|gemini|opencode] [--dry-run] [--json] [--locale=en]',
+      'aioson mcp:init [path] [--tool=claude|codex|gemini|opencode] [--dry-run] [--json] [--locale=en]',
     help_mcp_doctor:
-      'aios-forge mcp:doctor [path] [--strict-env] [--json] [--locale=en]',
+      'aioson mcp:doctor [path] [--strict-env] [--json] [--locale=en]',
     help_qa_doctor:
-      'aios-forge qa:doctor [path] [--json] [--locale=en]',
+      'aioson qa:doctor [path] [--json] [--locale=en]',
     help_qa_init:
-      'aios-forge qa:init [path] [--url=<app-url>] [--dry-run] [--json] [--locale=en]',
+      'aioson qa:init [path] [--url=<app-url>] [--dry-run] [--json] [--locale=en]',
     help_qa_run:
-      'aios-forge qa:run [path] [--url=<app-url>] [--persona=naive|hacker|power|mobile] [--headed] [--html] [--json] [--locale=en]',
+      'aioson qa:run [path] [--url=<app-url>] [--persona=naive|hacker|power|mobile] [--headed] [--html] [--json] [--locale=en]',
     help_qa_scan:
-      'aios-forge qa:scan [path] [--url=<app-url>] [--depth=3] [--max-pages=50] [--headed] [--html] [--json] [--locale=en]',
+      'aioson qa:scan [path] [--url=<app-url>] [--depth=3] [--max-pages=50] [--headed] [--html] [--json] [--locale=en]',
     help_qa_report:
-      'aios-forge qa:report [path] [--html] [--json] [--locale=en]',
+      'aioson qa:report [path] [--html] [--json] [--locale=en]',
     help_scan_project:
-      'aios-forge scan:project [path] --folder=<path[,path2]> [--summary-mode=titles|summaries|raw] [--with-llm] [--provider=<name>] [--llm-model=<name>] [--dry-run] [--json] [--locale=en]',
+      'aioson scan:project [path] --folder=<path[,path2]> [--summary-mode=titles|summaries|raw] [--with-llm] [--provider=<name>] [--llm-model=<name>] [--dry-run] [--json] [--locale=en]',
     help_config:
-      'aios-forge config <set KEY=value|show|get KEY> [--json] [--locale=en]',
+      'aioson config <set KEY=value|show|get KEY> [--json] [--locale=en]',
     help_genome_doctor:
-      'aios-forge genome:doctor <file> [--json] [--locale=en]',
+      'aioson genome:doctor <file> [--json] [--locale=en]',
     help_genome_migrate:
-      'aios-forge genome:migrate <file-or-dir> [--write] [--no-backup] [--json] [--locale=en]',
+      'aioson genome:migrate <file-or-dir> [--write] [--no-backup] [--json] [--locale=en]',
     help_squad_status:
-      'aios-forge squad:status [path] [--json] [--locale=en]',
+      'aioson squad:status [path] [--json] [--locale=en]',
     help_squad_doctor:
-      'aios-forge squad:doctor [path] [--squad=<slug>] [--stale-minutes=5] [--json] [--locale=en]',
+      'aioson squad:doctor [path] [--squad=<slug>] [--stale-minutes=5] [--json] [--locale=en]',
     help_squad_repair_genomes:
-      'aios-forge squad:repair-genomes <manifest.json> [--write] [--no-backup] [--json] [--locale=en]',
+      'aioson squad:repair-genomes <manifest.json> [--write] [--no-backup] [--json] [--locale=en]',
     help_squad_validate:
-      'aios-forge squad:validate [path] --squad=<slug> [--locale=en]',
+      'aioson squad:validate [path] --squad=<slug> [--locale=en]',
     help_squad_export:
-      'aios-forge squad:export [path] --squad=<slug> [--locale=en]',
+      'aioson squad:export [path] --squad=<slug> [--locale=en]',
     help_squad_pipeline:
-      'aios-forge squad:pipeline [path] [--sub=list|show|status] [--pipeline=<slug>] [--locale=en]',
+      'aioson squad:pipeline [path] [--sub=list|show|status] [--pipeline=<slug>] [--locale=en]',
     help_runtime_init:
-      'aios-forge runtime:init [path] [--json] [--locale=en]',
+      'aioson runtime:init [path] [--json] [--locale=en]',
     help_runtime_ingest:
-      'aios-forge runtime:ingest [path] [--squad=<slug>] [--agent=<name>] [--session=<key>] [--task=<key>] [--json] [--locale=en]',
+      'aioson runtime:ingest [path] [--squad=<slug>] [--agent=<name>] [--session=<key>] [--task=<key>] [--json] [--locale=en]',
     help_runtime_task_start:
-      'aios-forge runtime:task:start [path] --title=<text> [--squad=<slug>] [--session=<key>] [--goal=<text>] [--by=<agent>] [--task=<key>] [--json] [--locale=en]',
+      'aioson runtime:task:start [path] --title=<text> [--squad=<slug>] [--session=<key>] [--goal=<text>] [--by=<agent>] [--task=<key>] [--json] [--locale=en]',
     help_runtime_start:
-      'aios-forge runtime:start [path] --agent=<name> [--squad=<slug>] [--session=<key>] [--title=<text>] [--run=<key>] [--json] [--locale=en]',
+      'aioson runtime:start [path] --agent=<name> [--squad=<slug>] [--session=<key>] [--title=<text>] [--run=<key>] [--json] [--locale=en]',
     help_runtime_update:
-      'aios-forge runtime:update [path] --run=<key> [--message=<text>] [--summary=<text>] [--output=<path>] [--json] [--locale=en]',
+      'aioson runtime:update [path] --run=<key> [--message=<text>] [--summary=<text>] [--output=<path>] [--json] [--locale=en]',
     help_runtime_task_finish:
-      'aios-forge runtime:task:finish [path] --task=<key> [--goal=<text>] [--json] [--locale=en]',
+      'aioson runtime:task:finish [path] --task=<key> [--goal=<text>] [--json] [--locale=en]',
     help_runtime_finish:
-      'aios-forge runtime:finish [path] --run=<key> [--summary=<text>] [--output=<path>] [--json] [--locale=en]',
+      'aioson runtime:finish [path] --run=<key> [--summary=<text>] [--output=<path>] [--json] [--locale=en]',
     help_runtime_task_fail:
-      'aios-forge runtime:task:fail [path] --task=<key> [--goal=<text>] [--json] [--locale=en]',
+      'aioson runtime:task:fail [path] --task=<key> [--goal=<text>] [--json] [--locale=en]',
     help_runtime_fail:
-      'aios-forge runtime:fail [path] --run=<key> [--message=<text>] [--summary=<text>] [--output=<path>] [--json] [--locale=en]',
+      'aioson runtime:fail [path] --run=<key> [--message=<text>] [--summary=<text>] [--output=<path>] [--json] [--locale=en]',
     help_runtime_status:
-      'aios-forge runtime:status [path] [--json] [--locale=en]',
+      'aioson runtime:status [path] [--json] [--locale=en]',
     help_runtime_log:
-      'aios-forge runtime:log [path] --agent=<name> --message=<text> [--type=<event>] [--finish] [--status=completed|failed] [--summary=<text>] [--title=<task-title>] [--json] [--locale=en]',
+      'aioson runtime:log [path] --agent=<name> --message=<text> [--type=<event>] [--finish] [--status=completed|failed] [--summary=<text>] [--title=<task-title>] [--json] [--locale=en]',
     help_cloud_import_squad:
-      'aios-forge cloud:import:squad [path] --url=<snapshot-url> [--force] [--snapshots-only] [--dry-run] [--json] [--locale=en]',
+      'aioson cloud:import:squad [path] --url=<snapshot-url> [--force] [--snapshots-only] [--dry-run] [--json] [--locale=en]',
     help_cloud_import_genome:
-      'aios-forge cloud:import:genome [path] --url=<snapshot-url> [--force] [--snapshots-only] [--dry-run] [--json] [--locale=en]',
+      'aioson cloud:import:genome [path] --url=<snapshot-url> [--force] [--snapshots-only] [--dry-run] [--json] [--locale=en]',
     help_cloud_publish_squad:
-      'aios-forge cloud:publish:squad [path] --slug=<slug> --resource-version=<version> [--url=<publish-url>|--base-url=<site>] [--title=<text>] [--summary=<text>] [--compatibility-min=<version>] [--compatibility-max=<version>] [--linked-genome-version=<version>] [--dry-run] [--json] [--locale=en]',
+      'aioson cloud:publish:squad [path] --slug=<slug> --resource-version=<version> [--url=<publish-url>|--base-url=<site>] [--title=<text>] [--summary=<text>] [--compatibility-min=<version>] [--compatibility-max=<version>] [--linked-genome-version=<version>] [--dry-run] [--json] [--locale=en]',
     help_cloud_publish_genome:
-      'aios-forge cloud:publish:genome [path] --slug=<slug> --resource-version=<version> [--url=<publish-url>|--base-url=<site>] [--title=<text>] [--summary=<text>] [--source-kind=LOCAL|AIOSLITE|IMPORTED|REMOTE_PROVIDER] [--dry-run] [--json] [--locale=en]',
+      'aioson cloud:publish:genome [path] --slug=<slug> --resource-version=<version> [--url=<publish-url>|--base-url=<site>] [--title=<text>] [--summary=<text>] [--source-kind=LOCAL|AIOSLITE|IMPORTED|REMOTE_PROVIDER] [--dry-run] [--json] [--locale=en]',
     dashboard_moved:
-      'The `{command}` CLI flow was removed. The AIOS Forge dashboard is now installed separately. Open the dashboard app on your computer, create or add a project, and select the folder that already contains `.aios-forge/`.',
+      'The `{command}` CLI flow was removed. The AIOSON dashboard is now installed separately. Open the dashboard app on your computer, create or add a project, and select the folder that already contains `.aioson/`.',
     dashboard_moved_line: '{message}\n',
     unknown_command: 'Unknown command: {command}',
     unknown_command_line: '{message}\n',
@@ -124,7 +124,7 @@ module.exports = {
   },
   init: {
     usage_error:
-      'Usage: aios-forge init <project-name> [--force] [--dry-run] [--lang=en|pt-BR|es|fr] [--tool=codex|claude|gemini|opencode] [--locale=en]',
+      'Usage: aioson init <project-name> [--force] [--dry-run] [--lang=en|pt-BR|es|fr] [--tool=codex|claude|gemini|opencode] [--locale=en]',
     non_empty_dir: 'Directory is not empty: {targetDir}. Use --force to continue.',
     created_at: 'Project created at: {targetDir}',
     files_copied: 'Files copied: {count}',
@@ -132,8 +132,8 @@ module.exports = {
     next_steps: 'Next steps:',
     step_cd: '1. cd {projectName}',
     step_setup: '2. Open in your AI CLI and run @setup',
-    step_agents: '3. If no visual picker appears, run: aios-forge agents',
-    step_agent_prompt: '4. Generate setup prompt for your tool: aios-forge agent:prompt setup --tool={tool}'
+    step_agents: '3. If no visual picker appears, run: aioson agents',
+    step_agent_prompt: '4. Generate setup prompt for your tool: aioson agent:prompt setup --tool={tool}'
   },
   install: {
     framework_detected: 'Framework detected: {framework} ({evidence})',
@@ -142,21 +142,21 @@ module.exports = {
     files_copied: 'Files copied: {count}',
     files_skipped: 'Files skipped: {count}',
     next_steps: 'Next steps:',
-    step_setup_context: '1. Generate/refresh project context: aios-forge setup:context --defaults',
-    step_agents: '2. If no visual picker appears, run: aios-forge agents',
-    step_agent_prompt: '3. Generate setup prompt for your tool: aios-forge agent:prompt setup --tool={tool}',
+    step_setup_context: '1. Generate/refresh project context: aioson setup:context --defaults',
+    step_agents: '2. If no visual picker appears, run: aioson agents',
+    step_agent_prompt: '3. Generate setup prompt for your tool: aioson agent:prompt setup --tool={tool}',
     existing_project_detected: '⚠ Existing project detected ({count} files). Run the scanner before starting:',
     existing_project_scan_hint:
-      '  aios-forge scan:project --folder=src   (builds scan-index.md locally; add --with-llm to generate discovery.md)'
+      '  aioson scan:project --folder=src   (builds scan-index.md locally; add --with-llm to generate discovery.md)'
   },
   update: {
-    not_installed: 'No AIOS Forge installation found in {targetDir}.',
+    not_installed: 'No AIOSON installation found in {targetDir}.',
     done_at: 'Update completed at: {targetDir}',
     files_updated: 'Files updated: {count}',
     backups_created: 'Backups created: {count}'
   },
   info: {
-    cli_version: 'AIOS Forge CLI: v{version}',
+    cli_version: 'AIOSON CLI: v{version}',
     directory: 'Directory: {targetDir}',
     installed_here: 'Installed in this directory: {value}',
     framework_detected: 'Framework detected: {framework}',
@@ -177,7 +177,7 @@ module.exports = {
     detail_line: '  Detail: {text}',
     required_file: 'Required file: {rel}',
     context_generated: 'Main context generated',
-    context_hint: 'Run @setup to generate .aios-forge/context/project.context.md',
+    context_hint: 'Run @setup to generate .aioson/context/project.context.md',
     context_frontmatter_valid: 'Project context frontmatter is valid',
     context_frontmatter_valid_hint: 'Ensure project.context.md starts with YAML frontmatter delimited by ---',
     context_frontmatter_invalid: 'Project context frontmatter is invalid ({reason})',
@@ -195,21 +195,21 @@ module.exports = {
     context_conversation_language_format: '`conversation_language` is not a valid BCP-47 tag',
     context_conversation_language_format_hint: 'Use values like en, en-US, pt-BR.',
     node_version: 'Node.js >= 18 (current: {version})',
-    gateway_claude_pointer: 'CLAUDE gateway references shared AIOS Forge files',
+    gateway_claude_pointer: 'CLAUDE gateway references shared AIOSON files',
     gateway_claude_pointer_hint:
-      'Ensure CLAUDE.md references .aios-forge/config.md and .aios-forge/agents/setup.md.',
-    gateway_codex_pointer: 'Codex gateway references shared AIOS Forge files',
+      'Ensure CLAUDE.md references .aioson/config.md and .aioson/agents/setup.md.',
+    gateway_codex_pointer: 'Codex gateway references shared AIOSON files',
     gateway_codex_pointer_hint:
-      'Ensure AGENTS.md references .aios-forge/config.md and .aios-forge/agents/.',
+      'Ensure AGENTS.md references .aioson/config.md and .aioson/agents/.',
     gateway_gemini_pointer: 'Gemini gateway references shared command and agent paths',
     gateway_gemini_pointer_hint:
-      'Ensure .gemini/GEMINI.md references .gemini/commands/ and .aios-forge/agents/.',
+      'Ensure .gemini/GEMINI.md references .gemini/commands/ and .aioson/agents/.',
     gateway_gemini_command_pointer: 'Gemini command file maps to shared agent: {file}',
     gateway_gemini_command_pointer_hint:
-      'Ensure {file} includes instruction_file = ".aios-forge/agents/{agent}.md".',
-    gateway_opencode_pointer: 'OpenCode gateway references shared AIOS Forge files',
+      'Ensure {file} includes instruction_file = ".aioson/agents/{agent}.md".',
+    gateway_opencode_pointer: 'OpenCode gateway references shared AIOSON files',
     gateway_opencode_pointer_hint:
-      'Ensure OPENCODE.md references .aios-forge/config.md and .aios-forge/agents/.',
+      'Ensure OPENCODE.md references .aioson/config.md and .aioson/agents/.',
     fix_start: 'Safe fix mode enabled.',
     fix_start_dry_run: 'Safe fix mode enabled (dry-run).',
     fix_action_required_files: 'Restore missing managed files from template',
@@ -224,7 +224,7 @@ module.exports = {
     fix_summary_dry_run: '[dry-run] Safe fix changes planned: {count}'
   },
   i18n_add: {
-    usage_error: 'Usage: aios-forge i18n:add <locale> [--force] [--dry-run] [--locale=en]',
+    usage_error: 'Usage: aioson i18n:add <locale> [--force] [--dry-run] [--locale=en]',
     invalid_locale: 'Invalid locale code: {locale}. Expected formats like en, fr, pt-br.',
     base_locale: 'Locale "en" is the base dictionary and cannot be scaffolded.',
     locale_exists: 'Locale file already exists: {path}. Use --force to overwrite.',
@@ -250,7 +250,7 @@ module.exports = {
     output_line: '  Output: {value}',
     none: 'none',
     prompt_usage_error:
-      'Usage: aios-forge agent:prompt <agent> [path] [--tool=codex|claude|gemini|opencode] [--lang=en|pt-BR|es|fr] [--locale=en]',
+      'Usage: aioson agent:prompt <agent> [path] [--tool=codex|claude|gemini|opencode] [--lang=en|pt-BR|es|fr] [--locale=en]',
     prompt_unknown_agent: 'Unknown agent: {agent}',
     prompt_title: 'Prompt for agent "{agent}" on tool "{tool}" (locale: {locale}):'
   },
@@ -480,8 +480,8 @@ module.exports = {
     check_context_classification_invalid:
       'Parallel mode requires MEDIUM classification (current: {classification}).',
     check_context_classification_hint: 'Use --force to override classification guard.',
-    check_parallel_dir_ok: '.aios-forge/context/parallel directory exists.',
-    check_parallel_dir_missing: '.aios-forge/context/parallel directory is missing.',
+    check_parallel_dir_ok: '.aioson/context/parallel directory exists.',
+    check_parallel_dir_missing: '.aioson/context/parallel directory is missing.',
     check_parallel_dir_hint: 'Run parallel:init or parallel:doctor --fix.',
     check_parallel_shared_ok: 'shared-decisions.md is present.',
     check_parallel_shared_missing: 'shared-decisions.md is missing.',
@@ -505,7 +505,7 @@ module.exports = {
     requires_medium:
       'Parallel assignment requires MEDIUM classification (current: {classification}). Use --force to override.',
     parallel_missing: 'Parallel directory not found: {path}. Run parallel:init first.',
-    no_lanes: 'No lane status files were found in .aios-forge/context/parallel.',
+    no_lanes: 'No lane status files were found in .aioson/context/parallel.',
     missing_lanes: 'Missing lane files for requested workers: {lanes}.',
     source_missing: 'Could not resolve source document from --source={source}.',
     applied: 'Parallel scope assignment applied ({count} scope item(s)).',
@@ -517,7 +517,7 @@ module.exports = {
   },
   parallel_status: {
     parallel_missing: 'Parallel directory not found: {path}. Run parallel:init first.',
-    no_lanes: 'No lane status files were found in .aios-forge/context/parallel.',
+    no_lanes: 'No lane status files were found in .aioson/context/parallel.',
     title: 'Parallel status report: {path}',
     lanes_count: 'Lanes: {count}',
     statuses_title: 'Statuses:',
@@ -545,7 +545,7 @@ module.exports = {
     reason_chain_rpc_disabled: 'Web3 is disabled for this project.',
     reason_chain_rpc_enabled: 'dApp context detected; chain RPC access is required.',
     reason_makopy: 'Optional content pipeline integration.',
-    note_workspace_local: 'This is a workspace-local preset generated by AIOS Forge.',
+    note_workspace_local: 'This is a workspace-local preset generated by AIOSON.',
     note_replace_placeholders: 'Replace placeholder commands with the MCP servers you actually use.',
     note_keep_secrets_env: 'Keep secrets in environment variables, never inline tokens.',
     generated: 'MCP plan written: {path}',
@@ -566,23 +566,23 @@ module.exports = {
     context_parse_invalid: 'project.context.md could not be parsed ({reason}).',
     context_parse_invalid_hint: 'Fix context formatting to enable stack-aware MCP validation.',
     context_ok: 'project.context.md is available and parseable.',
-    plan_missing: 'MCP plan file was not found (.aios-forge/mcp/servers.local.json).',
-    plan_missing_hint: 'Run: aios-forge mcp:init',
+    plan_missing: 'MCP plan file was not found (.aioson/mcp/servers.local.json).',
+    plan_missing_hint: 'Run: aioson mcp:init',
     plan_invalid: 'MCP plan JSON is invalid: {error}',
-    plan_invalid_hint: 'Regenerate the plan with: aios-forge mcp:init',
+    plan_invalid_hint: 'Regenerate the plan with: aioson mcp:init',
     plan_ok: 'MCP plan file is present and valid JSON.',
     plan_servers_ok: 'MCP plan declares {count} server definition(s).',
     plan_servers_missing: 'MCP plan has no server definitions.',
-    plan_servers_hint: 'Regenerate with: aios-forge mcp:init',
+    plan_servers_hint: 'Regenerate with: aioson mcp:init',
     core_enabled: 'Core MCP server "{server}" is enabled.',
     core_missing: 'Core MCP server "{server}" is missing or disabled.',
     core_missing_hint: 'Regenerate and keep baseline core servers enabled.',
     presets_any_ok: '{count} MCP preset file(s) found.',
     presets_any_missing: 'No MCP preset files were found.',
-    presets_any_hint: 'Run: aios-forge mcp:init',
+    presets_any_hint: 'Run: aioson mcp:init',
     presets_coverage_partial: 'Only {existing}/{total} tool presets are present.',
     presets_coverage_partial_hint:
-      'Run: aios-forge mcp:init (without --tool) to generate all presets.',
+      'Run: aioson mcp:init (without --tool) to generate all presets.',
     presets_coverage_full: 'All tool presets are present (claude, codex, gemini, opencode).',
     env_none_required: 'No required environment variables in enabled MCP servers.',
     env_missing: '{missing}/{total} required env var(s) are missing: {vars}',
@@ -592,10 +592,10 @@ module.exports = {
     env_all_present: 'All required env vars are available ({count}).',
     compat_database_ok: 'Database MCP matches context stack engine ({engine}).',
     compat_database_mismatch: 'Database MCP does not fully match context stack ({engine}).',
-    compat_database_hint: 'Regenerate with: aios-forge mcp:init, or adjust database server manually.',
+    compat_database_hint: 'Regenerate with: aioson mcp:init, or adjust database server manually.',
     compat_web3_ok: 'chain-rpc MCP is enabled for Web3 context.',
     compat_web3_missing: 'Web3 context detected, but chain-rpc MCP is missing or disabled.',
-    compat_web3_missing_hint: 'Regenerate with: aios-forge mcp:init',
+    compat_web3_missing_hint: 'Regenerate with: aioson mcp:init',
     compat_web3_unneeded: 'chain-rpc MCP is enabled, but context is not Web3.',
     compat_web3_unneeded_hint: 'Disable chain-rpc if not needed.',
     report_title: 'MCP doctor report: {path}',
@@ -617,11 +617,11 @@ module.exports = {
     chromium_missing_hint: 'Run: npx playwright install chromium',
     config_ok: 'aios-qa.config.json found and valid.',
     config_missing: 'aios-qa.config.json not found.',
-    config_missing_hint: 'Run: aios-forge qa:init --url=<your-app-url>',
+    config_missing_hint: 'Run: aioson qa:init --url=<your-app-url>',
     config_invalid: 'aios-qa.config.json is not valid JSON: {error}',
     url_ok: 'Target URL is reachable ({url}).',
     url_missing: 'No target URL configured in aios-qa.config.json.',
-    url_missing_hint: 'Run: aios-forge qa:init --url=<your-app-url>',
+    url_missing_hint: 'Run: aioson qa:init --url=<your-app-url>',
     url_unreachable: 'Target URL is not reachable ({url}): {error}',
     url_unreachable_hint: 'Start your application before running qa:run or qa:scan.',
     context_ok: 'project.context.md found — tests will be enriched with project context.',
@@ -639,12 +639,12 @@ module.exports = {
     personas_count: 'Personas enabled: {count} (naive, hacker, power, mobile)',
     probes_count: 'Security probes enabled: {count}',
     next_steps: 'Next steps:',
-    step_doctor: '1. Verify prerequisites: aios-forge qa:doctor',
-    step_run: '2. Run browser tests: aios-forge qa:run'
+    step_doctor: '1. Verify prerequisites: aioson qa:doctor',
+    step_run: '2. Run browser tests: aioson qa:run'
   },
   qa_run: {
     playwright_missing: 'Playwright is not installed. Run: npm install -g playwright && npx playwright install chromium',
-    config_missing: 'aios-qa.config.json not found. Run: aios-forge qa:init --url=<your-app-url>',
+    config_missing: 'aios-qa.config.json not found. Run: aioson qa:init --url=<your-app-url>',
     url_missing: 'No URL configured. Add url to aios-qa.config.json or use --url=<app-url>.',
     starting: 'Starting browser QA session: {url}',
     persona_start: 'Running persona: {persona}',
@@ -661,7 +661,7 @@ module.exports = {
   },
   qa_scan: {
     playwright_missing: 'Playwright is not installed. Run: npm install -g playwright && npx playwright install chromium',
-    config_missing: 'aios-qa.config.json not found. Run: aios-forge qa:init --url=<your-app-url>',
+    config_missing: 'aios-qa.config.json not found. Run: aioson qa:init --url=<your-app-url>',
     url_missing: 'No URL configured. Add url to aios-qa.config.json or use --url=<app-url>.',
     starting: 'Starting autonomous scan: {url}',
     crawling: 'Crawling routes (max depth {depth}, max pages {pages})...',
@@ -673,12 +673,12 @@ module.exports = {
     html_report_written: 'HTML report written: {path}'
   },
   qa_report: {
-    not_found: 'No QA report found. Run: aios-forge qa:run or aios-forge qa:scan',
+    not_found: 'No QA report found. Run: aioson qa:run or aioson qa:scan',
     html_report_written: 'HTML report written: {path}'
   },
   config: {
     usage_error:
-      'Usage: aios-forge config <set KEY=value|show|get KEY> [--json] [--locale=en]',
+      'Usage: aioson config <set KEY=value|show|get KEY> [--json] [--locale=en]',
     set_ok: 'Config key set: {key} (saved to {path})',
     show_header: 'Global config: {path}',
     show_empty: '  (no keys configured)',
@@ -688,7 +688,7 @@ module.exports = {
   },
   runtime: {
     option_required: 'Required option missing: {option}',
-    store_missing: 'Runtime store not found: {path}. Run: aios-forge runtime:init',
+    store_missing: 'Runtime store not found: {path}. Run: aioson runtime:init',
     init_ok: 'Runtime store initialized: {path}',
     ingest_ok: 'Runtime contents indexed: {indexed} | skipped: {skipped} ({path})',
     task_start_ok: 'Task started: {task} ({path})',
@@ -743,23 +743,23 @@ module.exports = {
     check_executors: 'Declared executors: {count} | missing files: {missing}',
     check_output_dir: 'Squad output directory: {path}',
     check_media_dir: 'Squad media directory: {path}',
-    check_runtime_missing: 'Runtime store missing. Run aios-forge runtime:init.',
+    check_runtime_missing: 'Runtime store missing. Run aioson runtime:init.',
     check_active_runs: 'Active runs: {count} | possibly stuck (> {minutes} min): {stale}',
     check_content_indexing: 'Indexed contents: {indexed} | pending output files: {pending}',
     summary: 'Summary -> checks OK: {passed} | warnings: {warned} | failures: {failed}'
   },
   scan_project: {
-    scanning: 'aios-forge scan:project — scanning {dir}',
+    scanning: 'aioson scan:project — scanning {dir}',
     folder_required:
       'Pass --folder=<path[,path2]> to generate full scans for specific folders. Example: --folder=src or --folder=app.',
     folder_not_found: 'Folder "{folder}" was not found in this project. Top-level directories detected: {available}',
-    config_missing: '{file} not found. To use LLM mode, copy aios-forge-models.json and fill in your API keys.',
-    config_invalid: 'Invalid JSON in aios-forge-models.json: {error}',
-    provider_missing: 'LLM provider "{provider}" not found in aios-forge-models.json. Available: {available}',
+    config_missing: '{file} not found. To use LLM mode, copy aioson-models.json and fill in your API keys.',
+    config_invalid: 'Invalid JSON in aioson-models.json: {error}',
+    provider_missing: 'LLM provider "{provider}" not found in aioson-models.json. Available: {available}',
     provider_info: '  Provider : {provider}',
     model_info: '  Model    : {model}',
     context_found: '  Context  : project.context.md found',
-    context_missing: '  Context  : project.context.md not found (run aios-forge setup:context first)',
+    context_missing: '  Context  : project.context.md not found (run aioson setup:context first)',
     spec_found: '  Spec     : spec.md found — development memory included',
     local_only: '  LLM      : disabled by default — local scan only (use --with-llm to generate discovery.md + skeleton-system.md)',
     walking: '  Scanning project structure...',
@@ -767,9 +767,9 @@ module.exports = {
     index_written: '  Index    : local scan index written to {path} (mode: {mode})',
     folders_written: '  Folders  : folder map written to {path}',
     folder_written: '  Folder   : full map for {folder} written to {path}',
-    forge_written: '  AIOS     : useful .aios-forge map written to {path}',
+    forge_written: '  AIOS     : useful .aioson map written to {path}',
     dry_run_done: '[dry-run] Would scan {treeCount} entries and {keyCount} key files — no LLM call made.',
-    local_done: '  Result   : local scan completed — index, folder map, requested folder scans and .aios-forge map are ready.',
+    local_done: '  Result   : local scan completed — index, folder map, requested folder scans and .aioson map are ready.',
     calling_llm: '  Calling {provider} ({model})...',
     llm_missing_api_key:
       'The API key for provider "{provider}" is still missing in {file}. Fill providers.{provider}.api_key or choose another provider with --provider=...',

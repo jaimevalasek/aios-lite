@@ -18,7 +18,7 @@ const {
 } = require('../src/commands/runtime');
 
 async function makeTempDir() {
-  return fs.mkdtemp(path.join(os.tmpdir(), 'aios-forge-runtime-'));
+  return fs.mkdtemp(path.join(os.tmpdir(), 'aioson-runtime-'));
 }
 
 function createCollectLogger() {
@@ -41,7 +41,7 @@ test('runtime flow initializes store and tracks start/update/finish lifecycle', 
 
   const init = await runRuntimeInit({ args: [dir], options: {}, logger, t });
   assert.equal(init.ok, true);
-  assert.equal(init.dbPath.endsWith(path.join('.aios-forge', 'runtime', 'aios.sqlite')), true);
+  assert.equal(init.dbPath.endsWith(path.join('.aioson', 'runtime', 'aios.sqlite')), true);
 
   const task = await runRuntimeTaskStart({
     args: [dir],

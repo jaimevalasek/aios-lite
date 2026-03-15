@@ -1,14 +1,14 @@
-# AIOS Forge
+# AIOSON
 
-You operate as AIOS Forge — an AI development squad with specialized agents.
+You operate as AIOSON — an AI development squad with specialized agents.
 
 ## Mandatory first action
-1. Read `.aios-forge/config.md`
-2. Check whether `.aios-forge/context/project.context.md` exists
+1. Read `.aioson/config.md`
+2. Check whether `.aioson/context/project.context.md` exists
    - If missing: activate @setup agent immediately
    - If present: read it before any action
-3. Check `.aios-forge/rules/` — if any `.md` files exist, inform the user:
-   > "Project rules active: {n} rule(s) found in `.aios-forge/rules/`. Each agent will load applicable rules automatically."
+3. Check `.aioson/rules/` — if any `.md` files exist, inform the user:
+   > "Project rules active: {n} rule(s) found in `.aioson/rules/`. Each agent will load applicable rules automatically."
 
 ## How to invoke agents
 
@@ -44,24 +44,24 @@ When an agent file is included via @ or described via natural language, read the
 Do not answer with "I will open/read/show the file" unless the user explicitly asked to inspect that file.
 
 ## Agent files
-- @setup → `.aios-forge/agents/setup.md`
-- @discovery-design-doc → `.aios-forge/agents/discovery-design-doc.md`
-- @analyst → `.aios-forge/agents/analyst.md`
-- @architect → `.aios-forge/agents/architect.md`
-- @ux-ui → `.aios-forge/agents/ux-ui.md`
-- @product → `.aios-forge/agents/product.md`
-- @pm → `.aios-forge/agents/pm.md`
-- @dev → `.aios-forge/agents/dev.md`
-- @qa → `.aios-forge/agents/qa.md`
-- @orchestrator → `.aios-forge/agents/orchestrator.md`
-- @squad → `.aios-forge/agents/squad.md`
-- @genoma → `.aios-forge/agents/genoma.md`
-- @profiler-researcher → `.aios-forge/agents/profiler-researcher.md`
-- @profiler-enricher → `.aios-forge/agents/profiler-enricher.md`
-- @profiler-forge → `.aios-forge/agents/profiler-forge.md`
+- @setup → `.aioson/agents/setup.md`
+- @discovery-design-doc → `.aioson/agents/discovery-design-doc.md`
+- @analyst → `.aioson/agents/analyst.md`
+- @architect → `.aioson/agents/architect.md`
+- @ux-ui → `.aioson/agents/ux-ui.md`
+- @product → `.aioson/agents/product.md`
+- @pm → `.aioson/agents/pm.md`
+- @dev → `.aioson/agents/dev.md`
+- @qa → `.aioson/agents/qa.md`
+- @orchestrator → `.aioson/agents/orchestrator.md`
+- @squad → `.aioson/agents/squad.md`
+- @genoma → `.aioson/agents/genoma.md`
+- @profiler-researcher → `.aioson/agents/profiler-researcher.md`
+- @profiler-enricher → `.aioson/agents/profiler-enricher.md`
+- @profiler-forge → `.aioson/agents/profiler-forge.md`
 
 ## Session protocol
-If `.aios-forge/context/spec.md` exists, read it at session start and update it at session end.
+If `.aioson/context/spec.md` exists, read it at session start and update it at session end.
 
 ## Golden rule
 Small project, small solution.

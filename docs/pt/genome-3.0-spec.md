@@ -72,7 +72,7 @@ enneagram: "[XwY]"
 big_five: "O:[H] C:[M] E:[L] A:[L] N:[M]"
 mbti: "[XXXX]"
 confidence: [low|medium|high]
-profiler_report: ".aios-forge/profiler-reports/[slug]/enriched-profile.md"
+profiler_report: ".aioson/profiler-reports/[slug]/enriched-profile.md"
 hybrid_mode: [domain-function|single-persona|multi-persona]
 ```
 
@@ -98,7 +98,7 @@ enneagram: "3w4"
 big_five: "O:H C:H E:H A:M N:L"
 mbti: "ENTJ"
 confidence: medium
-profiler_report: ".aios-forge/profiler-reports/stefan-georgi/enriched-profile.md"
+profiler_report: ".aioson/profiler-reports/stefan-georgi/enriched-profile.md"
 ---
 ```
 
@@ -269,7 +269,7 @@ Além do markdown, recomenda-se um `.meta.json` correspondente com:
   "big_five": "O:H C:H E:H A:M N:L",
   "mbti": "ENTJ",
   "confidence": "medium",
-  "profiler_report": ".aios-forge/profiler-reports/stefan-georgi/enriched-profile.md"
+  "profiler_report": ".aioson/profiler-reports/stefan-georgi/enriched-profile.md"
 }
 ```
 

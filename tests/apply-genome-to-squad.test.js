@@ -8,14 +8,14 @@ const path = require('node:path');
 const { applyGenomeToExistingSquad } = require('../src/squads/apply-genome');
 
 async function makeTempDir() {
-  return fs.mkdtemp(path.join(os.tmpdir(), 'aios-forge-apply-genome-'));
+  return fs.mkdtemp(path.join(os.tmpdir(), 'aioson-apply-genome-'));
 }
 
 test('applyGenomeToExistingSquad persists bindings to blueprint, manifest and readiness', async () => {
   const projectRoot = await makeTempDir();
   const slug = 'content-lab';
-  const squadDir = path.join(projectRoot, '.aios-forge', 'squads', slug);
-  const designsDir = path.join(projectRoot, '.aios-forge', 'squads', '.designs');
+  const squadDir = path.join(projectRoot, '.aioson', 'squads', slug);
+  const designsDir = path.join(projectRoot, '.aioson', 'squads', '.designs');
   const manifestPath = path.join(squadDir, 'squad.manifest.json');
   const readinessPath = path.join(squadDir, 'docs', 'readiness.md');
   const blueprintPath = path.join(designsDir, `${slug}.blueprint.json`);
@@ -39,13 +39,13 @@ test('applyGenomeToExistingSquad persists bindings to blueprint, manifest and re
           {
             slug: 'writer',
             role: 'Writes content',
-            file: `.aios-forge/squads/${slug}/agents/writer.md`,
+            file: `.aioson/squads/${slug}/agents/writer.md`,
             genomes: ['legacy-voice']
           },
           {
             slug: 'reviewer',
             role: 'Reviews content',
-            file: `.aios-forge/squads/${slug}/agents/reviewer.md`
+            file: `.aioson/squads/${slug}/agents/reviewer.md`
           }
         ]
       },

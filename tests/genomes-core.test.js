@@ -22,7 +22,7 @@ const {
 } = require('../src/genome-files');
 
 async function makeTempDir() {
-  return fs.mkdtemp(path.join(os.tmpdir(), 'aios-forge-genomes-core-'));
+  return fs.mkdtemp(path.join(os.tmpdir(), 'aioson-genomes-core-'));
 }
 
 function createGenomeFixture() {
@@ -68,7 +68,7 @@ function createGenomeV3Fixture() {
     bigFive: 'O:H C:M E:L A:L N:L',
     mbti: 'INTJ',
     confidence: 'medium',
-    profilerReport: '.aios-forge/profiler-reports/naval-ravikant/enriched-profile.md',
+    profilerReport: '.aioson/profiler-reports/naval-ravikant/enriched-profile.md',
     sections: {
       knowledge: ['Leverage comes from code, media, capital, and specific knowledge.'],
       philosophies: ['Play long-term games with long-term people.'],
@@ -148,8 +148,8 @@ test('writeGenome persists markdown and meta files together', async () => {
   const genome = createGenomeFixture();
   const result = await writeGenome(dir, genome);
 
-  const markdownPath = path.join(dir, '.aios-forge', 'genomas', 'growth-marketing.md');
-  const metaPath = path.join(dir, '.aios-forge', 'genomas', 'growth-marketing.meta.json');
+  const markdownPath = path.join(dir, '.aioson', 'genomas', 'growth-marketing.md');
+  const metaPath = path.join(dir, '.aioson', 'genomas', 'growth-marketing.meta.json');
   const markdown = await fs.readFile(markdownPath, 'utf8');
   const meta = JSON.parse(await fs.readFile(metaPath, 'utf8'));
 
@@ -166,8 +166,8 @@ test('writeGenome persists genome v3 persona metadata', async () => {
   const genome = createGenomeV3Fixture();
   const result = await writeGenome(dir, genome);
 
-  const markdownPath = path.join(dir, '.aios-forge', 'genomas', 'naval-ravikant-leverage.md');
-  const metaPath = path.join(dir, '.aios-forge', 'genomas', 'naval-ravikant-leverage.meta.json');
+  const markdownPath = path.join(dir, '.aioson', 'genomas', 'naval-ravikant-leverage.md');
+  const metaPath = path.join(dir, '.aioson', 'genomas', 'naval-ravikant-leverage.meta.json');
   const markdown = await fs.readFile(markdownPath, 'utf8');
   const meta = JSON.parse(await fs.readFile(metaPath, 'utf8'));
 
@@ -180,6 +180,6 @@ test('writeGenome persists genome v3 persona metadata', async () => {
 });
 
 test('managed files include genome schemas', () => {
-  assert.equal(MANAGED_FILES.includes('.aios-forge/schemas/genome.schema.json'), true);
-  assert.equal(MANAGED_FILES.includes('.aios-forge/schemas/genome-meta.schema.json'), true);
+  assert.equal(MANAGED_FILES.includes('.aioson/schemas/genome.schema.json'), true);
+  assert.equal(MANAGED_FILES.includes('.aioson/schemas/genome-meta.schema.json'), true);
 });

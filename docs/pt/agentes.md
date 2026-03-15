@@ -6,7 +6,7 @@
 
 ## Visão geral
 
-O AIOS Forge tem agentes oficiais de projeto e também pode criar agentes de squad. Você não precisa usar todos — use apenas os que o contexto pede.
+O AIOSON tem agentes oficiais de projeto e também pode criar agentes de squad. Você não precisa usar todos — use apenas os que o contexto pede.
 
 ```
 @setup        ← sempre o primeiro
@@ -32,7 +32,7 @@ O AIOS Forge tem agentes oficiais de projeto e também pode criar agentes de squ
 **Quando usar:** Sempre. É o primeiro agente de qualquer projeto.
 
 **O que faz:**
-- Lê `.aios-forge/context/project.context.md`
+- Lê `.aioson/context/project.context.md`
 - Confirma stack, classificação e idioma
 - Define o plano de execução (quais agentes serão usados)
 - Orienta o desenvolvedor sobre os próximos passos
@@ -60,10 +60,10 @@ O AIOS Forge tem agentes oficiais de projeto e também pode criar agentes de squ
 - `@setup` continua sendo o primeiro agente
 - `@discovery-design-doc` entra como recomendação contextual, não como etapa obrigatória
 - se o pedido já estiver claro e pequeno, o fluxo pode seguir direto para `@dev`, `@analyst` ou `@architect`
-- se o usuário pedir o painel local do AIOS Forge, o fluxo correto agora é:
+- se o usuário pedir o painel local do AIOSON, o fluxo correto agora é:
   - abrir o app do dashboard já instalado no computador
   - clicar em criar/adicionar projeto
-  - selecionar a pasta do projeto que já contém `.aios-forge/`
+  - selecionar a pasta do projeto que já contém `.aioson/`
 
 ---
 
@@ -83,7 +83,7 @@ O AIOS Forge tem agentes oficiais de projeto e também pode criar agentes de squ
 /product
 ```
 
-**Entrega:** Arquivo `.aios-forge/context/prd.md` ou `.aios-forge/context/prd-{slug}.md` com:
+**Entrega:** Arquivo `.aioson/context/prd.md` ou `.aioson/context/prd-{slug}.md` com:
 - visão e problema do produto
 - usuários e escopo inicial do MVP
 - fluxos principais
@@ -122,7 +122,7 @@ O AIOS Forge tem agentes oficiais de projeto e também pode criar agentes de squ
 6. Quais dados são mais sensíveis ou críticos?
 ```
 
-**Entrega:** Arquivo `.aios-forge/context/discovery.md` com:
+**Entrega:** Arquivo `.aioson/context/discovery.md` com:
 - Mapa de entidades e atributos
 - Tabela de campos com tipo e restrições
 - Integrações mapeadas
@@ -138,8 +138,8 @@ O AIOS Forge tem agentes oficiais de projeto e também pode criar agentes de squ
 **O que faz:**
 - transforma briefing bruto em problema claro
 - identifica o que já está definido e o que ainda falta
-- produz `.aios-forge/context/design-doc.md`
-- produz `.aios-forge/context/readiness.md`
+- produz `.aioson/context/design-doc.md`
+- produz `.aioson/context/readiness.md`
 - detecta `modo projeto` ou `modo feature`
 - recomenda skills e documentos sob demanda para a próxima etapa
 - recomenda o próximo agente ou documento do fluxo
@@ -192,7 +192,7 @@ database/migrations/
 tests/
 ```
 
-**Entrega:** Arquivo `.aios-forge/context/architecture.md` com:
+**Entrega:** Arquivo `.aioson/context/architecture.md` com:
 - Estrutura de pastas (proporcional ao tamanho)
 - Stack definitiva
 - Decisões técnicas documentadas
@@ -219,7 +219,7 @@ tests/
 /ux-ui
 ```
 
-**Entrega:** Arquivo `.aios-forge/context/ui-spec.md` com:
+**Entrega:** Arquivo `.aioson/context/ui-spec.md` com:
 - Sistema de design (tokens, cores, tipografia)
 - Componentes principais e estados
 - Fluxos de navegação
@@ -247,7 +247,7 @@ tests/
 
 **Regra de ouro do @pm:** O documento deve ter no máximo 2 páginas. Se passar disso, corte funcionalidades do MVP.
 
-**Entrega:** Atualização do `.aios-forge/context/prd.md` com:
+**Entrega:** Atualização do `.aioson/context/prd.md` com:
 - priorização final do MVP
 - plano de entrega por fase
 - critérios de aceite compactos
@@ -264,7 +264,7 @@ tests/
 - Em MEDIUM: lê o `prd.md` e `architecture.md`, cria grafo de dependências e divide em lanes paralelas
 - Gerencia progresso via arquivos de status e `shared-decisions.md`
 
-**Comando `*update-spec`:** atualiza `.aios-forge/context/spec.md` com features concluídas, novas decisões e blockers da sessão atual.
+**Comando `*update-spec`:** atualiza `.aioson/context/spec.md` com features concluídas, novas decisões e blockers da sessão atual.
 
 **Como ativar:**
 ```
@@ -273,14 +273,14 @@ tests/
 
 **Ou via CLI para preparar os arquivos:**
 ```bash
-npx aios-forge parallel:init
-npx aios-forge parallel:assign --source=prd --workers=3
-npx aios-forge parallel:status
+npx aioson parallel:init
+npx aioson parallel:assign --source=prd --workers=3
+npx aioson parallel:status
 ```
 
 **Entrega:**
-- `.aios-forge/context/parallel/shared-decisions.md`
-- `.aios-forge/context/parallel/agent-1.status.md` (e 2, 3...)
+- `.aioson/context/parallel/shared-decisions.md`
+- `.aioson/context/parallel/agent-1.status.md` (e 2, 3...)
 - Cada lane tem seu escopo definido
 
 ---
@@ -293,23 +293,23 @@ npx aios-forge parallel:status
 - Pergunta o objetivo e o tipo de trabalho
 - Consolida um mini pacote de `discovery/design-doc/readiness` antes de compor a squad
 - Gera uma squad modular, não apenas uma pasta de agentes
-- Cria `.aios-forge/squads/{squad-slug}/agents/agents.md`
-- Cria `.aios-forge/squads/{squad-slug}/squad.manifest.json`
-- Cria `.aios-forge/squads/{squad-slug}/docs/design-doc.md`
-- Cria `.aios-forge/squads/{squad-slug}/docs/readiness.md`
-- Cria executores reais em `.aios-forge/squads/{squad-slug}/agents/`
+- Cria `.aioson/squads/{squad-slug}/agents/agents.md`
+- Cria `.aioson/squads/{squad-slug}/squad.manifest.json`
+- Cria `.aioson/squads/{squad-slug}/docs/design-doc.md`
+- Cria `.aioson/squads/{squad-slug}/docs/readiness.md`
+- Cria executores reais em `.aioson/squads/{squad-slug}/agents/`
 - Cria um `@orquestrador` próprio para esse squad
-- Registra metadata em `.aios-forge/squads/{slug}/squad.md`
+- Registra metadata em `.aioson/squads/{slug}/squad.md`
 - Declara `skills`, `MCPs`, política de `subagentes` e diretório `media/`
 - Declara `contentBlueprints` quando a squad for orientada a conteúdo
 - Trabalha com autonomia alta por padrão e evita perguntas extras quando a inferência já é suficiente
 - Detecta se o pedido parece mais `modo projeto` ou `modo feature`
 - Recomenda skills e documentos sob demanda em vez de inflar o contexto inteiro
-- Reaproveita skills instaladas em `.aios-forge/squads/{slug}/skills/` antes de criar especializações novas
+- Reaproveita skills instaladas em `.aioson/squads/{slug}/skills/` antes de criar especializações novas
 - Materializa o pacote minimo de contexto da squad para o runtime, dashboard e cloud
 - Pode organizar entregáveis estruturados como `content.json + index.html` por `content_key`
 - Usa `contentBlueprints` como contrato dinâmico do domínio; o framework fixa a casca do conteúdo, não os campos internos
-- Quando o usuário pedir painel local da squad, deve apontar para o app do dashboard instalado separadamente e para a seleção da pasta que já contém `.aios-forge/`, sem mandar usar `dashboard:*`
+- Quando o usuário pedir painel local da squad, deve apontar para o app do dashboard instalado separadamente e para a seleção da pasta que já contém `.aioson/`, sem mandar usar `dashboard:*`
 
 **Como ativar:**
 ```
@@ -333,7 +333,7 @@ npx aios-forge parallel:status
 
 **O que faz:**
 - Gera `O que saber`, `Mentes` e `Skills`
-- Pode salvar em `.aios-forge/genomas/`
+- Pode salvar em `.aioson/genomas/`
 - Pode ser aplicado depois a um squad já existente
 - Atua como camada cognitiva do sistema, não como executor
 
@@ -353,7 +353,7 @@ npx aios-forge parallel:status
 - `subagente` = investigação temporária
 
 Quando uma skill vier do catálogo online ou de outro pacote, ela deve ser salva em:
-- `.aios-forge/squads/{slug}/skills/{dominio}/{skill-slug}.md`
+- `.aioson/squads/{slug}/skills/{dominio}/{skill-slug}.md`
 
 Depois disso, ela passa a ser parte real do pacote local da squad e deve ser considerada pelos agentes sob demanda.
 
@@ -382,7 +382,7 @@ Depois disso, ela passa a ser parte real do pacote local da squad e deve ser con
 - Isolar lógica de negócio dos handlers de requisição
 - Validar input na fronteira do sistema (nunca depois)
 - Seguir as convenções nativas do framework do projeto
-- Verificar skills disponíveis em `.aios-forge/skills/static/` antes de implementar
+- Verificar skills disponíveis em `.aioson/skills/static/` antes de implementar
 
 **Execução atômica** — O @dev trabalha em passos pequenos e validados, nunca implementa uma feature inteira de uma vez:
 1. Declara o próximo passo antes de escrever código

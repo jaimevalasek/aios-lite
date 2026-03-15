@@ -62,7 +62,7 @@ async function listFilesRecursive(rootDir) {
 async function resolveSquadSlug(targetDir, requestedSlug) {
   if (requestedSlug) return String(requestedSlug).trim();
 
-  const metadataDir = path.join(targetDir, '.aios-forge', 'squads');
+  const metadataDir = path.join(targetDir, '.aioson', 'squads');
   const agentsDir = path.join(targetDir, 'agents');
   const candidates = new Set();
 
@@ -86,11 +86,11 @@ async function resolveSquadSlug(targetDir, requestedSlug) {
 }
 
 async function parseSquadPaths(targetDir, slug) {
-  const packageDir = path.join(targetDir, '.aios-forge', 'squads', slug);
+  const packageDir = path.join(targetDir, '.aioson', 'squads', slug);
   const hasPackageDir = await pathExists(packageDir);
   const metadataPath = hasPackageDir
     ? path.join(packageDir, 'squad.md')
-    : path.join(targetDir, '.aios-forge', 'squads', `${slug}.md`);
+    : path.join(targetDir, '.aioson', 'squads', `${slug}.md`);
   const manifestPath = hasPackageDir
     ? path.join(packageDir, 'squad.manifest.json')
     : path.join(targetDir, 'agents', slug, 'squad.manifest.json');
@@ -117,7 +117,7 @@ async function parseSquadPaths(targetDir, slug) {
     readinessPath,
     manifest,
     agentsDir: hasPackageDir
-      ? path.join(targetDir, normalizeRel(packageInfo.agentsDir || `.aios-forge/squads/${slug}/agents`))
+      ? path.join(targetDir, normalizeRel(packageInfo.agentsDir || `.aioson/squads/${slug}/agents`))
       : path.join(targetDir, 'agents', slug),
     outputDir: path.join(targetDir, normalizeRel(rules.outputsDir || `output/${slug}`)),
     logsDir: path.join(targetDir, normalizeRel(rules.logsDir || `aios-logs/${slug}`)),

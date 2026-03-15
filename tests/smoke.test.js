@@ -10,7 +10,7 @@ const { runSmokeTest } = require('../src/commands/smoke');
 const { validateProjectContextFile } = require('../src/context');
 
 async function makeTempDir() {
-  return fs.mkdtemp(path.join(os.tmpdir(), 'aios-forge-smoke-test-'));
+  return fs.mkdtemp(path.join(os.tmpdir(), 'aioson-smoke-test-'));
 }
 
 async function fileExists(filePath) {
@@ -36,7 +36,7 @@ test('test:smoke runs end-to-end and keeps workspace when requested', async () =
 
   assert.equal(result.ok, true);
   assert.equal(result.steps.length >= 8, true);
-  assert.equal(await fileExists(path.join(result.projectDir, '.aios-forge/context/project.context.md')), true);
+  assert.equal(await fileExists(path.join(result.projectDir, '.aioson/context/project.context.md')), true);
 
   await fs.rm(result.workspaceRoot, { recursive: true, force: true });
 });
@@ -135,7 +135,7 @@ test('test:smoke applies es/fr localized agent packs into active prompts', async
     assert.equal(result.ok, true);
     assert.equal(result.language, check.lang);
 
-    const setupAgentPath = path.join(result.projectDir, '.aios-forge/agents/setup.md');
+    const setupAgentPath = path.join(result.projectDir, '.aioson/agents/setup.md');
     const setupAgentContent = await fs.readFile(setupAgentPath, 'utf8');
     assert.equal(setupAgentContent.includes(check.marker), true);
 

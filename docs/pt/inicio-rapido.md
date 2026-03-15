@@ -16,35 +16,35 @@
 
 ```bash
 mkdir meu-projeto && cd meu-projeto
-npx aios-forge init
+npx aioson init
 ```
 
 ### Projeto existente
 
 ```bash
 cd meu-projeto
-npx aios-forge install
+npx aioson install
 ```
 
-Isso cria a pasta `.aios-forge/` com todos os arquivos de configuração, agentes e contexto.
+Isso cria a pasta `.aioson/` com todos os arquivos de configuração, agentes e contexto.
 
 Se o projeto já for brownfield e você quiser gerar um panorama inicial da base, rode depois:
 
 ```bash
-npx aios-forge scan:project . --folder=src
+npx aioson scan:project . --folder=src
 ```
 
 O scanner cria estes arquivos localmente:
 
-- `.aios-forge/context/scan-index.md`
-- `.aios-forge/context/scan-folders.md`
-- `.aios-forge/context/scan-<pasta>.md`
-- `.aios-forge/context/scan-aios-forge.md`
+- `.aioson/context/scan-index.md`
+- `.aioson/context/scan-folders.md`
+- `.aioson/context/scan-<pasta>.md`
+- `.aioson/context/scan-aioson.md`
 
 Se você também quiser gerar `discovery.md` e `skeleton-system.md`, ative a etapa opcional com LLM:
 
 ```bash
-npx aios-forge scan:project . --folder=src --with-llm --provider=openai
+npx aioson scan:project . --folder=src --with-llm --provider=openai
 ```
 
 ---
@@ -52,7 +52,7 @@ npx aios-forge scan:project . --folder=src --with-llm --provider=openai
 ## 2. Configure o contexto do projeto
 
 ```bash
-npx aios-forge setup:context
+npx aioson setup:context
 ```
 
 O CLI vai fazer perguntas sobre seu projeto:
@@ -66,7 +66,7 @@ O CLI vai fazer perguntas sobre seu projeto:
 ? Idioma de conversa: pt-BR
 ```
 
-Isso gera `.aios-forge/context/project.context.md` — o arquivo que orienta todos os agentes.
+Isso gera `.aioson/context/project.context.md` — o arquivo que orienta todos os agentes.
 
 ---
 
@@ -74,7 +74,7 @@ Isso gera `.aios-forge/context/project.context.md` — o arquivo que orienta tod
 
 No **Claude Code** (CLAUDE.md já configurado):
 ```
-/aios-forge/setup
+/aioson/setup
 ```
 
 No **Codex** (AGENTS.md já configurado — sem slash commands):

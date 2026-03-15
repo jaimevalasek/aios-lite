@@ -9,7 +9,7 @@ const { execSync } = require('node:child_process');
 const { runSquadExport } = require('../src/commands/squad-export');
 
 async function makeTempDir() {
-  return fs.mkdtemp(path.join(os.tmpdir(), 'aios-forge-squad-export-'));
+  return fs.mkdtemp(path.join(os.tmpdir(), 'aioson-squad-export-'));
 }
 
 function createCollectLogger() {
@@ -18,7 +18,7 @@ function createCollectLogger() {
 }
 
 async function createMinimalSquad(dir, slug) {
-  const squadDir = path.join(dir, '.aios-forge', 'squads', slug);
+  const squadDir = path.join(dir, '.aioson', 'squads', slug);
   await fs.mkdir(path.join(squadDir, 'agents'), { recursive: true });
   await fs.writeFile(path.join(squadDir, 'squad.manifest.json'), JSON.stringify({ slug, name: 'Test', mode: 'content', mission: 'Test', goal: 'Test', schemaVersion: '1.0.0' }));
   await fs.writeFile(path.join(squadDir, 'agents', 'agents.md'), '# Squad\n');
@@ -35,7 +35,7 @@ test('exports valid squad to tar.gz', { skip: !tarAvailable() }, async () => {
   const logger = createCollectLogger();
   const result = await runSquadExport({ args: [dir], options: { squad: 'my-squad' }, logger });
   assert.ok(result.ok);
-  const outputFile = path.join(dir, '.aios-forge', 'squads', 'exports', 'my-squad.aios-squad.tar.gz');
+  const outputFile = path.join(dir, '.aioson', 'squads', 'exports', 'my-squad.aios-squad.tar.gz');
   const stat = await fs.stat(outputFile);
   assert.ok(stat.size > 0, 'Export file should have content');
 });

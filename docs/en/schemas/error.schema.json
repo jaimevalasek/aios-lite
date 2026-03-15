@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://aiosforge.dev/schemas/error.schema.json",
-  "title": "AIOS Forge CLI --json error output",
+  "title": "AIOSON CLI --json error output",
   "type": "object",
   "required": ["ok", "error"],
   "properties": {

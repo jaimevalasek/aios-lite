@@ -9,7 +9,7 @@ const { createTranslator } = require('../src/i18n');
 const { runSetupContext } = require('../src/commands/setup-context');
 
 async function makeTempDir() {
-  return fs.mkdtemp(path.join(os.tmpdir(), 'aios-forge-setup-context-'));
+  return fs.mkdtemp(path.join(os.tmpdir(), 'aioson-setup-context-'));
 }
 
 function createQuietLogger() {
@@ -181,7 +181,7 @@ test('setup:context preserves the Forge version contract in output data and fron
     args: [projectDir],
     options: {
       defaults: true,
-      'aios-forge-version': '9.9.9'
+      'aioson-version': '9.9.9'
     },
     logger,
     t
@@ -189,6 +189,6 @@ test('setup:context preserves the Forge version contract in output data and fron
 
   const content = await fs.readFile(result.filePath, 'utf8');
 
-  assert.equal(result.data.aiosForgeVersion, '9.9.9');
-  assert.equal(content.includes('aios_forge_version: "9.9.9"'), true);
+  assert.equal(result.data.aiosonVersion, '9.9.9');
+  assert.equal(content.includes('aioson_version: "9.9.9"'), true);
 });

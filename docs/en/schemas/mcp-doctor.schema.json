@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://aiosforge.dev/schemas/mcp-doctor.schema.json",
-  "title": "AIOS Forge mcp:doctor --json output",
+  "title": "AIOSON mcp:doctor --json output",
   "type": "object",
   "required": ["ok", "targetDir", "strictEnv", "context", "plan", "env", "presets", "checks", "summary"],
   "properties": {

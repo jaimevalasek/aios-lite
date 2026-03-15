@@ -10,7 +10,7 @@ const { runAgentsList, runAgentPrompt } = require('../src/commands/agents');
 const { openRuntimeDb } = require('../src/runtime-store');
 
 async function makeTempDir() {
-  return fs.mkdtemp(path.join(os.tmpdir(), 'aios-forge-agents-cmd-'));
+  return fs.mkdtemp(path.join(os.tmpdir(), 'aioson-agents-cmd-'));
 }
 
 function createCollectLogger() {
@@ -27,10 +27,10 @@ function createCollectLogger() {
 }
 
 async function writeProjectContext(dir, classification = 'SMALL') {
-  await fs.mkdir(path.join(dir, '.aios-forge/context'), { recursive: true });
+  await fs.mkdir(path.join(dir, '.aioson/context'), { recursive: true });
   await fs.writeFile(
-    path.join(dir, '.aios-forge/context/project.context.md'),
-    `---\nproject_name: "demo"\nproject_type: "web_app"\nprofile: "developer"\nframework: "Next.js"\nframework_installed: true\nclassification: "${classification}"\nconversation_language: "en"\naios_forge_version: "1.2.1"\n---\n\n# Context\n`,
+    path.join(dir, '.aioson/context/project.context.md'),
+    `---\nproject_name: "demo"\nproject_type: "web_app"\nprofile: "developer"\nframework: "Next.js"\nframework_installed: true\nclassification: "${classification}"\nconversation_language: "en"\naioson_version: "1.2.1"\n---\n\n# Context\n`,
     'utf8'
   );
 }
@@ -116,7 +116,7 @@ test('agent:prompt classifies squad handoff as squad runtime activity', async ()
 test('agent:prompt enforces workflow and routes to the active stage', async () => {
   const dir = await makeTempDir();
   await writeProjectContext(dir, 'SMALL');
-  await fs.writeFile(path.join(dir, '.aios-forge/context/prd.md'), '# PRD\n', 'utf8');
+  await fs.writeFile(path.join(dir, '.aioson/context/prd.md'), '# PRD\n', 'utf8');
   const { t } = createTranslator('en');
   const logger = createCollectLogger();
 

@@ -1,0 +1,276 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://aiosforge.dev/schemas/squad-manifest.schema.json",
+  "title": "AIOSON Squad Manifest",
+  "description": "Schema para squad.manifest.json",
+  "type": "object",
+  "required": ["schemaVersion", "slug", "name", "mode", "mission", "goal"],
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "description": "Versão do schema (semver)"
+    },
+    "packageVersion": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "slug": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$",
+      "minLength": 2,
+      "maxLength": 50,
+      "description": "Identificador kebab-case do squad"
+    },
+    "name": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "mode": {
+      "type": "string",
+      "enum": ["content", "software", "research", "mixed"],
+      "description": "Tipo principal do squad"
+    },
+    "mission": { "type": "string", "maxLength": 500 },
+    "goal": { "type": "string", "maxLength": 500 },
+    "visibility": {
+      "type": "string",
+      "enum": ["private", "public"],
+      "default": "private"
+    },
+    "aiosLiteCompatibility": { "type": "string" },
+    "storagePolicy": {
+      "type": "object",
+      "properties": {
+        "primary": { "type": "string", "enum": ["sqlite", "file"] },
+        "artifacts": { "type": "string" },
+        "exports": {
+          "type": "object",
+          "properties": {
+            "html": { "type": "boolean" },
+            "markdown": { "type": "boolean" },
+            "json": { "type": "boolean" }
+          }
+        }
+      }
+    },
+    "package": {
+      "type": "object",
+      "properties": {
+        "rootDir": { "type": "string" },
+        "agentsDir": { "type": "string" },
+        "skillsDir": { "type": "string" },
+        "templatesDir": { "type": "string" },
+        "docsDir": { "type": "string" }
+      }
+    },
+    "rules": {
+      "type": "object",
+      "properties": {
+        "outputsDir": { "type": "string" },
+        "logsDir": { "type": "string" },
+        "mediaDir": { "type": "string" },
+        "reviewPolicy": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "executors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["slug", "role", "file"],
+        "properties": {
+          "slug": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+          "title": { "type": "string" },
+          "role": { "type": "string" },
+          "file": { "type": "string" },
+          "skills": { "type": "array", "items": { "type": "string" } },
+          "genomes": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                { "type": "string" },
+                {
+                  "type": "object",
+                  "required": ["slug"],
+                  "properties": {
+                    "slug": { "type": "string" },
+                    "type": { "type": "string" },
+                    "mode": { "type": "string" },
+                    "source": { "type": "string" },
+                    "priority": { "type": "integer" },
+                    "version": { "type": "string" },
+                    "evidenceMode": { "type": "string" },
+                    "notes": { "type": "string" }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    "skills": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["slug"],
+        "properties": {
+          "slug": { "type": "string" },
+          "title": { "type": "string" },
+          "description": { "type": "string" }
+        }
+      }
+    },
+    "mcps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["slug"],
+        "properties": {
+          "slug": { "type": "string" },
+          "required": { "type": "boolean" },
+          "purpose": { "type": "string" }
+        }
+      }
+    },
+    "subagents": {
+      "type": "object",
+      "properties": {
+        "allowed": { "type": "boolean" },
+        "when": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "genomes": {
+      "oneOf": [
+        {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              { "type": "string" },
+              { "type": "object" }
+            ]
+          }
+        },
+        {
+          "type": "object",
+          "properties": {
+            "squad": {
+              "type": "array",
+              "items": {
+                "oneOf": [
+                  { "type": "string" },
+                  {
+                    "type": "object",
+                    "required": ["slug"],
+                    "properties": {
+                      "slug": { "type": "string" },
+                      "type": { "type": "string" },
+                      "mode": { "type": "string" },
+                      "source": { "type": "string" },
+                      "priority": { "type": "integer" },
+                      "version": { "type": "string" },
+                      "evidenceMode": { "type": "string" },
+                      "notes": { "type": "string" }
+                    }
+                  }
+                ]
+              }
+            },
+            "executors": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "array",
+                "items": {
+                  "oneOf": [
+                    { "type": "string" },
+                    {
+                      "type": "object",
+                      "required": ["slug"],
+                      "properties": {
+                        "slug": { "type": "string" },
+                        "type": { "type": "string" },
+                        "mode": { "type": "string" },
+                        "source": { "type": "string" },
+                        "priority": { "type": "integer" },
+                        "version": { "type": "string" },
+                        "evidenceMode": { "type": "string" },
+                        "notes": { "type": "string" }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "contentBlueprints": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["slug", "contentType", "layoutType"],
+        "properties": {
+          "slug": { "type": "string" },
+          "contentType": { "type": "string" },
+          "layoutType": {
+            "type": "string",
+            "enum": ["document", "tabs", "accordion", "stack", "mixed"]
+          },
+          "description": { "type": "string" },
+          "sections": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["key", "label"],
+              "properties": {
+                "key": { "type": "string" },
+                "label": { "type": "string" },
+                "blockTypes": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "ports": {
+    "type": "object",
+    "description": "Declaração de inputs e outputs para conexão inter-squad",
+    "properties": {
+      "inputs": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": ["key"],
+          "properties": {
+            "key": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+            "dataType": { "type": "string", "enum": ["text", "json", "file", "file-list", "any"], "default": "any" },
+            "description": { "type": "string" },
+            "required": { "type": "boolean", "default": false }
+          }
+        }
+      },
+      "outputs": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": ["key"],
+          "properties": {
+            "key": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+            "dataType": { "type": "string", "enum": ["text", "json", "file", "file-list", "any"], "default": "any" },
+            "description": { "type": "string" },
+            "contentBlueprintSlug": { "type": "string" }
+          }
+        }
+      }
+    }
+  },
+  "additionalProperties": true
+}
