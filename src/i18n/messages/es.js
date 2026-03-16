@@ -208,7 +208,7 @@ module.exports = {
     active_path: 'Ruta activa',
     depends: 'Depende de',
     output: 'Salida',
-    agent_line: '- Agente: {command} ({id})',
+    agent_line: '- Agente: {label} - {command} ({id})',
     path_line: '  Ruta: {path}',
     active_path_line: '  Ruta activa: {path}',
     depends_line: '  Depende de: {value}',

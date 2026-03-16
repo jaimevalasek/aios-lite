@@ -61,6 +61,16 @@ If `framework_installed=true` in `project.context.md`:
   > `aioson scan:project`
 - **If present:** read `skeleton-system.md` first (lightweight index), then `discovery.md` AND `spec.md` together — they are two halves of project memory. Never read one without the other.
 
+## Context integrity
+
+Read `project.context.md` before implementation and keep it trustworthy.
+
+Rules:
+- If the file is inconsistent with the actual scope or stack already proven by the active artifacts, repair the objectively inferable metadata inside the workflow before coding.
+- Only correct fields grounded in current evidence (`project_type`, `framework`, `framework_installed`, `classification`, `design_skill`, `conversation_language`, and similar metadata). Do not invent product requirements.
+- If a field is uncertain and blocks implementation, pause for the minimum clarification or route the workflow back to `@setup`. Do not bypass the workflow.
+- Never suggest direct execution outside the workflow as a workaround for stale context.
+
 ## Implementation strategy
 - Start from data layer (migrations/models/contracts).
 - Implement services/use-cases before UI handlers.
@@ -113,6 +123,15 @@ resources/views/<resource>/   ← plural folder (users/, orders/)
 - Always implement: loading states, empty states, and error states
 - Always provide visual feedback for user actions
 
+## Design skill conventions
+- Read `design_skill` from `.aioson/context/project.context.md` before implementing any user-facing UI.
+- If `design_skill` is set, load `.aioson/skills/design/{design_skill}/SKILL.md` and only the references needed for the current screen or component.
+- If `design_skill` is set, treat it as the only visual system for the task. Do not mix it with `.aioson/skills/static/interface-design.md` or `.aioson/skills/static/premium-command-center-ui.md`.
+- If UI work is in scope, `project_type` is `site` or `web_app`, `design_skill` is blank, and `ui-spec.md` is absent, stop and ask whether to route through `@ux-ui` or proceed explicitly without a registered design skill.
+- Never auto-select, replace, or reinterpret a design skill inside `@dev`.
+- When implementing design-skill tokens, make sure CSS variables exist in the same scope where they are consumed. If `body` consumes `var(--font-body)`, typography tokens must live in `:root` or the font must be applied on the themed shell instead.
+- For premium tables and list rows, avoid `border-collapse: collapse` plus row background on `tr` when the selected design skill expects surfaced rows. Prefer separated rows or cell-based surfaces unless the existing component library dictates otherwise.
+
 ## Motion and animation (React / Next.js)
 
 When `framework=React` or `framework=Next.js` and the project has visual/marketing pages or the user requests animations:
@@ -122,6 +141,7 @@ When `framework=React` or `framework=Next.js` and the project has visual/marketi
 3. Use **Framer Motion** as the primary library; plain CSS `@keyframes` as fallback when Framer Motion is not installed
 4. Always include `prefers-reduced-motion` fallback for every animation
 5. Never apply heavy motion to pure admin/CRUD interfaces — motion serves the user, not the data
+6. Treat `react-motion-patterns.md` as implementation mechanics only. It must not override the selected `design_skill` typography, spacing, depth, or page composition.
 
 ## Web3 conventions (when `project_type=dapp`)
 - Validate inputs on-chain and off-chain
@@ -157,13 +177,13 @@ Interface copy, onboarding text, email content, and marketing text are not withi
 For stacks not listed above, apply the same separation principles:
 - Isolate business logic from request handlers (controller/route/handler → service/use-case).
 - Validate all input at the system boundary before it touches business logic.
-- Follow the framework's own conventions — check `.aioson/skills/static/` for available skill files.
+- Follow the framework's own conventions — check `.aioson/skills/static/`, `.aioson/skills/dynamic/`, and `.aioson/skills/design/` for available skill files.
 - If no skill file exists for the stack, apply the general pattern and document deviations in architecture.md.
 
 ## Working rules
 - Keep changes small and reviewable.
 - Enforce server-side validation and authorization.
-- Reuse project skills in `.aioson/skills/static` and `.aioson/skills/dynamic`.
+- Reuse project skills in `.aioson/skills/static`, `.aioson/skills/dynamic`, and `.aioson/skills/design`.
 - Also reuse squad-installed skills in `.aioson/squads/{squad-slug}/skills/` when the task belongs to a squad package.
 - Load detailed skills and documents on demand, not all at once.
 - Decide the minimum context package for the current implementation batch before coding.
@@ -197,5 +217,6 @@ When the user types `*update-skeleton`, rewrite `.aioson/context/skeleton-system
 ## Hard constraints
 - Use `conversation_language` from project context for all interaction/output.
 - If discovery/architecture is ambiguous, ask for clarification before implementing guessed behavior.
+- If a UI implementation depends on visual direction and `design_skill` is still blank, do not invent one silently.
 - No unnecessary rewrites outside current responsibility.
 - Do not copy content from discovery.md or architecture.md into your output. Reference by section name. The full document chain is already in context — re-stating it wastes tokens and introduces drift.

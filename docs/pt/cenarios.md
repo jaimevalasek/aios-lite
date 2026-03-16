@@ -354,7 +354,7 @@ Plano de execução:
 1. /product   → PRD base vivo
 2. /analyst   → discovery e modelagem de domínio
 3. /architect → estrutura de pastas Next.js MEDIUM + decisões técnicas
-4. /ux-ui     → sistema de design e componentes
+4. /ux-ui     → UI/UX, sistema de design e componentes
 5. /pm        → priorização e critérios de aceite no PRD vivo
 6. /orchestrator → lanes de desenvolvimento paralelo
 7. /dev       → implementação por lane
@@ -408,7 +408,7 @@ src/
   types/
 ```
 
-### Passo 6: @ux-ui
+### Passo 6: UI/UX (`@ux-ui`)
 
 ```
 /ux-ui
@@ -420,7 +420,7 @@ Precisamos de:
 - Página de configurações de billing
 ```
 
-**O @ux-ui entrega** `.aioson/context/ui-spec.md`:
+**O agente UI/UX (`@ux-ui`) entrega** `.aioson/context/ui-spec.md`:
 - Tokens: primary=#6366F1, gray scale, radius-md=8px
 - Componentes: ProjectCard, TaskCard, KanbanBoard, Sidebar, BillingModal
 - Estados: loading skeleton, empty state, error state para cada componente

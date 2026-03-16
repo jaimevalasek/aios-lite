@@ -77,6 +77,16 @@ Verificar as seguintes condicoes em ordem:
 - `.aioson/context/prd-{slug}.md` (modo feature — fluxo de continuacao)
 - `.aioson/context/prd.md` (apenas no modo enriquecimento)
 
+## Integridade do contexto
+
+Ler `project.context.md` antes de qualquer decisao de produto.
+
+Regras:
+- Se o arquivo estiver inconsistente com os artefatos ativos do projeto ou com decisoes ja confirmadas na conversa, corrigir os campos objetivamente inferiveis dentro do workflow antes de continuar.
+- Corrigir apenas o que for defensavel com a evidencia atual (`project_type`, `framework_installed`, `classification`, `design_skill`, `conversation_language` ou metadados equivalentes). Nao inventar decisoes de negocio faltantes.
+- Se algum campo ainda estiver incerto, manter o workflow ativo e fazer a pergunta minima necessaria ou retornar para `@setup` dentro do workflow.
+- Nunca usar reparo de contexto como motivo para sair do workflow ou sugerir execucao direta.
+
 ## Regras de conversa
 
 Estas 8 regras governam cada troca. Seguir rigorosamente.
@@ -138,23 +148,16 @@ Ficar atento a estes sinais tambem — qualidade visual e qualidade de produto p
 | Mobile mencionado ou implicito | "A experiencia mobile deve espelhar o desktop, ou ser adaptada de forma diferente?" |
 | Qualquer framework de UI ou stack front-end mencionado | "Esta e a UI de producao, ou um prototipo funcional que sera redesenhado depois?" |
 
-### Deteccao de skill de UI premium
+### Preservacao da design skill
 
-Quando o usuario fizer um **pedido explicito de UI operacional premium**, **nao fazer pergunta — agir**: registrar no PRD que a direcao visual usa a skill `premium-command-center-ui`.
+Antes de fazer mais perguntas visuais, ler `design_skill` em `project.context.md`.
 
-Sinais gatilho: `dashboard premium`, `command center`, `torre de controle`, `cockpit de produto`, `estilo AIOS Dashboard`, `tri-rail shell`, `UI operacional premium`, `superficie dark premium`, `command palette premium`.
-
-**Acao:** Na secao `## Identidade visual` do PRD, adicionar:
-
-```
-### Referencia de skill
-skill: premium-command-center-ui
-> O usuario solicitou uma interface de command center premium. O @ux-ui deve ler `.aioson/skills/static/premium-command-center-ui.md` antes de qualquer trabalho de design.
-```
-
-Isso garante que a intencao seja preservada mesmo se o `@ux-ui` nao for invocado.
-
-Nao registrar esta skill por mencoes genericas de `dashboard`, `painel admin` ou `ferramenta interna` sozinhas. Nesses casos, capturar a intencao visual normalmente em `## Identidade visual` sem forcar o estilo premium de command center.
+Regras:
+- Se `design_skill` ja estiver definido, preservar essa escolha no PRD. Nao trocar silenciosamente por outro sistema visual.
+- Se `project_type=site` ou `project_type=web_app` e `design_skill` estiver em branco, perguntar explicitamente se deve registrar uma das design skills instaladas em `.aioson/skills/design/`.
+- Se existir apenas uma design skill empacotada, ainda assim pedir confirmacao em vez de seleciona-la automaticamente.
+- Se o usuario quiser adiar a escolha, registrar que a design skill esta pendente em vez de inventar uma.
+- `@product` captura a decisao, `@ux-ui` aplica e `@dev` apenas consome.
 
 ## Fluxo de conversa
 
@@ -238,7 +241,12 @@ Ambos os arquivos usam exatamente estas secoes:
 - [Decisao nao resolvida que precisa de resposta antes ou durante o desenvolvimento]
 
 ## Identidade visual
-> **Incluir esta secao apenas se o cliente expressou preferencias visuais durante a conversa. Omitir completamente se requisitos visuais nao foram discutidos.**
+> **Incluir esta secao se o cliente expressou preferencias visuais durante a conversa OU se `design_skill` ja estiver definida em `project.context.md`. Omitir apenas quando requisitos visuais realmente nao foram discutidos e nenhuma design skill foi selecionada.**
+
+### Design skill
+- Skill: [`cognitive-ui` ou outra design skill instalada]
+- Se estiver pendente: escrever `pending-selection`
+- Nota: [Se selecionada, dizer que `@ux-ui` deve ler `.aioson/skills/design/{skill}/SKILL.md` antes do design. Se pendente, dizer que `@ux-ui` deve confirmar o sistema visual antes de produzir `ui-spec.md`.]
 
 ### Direcao estetica
 [1-2 frases. O humor, estilo e sensacao que a interface deve transmitir. Referenciar qualquer app ou site que o cliente citou.]
@@ -297,7 +305,7 @@ Avaliar a complexidade da feature pela conversa. Dizer claramente: "Esta feature
 - Design de entidades, schema de banco — NAO → isso e do `@analyst`
 - Stack tecnologica, escolhas de arquitetura — NAO → isso e do `@architect`
 - Implementacao, codigo — NAO → isso e do `@dev`
-- Requisitos visuais expressos pelo cliente (humor, paleta, intencao tipografica, prioridade de animacao) — SIM → capturar em `## Identidade visual`
+- Requisitos visuais expressos pelo cliente e a `design_skill` escolhida — SIM → capturar em `## Identidade visual`
 - Mockups de UI, wireframes, implementacao de componentes — NAO → isso e do `@ux-ui`
 
 Se uma pergunta estiver fora do escopo de produto, reconhecer brevemente e redirecionar: "Essa e uma questao de arquitetura — marque para o `@architect`."

@@ -108,6 +108,25 @@ const MANAGED_FILES = [
   '.aioson/skills/references/premium-command-center-ui/operational-ux-playbook.md',
   '.aioson/skills/references/premium-command-center-ui/master-application-prompt.md',
   '.aioson/skills/references/premium-command-center-ui/quality-validation-checklist.md',
+  '.aioson/skills/design/cognitive-ui/SKILL.md',
+  '.aioson/skills/design/cognitive-ui/references/foundations.md',
+  '.aioson/skills/design/cognitive-ui/references/components.md',
+  '.aioson/skills/design/cognitive-ui/references/patterns.md',
+  '.aioson/skills/design/cognitive-ui/references/motion.md',
+  '.aioson/skills/design/cognitive-ui/references/dashboards.md',
+  '.aioson/skills/design/cognitive-ui/references/websites.md',
+  '.aioson/skills/design/cognitive-ui/assets/cognitive-demo.jsx',
+  '.aioson/skills/design/premium-command-center-ui/SKILL.md',
+  '.aioson/skills/design/premium-command-center-ui/references/visual-system.md',
+  '.aioson/skills/design/premium-command-center-ui/references/patterns.md',
+  '.aioson/skills/design/premium-command-center-ui/references/operations.md',
+  '.aioson/skills/design/premium-command-center-ui/references/validation.md',
+  '.aioson/skills/design/interface-design/SKILL.md',
+  '.aioson/skills/design/interface-design/references/intent-and-domain.md',
+  '.aioson/skills/design/interface-design/references/design-directions.md',
+  '.aioson/skills/design/interface-design/references/tokens-and-depth.md',
+  '.aioson/skills/design/interface-design/references/components-and-states.md',
+  '.aioson/skills/design/interface-design/references/handoff-and-quality.md',
   '.aioson/skills/dynamic/laravel-docs.md',
   '.aioson/skills/dynamic/flux-ui-docs.md',
   '.aioson/skills/dynamic/npm-packages.md',
@@ -176,6 +195,7 @@ const CONTEXT_ALLOWED_PROFILES = ['developer', 'beginner', 'team'];
 const AGENT_DEFINITIONS = [
   {
     id: 'setup',
+    displayName: 'Setup',
     command: '@setup',
     path: '.aioson/agents/setup.md',
     dependsOn: [],
@@ -183,6 +203,7 @@ const AGENT_DEFINITIONS = [
   },
   {
     id: 'discovery-design-doc',
+    displayName: 'Discovery/Design Doc',
     command: '@discovery-design-doc',
     path: '.aioson/agents/discovery-design-doc.md',
     dependsOn: ['.aioson/context/project.context.md'],
@@ -190,6 +211,7 @@ const AGENT_DEFINITIONS = [
   },
   {
     id: 'product',
+    displayName: 'Product',
     command: '@product',
     path: '.aioson/agents/product.md',
     dependsOn: ['.aioson/context/project.context.md'],
@@ -197,6 +219,7 @@ const AGENT_DEFINITIONS = [
   },
   {
     id: 'analyst',
+    displayName: 'Analyst',
     command: '@analyst',
     path: '.aioson/agents/analyst.md',
     dependsOn: ['.aioson/context/project.context.md'],
@@ -204,6 +227,7 @@ const AGENT_DEFINITIONS = [
   },
   {
     id: 'architect',
+    displayName: 'Architect',
     command: '@architect',
     path: '.aioson/agents/architect.md',
     dependsOn: [
@@ -214,6 +238,7 @@ const AGENT_DEFINITIONS = [
   },
   {
     id: 'ux-ui',
+    displayName: 'UI/UX',
     command: '@ux-ui',
     path: '.aioson/agents/ux-ui.md',
     dependsOn: [
@@ -226,6 +251,7 @@ const AGENT_DEFINITIONS = [
   },
   {
     id: 'pm',
+    displayName: 'PM',
     command: '@pm',
     path: '.aioson/agents/pm.md',
     dependsOn: [
@@ -238,6 +264,7 @@ const AGENT_DEFINITIONS = [
   },
   {
     id: 'dev',
+    displayName: 'Dev',
     command: '@dev',
     path: '.aioson/agents/dev.md',
     dependsOn: [
@@ -249,6 +276,7 @@ const AGENT_DEFINITIONS = [
   },
   {
     id: 'qa',
+    displayName: 'QA',
     command: '@qa',
     path: '.aioson/agents/qa.md',
     dependsOn: ['.aioson/context/discovery.md'],
@@ -256,6 +284,7 @@ const AGENT_DEFINITIONS = [
   },
   {
     id: 'orchestrator',
+    displayName: 'Orchestrator',
     command: '@orchestrator',
     path: '.aioson/agents/orchestrator.md',
     dependsOn: [
@@ -267,6 +296,7 @@ const AGENT_DEFINITIONS = [
   },
   {
     id: 'squad',
+    displayName: 'Squad',
     command: '@squad',
     path: '.aioson/agents/squad.md',
     dependsOn: [],
@@ -275,6 +305,7 @@ const AGENT_DEFINITIONS = [
   },
   {
     id: 'genoma',
+    displayName: 'Genoma',
     command: '@genoma',
     path: '.aioson/agents/genoma.md',
     dependsOn: [],
@@ -282,6 +313,7 @@ const AGENT_DEFINITIONS = [
   },
   {
     id: 'profiler-researcher',
+    displayName: 'Profiler Researcher',
     command: '@profiler-researcher',
     path: '.aioson/agents/profiler-researcher.md',
     dependsOn: [],
@@ -289,6 +321,7 @@ const AGENT_DEFINITIONS = [
   },
   {
     id: 'profiler-enricher',
+    displayName: 'Profiler Enricher',
     command: '@profiler-enricher',
     path: '.aioson/agents/profiler-enricher.md',
     dependsOn: ['.aioson/profiler-reports/{person-slug}/research-report.md'],
@@ -296,6 +329,7 @@ const AGENT_DEFINITIONS = [
   },
   {
     id: 'profiler-forge',
+    displayName: 'Profiler Forge',
     command: '@profiler-forge',
     path: '.aioson/agents/profiler-forge.md',
     dependsOn: ['.aioson/profiler-reports/{person-slug}/enriched-profile.md'],

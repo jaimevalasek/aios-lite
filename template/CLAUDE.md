@@ -15,7 +15,7 @@ You operate as AIOSON.
 - /discovery-design-doc -> `.aioson/agents/discovery-design-doc.md`
 - /analyst -> `.aioson/agents/analyst.md`
 - /architect -> `.aioson/agents/architect.md`
-- /ux-ui -> `.aioson/agents/ux-ui.md`
+- /ux-ui (UI/UX) -> `.aioson/agents/ux-ui.md`
 - /product -> `.aioson/agents/product.md`
 - /pm -> `.aioson/agents/pm.md`
 - /dev -> `.aioson/agents/dev.md`

@@ -4,7 +4,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
 const path = require('node:path');
-const { AGENT_DEFINITIONS } = require('../src/constants');
+const { AGENT_DEFINITIONS, MANAGED_FILES } = require('../src/constants');
 
 const ROOT = path.resolve(__dirname, '..');
 const AGENTS = [
@@ -55,6 +55,7 @@ test('setup agent contract includes required context fields and service sections
     'framework_installed',
     'classification',
     'conversation_language',
+    'design_skill',
     'web3_enabled',
     'web3_networks',
     'contract_framework',
@@ -71,6 +72,119 @@ test('setup agent contract includes required context fields and service sections
   for (const token of requiredSnippets) {
     assert.equal(setupBase.includes(token), true, `missing in base setup: ${token}`);
     assert.equal(setupEn.includes(token), true, `missing in en setup: ${token}`);
+  }
+});
+
+test('workflow gate contract is explicit in AGENTS and setup locales', async () => {
+  const agentsGateway = await read(path.join(ROOT, 'template/AGENTS.md'));
+  const setupBase = await read(path.join(ROOT, 'template/.aioson/agents/setup.md'));
+  const setupEn = await read(path.join(ROOT, 'template/.aioson/locales/en/agents/setup.md'));
+  const setupPt = await read(path.join(ROOT, 'template/.aioson/locales/pt-BR/agents/setup.md'));
+  const setupEs = await read(path.join(ROOT, 'template/.aioson/locales/es/agents/setup.md'));
+  const setupFr = await read(path.join(ROOT, 'template/.aioson/locales/fr/agents/setup.md'));
+
+  const gatewayTokens = [
+    '## Workflow enforcement',
+    'must stay inside the workflow',
+    'repair it inside the workflow',
+    'Never silently bypass workflow'
+  ];
+  for (const token of gatewayTokens) {
+    assert.equal(agentsGateway.includes(token), true, `missing AGENTS workflow token: ${token}`);
+  }
+  assert.equal(agentsGateway.includes('Do you want to execute this directly outside the workflow?'), false);
+
+  const setupTokens = [
+    [setupBase, 'Workflow gate after setup'],
+    [setupBase, 'correct the file inside the workflow before handing off.'],
+    [setupBase, 'Never offer direct execution outside the workflow as a setup shortcut.'],
+    [setupBase, 'Never silently bypass workflow after setup.'],
+    [setupEn, 'Workflow gate after setup'],
+    [setupEn, 'correct the file inside the workflow before handing off.'],
+    [setupEn, 'Never offer direct execution outside the workflow as a setup shortcut.'],
+    [setupEn, 'Never silently bypass workflow after setup.'],
+    [setupPt, 'Gate de workflow apos o setup'],
+    [setupPt, 'corrigir o arquivo dentro do workflow antes do handoff.'],
+    [setupPt, 'Nunca oferecer execucao direta fora do workflow como atalho do setup.'],
+    [setupPt, 'Nunca contornar workflow em silencio apos o setup.'],
+    [setupEs, 'Gate de workflow despues del setup'],
+    [setupEs, 'corregir el archivo dentro del workflow antes del handoff.'],
+    [setupEs, 'Nunca ofrecer ejecucion directa fuera del workflow como atajo del setup.'],
+    [setupEs, 'Nunca saltar el workflow en silencio despues del setup.'],
+    [setupFr, 'Gate workflow apres setup'],
+    [setupFr, 'corriger le fichier dans le workflow avant le handoff.'],
+    [setupFr, 'Ne jamais proposer une execution directe hors workflow comme raccourci du setup.'],
+    [setupFr, 'Ne jamais contourner le workflow silencieusement apres setup.']
+  ];
+
+  for (const [content, token] of setupTokens) {
+    assert.equal(content.includes(token), true, `missing setup workflow token: ${token}`);
+  }
+  assert.equal(setupBase.includes('Do you want to execute this directly outside the workflow?'), false);
+  assert.equal(setupEn.includes('Do you want to execute this directly outside the workflow?'), false);
+  assert.equal(setupPt.includes('Deseja executar direto fora do workflow?'), false);
+  assert.equal(setupEs.includes('¿Quieres ejecutar esto directamente fuera del workflow?'), false);
+  assert.equal(setupFr.includes('Voulez-vous executer cela directement hors workflow ?'), false);
+});
+
+test('setup auto-repairs inconsistent returning context before offering manual menu', async () => {
+  const setupBase = await read(path.join(ROOT, 'template/.aioson/agents/setup.md'));
+  const setupEn = await read(path.join(ROOT, 'template/.aioson/locales/en/agents/setup.md'));
+  const setupPt = await read(path.join(ROOT, 'template/.aioson/locales/pt-BR/agents/setup.md'));
+  const setupEs = await read(path.join(ROOT, 'template/.aioson/locales/es/agents/setup.md'));
+  const setupFr = await read(path.join(ROOT, 'template/.aioson/locales/fr/agents/setup.md'));
+
+  const expected = [
+    [setupBase, 'If the existing context is inconsistent, stale, or still contains placeholders'],
+    [setupBase, 'do NOT stop at the menu first.'],
+    [setupBase, 'Repair `.aioson/context/project.context.md` before asking the user what to do next.'],
+    [setupBase, 'Only ask for clarification for fields that remain genuinely ambiguous after the repair pass.'],
+    [setupEn, 'If the existing context is inconsistent, stale, or still contains placeholders'],
+    [setupEn, 'do NOT stop at the menu first.'],
+    [setupEn, 'Repair `.aioson/context/project.context.md` before asking the user what to do next.'],
+    [setupEn, 'Only ask for clarification for fields that remain genuinely ambiguous after the repair pass.'],
+    [setupPt, 'Se o contexto existente estiver inconsistente, desatualizado ou ainda contiver placeholders'],
+    [setupPt, 'NAO parar no menu primeiro.'],
+    [setupPt, 'Corrigir `.aioson/context/project.context.md` antes de perguntar ao usuario o que fazer em seguida.'],
+    [setupPt, 'So pedir esclarecimento para campos que continuarem genuinamente ambiguos depois da etapa de reparo.'],
+    [setupEs, 'Si el contexto existente esta inconsistente, desactualizado o todavia contiene placeholders'],
+    [setupEs, 'NO detenerse primero en el menu.'],
+    [setupEs, 'Corregir `.aioson/context/project.context.md` antes de preguntar al usuario que hacer a continuacion.'],
+    [setupEs, 'Solo pedir aclaracion para campos que sigan genuinamente ambiguos despues de la etapa de reparacion.'],
+    [setupFr, 'Si le contexte existant est incoherent, obsolete ou contient encore des placeholders'],
+    [setupFr, "NE PAS s'arreter d'abord au menu."],
+    [setupFr, "Corriger `.aioson/context/project.context.md` avant de demander a l'utilisateur quoi faire ensuite."],
+    [setupFr, 'Ne demander une clarification que pour les champs qui restent reellement ambigus apres la passe de reparation.']
+  ];
+
+  for (const [content, token] of expected) {
+    assert.equal(content.includes(token), true, `missing setup auto-repair token: ${token}`);
+  }
+});
+
+test('core workflow agents repair context inside the workflow', async () => {
+  const productBase = await read(path.join(ROOT, 'template/.aioson/agents/product.md'));
+  const productPt = await read(path.join(ROOT, 'template/.aioson/locales/pt-BR/agents/product.md'));
+  const analystBase = await read(path.join(ROOT, 'template/.aioson/agents/analyst.md'));
+  const analystPt = await read(path.join(ROOT, 'template/.aioson/locales/pt-BR/agents/analyst.md'));
+  const devBase = await read(path.join(ROOT, 'template/.aioson/agents/dev.md'));
+  const devPt = await read(path.join(ROOT, 'template/.aioson/locales/pt-BR/agents/dev.md'));
+  const uxBase = await read(path.join(ROOT, 'template/.aioson/agents/ux-ui.md'));
+  const uxPt = await read(path.join(ROOT, 'template/.aioson/locales/pt-BR/agents/ux-ui.md'));
+
+  const expected = [
+    [productBase, 'Never use context repair as a reason to leave the workflow or suggest direct execution.'],
+    [productPt, 'Nunca usar reparo de contexto como motivo para sair do workflow ou sugerir execucao direta.'],
+    [analystBase, 'Never treat context repair as a reason to recommend execution outside the workflow.'],
+    [analystPt, 'Nunca tratar reparo de contexto como motivo para recomendar execucao fora do workflow.'],
+    [devBase, 'Never suggest direct execution outside the workflow as a workaround for stale context.'],
+    [devPt, 'Nunca sugerir execucao direta fora do workflow como atalho para contexto desatualizado.'],
+    [uxBase, 'never use context inconsistency as a reason to leave the workflow.'],
+    [uxPt, 'nunca usar inconsistencia de contexto como motivo para sair do workflow.']
+  ];
+
+  for (const [content, token] of expected) {
+    assert.equal(content.includes(token), true, `missing context-integrity token: ${token}`);
   }
 });
 
@@ -191,8 +305,8 @@ test('analyst, architect, and dev consume design-doc/readiness and use context o
   const analystPtTokens = ['## Skills e documentos sob demanda', 'design-doc.md', 'readiness.md'];
   const architectBaseTokens = ['design-doc.md', 'readiness.md', 'Load architecture docs and skills on demand'];
   const architectPtTokens = ['design-doc.md', 'readiness.md', 'Carregar documentos e skills de arquitetura sob demanda'];
-  const devBaseTokens = ['design-doc.md', 'readiness.md', 'minimum context package', 'needs more discovery', '.aioson/squads/{squad-slug}/skills/'];
-  const devPtTokens = ['design-doc.md', 'readiness.md', 'pacote minimo de contexto', 'needs more discovery', '.aioson/squads/{squad-slug}/skills/'];
+  const devBaseTokens = ['design-doc.md', 'readiness.md', 'minimum context package', 'needs more discovery', '.aioson/squads/{squad-slug}/skills/', 'design_skill'];
+  const devPtTokens = ['design-doc.md', 'readiness.md', 'pacote minimo de contexto', 'needs more discovery', '.aioson/squads/{squad-slug}/skills/', 'design_skill'];
 
   for (const token of analystBaseTokens) assert.equal(analystBase.includes(token), true, `missing analyst base token: ${token}`);
   for (const token of analystPtTokens) assert.equal(analystPt.includes(token), true, `missing analyst pt token: ${token}`);
@@ -202,22 +316,22 @@ test('analyst, architect, and dev consume design-doc/readiness and use context o
   for (const token of devPtTokens) assert.equal(devPt.includes(token), true, `missing dev pt token: ${token}`);
 });
 
-test('ux-ui contract supports autonomous visual decisions', async () => {
+test('ux-ui contract enforces explicit design skill gating', async () => {
   const uxBase = await read(path.join(ROOT, 'template/.aioson/agents/ux-ui.md'));
   const uxPt = await read(path.join(ROOT, 'template/.aioson/locales/pt-BR/agents/ux-ui.md'));
 
   const baseTokens = [
-    '## Step 0 — Autonomous visual direction decision',
-    'Autonomous decision-making: infer dark/light and visual direction from context whenever possible.',
-    'Premium Dark Platform',
-    'Never block the work if the inference is already good enough.'
+    '## Step 0 — Design skill gate',
+    'If `project_type=site` or `project_type=web_app` and `design_skill` is blank, stop and ask the user which installed design skill to use.',
+    'Proceeding without a registered design skill.',
+    'Never silently invent, swap, or auto-pick a design skill inside `@ux-ui`'
   ];
 
   const ptTokens = [
-    '## Etapa 0 — Decisao autonoma de direcao visual',
-    'Decisao autonoma: inferir dark/light e direcao visual pelo contexto sempre que possivel.',
-    'Premium Dark Platform',
-    'Nunca bloqueie o trabalho por falta dessa resposta se a inferencia ja for suficientemente boa.'
+    '## Etapa 0 — Gate da design skill',
+    'Se `project_type=site` ou `project_type=web_app` e `design_skill` estiver em branco, parar e perguntar ao usuario qual design skill instalada deve ser usada.',
+    'Prosseguindo sem uma design skill registrada.',
+    'Nunca inventar, trocar ou selecionar automaticamente uma design skill dentro do `@ux-ui`'
   ];
 
   for (const token of baseTokens) {
@@ -236,8 +350,9 @@ test('living PRD contracts preserve downstream sections and QA hooks', async () 
 
   const productTokens = [
     'PRD base',
-    'premium-command-center-ui',
-    'Do **not** register this skill for generic mentions of `dashboard`, `admin panel`, or `internal tool` alone.'
+    'Design skill preservation',
+    'If `project_type=site` or `project_type=web_app` and `design_skill` is blank',
+    '.aioson/skills/design/{skill}/SKILL.md'
   ];
   const pmTokens = [
     'Update the same PRD file you read',
@@ -247,7 +362,8 @@ test('living PRD contracts preserve downstream sections and QA hooks', async () 
     'Do not remove `🔴` bullets from `## MVP scope`.'
   ];
   const uxTokens = [
-    'Do not load this skill by default for every dashboard, admin panel, or internal tool.',
+    'design skill reference (`skill: cognitive-ui` or another installed design skill) if applied',
+    'pending-selection',
     'If the PRD does not yet contain `## Visual identity` and the design direction is now clear, create that section first'
   ];
 
@@ -259,6 +375,68 @@ test('living PRD contracts preserve downstream sections and QA hooks', async () 
   }
   for (const token of uxTokens) {
     assert.equal(uxBase.includes(token), true, `missing ux-ui token: ${token}`);
+  }
+});
+
+test('cognitive-ui packaged skill is shipped and managed', async () => {
+  const managedPaths = [
+    '.aioson/skills/design/cognitive-ui/SKILL.md',
+    '.aioson/skills/design/cognitive-ui/references/foundations.md',
+    '.aioson/skills/design/cognitive-ui/references/components.md',
+    '.aioson/skills/design/cognitive-ui/references/patterns.md',
+    '.aioson/skills/design/cognitive-ui/references/motion.md',
+    '.aioson/skills/design/cognitive-ui/references/dashboards.md',
+    '.aioson/skills/design/cognitive-ui/references/websites.md',
+    '.aioson/skills/design/cognitive-ui/assets/cognitive-demo.jsx'
+  ];
+
+  for (const file of managedPaths) {
+    assert.equal(MANAGED_FILES.includes(file), true, `missing managed file: ${file}`);
+    await assert.doesNotReject(() => fs.access(path.join(ROOT, 'template', file)));
+  }
+});
+
+test('additional packaged design skills are shipped and managed', async () => {
+  const managedPaths = [
+    '.aioson/skills/design/premium-command-center-ui/SKILL.md',
+    '.aioson/skills/design/premium-command-center-ui/references/visual-system.md',
+    '.aioson/skills/design/premium-command-center-ui/references/patterns.md',
+    '.aioson/skills/design/premium-command-center-ui/references/operations.md',
+    '.aioson/skills/design/premium-command-center-ui/references/validation.md',
+    '.aioson/skills/design/interface-design/SKILL.md',
+    '.aioson/skills/design/interface-design/references/intent-and-domain.md',
+    '.aioson/skills/design/interface-design/references/design-directions.md',
+    '.aioson/skills/design/interface-design/references/tokens-and-depth.md',
+    '.aioson/skills/design/interface-design/references/components-and-states.md',
+    '.aioson/skills/design/interface-design/references/handoff-and-quality.md'
+  ];
+
+  for (const file of managedPaths) {
+    assert.equal(MANAGED_FILES.includes(file), true, `missing managed file: ${file}`);
+    await assert.doesNotReject(() => fs.access(path.join(ROOT, 'template', file)));
+  }
+});
+
+test('cognitive-ui documents token scope, brownfield usage, and premium table guardrails', async () => {
+  const skill = await read(path.join(ROOT, 'template/.aioson/skills/design/cognitive-ui/SKILL.md'));
+  const foundations = await read(path.join(ROOT, 'template/.aioson/skills/design/cognitive-ui/references/foundations.md'));
+  const components = await read(path.join(ROOT, 'template/.aioson/skills/design/cognitive-ui/references/components.md'));
+  const patterns = await read(path.join(ROOT, 'template/.aioson/skills/design/cognitive-ui/references/patterns.md'));
+
+  const tokens = [
+    '## Delivery modes',
+    'greenfield',
+    'brownfield',
+    '## Token scope guardrails',
+    ':root {',
+    'Never define `--font-body` only inside a child theme container and then consume it on `body`.',
+    'border-collapse: separate;',
+    '## Greenfield vs brownfield application'
+  ];
+
+  for (const token of tokens) {
+    const haystack = [skill, foundations, components, patterns].find((content) => content.includes(token));
+    assert.equal(Boolean(haystack), true, `missing cognitive-ui guidance token: ${token}`);
   }
 });
 

@@ -111,6 +111,16 @@ Check the following conditions in order:
 - `.aioson/context/prd-{slug}.md` (feature mode — continue flow)
 - `.aioson/context/prd.md` (enrichment mode only)
 
+## Context integrity
+
+Read `project.context.md` before any product decision.
+
+Rules:
+- If the file is inconsistent with the active project artifacts or with decisions already confirmed in the conversation, correct the objectively inferable fields inside the workflow before continuing.
+- Correct only what is defensible from current evidence (`project_type`, `framework_installed`, `classification`, `design_skill`, `conversation_language`, or similarly explicit metadata). Do not invent missing business decisions.
+- If a field is still uncertain, keep the workflow active and ask the minimum clarifying question or route back to `@setup` inside the workflow.
+- Never use context repair as a reason to leave the workflow or suggest direct execution.
+
 ## Conversation rules
 
 These 8 rules govern every exchange. Follow them strictly.
@@ -179,23 +189,16 @@ Watch for these signals too — visual quality is product quality for user-facin
 | Mobile mentioned or implied | "Should the mobile experience mirror desktop, or be adapted differently?" |
 | Any UI framework or front-end stack mentioned | "Is this the production UI, or a functional prototype that will be redesigned later?" |
 
-### Premium UI skill detection
+### Design skill preservation
 
-When the user makes an **explicit premium operational UI request**, **do not ask a question — act**: register in the PRD that the visual direction uses the skill `premium-command-center-ui`.
+Before asking more visual questions, read `design_skill` from `project.context.md`.
 
-Trigger signals: `premium dashboard`, `command center`, `control tower`, `product cockpit`, `AIOS Dashboard style`, `tri-rail shell`, `premium operational UI`, `premium dark control surface`, `premium command palette`.
-
-**Action:** In the `## Visual identity` section of the PRD, add:
-
-```
-### Skill reference
-skill: premium-command-center-ui
-> The user requested a premium command center interface. @ux-ui must read `.aioson/skills/static/premium-command-center-ui.md` before any design work.
-```
-
-This ensures the intent is preserved even if `@ux-ui` is not invoked later.
-
-Do **not** register this skill for generic mentions of `dashboard`, `admin panel`, or `internal tool` alone. In those cases, capture the visual intent normally in `## Visual identity` without forcing the premium command-center style.
+Rules:
+- If `design_skill` is already set, preserve it in the PRD. Do not silently replace it with another style system.
+- If `project_type=site` or `project_type=web_app` and `design_skill` is blank, ask explicitly whether to register one of the installed design skills under `.aioson/skills/design/`.
+- If only one packaged design skill exists, still ask for confirmation instead of auto-selecting it.
+- If the user wants to postpone the choice, record that the design skill is pending instead of inventing one.
+- `@product` captures the decision, `@ux-ui` applies it, and `@dev` only consumes it.
 
 ## Conversation flow
 
@@ -280,7 +283,12 @@ Both files use exactly these sections:
 - [Unresolved decision that needs an answer before or during development]
 
 ## Visual identity
-> **Include this section only if the client expressed visual preferences during the conversation. Omit it entirely if visual requirements were not discussed.**
+> **Include this section if the client expressed visual preferences during the conversation OR if `design_skill` is already set in `project.context.md`. Omit it only when visual requirements truly were not discussed and no design skill was selected.**
+
+### Design skill
+- Skill: [`cognitive-ui` or another installed design skill]
+- If pending: write `pending-selection`
+- Note: [If selected, say `@ux-ui` must read `.aioson/skills/design/{skill}/SKILL.md` before design work. If pending, say `@ux-ui` must confirm the visual system before producing UI specs.`]
 
 ### Aesthetic direction
 [1–2 sentences. The mood, style, and feeling the interface should convey. Reference any apps or sites the client cited.]
@@ -346,7 +354,7 @@ Assess feature complexity from the conversation. Tell the user clearly: "This lo
 - Entity design, database schema — NO → that's `@analyst`
 - Tech stack, architecture choices — NO → that's `@architect`
 - Implementation, code — NO → that's `@dev`
-- Visual requirements expressed by the client (mood, palette, typography intent, animation priority) — YES → capture in `## Visual identity`
+- Visual requirements expressed by the client and the chosen `design_skill` — YES → capture in `## Visual identity`
 - UI mockups, wireframes, component implementation — NO → that's `@ux-ui`
 
 If a question is outside product scope, acknowledge it briefly and redirect: "That's an architecture question — flag it for `@architect`."

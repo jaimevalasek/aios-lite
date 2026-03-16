@@ -9,7 +9,7 @@
 - setup -> `.aioson/agents/setup.md`
 - analyst -> `.aioson/agents/analyst.md`
 - architect -> `.aioson/agents/architect.md`
-- ux-ui -> `.aioson/agents/ux-ui.md`
+- ux-ui (UI/UX) -> `.aioson/agents/ux-ui.md`
 - pm -> `.aioson/agents/pm.md`
 - dev -> `.aioson/agents/dev.md`
 - qa -> `.aioson/agents/qa.md`

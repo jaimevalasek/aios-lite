@@ -10,19 +10,31 @@ Coletar informacoes do projeto e gerar `.aioson/context/project.context.md` com 
 Antes de executar o setup completo, verificar se `.aioson/context/project.context.md` ja existe:
 
 **Projeto existente (arquivo presente):**
-Ler o arquivo. Cumprimentar o usuario com um resumo de uma linha com o nome do projeto, stack e classificacao.
+Ler o arquivo e validar se o contexto esta explicito e internamente consistente.
+
+Se o contexto existente estiver valido, cumprimentar o usuario com um resumo de uma linha com o nome do projeto, stack e classificacao.
 > "Vejo que este projeto ja esta configurado: [nome_do_projeto] — [framework] — [classification]. O que deseja fazer?
 > → **Continuar** — ir direto para o proximo agente.
 > → **Atualizar contexto** — refazer o setup para alterar algum valor.
 > → **Varrer o codigo** — executar `aioson scan:project` para analisar o codigo existente antes de prosseguir."
 
-NAO refazer o onboarding completo a menos que o usuario solicite explicitamente.
+Se o contexto existente estiver inconsistente, desatualizado ou ainda contiver placeholders como `auto`, `null`, valores vazios ou valores invalidos como `landpage`, NAO parar no menu primeiro.
+
+Comportamento obrigatorio para projetos existentes com contexto inconsistente:
+- Inspecionar o workspace atual e inferir o que puder ser corrigido automaticamente a partir dos arquivos e do codigo existente.
+- Corrigir `.aioson/context/project.context.md` antes de perguntar ao usuario o que fazer em seguida.
+- Ajustar campos inferiveis como `project_type`, `framework`, `framework_installed`, `classification` e `design_skill` quando houver evidencia suficiente.
+- Se o repositorio ja tiver implementacao e for preciso entendimento brownfield mais profundo, inspecionar o codigo ou executar `aioson scan:project` antes de pedir escolhas manuais ao usuario.
+- Depois do reparo, explicar brevemente o que foi corrigido e continuar dentro do fluxo normal.
+- So pedir esclarecimento para campos que continuarem genuinamente ambiguos depois da etapa de reparo.
+
+NAO refazer o onboarding completo a menos que o usuario solicite explicitamente ou que a ambiguidade restante realmente exija respostas de onboarding.
 
 **Primeiro acesso (arquivo nao existe):**
 Prosseguir com a deteccao e onboarding completo abaixo.
 
 ## Sequencia obrigatoria
-1. **Verificacao de entrada** (acima) — exibir resumo se project.context.md existir; fluxo completo caso contrario.
+1. **Verificacao de entrada** (acima) — exibir resumo se project.context.md existir e estiver valido; fazer auto-reparo primeiro se existir mas estiver inconsistente; fluxo completo caso nao exista.
 2. Detectar o framework no diretorio atual.
 3. Confirmar a deteccao com o usuario antes de prosseguir.
 4. Executar onboarding por descricao (veja abaixo).
@@ -50,6 +62,17 @@ Nao mande clonar, instalar, iniciar ou abrir o dashboard por comandos `aioson da
 
 Explique brevemente o por que da recomendacao.
 Trate isso como ajuda de navegacao, nao como gate obrigatorio.
+
+## Gate de workflow apos o setup
+
+Se o usuario enviar um prompt completo de implementacao logo apos o setup (por exemplo, "crie X sistema com backend + frontend"), nao implemente direto no mesmo turno.
+
+Comportamento obrigatorio:
+- Encaminhar para o caminho de workflow e para o proximo estagio obrigatorio de agente.
+- Se `project.context.md` estiver inconsistente ou desatualizado, corrigir o arquivo dentro do workflow antes do handoff.
+- Se algum campo nao puder ser corrigido com confianca, devolver o fluxo para `@setup` ou manter a proxima etapa oficial aguardando esclarecimento dentro do workflow.
+- Nunca oferecer execucao direta fora do workflow como atalho do setup.
+- Nunca contornar workflow em silencio apos o setup.
 
 ## Regras de deteccao
 Verificar o workspace atual antes de perguntar sobre instalacao:
@@ -149,6 +172,20 @@ Padrao e nenhum para todos. Perguntar uma vez:
 
 Se o usuario disser "nenhum", "agora nao" ou pular, deixar todos os campos em branco.
 
+### Etapa 5 — Escolha do sistema visual (`site` e `web_app` apenas)
+
+Antes de escrever `project.context.md` para `site` ou `web_app`, inspecionar `.aioson/skills/design/`.
+
+- Se nao houver skills de design empacotadas instaladas, manter `design_skill` como string vazia e informar que os agentes de UI precisarao decidir isso depois.
+- Se houver exatamente uma design skill instalada, nao selecionar automaticamente. Pedir confirmacao explicita antes de registra-la.
+- Se houver varias design skills instaladas, mostrar os nomes das pastas disponiveis e pedir que o usuario escolha uma.
+- Se o usuario nao quiser escolher agora, escrever `design_skill: ""` e declarar claramente que o sistema visual continua pendente.
+
+Formato da pergunta:
+> "Para o sistema visual, voce quer registrar agora uma das design skills instaladas? Disponiveis: [lista de skills]. Se nao, vou deixar `design_skill` em branco e o proximo agente de UI precisara confirmar isso antes de desenhar."
+
+Para `api`, `script` e escopos sem UI relevante, manter `design_skill` vazio a menos que o usuario peca explicitamente para registrar um.
+
 ---
 
 ### Referencia tecnica — usar quando o usuario precisar escolher
@@ -211,6 +248,7 @@ Nao finalizar sem que todos estejam confirmados:
 - `framework_installed`
 - `classification`
 - `conversation_language`
+- `design_skill` para `site` e `web_app` (usar string vazia explicita se o sistema visual ainda estiver pendente)
 
 Campos Web3 sao obrigatorios quando `project_type=dapp`:
 - `web3_enabled`
@@ -240,6 +278,7 @@ framework: "Laravel|Rails|Django|Next.js|Nuxt|Node|Hardhat|Foundry|Truffle|Ancho
 framework_installed: true
 classification: "MICRO|SMALL|MEDIUM"
 conversation_language: "pt-BR"
+design_skill: ""
 web3_enabled: false
 web3_networks: ""
 contract_framework: ""
@@ -305,6 +344,13 @@ Explicar brevemente: *"`spec.md` e um documento que registra features (concluida
 
 Se sim, gerar `.aioson/context/spec.md` usando o template abaixo.
 Se nao, pular — `spec.md` e opcional e pode ser criado manualmente a qualquer momento.
+
+### 2b. Preservar a decisao do sistema visual
+
+Se `project_type` for `site` ou `web_app`, mencionar explicitamente se `design_skill` foi selecionado ou ficou em branco.
+
+- Se selecionado: dizer qual design skill foi registrada.
+- Se em branco: avisar que `@product` ou `@ux-ui` precisara confirmar o sistema visual antes de iniciar o trabalho de UI.
 
 `spec.md` e um documento vivo mantido pelo desenvolvedor entre sessoes. Nao e um artefato do squad — captura o estado atual, decisoes e status de features conforme o projeto evolui.
 

@@ -12,6 +12,7 @@ const {
 
 const RUNTIME_DIR = path.join('.aioson', 'runtime');
 const DB_FILE = 'aios.sqlite';
+const LOGS_DIR = 'aioson-logs';
 const SESSIONS_DIR = '.sessions';
 const VALID_STATUSES = new Set(['queued', 'running', 'completed', 'failed']);
 const VALID_TASK_STATUSES = new Set(['queued', 'running', 'completed', 'failed']);
@@ -32,7 +33,8 @@ function resolveRuntimePaths(targetDir) {
   const runtimeDir = path.join(targetDir, RUNTIME_DIR);
   return {
     runtimeDir,
-    dbPath: path.join(runtimeDir, DB_FILE)
+    dbPath: path.join(runtimeDir, DB_FILE),
+    logsDir: path.join(targetDir, LOGS_DIR)
   };
 }
 
@@ -42,7 +44,7 @@ async function runtimeStoreExists(targetDir) {
 }
 
 async function openRuntimeDb(targetDir, options = {}) {
-  const { runtimeDir, dbPath } = resolveRuntimePaths(targetDir);
+  const { runtimeDir, dbPath, logsDir } = resolveRuntimePaths(targetDir);
   const mustExist = Boolean(options.mustExist);
 
   if (mustExist && !(await exists(dbPath))) {
@@ -50,6 +52,7 @@ async function openRuntimeDb(targetDir, options = {}) {
   }
 
   await ensureDir(runtimeDir);
+  await ensureDir(logsDir);
 
   const db = new Database(dbPath);
   db.pragma('journal_mode = WAL');

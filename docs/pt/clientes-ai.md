@@ -22,6 +22,8 @@ O AIOSON funciona com **Claude Code**, **Codex CLI** e **Gemini CLI**. Cada um t
 
 O Claude Code lê `CLAUDE.md` automaticamente ao iniciar. Os agentes do AIOSON ficam em `.claude/commands/aioson/` — isso cria o namespace `/aioson/*` no autocomplete.
 
+O nome humano do agente é **UI/UX**, mas o comando continua sendo `/aioson/ux-ui`.
+
 ### Ativando agentes
 
 Digite `/` para abrir o autocomplete e depois `aioson/`:
@@ -136,6 +138,8 @@ Quando você menciona `@setup`, o Codex lê o arquivo correspondente e segue tod
 ### Como funciona
 
 O Gemini CLI lê `.gemini/GEMINI.md` ao iniciar e reconhece comandos definidos em `.gemini/commands/*.toml`. Os agentes do AIOSON são registrados com o prefixo `aios-`.
+
+O nome humano do agente é **UI/UX**, mas o comando continua sendo `/aios-ux-ui`.
 
 ### Ativando agentes
 

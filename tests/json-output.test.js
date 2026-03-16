@@ -156,6 +156,8 @@ test('agents --json returns structured payload without human logs', async () => 
   assert.equal(typeof parsed.count, 'number');
   assert.equal(Array.isArray(parsed.agents), true);
   assert.equal(typeof parsed.locale, 'string');
+  const uxAgent = parsed.agents.find((agent) => agent.id === 'ux-ui');
+  assert.equal(uxAgent.displayName, 'UI/UX');
 });
 
 test('agent:prompt --json returns structured payload without human logs', async () => {

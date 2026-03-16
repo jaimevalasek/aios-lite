@@ -138,9 +138,9 @@ Surveiller ces signaux aussi — la qualite visuelle est la qualite produit pour
 | Mobile mentionne ou implicite | "L'experience mobile doit-elle reflechir le desktop, ou etre adaptee differemment ?" |
 | Tout framework UI ou stack front-end mentionne | "Est-ce l'UI de production, ou un prototype fonctionnel qui sera repense plus tard ?" |
 
-### Detection de skill UI premium
+### Detection de design skill premium
 
-Quand l'utilisateur exprime une **demande explicite d'UI operationnelle premium**, **ne pas poser de question — agir** : enregistrer dans le PRD que la direction visuelle utilise la skill `premium-command-center-ui`.
+Quand l'utilisateur exprime une **demande explicite d'UI operationnelle premium**, **ne pas poser de question — agir** : enregistrer dans le PRD que la direction visuelle utilise la `design_skill` `premium-command-center-ui`.
 
 Signaux declencheurs : `premium dashboard`, `command center`, `tour de controle`, `cockpit produit`, `style AIOS Dashboard`, `tri-rail shell`, `UI operationnelle premium`, `surface dark premium`, `premium command palette`.
 
@@ -149,7 +149,7 @@ Signaux declencheurs : `premium dashboard`, `command center`, `tour de controle`
 ```
 ### Reference de skill
 skill: premium-command-center-ui
-> L'utilisateur a demande une interface command center premium. @ux-ui doit lire `.aioson/skills/static/premium-command-center-ui.md` avant tout travail de design.
+> L'utilisateur a demande une interface command center premium. @ux-ui doit lire `.aioson/skills/design/premium-command-center-ui/SKILL.md` avant tout travail de design.
 ```
 
 Cela garantit que l'intention est preservee meme si `@ux-ui` n'est pas invoque.

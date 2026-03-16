@@ -135,7 +135,7 @@ If your AI CLI does not show a visual agent picker, these commands let you inter
 - [`aioson test:smoke --profile=parallel`](docs/en/cli-reference.md#testsmoke)
 - [`aioson test:package --dry-run`](docs/en/cli-reference.md#testpackage)
 
-Default planning includes `@product` → `@ux-ui` for SMALL/MEDIUM projects.
+Default planning includes `@product` → UI/UX (`@ux-ui`) for SMALL/MEDIUM projects.
 
 ## JSON output for CI
 Use `--json` on selected commands. See [JSON schemas](docs/en/json-schemas.md) for output contracts.

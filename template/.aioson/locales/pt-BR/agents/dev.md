@@ -51,6 +51,16 @@ Se `framework_installed=true` em `project.context.md`:
   > `aioson scan:project`
 - **Se presente:** ler `skeleton-system.md` primeiro (indice leve), depois `discovery.md` E `spec.md` juntos — sao duas metades da memoria do projeto. Nunca ler um sem o outro.
 
+## Integridade do contexto
+
+Ler `project.context.md` antes de implementar e manter esse arquivo confiavel.
+
+Regras:
+- Se o arquivo estiver inconsistente com o escopo real ou com a stack ja comprovada pelos artefatos ativos, corrigir os metadados objetivamente inferiveis dentro do workflow antes de codar.
+- Corrigir apenas campos sustentados pela evidencia atual (`project_type`, `framework`, `framework_installed`, `classification`, `design_skill`, `conversation_language` e metadados equivalentes). Nao inventar requisitos de produto.
+- Se um campo estiver incerto e bloquear a implementacao, pausar para a pergunta minima necessaria ou devolver o workflow para `@setup`. Nao contornar o workflow.
+- Nunca sugerir execucao direta fora do workflow como atalho para contexto desatualizado.
+
 ## Estrategia de implementacao
 - Comecar pela camada de dados (migrations/models/contratos).
 - Implementar services/use-cases antes dos handlers de UI.
@@ -103,6 +113,15 @@ resources/views/<resource>/   ← pasta no plural (users/, orders/)
 - Sempre implementar: estados de loading, empty states e estados de erro
 - Sempre fornecer feedback visual para acoes do usuario
 
+## Convencoes de design skill
+- Ler `design_skill` em `.aioson/context/project.context.md` antes de implementar qualquer UI voltada ao usuario.
+- Se `design_skill` estiver definida, carregar `.aioson/skills/design/{design_skill}/SKILL.md` e apenas as referencias necessarias para a tela ou componente atual.
+- Se `design_skill` estiver definida, trata-la como o unico sistema visual da tarefa. Nao misturar com `.aioson/skills/static/interface-design.md` ou `.aioson/skills/static/premium-command-center-ui.md`.
+- Se houver trabalho de UI no escopo, `project_type` for `site` ou `web_app`, `design_skill` estiver em branco e `ui-spec.md` estiver ausente, parar e perguntar se deve encaminhar para `@ux-ui` ou prosseguir explicitamente sem uma design skill registrada.
+- Nunca selecionar, trocar ou reinterpretar automaticamente uma design skill dentro do `@dev`.
+- Ao implementar tokens de uma design skill, garantir que as variaveis CSS existam no mesmo escopo em que sao consumidas. Se o `body` consumir `var(--font-body)`, os tokens tipograficos precisam estar em `:root` ou a fonte precisa ser aplicada no shell tematico.
+- Para tabelas premium e linhas de lista, evitar `border-collapse: collapse` com background aplicado no `tr` quando a design skill selecionada espera linhas tratadas como superficie. Preferir linhas separadas ou superficies por celula, a menos que a biblioteca existente imponha outro padrao.
+
 ## Motion e animacao (React / Next.js)
 
 Quando `framework=React` ou `framework=Next.js` e o projeto tem paginas visuais/marketing ou o usuario pede animacoes:
@@ -112,6 +131,7 @@ Quando `framework=React` ou `framework=Next.js` e o projeto tem paginas visuais/
 3. Usar **Framer Motion** como biblioteca principal; CSS puro `@keyframes` como fallback se Framer Motion nao estiver instalado
 4. Sempre incluir fallback `prefers-reduced-motion` em toda animacao
 5. Nao aplicar motion pesado em interfaces admin/CRUD — motion serve o usuario, nao os dados
+6. Tratar `react-motion-patterns.md` apenas como mecanica de implementacao. Ele nao pode sobrescrever tipografia, espacamento, profundidade ou composicao da `design_skill` selecionada.
 
 ## Convencoes Web3 (quando `project_type=dapp`)
 - Validar inputs on-chain e off-chain
@@ -147,13 +167,13 @@ Copy de interface, textos de onboarding, conteudo de email e textos de marketing
 Para stacks nao listadas acima, aplicar os mesmos principios de separacao:
 - Isolar logica de negocio dos handlers de requisicao (controller/route/handler → service/use-case).
 - Validar todo input na fronteira do sistema antes de tocar a logica de negocio.
-- Seguir as convencoes proprias do framework — verificar `.aioson/skills/static/` para skills disponiveis.
+- Seguir as convencoes proprias do framework — verificar `.aioson/skills/static/`, `.aioson/skills/dynamic/` e `.aioson/skills/design/` para skills disponiveis.
 - Se nao existir skill para a stack, aplicar o padrao geral e documentar desvios em architecture.md.
 
 ## Regras de trabalho
 - Manter mudancas pequenas e revisaveis.
 - Aplicar validacao e autorizacao no lado servidor.
-- Reutilizar skills do projeto em `.aioson/skills/static` e `.aioson/skills/dynamic`.
+- Reutilizar skills do projeto em `.aioson/skills/static`, `.aioson/skills/dynamic` e `.aioson/skills/design`.
 - Reutilizar tambem skills instaladas da squad em `.aioson/squads/{squad-slug}/skills/` quando a tarefa estiver dentro de um pacote de squad.
 - Carregar skills e documentos detalhados sob demanda, nao todos de uma vez.
 - Antes de implementar, decidir qual e o pacote minimo de contexto necessario para este lote.
@@ -184,6 +204,7 @@ Quando o usuario digitar `*update-skeleton`, reescrever `.aioson/context/skeleto
 ## Restricoes obrigatorias
 - Usar `conversation_language` do contexto do projeto para toda interacao e output.
 - Se discovery/arquitetura for ambigua, pedir esclarecimento antes de implementar comportamento assumido.
+- Se uma implementacao de UI depender de direcao visual e `design_skill` ainda estiver em branco, nao inventar uma silenciosamente.
 - Sem reescritas desnecessarias fora da responsabilidade atual.
 - Nao copiar conteudo do discovery.md ou architecture.md no seu output. Referenciar pelo nome da secao. A cadeia completa de documentos ja esta no contexto — re-declarar desperdica tokens e introduz divergencia.
 

@@ -24,6 +24,7 @@ test('getAgentDefinition resolves ux-ui agent', () => {
   const agent = getAgentDefinition('ux-ui');
   assert.equal(Boolean(agent), true);
   assert.equal(agent.id, 'ux-ui');
+  assert.equal(agent.displayName, 'UI/UX');
   assert.equal(agent.output.includes('.aioson/context/ui-spec.md'), true);
 });
 

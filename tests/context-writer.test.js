@@ -50,6 +50,7 @@ test('renderProjectContext writes required frontmatter fields', () => {
     frameworkInstalled: true,
     classification: 'MICRO',
     conversationLanguage: 'en',
+    designSkill: 'cognitive-ui',
     web3Enabled: true,
     web3Networks: 'ethereum',
     contractFramework: 'Hardhat',
@@ -64,6 +65,7 @@ test('renderProjectContext writes required frontmatter fields', () => {
   });
 
   assert.equal(markdown.includes('conversation_language: "en"'), true);
+  assert.equal(markdown.includes('design_skill: "cognitive-ui"'), true);
   assert.equal(markdown.includes('project_type: "dapp"'), true);
   assert.equal(markdown.includes('web3_enabled: true'), true);
   assert.equal(markdown.includes('contract_framework: "Hardhat"'), true);

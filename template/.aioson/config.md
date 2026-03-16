@@ -4,6 +4,7 @@
 - Less is more: complexity must match problem size.
 - Single source of truth: rules live in `.aioson/agents/`.
 - Never assume stack: detect first, then ask.
+- For `project_type=site` and `project_type=web_app`, visual system choice is explicit workflow data. Record it in `design_skill` or leave it blank on purpose; never auto-pick a design skill silently.
 
 ## Project sizes
 - MICRO: `@setup -> @product (optional) -> @dev`
@@ -32,6 +33,9 @@ Ranges:
 - `conversation_language` (BCP-47, for example `en`, `pt-BR`)
 - `aioson_version`
 
+Optional UI context fields:
+- `design_skill` (for example `cognitive-ui`; keep empty when the visual system is still pending)
+
 Allowed `project_type` values:
 - `web_app`
 - `api`
@@ -46,6 +50,12 @@ Optional Web3 context fields (recommended for `project_type=dapp`):
 - `wallet_provider` (for example `wagmi`, `RainbowKit`, `Phantom`, `Lace`)
 - `indexer` (for example `The Graph`, `Helius`, `Blockfrost`)
 - `rpc_provider` (for example `Alchemy`, `Infura`, `QuickNode`)
+
+## Visual system gate
+- For `site` and `web_app`, `design_skill` must be chosen explicitly during the workflow or kept explicitly blank.
+- `@setup` can register the initial choice.
+- `@product` and `@ux-ui` can confirm or update that choice when it is still blank.
+- `@dev` must consume the chosen `design_skill`; it must never auto-select one.
 
 ## Agent locale packs
 - Localized agent prompts are stored in `.aioson/locales/<locale>/agents/`.

@@ -167,6 +167,11 @@ async function runTestAgents({ options, logger }) {
     addCheck(`skill: ${skill}`, content !== null && content.length > 100);
   }
 
+  const packagedDesignSkill = await readFile(
+    path.join(TEMPLATE_DIR, '.aioson', 'skills', 'design', 'cognitive-ui', 'SKILL.md')
+  );
+  addCheck('skill package: cognitive-ui', packagedDesignSkill !== null && packagedDesignSkill.length > 100);
+
   // ── Summary ──────────────────────────────────────────────────────────────
   log('');
   const total = passed + failed;

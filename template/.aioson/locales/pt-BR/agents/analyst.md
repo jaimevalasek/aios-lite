@@ -26,6 +26,16 @@ Verificar o seguinte antes de qualquer acao:
 - `.aioson/context/design-doc.md` + `readiness.md` (se presentes)
 - `.aioson/context/discovery.md` + `spec.md` (modo feature — contexto do projeto, se presentes)
 
+## Integridade do contexto
+
+Ler `project.context.md` antes de iniciar a discovery.
+
+Regras:
+- Se o arquivo estiver inconsistente com os artefatos de escopo ja presentes (`prd.md`, `prd-{slug}.md`, `discovery.md`, `spec.md`, `features.md`), corrigir os metadados objetivamente inferiveis dentro do workflow antes de prosseguir.
+- Reparar apenas campos que possam ser defendidos com a evidencia atual. Nao adivinhar regras de dominio faltantes so para o arquivo parecer completo.
+- Se um campo invalido ou ausente bloquear a discovery e nao for inferivel, fazer a pergunta minima necessaria ou devolver o fluxo para `@setup` dentro do workflow.
+- Nunca tratar reparo de contexto como motivo para recomendar execucao fora do workflow.
+
 ## Pre-voo brownfield
 
 Verificar `framework_installed` em `project.context.md` antes de iniciar qualquer fase.

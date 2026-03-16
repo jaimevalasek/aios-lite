@@ -10,23 +10,46 @@ Collect project information and generate `.aioson/context/project.context.md` wi
 Before running the full setup, check whether `.aioson/context/project.context.md` already exists:
 
 **Returning project (file exists):**
-Read the file. Greet the user with a one-line summary of the project name, stack, and classification.
+Read the file and validate whether the context is explicit and internally consistent.
+
+If the existing context is valid, greet the user with a one-line summary of the project name, stack, and classification.
 > "I see this project is already configured: [project_name] — [framework] — [classification]. What would you like to do?
 > → **Continue** — go straight to the next agent.
 > → **Update context** — re-run setup to change any values.
 > → **Scan codebase** — run `aioson scan:project` to analyse existing code before proceeding."
 
-Do NOT re-run the full onboarding unless the user explicitly requests it.
+If the existing context is inconsistent, stale, or still contains placeholders such as `auto`, `null`, blank values, or invalid values such as `landpage`, do NOT stop at the menu first.
+
+Mandatory behavior for inconsistent returning projects:
+- Inspect the current workspace and infer what can be repaired automatically from existing files and code.
+- Repair `.aioson/context/project.context.md` before asking the user what to do next.
+- Fix inferable fields such as `project_type`, `framework`, `framework_installed`, `classification`, and `design_skill` when there is enough evidence.
+- If the repository already contains an implementation and deeper brownfield understanding is required, inspect the codebase or run `aioson scan:project` before asking the user for manual choices.
+- After repair, explain briefly what was corrected and continue inside the normal workflow.
+- Only ask for clarification for fields that remain genuinely ambiguous after the repair pass.
+
+Do NOT re-run the full onboarding unless the user explicitly requests it or the remaining ambiguity truly requires onboarding answers.
 
 **First run (file does not exist):**
 Proceed with detection and full onboarding below.
 
 ## Mandatory sequence
-1. **Entry check** (above) — return summary if project.context.md exists; full flow if not.
+1. **Entry check** (above) — return summary if project.context.md exists and is valid; auto-repair first if it exists but is inconsistent; full flow if it does not exist.
 2. Detect framework in the current directory.
 3. Confirm detection with the user before proceeding.
 4. Run profile onboarding (description-first — see below).
 5. Write context file and verify values are explicit (never implicit).
+
+## Workflow gate after setup
+
+If the user sends a full implementation prompt right after setup (for example, "build X system with backend + frontend"), do not implement directly in the same turn.
+
+Mandatory behavior:
+- Route to the workflow path and the next required agent stage.
+- If `project.context.md` is inconsistent or stale, correct the file inside the workflow before handing off.
+- If a field cannot be corrected confidently, send the workflow back to `@setup` or keep the next official stage waiting for clarification inside the workflow.
+- Never offer direct execution outside the workflow as a setup shortcut.
+- Never silently bypass workflow after setup.
 
 ## Detection rules
 Check current workspace before asking installation questions:
@@ -126,6 +149,20 @@ Default is none for all. Ask once:
 
 If user says "none", "not now", or skips, leave all fields blank.
 
+### Step 5 — Visual system selection (`site` and `web_app` only)
+
+Before writing `project.context.md` for `site` or `web_app`, inspect `.aioson/skills/design/`.
+
+- If no packaged design skills are installed, keep `design_skill` as an empty string and state that UI agents must decide the visual system later.
+- If exactly one design skill is installed, do not auto-select it. Ask for explicit confirmation before registering it.
+- If multiple design skills are installed, show the available folder names and ask the user to choose one.
+- If the user does not want to choose yet, write `design_skill: ""` and state clearly that the visual system is still pending.
+
+Question format:
+> "For the visual system, do you want to register one of the installed design skills now? Available: [skill list]. If not, I'll leave `design_skill` blank and the next UI agent must confirm it before designing."
+
+For `api`, `script`, and non-UI-first scopes, keep `design_skill` empty unless the user explicitly asks to register one.
+
 ---
 
 ### Tech reference — use when user needs to choose
@@ -188,6 +225,7 @@ Do not finalize until all are confirmed:
 - `framework_installed`
 - `classification`
 - `conversation_language`
+- `design_skill` for `site` and `web_app` (use an explicit empty string if the visual system is still pending)
 
 Web3 fields are required when `project_type=dapp`:
 - `web3_enabled`
@@ -217,6 +255,7 @@ framework: "Laravel|Rails|Django|Next.js|Nuxt|Node|Hardhat|Foundry|Truffle|Ancho
 framework_installed: true
 classification: "MICRO|SMALL|MEDIUM"
 conversation_language: "en"
+design_skill: ""
 web3_enabled: false
 web3_networks: ""
 contract_framework: ""
@@ -280,6 +319,13 @@ Explain briefly: *"`spec.md` is a document that tracks features (done / in progr
 
 If yes, generate `.aioson/context/spec.md` using the template below.
 If no, skip — `spec.md` is optional and can be created manually at any time.
+
+### 2b. Preserve the visual-system decision
+
+If `project_type` is `site` or `web_app`, explicitly mention whether `design_skill` was selected or left blank.
+
+- If selected: tell the user which design skill was registered.
+- If blank: tell the user that `@product` or `@ux-ui` must confirm the visual system before UI work starts.
 
 `spec.md` is a living document maintained by the developer across sessions. It is not a squad artifact — it captures evolving state, decisions, and feature status as the project grows.
 

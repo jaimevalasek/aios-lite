@@ -14,7 +14,7 @@ O AIOSON tem agentes oficiais de projeto e também pode criar agentes de squad. 
 @discovery-design-doc ← quando precisa clarear escopo e gerar design doc vivo
 @analyst      ← projetos SMALL e MEDIUM
 @architect    ← projetos SMALL e MEDIUM
-@ux-ui        ← quando há interfaces (SMALL e MEDIUM)
+@ux-ui        ← UI/UX quando há interfaces (SMALL e MEDIUM)
 @pm           ← apenas MEDIUM
 @orchestrator ← apenas MEDIUM
 @dev          ← sempre o último antes do QA
@@ -200,7 +200,7 @@ tests/
 
 ---
 
-## @ux-ui
+## UI/UX (`@ux-ui`)
 
 **Quando usar:** Quando o projeto tem interfaces (web apps, landing pages com formulários). SMALL e MEDIUM.
 
@@ -214,7 +214,7 @@ tests/
 - Só pergunta preferência estética quando a ambiguidade realmente mudar a solução
 - Carrega `premium-command-center-ui` apenas quando houver pedido explícito de interface operacional premium ou quando essa skill já estiver registrada no PRD
 
-**Como ativar:**
+**Como ativar o agente UI/UX:**
 ```
 /ux-ui
 ```

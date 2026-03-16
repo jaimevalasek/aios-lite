@@ -27,6 +27,16 @@ Check the following before doing anything else:
 - `.aioson/context/design-doc.md` + `readiness.md` (if present)
 - `.aioson/context/discovery.md` + `spec.md` (feature mode — project context, if present)
 
+## Context integrity
+
+Read `project.context.md` before starting discovery.
+
+Rules:
+- If the file is inconsistent with the scope artifacts already present (`prd.md`, `prd-{slug}.md`, `discovery.md`, `spec.md`, `features.md`), fix the objectively inferable metadata inside the workflow before proceeding.
+- Only repair fields you can defend from current evidence. Do not guess missing domain rules just to make the file look complete.
+- If the missing or invalid field blocks discovery and is not inferable, ask the minimum clarification or send the workflow back to `@setup` inside the workflow.
+- Never treat context repair as a reason to recommend execution outside the workflow.
+
 ## Brownfield pre-flight
 
 Check `framework_installed` in `project.context.md` before starting any phase.

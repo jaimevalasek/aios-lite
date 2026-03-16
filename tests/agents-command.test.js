@@ -82,6 +82,8 @@ test('agent:prompt bootstraps direct runtime handoff for non-workflow agents', a
   } finally {
     runtime.db.close();
   }
+
+  await assert.doesNotReject(() => fs.access(path.join(dir, 'aioson-logs')));
 });
 
 test('agent:prompt classifies squad handoff as squad runtime activity', async () => {
@@ -147,4 +149,61 @@ test('agent:prompt enforces workflow and routes to the active stage', async () =
   } finally {
     runtime.db.close();
   }
+});
+
+test('agent:prompt keeps workflow routing when project context is invalid but workflow state exists', async () => {
+  const dir = await makeTempDir();
+  await fs.mkdir(path.join(dir, '.aioson/context'), { recursive: true });
+  await fs.writeFile(
+    path.join(dir, '.aioson/context/project.context.md'),
+    '---\nproject_name: "demo"\nproject_type: "landpage"\nprofile: "developer"\nframework: "null"\nframework_installed: true\nclassification: "SMALL"\nconversation_language: "en"\naioson_version: "1.2.1"\n---\n\n# Context\n',
+    'utf8'
+  );
+  await fs.writeFile(
+    path.join(dir, '.aioson/context/workflow.state.json'),
+    `${JSON.stringify({
+      version: 1,
+      mode: 'project',
+      classification: 'SMALL',
+      sequence: ['setup', 'product', 'analyst', 'architect', 'dev', 'qa'],
+      current: null,
+      next: 'analyst',
+      completed: ['setup', 'product'],
+      skipped: [],
+      featureSlug: null,
+      detour: null,
+      updatedAt: new Date().toISOString()
+    }, null, 2)}\n`,
+    'utf8'
+  );
+
+  const { t } = createTranslator('en');
+  const logger = createCollectLogger();
+  const result = await runAgentPrompt({
+    args: ['dev', dir],
+    options: { tool: 'codex' },
+    logger,
+    t
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.requestedAgent, 'dev');
+  assert.equal(result.agent, 'analyst');
+  assert.equal(result.routed, true);
+
+  const runtime = await openRuntimeDb(dir, { mustExist: true });
+  try {
+    const stageRun = runtime.db.prepare("SELECT agent_name, source, workflow_stage, status FROM agent_runs WHERE agent_name = '@analyst' ORDER BY updated_at DESC LIMIT 1").get();
+    const task = runtime.db.prepare('SELECT session_key, status FROM tasks ORDER BY updated_at DESC LIMIT 1').get();
+
+    assert.equal(stageRun.agent_name, '@analyst');
+    assert.equal(stageRun.source, 'workflow');
+    assert.equal(stageRun.workflow_stage, 'analyst');
+    assert.equal(task.session_key, 'workflow:project:project:default');
+    assert.equal(task.status, 'running');
+  } finally {
+    runtime.db.close();
+  }
+
+  await assert.doesNotReject(() => fs.access(path.join(dir, 'aioson-logs')));
 });

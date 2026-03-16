@@ -211,4 +211,6 @@ test('workflow:next syncs workflow task, runs, and canonical events into runtime
   } finally {
     runtime.db.close();
   }
+
+  await assert.doesNotReject(() => fs.access(path.join(dir, 'aioson-logs')));
 });

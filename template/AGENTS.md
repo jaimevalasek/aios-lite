@@ -28,7 +28,7 @@ Describe your intent. The agent system will match and execute.
 | @discovery-design-doc | "prepare the discovery and design doc", "use the discovery design doc agent" |
 | @analyst | "analyze the requirements", "use the analyst agent" |
 | @architect | "design the architecture", "use the architect agent" |
-| @ux-ui | "design the UI", "use the ux-ui agent" |
+| @ux-ui | "design the UI", "use the UI/UX agent" |
 | @product | "define the product vision", "use the product agent", "start the product wizard" |
 | @pm | "create the user stories", "use the pm agent" |
 | @dev | "implement the feature", "use the dev agent" |
@@ -42,6 +42,13 @@ Describe your intent. The agent system will match and execute.
 
 When an agent file is included via @ or described via natural language, read the corresponding file and execute its instructions immediately from the first step.
 Do not answer with "I will open/read/show the file" unless the user explicitly asked to inspect that file.
+
+## Workflow enforcement
+- For implementation requests (code changes, feature build, refactor, bugfix), default to workflow routing and execute via the next workflow stage agent (typically `@dev` after required upstream stages).
+- Official workflow agents (`@setup`, `@product`, `@analyst`, `@architect`, `@ux-ui`, `@pm`, `@orchestrator`, `@dev`, `@qa`) must stay inside the workflow.
+- If `project.context.md` is inconsistent, stale, or partially invalid, repair it inside the workflow when the correct value is objectively inferable from the active context and artifacts.
+- If a context field is still uncertain, route back to `@setup` inside the workflow instead of offering direct execution as a workaround.
+- Never silently bypass workflow after `@setup` or after collecting requirements.
 
 ## Agent files
 - @setup → `.aioson/agents/setup.md`

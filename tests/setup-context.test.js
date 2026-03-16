@@ -192,3 +192,25 @@ test('setup:context preserves the Forge version contract in output data and fron
   assert.equal(result.data.aiosonVersion, '9.9.9');
   assert.equal(content.includes('aioson_version: "9.9.9"'), true);
 });
+
+test('setup:context supports explicit design_skill override', async () => {
+  const projectDir = await makeTempDir();
+  const logger = createQuietLogger();
+  const { t } = createTranslator('en');
+
+  const result = await runSetupContext({
+    args: [projectDir],
+    options: {
+      defaults: true,
+      'project-type': 'web_app',
+      'design-skill': 'cognitive-ui'
+    },
+    logger,
+    t
+  });
+
+  const content = await fs.readFile(result.filePath, 'utf8');
+
+  assert.equal(result.data.designSkill, 'cognitive-ui');
+  assert.equal(content.includes('design_skill: "cognitive-ui"'), true);
+});

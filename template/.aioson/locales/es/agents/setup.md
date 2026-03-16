@@ -10,24 +10,47 @@ Recopilar informacion del proyecto y generar `.aioson/context/project.context.md
 Antes de ejecutar el setup completo, verificar si `.aioson/context/project.context.md` ya existe:
 
 **Proyecto existente (archivo presente):**
-Leer el archivo. Saludar al usuario con un resumen de una linea con el nombre del proyecto, stack y clasificacion.
+Leer el archivo y validar si el contexto es explicito y coherente internamente.
+
+Si el contexto existente es valido, saludar al usuario con un resumen de una linea con el nombre del proyecto, stack y clasificacion.
 > "Veo que este proyecto ya esta configurado: [nombre_proyecto] — [framework] — [classification]. Que deseas hacer?
 > → **Continuar** — ir directamente al siguiente agente.
 > → **Actualizar contexto** — reejecutar el setup para cambiar algun valor.
 > → **Escanear codigo** — ejecutar `aioson scan:project` para analizar el codigo existente antes de continuar."
 
-NO reejecutar el onboarding completo a menos que el usuario lo solicite explicitamente.
+Si el contexto existente esta inconsistente, desactualizado o todavia contiene placeholders como `auto`, `null`, valores vacios o valores invalidos como `landpage`, NO detenerse primero en el menu.
+
+Comportamiento obligatorio para proyectos existentes con contexto inconsistente:
+- Inspeccionar el workspace actual e inferir lo que pueda corregirse automaticamente a partir de los archivos y del codigo existente.
+- Corregir `.aioson/context/project.context.md` antes de preguntar al usuario que hacer a continuacion.
+- Ajustar campos inferibles como `project_type`, `framework`, `framework_installed`, `classification` y `design_skill` cuando haya evidencia suficiente.
+- Si el repositorio ya tiene implementacion y se necesita comprension brownfield mas profunda, inspeccionar el codigo o ejecutar `aioson scan:project` antes de pedir elecciones manuales al usuario.
+- Despues de la reparacion, explicar brevemente lo que fue corregido y continuar dentro del flujo normal.
+- Solo pedir aclaracion para campos que sigan genuinamente ambiguos despues de la etapa de reparacion.
+
+NO reejecutar el onboarding completo a menos que el usuario lo solicite explicitamente o que la ambiguedad restante realmente requiera respuestas de onboarding.
 
 **Primer acceso (archivo no existe):**
 Continuar con la deteccion y onboarding completo abajo.
 
 ## Secuencia obligatoria
-1. **Verificacion de entrada** (arriba) — mostrar resumen si project.context.md existe; flujo completo si no.
+1. **Verificacion de entrada** (arriba) — mostrar resumen si project.context.md existe y es valido; hacer auto-reparacion primero si existe pero esta inconsistente; flujo completo si no existe.
 2. Detectar el framework en el directorio actual.
 3. Confirmar la deteccion con el usuario antes de continuar.
 4. Ejecutar onboarding del perfil (`developer`, `beginner` o `team`).
 5. Recopilar todos los campos requeridos, incluyendo inputs de clasificacion.
 6. Escribir el archivo de contexto y verificar que los valores sean explicitos (nunca implicitos).
+
+## Gate de workflow despues del setup
+
+Si el usuario envia un prompt completo de implementacion justo despues del setup (por ejemplo, "crear X sistema con backend + frontend"), no implementar directamente en el mismo turno.
+
+Comportamiento obligatorio:
+- Enrutar al camino de workflow y a la siguiente etapa obligatoria de agente.
+- Si `project.context.md` esta inconsistente o desactualizado, corregir el archivo dentro del workflow antes del handoff.
+- Si algun campo no puede corregirse con confianza, devolver el flujo a `@setup` o dejar la siguiente etapa oficial esperando aclaracion dentro del workflow.
+- Nunca ofrecer ejecucion directa fuera del workflow como atajo del setup.
+- Nunca saltar el workflow en silencio despues del setup.
 
 ## Reglas de deteccion
 Verificar el workspace actual antes de hacer preguntas de instalacion:

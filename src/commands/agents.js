@@ -17,6 +17,18 @@ const {
   classifyDirectAgentRuntime
 } = require('../execution-gateway');
 
+const WORKFLOW_AGENT_IDS = new Set([
+  'setup',
+  'product',
+  'analyst',
+  'architect',
+  'ux-ui',
+  'pm',
+  'orchestrator',
+  'dev',
+  'qa'
+]);
+
 async function resolveLocaleForTarget(targetDir, options) {
   const fromOption = options.language || options.lang;
   if (fromOption) return resolveAgentLocale(fromOption);
@@ -44,7 +56,13 @@ async function runAgentsList({ args, options, logger, t }) {
   for (const agent of agents) {
     const deps = agent.dependsOn.length > 0 ? agent.dependsOn.join(', ') : t('agents.none');
     const instructionPath = await resolveExistingInstructionPath(targetDir, agent, locale);
-    logger.log(t('agents.agent_line', { command: agent.command, id: agent.id }));
+    logger.log(
+      t('agents.agent_line', {
+        label: agent.displayName || agent.id,
+        command: agent.command,
+        id: agent.id
+      })
+    );
     logger.log(t('agents.path_line', { path: instructionPath }));
     logger.log(t('agents.active_path_line', { path: agent.path }));
     logger.log(t('agents.depends_line', { value: deps }));
@@ -76,10 +94,10 @@ async function runAgentPrompt({ args, options, logger, t }) {
   let instructionPath = null;
   let prompt = null;
 
-  const context = await validateProjectContextFile(targetDir);
-  if (context.valid) {
+  if (WORKFLOW_AGENT_IDS.has(requestedAgent)) {
     const loaded = await loadOrCreateState(targetDir, options);
-    if (loaded.state.sequence.includes(requestedAgent)) {
+    const hasWorkflowStage = Boolean(loaded.state.current || loaded.state.next || loaded.state.sequence.length > 0);
+    if (hasWorkflowStage) {
       const workflowResult = await runWorkflowNext({
         args: [targetDir],
         options: {
