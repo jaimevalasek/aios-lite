@@ -53,7 +53,9 @@ const {
   runRuntimeFail,
   runRuntimeStatus,
   runRuntimeLog,
-  runDeliver
+  runDeliver,
+  runOutputStrategyExport,
+  runOutputStrategyImport
 } = require('./commands/runtime');
 const {
   runCloudImportSquad,
@@ -167,6 +169,8 @@ const JSON_SUPPORTED_COMMANDS = new Set([
   'runtime:log',
   'runtime-log',
   'deliver',
+  'output-strategy:export',
+  'output-strategy:import',
   'cloud:import:squad',
   'cloud-import-squad',
   'cloud:import:genome',
@@ -454,6 +458,10 @@ async function main() {
       result = await runRuntimeLog({ args, options, logger: commandLogger, t });
     } else if (command === 'deliver') {
       result = await runDeliver({ args, options, logger: commandLogger, t });
+    } else if (command === 'output-strategy:export') {
+      result = await runOutputStrategyExport({ args, options, logger: commandLogger, t });
+    } else if (command === 'output-strategy:import') {
+      result = await runOutputStrategyImport({ args, options, logger: commandLogger, t });
     } else if (command === 'cloud:import:squad' || command === 'cloud-import-squad') {
       result = await runCloudImportSquad({ args, options, logger: commandLogger, t });
     } else if (command === 'cloud:import:genome' || command === 'cloud-import-genome') {

@@ -996,6 +996,92 @@ async function runDeliver({ args, options = {}, logger, t }) {
   }
 }
 
+async function findManifestPath(projectDir, slug) {
+  const candidates = [
+    path.join(projectDir, '.aioson', 'squads', slug, 'squad.manifest.json'),
+    path.join(projectDir, 'agents', slug, 'squad.manifest.json')
+  ];
+  for (const p of candidates) {
+    try { await fs.stat(p); return p; } catch { continue; }
+  }
+  return null;
+}
+
+async function runOutputStrategyExport({ args, options = {}, logger, t }) {
+  const projectDir = resolveTargetDir(args);
+  const slug = requireOption(options, 'squad', t);
+  const manifestPath = await findManifestPath(projectDir, slug);
+
+  if (!manifestPath) {
+    logger.error(`Manifest not found for squad "${slug}"`);
+    return { ok: false, error: 'Manifest not found' };
+  }
+
+  const raw = await fs.readFile(manifestPath, 'utf8');
+  const manifest = JSON.parse(raw);
+  const strategy = manifest.outputStrategy || null;
+
+  if (!strategy) {
+    logger.log(`Squad "${slug}" has no outputStrategy configured.`);
+    return { ok: false, error: 'No outputStrategy found' };
+  }
+
+  const exportsDir = path.join(projectDir, '.aioson', 'squads', 'exports');
+  await fs.mkdir(exportsDir, { recursive: true });
+  const outFile = path.join(exportsDir, `${slug}.output-strategy.json`);
+  await fs.writeFile(outFile, JSON.stringify(strategy, null, 2) + '\n', 'utf8');
+
+  const relOut = path.relative(projectDir, outFile).replace(/\\/g, '/');
+  logger.log(`Exported outputStrategy from "${slug}" → ${relOut}`);
+  return { ok: true, file: relOut, strategy };
+}
+
+async function runOutputStrategyImport({ args, options = {}, logger, t }) {
+  const projectDir = resolveTargetDir(args);
+  const slug = requireOption(options, 'squad', t);
+  const fromSlug = options.from || null;
+  const fromFile = options.file || null;
+
+  if (!fromSlug && !fromFile) {
+    logger.error('Usage: aioson output-strategy:import --squad=<target> --from=<source-slug> | --file=<path>');
+    return { ok: false, error: 'Provide --from or --file' };
+  }
+
+  // Load source strategy
+  let strategy;
+  if (fromFile) {
+    const absFile = path.resolve(projectDir, fromFile);
+    const raw = await fs.readFile(absFile, 'utf8');
+    strategy = JSON.parse(raw);
+  } else {
+    const srcPath = await findManifestPath(projectDir, fromSlug);
+    if (!srcPath) {
+      logger.error(`Source squad "${fromSlug}" manifest not found`);
+      return { ok: false, error: 'Source manifest not found' };
+    }
+    const srcManifest = JSON.parse(await fs.readFile(srcPath, 'utf8'));
+    strategy = srcManifest.outputStrategy || null;
+    if (!strategy) {
+      logger.error(`Source squad "${fromSlug}" has no outputStrategy`);
+      return { ok: false, error: 'Source has no outputStrategy' };
+    }
+  }
+
+  // Write to target
+  const targetPath = await findManifestPath(projectDir, slug);
+  if (!targetPath) {
+    logger.error(`Target squad "${slug}" manifest not found`);
+    return { ok: false, error: 'Target manifest not found' };
+  }
+
+  const targetManifest = JSON.parse(await fs.readFile(targetPath, 'utf8'));
+  targetManifest.outputStrategy = strategy;
+  await fs.writeFile(targetPath, JSON.stringify(targetManifest, null, 2) + '\n', 'utf8');
+
+  logger.log(`Imported outputStrategy into "${slug}" from ${fromSlug || fromFile}`);
+  return { ok: true, squad: slug, source: fromSlug || fromFile };
+}
+
 module.exports = {
   runRuntimeInit,
   runRuntimeIngest,
@@ -1008,5 +1094,7 @@ module.exports = {
   runRuntimeFail,
   runRuntimeStatus,
   runRuntimeLog,
-  runDeliver
+  runDeliver,
+  runOutputStrategyExport,
+  runOutputStrategyImport
 };
