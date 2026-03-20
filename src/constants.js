@@ -317,7 +317,7 @@ const AGENT_DEFINITIONS = [
     path: '.aioson/agents/squad.md',
     dependsOn: [],
     output:
-      '.aioson/squads/{slug}/squad.manifest.json + .aioson/squads/{slug}/squad.md + .aioson/squads/{slug}/agents/ + .aioson/squads/{slug}/skills/ + .aioson/squads/{slug}/templates/ + .aioson/squads/{slug}/docs/ + output/{slug}/{session-id}.html + output/{slug}/{content-key}/content.json + output/{slug}/{content-key}/index.html + output/{slug}/latest.html + aios-logs/{slug}/ + media/{slug}/'
+      '.aioson/squads/{slug}/squad.manifest.json + .aioson/squads/{slug}/squad.md + .aioson/squads/{slug}/agents/ + .aioson/squads/{slug}/workers/ + .aioson/squads/{slug}/workflows/ + .aioson/squads/{slug}/skills/ + .aioson/squads/{slug}/templates/ + .aioson/squads/{slug}/docs/ + output/{slug}/{session-id}.html + output/{slug}/{content-key}/content.json + output/{slug}/{content-key}/index.html + output/{slug}/latest.html + aios-logs/{slug}/ + media/{slug}/'
   },
   {
     id: 'genoma',

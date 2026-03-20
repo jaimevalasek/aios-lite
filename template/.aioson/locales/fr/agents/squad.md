@@ -50,6 +50,38 @@ Puis determiner l'equipe d'agents et generer tous les fichiers.
 3. Recevoir le genome et deriver les roles de specialistes de sa section Mentes.
 4. Generer les fichiers de l'equipe d'agents (voir Generation d'agents ci-dessous).
 
+## Classification des executeurs
+
+Avant de generer les executeurs, classifier chaque role avec cet arbre de decision :
+
+```
+TACHE / ROLE
+  ├── Est-elle deterministe ? (meme input → meme output toujours)
+  │   ├── OUI → type: worker (script Python/bash, sans LLM, cout zero)
+  │   └── NON ↓
+  ├── Necessite un jugement humain critique ? (legal, financier, societaire)
+  │   ├── OUI → type: human-gate (point d'approbation avec regles graduees)
+  │   └── NON ↓
+  ├── Doit repliquer la methodologie d'une personne reelle specifique ?
+  │   ├── OUI → type: clone (necessite un genome de la personne)
+  │   └── NON ↓
+  ├── Est-ce un domaine specialise necessitant une expertise profonde ?
+  │   ├── OUI → type: assistant (specialiste de domaine)
+  │   └── NON → type: agent (IA avec role defini)
+  │
+  └── Ensemble de roles avec une mission partagee → squad
+```
+
+Appliquer cette classification a chaque executeur avant d'ecrire les fichiers.
+Montrer la classification a l'utilisateur dans la confirmation du squad.
+
+**Regles par type :**
+- `worker` → generer un script dans `workers/` (Python ou bash), PAS dans `agents/`
+- `agent` → generer `.md` dans `agents/` (flux standard)
+- `clone` → generer `.md` dans `agents/` + referencer le genome via `genomeSource`
+- `assistant` → generer `.md` dans `agents/` + inclure `domain` et `behavioralProfile`
+- `human-gate` → enregistrer dans le manifeste JSON + workflow ; aucun fichier `.md` genere
+
 ## Generation d'agents
 
 Apres avoir recueilli les informations, determiner **3–5 roles specialises** que le domaine requiert.
@@ -135,6 +167,51 @@ synthetiser les rendus, gerer le rapport HTML de session.
 - Livrables des agents : `output/{squad-slug}/`
 - Logs : `aios-logs/squads/{squad-slug}/`
 ```
+
+### Etape 2b — Generer le workflow (quand le squad a un pipeline avec des phases)
+
+Si le squad a un processus end-to-end avec des phases distinctes et des handoffs, generer un workflow.
+Ignorer uniquement pour les squads purement conversationnels ou exploratoires.
+
+**Modes d'execution :**
+- `sequential` — les phases dependent de l'output de la precedente (defaut)
+- `parallel` — les phases sont independantes et peuvent s'executer simultanement
+- `mixed` — certaines phases declarent `parallel: true`
+
+Creer `.aioson/squads/{squad-slug}/workflows/main.md` :
+
+```markdown
+# Workflow : {workflow-title}
+
+## Declencheur
+{Ce qui demarre ce workflow}
+
+## Duree Estimee
+{ex : 30-60 min}
+
+## Mode d'Execution
+{sequential | parallel | mixed}
+
+## Phases
+
+### Phase 1 — {titre}
+- **Executeur :** @{slug} ({type})
+- **Input :** {description}
+- **Output :** {artefact}
+- **Handoff :** output → input de la Phase 2
+
+### Phase N — {titre}
+- **Executeur :** {slug} (worker)
+- **Input :** {artefact}
+- **Output :** {artefact final}
+- **Human Gate :** {condition} → {auto | consult | approve | block}
+```
+
+Niveaux d'action du gate :
+- `auto` — l'executeur decide de facon autonome (faible risque)
+- `consult` — consulte un autre agent specialiste avant (risque moyen)
+- `approve` — un humain doit approuver avant de continuer (risque eleve)
+- `block` — ne peut pas continuer sans autorisation humaine explicite (critique)
 
 ### Etape 3 — Enregistrer les agents dans CLAUDE.md
 

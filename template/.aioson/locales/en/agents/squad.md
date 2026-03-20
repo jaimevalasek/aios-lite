@@ -50,6 +50,38 @@ Then determine the agent team and generate all files.
 3. Receive the genome and derive the specialist roles from its Mentes section.
 4. Generate the agent team files (see Agent generation below).
 
+## Executor classification
+
+Before generating executors, classify each role using this decision tree:
+
+```
+TASK / ROLE
+  ├── Is it deterministic? (same input → same output, always)
+  │   ├── YES → type: worker (Python/bash script, no LLM, zero cost)
+  │   └── NO ↓
+  ├── Requires critical human judgment? (legal, financial, accountability)
+  │   ├── YES → type: human-gate (approval checkpoint with graduated rules)
+  │   └── NO ↓
+  ├── Must replicate a specific real person's methodology?
+  │   ├── YES → type: clone (requires genome)
+  │   └── NO ↓
+  ├── Is it a specialized domain requiring deep expertise?
+  │   ├── YES → type: assistant (domain specialist)
+  │   └── NO → type: agent (LLM with defined role)
+  │
+  └── Group of roles with a shared mission → squad
+```
+
+Apply this classification to every executor before writing files.
+Show the classification to the user as part of the squad confirmation.
+
+**Rules by type:**
+- `worker` → generate script in `workers/` (Python or bash), NOT in `agents/`
+- `agent` → generate `.md` in `agents/` (default flow)
+- `clone` → generate `.md` in `agents/` + reference genome via `genomeSource`
+- `assistant` → generate `.md` in `agents/` + include `domain` and `behavioralProfile`
+- `human-gate` → register in manifest JSON + workflow only; no `.md` file generated
+
 ## Agent generation
 
 After gathering information, determine **3–5 specialized roles** the domain requires.
@@ -66,9 +98,14 @@ After gathering information, determine **3–5 specialized roles** the domain re
 - Max 50 characters, no trailing hyphens
 - Example: "YouTube viral scripts about AI" → `youtube-viral-scripts-ai`
 
-### Step 1 — Generate each specialist agent
+### Step 1 — Generate each executor
 
-For each role, create `agents/{squad-slug}/{role-slug}.md`:
+Confirm the `type` for each executor before generating files.
+
+**If `type: worker`:** create a script at `agents/{squad-slug}/` → **no**, at `workers/{slug}.py` (or `.sh`).
+The script must be deterministic — same input, same output. No LLM calls.
+
+**If `type: agent`, `clone`, or `assistant`:** create `agents/{squad-slug}/{role-slug}.md`:
 
 ```markdown
 # Agent @{role-slug}
@@ -135,6 +172,51 @@ synthesize outputs, manage the session HTML report.
 - Agent deliverables: `output/{squad-slug}/`
 - Logs: `aios-logs/squads/{squad-slug}/`
 ```
+
+### Step 2b — Generate workflow (when the squad has a multi-phase pipeline)
+
+If the squad has a clear end-to-end process with distinct phases, generate a workflow.
+Skip only for purely conversational or exploratory squads.
+
+**Execution modes:**
+- `sequential` — phases depend on each other's output (default)
+- `parallel` — phases are independent and run simultaneously
+- `mixed` — some phases declare `parallel: true`
+
+Create `.aioson/squads/{squad-slug}/workflows/main.md`:
+
+```markdown
+# Workflow: {workflow-title}
+
+## Trigger
+{What starts this workflow}
+
+## Estimated Duration
+{e.g. 30-60 min}
+
+## Execution Mode
+{sequential | parallel | mixed}
+
+## Phases
+
+### Phase 1 — {title}
+- **Executor:** @{slug} ({type})
+- **Input:** {description}
+- **Output:** {artifact}
+- **Handoff:** output → Phase 2 input
+
+### Phase N — {title}
+- **Executor:** {slug} (worker)
+- **Input:** {artifact}
+- **Output:** {final artifact}
+- **Human Gate:** {condition} → {auto | consult | approve | block}
+```
+
+Gate action levels:
+- `auto` — executor decides (low risk)
+- `consult` — consults another specialist agent first (medium risk)
+- `approve` — human must approve before proceeding (high risk)
+- `block` — cannot proceed without explicit human authorization (critical)
 
 ### Step 3 — Register agents in CLAUDE.md
 

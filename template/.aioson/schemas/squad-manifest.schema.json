@@ -59,6 +59,8 @@
       "properties": {
         "rootDir": { "type": "string" },
         "agentsDir": { "type": "string" },
+        "workersDir": { "type": "string", "description": "Directory for deterministic worker scripts (no LLM)" },
+        "workflowsDir": { "type": "string", "description": "Directory for workflow .md files with phases and handoffs" },
         "skillsDir": { "type": "string" },
         "templatesDir": { "type": "string" },
         "docsDir": { "type": "string" }
@@ -80,12 +82,85 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["slug", "role", "file"],
+        "required": ["slug", "role"],
         "properties": {
           "slug": { "type": "string", "pattern": "^[a-z0-9-]+$" },
           "title": { "type": "string" },
+          "type": {
+            "type": "string",
+            "enum": ["worker", "agent", "clone", "assistant", "human-gate"],
+            "default": "agent",
+            "description": "Executor type: worker (deterministic script, no LLM), agent (LLM with defined role), clone (cognitive replica of real person), assistant (domain specialist with behavioral profile), human-gate (human approval checkpoint)"
+          },
           "role": { "type": "string" },
           "file": { "type": "string" },
+          "deterministic": {
+            "type": "boolean",
+            "description": "Whether the executor always produces the same output for the same input"
+          },
+          "usesLLM": {
+            "type": "boolean",
+            "description": "Whether the executor uses an LLM (false = zero LLM cost)"
+          },
+          "runtime": {
+            "type": "string",
+            "enum": ["python", "bash", "node", "other"],
+            "description": "Runtime for worker executors"
+          },
+          "entrypoint": {
+            "type": "string",
+            "description": "Script path for worker executors"
+          },
+          "domain": {
+            "type": "string",
+            "description": "Specialized domain for assistant executors"
+          },
+          "behavioralProfile": {
+            "type": "string",
+            "description": "Behavioral profile for assistant executors (e.g. analytical-compliant, driver, expressive)"
+          },
+          "genomeSource": {
+            "type": "string",
+            "description": "Path to genome file for clone executors"
+          },
+          "fidelityScore": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "description": "Cognitive fidelity score for clone executors (0-1)"
+          },
+          "personReal": {
+            "type": "boolean",
+            "description": "Whether the clone is based on a real person"
+          },
+          "trigger": {
+            "type": "string",
+            "description": "Condition that activates a human-gate executor"
+          },
+          "escalation": {
+            "type": "object",
+            "description": "Graduated escalation rules for human-gate executors",
+            "properties": {
+              "rules": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "condition": { "type": "string" },
+                    "action": {
+                      "type": "string",
+                      "enum": ["auto", "consult", "approve", "block"]
+                    },
+                    "consultAgent": { "type": "string" },
+                    "notifyVia": {
+                      "type": "array",
+                      "items": { "type": "string" }
+                    }
+                  }
+                }
+              }
+            }
+          },
           "skills": { "type": "array", "items": { "type": "string" } },
           "genomes": {
             "type": "array",
@@ -207,6 +282,76 @@
           }
         }
       ]
+    },
+    "workflows": {
+      "type": "array",
+      "description": "Pipelines with phases, executors, handoffs, and execution modes",
+      "items": {
+        "type": "object",
+        "required": ["slug", "title"],
+        "properties": {
+          "slug": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+          "title": { "type": "string" },
+          "trigger": { "type": "string", "description": "Condition or user action that starts this workflow" },
+          "executionMode": {
+            "type": "string",
+            "enum": ["sequential", "parallel", "mixed"],
+            "default": "sequential",
+            "description": "How phases run: sequential (each waits for previous), parallel (all at once), mixed (phases declare their own mode)"
+          },
+          "estimatedDuration": { "type": "string", "description": "Human-readable estimate, e.g. '30-60min'" },
+          "file": { "type": "string", "description": "Path to the workflow .md file" },
+          "phases": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["id", "title", "executor"],
+              "properties": {
+                "id": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+                "title": { "type": "string" },
+                "executor": {
+                  "oneOf": [
+                    { "type": "string" },
+                    { "type": "array", "items": { "type": "string" } }
+                  ],
+                  "description": "Executor slug(s) responsible for this phase"
+                },
+                "executorType": {
+                  "type": "string",
+                  "enum": ["worker", "agent", "clone", "assistant", "human-gate"]
+                },
+                "dependsOn": {
+                  "type": "array",
+                  "items": { "type": "string" },
+                  "description": "Phase IDs that must complete before this phase starts"
+                },
+                "parallel": {
+                  "type": "boolean",
+                  "default": false,
+                  "description": "Whether this phase can run in parallel with siblings"
+                },
+                "input": { "type": "string", "description": "Expected input description or source" },
+                "output": { "type": "string", "description": "Expected output artifact or description" },
+                "humanGate": {
+                  "type": "object",
+                  "description": "Optional human approval checkpoint within this phase",
+                  "properties": {
+                    "condition": { "type": "string", "description": "Expression that triggers the gate" },
+                    "action": {
+                      "type": "string",
+                      "enum": ["auto", "consult", "approve", "block"]
+                    },
+                    "consultAgent": { "type": "string" },
+                    "notifyVia": { "type": "array", "items": { "type": "string" } },
+                    "reason": { "type": "string" }
+                  }
+                },
+                "checklist": { "type": "string", "description": "Path to quality checklist for this phase" }
+              }
+            }
+          }
+        }
+      }
     },
     "contentBlueprints": {
       "type": "array",

@@ -205,6 +205,38 @@ When applying a genome that was already applied before:
 - Show semantic diff: "genome-slug changed: added section X, removed constraint Y"
 - Ask for confirmation before rewriting any executor files
 
+## Executor classification
+
+Before generating executors, classify each role using this decision tree:
+
+```
+TASK / ROLE
+  ├── Is it deterministic? (same input → same output, always)
+  │   ├── YES → type: worker (Python/bash script, no LLM, zero cost)
+  │   └── NO ↓
+  ├── Requires critical human judgment? (legal, financial, accountability)
+  │   ├── YES → type: human-gate (approval checkpoint with graduated rules)
+  │   └── NO ↓
+  ├── Must replicate a specific real person's methodology?
+  │   ├── YES → type: clone (requires genome)
+  │   └── NO ↓
+  ├── Is it a specialized domain requiring deep expertise?
+  │   ├── YES → type: assistant (domain specialist)
+  │   └── NO → type: agent (LLM with defined role)
+  │
+  └── Group of roles with a shared mission → squad
+```
+
+Apply this classification to every executor before writing files.
+Show the classification to the user as part of the squad confirmation.
+
+**Rules by type:**
+- `worker` → generate script in `workers/` (Python or bash), NOT in `agents/`
+- `agent` → generate `.md` in `agents/` (default flow)
+- `clone` → generate `.md` in `agents/` + reference genome via `genomeSource`
+- `assistant` → generate `.md` in `agents/` + include `domain` and `behavioralProfile`
+- `human-gate` → register in manifest JSON + workflow only; no `.md` file generated
+
 ## Agent generation
 
 After gathering information, determine **3–5 specialized roles** the domain requires.
@@ -218,7 +250,9 @@ Every new squad must also include:
 - templates at `.aioson/squads/{squad-slug}/templates/`
 - a local `design-doc` at `.aioson/squads/{squad-slug}/docs/design-doc.md`
 - a local `readiness` file at `.aioson/squads/{squad-slug}/docs/readiness.md`
-- permanent executors in `.aioson/squads/{squad-slug}/agents/`
+- permanent executors (agents, clones, assistants) in `.aioson/squads/{squad-slug}/agents/`
+- workers (deterministic scripts, no LLM) in `.aioson/squads/{squad-slug}/workers/`
+- workflows (phase pipelines with handoffs) in `.aioson/squads/{squad-slug}/workflows/`
 - metadata at `.aioson/squads/{slug}/squad.md`
 - `output/`, `aios-logs/`, and `media/` directories
 
@@ -468,6 +502,8 @@ Also create `.aioson/squads/{squad-slug}/squad.manifest.json` with this minimum 
   "package": {
     "rootDir": ".aioson/squads/{squad-slug}",
     "agentsDir": ".aioson/squads/{squad-slug}/agents",
+    "workersDir": ".aioson/squads/{squad-slug}/workers",
+    "workflowsDir": ".aioson/squads/{squad-slug}/workflows",
     "skillsDir": ".aioson/squads/{squad-slug}/skills",
     "templatesDir": ".aioson/squads/{squad-slug}/templates",
     "docsDir": ".aioson/squads/{squad-slug}/docs"
@@ -512,12 +548,16 @@ Also create `.aioson/squads/{squad-slug}/squad.manifest.json` with this minimum 
     {
       "slug": "orquestrador",
       "title": "Orchestrator",
+      "type": "agent",
       "role": "Coordinates the squad and publishes the final HTML.",
       "file": ".aioson/squads/{squad-slug}/agents/orquestrador.md",
+      "deterministic": false,
+      "usesLLM": true,
       "skills": [],
       "genomes": []
     }
   ],
+  "workflows": [],
   "genomes": []
 }
 ```
@@ -658,6 +698,115 @@ synthesize outputs, manage the session HTML report.
 - Logs: `aios-logs/{squad-slug}/`
 - Media: `media/{squad-slug}/`
 ```
+
+### Step 3b — Generate workflow (when the squad has a multi-phase pipeline)
+
+If the squad has a clear end-to-end process with distinct phases and handoffs, generate a workflow.
+Skip this step only for squads that are purely conversational or exploratory.
+
+**When to generate a workflow:**
+- The squad has 3+ distinct phases where output of one feeds the next
+- There are deterministic steps (workers) mixed with LLM steps
+- There are human approval checkpoints
+- The squad will be run repeatedly as a repeatable pipeline
+
+**Execution mode decision:**
+- `sequential` — phases depend on each other's output (default)
+- `parallel` — phases are independent and can run simultaneously
+- `mixed` — some phases are sequential, others declare `parallel: true`
+
+Create `.aioson/squads/{squad-slug}/workflows/main.md`:
+
+```markdown
+# Workflow: {workflow-title}
+
+## Trigger
+{What user action or event starts this workflow}
+
+## Estimated Duration
+{e.g. 30-60 min (first run)}
+
+## Execution Mode
+{sequential | parallel | mixed}
+
+## Phases
+
+### Phase 1 — {Phase title}
+- **Executor:** @{executor-slug} ({type: agent | worker | clone | assistant})
+- **Input:** {what this phase receives}
+- **Output:** {what this phase produces, e.g. analysis.md}
+- **Handoff:** output → Phase 2 input
+
+### Phase 2 — {Phase title}
+- **Executor:** @{executor-slug} ({type})
+- **Input:** Output from Phase 1
+- **Output:** {artifact}
+- **Handoff:** output → Phase 3 input
+
+### Phase N — {Phase title}
+- **Executor:** {executor-slug} (worker) [if deterministic]
+- **Input:** {artifact from previous phase}
+- **Output:** {final artifact}
+- **Human Gate:** {condition} → {action: auto | consult | approve | block}
+```
+
+Then register the workflow in `squad.manifest.json`:
+
+```json
+"workflows": [
+  {
+    "slug": "{workflow-slug}",
+    "title": "{workflow-title}",
+    "trigger": "{trigger description}",
+    "executionMode": "sequential",
+    "estimatedDuration": "{duration}",
+    "file": ".aioson/squads/{squad-slug}/workflows/main.md",
+    "phases": [
+      {
+        "id": "{phase-1-id}",
+        "title": "{Phase 1 title}",
+        "executor": "{executor-slug}",
+        "executorType": "agent",
+        "dependsOn": [],
+        "output": "{output artifact}"
+      },
+      {
+        "id": "{phase-2-id}",
+        "title": "{Phase 2 title}",
+        "executor": "{executor-slug}",
+        "executorType": "agent",
+        "dependsOn": ["{phase-1-id}"],
+        "output": "{output artifact}"
+      }
+    ]
+  }
+]
+```
+
+**Human gate rules (when a phase needs human approval):**
+
+Add `humanGate` to the phase:
+```json
+{
+  "id": "review",
+  "title": "Human Review",
+  "executor": "orquestrador",
+  "executorType": "agent",
+  "dependsOn": ["previous-phase"],
+  "humanGate": {
+    "condition": "{expression, e.g. score < 80 or budget > 1000}",
+    "action": "approve",
+    "notifyVia": ["slack"],
+    "reason": "{why human judgment is needed here}"
+  }
+}
+```
+
+Gate action levels:
+- `auto` — executor decides autonomously (low risk)
+- `consult` — executor consults another specialist agent first (medium risk)
+- `approve` — human must approve before proceeding (high risk)
+- `block` — cannot proceed without explicit human authorization (critical)
 
 ### Step 4 — Register agents in the project gateways
 

@@ -50,6 +50,38 @@ Luego determinar el equipo de agentes y generar todos los archivos.
 3. Recibir el genoma y derivar los roles de especialistas de su seccion Mentes.
 4. Generar los archivos del equipo de agentes (ver Generacion de agentes abajo).
 
+## Clasificacion de ejecutores
+
+Antes de generar los ejecutores, clasificar cada rol usando este arbol de decision:
+
+```
+TAREA / ROL
+  ├── ¿Es determinista? (mismo input → mismo output siempre)
+  │   ├── SI → type: worker (script Python/bash, sin LLM, costo cero)
+  │   └── NO ↓
+  ├── ¿Requiere juicio humano critico? (legal, financiero, societario)
+  │   ├── SI → type: human-gate (punto de aprobacion con reglas graduales)
+  │   └── NO ↓
+  ├── ¿Debe replicar la metodologia de una persona real especifica?
+  │   ├── SI → type: clone (requiere genoma de la persona)
+  │   └── NO ↓
+  ├── ¿Es un dominio especializado que exige expertise profunda?
+  │   ├── SI → type: assistant (especialista de dominio)
+  │   └── NO → type: agent (IA con rol definido)
+  │
+  └── Conjunto de roles con mision compartida → squad
+```
+
+Aplicar esta clasificacion a cada ejecutor antes de escribir los archivos.
+Mostrar la clasificacion al usuario como parte de la confirmacion del squad.
+
+**Reglas por tipo:**
+- `worker` → generar script en `workers/` (Python o bash), NO en `agents/`
+- `agent` → generar `.md` en `agents/` (flujo estandar)
+- `clone` → generar `.md` en `agents/` + referenciar genoma con `genomeSource`
+- `assistant` → generar `.md` en `agents/` + incluir `domain` y `behavioralProfile`
+- `human-gate` → registrar en manifiesto JSON + workflow; no genera archivo `.md`
+
 ## Generacion de agentes
 
 Despues de recopilar la informacion, determinar **3–5 roles especializados** que el dominio requiere.
@@ -135,6 +167,51 @@ sintetizar outputs, gestionar el informe HTML de la sesion.
 - Entregables de agentes: `output/{squad-slug}/`
 - Logs: `aios-logs/squads/{squad-slug}/`
 ```
+
+### Paso 2b — Generar workflow (cuando el squad tiene un pipeline con fases)
+
+Si el squad tiene un proceso end-to-end con fases distintas y handoffs, generar un workflow.
+Omitir solo para squads puramente conversacionales o exploratorios.
+
+**Modos de ejecucion:**
+- `sequential` — las fases dependen del output de la anterior (predeterminado)
+- `parallel` — las fases son independientes y pueden correr simultaneamente
+- `mixed` — algunas fases declaran `parallel: true`
+
+Crear `.aioson/squads/{squad-slug}/workflows/main.md`:
+
+```markdown
+# Workflow: {workflow-title}
+
+## Trigger
+{Que inicia este workflow}
+
+## Duracion Estimada
+{ej: 30-60 min}
+
+## Modo de Ejecucion
+{sequential | parallel | mixed}
+
+## Fases
+
+### Fase 1 — {titulo}
+- **Executor:** @{slug} ({type})
+- **Input:** {descripcion}
+- **Output:** {artefacto}
+- **Handoff:** output → input de Fase 2
+
+### Fase N — {titulo}
+- **Executor:** {slug} (worker)
+- **Input:** {artefacto}
+- **Output:** {artefacto final}
+- **Human Gate:** {condicion} → {auto | consult | approve | block}
+```
+
+Niveles de accion del gate:
+- `auto` — executor decide autonomamente (bajo riesgo)
+- `consult` — consulta a otro agente especialista antes (riesgo medio)
+- `approve` — humano debe aprobar antes de continuar (alto riesgo)
+- `block` — no puede continuar sin autorizacion humana explicita (critico)
 
 ### Paso 3 — Registrar agentes en CLAUDE.md
 

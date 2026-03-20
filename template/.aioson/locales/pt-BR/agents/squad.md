@@ -102,6 +102,38 @@ Se houver material anexado, leia e incorpore esse contexto antes de definir os a
 Depois determine o time de agentes e gere todos os arquivos.
 Evite conversas longas demais antes de criar o squad.
 
+## Classificacao de executores
+
+Antes de gerar os executores, classifique cada papel usando esta árvore de decisão:
+
+```
+TAREFA / PAPEL
+  ├── É determinística? (mesmo input → mesmo output sempre)
+  │   ├── SIM → type: worker (script Python/bash, sem LLM, custo zero)
+  │   └── NÃO ↓
+  ├── Requer julgamento humano crítico? (legal, financeiro, societário)
+  │   ├── SIM → type: human-gate (ponto de aprovação com regras graduais)
+  │   └── NÃO ↓
+  ├── Precisa replicar a metodologia de uma pessoa real específica?
+  │   ├── SIM → type: clone (requer genoma da pessoa)
+  │   └── NÃO ↓
+  ├── É domínio especializado que exige expertise profunda?
+  │   ├── SIM → type: assistant (especialista de domínio)
+  │   └── NÃO → type: agent (IA com papel definido)
+  │
+  └── Conjunto de papéis com missão compartilhada → squad
+```
+
+Aplique essa classificação a cada executor antes de escrever os arquivos.
+Mostre a classificação ao usuário como parte da confirmação do squad.
+
+**Regras por tipo:**
+- `worker` → gere script em `workers/` (Python ou bash), não em `agents/`
+- `agent` → gere `.md` em `agents/` (fluxo padrão)
+- `clone` → gere `.md` em `agents/` + referencie genoma com `genomeSource`
+- `assistant` → gere `.md` em `agents/` + inclua `domain` e `behavioralProfile`
+- `human-gate` → registre no manifesto JSON + no workflow; não gera arquivo `.md`
+
 ## Discovery e design doc antes da squad
 
 Antes de definir skills, MCPs e executores, consolide um pacote minimo de contexto para o escopo atual da squad.
@@ -169,7 +201,9 @@ Toda squad nova deve nascer com:
 - templates em `.aioson/squads/{squad-slug}/templates/`
 - um `design-doc` local em `.aioson/squads/{squad-slug}/docs/design-doc.md`
 - um `readiness` local em `.aioson/squads/{squad-slug}/docs/readiness.md`
-- executores permanentes em `.aioson/squads/{squad-slug}/agents/`
+- executores permanentes (agents, clones, assistants) em `.aioson/squads/{squad-slug}/agents/`
+- workers (scripts determinísticos, sem LLM) em `.aioson/squads/{squad-slug}/workers/`
+- workflows (pipelines com fases e handoffs) em `.aioson/squads/{squad-slug}/workflows/`
 - metadata em `.aioson/squads/{slug}/squad.md`
 - diretórios de `output/`, `aios-logs/` e `media/`
 
@@ -351,9 +385,23 @@ Crie `.aioson/squads/{squad-slug}/agents/agents.md`:
 - [2 a 4 limites claros]
 
 ## Executores permanentes
-- @orquestrador — [papel]
+
+### Workers (determinísticos, sem LLM)
+- {worker-slug} — [descrição]
+
+### Agents (IA com papel definido)
+- @orquestrador — coordena o squad
 - @{role1} — [papel]
 - @{role2} — [papel]
+
+### Clones (réplica cognitiva de pessoa real)
+- @{clone-slug} — [pessoa] (fidelidade: X%)
+
+### Assistants (especialista de domínio)
+- @{assistant-slug} — [domínio] (perfil: [behavioral-profile])
+
+### Human Gates (aprovação humana)
+- {gate-slug} — [condição que dispara aprovação]
 
 ## Skills da squad
 - [skill-slug] — [descrição em uma linha]
@@ -398,6 +446,8 @@ Crie também `.aioson/squads/{squad-slug}/squad.manifest.json` com este schema m
   "package": {
     "rootDir": ".aioson/squads/{squad-slug}",
     "agentsDir": ".aioson/squads/{squad-slug}/agents",
+    "workersDir": ".aioson/squads/{squad-slug}/workers",
+    "workflowsDir": ".aioson/squads/{squad-slug}/workflows",
     "skillsDir": ".aioson/squads/{squad-slug}/skills",
     "templatesDir": ".aioson/squads/{squad-slug}/templates",
     "docsDir": ".aioson/squads/{squad-slug}/docs"
@@ -442,12 +492,16 @@ Crie também `.aioson/squads/{squad-slug}/squad.manifest.json` com este schema m
     {
       "slug": "orquestrador",
       "title": "Orquestrador",
+      "type": "agent",
       "role": "Coordena o squad e publica o HTML final.",
       "file": ".aioson/squads/{squad-slug}/agents/orquestrador.md",
+      "deterministic": false,
+      "usesLLM": true,
       "skills": [],
       "genomes": []
     }
   ],
+  "workflows": [],
   "genomes": []
 }
 ```
@@ -479,9 +533,15 @@ Exemplos de tipos de bloco:
 
 Se precisar definir campos especificos do dominio, faça isso dentro do blueprint da squad, nunca como regra fixa global do AIOSON.
 
-### Passo 2 — Gere cada agente especialista
+### Passo 2 — Gere cada executor
 
-Para cada papel, crie `.aioson/squads/{squad-slug}/agents/{role-slug}.md`:
+Antes de gerar cada arquivo, confirme o `type` do executor segundo a árvore de classificação.
+
+**Se `type: worker`:** crie um script em `.aioson/squads/{squad-slug}/workers/{slug}.py` (ou `.sh`).
+O script deve ser determinístico — mesmo input, mesmo output. Sem chamadas LLM.
+Registre no manifesto com `"usesLLM": false, "deterministic": true, "runtime": "python"`.
+
+**Se `type: agent`, `clone` ou `assistant`:** crie `.aioson/squads/{squad-slug}/agents/{role-slug}.md`:
 
 ```markdown
 # Agente @{role-slug}
@@ -593,6 +653,115 @@ sintetizar outputs, gerenciar o relatório HTML da sessão.
 - A telemetria operacional da sessao e responsabilidade do runtime do AIOSON, nao do prompt do squad.
 - Nao tente persistir eventos via shell snippet ou `aioson runtime-log` durante a execucao normal.
 - O gateway oficial deve agrupar task compartilhada, runs dos executores e eventos do squad no runtime do projeto.
+
+### Passo 3b — Gere o workflow (quando o squad tem um pipeline com fases)
+
+Se o squad tiver um processo fim-a-fim com fases distintas e handoffs, gere um workflow.
+Pule este passo apenas para squads puramente conversacionais ou exploratórios.
+
+**Quando gerar um workflow:**
+- O squad tem 3+ fases distintas onde o output de uma alimenta a próxima
+- Há etapas determinísticas (workers) misturadas com etapas LLM
+- Há pontos de aprovação humana
+- O squad será executado repetidamente como pipeline recorrente
+
+**Decisão do modo de execução:**
+- `sequential` — fases dependem do output da anterior (padrão)
+- `parallel` — fases são independentes e podem rodar simultaneamente
+- `mixed` — algumas fases são sequenciais, outras declaram `parallel: true`
+
+Crie `.aioson/squads/{squad-slug}/workflows/main.md`:
+
+```markdown
+# Workflow: {workflow-title}
+
+## Trigger
+{Qual ação do usuário ou evento inicia este workflow}
+
+## Duração Estimada
+{ex: 30-60 min (primeira execução)}
+
+## Modo de Execução
+{sequential | parallel | mixed}
+
+## Fases
+
+### Fase 1 — {Título da fase}
+- **Executor:** @{executor-slug} ({type: agent | worker | clone | assistant})
+- **Input:** {o que esta fase recebe}
+- **Output:** {o que esta fase produz, ex: analysis.md}
+- **Handoff:** output → input da Fase 2
+
+### Fase 2 — {Título da fase}
+- **Executor:** @{executor-slug} ({type})
+- **Input:** Output da Fase 1
+- **Output:** {artefato}
+- **Handoff:** output → input da Fase 3
+
+### Fase N — {Título da fase}
+- **Executor:** {executor-slug} (worker) [se determinístico]
+- **Input:** {artefato da fase anterior}
+- **Output:** {artefato final}
+- **Human Gate:** {condição} → {action: auto | consult | approve | block}
+```
+
+Depois registre o workflow no `squad.manifest.json`:
+
+```json
+"workflows": [
+  {
+    "slug": "{workflow-slug}",
+    "title": "{workflow-title}",
+    "trigger": "{descrição do gatilho}",
+    "executionMode": "sequential",
+    "estimatedDuration": "{duração}",
+    "file": ".aioson/squads/{squad-slug}/workflows/main.md",
+    "phases": [
+      {
+        "id": "{fase-1-id}",
+        "title": "{Título da Fase 1}",
+        "executor": "{executor-slug}",
+        "executorType": "agent",
+        "dependsOn": [],
+        "output": "{artefato de output}"
+      },
+      {
+        "id": "{fase-2-id}",
+        "title": "{Título da Fase 2}",
+        "executor": "{executor-slug}",
+        "executorType": "agent",
+        "dependsOn": ["{fase-1-id}"],
+        "output": "{artefato de output}"
+      }
+    ]
+  }
+]
+```
+
+**Regras de human gate (quando uma fase precisa de aprovação humana):**
+
+Adicione `humanGate` à fase:
+```json
+{
+  "id": "revisao",
+  "title": "Revisão Humana",
+  "executor": "orquestrador",
+  "executorType": "agent",
+  "dependsOn": ["fase-anterior"],
+  "humanGate": {
+    "condition": "{expressão, ex: score < 80 ou budget > 1000}",
+    "action": "approve",
+    "notifyVia": ["slack"],
+    "reason": "{por que julgamento humano é necessário aqui}"
+  }
+}
+```
+
+Níveis de ação do gate:
+- `auto` — executor decide de forma autônoma (baixo risco)
+- `consult` — executor consulta outro agente especialista antes (médio risco)
+- `approve` — humano deve aprovar antes de prosseguir (alto risco)
+- `block` — não pode prosseguir sem autorização humana explícita (crítico)
 
 ### Passo 4 — Registre os agentes nos gateways do projeto
 
