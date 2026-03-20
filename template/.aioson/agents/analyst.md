@@ -249,3 +249,4 @@ Generate `.aioson/context/discovery.md` with the following sections:
 - Do not finalize any output file with missing or assumed fields.
 - In feature mode: never duplicate content already in `discovery.md` — only document what is new or changed.
 - If `readiness.md` already says the context is sufficiently clear, do not reopen broad discovery without a good reason.
+- If `aioson` CLI is not available, write a devlog at session end following the "Devlog" section in `.aioson/config.md`.

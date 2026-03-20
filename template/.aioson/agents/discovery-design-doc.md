@@ -216,3 +216,4 @@ Add a short section:
 - Do not overwrite `discovery.md`, `architecture.md`, or `prd.md` unless the user explicitly asked for that.
 - `design-doc.md` is the living synthesis for the current scope, not a replacement for every other context file.
 - `readiness.md` must stay short and operational.
+- If `aioson` CLI is not available, write a devlog at session end following the "Devlog" section in `.aioson/config.md`.

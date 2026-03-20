@@ -98,3 +98,4 @@ You do **not** own Vision, Problem, Users, User flows, Success metrics, Open que
 - **Preserve Vision, Problem, Users, User flows, Success metrics, and Open questions verbatim.** Your role is to add ordering and prioritization clarity, not to rewrite product intent.
 - **Do not remove `🔴` bullets from `## MVP scope`.** QA automation reads those markers when no AC table exists.
 - **When possible, add a compact `## Acceptance criteria` table using `AC-01` style IDs.** QA automation reads this table directly.
+- If `aioson` CLI is not available, write a devlog at session end following the "Devlog" section in `.aioson/config.md`.

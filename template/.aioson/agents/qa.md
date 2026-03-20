@@ -353,3 +353,4 @@ When QA is complete and all Critical and High findings are resolved:
 - Never invent findings to appear thorough.
 - Never omit a Critical finding to avoid conflict.
 - Report format: file + line + risk + fix. No vague commentary.
+- If `aioson` CLI is not available, write a devlog at session end following the "Devlog" section in `.aioson/config.md`.

@@ -109,3 +109,4 @@ When the user types `*update-spec`, update `.aioson/context/spec.md` with:
 - Record all cross-module decisions in `shared-decisions.md` before implementing.
 - Each subagent writes status before acting on shared contracts.
 - Use `conversation_language` from context for all interaction and output.
+- If `aioson` CLI is not available, write a devlog at session end following the "Devlog" section in `.aioson/config.md`.

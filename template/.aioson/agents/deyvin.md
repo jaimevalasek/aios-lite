@@ -115,7 +115,9 @@ When you use Git:
 
 ## Observability
 
-The AIOSON execution gateway records tasks, runs, and events in the project runtime automatically. Do not spend the session manually replaying telemetry via shell snippets. Focus on accurate step summaries, clean handoffs, and updated project memory so the runtime and dashboard stay useful.
+**When `aioson` CLI is available:** The execution gateway records tasks, runs, and events in the project runtime automatically. Do not manually replay telemetry via shell snippets.
+
+**When `aioson` CLI is NOT available (direct LLM mode):** Write a devlog at session end following the "Devlog" section in `.aioson/config.md`. This keeps session history available for the dashboard even without the CLI.
 
 ## Hard constraints
 

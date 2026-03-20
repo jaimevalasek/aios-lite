@@ -78,6 +78,40 @@ The agent `.md` files define WHAT each agent does. The CLI defines HOW the sessi
 These commands are injected into the agent prompt automatically by `aioson workflow:next`.
 In direct mode (LLM without CLI), agents call them manually following the rules in CLAUDE.md / AGENTS.md.
 
+## Devlog (direct LLM mode without CLI)
+
+When the `aioson` CLI is **not available**, agents must write a devlog file at the end of the session (or when the user asks to save progress). This is the only way to preserve session history for the dashboard when the CLI is missing.
+
+**Directory:** `aioson-logs/` (create if absent)
+**Filename:** `devlog-{YYYY-MM-DD}T{HH-MM}.md`
+**If a devlog from today already exists:** append to it instead of creating a new file.
+
+**Template:**
+```markdown
+---
+agent: "{agent-id}"
+session_start: "{ISO 8601}"
+session_end: "{ISO 8601}"
+status: completed # or partial
+summary: "One-line summary of what was accomplished"
+---
+
+## Decisions
+- {decision} → {why}
+
+## Changes
+- {file}: {what changed}
+
+## Next
+- {what should happen next session}
+```
+
+**Rules:**
+- Max 30 lines. This is a decision log, not a transcript.
+- Record **why** decisions were made — the "what" is in the git diff.
+- Skip the devlog for trivial sessions (quick questions, no code changes).
+- When the CLI becomes available, `aioson devlog:sync` will import file-based devlogs into SQLite for the dashboard.
+
 ## Agent locale packs
 - Localized agent prompts are stored in `.aioson/locales/<locale>/agents/`.
 - Active runtime prompts are in `.aioson/agents/`.

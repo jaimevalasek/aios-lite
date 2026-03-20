@@ -431,3 +431,4 @@ Do not overwrite Vision, Problem, Users, MVP scope, User flows, Success metrics,
 - Real copy only — no "Lorem ipsum", no "[Your headline here]", no placeholder text in final output.
 - Always run the entry check before Step 0 — never assume Creation mode when UI artifacts may already exist.
 - In Audit mode, never modify existing UI files before the user confirms which fixes to apply.
+- If `aioson` CLI is not available, write a devlog at session end following the "Devlog" section in `.aioson/config.md`.
