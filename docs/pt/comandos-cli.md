@@ -89,6 +89,9 @@
 | `squad:validate` | Valida a estrutura e o manifesto de uma squad específica | Antes de exportar ou publicar |
 | `squad:export` | Exporta uma squad local para snapshot/entrega | Quando quer empacotar a squad |
 | `squad:pipeline` | Lista, inspeciona ou acompanha pipelines declarados na squad | Quando a squad define pipelines reutilizáveis |
+| `output-strategy:export` | Exporta a estratégia de output (webhooks, delivery) de uma squad | Quando quer copiar configuração para outra squad ou documentar |
+| `output-strategy:import` | Importa estratégia de output de um arquivo ou outra squad | Quando quer replicar webhooks/delivery entre squads |
+| `deliver` | Dispara delivery manual de conteúdo para webhooks configurados | Quando quer reenviar conteúdo ou testar webhooks |
 
 ### Runtime
 
@@ -560,6 +563,36 @@ aioson cloud:import:genome . --url=https://aiosforge.com/snapshots/genomes/finte
 ```
 
 Use quando vai instalar, atualizar ou sincronizar recursos publicados em outro projeto.
+
+### 25. Configurar e monitorar delivery de conteúdo
+
+```bash
+# Validar output strategy antes de rodar
+aioson squad:validate . --squad=youtube-creator
+
+# Verificar saúde (modo, webhooks, env vars)
+aioson squad:doctor . --squad=youtube-creator
+
+# Exportar configuração para outra squad ou documentar
+aioson output-strategy:export . --squad=youtube-creator
+
+# Copiar webhooks de uma squad para outra
+aioson output-strategy:import . --squad=nova-squad --from=youtube-creator
+
+# Ou importar de um arquivo
+aioson output-strategy:import . --squad=nova-squad --file=config-webhooks.json
+
+# Disparar delivery manual de conteúdo (quando autoPublish está desligado)
+aioson deliver . --squad=youtube-creator --content-key=episode-001
+```
+
+Use quando você quer:
+- **Validar** que webhooks estão configurados corretamente
+- **Copiar** a mesma estratégia de delivery entre múltiplas squads
+- **Testar** webhooks antes de rodar squads de verdade
+- **Reenviar** conteúdo que falhou na entrega automática
+
+Veja [Output Strategy e Delivery](../output-strategy-delivery.md) para guia completo sobre webhooks, payloads, env vars e troubleshooting.
 
 ---
 

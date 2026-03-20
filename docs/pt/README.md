@@ -13,6 +13,7 @@ Bem-vindo à documentação em português do AIOSON — um framework leve de age
 | [Cenários de Uso](./cenarios.md) | Exemplos completos e práticos para projetos MICRO, SMALL e MEDIUM |
 | [Guia de Agentes](./agentes.md) | Quando usar cada agente e o que ele entrega |
 | [Squad e Genoma](./squad-genoma.md) | Como criar squads modulares, diferenciar skill de genoma, aplicar genomas e publicar entregáveis HTML |
+| [Output Strategy e Delivery](./output-strategy-delivery.md) | Configurar webhooks, automatizar entrega de conteúdo, monitorar delivery e troubleshoot |
 | [Suporte Web3](./web3.md) | Guia para projetos dApp (Ethereum, Solana, Cardano) |
 
 ## Documentação em inglês
