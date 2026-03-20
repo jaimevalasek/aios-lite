@@ -32,7 +32,7 @@ Leia `.aioson/squads/.designs/<slug>.blueprint.json` e valide que os campos obri
 └── squad.manifest.json        # Manifesto JSON formal
 
 output/<slug>/                  # Diretório de output
-aios-logs/<slug>/               # Diretório de logs
+aioson-logs/<slug>/               # Diretório de logs
 media/<slug>/                   # Diretório de mídia
 ```
 

@@ -408,7 +408,7 @@ test('cloud:publish:squad posts local squad snapshot to cloud endpoint', async (
       'Package: .aioson/squads/youtube-creator/',
       'Agents: .aioson/squads/youtube-creator/agents/',
       'Output: output/youtube-creator/',
-      'Logs: aios-logs/youtube-creator/',
+      'Logs: aioson-logs/youtube-creator/',
       'Media: media/youtube-creator/'
     ].join('\n'),
     'utf8'
@@ -455,7 +455,7 @@ test('cloud:publish:squad posts local squad snapshot to cloud endpoint', async (
         aiosLiteCompatibility: '^1.1.1',
         rules: {
           outputsDir: 'output/youtube-creator',
-          logsDir: 'aios-logs/youtube-creator',
+          logsDir: 'aioson-logs/youtube-creator',
           mediaDir: 'media/youtube-creator',
           reviewPolicy: ['clareza', 'densidade']
         },

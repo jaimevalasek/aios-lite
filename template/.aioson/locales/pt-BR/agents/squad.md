@@ -248,7 +248,7 @@ Toda squad nova deve nascer com:
 - workflows (pipelines com fases e handoffs) em `.aioson/squads/{squad-slug}/workflows/`
 - checklists (validação de qualidade) em `.aioson/squads/{squad-slug}/checklists/`
 - metadata em `.aioson/squads/{slug}/squad.md`
-- diretórios de `output/`, `aios-logs/` e `media/`
+- diretórios de `output/`, `aioson-logs/` e `media/`
 
 Para squads focadas em criacao de conteudo, nao trate output apenas como arquivos soltos.
 Pense em **conteudos** como entregaveis estruturados ligados a tasks.
@@ -461,7 +461,7 @@ Crie `.aioson/squads/{squad-slug}/agents/agents.md`:
 ## Saidas e revisao
 - Drafts: `output/{squad-slug}/`
 - HTML final: `output/{squad-slug}/{session-id}.html`
-- Logs: `aios-logs/{squad-slug}/`
+- Logs: `aioson-logs/{squad-slug}/`
 - Midia: `media/{squad-slug}/`
 - Toda entrega final deve passar por leitura crítica e síntese do @orquestrador
 ```
@@ -499,7 +499,7 @@ Crie também `.aioson/squads/{squad-slug}/squad.manifest.json` com este schema m
   },
   "rules": {
     "outputsDir": "output/{squad-slug}",
-    "logsDir": "aios-logs/{squad-slug}",
+    "logsDir": "aioson-logs/{squad-slug}",
     "mediaDir": "media/{squad-slug}",
     "reviewPolicy": ["clareza", "densidade", "consistencia", "proximo-passo"]
   },
@@ -623,7 +623,7 @@ Outros agentes: @orquestrador, @{outros-slugs}
 - Use sempre os genomas ativos deste agente como contexto prioritário de domínio e estilo
 - Todos os arquivos entregáveis vão para `output/{squad-slug}/`
 - Não sobrescreva os arquivos de output de outros agentes
-- Quando precisar registrar logs técnicos, escreva em `aios-logs/{squad-slug}/`
+- Quando precisar registrar logs técnicos, escreva em `aioson-logs/{squad-slug}/`
 
 ## Contrato de output
 - Drafts intermediários: `output/{squad-slug}/`
@@ -707,7 +707,7 @@ Nunca duplique capacidades que já existem em outro squad.
 - HTML da sessão: `output/{squad-slug}/{session-id}.html`
 - Latest HTML: `output/{squad-slug}/latest.html`
 - Entregáveis dos agentes: `output/{squad-slug}/`
-- Logs: `aios-logs/{squad-slug}/`
+- Logs: `aioson-logs/{squad-slug}/`
 - Midia: `media/{squad-slug}/`
 
 ## Observabilidade
@@ -910,7 +910,7 @@ Goal: {goal}
 Agents: .aioson/squads/{squad-slug}/agents/
 Manifest: .aioson/squads/{squad-slug}/squad.manifest.json
 Output: output/{squad-slug}/
-Logs: aios-logs/{squad-slug}/
+Logs: aioson-logs/{squad-slug}/
 Media: media/{squad-slug}/
 LatestSession: output/{squad-slug}/latest.html
 Genomes:
@@ -1066,7 +1066,7 @@ Após salvar o arquivo:
 - NÃO ofereça `Modo Genoma` como etapa inicial do `@squad`.
 - Quando o usuário quiser genomas, encaminhe para `@genoma` como fluxo separado.
 - Agentes vão em `.aioson/squads/{squad-slug}/agents/`, HTML em `output/{squad-slug}/` — NÃO dentro de `.aioson/`.
-- Logs brutos vão apenas em `aios-logs/{squad-slug}/` na raiz do projeto — nunca dentro de `.aioson/`.
+- Logs brutos vão apenas em `aioson-logs/{squad-slug}/` na raiz do projeto — nunca dentro de `.aioson/`.
 - Midia da squad vai apenas em `media/{squad-slug}/` na raiz do projeto.
 - `.aioson/context/` aceita somente arquivos `.md` — não escreva arquivos não-markdown lá.
 - NÃO pule o entregável HTML — gere `output/{squad-slug}/{session-id}.html` após cada rodada de resposta.
@@ -1083,7 +1083,7 @@ Após salvar o arquivo:
 - Latest HTML: `output/{squad-slug}/latest.html`
 - Drafts `.md`: `output/{squad-slug}/`
 - Genomas vinculados: `.aioson/squads/{slug}/squad.md`
-- Logs: `aios-logs/{squad-slug}/`
+- Logs: `aioson-logs/{squad-slug}/`
 - Midia: `media/{squad-slug}/`
 - CLAUDE.md: atualizado com atalhos `/agente`
 - AGENTS.md: atualizado com atalhos `@agente`

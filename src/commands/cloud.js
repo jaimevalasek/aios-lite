@@ -113,7 +113,7 @@ function localSquadOutputDir(projectDir, slug) {
 }
 
 function localSquadLogsDir(projectDir, slug) {
-  return path.join(projectDir, 'aios-logs', sanitizeSegment(slug, 'squad'));
+  return path.join(projectDir, 'aioson-logs', sanitizeSegment(slug, 'squad'));
 }
 
 function localSquadMediaDir(projectDir, slug) {
@@ -428,7 +428,7 @@ function buildLocalSquadManifest(snapshot, agents) {
     ),
     rules: {
       outputsDir: `output/${slug}`,
-      logsDir: `aios-logs/${slug}`,
+      logsDir: `aioson-logs/${slug}`,
       mediaDir: `media/${slug}`,
       reviewPolicy: Array.isArray(source?.rules?.reviewPolicy)
         ? source.rules.reviewPolicy
@@ -532,7 +532,7 @@ function buildSquadTextManifest(snapshot, manifest) {
     '## Outputs and review',
     `- Drafts: \`output/${manifest.slug}/\``,
     `- Final HTML: \`output/${manifest.slug}/{session-id}.html\``,
-    `- Logs: \`aios-logs/${manifest.slug}/\``,
+    `- Logs: \`aioson-logs/${manifest.slug}/\``,
     `- Media: \`media/${manifest.slug}/\``,
     `- Package root: \`.aioson/squads/${manifest.slug}/\``,
     `- Design doc: \`.aioson/squads/${manifest.slug}/docs/design-doc.md\``,
@@ -586,7 +586,7 @@ function buildSquadMetadata(snapshot, options = {}) {
     `Templates: ${packageRoot}/templates/`,
     `Docs: ${packageRoot}/docs/`,
     `Output: output/${slug}/`,
-    `Logs: aios-logs/${slug}/`,
+    `Logs: aioson-logs/${slug}/`,
     `Media: media/${slug}/`,
     `DesignDoc: ${packageRoot}/docs/design-doc.md`,
     `Readiness: ${packageRoot}/docs/readiness.md`,
@@ -898,7 +898,7 @@ async function materializeImportedSquad(projectDir, payload, sourceUrl, force) {
       packageDir: `.aioson/squads/${slug}`,
       agentsDir: `.aioson/squads/${slug}/agents`,
       outputDir: `output/${slug}`,
-      logsDir: `aios-logs/${slug}`,
+      logsDir: `aioson-logs/${slug}`,
       mediaDir: `media/${slug}`,
       latestSessionPath: `output/${slug}/latest.html`
     });
@@ -1477,7 +1477,7 @@ async function loadLocalSquadSnapshot(projectDir, slug, options = {}) {
   const packageRootRel = `.aioson/squads/${slug}`;
   const agentsDirRel = normalizeRel(extractField(content, 'Agents') || `${packageRootRel}/agents`);
   const outputDirRel = normalizeRel(extractField(content, 'Output') || `output/${slug}`);
-  const logsDirRel = normalizeRel(extractField(content, 'Logs') || `aios-logs/${slug}`);
+  const logsDirRel = normalizeRel(extractField(content, 'Logs') || `aioson-logs/${slug}`);
   const mediaDirRel = normalizeRel(extractField(content, 'Media') || `media/${slug}`);
   const agentsDirAbs = path.join(projectDir, agentsDirRel);
   const localManifest = (await loadLocalSquadManifest(projectDir, slug)) || {};

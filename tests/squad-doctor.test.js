@@ -37,7 +37,7 @@ async function createSquadSkeleton(dir, slug) {
 
   await fs.writeFile(
     path.join(squadDir, 'squad.md'),
-    `Squad: ${slug}\nMode: Squad\nGoal: Gerar conteudos\nAgents: .aioson/squads/${slug}/agents/\nOutput: output/${slug}/\nLogs: aios-logs/${slug}/\n`,
+    `Squad: ${slug}\nMode: Squad\nGoal: Gerar conteudos\nAgents: .aioson/squads/${slug}/agents/\nOutput: output/${slug}/\nLogs: aioson-logs/${slug}/\n`,
     'utf8'
   );
   await fs.writeFile(path.join(squadDir, 'agents', 'agents.md'), '# Rules\n', 'utf8');
@@ -56,7 +56,7 @@ async function createSquadSkeleton(dir, slug) {
         goal: 'Publicar letras e estruturas',
         rules: {
           outputsDir: `output/${slug}`,
-          logsDir: `aios-logs/${slug}`,
+          logsDir: `aioson-logs/${slug}`,
           mediaDir: `media/${slug}`
         },
         skills: [

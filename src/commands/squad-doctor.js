@@ -120,7 +120,7 @@ async function parseSquadPaths(targetDir, slug) {
       ? path.join(targetDir, normalizeRel(packageInfo.agentsDir || `.aioson/squads/${slug}/agents`))
       : path.join(targetDir, 'agents', slug),
     outputDir: path.join(targetDir, normalizeRel(rules.outputsDir || `output/${slug}`)),
-    logsDir: path.join(targetDir, normalizeRel(rules.logsDir || `aios-logs/${slug}`)),
+    logsDir: path.join(targetDir, normalizeRel(rules.logsDir || `aioson-logs/${slug}`)),
     mediaDir: path.join(targetDir, normalizeRel(rules.mediaDir || `media/${slug}`))
   };
 }

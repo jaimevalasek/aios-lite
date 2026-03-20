@@ -33,7 +33,7 @@ test('squad:status reads metadata, sessions, latest html and logs', async () => 
   await fs.mkdir(path.join(dir, '.aioson', 'squads'), { recursive: true });
   await fs.mkdir(path.join(dir, 'agents', 'youtube-viral'), { recursive: true });
   await fs.mkdir(path.join(dir, 'output', 'youtube-viral'), { recursive: true });
-  await fs.mkdir(path.join(dir, 'aios-logs', 'youtube-viral'), { recursive: true });
+  await fs.mkdir(path.join(dir, 'aioson-logs', 'youtube-viral'), { recursive: true });
 
   await fs.writeFile(
     path.join(dir, '.aioson', 'squads', 'youtube-viral.md'),
@@ -43,7 +43,7 @@ test('squad:status reads metadata, sessions, latest html and logs', async () => 
       'Goal: Criar roteiros e titulos',
       'Agents: agents/youtube-viral/',
       'Output: output/youtube-viral/',
-      'Logs: aios-logs/youtube-viral/',
+      'Logs: aioson-logs/youtube-viral/',
       'LatestSession: output/youtube-viral/latest.html',
       'Genomes:',
       '- .aioson/genomas/storytelling-retencao.md',
@@ -64,7 +64,7 @@ test('squad:status reads metadata, sessions, latest html and logs', async () => 
     'utf8'
   );
   await fs.writeFile(path.join(dir, 'output', 'youtube-viral', 'latest.html'), '<html></html>', 'utf8');
-  await fs.writeFile(path.join(dir, 'aios-logs', 'youtube-viral', 'run-1.md'), 'log\n', 'utf8');
+  await fs.writeFile(path.join(dir, 'aioson-logs', 'youtube-viral', 'run-1.md'), 'log\n', 'utf8');
 
   const result = await runSquadStatus({
     args: [dir],
@@ -87,7 +87,7 @@ test('squad:status reads metadata, sessions, latest html and logs', async () => 
   assert.equal(logger.lines.some((line) => line.includes('Agentes     : 2 especialistas / 3 total')), true);
   assert.equal(logger.lines.some((line) => line.includes('Sessoes     : 1 (output/youtube-viral)')), true);
   assert.equal(logger.lines.some((line) => line.includes('Latest HTML : output/youtube-viral/latest.html')), true);
-  assert.equal(logger.lines.some((line) => line.includes('Logs        : 1 (aios-logs/youtube-viral)')), true);
+  assert.equal(logger.lines.some((line) => line.includes('Logs        : 1 (aioson-logs/youtube-viral)')), true);
   assert.equal(logger.lines.some((line) => line.includes('Genomas     : 1 no squad / 1 vinculos por agente')), true);
 });
 
@@ -134,7 +134,7 @@ test('squad:status reads normalized genome bindings from squad.manifest.json', a
 
   await fs.mkdir(path.join(squadDir, 'agents'), { recursive: true });
   await fs.mkdir(path.join(dir, 'output', slug), { recursive: true });
-  await fs.mkdir(path.join(dir, 'aios-logs', slug), { recursive: true });
+  await fs.mkdir(path.join(dir, 'aioson-logs', slug), { recursive: true });
 
   await fs.writeFile(
     path.join(squadDir, 'squad.manifest.json'),
@@ -149,7 +149,7 @@ test('squad:status reads normalized genome bindings from squad.manifest.json', a
         goal: 'Analyze content opportunities.',
         rules: {
           outputsDir: `output/${slug}`,
-          logsDir: `aios-logs/${slug}`
+          logsDir: `aioson-logs/${slug}`
         },
         package: {
           agentsDir: `.aioson/squads/${slug}/agents`
@@ -182,7 +182,7 @@ test('squad:status reads normalized genome bindings from squad.manifest.json', a
   await fs.writeFile(path.join(squadDir, 'agents', 'orquestrador.md'), '# Agent @orquestrador\n', 'utf8');
   await fs.writeFile(path.join(squadDir, 'agents', 'researcher.md'), '# Agent @researcher\n', 'utf8');
   await fs.writeFile(path.join(dir, 'output', slug, 'latest.html'), '<html></html>', 'utf8');
-  await fs.writeFile(path.join(dir, 'aios-logs', slug, 'run-1.md'), 'log\n', 'utf8');
+  await fs.writeFile(path.join(dir, 'aioson-logs', slug, 'run-1.md'), 'log\n', 'utf8');
 
   const result = await runSquadStatus({
     args: [dir],

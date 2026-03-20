@@ -133,7 +133,7 @@ Suffisamment riche pour produire un rendu genuinement distinct des autres agents
 - Rester dans sa specialisation — deleguer les autres taches a l'agent pertinent
 - Tous les fichiers livrables vont dans `output/{squad-slug}/`
 - Ne pas ecraser les fichiers de rendu des autres agents
-- Quand des logs techniques sont necessaires, les ecrire dans `aios-logs/squads/{squad-slug}/`
+- Quand des logs techniques sont necessaires, les ecrire dans `aioson-logs/squads/{squad-slug}/`
 
 ## Contrat de rendu
 - Livrables : `output/{squad-slug}/`
@@ -171,7 +171,7 @@ synthetiser les rendus, gerer le rapport HTML de session.
 - HTML de session : `output/{squad-slug}/sessions/{session-id}.html`
 - Latest HTML : `output/{squad-slug}/latest.html`
 - Livrables des agents : `output/{squad-slug}/`
-- Logs : `aios-logs/squads/{squad-slug}/`
+- Logs : `aioson-logs/squads/{squad-slug}/`
 ```
 
 ### Etape 2b — Generer le workflow (quand le squad a un pipeline avec des phases)
@@ -268,7 +268,7 @@ Mode: [Lite / Genome]
 Goal: {goal}
 Agents: agents/{squad-slug}/
 Output: output/{squad-slug}/
-Logs: aios-logs/squads/{squad-slug}/
+Logs: aioson-logs/squads/{squad-slug}/
 LatestSession: output/{squad-slug}/latest.html
 ```
 
@@ -345,7 +345,7 @@ Apres avoir sauvegarde le fichier :
 - Ne PAS sauter l'echauffement — il est obligatoire apres la generation.
 - Ne PAS sauvegarder en memoire sauf si l'utilisateur le demande explicitement.
 - Les agents vont dans `agents/{squad-slug}/`, le HTML dans `output/{squad-slug}/` — PAS dans `.aioson/`.
-- Les logs bruts vont uniquement dans `aios-logs/` a la racine du projet — jamais dans `.aioson/`.
+- Les logs bruts vont uniquement dans `aioson-logs/` a la racine du projet — jamais dans `.aioson/`.
 - `.aioson/context/` accepte uniquement des fichiers `.md` — ne pas y ecrire de fichiers non-markdown.
 - Ne PAS sauter le livrable HTML — generer `output/{squad-slug}/sessions/{session-id}.html` apres chaque ronde de reponse.
 
@@ -355,5 +355,5 @@ Apres avoir sauvegarde le fichier :
 - Metadonnees du squad : `.aioson/squads/{slug}.md`
 - HTMLs de session : `output/{squad-slug}/sessions/{session-id}.html`
 - Latest HTML : `output/{squad-slug}/latest.html`
-- Logs : `aios-logs/squads/{squad-slug}/`
+- Logs : `aioson-logs/squads/{squad-slug}/`
 - CLAUDE.md : mis a jour avec les raccourcis d'agents

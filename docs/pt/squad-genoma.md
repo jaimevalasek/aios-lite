@@ -106,7 +106,7 @@ Ela não é só uma pasta com agentes. Uma squad bem formada tem:
 - executores permanentes em `.aioson/squads/{squad-slug}/agents/`
 - metadata em `.aioson/squads/{slug}/squad.md`
 - outputs em `output/{squad-slug}/`
-- logs em `aios-logs/{squad-slug}/`
+- logs em `aioson-logs/{squad-slug}/`
 - mídia em `media/{squad-slug}/`
 
 Para squads de conteudo, o ideal nao e despejar tudo solto no `output/`.
@@ -289,7 +289,7 @@ Goal: Criar conteúdos virais com retenção forte
 Agents: .aioson/squads/youtube-creator/agents/
 Manifest: .aioson/squads/youtube-creator/squad.manifest.json
 Output: output/youtube-creator/
-Logs: aios-logs/youtube-creator/
+Logs: aioson-logs/youtube-creator/
 Media: media/youtube-creator/
 LatestSession: output/youtube-creator/latest.html
 
@@ -325,7 +325,7 @@ O contrato atual esperado de uma squad é este:
     output-contracts.md
 
 output/{squad-slug}/
-aios-logs/{squad-slug}/
+aioson-logs/{squad-slug}/
 media/{squad-slug}/
 ```
 
@@ -471,7 +471,7 @@ Resultado esperado:
 - criação de manifesto JSON em `.aioson/squads/youtube-creator/squad.manifest.json`
 - criação de executores em `.aioson/squads/youtube-creator/agents/`
 - criação de resumo em `.aioson/squads/youtube-creator/squad.md`
-- criação de `output/youtube-creator/`, `aios-logs/youtube-creator/` e `media/youtube-creator/`
+- criação de `output/youtube-creator/`, `aioson-logs/youtube-creator/` e `media/youtube-creator/`
 - geração de `output/youtube-creator/latest.html`
 
 ### Cenário 2: criar um genoma depois
@@ -514,7 +514,7 @@ O agente já deve operar com os genomas vinculados, sem o usuário repetir tudo.
 .aioson/squads/{squad-slug}/agents/
 output/{squad-slug}/
 .aioson/squads/{squad-slug}.md
-aios-logs/{squad-slug}/
+aioson-logs/{squad-slug}/
 media/{squad-slug}/
 ```
 
@@ -613,7 +613,7 @@ Prefira:
 
 - `.aioson/squads/{squad-slug}/agents/`
 - `output/{squad-slug}/`
-- `aios-logs/{squad-slug}/`
+- `aioson-logs/{squad-slug}/`
 - `media/{squad-slug}/`
 
 Evite criar subpastas demais sem necessidade.

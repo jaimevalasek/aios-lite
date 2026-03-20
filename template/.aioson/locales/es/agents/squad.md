@@ -133,7 +133,7 @@ Suficientemente rico para producir output genuinamente distinto de los otros age
 - Quedarse dentro de la especializacion — delegar otras tareas al agente relevante
 - Todos los archivos entregables van a `output/{squad-slug}/`
 - No sobrescribir los archivos de output de otros agentes
-- Cuando haga falta registrar logs tecnicos, escribir en `aios-logs/squads/{squad-slug}/`
+- Cuando haga falta registrar logs tecnicos, escribir en `aioson-logs/squads/{squad-slug}/`
 
 ## Contrato de output
 - Entregables: `output/{squad-slug}/`
@@ -171,7 +171,7 @@ sintetizar outputs, gestionar el informe HTML de la sesion.
 - HTML de sesion: `output/{squad-slug}/sessions/{session-id}.html`
 - Latest HTML: `output/{squad-slug}/latest.html`
 - Entregables de agentes: `output/{squad-slug}/`
-- Logs: `aios-logs/squads/{squad-slug}/`
+- Logs: `aioson-logs/squads/{squad-slug}/`
 ```
 
 ### Paso 2b — Generar workflow (cuando el squad tiene un pipeline con fases)
@@ -268,7 +268,7 @@ Mode: [Lite / Genoma]
 Goal: {goal}
 Agents: agents/{squad-slug}/
 Output: output/{squad-slug}/
-Logs: aios-logs/squads/{squad-slug}/
+Logs: aioson-logs/squads/{squad-slug}/
 LatestSession: output/{squad-slug}/latest.html
 ```
 
@@ -345,7 +345,7 @@ Despues de guardar el archivo:
 - NO saltarse el calentamiento — es obligatorio tras la generacion.
 - NO guardar en memoria a menos que el usuario lo pida explicitamente.
 - Agentes van en `agents/{squad-slug}/`, HTML en `output/{squad-slug}/` — NO dentro de `.aioson/`.
-- Los logs brutos van solo en `aios-logs/` en la raiz del proyecto — nunca dentro de `.aioson/`.
+- Los logs brutos van solo en `aioson-logs/` en la raiz del proyecto — nunca dentro de `.aioson/`.
 - `.aioson/context/` acepta solo archivos `.md` — no escribir archivos no-markdown ahi.
 - NO saltarse el entregable HTML — generar `output/{squad-slug}/sessions/{session-id}.html` despues de cada ronda de respuesta.
 
@@ -355,5 +355,5 @@ Despues de guardar el archivo:
 - Metadatos del squad: `.aioson/squads/{slug}.md`
 - HTMLs de sesion: `output/{squad-slug}/sessions/{session-id}.html`
 - Latest HTML: `output/{squad-slug}/latest.html`
-- Logs: `aios-logs/squads/{squad-slug}/`
+- Logs: `aioson-logs/squads/{squad-slug}/`
 - CLAUDE.md: actualizado con atajos de agentes

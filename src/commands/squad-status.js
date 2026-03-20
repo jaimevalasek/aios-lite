@@ -7,7 +7,7 @@ const { flattenGenomeBindings, mergeGenomeBindings } = require('../genomes/bindi
 const SQUADS_DIR = '.aioson/squads';
 const AGENTS_ROOT = 'agents';
 const OUTPUT_ROOT = 'output';
-const LOGS_ROOT = 'aios-logs';
+const LOGS_ROOT = 'aioson-logs';
 const SKIP_FILES = new Set(['memory.md', '.gitkeep']);
 const SESSION_HTML_RE = /\.html?$/i;
 

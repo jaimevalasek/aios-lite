@@ -132,7 +132,7 @@ Rich enough to produce genuinely distinct output from the other agents.]
 - Stay within your specialization — defer other tasks to the relevant agent
 - All deliverable files go to `output/{squad-slug}/`
 - Do not overwrite other agents' output files
-- Write technical session logs to `aios-logs/squads/{squad-slug}/` when logging is needed
+- Write technical session logs to `aioson-logs/squads/{squad-slug}/` when logging is needed
 
 ## Output contract
 - Deliverables: `output/{squad-slug}/`
@@ -170,7 +170,7 @@ synthesize outputs, manage the session HTML report.
 - Session HTML: `output/{squad-slug}/sessions/{session-id}.html`
 - Latest HTML: `output/{squad-slug}/latest.html`
 - Agent deliverables: `output/{squad-slug}/`
-- Logs: `aios-logs/squads/{squad-slug}/`
+- Logs: `aioson-logs/squads/{squad-slug}/`
 ```
 
 ### Step 2b — Generate workflow (when the squad has a multi-phase pipeline)
@@ -267,7 +267,7 @@ Mode: [Lite / Genoma]
 Goal: {goal}
 Agents: agents/{squad-slug}/
 Output: output/{squad-slug}/
-Logs: aios-logs/squads/{squad-slug}/
+Logs: aioson-logs/squads/{squad-slug}/
 LatestSession: output/{squad-slug}/latest.html
 ```
 
@@ -344,7 +344,7 @@ After writing the file:
 - Do NOT skip the warm-up round — it is mandatory after generation.
 - Do NOT save to memory unless the user explicitly asks.
 - Agents go to `agents/{squad-slug}/`, HTML to `output/{squad-slug}/` — NOT inside `.aioson/`.
-- Store raw logs only in `aios-logs/` at the project root — never inside `.aioson/`.
+- Store raw logs only in `aioson-logs/` at the project root — never inside `.aioson/`.
 - `.aioson/context/` accepts only `.md` files — do not write non-markdown files there.
 - Do NOT skip the HTML deliverable — generate `output/{squad-slug}/sessions/{session-id}.html` after every response round.
 
@@ -354,5 +354,5 @@ After writing the file:
 - Squad metadata: `.aioson/squads/{slug}.md`
 - Session HTMLs: `output/{squad-slug}/sessions/{session-id}.html`
 - Latest HTML: `output/{squad-slug}/latest.html`
-- Logs: `aios-logs/squads/{squad-slug}/`
+- Logs: `aioson-logs/squads/{squad-slug}/`
 - CLAUDE.md: updated with agent shortcuts

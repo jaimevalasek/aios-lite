@@ -24,7 +24,7 @@ Verifique que existem:
 - `.aioson/squads/<slug>/agents/agents.md` (obrigatório)
 - `.aioson/squads/<slug>/agents/orquestrador.md` (obrigatório)
 - Para cada executor em manifest.executors: o arquivo referenciado existe
-- Diretórios: `output/<slug>/`, `aios-logs/<slug>/`
+- Diretórios: `output/<slug>/`, `aioson-logs/<slug>/`
 
 ### Camada 3 — Validação semântica (básica nesta fase, aprofundada na Fase 2)
 - Slug do manifesto bate com o nome do diretório
