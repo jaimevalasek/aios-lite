@@ -192,10 +192,11 @@ For stacks not listed above, apply the same separation principles:
 - Keep changes small and reviewable.
 - Enforce server-side validation and authorization.
 - Reuse project skills in `.aioson/skills/static` and `.aioson/skills/dynamic`. For `.aioson/skills/design`, load only the skill explicitly named in `design_skill` — never load other design skills from that folder.
+- Check `.aioson/installed-skills/` for user-installed third-party skills. Each subfolder has a `SKILL.md` with frontmatter describing when to use it. Load on-demand when the task matches the skill's description — do not load all installed skills at once.
 - Also reuse squad-installed skills in `.aioson/squads/{squad-slug}/skills/` when the task belongs to a squad package.
 - Load detailed skills and documents on demand, not all at once.
 - Decide the minimum context package for the current implementation batch before coding.
-- If an installed squad skill already covers the recurring technique, prefer reuse instead of inventing a new rule inside the agent or scattering instructions into code.
+- If an installed skill (third-party or squad) already covers the recurring technique, prefer reuse instead of inventing a new rule inside the agent or scattering instructions into code.
 
 ## Atomic execution
 Work in small, validated steps — never implement an entire feature in one pass:

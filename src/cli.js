@@ -69,6 +69,11 @@ const {
   runRuntimeBackup,
   runRuntimeRestore
 } = require('./commands/backup');
+const {
+  runSkillInstall,
+  runSkillList,
+  runSkillRemove
+} = require('./commands/skill');
 
 const JSON_SUPPORTED_COMMANDS = new Set([
   'init',
@@ -189,6 +194,12 @@ const JSON_SUPPORTED_COMMANDS = new Set([
   'runtime-backup',
   'runtime:restore',
   'runtime-restore',
+  'skill:install',
+  'skill-install',
+  'skill:list',
+  'skill-list',
+  'skill:remove',
+  'skill-remove',
   'version',
   '--version',
   '-v'
@@ -284,6 +295,9 @@ function printHelp(t, logger) {
   logHelpLine(t, logger, 'cli.help_runtime_status');
   logHelpLine(t, logger, 'cli.help_runtime_backup');
   logHelpLine(t, logger, 'cli.help_runtime_restore');
+  logHelpLine(t, logger, 'cli.help_skill_install');
+  logHelpLine(t, logger, 'cli.help_skill_list');
+  logHelpLine(t, logger, 'cli.help_skill_remove');
   logHelpLine(t, logger, 'cli.help_cloud_import_squad');
   logHelpLine(t, logger, 'cli.help_cloud_import_genome');
   logHelpLine(t, logger, 'cli.help_cloud_publish_squad');
@@ -482,6 +496,12 @@ async function main() {
       result = await runRuntimeBackup({ args, options, logger: commandLogger, t });
     } else if (command === 'runtime:restore' || command === 'runtime-restore') {
       result = await runRuntimeRestore({ args, options, logger: commandLogger, t });
+    } else if (command === 'skill:install' || command === 'skill-install') {
+      result = await runSkillInstall({ args, options, logger: commandLogger, t });
+    } else if (command === 'skill:list' || command === 'skill-list') {
+      result = await runSkillList({ args, options, logger: commandLogger, t });
+    } else if (command === 'skill:remove' || command === 'skill-remove') {
+      result = await runSkillRemove({ args, options, logger: commandLogger, t });
     } else if (command === 'cloud:import:squad' || command === 'cloud-import-squad') {
       result = await runCloudImportSquad({ args, options, logger: commandLogger, t });
     } else if (command === 'cloud:import:genome' || command === 'cloud-import-genome') {

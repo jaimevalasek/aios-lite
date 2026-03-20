@@ -30,6 +30,9 @@ const GITIGNORE_POLICY_LINES = [
   '.aioson/templates/',
   '.aioson/advisors/',
   '.aioson/mcp/servers.md',
+  '# AIOSON — user-installed skills (versioned with project)',
+  '!.aioson/installed-skills/',
+  '!.aioson/installed-skills/**',
   '# AIOSON — local-only artifacts',
   'aioson-models.json',
   '.aioson/backups/',
@@ -118,6 +121,8 @@ async function listFilesRecursive(dir) {
 function shouldSkipTemplatePath(rel) {
   if (rel.startsWith('.aioson/context/')) return true;
   if (rel === '.aioson/context/.gitkeep') return false;
+  // Never overwrite user-installed skills (only the .gitkeep is created)
+  if (rel.startsWith('.aioson/installed-skills/') && rel !== '.aioson/installed-skills/.gitkeep') return true;
   return false;
 }
 

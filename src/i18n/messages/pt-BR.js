@@ -103,6 +103,12 @@ module.exports = {
       'aioson runtime:backup [caminho] [--tables=tasks,runs,...] [--force] [--dry-run] [--json] [--locale=pt-BR]',
     help_runtime_restore:
       'aioson runtime:restore [caminho] [--tables=tasks,runs,...] [--dry-run] [--json] [--locale=pt-BR]',
+    help_skill_install:
+      'aioson skill:install [caminho] --slug=<nome> [--from=npm|cloud|./caminho] [--force] [--json] [--locale=pt-BR]',
+    help_skill_list:
+      'aioson skill:list [caminho] [--json] [--locale=pt-BR]',
+    help_skill_remove:
+      'aioson skill:remove [caminho] --slug=<nome> [--json] [--locale=pt-BR]',
     help_cloud_import_squad:
       'aioson cloud:import:squad [path] --url=<snapshot-url> [--force] [--snapshots-only] [--dry-run] [--json] [--locale=pt-BR]',
     help_cloud_import_genome:

@@ -93,6 +93,7 @@ Suggested map:
 Before finalizing the hand-off, explicitly evaluate:
 
 - which local skills in `.aioson/skills/static/` or `.aioson/skills/dynamic/` matter for this scope
+- which user-installed skills in `.aioson/installed-skills/` are relevant (check each `SKILL.md` frontmatter)
 - which installed squad skills in `.aioson/squads/{squad-slug}/skills/` already cover part of the work
 - which context docs should be read next (`discovery.md`, `architecture.md`, `prd.md`, `spec.md`, `ui-spec.md`)
 - which references are unnecessary right now and should stay out of the active context

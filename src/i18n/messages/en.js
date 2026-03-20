@@ -101,6 +101,12 @@ module.exports = {
       'aioson runtime:backup [path] [--tables=tasks,runs,...] [--force] [--dry-run] [--json] [--locale=en]',
     help_runtime_restore:
       'aioson runtime:restore [path] [--tables=tasks,runs,...] [--dry-run] [--json] [--locale=en]',
+    help_skill_install:
+      'aioson skill:install [path] --slug=<name> [--from=npm|cloud|./path] [--force] [--json] [--locale=en]',
+    help_skill_list:
+      'aioson skill:list [path] [--json] [--locale=en]',
+    help_skill_remove:
+      'aioson skill:remove [path] --slug=<name> [--json] [--locale=en]',
     help_cloud_import_squad:
       'aioson cloud:import:squad [path] --url=<snapshot-url> [--force] [--snapshots-only] [--dry-run] [--json] [--locale=en]',
     help_cloud_import_genome:
