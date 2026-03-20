@@ -72,6 +72,30 @@ Se nenhum subcomando for fornecido (apenas `@squad` ou `@squad` com texto livre)
 → Execute o fluxo completo: design → create → validate em sequência.
 → Este é o "caminho rápido" — mesmo comportamento de antes, mas agora com um blueprint intermediário.
 
+## Squads efêmeros (temporários, ad-hoc)
+
+Quando o usuário precisa de um squad rápido e descartável:
+
+- `@squad --ephemeral` ou usuário diz "squad rápido", "squad temporário", "só para esta sessão"
+- Cria um squad leve com `"ephemeral": true` no manifesto
+- Pula design-doc, readiness e derivação detalhada de skills/MCPs
+- Usa slug com timestamp: `ephemeral-{hint-dominio}-{YYYYMMDD-HHmm}`
+- Agentes vão em `.aioson/squads/{slug}/agents/` normalmente (para serem invocáveis)
+- Output vai em `output/{slug}/` normalmente
+- Após a sessão ou após o TTL expirar, o squad fica elegível para limpeza
+- `@squad` NÃO lista squads efêmeros por padrão (use `--include-ephemeral` para ver)
+
+No manifesto:
+```json
+{
+  "ephemeral": true,
+  "ttl": "24h"
+}
+```
+
+Squads efêmeros **não são registrados** no CLAUDE.md ou AGENTS.md.
+Existem apenas para a sessão atual ou janela de TTL.
+
 ## Fluxo de criação do squad
 
 Peça primeiro as informações em um único bloco. Só faça perguntas adicionais se houver lacunas relevantes.
@@ -132,8 +156,25 @@ Mostre a classificação ao usuário como parte da confirmação do squad.
 - `worker` → gere script em `workers/` (Python ou bash), não em `agents/`
 - `agent` → gere `.md` em `agents/` (fluxo padrão)
 - `clone` → gere `.md` em `agents/` + referencie genoma com `genomeSource`
-- `assistant` → gere `.md` em `agents/` + inclua `domain` e `behavioralProfile`
+- `assistant` → gere `.md` em `agents/` + inclua `domain` e `behavioralProfile` (baseado em DISC)
 - `human-gate` → registre no manifesto JSON + no workflow; não gera arquivo `.md`
+
+**Perfis comportamentais DISC para assistants:**
+
+Ao criar um executor `type: assistant`, atribua um perfil DISC que combine com a função:
+
+| Perfil | Traços | Melhor para |
+|--------|--------|-------------|
+| `dominant-driver` | Decisivo, orientado a resultados, rápido | Gestores de projeto, tomadores de decisão |
+| `influential-expressive` | Persuasivo, criativo, entusiasmado | Copywriters, vendedores, apresentadores |
+| `steady-amiable` | Paciente, suporte, confiável | Suporte ao cliente, mentores, mediadores |
+| `compliant-analytical` | Preciso, sistemático, detalhista | Analistas, auditores, tributaristas, QA |
+| `dominant-influential` | Visionário, assertivo, inspirador | Líderes, estrategistas, fundadores |
+| `influential-steady` | Colaborativo, empático, diplomático | RH, coaches, community managers |
+| `steady-compliant` | Metódico, leal, orientado a processos | Operações, compliance, documentação |
+| `compliant-dominant` | Estratégico, exigente, orientado a qualidade | Arquitetos, engenheiros, pesquisadores |
+
+O perfil molda o estilo de comunicação e abordagem de decisão do assistant no arquivo de agente gerado.
 
 ## Discovery e design doc antes da squad
 
@@ -635,6 +676,22 @@ sintetizar outputs, gerenciar o relatório HTML da sessão.
 ## Politica de subagentes
 - Use subagentes apenas para investigação isolada, comparação, leitura ampla ou paralelismo
 - Não use subagentes como substitutos de skills ou executores permanentes
+
+## Consciência inter-squad (meta-orquestração)
+
+Quando o projeto tiver múltiplos squads, este orquestrador deve conhecer os squads irmãos.
+Antes de iniciar uma nova sessão:
+1. Escaneie `.aioson/squads/` para encontrar outros diretórios de squad
+2. Leia cada `squad.md` irmão para entender seu domínio e capacidades
+3. Se uma solicitação cair fora do domínio deste squad, sugira rotear para o squad irmão adequado
+4. Se uma tarefa exigir colaboração inter-squad, coordene handoffs explicitamente
+
+Template de roteamento inter-squad:
+> "Esta solicitação é melhor atendida pelo squad **{nome-irmão}** ({domínio-irmão}).
+> Invoque `@{orquestrador-irmão}` ou alterne para esse squad."
+
+Nunca absorva silenciosamente tarefas que pertençam a um squad irmão.
+Nunca duplique capacidades que já existem em outro squad.
 
 ## Restricoes
 - Sempre envolva todos os especialistas relevantes para cada desafio

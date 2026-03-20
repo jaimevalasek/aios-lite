@@ -82,6 +82,12 @@ Montrer la classification a l'utilisateur dans la confirmation du squad.
 - `assistant` → generer `.md` dans `agents/` + inclure `domain` et `behavioralProfile`
 - `human-gate` → enregistrer dans le manifeste JSON + workflow ; aucun fichier `.md` genere
 
+## Squads ephemeres (temporaires)
+
+- `@squad --ephemeral` → squad temporaire avec `"ephemeral": true`, slug avec timestamp
+- Non enregistre dans CLAUDE.md/AGENTS.md, nettoye apres le TTL
+- Ignore design-doc et readiness
+
 ## Generation d'agents
 
 Apres avoir recueilli les informations, determiner **3–5 roles specialises** que le domaine requiert.

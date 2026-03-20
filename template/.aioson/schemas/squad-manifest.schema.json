@@ -38,6 +38,15 @@
       "enum": ["private", "public"],
       "default": "private"
     },
+    "ephemeral": {
+      "type": "boolean",
+      "default": false,
+      "description": "Temporary squad — created ad-hoc for a one-off task, no persistence. Auto-cleaned after session ends."
+    },
+    "ttl": {
+      "type": "string",
+      "description": "Time-to-live for ephemeral squads (e.g. '24h', '7d'). After TTL, squad files are eligible for cleanup."
+    },
     "aiosLiteCompatibility": { "type": "string" },
     "storagePolicy": {
       "type": "object",
@@ -118,7 +127,17 @@
           },
           "behavioralProfile": {
             "type": "string",
-            "description": "Behavioral profile for assistant executors (e.g. analytical-compliant, driver, expressive)"
+            "enum": [
+              "dominant-driver",
+              "influential-expressive",
+              "steady-amiable",
+              "compliant-analytical",
+              "dominant-influential",
+              "influential-steady",
+              "steady-compliant",
+              "compliant-dominant"
+            ],
+            "description": "DISC-based behavioral profile for assistant executors. Primary-secondary pattern: D=results-driven, I=people-oriented, S=stability-focused, C=precision-oriented"
           },
           "genomeSource": {
             "type": "string",

@@ -79,6 +79,30 @@ If no subcommand is given (just `@squad` or `@squad` with freeform text):
 → Run the full flow: design → create → validate in sequence.
 → This is the "fast path" — same behavior as today but now with a blueprint intermediary.
 
+## Ephemeral squads (temporary, ad-hoc)
+
+When the user needs a quick, one-off squad that won't persist:
+
+- `@squad --ephemeral` or user says "quick squad", "temporary squad", "just for this session"
+- Creates a lightweight squad with `"ephemeral": true` in the manifest
+- Skips design-doc, readiness, and detailed skills/MCPs derivation
+- Uses a timestamped slug: `ephemeral-{domain-hint}-{YYYYMMDD-HHmm}`
+- Agents go to `.aioson/squads/{slug}/agents/` as normal (so they're invocable)
+- Output goes to `output/{slug}/` as normal
+- After the session or after TTL expires, the squad is eligible for cleanup
+- `@squad` will NOT list ephemeral squads by default (use `--include-ephemeral` to see them)
+
+Set in manifest:
+```json
+{
+  "ephemeral": true,
+  "ttl": "24h"
+}
+```
+
+Ephemeral squads are **not registered** in CLAUDE.md or AGENTS.md.
+They exist only for the current session or TTL window.
+
 ## Squad creation flow
 
 Ask for the core information in one block first. Only ask follow-up questions if there are meaningful gaps.
@@ -235,8 +259,25 @@ Show the classification to the user as part of the squad confirmation.
 - `worker` → generate script in `workers/` (Python or bash), NOT in `agents/`
 - `agent` → generate `.md` in `agents/` (default flow)
 - `clone` → generate `.md` in `agents/` + reference genome via `genomeSource`
-- `assistant` → generate `.md` in `agents/` + include `domain` and `behavioralProfile`
+- `assistant` → generate `.md` in `agents/` + include `domain` and `behavioralProfile` (DISC-based)
 - `human-gate` → register in manifest JSON + workflow only; no `.md` file generated
+
+**DISC behavioral profiles for assistants:**
+
+When creating a `type: assistant` executor, assign a DISC-based profile that matches the function:
+
+| Profile | Traits | Best for |
+|---------|--------|----------|
+| `dominant-driver` | Decisive, results-oriented, fast | Project managers, decision-makers |
+| `influential-expressive` | Persuasive, creative, enthusiastic | Copywriters, salespeople, presenters |
+| `steady-amiable` | Patient, supportive, reliable | Customer support, mentors, mediators |
+| `compliant-analytical` | Precise, systematic, detail-oriented | Analysts, auditors, tax specialists, QA |
+| `dominant-influential` | Visionary, assertive, inspiring | Leaders, strategists, founders |
+| `influential-steady` | Collaborative, empathetic, diplomatic | HR, coaches, community managers |
+| `steady-compliant` | Methodical, loyal, process-oriented | Operations, compliance, documentation |
+| `compliant-dominant` | Strategic, exacting, quality-driven | Architects, engineers, researchers |
+
+The profile shapes the assistant's communication style and decision-making approach in the generated agent file.
 
 ## Agent generation
 
@@ -685,6 +726,22 @@ synthesize outputs, manage the session HTML report.
 ## Subagent policy
 - Use subagents only for isolated investigation, comparison, broad reading, or parallel work
 - Do not use subagents as substitutes for skills or permanent executors
+
+## Cross-squad awareness (meta-orchestration)
+
+When the project has multiple squads, this orchestrator should be aware of sibling squads.
+Before starting a new session:
+1. Scan `.aioson/squads/` for other squad directories
+2. Read each sibling `squad.md` to understand their domain and capabilities
+3. If a user request falls outside this squad's domain, suggest routing to the appropriate sibling squad
+4. If a task requires cross-squad collaboration, coordinate handoffs explicitly
+
+Cross-squad routing template:
+> "This request is better handled by squad **{sibling-name}** ({sibling-domain}).
+> Invoke `@{sibling-orquestrador}` or switch to that squad."
+
+Never silently absorb tasks that belong to a sibling squad.
+Never duplicate capabilities that already exist in another squad.
 
 ## Hard constraints
 - Always involve all relevant specialists for each challenge
