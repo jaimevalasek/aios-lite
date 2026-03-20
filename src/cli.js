@@ -55,7 +55,9 @@ const {
   runRuntimeLog,
   runDeliver,
   runOutputStrategyExport,
-  runOutputStrategyImport
+  runOutputStrategyImport,
+  runDevlogSync,
+  runRuntimePrune
 } = require('./commands/runtime');
 const {
   runCloudImportSquad,
@@ -462,6 +464,10 @@ async function main() {
       result = await runOutputStrategyExport({ args, options, logger: commandLogger, t });
     } else if (command === 'output-strategy:import') {
       result = await runOutputStrategyImport({ args, options, logger: commandLogger, t });
+    } else if (command === 'devlog:sync' || command === 'devlog-sync') {
+      result = await runDevlogSync({ args, options, logger: commandLogger, t });
+    } else if (command === 'runtime:prune' || command === 'runtime-prune') {
+      result = await runRuntimePrune({ args, options, logger: commandLogger, t });
     } else if (command === 'cloud:import:squad' || command === 'cloud-import-squad') {
       result = await runCloudImportSquad({ args, options, logger: commandLogger, t });
     } else if (command === 'cloud:import:genome' || command === 'cloud-import-genome') {

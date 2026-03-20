@@ -462,7 +462,7 @@ test('deyvin contract prioritizes rules, memory, runtime, and git fallback', asy
   const ptContent = await read(path.join(ROOT, 'template/.aioson/locales/pt-BR/agents/deyvin.md'));
 
   const baseTokens = [
-    'Project rules & docs',
+    'Project rules, docs & design docs',
     '.aioson/rules/',
     '.aioson/docs/',
     'memory-index.md',

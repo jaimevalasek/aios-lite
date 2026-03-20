@@ -13,7 +13,8 @@ const {
   attachArtifact,
   upsertContentItem,
   getStatusSnapshot,
-  logAgentEvent
+  logAgentEvent,
+  appendRunEvent
 } = require('../runtime-store');
 const { runAutoDelivery } = require('../delivery-runner');
 
@@ -1082,6 +1083,206 @@ async function runOutputStrategyImport({ args, options = {}, logger, t }) {
   return { ok: true, squad: slug, source: fromSlug || fromFile };
 }
 
+/**
+ * aioson devlog:sync [targetDir]
+ *
+ * Parses aioson-logs/devlog-*.md files, imports them into SQLite as
+ * task + run + events, then renames each file to .synced so it is not
+ * re-imported on subsequent runs.
+ */
+async function runDevlogSync({ args, options = {}, logger, t }) {
+  const targetDir = resolveTargetDir(args);
+  const logsDir = path.join(targetDir, 'aioson-logs');
+
+  let entries;
+  try {
+    entries = await fs.readdir(logsDir);
+  } catch {
+    logger.log('No aioson-logs/ directory found — nothing to sync.');
+    return { ok: true, synced: 0 };
+  }
+
+  const devlogFiles = entries
+    .filter(f => f.startsWith('devlog-') && f.endsWith('.md'))
+    .sort();
+
+  if (devlogFiles.length === 0) {
+    logger.log('No devlog files to sync.');
+    return { ok: true, synced: 0 };
+  }
+
+  const { db, dbPath } = await openRuntimeDb(targetDir);
+  let synced = 0;
+
+  try {
+    for (const file of devlogFiles) {
+      const filePath = path.join(logsDir, file);
+      const raw = await fs.readFile(filePath, 'utf8');
+
+      // Parse YAML frontmatter
+      const fm = parseFrontmatter(raw);
+      const agent = fm.agent || 'unknown';
+      const summary = fm.summary || file;
+      const sessionStart = fm.session_start || null;
+      const sessionEnd = fm.session_end || null;
+      const status = fm.status || 'completed';
+
+      // Create task + run
+      const taskKey = startTask(db, {
+        title: `devlog: ${summary}`,
+        squadSlug: null,
+        status: status === 'partial' ? 'running' : 'completed',
+        createdBy: agent
+      });
+
+      const runKey = startRun(db, {
+        taskKey,
+        agentName: agent,
+        agentKind: 'devlog',
+        squadSlug: null,
+        title: `@${agent} devlog`,
+        message: summary
+      });
+
+      // Extract body sections as events
+      const body = raw.replace(/^---[\s\S]*?---\s*/, '');
+      const sections = body.split(/^## /m).filter(Boolean);
+      for (const section of sections) {
+        const firstLine = section.split('\n')[0].trim();
+        const content = section.slice(firstLine.length).trim();
+        if (content) {
+          appendRunEvent(db, {
+            runKey,
+            eventType: 'devlog',
+            phase: firstLine.toLowerCase().replace(/\s+/g, '_'),
+            status: 'completed',
+            message: `## ${firstLine}\n${content}`,
+            createdAt: sessionEnd || new Date().toISOString()
+          });
+        }
+      }
+
+      // Close the run
+      updateRun(db, runKey, {
+        status: status === 'partial' ? 'running' : 'completed',
+        summary,
+        finishedAt: sessionEnd || new Date().toISOString()
+      });
+
+      if (status !== 'partial') {
+        updateTask(db, taskKey, {
+          status: 'completed',
+          finishedAt: sessionEnd || new Date().toISOString()
+        });
+      }
+
+      // Rename to .synced
+      await fs.rename(filePath, filePath.replace(/\.md$/, '.synced.md'));
+      synced++;
+      logger.log(`  Synced: ${file} → task=${taskKey} run=${runKey}`);
+    }
+
+    logger.log(`Synced ${synced} devlog(s) into ${dbPath}`);
+    return { ok: true, synced, dbPath };
+  } finally {
+    db.close();
+  }
+}
+
+/**
+ * Minimal YAML frontmatter parser (no external deps).
+ * Returns an object with frontmatter keys, or {} if none.
+ */
+function parseFrontmatter(content) {
+  const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+  if (!match) return {};
+  const result = {};
+  for (const line of match[1].split('\n')) {
+    const idx = line.indexOf(':');
+    if (idx === -1) continue;
+    const key = line.slice(0, idx).trim();
+    let val = line.slice(idx + 1).trim();
+    // Strip surrounding quotes
+    if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+      val = val.slice(1, -1);
+    }
+    result[key] = val;
+  }
+  return result;
+}
+
+/**
+ * aioson runtime:prune [targetDir] --older-than=<days>
+ *
+ * Removes execution_events, agent_events, and completed agent_runs
+ * older than the specified number of days. Tasks are kept but their
+ * events are cleaned up.
+ */
+async function runRuntimePrune({ args, options = {}, logger, t }) {
+  const targetDir = resolveTargetDir(args);
+  const days = parseInt(options['older-than'] || options.olderThan || '30', 10);
+
+  if (isNaN(days) || days < 1) {
+    logger.error('Usage: aioson runtime:prune --older-than=<days> (minimum 1)');
+    return { ok: false, error: 'Invalid --older-than value' };
+  }
+
+  const { db, dbPath } = await withRuntimeDb(targetDir, t);
+
+  try {
+    const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+
+    const execEvents = db.prepare(
+      `DELETE FROM execution_events WHERE created_at < ?`
+    ).run(cutoff);
+
+    const agentEvents = db.prepare(
+      `DELETE FROM agent_events WHERE created_at < ?`
+    ).run(cutoff);
+
+    const runs = db.prepare(
+      `DELETE FROM agent_runs WHERE status IN ('completed', 'failed') AND finished_at < ?`
+    ).run(cutoff);
+
+    const tasks = db.prepare(
+      `DELETE FROM tasks WHERE status IN ('completed', 'failed') AND finished_at < ?`
+    ).run(cutoff);
+
+    const deliveryLogs = db.prepare(
+      `DELETE FROM delivery_log WHERE created_at < ?`
+    ).run(cutoff);
+
+    // Reclaim disk space
+    db.pragma('wal_checkpoint(TRUNCATE)');
+
+    const total = execEvents.changes + agentEvents.changes + runs.changes + tasks.changes + deliveryLogs.changes;
+
+    logger.log(`Pruned ${total} records older than ${days} days from ${dbPath}:`);
+    logger.log(`  execution_events: ${execEvents.changes}`);
+    logger.log(`  agent_events: ${agentEvents.changes}`);
+    logger.log(`  agent_runs: ${runs.changes}`);
+    logger.log(`  tasks: ${tasks.changes}`);
+    logger.log(`  delivery_log: ${deliveryLogs.changes}`);
+
+    return {
+      ok: true,
+      dbPath,
+      days,
+      cutoff,
+      deleted: {
+        execution_events: execEvents.changes,
+        agent_events: agentEvents.changes,
+        agent_runs: runs.changes,
+        tasks: tasks.changes,
+        delivery_log: deliveryLogs.changes,
+        total
+      }
+    };
+  } finally {
+    db.close();
+  }
+}
+
 module.exports = {
   runRuntimeInit,
   runRuntimeIngest,
@@ -1096,5 +1297,7 @@ module.exports = {
   runRuntimeLog,
   runDeliver,
   runOutputStrategyExport,
-  runOutputStrategyImport
+  runOutputStrategyImport,
+  runDevlogSync,
+  runRuntimePrune
 };
