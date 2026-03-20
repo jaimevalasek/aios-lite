@@ -97,6 +97,10 @@ module.exports = {
       'aioson runtime:status [path] [--json] [--locale=en]',
     help_runtime_log:
       'aioson runtime:log [path] --agent=<name> --message=<text> [--type=<event>] [--finish] [--status=completed|failed] [--summary=<text>] [--title=<task-title>] [--json] [--locale=en]',
+    help_runtime_backup:
+      'aioson runtime:backup [path] [--tables=tasks,runs,...] [--force] [--dry-run] [--json] [--locale=en]',
+    help_runtime_restore:
+      'aioson runtime:restore [path] [--tables=tasks,runs,...] [--dry-run] [--json] [--locale=en]',
     help_cloud_import_squad:
       'aioson cloud:import:squad [path] --url=<snapshot-url> [--force] [--snapshots-only] [--dry-run] [--json] [--locale=en]',
     help_cloud_import_genome:

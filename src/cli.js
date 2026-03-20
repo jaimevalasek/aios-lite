@@ -65,6 +65,10 @@ const {
   runCloudPublishGenome,
   runCloudPublishSquad
 } = require('./commands/cloud');
+const {
+  runRuntimeBackup,
+  runRuntimeRestore
+} = require('./commands/backup');
 
 const JSON_SUPPORTED_COMMANDS = new Set([
   'init',
@@ -181,6 +185,10 @@ const JSON_SUPPORTED_COMMANDS = new Set([
   'cloud-publish-squad',
   'cloud:publish:genome',
   'cloud-publish-genome',
+  'runtime:backup',
+  'runtime-backup',
+  'runtime:restore',
+  'runtime-restore',
   'version',
   '--version',
   '-v'
@@ -274,6 +282,8 @@ function printHelp(t, logger) {
   logHelpLine(t, logger, 'cli.help_runtime_task_fail');
   logHelpLine(t, logger, 'cli.help_runtime_fail');
   logHelpLine(t, logger, 'cli.help_runtime_status');
+  logHelpLine(t, logger, 'cli.help_runtime_backup');
+  logHelpLine(t, logger, 'cli.help_runtime_restore');
   logHelpLine(t, logger, 'cli.help_cloud_import_squad');
   logHelpLine(t, logger, 'cli.help_cloud_import_genome');
   logHelpLine(t, logger, 'cli.help_cloud_publish_squad');
@@ -468,6 +478,10 @@ async function main() {
       result = await runDevlogSync({ args, options, logger: commandLogger, t });
     } else if (command === 'runtime:prune' || command === 'runtime-prune') {
       result = await runRuntimePrune({ args, options, logger: commandLogger, t });
+    } else if (command === 'runtime:backup' || command === 'runtime-backup') {
+      result = await runRuntimeBackup({ args, options, logger: commandLogger, t });
+    } else if (command === 'runtime:restore' || command === 'runtime-restore') {
+      result = await runRuntimeRestore({ args, options, logger: commandLogger, t });
     } else if (command === 'cloud:import:squad' || command === 'cloud-import-squad') {
       result = await runCloudImportSquad({ args, options, logger: commandLogger, t });
     } else if (command === 'cloud:import:genome' || command === 'cloud-import-genome') {

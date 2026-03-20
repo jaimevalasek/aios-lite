@@ -371,6 +371,15 @@ async function openRuntimeDb(targetDir, options = {}) {
 
     CREATE INDEX IF NOT EXISTS idx_delivery_log_squad ON delivery_log(squad_slug);
     CREATE INDEX IF NOT EXISTS idx_delivery_log_content ON delivery_log(content_key);
+
+    CREATE TABLE IF NOT EXISTS backup_manifest (
+      record_key TEXT PRIMARY KEY,
+      record_type TEXT NOT NULL,
+      content_hash TEXT NOT NULL,
+      backed_up_at TEXT NOT NULL,
+      remote_key TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_backup_manifest_type ON backup_manifest(record_type, backed_up_at DESC);
   `);
 
   ensureLegacyColumns(db);
