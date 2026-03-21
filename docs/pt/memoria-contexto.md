@@ -235,7 +235,7 @@ Se estiver em dúvida, siga esta ordem:
 Regra prática:
 
 - pode versionar os arquivos de `.aioson/context/`
-- pode versionar squads e genomas do projeto quando eles forem parte real do trabalho
+- pode versionar squads e genomes do projeto quando eles forem parte real do trabalho
 - normalmente nao deve versionar arquivos gerenciados do framework em `.aioson/agents/`, `.aioson/locales/`, `.aioson/skills/`, `.aioson/schemas/`, `.aioson/tasks/`, `.aioson/templates/` e `.aioson/advisors/`
 
 O AIOSON agora reforça isso no `.gitignore` do projeto durante `install`, `update` e `scan:project`.

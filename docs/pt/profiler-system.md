@@ -1,6 +1,6 @@
 # Sistema Profiler — Guia Rápido
 
-> Pipeline oficial para pesquisa, enriquecimento e geração de Genoma 3.0 e Advisors no AIOSON.
+> Pipeline oficial para pesquisa, enriquecimento e geração de Genome 3.0 e Advisors no AIOSON.
 
 ---
 
@@ -16,7 +16,7 @@ O Sistema Profiler cria um perfil cognitivo inferido de pessoas públicas a part
 
 O pipeline gera dois outputs principais:
 
-- `Genoma 3.0`: conhecimento destilado + perfil cognitivo aplicável a agentes executores
+- `Genome 3.0`: conhecimento destilado + perfil cognitivo aplicável a agentes executores
 - `Advisor Agent`: conselheiro ativo que responde como a persona, com web search e memória
 
 ---
@@ -30,7 +30,7 @@ O fluxo oficial é sequencial:
 2. `@profiler-enricher`
    Consolida a pesquisa com materiais extras do usuário e produz `.aioson/profiler-reports/{person-slug}/enriched-profile.md`
 3. `@profiler-forge`
-   Transforma o perfil enriquecido em Genoma 3.0, Advisor Agent ou ambos
+   Transforma o perfil enriquecido em Genome 3.0, Advisor Agent ou ambos
 
 Fluxo resumido:
 
@@ -41,7 +41,7 @@ Pessoa alvo
   -> @profiler-enricher
   -> enriched-profile.md
   -> @profiler-forge
-  -> Genoma 3.0 / Advisor / ambos
+  -> Genome 3.0 / Advisor / ambos
 ```
 
 ---
@@ -61,20 +61,20 @@ Depois siga a sequência natural:
 @profiler-forge stefan-georgi
 ```
 
-### Opção 2: via `@genoma`
+### Opção 2: via `@genome`
 
 ```text
-@genoma
+@genome
 Tipo: persona
 Pessoa: Stefan Georgi
 Domínio: direct response copywriting
 ```
 
-Quando `type: persona` é detectado, o `@genoma` deve redirecionar para o pipeline profiler por padrão.
+Quando `type: persona` é detectado, o `@genome` deve redirecionar para o pipeline profiler por padrão.
 
 ### Opção 3: modo rápido
 
-Se o usuário pedir explicitamente um genoma persona rápido, leve ou `--quick`, o sistema pode gerar um resultado com baixa fidelidade usando apenas conhecimento inferido do LLM.
+Se o usuário pedir explicitamente um genome persona rápido, leve ou `--quick`, o sistema pode gerar um resultado com baixa fidelidade usando apenas conhecimento inferido do LLM.
 
 Nesses casos:
 
@@ -120,16 +120,16 @@ Todos os perfis psicométricos devem ser tratados como `INFERIDOS`.
 ### Outputs finais
 
 ```text
-.aioson/genomas/{person-slug}-{domain-slug}.md
-.aioson/genomas/{person-slug}-{domain-slug}.meta.json
+.aioson/genomes/{person-slug}-{domain-slug}.md
+.aioson/genomes/{person-slug}-{domain-slug}.meta.json
 .aioson/advisors/{person-slug}-advisor.md
 ```
 
 ---
 
-## Quando usar Genoma 3.0
+## Quando usar Genome 3.0
 
-Use Genoma 3.0 quando você quer enriquecer executores já existentes com a forma de pensar de uma pessoa.
+Use Genome 3.0 quando você quer enriquecer executores já existentes com a forma de pensar de uma pessoa.
 
 Exemplos:
 
@@ -137,7 +137,7 @@ Exemplos:
 - estrategista editorial operando com lentes mentais de um criador específico
 - time de liderança avaliando decisões com a filosofia operacional de uma referência
 
-Genoma é artefato passivo. Ele não executa sozinho.
+Genome é artefato passivo. Ele não executa sozinho.
 
 ---
 
@@ -196,10 +196,10 @@ Sinais de profiling fraco:
 
 ## Relação com o sistema atual
 
-O Profiler System é uma extensão do fluxo de genomas, não um substituto do Genoma 2.0.
+O Profiler System é uma extensão do fluxo de genomes, não um substituto do Genome 2.0.
 
-- Genoma 2.0 continua válido para `domain` e `function`
-- Genoma 3.0 entra quando existe `persona`
+- Genome 2.0 continua válido para `domain` e `function`
+- Genome 3.0 entra quando existe `persona`
 - Advisors convivem com squads como membros consultivos
 - relatórios intermediários viram a fonte de verdade para reprocessamento futuro
 
@@ -211,4 +211,4 @@ O Profiler System é uma extensão do fluxo de genomas, não um substituto do Ge
 - não omitir limitações do perfil
 - não pular o enriquecimento quando o objetivo for alta fidelidade
 - preservar os relatórios intermediários como trilha de auditoria
-- preferir `Genoma 3.0 + Advisor` quando o caso exigir execução e consultoria
+- preferir `Genome 3.0 + Advisor` quando o caso exigir execução e consultoria

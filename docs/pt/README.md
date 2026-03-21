@@ -12,7 +12,7 @@ Bem-vindo à documentação em português do AIOSON — um framework leve de age
 | [Deyvin](./deyvin.md) | Guia do agente de continuidade e pair programming do AIOSON |
 | [Cenários de Uso](./cenarios.md) | Exemplos completos e práticos para projetos MICRO, SMALL e MEDIUM |
 | [Guia de Agentes](./agentes.md) | Quando usar cada agente e o que ele entrega |
-| [Squad e Genoma](./squad-genoma.md) | Como criar squads modulares, diferenciar skill de genoma, aplicar genomas e publicar entregáveis HTML |
+| [Squad e Genome](./squad-genome.md) | Como criar squads modulares, diferenciar skill de genome, aplicar genomes e publicar entregáveis HTML |
 | [Agentes Customizados](./agentes-customizados.md) | Criar agentes personalizados com `squad:agent-create` — tipos, Voice DNA, infra operacional, maturity scoring |
 | [Skills](./skills.md) | Sistema de skills: tipos, instalação, mapeamento por framework e compatibilidade cross-tool |
 | [Automação de Squads](./automacao-squads.md) | Transformar processos de squad em scripts executáveis (Python/Node.js) que rodam sem LLM |

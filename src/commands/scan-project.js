@@ -40,7 +40,7 @@ const CONTEXT_MODES  = new Set(['merge', 'rewrite']);
 const FORGE_SCAN_ROOTS = [
   '.aioson/context',
   '.aioson/squads',
-  '.aioson/genomas',
+  '.aioson/genomes',
   '.aioson/mcp'
 ];
 const FORGE_SECTION_ROOTS = [
@@ -55,9 +55,9 @@ const FORGE_SECTION_ROOTS = [
     empty: '_No squads detected yet_'
   },
   {
-    root: '.aioson/genomas',
-    title: 'Genomas',
-    empty: '_No genomas detected yet_'
+    root: '.aioson/genomes',
+    title: 'Genomes',
+    empty: '_No genomes detected yet_'
   },
   {
     root: '.aioson/mcp',
@@ -694,7 +694,7 @@ function buildForgeArtifactsMarkdown({ entries, generatedAt, managedForgePaths }
     '',
     '## Scope',
     '- Shows generated or project-specific artifacts inside `.aioson/`.',
-    '- Groups what matters for client analysis, especially context pages, squads, genomas and local MCP artifacts.',
+    '- Groups what matters for client analysis, especially context pages, squads, genomes and local MCP artifacts.',
     '- Hides framework-managed defaults such as agents, locales, schemas, static skills and task docs.'
   ];
 

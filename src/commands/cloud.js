@@ -35,7 +35,7 @@ function squadImportFilePath(projectDir, slug, versionNumber) {
 }
 
 function genomeImportFilePath(projectDir, slug, versionNumber) {
-  const safeSlug = sanitizeSegment(slug, 'genoma');
+  const safeSlug = sanitizeSegment(slug, 'genome');
   const safeVersion = sanitizeSegment(versionNumber, 'latest');
   return path.join(cloudImportsRoot(projectDir), 'genomes', safeSlug, `${safeVersion}.json`);
 }
@@ -53,7 +53,7 @@ function historyImportFilePath(projectDir, slug, versionNumber) {
 }
 
 function genomeHistoryImportFilePath(projectDir, slug, versionNumber) {
-  const safeSlug = sanitizeSegment(slug, 'genoma');
+  const safeSlug = sanitizeSegment(slug, 'genome');
   const safeVersion = sanitizeSegment(versionNumber, 'latest');
   return path.join(
     cloudImportsRoot(projectDir),
@@ -73,7 +73,7 @@ function installedManifestPath(projectDir, slug) {
 }
 
 function installedGenomeManifestPath(projectDir, slug) {
-  return path.join(installedRoot(projectDir), 'genomes', sanitizeSegment(slug, 'genoma'), 'manifest.json');
+  return path.join(installedRoot(projectDir), 'genomes', sanitizeSegment(slug, 'genome'), 'manifest.json');
 }
 
 function localSquadPackageDir(projectDir, slug) {
@@ -161,7 +161,7 @@ function localLegacySquadReadinessPath(projectDir, slug) {
 }
 
 function localGenomeFilePath(projectDir, slug) {
-  return path.join(projectDir, '.aioson', 'genomas', `${sanitizeSegment(slug, 'genoma')}.md`);
+  return path.join(projectDir, '.aioson', 'genomes', `${sanitizeSegment(slug, 'genome')}.md`);
 }
 
 function findPrimaryHeading(markdown, fallback) {
@@ -602,7 +602,7 @@ function buildSquadMetadata(snapshot, options = {}) {
     ? snapshot.appliedGenomes.filter((item) => String(item.scopeType || 'SQUAD').toUpperCase() === 'SQUAD')
     : [];
   for (const genome of shared) {
-    lines.push(`- .aioson/genomas/${sanitizeSegment(genome.genome.slug, 'genoma')}.md`);
+    lines.push(`- .aioson/genomes/${sanitizeSegment(genome.genome.slug, 'genome')}.md`);
   }
 
   lines.push('', 'AgentGenomes:');
@@ -614,7 +614,7 @@ function buildSquadMetadata(snapshot, options = {}) {
 
   for (const genome of scoped) {
     lines.push(
-      `- ${normalizeAgentSlug(genome.agentSlug)}: .aioson/genomas/${sanitizeSegment(genome.genome.slug, 'genoma')}.md`
+      `- ${normalizeAgentSlug(genome.agentSlug)}: .aioson/genomes/${sanitizeSegment(genome.genome.slug, 'genome')}.md`
     );
   }
 
@@ -1109,7 +1109,7 @@ function buildInstalledGenomeManifest(snapshot, sourceUrl) {
 }
 
 async function materializeImportedGenome(projectDir, payload, sourceUrl, force) {
-  const slug = sanitizeSegment(payload.genome.slug, 'genoma');
+  const slug = sanitizeSegment(payload.genome.slug, 'genome');
   const genomePath = localGenomeFilePath(projectDir, slug);
   const manifestPath = installedGenomeManifestPath(projectDir, slug);
 
@@ -1298,7 +1298,7 @@ async function loadLocalGenomeSnapshot(projectDir, slug, options = {}) {
     genome: {
       id: null,
       name: genomeName,
-      slug: sanitizeSegment(slug, 'genoma'),
+      slug: sanitizeSegment(slug, 'genome'),
       description: options.description ? String(options.description).trim() : firstParagraph(markdown),
       visibility: String(options.visibility || 'PRIVATE').toUpperCase(),
       status: 'PUBLISHED',
@@ -1353,7 +1353,7 @@ async function buildAppliedGenomesFromMetadata(projectDir, metadataContent, opti
     const genomeAbsPath = path.join(projectDir, normalizeRel(genomeRelPath));
     const markdown = await fs.readFile(genomeAbsPath, 'utf8').catch(() => null);
     if (!markdown) continue;
-    const slug = sanitizeSegment(path.basename(genomeAbsPath, '.md'), 'genoma');
+    const slug = sanitizeSegment(path.basename(genomeAbsPath, '.md'), 'genome');
     items.push({
       scopeType: 'SQUAD',
       agentSlug: null,
@@ -1384,7 +1384,7 @@ async function buildAppliedGenomesFromMetadata(projectDir, metadataContent, opti
     const genomeAbsPath = path.join(projectDir, normalizeRel(entry.genomePath));
     const markdown = await fs.readFile(genomeAbsPath, 'utf8').catch(() => null);
     if (!markdown) continue;
-    const slug = sanitizeSegment(path.basename(genomeAbsPath, '.md'), 'genoma');
+    const slug = sanitizeSegment(path.basename(genomeAbsPath, '.md'), 'genome');
     items.push({
       scopeType: 'AGENT',
       agentSlug: entry.agentSlug,
@@ -1420,7 +1420,7 @@ async function buildAppliedGenomesFromBindings(projectDir, genomeBindings, optio
   const items = [];
 
   for (const binding of flattened) {
-    const genomeAbsPath = path.join(projectDir, '.aioson', 'genomas', `${binding.slug}.md`);
+    const genomeAbsPath = path.join(projectDir, '.aioson', 'genomes', `${binding.slug}.md`);
     const markdown = await fs.readFile(genomeAbsPath, 'utf8').catch(() => null);
     if (!markdown) continue;
 

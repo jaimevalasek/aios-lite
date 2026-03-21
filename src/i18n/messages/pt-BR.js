@@ -131,12 +131,12 @@ module.exports = {
     url_required: 'Informe --url com o endpoint JSON do snapshot do squad.',
     import_squad_dry_run: 'Dry run: squad {slug}@{version} pronto para import cloud.',
     import_squad_done: 'Snapshot do squad {slug}@{version} importado.',
-    import_genome_dry_run: 'Dry run: genoma {slug}@{version} pronto para import cloud.',
-    import_genome_done: 'Snapshot do genoma {slug}@{version} importado.',
+    import_genome_dry_run: 'Dry run: genome {slug}@{version} pronto para import cloud.',
+    import_genome_done: 'Snapshot do genome {slug}@{version} importado.',
     publish_squad_dry_run: 'Dry run: squad {slug}@{version} pronto para publish cloud.',
     publish_squad_done: 'Squad {slug}@{version} publicado no cloud.',
-    publish_genome_dry_run: 'Dry run: genoma {slug}@{version} pronto para publish cloud.',
-    publish_genome_done: 'Genoma {slug}@{version} publicado no cloud.'
+    publish_genome_dry_run: 'Dry run: genome {slug}@{version} pronto para publish cloud.',
+    publish_genome_done: 'Genome {slug}@{version} publicado no cloud.'
   },
   init: {
     usage_error:
@@ -782,7 +782,7 @@ module.exports = {
     sessions: '    Sessoes     : {count} ({path})',
     latest_html: '    Latest HTML : {value}',
     logs: '    Logs        : {count} ({path})',
-    genomes: '    Genomas     : {count} no squad / {agent_count} vinculos por agente'
+    genomes: '    Genomes     : {count} no squad / {agent_count} vinculos por agente'
   },
   squad_agent_create: {
     no_name: 'Uso: aioson squad:agent-create [path] --name=<nome-agente> [--type=agent|assistant|clone|worker] [--scope=my-agents|squad] [--squad=<slug>]',

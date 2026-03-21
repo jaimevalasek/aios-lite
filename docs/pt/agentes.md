@@ -21,10 +21,10 @@ O AIOSON tem agentes oficiais de projeto e também pode criar agentes de squad. 
 @dev          ← sempre o último antes do QA
 @qa           ← projetos SMALL e MEDIUM
 @squad        ← cria squads especializados no projeto
-@genoma       ← cria genomas de domínio reutilizáveis
+@genome       ← cria genomes de domínio reutilizáveis
 ```
 
-> Para o fluxo completo de `@squad` e `@genoma`, veja também [Squad e Genoma](./squad-genoma.md).
+> Para o fluxo completo de `@squad` e `@genome`, veja também [Squad e Genome](./squad-genome.md).
 > Para criar agentes customizados (my-agents e squad agents), veja [Agentes Customizados](./agentes-customizados.md).
 > Para uma explicação focada no agente de continuidade, veja também [Deyvin](./deyvin.md).
 
@@ -403,32 +403,32 @@ npx @jaimevalasek/aioson parallel:status
 - Metadata do squad
 - Estrutura de output, logs, mídia e sessão
 
-> Guia completo: [Squad e Genoma](./squad-genoma.md)
+> Guia completo: [Squad e Genome](./squad-genome.md)
 
 ---
 
-## @genoma
+## @genome
 
 **Quando usar:** Quando você quer criar uma base de conhecimento de domínio reutilizável e aplicá-la a squads ou agentes específicos.
 
 **O que faz:**
 - Gera `O que saber`, `Mentes` e `Skills`
-- Pode salvar em `.aioson/genomas/`
+- Pode salvar em `.aioson/genomes/`
 - Pode ser aplicado depois a um squad já existente
 - Atua como camada cognitiva do sistema, não como executor
 
 **Como ativar:**
 ```
-@genoma
+@genome
 ```
 
 **Entrega:**
-- Genoma estruturado
+- Genome estruturado
 - Opcionalmente, vínculo persistente com um squad
 
 **Não confundir:**
 - `skill` = capacidade operacional
-- `genoma` = forma de pensar, lentes e repertório
+- `genome` = forma de pensar, lentes e repertório
 - `executor` = quem faz o trabalho
 - `subagente` = investigação temporária
 
@@ -437,7 +437,7 @@ Quando uma skill vier do catálogo online ou de outro pacote, ela deve ser salva
 
 Depois disso, ela passa a ser parte real do pacote local da squad e deve ser considerada pelos agentes sob demanda.
 
-> Guia completo: [Squad e Genoma](./squad-genoma.md)
+> Guia completo: [Squad e Genome](./squad-genome.md)
 
 ---
 

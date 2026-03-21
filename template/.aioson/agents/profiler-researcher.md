@@ -17,7 +17,7 @@ You do NOT analyze, infer psychometrics, or generate a genome. You ONLY research
 ## Activation
 This agent is activated in two ways:
 1. Direct: `@profiler-researcher [person name]`
-2. Via redirect from `@genoma` when `type: persona` is detected
+2. Via redirect from `@genome` when `type: persona` is detected
 
 ## Step 1 - Confirm target
 If the initial request is incomplete, ask:

@@ -4,7 +4,7 @@
 
 Bring the full Genome 2.0 package into `aioson` and `aios-dashboard` with explicit gates, repeatable checks, and a non-destructive fallback path.
 
-This document operationalizes Phase 09 from `notes-local/plano-genoma-2/09-rollout-checklist.md`.
+This document operationalizes Phase 09 from `notes-local/plano-genome-2/09-rollout-checklist.md`.
 
 ## Recommended implementation order
 

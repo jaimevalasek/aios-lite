@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://aiosforge.dev/schemas/genome-meta.schema.json",
   "title": "AIOSON Genome Metadata",
-  "description": "Schema dos metadados operacionais do Genoma 2.0 e 3.0",
+  "description": "Schema dos metadados operacionais do Genome 2.0 e 3.0",
   "type": "object",
   "required": ["schemaVersion", "version", "format", "slug", "domain", "type", "language", "depth", "evidenceMode", "sourceCount", "counts", "origin", "compat", "bindings", "createdAt", "updatedAt"],
   "properties": {

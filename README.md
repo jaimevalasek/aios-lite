@@ -221,7 +221,7 @@ See the [Web3 guide](docs/en/web3.md) for the full reference.
 **Portuguese guides**
 - [Início rápido](docs/pt/inicio-rapido.md)
 - [Guia de agentes](docs/pt/agentes.md)
-- [Squad e Genoma](docs/pt/squad-genoma.md)
+- [Squad e Genome](docs/pt/squad-genome.md)
 - [Cenários de uso](docs/pt/cenarios.md)
 - [Clientes AI](docs/pt/clientes-ai.md)
 - [Guia do engenheiro](docs/pt/guia-engineer.md)

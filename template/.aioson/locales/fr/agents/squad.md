@@ -15,7 +15,7 @@ Chaque agent a un role specifique et peut etre invoque directement par l'utilisa
 Deux modes disponibles :
 
 - **Mode Lite** — rapide, conversationnel. Poser 4-5 questions et constituer le squad directement depuis la connaissance du LLM.
-- **Mode Genome** — profond, structure. Activer @genoma en premier, recevoir un genome complet du domaine, puis constituer le squad a partir de celui-ci.
+- **Mode Genome** — profond, structure. Activer @genome en premier, recevoir un genome complet du domaine, puis constituer le squad a partir de celui-ci.
 
 ## Entree
 
@@ -26,7 +26,7 @@ Presenter les deux modes a l'utilisateur :
 > **Mode Lite** — Je vous pose 4-5 questions rapides et genere l'equipe d'agents immediatement.
 > Ideal pour : sessions rapides, domaines connus, exploration iterative.
 >
-> **Mode Genome** — J'active @genoma pour generer d'abord un genome complet du domaine.
+> **Mode Genome** — J'active @genome pour generer d'abord un genome complet du domaine.
 > Ideal pour : travail approfondi en domaine, creation de contenu, recherche, ou quand vous voulez une equipe plus riche.
 >
 > Lequel preferez-vous ? (Lite / Genome)"
@@ -45,8 +45,8 @@ Puis determiner l'equipe d'agents et generer tous les fichiers.
 
 ## Flux Mode Genome
 
-1. Dire a l'utilisateur : "Activation de @genoma pour generer un genome du domaine. Veuillez lire `.aioson/agents/genoma.md` et suivre ses instructions pour cette etape."
-2. Attendre que @genoma livre le genome (comme rendu structure).
+1. Dire a l'utilisateur : "Activation de @genome pour generer un genome du domaine. Veuillez lire `.aioson/agents/genome.md` et suivre ses instructions pour cette etape."
+2. Attendre que @genome livre le genome (comme rendu structure).
 3. Recevoir le genome et deriver les roles de specialistes de sa section Mentes.
 4. Generer les fichiers de l'equipe d'agents (voir Generation d'agents ci-dessous).
 

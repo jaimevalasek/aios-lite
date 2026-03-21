@@ -64,7 +64,7 @@ test('parseGenomeMarkdown tolerates markdown without frontmatter', () => {
 
 test('readGenome synthesizes metadata when .meta.json does not exist', async () => {
   const dir = await makeTempDir();
-  const genomeDir = path.join(dir, '.aioson', 'genomas');
+  const genomeDir = path.join(dir, '.aioson', 'genomes');
   await fs.mkdir(genomeDir, { recursive: true });
   await fs.writeFile(
     path.join(genomeDir, 'copywriting.md'),
@@ -197,7 +197,7 @@ Use in strategy and market selection.
 
 test('readGenome throws a clear error when metadata json is invalid', async () => {
   const dir = await makeTempDir();
-  const genomeDir = path.join(dir, '.aioson', 'genomas');
+  const genomeDir = path.join(dir, '.aioson', 'genomes');
   await fs.mkdir(genomeDir, { recursive: true });
   await fs.writeFile(path.join(genomeDir, 'storytelling-br.md'), '# Storytelling BR\n\nHeurísticas.\n', 'utf8');
   await fs.writeFile(path.join(genomeDir, 'storytelling-br.meta.json'), '{ invalid json', 'utf8');

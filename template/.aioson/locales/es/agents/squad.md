@@ -15,7 +15,7 @@ Cada agente tiene un rol especifico y puede ser invocado directamente por el usu
 Dos modos disponibles:
 
 - **Modo Lite** — rapido, conversacional. Hacer 4-5 preguntas y armar el squad directo desde el conocimiento del LLM.
-- **Modo Genoma** — profundo, estructurado. Activar @genoma primero, recibir un genoma completo del dominio, luego armar el squad a partir de el.
+- **Modo Genome** — profundo, estructurado. Activar @genome primero, recibir un genome completo del dominio, luego armar el squad a partir de el.
 
 ## Entrada
 
@@ -26,10 +26,10 @@ Presentar ambos modos al usuario:
 > **Modo Lite** — Te hago 4-5 preguntas rapidas y genero el equipo de agentes enseguida.
 > Mejor para: sesiones rapidas, dominios conocidos, exploracion iterativa.
 >
-> **Modo Genoma** — Activo @genoma para generar un genoma completo del dominio primero.
+> **Modo Genome** — Activo @genome para generar un genome completo del dominio primero.
 > Mejor para: trabajo profundo en dominio, creacion de contenido, investigacion, o cuando quieres un equipo mas rico.
 >
-> ¿Cual prefieres? (Lite / Genoma)"
+> ¿Cual prefieres? (Lite / Genome)"
 
 ## Flujo Modo Lite
 
@@ -43,11 +43,11 @@ Preguntar en secuencia (una a la vez, conversacionalmente):
 
 Luego determinar el equipo de agentes y generar todos los archivos.
 
-## Flujo Modo Genoma
+## Flujo Modo Genome
 
-1. Decirle al usuario: "Activando @genoma para generar un genoma del dominio. Por favor lee `.aioson/agents/genoma.md` y sigue sus instrucciones para este paso."
-2. Esperar que @genoma entregue el genoma (como output estructurado).
-3. Recibir el genoma y derivar los roles de especialistas de su seccion Mentes.
+1. Decirle al usuario: "Activando @genome para generar un genome del dominio. Por favor lee `.aioson/agents/genome.md` y sigue sus instrucciones para este paso."
+2. Esperar que @genome entregue el genome (como output estructurado).
+3. Recibir el genome y derivar los roles de especialistas de su seccion Mentes.
 4. Generar los archivos del equipo de agentes (ver Generacion de agentes abajo).
 
 ## Clasificacion de ejecutores
@@ -63,7 +63,7 @@ TAREA / ROL
   │   ├── SI → type: human-gate (punto de aprobacion con reglas graduales)
   │   └── NO ↓
   ├── ¿Debe replicar la metodologia de una persona real especifica?
-  │   ├── SI → type: clone (requiere genoma de la persona)
+  │   ├── SI → type: clone (requiere genome de la persona)
   │   └── NO ↓
   ├── ¿Es un dominio especializado que exige expertise profunda?
   │   ├── SI → type: assistant (especialista de dominio)
@@ -78,7 +78,7 @@ Mostrar la clasificacion al usuario como parte de la confirmacion del squad.
 **Reglas por tipo:**
 - `worker` → generar script en `workers/` (Python o bash), NO en `agents/`
 - `agent` → generar `.md` en `agents/` (flujo estandar)
-- `clone` → generar `.md` en `agents/` + referenciar genoma con `genomeSource`
+- `clone` → generar `.md` en `agents/` + referenciar genome con `genomeSource`
 - `assistant` → generar `.md` en `agents/` + incluir `domain` y `behavioralProfile`
 - `human-gate` → registrar en manifiesto JSON + workflow; no genera archivo `.md`
 
@@ -264,7 +264,7 @@ Agregar una seccion de Squad a `CLAUDE.md` en la raiz del proyecto:
 Guardar un resumen en `.aioson/squads/{slug}.md`:
 ```
 Squad: {squad-name}
-Mode: [Lite / Genoma]
+Mode: [Lite / Genome]
 Goal: {goal}
 Agents: agents/{squad-slug}/
 Output: output/{squad-slug}/
@@ -341,7 +341,7 @@ Despues de guardar el archivo:
 
 ## Restricciones
 
-- NO inventar hechos del dominio — quedarse dentro del conocimiento del LLM o del genoma.
+- NO inventar hechos del dominio — quedarse dentro del conocimiento del LLM o del genome.
 - NO saltarse el calentamiento — es obligatorio tras la generacion.
 - NO guardar en memoria a menos que el usuario lo pida explicitamente.
 - Agentes van en `agents/{squad-slug}/`, HTML en `output/{squad-slug}/` — NO dentro de `.aioson/`.

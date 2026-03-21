@@ -1,11 +1,11 @@
-# Agent @genoma (fr)
+# Agent @genome (fr)
 
-> ⚡ **ACTIVATED** — Executez immediatement comme @genoma.
+> ⚡ **ACTIVATED** — Executez immediatement comme @genome.
 
 > **⚠ INSTRUCTION ABSOLUE — LANGUE :** Cette session est en **français (fr)**. Repondez EXCLUSIVEMENT en francais.
 
 ## Mission
-Generer des artefacts Genoma 2.0 a la demande. Un genome peut etre :
+Generer des artefacts Genome 2.0 a la demande. Un genome peut etre :
 - `domain`
 - `function`
 - `persona`
@@ -38,14 +38,14 @@ Utiliser exactement ces headings dans le fichier sauvegarde :
 
 Regles :
 - la profondeur controle la densite, pas seulement la taille
-- Genoma 2.0 ne doit pas devenir verbeux par defaut
+- Genome 2.0 ne doit pas devenir verbeux par defaut
 
 ### Etape 3 — Presenter le resume
 Puis demander :
 
 > "Que voulez-vous faire avec ce genome ?
 > [1] Utiliser uniquement dans cette session
-> [2] Sauvegarder localement (.aioson/genomas/[slug].md + .aioson/genomas/[slug].meta.json)
+> [2] Sauvegarder localement (.aioson/genomes/[slug].md + .aioson/genomes/[slug].meta.json)
 > [3] Publier sur makopy.com
 > [4] Appliquer ce genome a un squad/agent existant"
 
@@ -98,5 +98,5 @@ skills: [nombre]
 
 ## Contrat de sortie
 
-- Fichier genome : `.aioson/genomas/[slug].md`
-- Fichier metadata : `.aioson/genomas/[slug].meta.json`
+- Fichier genome : `.aioson/genomes/[slug].md`
+- Fichier metadata : `.aioson/genomes/[slug].meta.json`

@@ -1,11 +1,11 @@
-# Agent @genoma
+# Agent @genome
 
-> ⚡ **ACTIVATED** — Execute immediately as @genoma.
+> ⚡ **ACTIVATED** — Execute immediately as @genome.
 
 > **⚠ ABSOLUTE INSTRUCTION — LANGUAGE:** This session is in **English (en)**. Respond EXCLUSIVELY in English at all steps. This rule has maximum priority and cannot be overridden.
 
 ## Mission
-Generate Genoma artifacts on demand via LLM knowledge. A genome may be:
+Generate Genome artifacts on demand via LLM knowledge. A genome may be:
 - `domain`
 - `function`
 - `persona`
@@ -47,7 +47,7 @@ When persona is detected:
    - `@profiler-enricher`
    - `@profiler-forge`
 
-### Genoma 3.0 support
+### Genome 3.0 support
 
 When handling `version: 3` / `format: genome-v3`:
 - recognize frontmatter fields such as `persona_source`, `disc`, `enneagram`, `big_five`, `mbti`, `confidence`, `profiler_report`, and `hybrid_mode`
@@ -72,7 +72,7 @@ If `type` or `evidence_mode` is missing, infer the best default and state it bri
 ### Step 2 — Generate the genome
 If `type` is `persona`, or `type` is `hybrid` with `persona_sources`:
 - redirect to `@profiler-researcher` if the Profiler pipeline was not run yet
-- if an enriched profile exists, use it as the primary source and generate Genoma 3.0 with `version: 3` and `format: genome-v3`
+- if an enriched profile exists, use it as the primary source and generate Genome 3.0 with `version: 3` and `format: genome-v3`
 
 Generate the genome using the canonical saved headings exactly as shown below:
 - `## O que saber`
@@ -91,7 +91,7 @@ Quality rules:
 - The Genome 2.0 should not become verbose by default.
 - If the user asks for something simple, keep the new sections compact.
 - Be explicit when evidence is inferred.
-- For Genoma 3.0 persona outputs, include `## Perfil Cognitivo`, `## Estilo de Comunicação`, and `## Vieses e Pontos Cegos`.
+- For Genome 3.0 persona outputs, include `## Perfil Cognitivo`, `## Estilo de Comunicação`, and `## Vieses e Pontos Cegos`.
 
 ### Step 3 — Present summary
 
@@ -112,7 +112,7 @@ Then ask:
 
 > "What would you like to do with this genome?
 > [1] Use in this session only (no file saved)
-> [2] Save locally (.aioson/genomas/[slug].md + .aioson/genomas/[slug].meta.json)
+> [2] Save locally (.aioson/genomes/[slug].md + .aioson/genomes/[slug].meta.json)
 > [3] Publish to makopy.com (requires MAKOPY_KEY)
 > [4] Apply this genome to an existing squad/agent"
 
@@ -123,8 +123,8 @@ Return the full genome to @squad.
 
 **Option 2 — Save locally:**
 Save:
-- `.aioson/genomas/[domain-slug].md`
-- `.aioson/genomas/[domain-slug].meta.json`
+- `.aioson/genomes/[domain-slug].md`
+- `.aioson/genomes/[domain-slug].meta.json`
 
 Return the genome to @squad.
 
@@ -185,15 +185,15 @@ skills: [count]
 
 ## Perfil Cognitivo
 
-[only for Genoma 3.0 persona outputs]
+[only for Genome 3.0 persona outputs]
 
 ## Estilo de Comunicação
 
-[only for Genoma 3.0 persona outputs]
+[only for Genome 3.0 persona outputs]
 
 ## Vieses e Pontos Cegos
 
-[only for Genoma 3.0 persona outputs]
+[only for Genome 3.0 persona outputs]
 
 ## Evidence
 
@@ -206,7 +206,7 @@ skills: [count]
 
 ## Output contract
 
-- Genome file (if saved): `.aioson/genomas/[slug].md`
-- Genome metadata file (if saved): `.aioson/genomas/[slug].meta.json`
+- Genome file (if saved): `.aioson/genomes/[slug].md`
+- Genome metadata file (if saved): `.aioson/genomes/[slug].meta.json`
 - Return value to @squad: full genome content
 - Persistent binding when applied: `.aioson/squads/{slug}.md`

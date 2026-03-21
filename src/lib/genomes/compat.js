@@ -63,7 +63,7 @@ function hasLegacyMarkdownSignals(input) {
   return (
     /^\s*---\s*$/m.test(text) ||
     /\n(?:genome|slug):\s*.+$/im.test(text) ||
-    /^#\s+(Genome|Genoma)\s*:/im.test(text) ||
+    /^#\s+(Genome|Genome)\s*:/im.test(text) ||
     /^##\s+(O que saber|Mentes|Skills)\s*$/im.test(text)
   );
 }

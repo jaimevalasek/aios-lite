@@ -1,17 +1,17 @@
-# Genoma 3.0 — Especificação de Formato
+# Genome 3.0 — Especificação de Formato
 
 > Versão: 3.0  
 > Status: Ativo  
-> Compatibilidade: retrocompatível com Genoma 2.0  
+> Compatibilidade: retrocompatível com Genome 2.0  
 > Data: 2026-03-13
 
 ---
 
 ## Visão geral
 
-O Genoma 3.0 estende o Genoma 2.0 com suporte a profiling de persona baseado em evidências. O objetivo é representar não só o que um domínio exige, mas como uma pessoa específica pensa sobre esse domínio.
+O Genome 3.0 estende o Genome 2.0 com suporte a profiling de persona baseado em evidências. O objetivo é representar não só o que um domínio exige, mas como uma pessoa específica pensa sobre esse domínio.
 
-O formato mantém as 10 seções canônicas do Genoma 2.0 e adiciona seções específicas para:
+O formato mantém as 10 seções canônicas do Genome 2.0 e adiciona seções específicas para:
 
 - perfil cognitivo
 - estilo de comunicação
@@ -20,7 +20,7 @@ O formato mantém as 10 seções canônicas do Genoma 2.0 e adiciona seções es
 
 ---
 
-## Tipos de genoma
+## Tipos de genome
 
 | Tipo | Versão mínima | Descrição |
 |------|---------------|-----------|
@@ -106,7 +106,7 @@ profiler_report: ".aioson/profiler-reports/stefan-georgi/enriched-profile.md"
 
 ## Seções canônicas
 
-### Obrigatórias em todo genoma
+### Obrigatórias em todo genome
 
 | Seção | Descrição |
 |-------|-----------|
@@ -200,7 +200,7 @@ Cobrir:
 - padrões típicos de erro
 - áreas de excesso de confiança
 - áreas de subconfiança
-- guidance compensatório para agentes que aplicarem o genoma
+- guidance compensatório para agentes que aplicarem o genome
 
 ### `## Conflict Resolution`
 
@@ -220,17 +220,17 @@ Cobrir:
 
 ### Leitura por sistema 2.0
 
-Um leitor de Genoma 2.0 deve conseguir:
+Um leitor de Genome 2.0 deve conseguir:
 
 - ignorar campos extras no frontmatter
 - ignorar seções extras
 - continuar lendo normalmente as 10 seções canônicas
 
-Isso torna o Genoma 3.0 retrocompatível por adição.
+Isso torna o Genome 3.0 retrocompatível por adição.
 
 ### Migração de 2.0 para 3.0
 
-Quando um genoma 2.0 recebe camada de persona:
+Quando um genome 2.0 recebe camada de persona:
 
 1. preservar o slug base quando fizer sentido
 2. elevar `version` para `3`
@@ -241,7 +241,7 @@ Quando um genoma 2.0 recebe camada de persona:
 
 ### Quick mode
 
-Quando um genoma persona for gerado sem profiler completo:
+Quando um genome persona for gerado sem profiler completo:
 
 - `evidence_mode: inferred`
 - `confidence: low`

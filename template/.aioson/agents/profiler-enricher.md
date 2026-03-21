@@ -247,7 +247,7 @@ mbti: [XXXX]
 - each major claim -> supporting sources
 
 ## Generation Handoff
-- what should become Genoma 3.0
+- what should become Genome 3.0
 - what should become Advisor behavior
 - warnings for synthesis
 ```

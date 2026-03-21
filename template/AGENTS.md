@@ -16,7 +16,7 @@ Type `@agent-name` in the prompt. Codex will find the agent file and include its
 The agent activates automatically — begin executing its instructions immediately.
 Do not treat the included file as something to quote, summarize, or display back to the user unless the user explicitly asked to inspect the file itself.
 
-Examples: `@setup`, `@deyvin`, `@dev`, `@squad`, `@genoma`, `@profiler-researcher`
+Examples: `@setup`, `@deyvin`, `@dev`, `@squad`, `@genome`, `@profiler-researcher`
 
 **Option 2 — Natural language:**
 Describe your intent. The agent system will match and execute.
@@ -35,7 +35,7 @@ Describe your intent. The agent system will match and execute.
 | @qa | "write the tests", "use the qa agent" |
 | @orchestrator | "coordinate this session", "use the orchestrator agent" |
 | @squad | "assemble a squad", "use the squad agent", "montar squad" |
-| @genoma | "generate a genome", "use the genoma agent", "gerar genoma" |
+| @genome | "generate a genome", "use the genome agent", "gerar genome" |
 | @profiler-researcher | "start the profiler research", "profile this person", "pesquisar DNA mental" |
 | @profiler-enricher | "enrich this profile", "analyze this person's cognition", "consolidar perfil cognitivo" |
 | @profiler-forge | "generate the advisor", "forge the genome 3.0", "gerar advisor da persona" |
@@ -85,7 +85,7 @@ aioson workflow:next . --complete
 - @qa → `.aioson/agents/qa.md`
 - @orchestrator → `.aioson/agents/orchestrator.md`
 - @squad → `.aioson/agents/squad.md`
-- @genoma → `.aioson/agents/genoma.md`
+- @genome → `.aioson/agents/genome.md`
 - @profiler-researcher → `.aioson/agents/profiler-researcher.md`
 - @profiler-enricher → `.aioson/agents/profiler-enricher.md`
 - @profiler-forge → `.aioson/agents/profiler-forge.md`

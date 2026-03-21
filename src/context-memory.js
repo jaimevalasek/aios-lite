@@ -136,7 +136,7 @@ const CONTEXT_DOC_SPECS = [
     relPath: SCAN_AIOSON_FILE,
     title: 'AIOSON Generated Map',
     group: 'scan',
-    readWhen: 'you need generated context pages, squads, genomas or local MCP artifacts',
+    readWhen: 'you need generated context pages, squads, genomes or local MCP artifacts',
     tags: ['scan', 'brownfield', 'aioson']
   }
 ];

@@ -46,10 +46,10 @@ test('squad:status reads metadata, sessions, latest html and logs', async () => 
       'Logs: aioson-logs/youtube-viral/',
       'LatestSession: output/youtube-viral/latest.html',
       'Genomes:',
-      '- .aioson/genomas/storytelling-retencao.md',
+      '- .aioson/genomes/storytelling-retencao.md',
       '',
       'AgentGenomes:',
-      '- roteirista-viral: .aioson/genomas/copy-youtube.md',
+      '- roteirista-viral: .aioson/genomes/copy-youtube.md',
       ''
     ].join('\n'),
     'utf8'
@@ -88,7 +88,7 @@ test('squad:status reads metadata, sessions, latest html and logs', async () => 
   assert.equal(logger.lines.some((line) => line.includes('Sessoes     : 1 (output/youtube-viral)')), true);
   assert.equal(logger.lines.some((line) => line.includes('Latest HTML : output/youtube-viral/latest.html')), true);
   assert.equal(logger.lines.some((line) => line.includes('Logs        : 1 (aioson-logs/youtube-viral)')), true);
-  assert.equal(logger.lines.some((line) => line.includes('Genomas     : 1 no squad / 1 vinculos por agente')), true);
+  assert.equal(logger.lines.some((line) => line.includes('Genomes     : 1 no squad / 1 vinculos por agente')), true);
 });
 
 test('squad:status falls back to agents directory when metadata is missing', async () => {
@@ -195,5 +195,5 @@ test('squad:status reads normalized genome bindings from squad.manifest.json', a
   assert.equal(result.count, 1);
   assert.deepEqual(result.squads[0].genomes, ['audience-research']);
   assert.deepEqual(result.squads[0].agentGenomes, ['researcher: trend-scan']);
-  assert.equal(logger.lines.some((line) => line.includes('Genomas     : 1 no squad / 1 vinculos por agente')), true);
+  assert.equal(logger.lines.some((line) => line.includes('Genomes     : 1 no squad / 1 vinculos por agente')), true);
 });

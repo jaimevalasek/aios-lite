@@ -12,7 +12,7 @@ const FIXTURES_ROOT = path.join(__dirname, '..', '..', 'tests', 'fixtures');
 
 async function ensureFixtureWorkspace(workspaceRoot) {
   const projectRoot = path.join(workspaceRoot, 'project');
-  const genomeDir = path.join(projectRoot, '.aioson', 'genomas');
+  const genomeDir = path.join(projectRoot, '.aioson', 'genomes');
   const squadsDir = path.join(projectRoot, '.aioson', 'squads');
 
   await fs.mkdir(genomeDir, { recursive: true });

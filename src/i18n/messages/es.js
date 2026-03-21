@@ -689,7 +689,7 @@ module.exports = {
     sessions: '    Sesiones    : {count} ({path})',
     latest_html: '    Latest HTML : {value}',
     logs: '    Logs        : {count} ({path})',
-    genomes: '    Genomas     : {count} en el squad / {agent_count} vinculos por agente'
+    genomes: '    Genomes     : {count} en el squad / {agent_count} vinculos por agente'
   },
   scan_project: {
     scanning: 'aioson scan:project — escaneando {dir}',

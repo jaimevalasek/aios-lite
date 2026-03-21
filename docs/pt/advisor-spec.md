@@ -9,7 +9,7 @@
 
 ## O que é um Advisor
 
-Um Advisor é um agente operacional completo baseado no perfil cognitivo inferido de uma pessoa real. Ele não é um genoma aplicado passivamente; ele opera diretamente em modo consultivo.
+Um Advisor é um agente operacional completo baseado no perfil cognitivo inferido de uma pessoa real. Ele não é um genome aplicado passivamente; ele opera diretamente em modo consultivo.
 
 Capacidades esperadas:
 
@@ -21,16 +21,16 @@ Capacidades esperadas:
 
 ---
 
-## Advisor versus Genoma
+## Advisor versus Genome
 
-| Aspecto | Genoma | Advisor |
+| Aspecto | Genome | Advisor |
 |---------|--------|---------|
 | Tipo | Artefato passivo de conhecimento | Agente ativo |
 | Execução direta | Não | Sim, em modo consultivo |
 | Web search | Não | Sim |
 | Memória | Não | Sim |
 | Uso principal | Enriquecer executores | Opinar, desafiar, aconselhar |
-| Localização | `.aioson/genomas/` | `.aioson/advisors/` |
+| Localização | `.aioson/genomes/` | `.aioson/advisors/` |
 
 ---
 
@@ -53,7 +53,7 @@ mbti: "[XXXX]"
 confidence: [low|medium|high]
 
 profiler_report: ".aioson/profiler-reports/[slug]/enriched-profile.md"
-genome: ".aioson/genomas/[slug].md"
+genome: ".aioson/genomes/[slug].md"
 
 web_search: true
 memory: true

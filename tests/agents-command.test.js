@@ -58,14 +58,14 @@ test('agent:prompt bootstraps direct runtime handoff for non-workflow agents', a
   const logger = createCollectLogger();
 
   const result = await runAgentPrompt({
-    args: ['genoma', dir],
+    args: ['genome', dir],
     options: { tool: 'codex' },
     logger,
     t
   });
 
   assert.equal(result.ok, true);
-  assert.equal(result.agent, 'genoma');
+  assert.equal(result.agent, 'genome');
   assert.equal(result.routed, false);
   assert.equal(Boolean(result.runtime), true);
 
@@ -74,7 +74,7 @@ test('agent:prompt bootstraps direct runtime handoff for non-workflow agents', a
     const run = runtime.db.prepare("SELECT agent_name, source, status FROM agent_runs ORDER BY updated_at DESC LIMIT 1").get();
     const event = runtime.db.prepare("SELECT event_type, phase FROM execution_events ORDER BY created_at DESC, id DESC LIMIT 1").get();
 
-    assert.equal(run.agent_name, '@genoma');
+    assert.equal(run.agent_name, '@genome');
     assert.equal(run.source, 'direct');
     assert.equal(run.status, 'queued');
     assert.equal(event.event_type, 'prompt.generated');

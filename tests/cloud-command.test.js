@@ -154,7 +154,7 @@ function createGenomeSnapshot() {
       id: 'gn_cloud_1',
       name: 'Storytelling BR',
       slug: 'storytelling-br',
-      description: 'Genoma para storytelling em portugues.',
+      description: 'Genome para storytelling em portugues.',
       visibility: 'FREE',
       status: 'PUBLISHED',
       sourceKind: 'AIOSLITE',
@@ -210,7 +210,7 @@ test('cloud:import:squad imports snapshot into .aioson/cloud-imports', async () 
   assert.match(metadataRaw, /Package: \.aioson\/squads\/youtube-creator\//);
   assert.match(metadataRaw, /Agents: \.aioson\/squads\/youtube-creator\/agents\//);
   assert.match(metadataRaw, /storytelling-retencao\.md/);
-  assert.match(metadataRaw, /roteirista-viral: \.aioson\/genomas\/copy-ctr\.md/);
+  assert.match(metadataRaw, /roteirista-viral: \.aioson\/genomes\/copy-ctr\.md/);
 
   const orchestratorRaw = await fs.readFile(
     path.join(projectDir, '.aioson', 'squads', 'youtube-creator', 'agents', 'orquestrador.md'),
@@ -256,7 +256,7 @@ test('cloud:import:squad imports snapshot into .aioson/cloud-imports', async () 
   assert.match(stubRaw, /The cloud snapshot did not include a full prompt body/);
 
   const genomeRaw = await fs.readFile(
-    path.join(projectDir, '.aioson', 'genomas', 'storytelling-retencao.md'),
+    path.join(projectDir, '.aioson', 'genomes', 'storytelling-retencao.md'),
     'utf8'
   );
   assert.match(genomeRaw, /# O que saber/);
@@ -318,7 +318,7 @@ test('cloud:import:genome imports snapshot into .aioson/cloud-imports and materi
   assert.equal(imported.genome.slug, 'storytelling-br');
 
   const genomeRaw = await fs.readFile(
-    path.join(projectDir, '.aioson', 'genomas', 'storytelling-br.md'),
+    path.join(projectDir, '.aioson', 'genomes', 'storytelling-br.md'),
     'utf8'
   );
   assert.match(genomeRaw, /# O que saber/);
@@ -357,7 +357,7 @@ test('cloud:publish:genome posts local genome snapshot to cloud endpoint', async
   const projectDir = await makeTempDir();
   const logger = createLogger();
   const { t } = createTranslator('en');
-  const genomePath = path.join(projectDir, '.aioson', 'genomas', 'storytelling-br.md');
+  const genomePath = path.join(projectDir, '.aioson', 'genomes', 'storytelling-br.md');
   await fs.mkdir(path.dirname(genomePath), { recursive: true });
   await fs.writeFile(genomePath, '# Storytelling BR\n\nHeuristicas para videos.\n', 'utf8');
 
@@ -397,7 +397,7 @@ test('cloud:publish:squad posts local squad snapshot to cloud endpoint', async (
 
   await fs.mkdir(path.join(projectDir, '.aioson', 'squads', 'youtube-creator', 'agents'), { recursive: true });
   await fs.mkdir(path.join(projectDir, '.aioson', 'squads', 'youtube-creator', 'docs'), { recursive: true });
-  await fs.mkdir(path.join(projectDir, '.aioson', 'genomas'), { recursive: true });
+  await fs.mkdir(path.join(projectDir, '.aioson', 'genomes'), { recursive: true });
   await fs.mkdir(path.join(projectDir, 'media', 'youtube-creator'), { recursive: true });
 
   await fs.writeFile(
@@ -562,12 +562,12 @@ test('cloud:publish:squad posts local squad snapshot to cloud endpoint', async (
     'utf8'
   );
   await fs.writeFile(
-    path.join(projectDir, '.aioson', 'genomas', 'storytelling-retencao.md'),
+    path.join(projectDir, '.aioson', 'genomes', 'storytelling-retencao.md'),
     '# Storytelling Retencao\n\nGancho e retencao.\n',
     'utf8'
   );
   await fs.writeFile(
-    path.join(projectDir, '.aioson', 'genomas', 'copy-ctr.md'),
+    path.join(projectDir, '.aioson', 'genomes', 'copy-ctr.md'),
     '# Copy CTR\n\nTitulos com CTR.\n',
     'utf8'
   );
@@ -625,7 +625,7 @@ test('cloud:publish:squad falls back to textual genome sections when manifest bi
 
   await fs.mkdir(path.join(projectDir, '.aioson', 'squads', 'legacy-creator', 'agents'), { recursive: true });
   await fs.mkdir(path.join(projectDir, '.aioson', 'squads', 'legacy-creator', 'docs'), { recursive: true });
-  await fs.mkdir(path.join(projectDir, '.aioson', 'genomas'), { recursive: true });
+  await fs.mkdir(path.join(projectDir, '.aioson', 'genomes'), { recursive: true });
 
   await fs.writeFile(
     path.join(projectDir, '.aioson', 'squads', 'legacy-creator', 'squad.md'),
@@ -635,10 +635,10 @@ test('cloud:publish:squad falls back to textual genome sections when manifest bi
       'Agents: .aioson/squads/legacy-creator/agents/',
       '',
       'Genomes:',
-      '- .aioson/genomas/storytelling-retencao.md',
+      '- .aioson/genomes/storytelling-retencao.md',
       '',
       'AgentGenomes:',
-      '- roteirista-viral: .aioson/genomas/copy-ctr.md',
+      '- roteirista-viral: .aioson/genomes/copy-ctr.md',
       ''
     ].join('\n'),
     'utf8'
@@ -684,12 +684,12 @@ test('cloud:publish:squad falls back to textual genome sections when manifest bi
     'utf8'
   );
   await fs.writeFile(
-    path.join(projectDir, '.aioson', 'genomas', 'storytelling-retencao.md'),
+    path.join(projectDir, '.aioson', 'genomes', 'storytelling-retencao.md'),
     '# Storytelling Retencao\n\nGancho e retencao.\n',
     'utf8'
   );
   await fs.writeFile(
-    path.join(projectDir, '.aioson', 'genomas', 'copy-ctr.md'),
+    path.join(projectDir, '.aioson', 'genomes', 'copy-ctr.md'),
     '# Copy CTR\n\nTitulos com CTR.\n',
     'utf8'
   );

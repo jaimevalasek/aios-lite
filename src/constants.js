@@ -31,7 +31,7 @@ const MANAGED_FILES = [
   '.aioson/agents/qa.md',
   '.aioson/agents/orchestrator.md',
   '.aioson/agents/squad.md',
-  '.aioson/agents/genoma.md',
+  '.aioson/agents/genome.md',
   '.aioson/agents/profiler-researcher.md',
   '.aioson/agents/profiler-enricher.md',
   '.aioson/agents/profiler-forge.md',
@@ -48,7 +48,7 @@ const MANAGED_FILES = [
   '.aioson/locales/en/agents/qa.md',
   '.aioson/locales/en/agents/orchestrator.md',
   '.aioson/locales/en/agents/squad.md',
-  '.aioson/locales/en/agents/genoma.md',
+  '.aioson/locales/en/agents/genome.md',
   '.aioson/locales/en/agents/profiler-researcher.md',
   '.aioson/locales/en/agents/profiler-enricher.md',
   '.aioson/locales/en/agents/profiler-forge.md',
@@ -65,7 +65,7 @@ const MANAGED_FILES = [
   '.aioson/locales/pt-BR/agents/qa.md',
   '.aioson/locales/pt-BR/agents/orchestrator.md',
   '.aioson/locales/pt-BR/agents/squad.md',
-  '.aioson/locales/pt-BR/agents/genoma.md',
+  '.aioson/locales/pt-BR/agents/genome.md',
   '.aioson/locales/pt-BR/agents/profiler-researcher.md',
   '.aioson/locales/pt-BR/agents/profiler-enricher.md',
   '.aioson/locales/pt-BR/agents/profiler-forge.md',
@@ -82,7 +82,7 @@ const MANAGED_FILES = [
   '.aioson/locales/es/agents/qa.md',
   '.aioson/locales/es/agents/orchestrator.md',
   '.aioson/locales/es/agents/squad.md',
-  '.aioson/locales/es/agents/genoma.md',
+  '.aioson/locales/es/agents/genome.md',
   '.aioson/locales/es/agents/profiler-researcher.md',
   '.aioson/locales/es/agents/profiler-enricher.md',
   '.aioson/locales/es/agents/profiler-forge.md',
@@ -99,7 +99,7 @@ const MANAGED_FILES = [
   '.aioson/locales/fr/agents/qa.md',
   '.aioson/locales/fr/agents/orchestrator.md',
   '.aioson/locales/fr/agents/squad.md',
-  '.aioson/locales/fr/agents/genoma.md',
+  '.aioson/locales/fr/agents/genome.md',
   '.aioson/locales/fr/agents/profiler-researcher.md',
   '.aioson/locales/fr/agents/profiler-enricher.md',
   '.aioson/locales/fr/agents/profiler-forge.md',
@@ -320,12 +320,12 @@ const AGENT_DEFINITIONS = [
       '.aioson/squads/{slug}/squad.manifest.json + .aioson/squads/{slug}/squad.md + .aioson/squads/{slug}/agents/ + .aioson/squads/{slug}/workers/ + .aioson/squads/{slug}/workflows/ + .aioson/squads/{slug}/checklists/ + .aioson/squads/{slug}/skills/ + .aioson/squads/{slug}/templates/ + .aioson/squads/{slug}/docs/ + output/{slug}/{session-id}.html + output/{slug}/{content-key}/content.json + output/{slug}/{content-key}/index.html + output/{slug}/latest.html + aioson-logs/{slug}/ + media/{slug}/'
   },
   {
-    id: 'genoma',
-    displayName: 'Genoma',
-    command: '@genoma',
-    path: '.aioson/agents/genoma.md',
+    id: 'genome',
+    displayName: 'Genome',
+    command: '@genome',
+    path: '.aioson/agents/genome.md',
     dependsOn: [],
-    output: '.aioson/genomas/[slug].md + .aioson/genomas/[slug].meta.json + optional binding in .aioson/squads/{slug}/squad.md or .aioson/squads/{slug}/squad.manifest.json'
+    output: '.aioson/genomes/[slug].md + .aioson/genomes/[slug].meta.json + optional binding in .aioson/squads/{slug}/squad.md or .aioson/squads/{slug}/squad.manifest.json'
   },
   {
     id: 'profiler-researcher',
@@ -349,7 +349,7 @@ const AGENT_DEFINITIONS = [
     command: '@profiler-forge',
     path: '.aioson/agents/profiler-forge.md',
     dependsOn: ['.aioson/profiler-reports/{person-slug}/enriched-profile.md'],
-    output: '.aioson/genomas/{person-slug}-{domain-slug}.md + .aioson/genomas/{person-slug}-{domain-slug}.meta.json + .aioson/advisors/{person-slug}-advisor.md'
+    output: '.aioson/genomes/{person-slug}-{domain-slug}.md + .aioson/genomes/{person-slug}-{domain-slug}.meta.json + .aioson/advisors/{person-slug}-advisor.md'
   }
 ];
 

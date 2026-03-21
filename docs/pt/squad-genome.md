@@ -1,31 +1,31 @@
-# Squad e Genoma
+# Squad e Genome
 
-> Guia prático para usar `@squad` e `@genoma` no AIOSON sem confundir time operacional, skill e camada cognitiva.
+> Guia prático para usar `@squad` e `@genome` no AIOSON sem confundir time operacional, skill e camada cognitiva.
 
 ---
 
 ## Visão rápida
 
-`@squad` e `@genoma` resolvem problemas diferentes:
+`@squad` e `@genome` resolvem problemas diferentes:
 
 - `@squad` cria uma **squad modular em pacote** sob `.aioson/squads/{squad-slug}/`
-- `@genoma` cria uma **base estruturada de conhecimento e lentes cognitivas** em `.aioson/genomas/{slug}.md`
+- `@genome` cria uma **base estruturada de conhecimento e lentes cognitivas** em `.aioson/genomes/{slug}.md`
 
 Em termos simples:
 
 - `skill` define **o que saber fazer**
-- `genoma` define **como pensar**
+- `genome` define **como pensar**
 - `@squad` organiza isso em **pacote versionável, executores leves, output, logs e media**
 - o `@orquestrador` gerado para cada squad consolida o trabalho em HTML
 
 ---
 
-## Distinção central: skill, genoma, executor e subagente
+## Distinção central: skill, genome, executor e subagente
 
 Essa separação precisa ficar estável no sistema:
 
 - `skill` é capacidade operacional reutilizável
-- `genoma` é lente cognitiva, repertório e forma de pensar
+- `genome` é lente cognitiva, repertório e forma de pensar
 - `agente executor` é um trabalhador permanente da squad
 - `subagente` é uma unidade temporária de investigação, comparação ou paralelismo
 - `agents.md` é o manifesto curto da squad, não é um executor
@@ -44,16 +44,16 @@ Skill responde à pergunta:
 
 > "O que este sistema sabe fazer bem?"
 
-### Genoma
+### Genome
 
-Use genoma para descrever algo como:
+Use genome para descrever algo como:
 
 - mente de estrategista editorial
 - mente de copywriter de retenção
 - mente de advogado cético
 - mente de criador viral
 
-Genoma responde à pergunta:
+Genome responde à pergunta:
 
 > "Com que lentes este sistema pensa, julga e escolhe?"
 
@@ -80,7 +80,7 @@ Use para:
 Não use subagente como substituto de:
 
 - skill
-- genoma
+- genome
 - executor permanente
 
 ---
@@ -194,9 +194,9 @@ Esses agentes não são os agentes oficiais da aioson. Eles são executores do s
 
 ---
 
-## O que é um genoma
+## O que é um genome
 
-Um genoma é um artefato de domínio e cognição. Ele descreve:
+Um genome é um artefato de domínio e cognição. Ele descreve:
 
 - `O que saber`: conceitos, tensões, heurísticas e linguagem do domínio
 - `Mentes`: perspectivas cognitivas úteis para pensar naquele domínio
@@ -206,22 +206,22 @@ Um genoma é um artefato de domínio e cognição. Ele descreve:
 Exemplo:
 
 ```text
-.aioson/genomas/storytelling-retencao-youtube.md
+.aioson/genomes/storytelling-retencao-youtube.md
 ```
 
-Esse genoma não faz trabalho sozinho. Ele não substitui o agente. Ele não substitui skill. Ele enriquece a forma como os agentes executam suas skills.
+Esse genome não faz trabalho sozinho. Ele não substitui o agente. Ele não substitui skill. Ele enriquece a forma como os agentes executam suas skills.
 
-### Como pensar no genoma na prática
+### Como pensar no genome na prática
 
-O jeito mais útil de entender genoma é:
+O jeito mais útil de entender genome é:
 
 - `skill` = ferramenta
-- `genoma` = mente
+- `genome` = mente
 
 Exemplo:
 
 - o agente `@roteirista-viral` pode ter a skill de `roteiro-short-form`
-- o genoma `storytelling-retencao-youtube` muda como esse agente pensa:
+- o genome `storytelling-retencao-youtube` muda como esse agente pensa:
   - que tipo de hook priorizar
   - que tensão narrativa abrir
   - que payoff prometer
@@ -229,9 +229,9 @@ Exemplo:
 
 Então, para o sistema:
 
-- skill sem genoma pode executar
-- genoma sem skill não executa
-- executor com skill + genoma tende a entregar melhor
+- skill sem genome pode executar
+- genome sem skill não executa
+- executor com skill + genome tende a entregar melhor
 
 Quando uma skill vier do catálogo online ou de outro pacote, ela deve ser salva em:
 
@@ -243,20 +243,20 @@ Depois disso, essa skill passa a ser parte real do pacote local da squad e deve 
 
 ---
 
-## Genoma não é clone literal de pessoa
+## Genome não é clone literal de pessoa
 
 Se você quiser usar uma inspiração autoral, prefira este pensamento:
 
-- melhor: `genoma de estilo editorial`
-- melhor: `genoma de raciocínio`
-- melhor: `genoma de storytelling`
+- melhor: `genome de estilo editorial`
+- melhor: `genome de raciocínio`
+- melhor: `genome de storytelling`
 - evitar como regra principal: `clone da pessoa X`
 
 O uso mais saudável é:
 
-- "genoma de copy de retenção"
-- "genoma de estratégia editorial para YouTube"
-- "genoma de narrativa emocional"
+- "genome de copy de retenção"
+- "genome de estratégia editorial para YouTube"
+- "genome de narrativa emocional"
 
 Isso deixa o sistema:
 
@@ -266,16 +266,16 @@ Isso deixa o sistema:
 
 ---
 
-## Relação entre squad e genoma
+## Relação entre squad e genome
 
 O modelo recomendado é:
 
 1. criar o squad
-2. criar ou importar genomas
-3. aplicar genomas ao squad inteiro ou a agentes específicos
+2. criar ou importar genomes
+3. aplicar genomes ao squad inteiro ou a agentes específicos
 4. chamar os agentes normalmente
 
-Depois que o genoma é aplicado, o usuário não deveria precisar repetir isso em toda sessão.
+Depois que o genome é aplicado, o usuário não deveria precisar repetir isso em toda sessão.
 O vínculo precisa ficar salvo no metadata do squad e refletido no manifesto da squad.
 
 Exemplo:
@@ -296,11 +296,11 @@ Media: media/youtube-creator/
 LatestSession: output/youtube-creator/latest.html
 
 Genomes:
-- .aioson/genomas/storytelling-retencao-youtube.md
+- .aioson/genomes/storytelling-retencao-youtube.md
 
 AgentGenomes:
-- roteirista-viral: .aioson/genomas/redacao-emocional-youtube.md
-- copywriter-thumbnail: .aioson/genomas/copy-ctr-youtube.md
+- roteirista-viral: .aioson/genomes/redacao-emocional-youtube.md
+- copywriter-thumbnail: .aioson/genomes/copy-ctr-youtube.md
 ```
 
 ---
@@ -440,13 +440,13 @@ Isso evita que dashboard e cloud passem a depender de payloads quebrados.
 O fluxo recomendado agora é mais direto:
 
 - `@squad` cria e mantém squads
-- `@genoma` cria e aplica genomas
+- `@genome` cria e aplica genomes
 
 Na prática:
 
-- `@squad` não deve abrir perguntando entre Lite e Genoma
+- `@squad` não deve abrir perguntando entre Lite e Genome
 - `@squad` entra direto nas perguntas para criação da squad
-- `@genoma` é chamado separadamente quando o usuário quiser enriquecer a squad
+- `@genome` é chamado separadamente quando o usuário quiser enriquecer a squad
 
 ---
 
@@ -476,26 +476,26 @@ Resultado esperado:
 - criação de `output/youtube-creator/`, `aioson-logs/youtube-creator/` e `media/youtube-creator/`
 - geração de `output/youtube-creator/latest.html`
 
-### Cenário 2: criar um genoma depois
+### Cenário 2: criar um genome depois
 
 ```text
-@genoma
-Quero um genoma para storytelling com retenção alta em vídeos longos do YouTube Brasil.
+@genome
+Quero um genome para storytelling com retenção alta em vídeos longos do YouTube Brasil.
 ```
 
 Depois:
 
 ```text
-Aplicar este genoma ao squad youtube-creator.
+Aplicar este genome ao squad youtube-creator.
 Aplicar especialmente ao agente @roteirista-viral.
 ```
 
 Resultado esperado:
 
-- genoma salvo em `.aioson/genomas/...`
+- genome salvo em `.aioson/genomes/...`
 - vínculo salvo no metadata do squad
 - manifesto da squad refletindo o vínculo
-- agente `roteirista-viral.md` reescrito com `## Genomas ativos`
+- agente `roteirista-viral.md` reescrito com `## Genomes ativos`
 
 ### Cenário 3: usar o agente depois disso
 
@@ -504,7 +504,7 @@ Resultado esperado:
 Crie um roteiro para um vídeo sobre como aprender inglês sem pagar curso.
 ```
 
-O agente já deve operar com os genomas vinculados, sem o usuário repetir tudo.
+O agente já deve operar com os genomes vinculados, sem o usuário repetir tudo.
 
 ---
 
@@ -520,10 +520,10 @@ aioson-logs/{squad-slug}/
 media/{squad-slug}/
 ```
 
-### Genoma
+### Genome
 
 ```text
-.aioson/genomas/{genoma-slug}.md
+.aioson/genomes/{genome-slug}.md
 ```
 
 ### Registro nos gateways
@@ -572,15 +572,15 @@ Não é o `@orchestrator` oficial da aioson.
 
 É o `@orquestrador` gerado dentro de `.aioson/squads/{squad-slug}/agents/`.
 
-### 2. Genoma não deve alterar agentes oficiais da aioson
+### 2. Genome não deve alterar agentes oficiais da aioson
 
-Não aplique genomas customizados do usuário em:
+Não aplique genomes customizados do usuário em:
 
 ```text
 .aioson/agents/
 ```
 
-Os genomas devem ser aplicados aos agentes criados em:
+Os genomes devem ser aplicados aos agentes criados em:
 
 ```text
 .aioson/squads/{squad-slug}/agents/
@@ -588,7 +588,7 @@ Os genomas devem ser aplicados aos agentes criados em:
 
 ### 3. O usuário pode mandar contexto grande
 
-Tanto no `@squad` quanto no `@genoma`, o usuário pode enviar:
+Tanto no `@squad` quanto no `@genome`, o usuário pode enviar:
 
 - textos longos
 - PDFs ou arquivos
@@ -597,7 +597,7 @@ Tanto no `@squad` quanto no `@genoma`, o usuário pode enviar:
 - anotações brutas
 - exemplos de referência
 
-### 4. Um genoma pode ser do squad inteiro ou de um agente
+### 4. Um genome pode ser do squad inteiro ou de um agente
 
 Use no squad inteiro quando o contexto vale para todos.
 
@@ -669,8 +669,8 @@ Depois que a squad produz output, o orquestrador pode analisar se o processo é 
 
 ## Boas práticas
 
-- comece criando a squad antes de enriquecer com genomas
-- aplique genomas ao menor escopo possível
+- comece criando a squad antes de enriquecer com genomes
+- aplique genomes ao menor escopo possível
 - use `agents.md` como mapa curto da squad
 - use `squad.manifest.json` como contrato de runtime e sync
 - deixe o orquestrador do squad cuidar do HTML final
@@ -678,17 +678,17 @@ Depois que a squad produz output, o orquestrador pode analisar se o processo é 
 
 ---
 
-## Genoma 3.0 e o Sistema Profiler
+## Genome 3.0 e o Sistema Profiler
 
-### O que é o Genoma 3.0
+### O que é o Genome 3.0
 
-O Genoma 3.0 estende o formato 2.0 com suporte a profiling de personas baseado em evidência. Enquanto o Genoma 2.0 responde "como pensar sobre um assunto", o Genoma 3.0 responde "como uma pessoa específica pensa sobre um assunto".
+O Genome 3.0 estende o formato 2.0 com suporte a profiling de personas baseado em evidência. Enquanto o Genome 2.0 responde "como pensar sobre um assunto", o Genome 3.0 responde "como uma pessoa específica pensa sobre um assunto".
 
 ### Tipos de output
 
 | Output | O que é | Onde vive |
 |--------|---------|-----------|
-| Genoma 3.0 | Conhecimento destilado + perfil cognitivo | `.aioson/genomas/` |
+| Genome 3.0 | Conhecimento destilado + perfil cognitivo | `.aioson/genomes/` |
 | Advisor Agent | Conselheiro ativo com a lente da persona | `.aioson/advisors/` |
 
 ### O pipeline profiler
@@ -700,12 +700,12 @@ O sistema profiler é composto por 3 agentes:
 2. `@profiler-enricher`
    Consolida evidências, material do usuário e análise cognitiva
 3. `@profiler-forge`
-   Gera Genoma 3.0, Advisor ou ambos
+   Gera Genome 3.0, Advisor ou ambos
 
 O pipeline pode começar:
 
 - diretamente com `@profiler-researcher [nome da pessoa]`
-- via redirect do `@genoma` quando `type: persona` for detectado
+- via redirect do `@genome` quando `type: persona` for detectado
 
 ### Dimensões capturadas
 
@@ -726,9 +726,9 @@ Perfis psicométricos devem ser tratados como `INFERIDOS`, nunca como avaliaçã
 
 ### Advisors
 
-Advisor não é genoma.
+Advisor não é genome.
 
-- genoma é passivo e serve para enriquecer executores
+- genome é passivo e serve para enriquecer executores
 - advisor é ativo e serve para opinar, questionar, analisar e aconselhar
 
 O advisor pode ter:
@@ -742,18 +742,18 @@ O advisor pode ter:
 
 Múltiplos advisors podem operar como board para analisar a mesma pergunta sob perspectivas diferentes. Isso é especialmente útil em decisões de alto impacto, estratégia, oferta e posicionamento.
 
-### Relação entre Genoma 3.0 e Advisor
+### Relação entre Genome 3.0 e Advisor
 
 O uso mais forte costuma ser combinado:
 
-- o Genoma 3.0 entra nos agentes executores do squad
+- o Genome 3.0 entra nos agentes executores do squad
 - o Advisor revisa, desafia e aconselha sobre os outputs produzidos
 
 Exemplo:
 
 ```text
 Squad: youtube-creator
-  Executores: @roteirista-viral (com Genoma 3.0 aplicado)
+  Executores: @roteirista-viral (com Genome 3.0 aplicado)
   Advisory: @stefan-advisor (analisa os roteiros produzidos)
 ```
 
@@ -765,13 +765,13 @@ Squad: youtube-creator
   enriched-profile.md
 ```
 
-Esses arquivos são a fonte de verdade para genomas e advisors gerados.
+Esses arquivos são a fonte de verdade para genomes e advisors gerados.
 
 ---
 
 ## O que ainda vem pela frente
 
-O modelo atual já suporta squads modulares, publish/import e genomas vinculados.
+O modelo atual já suporta squads modulares, publish/import e genomes vinculados.
 
 Os próximos blocos naturais do framework são:
 
@@ -780,4 +780,4 @@ Os próximos blocos naturais do framework são:
 - uso mais claro de skills e arquivos sob demanda
 - herança disso pelo `@squad` na criação de novas squads
 
-Ou seja: a base de squad/genoma já existe, mas ainda vai ficar mais forte quando o fluxo completo de discovery/design estiver costurado no core.
+Ou seja: a base de squad/genome já existe, mas ainda vai ficar mais forte quando o fluxo completo de discovery/design estiver costurado no core.

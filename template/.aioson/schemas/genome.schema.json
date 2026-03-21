@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://aiosforge.dev/schemas/genome.schema.json",
   "title": "AIOSON Genome",
-  "description": "Schema do objeto normalizado do Genoma 2.0 e 3.0",
+  "description": "Schema do objeto normalizado do Genome 2.0 e 3.0",
   "type": "object",
   "required": ["slug", "domain", "type", "language", "depth", "version", "format", "evidenceMode", "sections"],
   "properties": {

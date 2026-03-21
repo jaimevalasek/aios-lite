@@ -649,7 +649,7 @@ Dashboard mostra status de cada entrega
 
 ## Próximas Passos
 
-- Ler [Squad e Genoma](./squad-genoma.md) para entender estrutura geral
+- Ler [Squad e Genome](./squad-genome.md) para entender estrutura geral
 - Usar `aioson squad:validate` antes de rodar squads
 - Monitorar em `/squads/[slug]` → aba "Saída"
 - Debugar com `squad:doctor` se algo não funcionar

@@ -271,7 +271,7 @@ function extractTitle(markdown) {
     const match = line.match(/^#\s+(.+?)\s*$/);
     if (!match) continue;
     return match[1]
-      .replace(/^(Genome|Genoma)\s*:\s*/i, '')
+      .replace(/^(Genome|Genome)\s*:\s*/i, '')
       .trim();
   }
   return '';

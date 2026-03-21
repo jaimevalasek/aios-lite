@@ -20,7 +20,7 @@ const AGENTS = [
   'qa',
   'orchestrator',
   'squad',
-  'genoma',
+  'genome',
   'profiler-researcher',
   'profiler-enricher',
   'profiler-forge'
@@ -498,11 +498,11 @@ test('deyvin contract prioritizes rules, memory, runtime, and git fallback', asy
   }
 });
 
-test('squad and genoma contracts include genome binding workflow', async () => {
+test('squad and genome contracts include genome binding workflow', async () => {
   const squadBase = await read(path.join(ROOT, 'template/.aioson/agents/squad.md'));
   const squadPt = await read(path.join(ROOT, 'template/.aioson/locales/pt-BR/agents/squad.md'));
-  const genomaBase = await read(path.join(ROOT, 'template/.aioson/agents/genoma.md'));
-  const genomaPt = await read(path.join(ROOT, 'template/.aioson/locales/pt-BR/agents/genoma.md'));
+  const genomeBase = await read(path.join(ROOT, 'template/.aioson/agents/genome.md'));
+  const genomePt = await read(path.join(ROOT, 'template/.aioson/locales/pt-BR/agents/genome.md'));
 
   const squadTokens = [
     '## Discovery and design-doc before the squad',
@@ -543,7 +543,7 @@ test('squad and genoma contracts include genome binding workflow', async () => {
     'output/{squad-slug}/',
     'AgentGenomes:',
     'AGENTS.md: updated with `@agent` shortcuts',
-    'Do NOT offer `Genoma mode` as an initial `@squad` entry path.',
+    'Do NOT offer `Genome mode` as an initial `@squad` entry path.',
     'do not silently reuse the old squad',
     'HARD STOP — `@` ACTIVATION:',
     'Visual direction: sophisticated dark product UI, not neon dashboard UI',
@@ -554,8 +554,8 @@ test('squad and genoma contracts include genome binding workflow', async () => {
     '## Discovery e design doc antes da squad',
     '## Regra de paralelismo entre squads',
     '## App de dashboard do AIOSON',
-    '## Vinculo de genomas ao squad',
-    '## Genomas ativos',
+    '## Vinculo de genomes ao squad',
+    '## Genomes ativos',
     '## Padrao de resposta',
     'Me responda em um único bloco, se quiser:',
     'modo projeto',
@@ -589,14 +589,14 @@ test('squad and genoma contracts include genome binding workflow', async () => {
     'output/{squad-slug}/',
     'AgentGenomes:',
     'AGENTS.md: atualizado com atalhos `@agente`',
-    'NÃO ofereça `Modo Genoma` como etapa inicial do `@squad`.',
+    'NÃO ofereça `Modo Genome` como etapa inicial do `@squad`.',
     'nao reutilize silenciosamente a squad antiga',
     'HARD STOP — ATIVAÇÃO VIA `@`:',
     'Direção visual: escuro sofisticado e técnico, inspirado em produto premium, não em dashboard neon',
     'não reduza o trabalho dos agentes a título + uma frase'
   ];
 
-  const genomaTokens = [
+  const genomeTokens = [
     '[4] Apply this genome to an existing squad/agent',
     'AgentGenomes:',
     'Do not modify official `.aioson/agents/` files with user custom genomes',
@@ -625,10 +625,10 @@ test('squad and genoma contracts include genome binding workflow', async () => {
     'The Genome 2.0 should not become verbose by default'
   ];
 
-  const genomaPtTokens = [
-    '[4] Aplicar este genoma a um squad/agente já existente',
+  const genomePtTokens = [
+    '[4] Aplicar este genome a um squad/agente já existente',
     'AgentGenomes:',
-    'Não modifique agentes oficiais de `.aioson/agents/` com genomas customizados do usuário',
+    'Não modifique agentes oficiais de `.aioson/agents/` com genomes customizados do usuário',
     '## Integracao com pipeline persona',
     '@profiler-researcher',
     'version: 3',
@@ -651,13 +651,13 @@ test('squad and genoma contracts include genome binding workflow', async () => {
     '## Application notes',
     '.meta.json',
     'profundidade controla densidade, não só tamanho',
-    'o Genoma 2.0 não deve ficar verborrágico por padrão'
+    'o Genome 2.0 não deve ficar verborrágico por padrão'
   ];
 
   for (const token of squadTokens) assert.equal(squadBase.includes(token), true, `missing squad base token: ${token}`);
   for (const token of squadPtTokens) assert.equal(squadPt.includes(token), true, `missing squad pt token: ${token}`);
-  for (const token of genomaTokens) assert.equal(genomaBase.includes(token), true, `missing genoma base token: ${token}`);
-  for (const token of genomaPtTokens) assert.equal(genomaPt.includes(token), true, `missing genoma pt token: ${token}`);
+  for (const token of genomeTokens) assert.equal(genomeBase.includes(token), true, `missing genome base token: ${token}`);
+  for (const token of genomePtTokens) assert.equal(genomePt.includes(token), true, `missing genome pt token: ${token}`);
 });
 
 test('profiler agent contracts ship with workflow and localized wrappers', async () => {
@@ -671,7 +671,7 @@ test('profiler agent contracts ship with workflow and localized wrappers', async
   const baseChecks = [
     [researcherBase, ['## Mission', '## Step 2 - Research protocol', 'research-report.md', 'DECISION', 'WORK-SAMPLE', '## Hard constraints', '.aioson/context/']],
     [enricherBase, ['## Mission', '## Step 3 - Extract the cognitive profile', 'DISC Profile', 'MBTI', 'enriched-profile.md', '## Hard constraints', '.aioson/context/']],
-    [forgeBase, ['## Mission', 'Genoma 3.0', 'Advisor Agent', 'genome-v3', '.aioson/advisors/{person-slug}-advisor.md', '## Hard constraints', '.aioson/context/']]
+    [forgeBase, ['## Mission', 'Genome 3.0', 'Advisor Agent', 'genome-v3', '.aioson/advisors/{person-slug}-advisor.md', '## Hard constraints', '.aioson/context/']]
   ];
 
   for (const [content, tokens] of baseChecks) {

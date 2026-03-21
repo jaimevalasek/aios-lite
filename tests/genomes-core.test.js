@@ -148,8 +148,8 @@ test('writeGenome persists markdown and meta files together', async () => {
   const genome = createGenomeFixture();
   const result = await writeGenome(dir, genome);
 
-  const markdownPath = path.join(dir, '.aioson', 'genomas', 'growth-marketing.md');
-  const metaPath = path.join(dir, '.aioson', 'genomas', 'growth-marketing.meta.json');
+  const markdownPath = path.join(dir, '.aioson', 'genomes', 'growth-marketing.md');
+  const metaPath = path.join(dir, '.aioson', 'genomes', 'growth-marketing.meta.json');
   const markdown = await fs.readFile(markdownPath, 'utf8');
   const meta = JSON.parse(await fs.readFile(metaPath, 'utf8'));
 
@@ -166,8 +166,8 @@ test('writeGenome persists genome v3 persona metadata', async () => {
   const genome = createGenomeV3Fixture();
   const result = await writeGenome(dir, genome);
 
-  const markdownPath = path.join(dir, '.aioson', 'genomas', 'naval-ravikant-leverage.md');
-  const metaPath = path.join(dir, '.aioson', 'genomas', 'naval-ravikant-leverage.meta.json');
+  const markdownPath = path.join(dir, '.aioson', 'genomes', 'naval-ravikant-leverage.md');
+  const metaPath = path.join(dir, '.aioson', 'genomes', 'naval-ravikant-leverage.meta.json');
   const markdown = await fs.readFile(markdownPath, 'utf8');
   const meta = JSON.parse(await fs.readFile(metaPath, 'utf8'));
 

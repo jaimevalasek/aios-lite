@@ -77,15 +77,15 @@
 | `qa:scan` | Faz crawl automático do app e procura riscos | Quando quer inspeção ampla de rotas |
 | `qa:report` | Reexibe ou exporta o último relatório | Quando quer consultar ou regenerar o relatório |
 
-### Genomas e squads
+### Genomes e squads
 
 | Comando | O que faz | Quando usar |
 |---|---|---|
-| `genome:doctor` | Valida um arquivo de genoma | Quando quer checar integridade de um genoma |
-| `genome:migrate` | Migra genomas para o formato novo | Quando está atualizando genomas legados |
+| `genome:doctor` | Valida um arquivo de genome | Quando quer checar integridade de um genome |
+| `genome:migrate` | Migra genomes para o formato novo | Quando está atualizando genomes legados |
 | `squad:status` | Mostra visão geral das squads instaladas | Quando quer saber o estado atual das squads |
 | `squad:doctor` | Diagnostica saúde operacional das squads | Quando suspeita de drift, staleness ou artefatos faltando |
-| `squad:repair-genomes` | Corrige referências de genomas em manifesto de squad | Quando um manifesto aponta bindings quebrados |
+| `squad:repair-genomes` | Corrige referências de genomes em manifesto de squad | Quando um manifesto aponta bindings quebrados |
 | `squad:validate` | Valida a estrutura e o manifesto de uma squad específica | Antes de exportar ou publicar |
 | `squad:export` | Exporta uma squad local para snapshot/entrega | Quando quer empacotar a squad |
 | `squad:pipeline` | Lista, inspeciona ou acompanha pipelines declarados na squad | Quando a squad define pipelines reutilizáveis |
@@ -126,9 +126,9 @@
 | Comando | O que faz | Quando usar |
 |---|---|---|
 | `cloud:import:squad` | Importa snapshot remoto de squad para o projeto | Quando vai instalar ou sincronizar uma squad publicada |
-| `cloud:import:genome` | Importa snapshot remoto de genoma | Quando quer trazer um genoma publicado |
+| `cloud:import:genome` | Importa snapshot remoto de genome | Quando quer trazer um genome publicado |
 | `cloud:publish:squad` | Publica snapshot de uma squad local | Quando quer distribuir uma squad para outro projeto ou catálogo |
-| `cloud:publish:genome` | Publica snapshot de um genoma local | Quando quer versionar e compartilhar um genoma |
+| `cloud:publish:genome` | Publica snapshot de um genome local | Quando quer versionar e compartilhar um genome |
 
 ---
 
@@ -361,7 +361,7 @@ E mostra o que importa para operação do projeto, por exemplo:
 
 - páginas de contexto geradas
 - squads criadas
-- genomas criados
+- genomes criados
 - arquivos locais de MCP
 - outros artefatos específicos do uso real do cliente
 
@@ -482,11 +482,11 @@ Use este fluxo:
 
 Use isso quando quiser um painel local para acompanhar squads, runtime e entregas do projeto.
 
-### 16. Validar e migrar genomas
+### 16. Validar e migrar genomes
 
 ```bash
-aioson genome:doctor .aioson/genomas/fintech.md
-aioson genome:migrate .aioson/genomas --write
+aioson genome:doctor .aioson/genomes/fintech.md
+aioson genome:migrate .aioson/genomes --write
 ```
 
 Use `genome:doctor` para validar um arquivo individual e `genome:migrate` para atualizar um conjunto legado para o formato novo.
@@ -510,13 +510,13 @@ Use:
 - `squad:export` para empacotar a squad
 - `squad:pipeline` para inspecionar pipelines definidos dentro da squad
 
-### 18. Reparar bindings de genoma em squads
+### 18. Reparar bindings de genome em squads
 
 ```bash
 aioson squad:repair-genomes .aioson/squads/marketing/squad.manifest.json --write
 ```
 
-Use quando o manifesto da squad perdeu referências corretas para genomas ou ficou incompatível com a estrutura atual.
+Use quando o manifesto da squad perdeu referências corretas para genomes ou ficou incompatível com a estrutura atual.
 
 ### 19. Inicializar o runtime e indexar entregas
 
@@ -558,7 +558,7 @@ aioson runtime:fail . --run=run-001 --message="Dependencia externa indisponivel"
 
 Use quando a task ou a run precisa ser encerrada como falha, mantendo histórico no runtime.
 
-### 23. Publicar squads e genomas
+### 23. Publicar squads e genomes
 
 ```bash
 aioson cloud:publish:squad . --slug=marketing --resource-version=1.0.0 --base-url=https://aiosforge.com
@@ -567,7 +567,7 @@ aioson cloud:publish:genome . --slug=fintech --resource-version=1.0.0 --base-url
 
 Use quando você quer transformar artefatos locais em snapshots publicáveis e versionados.
 
-### 24. Importar squads e genomas publicados
+### 24. Importar squads e genomes publicados
 
 ```bash
 aioson cloud:import:squad . --url=https://aiosforge.com/snapshots/squads/marketing/1.0.0.json

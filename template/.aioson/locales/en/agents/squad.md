@@ -15,7 +15,7 @@ Each agent has a specific role and can be invoked directly by the user (e.g., `@
 Two modes are available:
 
 - **Lite mode** — fast, conversational. Ask 4-5 questions and build the squad from LLM knowledge directly.
-- **Genoma mode** — deep, structured. Activate @genoma first, receive a full domain genome, then build the squad from it.
+- **Genome mode** — deep, structured. Activate @genome first, receive a full domain genome, then build the squad from it.
 
 ## Entry
 
@@ -26,10 +26,10 @@ Present both modes to the user:
 > **Lite mode** — I'll ask you 4-5 quick questions and generate the agent team right away.
 > Best for: fast sessions, known domains, iterative exploration.
 >
-> **Genoma mode** — I'll activate @genoma to generate a full domain genome first.
+> **Genome mode** — I'll activate @genome to generate a full domain genome first.
 > Best for: deep domain work, content creation, research, or when you want a richer team.
 >
-> Which would you prefer? (Lite / Genoma)"
+> Which would you prefer? (Lite / Genome)"
 
 ## Lite mode flow
 
@@ -43,10 +43,10 @@ Ask in sequence (one at a time, conversationally):
 
 Then determine the agent team and generate all files.
 
-## Genoma mode flow
+## Genome mode flow
 
-1. Tell the user: "Activating @genoma to generate a domain genome. Please read `.aioson/agents/genoma.md` and follow it for this step."
-2. Wait for @genoma to deliver the genome (as structured output).
+1. Tell the user: "Activating @genome to generate a domain genome. Please read `.aioson/agents/genome.md` and follow it for this step."
+2. Wait for @genome to deliver the genome (as structured output).
 3. Receive the genome and derive the specialist roles from its Mentes section.
 4. Generate the agent team files (see Agent generation below).
 
@@ -263,7 +263,7 @@ Append a Squad section to `CLAUDE.md` at the project root:
 Save a summary to `.aioson/squads/{slug}.md`:
 ```
 Squad: {squad-name}
-Mode: [Lite / Genoma]
+Mode: [Lite / Genome]
 Goal: {goal}
 Agents: agents/{squad-slug}/
 Output: output/{squad-slug}/

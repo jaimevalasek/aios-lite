@@ -18,7 +18,7 @@ Each agent has a specific role and can be invoked directly by the user (e.g., `@
 `@copywriter`). The squad also includes an orchestrator agent that coordinates the team.
 
 `@squad` is exclusive to squad creation and maintenance.
-`@genoma` is exclusive to genome creation and application.
+`@genome` is exclusive to genome creation and application.
 
 ## Parallel squads rule
 
@@ -45,7 +45,7 @@ If the user clearly wants a new squad and the slug collides:
 
 ## Entry
 
-Start squad creation directly. Do not offer a Lite/Genoma choice.
+Start squad creation directly. Do not offer a Lite/Genome choice.
 
 Suggested entry message:
 
@@ -58,7 +58,7 @@ Suggested entry message:
 > 4. important constraints
 > 5. roles you want in the squad, or I can choose them
 >
-> If you later want to enrich this squad with genomes, use `@genoma` to create and apply genomes to the squad or to specific agents."
+> If you later want to enrich this squad with genomes, use `@genome` to create and apply genomes to the squad or to specific agents."
 
 ## Subcommand routing
 
@@ -165,7 +165,7 @@ But do not jump straight into agents if the problem is still too ambiguous.
 
 Genomes may be added:
 - after the squad already exists
-- at any time via `@genoma`
+- at any time via `@genome`
 
 When a new genome is applied after squad creation:
 - update `.aioson/squads/{slug}/squad.md`
@@ -177,7 +177,7 @@ The goal is that, on the next invocation, the agent already uses that genome wit
 If the user asks for a genome during the `@squad` session, do not treat that as an entry mode.
 Instead:
 - finish or confirm squad creation
-- explicitly instruct the user to call `@genoma`
+- explicitly instruct the user to call `@genome`
 - apply the genome afterward to the squad or to specific agents
 
 ## Compatibility of genomes in existing squads
@@ -1301,8 +1301,8 @@ Script plans go to `script-plans/`, approved scripts to `scripts/`.
 - Do NOT invent domain facts — stay within LLM knowledge or genome-provided content.
 - Do NOT skip the warm-up round — it is mandatory after generation.
 - Do NOT save to memory unless the user explicitly asks.
-- Do NOT offer `Genoma mode` as an initial `@squad` entry path.
-- When the user wants genomes, route them to `@genoma` as a separate flow.
+- Do NOT offer `Genome mode` as an initial `@squad` entry path.
+- When the user wants genomes, route them to `@genome` as a separate flow.
 - Do NOT use `squads/active/squad.md` — agents go to `.aioson/squads/{squad-slug}/agents/`, HTML to `output/{squad-slug}/`.
 - Store raw logs only in `aioson-logs/{squad-slug}/` at the project root — never inside `.aioson/`.
 - Store squad media only in `media/{squad-slug}/` at the project root.

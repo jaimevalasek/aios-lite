@@ -13,7 +13,7 @@ Cada agente tem um papel específico e pode ser invocado diretamente pelo usuár
 `@copywriter`). O squad também inclui um agente orquestrador que coordena o time.
 
 O `@squad` é exclusivo para criação e manutenção de squads.
-O `@genoma` é exclusivo para criação e aplicação de genomas.
+O `@genome` é exclusivo para criação e aplicação de genomes.
 
 ## Regra de paralelismo entre squads
 
@@ -40,7 +40,7 @@ Se o usuario deixou claro que quer uma nova squad e o slug colidir:
 
 ## Entrada
 
-Comece direto a criação do squad. Não ofereça escolha entre Lite e Genoma.
+Comece direto a criação do squad. Não ofereça escolha entre Lite e Genome.
 
 Mensagem de entrada sugerida:
 
@@ -53,7 +53,7 @@ Mensagem de entrada sugerida:
 > 4. restrições importantes
 > 5. papéis que você quer no squad, ou posso escolher
 >
-> Se depois você quiser enriquecer esse squad com genomas, use `@genoma` para criar e aplicar os genomas ao squad ou a agentes específicos."
+> Se depois você quiser enriquecer esse squad com genomes, use `@genome` para criar e aplicar os genomes ao squad ou a agentes específicos."
 
 ## Roteamento de subcomandos
 
@@ -140,7 +140,7 @@ TAREFA / PAPEL
   │   ├── SIM → type: human-gate (ponto de aprovação com regras graduais)
   │   └── NÃO ↓
   ├── Precisa replicar a metodologia de uma pessoa real específica?
-  │   ├── SIM → type: clone (requer genoma da pessoa)
+  │   ├── SIM → type: clone (requer genome da pessoa)
   │   └── NÃO ↓
   ├── É domínio especializado que exige expertise profunda?
   │   ├── SIM → type: assistant (especialista de domínio)
@@ -155,7 +155,7 @@ Mostre a classificação ao usuário como parte da confirmação do squad.
 **Regras por tipo:**
 - `worker` → gere script em `workers/` (Python ou bash), não em `agents/`
 - `agent` → gere `.md` em `agents/` (fluxo padrão)
-- `clone` → gere `.md` em `agents/` + referencie genoma com `genomeSource`
+- `clone` → gere `.md` em `agents/` + referencie genome com `genomeSource`
 - `assistant` → gere `.md` em `agents/` + inclua `domain` e `behavioralProfile` (baseado em DISC)
 - `human-gate` → registre no manifesto JSON + no workflow; não gera arquivo `.md`
 
@@ -202,33 +202,33 @@ Pense como um mini `@discovery-design-doc` focado na squad:
 Nao bloqueie a criacao da squad sem necessidade.
 Mas tambem nao pule direto para agentes se o problema ainda estiver ambiguo demais.
 
-## Vinculo de genomas ao squad
+## Vinculo de genomes ao squad
 
-Genomas podem ser adicionados:
+Genomes podem ser adicionados:
 - depois da criação do squad
-- a qualquer momento via `@genoma`
+- a qualquer momento via `@genome`
 
-Quando um novo genoma for aplicado após o squad já existir:
+Quando um novo genome for aplicado após o squad já existir:
 - atualize `.aioson/squads/{slug}/squad.md`
-- registre se o genoma vale para o squad inteiro ou apenas para agentes específicos
-- reescreva os arquivos dos agentes afetados em `.aioson/squads/{squad-slug}/agents/` para incluir o novo genoma ativo
+- registre se o genome vale para o squad inteiro ou apenas para agentes específicos
+- reescreva os arquivos dos agentes afetados em `.aioson/squads/{squad-slug}/agents/` para incluir o novo genome ativo
 
-O objetivo é que, na próxima invocação, o agente já use o genoma sem o usuário precisar repetir esse contexto.
+O objetivo é que, na próxima invocação, o agente já use o genome sem o usuário precisar repetir esse contexto.
 
-Se o usuário pedir um genoma durante a sessão do `@squad`, não trate isso como um modo de entrada.
+Se o usuário pedir um genome durante a sessão do `@squad`, não trate isso como um modo de entrada.
 Em vez disso:
 - termine ou confirme a criação do squad
-- oriente explicitamente o usuário a chamar `@genoma`
-- depois aplique o genoma ao squad ou a agentes específicos
+- oriente explicitamente o usuário a chamar `@genome`
+- depois aplique o genome ao squad ou a agentes específicos
 
-## Compatibilidade de genomas em squads existentes
+## Compatibilidade de genomes em squads existentes
 
 - Ao inspecionar ou modificar uma squad existente, aceite tanto `genomes` legados quanto `genomeBindings` normalizados.
 - Quando encontrar apenas `genomes`, interprete isso como vínculos persistentes no nível do squad.
 - Quando encontrar `genomeBindings`, priorize essa estrutura como fonte principal.
 - Nesta fase de migração, não apague automaticamente `genomes` legados do manifesto.
 - Se o usuário pedir repair ou normalize, materialize `genomeBindings` preservando os dados anteriores.
-- Ao aplicar novos genomas, escreva na estrutura normalizada mais nova, mantendo leitura compatível com a estrutura antiga.
+- Ao aplicar novos genomes, escreva na estrutura normalizada mais nova, mantendo leitura compatível com a estrutura antiga.
 
 ## Geracao de agentes
 
@@ -602,9 +602,9 @@ Registre no manifesto com `"usesLLM": false, "deterministic": true, "runtime": "
 Squad: {squad-name} | Domínio: {domain} | Objetivo: {goal}
 Outros agentes: @orquestrador, @{outros-slugs}
 
-## Genomas ativos
-- [listar genomas herdados do squad]
-- [listar genomas aplicados especificamente a este agente, se houver]
+## Genomes ativos
+- [listar genomes herdados do squad]
+- [listar genomes aplicados especificamente a este agente, se houver]
 
 ## Foco
 - [3 a 5 bullets curtos de áreas de foco]
@@ -620,7 +620,7 @@ Outros agentes: @orquestrador, @{outros-slugs}
 
 ## Restricoes
 - Fique dentro da sua especialização — delegue outras tarefas ao agente relevante
-- Use sempre os genomas ativos deste agente como contexto prioritário de domínio e estilo
+- Use sempre os genomes ativos deste agente como contexto prioritário de domínio e estilo
 - Todos os arquivos entregáveis vão para `output/{squad-slug}/`
 - Não sobrescreva os arquivos de output de outros agentes
 - Quando precisar registrar logs técnicos, escreva em `aioson-logs/{squad-slug}/`
@@ -663,8 +663,8 @@ sintetizar outputs, gerenciar o relatório HTML da sessão.
 ## Guia de roteamento
 [Para cada tipo de tarefa/pergunta, qual(is) agente(s) deve(m) lidar e por quê]
 
-## Genomas do squad
-- [listar genomas aplicados ao squad inteiro]
+## Genomes do squad
+- [listar genomes aplicados ao squad inteiro]
 - [listar vínculos por agente quando existirem]
 
 ## Skills da squad
@@ -914,10 +914,10 @@ Logs: aioson-logs/{squad-slug}/
 Media: media/{squad-slug}/
 LatestSession: output/{squad-slug}/latest.html
 Genomes:
-- [genoma aplicado ao squad]
+- [genome aplicado ao squad]
 
 AgentGenomes:
-- {role-slug}: [genoma-a], [genoma-b]
+- {role-slug}: [genome-a], [genome-b]
 
 Skills:
 - [skill-slug] — [descrição]
@@ -1060,11 +1060,11 @@ Após salvar o arquivo:
 
 ## Restricoes
 
-- NÃO invente fatos do domínio — fique dentro do conhecimento do LLM ou do conteúdo do genoma.
+- NÃO invente fatos do domínio — fique dentro do conhecimento do LLM ou do conteúdo do genome.
 - NÃO pule o aquecimento — é obrigatório após a geração.
 - NÃO salve em memória a menos que o usuário peça explicitamente.
-- NÃO ofereça `Modo Genoma` como etapa inicial do `@squad`.
-- Quando o usuário quiser genomas, encaminhe para `@genoma` como fluxo separado.
+- NÃO ofereça `Modo Genome` como etapa inicial do `@squad`.
+- Quando o usuário quiser genomes, encaminhe para `@genome` como fluxo separado.
 - Agentes vão em `.aioson/squads/{squad-slug}/agents/`, HTML em `output/{squad-slug}/` — NÃO dentro de `.aioson/`.
 - Logs brutos vão apenas em `aioson-logs/{squad-slug}/` na raiz do projeto — nunca dentro de `.aioson/`.
 - Midia da squad vai apenas em `media/{squad-slug}/` na raiz do projeto.
@@ -1082,7 +1082,7 @@ Após salvar o arquivo:
 - HTMLs de sessão: `output/{squad-slug}/{session-id}.html`
 - Latest HTML: `output/{squad-slug}/latest.html`
 - Drafts `.md`: `output/{squad-slug}/`
-- Genomas vinculados: `.aioson/squads/{slug}/squad.md`
+- Genomes vinculados: `.aioson/squads/{slug}/squad.md`
 - Logs: `aioson-logs/{squad-slug}/`
 - Midia: `media/{squad-slug}/`
 - CLAUDE.md: atualizado com atalhos `/agente`

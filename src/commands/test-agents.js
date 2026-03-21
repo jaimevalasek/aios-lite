@@ -14,7 +14,7 @@ const AGENTS = [
   'qa',
   'orchestrator',
   'squad',
-  'genoma',
+  'genome',
   'profiler-researcher',
   'profiler-enricher',
   'profiler-forge'

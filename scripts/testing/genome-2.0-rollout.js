@@ -15,7 +15,7 @@ const BLOCKS = {
     repo: 'core',
     command: ['npm', 'run', 'test:genome-2.0:block-a'],
     gate: [
-      'persistencia do genoma 2.0',
+      'persistencia do genome 2.0',
       'binding em squad estavel',
       'compatibilidade de leitura antiga e nova'
     ]
@@ -27,7 +27,7 @@ const BLOCKS = {
     command: ['npm', 'run', 'test:genome-2.0:block-b'],
     gate: [
       'artisan suporta Genome Brief',
-      'catalogo /genomes le genomas antigos e novos'
+      'catalogo /genomes le genomes antigos e novos'
     ]
   },
   C: {
@@ -37,7 +37,7 @@ const BLOCKS = {
     command: ['npm', 'run', 'test:genome-2.0:block-c'],
     gate: [
       'bindings de squad e executor estaveis',
-      'pipeline mostra genomas apenas como contexto'
+      'pipeline mostra genomes apenas como contexto'
     ]
   },
   D: {

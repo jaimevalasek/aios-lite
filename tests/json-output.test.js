@@ -75,7 +75,7 @@ function createGenomeSnapshot() {
       id: 'gn_cloud_1',
       name: 'Storytelling BR',
       slug: 'storytelling-br',
-      description: 'Genoma para storytelling em portugues.',
+      description: 'Genome para storytelling em portugues.',
       visibility: 'FREE',
       status: 'PUBLISHED',
       sourceKind: 'AIOSLITE',
@@ -241,7 +241,7 @@ test('cloud:import:genome --dry-run --json returns structured payload without hu
 
 test('cloud:publish:genome --dry-run --json returns structured payload without human logs', async () => {
   const dir = await makeTempDir();
-  const genomeDir = path.join(dir, '.aioson', 'genomas');
+  const genomeDir = path.join(dir, '.aioson', 'genomes');
   await fs.mkdir(genomeDir, { recursive: true });
   await fs.writeFile(path.join(genomeDir, 'storytelling-br.md'), '# Storytelling BR\n\nHeuristicas.\n', 'utf8');
 
@@ -266,7 +266,7 @@ test('cloud:publish:genome --dry-run --json returns structured payload without h
 
 test('genome:doctor --json returns compatible genome diagnosis', async () => {
   const dir = await makeTempDir();
-  const genomeDir = path.join(dir, '.aioson', 'genomas');
+  const genomeDir = path.join(dir, '.aioson', 'genomes');
   await fs.mkdir(genomeDir, { recursive: true });
   await fs.writeFile(
     path.join(genomeDir, 'legacy-copy.md'),
@@ -290,7 +290,7 @@ test('genome:doctor --json returns compatible genome diagnosis', async () => {
 
 test('genome:migrate --json returns dry-run payload without mutating files', async () => {
   const dir = await makeTempDir();
-  const genomeDir = path.join(dir, '.aioson', 'genomas');
+  const genomeDir = path.join(dir, '.aioson', 'genomes');
   const target = path.join(genomeDir, 'legacy-copy.md');
   await fs.mkdir(genomeDir, { recursive: true });
   const original = '---\ngenome: legacy-copy\ntype: domain\n---\n\n# Genome: Legacy Copy\n\n## O que saber\n\n- Oferta\n';
@@ -350,7 +350,7 @@ test('squad:repair-genomes --json returns dry-run payload without mutating manif
 test('cloud:publish:squad --dry-run --json returns structured payload without human logs', async () => {
   const dir = await makeTempDir();
   await fs.mkdir(path.join(dir, '.aioson', 'squads'), { recursive: true });
-  await fs.mkdir(path.join(dir, '.aioson', 'genomas'), { recursive: true });
+  await fs.mkdir(path.join(dir, '.aioson', 'genomes'), { recursive: true });
   await fs.mkdir(path.join(dir, 'agents', 'youtube-creator'), { recursive: true });
 
   await fs.writeFile(
@@ -361,7 +361,7 @@ test('cloud:publish:squad --dry-run --json returns structured payload without hu
       'Agents: agents/youtube-creator/',
       '',
       'Genomes:',
-      '- .aioson/genomas/storytelling-retencao.md',
+      '- .aioson/genomes/storytelling-retencao.md',
       ''
     ].join('\n'),
     'utf8'
@@ -372,7 +372,7 @@ test('cloud:publish:squad --dry-run --json returns structured payload without hu
     'utf8'
   );
   await fs.writeFile(
-    path.join(dir, '.aioson', 'genomas', 'storytelling-retencao.md'),
+    path.join(dir, '.aioson', 'genomes', 'storytelling-retencao.md'),
     '# Storytelling Retencao\n\nGancho e retencao.\n',
     'utf8'
   );

@@ -138,7 +138,7 @@ test('scan:project runs in local-only mode by default and writes folder-specific
     await fs.mkdir(path.join(projectDir, '.aioson', 'agents'), { recursive: true });
     await fs.mkdir(path.join(projectDir, '.aioson', 'context'), { recursive: true });
     await fs.mkdir(path.join(projectDir, '.aioson', 'squads', 'custom-squad'), { recursive: true });
-    await fs.mkdir(path.join(projectDir, '.aioson', 'genomas'), { recursive: true });
+    await fs.mkdir(path.join(projectDir, '.aioson', 'genomes'), { recursive: true });
     await fs.writeFile(path.join(projectDir, '.aioson', 'agents', 'setup.md'), '# managed\n', 'utf8');
     await fs.writeFile(path.join(projectDir, '.aioson', 'squads', 'memory.md'), '# managed memory\n', 'utf8');
     await fs.writeFile(
@@ -175,7 +175,7 @@ test('scan:project runs in local-only mode by default and writes folder-specific
       '{ "slug": "custom-squad" }\n',
       'utf8'
     );
-    await fs.writeFile(path.join(projectDir, '.aioson', 'genomas', 'demo.md'), '# demo genome\n', 'utf8');
+    await fs.writeFile(path.join(projectDir, '.aioson', 'genomes', 'demo.md'), '# demo genome\n', 'utf8');
 
     const { t } = createTranslator('pt-BR');
     const logger = createCollectLogger();
@@ -257,7 +257,7 @@ test('scan:project runs in local-only mode by default and writes folder-specific
     assert.match(forgeContent, /# AIOSON Generated Map/);
     assert.match(forgeContent, /## Context Pages/);
     assert.match(forgeContent, /## Squads/);
-    assert.match(forgeContent, /## Genomas/);
+    assert.match(forgeContent, /## Genomes/);
     assert.match(forgeContent, /\|-- \.aioson\/context\//);
     assert.match(forgeContent, /custom-squad\//);
     assert.match(forgeContent, /demo\.md/);

@@ -638,12 +638,12 @@ Um agente scaffold (Level 1) precisa de enriquecimento para chegar a Level 3. Aq
 - Use skill quando o conhecimento é genérico e compartilhável
 - Use agente quando precisa de identidade, voz e processo específico
 
-### Agentes customizados vs genomas
+### Agentes customizados vs genomes
 
-- **Genoma** = lente cognitiva passiva que enriquece agentes
+- **Genome** = lente cognitiva passiva que enriquece agentes
 - **Agente** = executor ativo que produz trabalho
-- Genomas são aplicados em agentes — não substituem agentes
-- Use `@genoma` para criar o genoma, depois aplique ao agente
+- Genomes são aplicados em agentes — não substituem agentes
+- Use `@genome` para criar o genome, depois aplique ao agente
 
 ---
 

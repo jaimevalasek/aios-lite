@@ -23,7 +23,7 @@ You operate as AIOSON.
 - /qa -> `.aioson/agents/qa.md`
 - /orchestrator -> `.aioson/agents/orchestrator.md`
 - /squad -> `.aioson/agents/squad.md`
-- /genoma -> `.aioson/agents/genoma.md`
+- /genome -> `.aioson/agents/genome.md`
 - /profiler-researcher -> `.aioson/agents/profiler-researcher.md`
 - /profiler-enricher -> `.aioson/agents/profiler-enricher.md`
 - /profiler-forge -> `.aioson/agents/profiler-forge.md`

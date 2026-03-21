@@ -12,7 +12,7 @@ const { assertValidGenome, assertValidGenomeMeta } = require('./genome-schema');
 const { ensureDir, exists } = require('./utils');
 
 function getGenomeDir(projectRoot) {
-  return path.join(projectRoot, '.aioson', 'genomas');
+  return path.join(projectRoot, '.aioson', 'genomes');
 }
 
 function getGenomeMarkdownPath(projectRoot, slug) {
