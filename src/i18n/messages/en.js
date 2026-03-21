@@ -76,7 +76,7 @@ module.exports = {
     help_squad_pipeline:
       'aioson squad:pipeline [path] [--sub=list|show|status] [--pipeline=<slug>] [--locale=en]',
     help_squad_agent_create:
-      'aioson squad:agent-create [path] --name=<name> [--scope=my-agents|squad] [--squad=<slug>] [--mission=<text>] [--locale=en]',
+      'aioson squad:agent-create [path] --name=<name> [--scope=my-agents|squad] [--squad=<slug>] [--type=agent|assistant|clone|worker] [--tier=0|1|2|3] [--disc=<profile>] [--mission=<text>] [--domain=<text>] [--specialist=<name>] [--with-infra] [--locale=en]',
     help_runtime_init:
       'aioson runtime:init [path] [--json] [--locale=en]',
     help_runtime_ingest:
@@ -751,8 +751,11 @@ module.exports = {
     genomes: '    Genomes     : {count} squad-level / {agent_count} agent bindings'
   },
   squad_agent_create: {
-    no_name: 'Usage: aioson squad:agent-create [path] --name=<agent-name> [--scope=my-agents|squad] [--squad=<slug>]',
+    no_name: 'Usage: aioson squad:agent-create [path] --name=<agent-name> [--type=agent|assistant|clone|worker] [--scope=my-agents|squad] [--squad=<slug>]',
     invalid_scope: 'Invalid scope: "{scope}". Use "my-agents" or "squad".',
+    invalid_type: 'Invalid type: "{type}". Use: agent, assistant, clone, worker.',
+    invalid_tier: 'Invalid tier: "{tier}". Use: 0 (foundation), 1 (master), 2 (systematizer), 3 (specialist).',
+    invalid_disc: 'Invalid DISC profile: "{disc}".',
     no_squads: 'No squads found. Create a squad first with @squad or provide --squad=<slug>.',
     squad_required: '--squad=<slug> required when scope is "squad".',
     squad_not_found: 'Squad "{squad}" not found.',
