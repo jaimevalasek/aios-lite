@@ -663,6 +663,10 @@ Evite:
 
 ---
 
+## Automação de processos
+
+Depois que a squad produz output, o orquestrador pode analisar se o processo é determinístico o suficiente para virar um script Python ou Node.js que roda sem LLM. Veja [Automação de Squads](./automacao-squads.md) para o guia completo com exemplos.
+
 ## Boas práticas
 
 - comece criando a squad antes de enriquecer com genomas

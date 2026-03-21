@@ -74,6 +74,7 @@ If the user includes a subcommand, route to the corresponding task:
 - `@squad pipeline <sub> [args]` → read and execute `.aioson/tasks/squad-pipeline.md`
 - `@squad create --from-artisan <id>` → read artisan PRD and use as blueprint source (see Artisan integration below)
 - `@squad --config=output --squad=<slug>` → read and execute `.aioson/tasks/squad-output-config.md`
+- `@squad automate <slug>` → analyze the last session and propose script plans (see **Automation extraction** below)
 
 If no subcommand is given (just `@squad` or `@squad` with freeform text):
 → Run the full flow: design → create → validate in sequence.
@@ -296,6 +297,8 @@ Every new squad must also include:
 - workers (deterministic scripts, no LLM) in `.aioson/squads/{squad-slug}/workers/`
 - workflows (phase pipelines with handoffs) in `.aioson/squads/{squad-slug}/workflows/`
 - checklists (quality validation) in `.aioson/squads/{squad-slug}/checklists/`
+- script plans (automation analysis) in `.aioson/squads/{squad-slug}/script-plans/`
+- scripts (approved automation scripts) in `.aioson/squads/{squad-slug}/scripts/`
 - metadata at `.aioson/squads/{slug}/squad.md`
 - `output/`, `aioson-logs/`, and `media/` directories
 
@@ -551,7 +554,9 @@ Also create `.aioson/squads/{squad-slug}/squad.manifest.json` with this minimum 
     "checklistsDir": ".aioson/squads/{squad-slug}/checklists",
     "skillsDir": ".aioson/squads/{squad-slug}/skills",
     "templatesDir": ".aioson/squads/{squad-slug}/templates",
-    "docsDir": ".aioson/squads/{squad-slug}/docs"
+    "docsDir": ".aioson/squads/{squad-slug}/docs",
+    "scriptPlansDir": ".aioson/squads/{squad-slug}/script-plans",
+    "scriptsDir": ".aioson/squads/{squad-slug}/scripts"
   },
   "rules": {
     "outputsDir": "output/{squad-slug}",
@@ -604,7 +609,8 @@ Also create `.aioson/squads/{squad-slug}/squad.manifest.json` with this minimum 
   ],
   "checklists": [],
   "workflows": [],
-  "genomes": []
+  "genomes": [],
+  "automations": []
 }
 ```
 
@@ -742,6 +748,12 @@ Cross-squad routing template:
 
 Never silently absorb tasks that belong to a sibling squad.
 Never duplicate capabilities that already exist in another squad.
+
+## Automation awareness
+After productive sessions that produce structured output, evaluate whether
+the process is automatable. If feasibility is medium or high, offer to
+create a script plan. Never insist — offer once and respect the user's choice.
+Script plans go to `.aioson/squads/{squad-slug}/script-plans/`, approved scripts to `.aioson/squads/{squad-slug}/scripts/`.
 
 ## Hard constraints
 - Always involve all relevant specialists for each challenge
@@ -1103,6 +1115,187 @@ Design guidelines:
 After writing the file:
 > "Results saved to `output/{squad-slug}/{session-id}.html` and `output/{squad-slug}/latest.html` — open in any browser."
 
+## Automation extraction — LLM-to-script
+
+After a productive session where the squad produces output, the orchestrator (or the user via `@squad automate <slug>`) can analyze whether the process is deterministic enough to be automated as a standalone script.
+
+**Why this matters:** Every time a squad runs the same kind of task, it costs LLM tokens. If the process follows a repeatable pattern (same inputs → same transformation → same output structure), a script can do it for free — locally, in CI/CD, cron, or serverless.
+
+### When to offer automation
+
+The orchestrator should offer automation analysis when **all** of these are true:
+
+- The session produced a concrete, structured output (not just conversation)
+- The process followed identifiable steps (not purely creative exploration)
+- The same kind of task is likely to recur with different inputs
+
+After delivering the final output, the orchestrator says:
+
+> "This process looks automatable. Want me to analyze if it can become a standalone script that runs without LLM?"
+
+If the user declines, move on. Do not insist.
+
+### Phase 1: Script plan (analysis)
+
+Analyze the session and write a script plan to `.aioson/squads/{squad-slug}/script-plans/{plan-slug}.md`:
+
+```markdown
+# Script Plan: {plan-slug}
+
+**Status:** proposed
+**Squad:** {squad-slug}
+**Session:** {session-id}
+**Language:** python | nodejs
+**Feasibility:** high | medium | low
+
+## What the LLM did
+[Concrete description of the process — not vague, not the full session transcript.
+Focus on the transformation: what inputs were consumed, what steps were applied, what output was produced.]
+
+## Automation feasibility analysis
+
+### Can be automated (deterministic parts)
+- [Step that follows a fixed rule]
+- [Transformation that is always the same]
+- [Format conversion, template filling, data extraction]
+
+### Cannot be automated (requires judgment)
+- [Creative decisions the LLM made]
+- [Ambiguous interpretations that required context]
+- [Quality judgments that depend on domain expertise]
+
+### Feasibility verdict
+[High/Medium/Low with one-line justification]
+
+## Script design
+
+### Inputs
+| Name | Type | Source | Example |
+|------|------|--------|---------|
+| [input_1] | file/string/json | [where it comes from] | [example value] |
+
+### Process
+1. [Read/parse inputs]
+2. [Transform step]
+3. [Validate step]
+4. [Write output]
+
+### Outputs
+| Name | Format | Location |
+|------|--------|----------|
+| [output_1] | [json/md/html/csv] | [where it goes] |
+
+### Dependencies
+- [npm package or pip package needed, if any]
+- Prefer zero or minimal dependencies
+
+### Limitations
+- [What this script will NOT handle — edge cases that still need LLM]
+- [When the user should fall back to the full squad instead]
+
+## Estimated effort
+[Small: < 100 lines | Medium: 100-300 lines | Large: 300+ lines]
+```
+
+**Rules for script plans:**
+- Be honest about feasibility. If the process is 80% creative, say `low` — do not force automation.
+- `medium` feasibility means: the script handles the repeatable core, but some steps may produce lower quality than the LLM version. Document which steps.
+- `high` feasibility means: the script can reproduce the LLM output with negligible quality loss for the defined input types.
+
+### Phase 2: Script generation (after user approval)
+
+When the user reviews the plan and says "ok", "approved", "implement it", or similar:
+
+1. Update the plan status to `approved`
+2. Generate the script at `.aioson/squads/{squad-slug}/scripts/{script-slug}.{ext}`
+3. The script must be **self-contained and runnable**:
+
+**For Python:**
+```python
+#!/usr/bin/env python3
+"""
+{script-name} — generated from squad:{squad-slug}
+Plan: script-plans/{plan-slug}.md
+
+Usage:
+  python {script-slug}.py --input=<path> [--output=<path>]
+"""
+```
+
+**For Node.js:**
+```javascript
+#!/usr/bin/env node
+/**
+ * {script-name} — generated from squad:{squad-slug}
+ * Plan: script-plans/{plan-slug}.md
+ *
+ * Usage:
+ *   node {script-slug}.js --input=<path> [--output=<path>]
+ */
+```
+
+**Script requirements:**
+- Parse CLI arguments (argparse for Python, process.argv or minimist for Node)
+- Read input from file or stdin
+- Write output to file or stdout
+- Include `--help` with usage description
+- Include `--dry-run` when the script writes files
+- Handle errors gracefully with clear messages
+- No hardcoded paths — everything via arguments or config
+- Reference the script plan in a header comment
+- If the script needs external packages, include a comment block listing them and install instructions
+
+4. After generating, update the plan status to `implemented`
+5. Register the automation in `squad.manifest.json`:
+
+```json
+{
+  "automations": [
+    {
+      "slug": "{script-slug}",
+      "plan": "script-plans/{plan-slug}.md",
+      "script": "scripts/{script-slug}.py",
+      "language": "python",
+      "status": "implemented",
+      "createdFrom": "{session-id}",
+      "inputs": ["description of expected inputs"],
+      "outputs": ["description of expected outputs"]
+    }
+  ]
+}
+```
+
+6. Tell the user:
+> "Script generated at `.aioson/squads/{squad-slug}/scripts/{script-slug}.py`.
+> Test with: `python .aioson/squads/{squad-slug}/scripts/{script-slug}.py --help`"
+
+### Phase 3: Iteration
+
+If the user tests the script and reports issues:
+- Fix the script in place (do not create a new file)
+- Update the plan with a `## Iterations` section documenting what changed
+- Keep the plan and script in sync
+
+### What NOT to automate
+
+Do not propose automation for:
+- Purely creative work (writing original content, brainstorming ideas)
+- Tasks that require web search or real-time data
+- Processes where the LLM's judgment is the primary value (code review, strategic analysis)
+- One-off tasks that will never recur
+
+### Orchestrator integration
+
+Add this to every generated orchestrator's Hard constraints:
+
+```markdown
+## Automation awareness
+After productive sessions that produce structured output, evaluate whether
+the process is automatable. If feasibility is medium or high, offer to
+create a script plan. Never insist — offer once and respect the user's choice.
+Script plans go to `script-plans/`, approved scripts to `scripts/`.
+```
+
 ## Hard constraints
 
 - Do NOT invent domain facts — stay within LLM knowledge or genome-provided content.
@@ -1128,6 +1321,8 @@ After writing the file:
 - Latest HTML: `output/{squad-slug}/latest.html`
 - Draft `.md` files: `output/{squad-slug}/`
 - Genome bindings: `.aioson/squads/{slug}/squad.md`
+- Script plans: `.aioson/squads/{squad-slug}/script-plans/`
+- Automation scripts: `.aioson/squads/{squad-slug}/scripts/`
 - Logs: `aioson-logs/{squad-slug}/`
 - Media: `media/{squad-slug}/`
 - CLAUDE.md: updated with `/agent` shortcuts

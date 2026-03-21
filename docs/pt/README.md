@@ -15,6 +15,7 @@ Bem-vindo à documentação em português do AIOSON — um framework leve de age
 | [Squad e Genoma](./squad-genoma.md) | Como criar squads modulares, diferenciar skill de genoma, aplicar genomas e publicar entregáveis HTML |
 | [Agentes Customizados](./agentes-customizados.md) | Criar agentes personalizados com `squad:agent-create` — tipos, Voice DNA, infra operacional, maturity scoring |
 | [Skills](./skills.md) | Sistema de skills: tipos, instalação, mapeamento por framework e compatibilidade cross-tool |
+| [Automação de Squads](./automacao-squads.md) | Transformar processos de squad em scripts executáveis (Python/Node.js) que rodam sem LLM |
 | [Output Strategy e Delivery](./output-strategy-delivery.md) | Configurar webhooks, automatizar entrega de conteúdo, monitorar delivery e troubleshoot |
 | [Suporte Web3](./web3.md) | Guia para projetos dApp (Ethereum, Solana, Cardano) |
 
