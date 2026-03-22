@@ -20,6 +20,7 @@ const { runMcpDoctor } = require('./commands/mcp-doctor');
 const { runPackageTest } = require('./commands/package-e2e');
 const { runWorkflowPlan } = require('./commands/workflow-plan');
 const { runWorkflowNext } = require('./commands/workflow-next');
+const { runWorkflowStatus } = require('./commands/workflow-status');
 const { runParallelInit } = require('./commands/parallel-init');
 const { runParallelDoctor } = require('./commands/parallel-doctor');
 const { runParallelAssign } = require('./commands/parallel-assign');
@@ -107,6 +108,8 @@ const JSON_SUPPORTED_COMMANDS = new Set([
   'workflow-plan',
   'workflow:next',
   'workflow-next',
+  'workflow:status',
+  'workflow-status',
   'agent:next',
   'agent-next',
   'parallel:init',
@@ -265,6 +268,7 @@ function printHelp(t, logger) {
   logHelpLine(t, logger, 'cli.help_test_package');
   logHelpLine(t, logger, 'cli.help_workflow_plan');
   logHelpLine(t, logger, 'cli.help_workflow_next');
+  logHelpLine(t, logger, 'cli.help_workflow_status');
   logHelpLine(t, logger, 'cli.help_parallel_init');
   logHelpLine(t, logger, 'cli.help_parallel_doctor');
   logHelpLine(t, logger, 'cli.help_parallel_assign');
@@ -401,7 +405,17 @@ async function main() {
       command === 'agent:next' ||
       command === 'agent-next'
     ) {
-      result = await runWorkflowNext({ args, options, logger: commandLogger, t });
+      // --status flag routes to workflow:status
+      if (options.status) {
+        result = await runWorkflowStatus({ args, options, logger: commandLogger, t });
+      } else {
+        result = await runWorkflowNext({ args, options, logger: commandLogger, t });
+      }
+    } else if (
+      command === 'workflow:status' ||
+      command === 'workflow-status'
+    ) {
+      result = await runWorkflowStatus({ args, options, logger: commandLogger, t });
     } else if (
       command === 'parallel:init' ||
       command === 'parallel-init' ||

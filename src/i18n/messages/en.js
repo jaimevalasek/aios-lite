@@ -32,7 +32,9 @@ module.exports = {
     help_workflow_plan:
       'aioson workflow:plan [path] [--classification=MICRO|SMALL|MEDIUM] [--json] [--locale=en]',
     help_workflow_next:
-      'aioson workflow:next [path] [--complete[=<agent>]] [--agent=<agent>] [--skip=<agent>] [--tool=codex|claude|gemini|opencode] [--json] [--locale=en]',
+      'aioson workflow:next [path] [--complete[=<agent>]] [--agent=<agent>] [--skip=<agent>] [--status] [--tool=codex|claude|gemini|opencode] [--json] [--locale=en]',
+    help_workflow_status:
+      'aioson workflow:status [path] [--json] [--locale=en]',
     help_parallel_init:
       'aioson parallel:init [path] [--workers=2..6] [--force] [--dry-run] [--json] [--locale=en]',
     help_parallel_doctor:

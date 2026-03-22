@@ -7,6 +7,7 @@ const { resolveAgentLocale } = require('../locales');
 const { validateProjectContextFile } = require('../context');
 const { exists, ensureDir } = require('../utils');
 const { syncWorkflowRuntime } = require('../execution-gateway');
+const { writeHandoff, buildWorkflowHandoff } = require('../session-handoff');
 
 const STATE_RELATIVE_PATH = '.aioson/context/workflow.state.json';
 const CONFIG_RELATIVE_PATH = '.aioson/context/workflow.config.json';
@@ -526,6 +527,12 @@ async function runWorkflowNext({ args, options, logger, t }) {
     activationAgent: activation.agent,
     completedStage
   });
+
+  // Generate session handoff when a stage completes or workflow finishes
+  if (completedStage || !activation.agent) {
+    const handoffData = buildWorkflowHandoff(state, completedStage, activation.agent);
+    await writeHandoff(targetDir, handoffData);
+  }
 
   const payload = {
     ok: true,

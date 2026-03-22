@@ -17,6 +17,7 @@ const {
   appendRunEvent
 } = require('../runtime-store');
 const { runAutoDelivery } = require('../delivery-runner');
+const { writeHandoff, buildRuntimeLogHandoff } = require('../session-handoff');
 
 const ALLOWED_LAYOUTS = new Set(['document', 'tabs', 'accordion', 'stack', 'mixed']);
 const DEFAULT_TEXT_FIELDS = ['content', 'text', 'body', 'lyrics', 'markdown'];
@@ -928,6 +929,16 @@ async function runRuntimeLog({ args, options = {}, logger, t }) {
       summary: options.summary,
       meta: options.meta ? (() => { try { return JSON.parse(options.meta); } catch { return { raw: options.meta }; } })() : undefined
     });
+
+    // Generate session handoff on --finish
+    if (options.finish) {
+      const handoffData = buildRuntimeLogHandoff(
+        agentName,
+        options.message || '',
+        options.summary || ''
+      );
+      await writeHandoff(targetDir, handoffData);
+    }
 
     if (!options.json) {
       const isFinish = Boolean(options.finish);
