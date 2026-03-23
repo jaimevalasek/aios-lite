@@ -128,8 +128,11 @@ async function openRuntimeDb(targetDir, options = {}) {
       task_key TEXT PRIMARY KEY,
       squad_slug TEXT,
       session_key TEXT,
+      task_kind TEXT,
+      parent_task_key TEXT,
       title TEXT NOT NULL,
       goal TEXT,
+      meta_json TEXT,
       status TEXT NOT NULL,
       created_by TEXT,
       created_at TEXT NOT NULL,
@@ -410,6 +413,25 @@ function normalizeTaskStatus(value, fallback) {
 }
 
 function ensureLegacyColumns(db) {
+  const taskColumns = db.prepare('PRAGMA table_info(tasks)').all();
+  const taskColumnNames = new Set(taskColumns.map((column) => column.name));
+
+  if (!taskColumnNames.has('task_kind')) {
+    db.exec('ALTER TABLE tasks ADD COLUMN task_kind TEXT');
+  }
+
+  if (!taskColumnNames.has('parent_task_key')) {
+    db.exec('ALTER TABLE tasks ADD COLUMN parent_task_key TEXT');
+  }
+
+  if (!taskColumnNames.has('meta_json')) {
+    db.exec('ALTER TABLE tasks ADD COLUMN meta_json TEXT');
+  }
+
+  db.exec('CREATE INDEX IF NOT EXISTS idx_tasks_session ON tasks(session_key, updated_at DESC)');
+  db.exec('CREATE INDEX IF NOT EXISTS idx_tasks_parent ON tasks(parent_task_key, updated_at DESC)');
+  db.exec('CREATE INDEX IF NOT EXISTS idx_tasks_kind ON tasks(task_kind, updated_at DESC)');
+
   const agentRunColumns = db.prepare('PRAGMA table_info(agent_runs)').all();
   const agentRunColumnNames = new Set(agentRunColumns.map((column) => column.name));
 
@@ -562,21 +584,27 @@ function startTask(db, options) {
   const now = nowIso();
   const taskKey = String(options.taskKey || createTaskKey(options.title));
   const status = normalizeTaskStatus(options.status, 'running');
+  const metaJson = options.metaJson && typeof options.metaJson === 'object'
+    ? JSON.stringify(options.metaJson)
+    : (typeof options.metaJson === 'string' && options.metaJson.trim() ? options.metaJson.trim() : null);
 
   db.prepare(`
     INSERT INTO tasks (
-      task_key, squad_slug, session_key, title, goal, status, created_by,
-      created_at, updated_at, finished_at
+      task_key, squad_slug, session_key, task_kind, parent_task_key,
+      title, goal, meta_json, status, created_by, created_at, updated_at, finished_at
     ) VALUES (
-      @task_key, @squad_slug, @session_key, @title, @goal, @status, @created_by,
-      @created_at, @updated_at, @finished_at
+      @task_key, @squad_slug, @session_key, @task_kind, @parent_task_key,
+      @title, @goal, @meta_json, @status, @created_by, @created_at, @updated_at, @finished_at
     )
   `).run({
     task_key: taskKey,
     squad_slug: options.squadSlug ? String(options.squadSlug).trim() : null,
     session_key: options.sessionKey ? String(options.sessionKey).trim() : null,
+    task_kind: options.taskKind ? String(options.taskKind).trim() : null,
+    parent_task_key: options.parentTaskKey ? String(options.parentTaskKey).trim() : null,
     title: String(options.title).trim(),
     goal: options.goal ? String(options.goal).trim() : null,
+    meta_json: metaJson,
     status,
     created_by: options.createdBy ? String(options.createdBy).trim() : null,
     created_at: now,
@@ -595,12 +623,18 @@ function updateTask(db, options) {
 
   const now = nowIso();
   const nextStatus = normalizeTaskStatus(options.status, existing.status || 'running');
+  const metaJson = options.metaJson && typeof options.metaJson === 'object'
+    ? JSON.stringify(options.metaJson)
+    : (typeof options.metaJson === 'string' && options.metaJson.trim() ? options.metaJson.trim() : null);
 
   db.prepare(`
     UPDATE tasks
     SET
       status = @status,
       goal = COALESCE(@goal, goal),
+      task_kind = COALESCE(@task_kind, task_kind),
+      parent_task_key = COALESCE(@parent_task_key, parent_task_key),
+      meta_json = COALESCE(@meta_json, meta_json),
       updated_at = @updated_at,
       finished_at = CASE
         WHEN @status IN ('completed', 'failed') THEN @updated_at
@@ -611,6 +645,9 @@ function updateTask(db, options) {
     task_key: String(options.taskKey),
     status: nextStatus,
     goal: options.goal ? String(options.goal).trim() : null,
+    task_kind: options.taskKind ? String(options.taskKind).trim() : null,
+    parent_task_key: options.parentTaskKey ? String(options.parentTaskKey).trim() : null,
+    meta_json: metaJson,
     updated_at: now
   });
 
@@ -723,6 +760,52 @@ function parseJsonArray(value) {
   } catch {
     return [];
   }
+}
+
+
+function parseJsonObject(value) {
+  if (!value) return null;
+  try {
+    const parsed = JSON.parse(value);
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function getTaskPlanProgress(meta) {
+  const steps = Array.isArray(meta?.plan_steps) ? meta.plan_steps : [];
+  return {
+    plan_steps_done: steps.filter((step) => step && step.done).length,
+    plan_steps_total: steps.length
+  };
+}
+
+function decorateTaskSnapshotRow(row) {
+  const meta = parseJsonObject(row.meta_json);
+  const progress = getTaskPlanProgress(meta);
+  row.meta = meta;
+  row.plan_steps_done = progress.plan_steps_done;
+  row.plan_steps_total = progress.plan_steps_total;
+  row.is_live_session = row.task_kind === 'live_session';
+  row.is_micro_task = row.task_kind === 'micro_task';
+  return row;
+}
+
+function decorateRunSnapshotRow(row) {
+  row.used_skills = parseJsonArray(row.used_skills_json);
+  row.is_live = row.source === 'live';
+  row.is_handoff_child = Boolean(row.parent_run_key);
+  return row;
+}
+
+function decorateExecutionEventSnapshotRow(row) {
+  const payload = parseJsonObject(row.payload_json);
+  row.payload = payload;
+  row.is_handoff = row.event_type === 'handoff';
+  row.handoff_from = payload?.from || row.agent_name || null;
+  row.handoff_to = payload?.to || null;
+  return row;
 }
 
 function upsertSquadManifest(db, options) {
@@ -1271,7 +1354,7 @@ function getStatusSnapshot(db) {
 
   const activeTasks = db.prepare(`
     SELECT
-      task_key, squad_slug, session_key, title, goal, status, created_by, created_at, updated_at,
+      task_key, squad_slug, session_key, task_kind, parent_task_key, title, goal, meta_json, status, created_by, created_at, updated_at,
       (
         SELECT COUNT(*)
         FROM agent_runs
@@ -1281,7 +1364,29 @@ function getStatusSnapshot(db) {
         SELECT COUNT(*)
         FROM artifacts
         WHERE artifacts.task_key = tasks.task_key
-      ) AS artifact_count
+      ) AS artifact_count,
+      (
+        SELECT agent_name
+        FROM agent_runs
+        WHERE agent_runs.task_key = tasks.task_key
+        ORDER BY CASE WHEN agent_runs.status IN ('queued', 'running') THEN 0 ELSE 1 END, updated_at DESC, started_at DESC
+        LIMIT 1
+      ) AS latest_agent_name,
+      (
+        SELECT COUNT(*)
+        FROM tasks AS child_tasks
+        WHERE child_tasks.parent_task_key = tasks.task_key
+      ) AS child_task_count,
+      (
+        SELECT COUNT(*)
+        FROM tasks AS child_tasks
+        WHERE child_tasks.parent_task_key = tasks.task_key AND child_tasks.status = 'completed'
+      ) AS completed_child_task_count,
+      (
+        SELECT COUNT(*)
+        FROM agent_runs AS handoff_runs
+        WHERE handoff_runs.task_key = tasks.task_key AND handoff_runs.parent_run_key IS NOT NULL
+      ) AS handoff_count
     FROM tasks
     WHERE status IN ('queued', 'running')
     ORDER BY updated_at DESC, created_at DESC
@@ -1289,7 +1394,7 @@ function getStatusSnapshot(db) {
 
   const recentTasks = db.prepare(`
     SELECT
-      task_key, squad_slug, session_key, title, goal, status, created_by, created_at, updated_at, finished_at,
+      task_key, squad_slug, session_key, task_kind, parent_task_key, title, goal, meta_json, status, created_by, created_at, updated_at, finished_at,
       (
         SELECT COUNT(*)
         FROM agent_runs
@@ -1299,7 +1404,29 @@ function getStatusSnapshot(db) {
         SELECT COUNT(*)
         FROM artifacts
         WHERE artifacts.task_key = tasks.task_key
-      ) AS artifact_count
+      ) AS artifact_count,
+      (
+        SELECT agent_name
+        FROM agent_runs
+        WHERE agent_runs.task_key = tasks.task_key
+        ORDER BY CASE WHEN agent_runs.status IN ('queued', 'running') THEN 0 ELSE 1 END, updated_at DESC, started_at DESC
+        LIMIT 1
+      ) AS latest_agent_name,
+      (
+        SELECT COUNT(*)
+        FROM tasks AS child_tasks
+        WHERE child_tasks.parent_task_key = tasks.task_key
+      ) AS child_task_count,
+      (
+        SELECT COUNT(*)
+        FROM tasks AS child_tasks
+        WHERE child_tasks.parent_task_key = tasks.task_key AND child_tasks.status = 'completed'
+      ) AS completed_child_task_count,
+      (
+        SELECT COUNT(*)
+        FROM agent_runs AS handoff_runs
+        WHERE handoff_runs.task_key = tasks.task_key AND handoff_runs.parent_run_key IS NOT NULL
+      ) AS handoff_count
     FROM tasks
     ORDER BY updated_at DESC, created_at DESC
     LIMIT 20
@@ -1332,16 +1459,34 @@ function getStatusSnapshot(db) {
   `).all();
 
   for (const row of activeRuns) {
-    row.used_skills = parseJsonArray(row.used_skills_json);
+    decorateRunSnapshotRow(row);
   }
 
   for (const row of recentRuns) {
-    row.used_skills = parseJsonArray(row.used_skills_json);
+    decorateRunSnapshotRow(row);
+  }
+
+  for (const row of activeTasks) {
+    decorateTaskSnapshotRow(row);
+  }
+
+  for (const row of recentTasks) {
+    decorateTaskSnapshotRow(row);
   }
 
   for (const row of recentContentItems) {
     row.used_skills = parseJsonArray(row.used_skills_json);
   }
+
+  for (const row of recentExecutionEvents) {
+    decorateExecutionEventSnapshotRow(row);
+  }
+
+  const activeLiveSessions = activeTasks.filter((task) => task.task_kind === 'live_session');
+  const activeMicroTasks = activeTasks.filter((task) => task.task_kind === 'micro_task');
+  const recentLiveSessions = recentTasks.filter((task) => task.task_kind === 'live_session');
+  const recentMicroTasks = recentTasks.filter((task) => task.task_kind === 'micro_task');
+  const recentHandoffs = recentExecutionEvents.filter((event) => event.event_type === 'handoff');
 
   return {
     taskCounts,
@@ -1350,6 +1495,11 @@ function getStatusSnapshot(db) {
     recentTasks,
     activeRuns,
     recentRuns,
+    activeLiveSessions,
+    activeMicroTasks,
+    recentLiveSessions,
+    recentMicroTasks,
+    recentHandoffs,
     recentArtifacts,
     recentContentItems,
     recentExecutionEvents
@@ -1403,6 +1553,7 @@ async function clearAgentSession(runtimeDir, agentName) {
 async function logAgentEvent(db, runtimeDir, options) {
   const agentName = String(options.agentName || 'unknown').trim();
   const squadSlug = options.squadSlug ? String(options.squadSlug).trim() : null;
+  const sessionKey = options.sessionKey ? String(options.sessionKey).trim() : null;
   const isFinish = Boolean(options.finish);
   const now = nowIso();
 
@@ -1471,6 +1622,7 @@ async function logAgentEvent(db, runtimeDir, options) {
       taskKey = startTask(db, {
         title: taskTitle,
         squadSlug: null,
+        sessionKey,
         status: 'running',
         createdBy: agentName
       });
@@ -1479,10 +1631,11 @@ async function logAgentEvent(db, runtimeDir, options) {
         agentName,
         agentKind: 'official',
         squadSlug: null,
+        sessionKey,
         title: taskTitle,
         message: options.message || 'Iniciando'
       });
-      await writeAgentSession(runtimeDir, agentName, { runKey, taskKey, startedAt: now, finished: false });
+      await writeAgentSession(runtimeDir, agentName, { runKey, taskKey, sessionKey, startedAt: now, finished: false });
     } else {
       appendRunEvent(db, {
         runKey,
@@ -1534,6 +1687,7 @@ module.exports = {
   appendRunEvent,
   logAgentEvent,
   readAgentSession,
+  writeAgentSession,
   clearAgentSession,
   // Pipeline CRUD
   upsertPipeline,

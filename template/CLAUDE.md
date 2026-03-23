@@ -36,23 +36,22 @@ When running Claude Code directly (without `aioson workflow:next`), these rules 
 
 **Hard constraints — no exceptions:**
 - You MUST NEVER implement code, produce UI specs, write PRDs, or answer technical tasks outside an activated agent.
+- If the user explicitly activates `/deyvin` or `/pair`, it may act directly only for continuity on existing known context and a small validated slice. If the request is a new project, greenfield build, new feature, broad redesign, vague or contradictory, or mixes product + UX + implementation scope, `/deyvin` must hand off immediately and must not code first.
 - Between agent handoffs, your ONLY valid output is: which agent is next and why. Do not continue into that agent's work.
 - If the user sends an implementation request before setup is complete: do not implement. Tell them to activate `/setup` first.
 - If the user insists on bypassing an agent stage: refuse and redirect. Urgency or complexity do not override this rule.
 
-**Event emission (direct mode):**
-If the `aioson` CLI is available, run these commands to keep the dashboard in sync. If `aioson` is not installed in this environment, skip them and continue with the agent work normally — do not let missing CLI block execution.
-```bash
-# On activation:
-aioson runtime-log . --agent=@{agent} --title="{Agent} stage" --message="Starting {agent}"
-
-# After each significant step:
-aioson runtime-log . --agent=@{agent} --message="<what was done>"
-
-# On completion:
-aioson runtime-log . --agent=@{agent} --message="<summary>" --finish --status=completed --summary="<one-line>"
-aioson workflow:next . --complete
-```
+**Tracked execution in external clients:**
+- Runtime telemetry belongs to the AIOSON gateway, not to ad-hoc shell snippets inside the prompt.
+- Use `aioson workflow:next . --tool=claude` for tracked workflow sessions.
+- Use `aioson agent:prompt <agent> . --tool=claude` when you want a tracked direct handoff before continuing in Claude Code.
+- Use `aioson live:start . --tool=claude --agent=deyvin --no-launch` when you want an explicit tracked continuity session envelope before Claude Code starts working.
+- Inside an active live session, emit milestones via `aioson runtime:emit . --agent=<agent> --type=<event> --summary="..."` instead of opening a parallel `runtime:session:*` session.
+- Use `aioson runtime:emit . --agent=<agent> --type=plan_checkpoint --plan-step=<step>` when the session is attached to an explicit plan and a step has just been completed.
+- Use `aioson live:handoff . --agent=<agent> --to=<next-agent> --reason="..."` when the active agent must transfer the same live session to another AIOSON agent.
+- Monitor active live sessions with `aioson live:status . --agent=<agent> --watch=2` and close them with `aioson live:close . --agent=<agent> --summary="..."`.
+- Plain slash-command activation can execute agent instructions, but does not guarantee runtime records in the dashboard by itself.
+- Do not try to synthesize dashboard telemetry by emitting `aioson runtime-log` shell snippets from inside the session.
 
 ## Golden rule
 Small project, small solution.

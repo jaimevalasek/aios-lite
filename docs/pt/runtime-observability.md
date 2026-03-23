@@ -60,7 +60,11 @@ O gateway oficial de execucao deve:
 - `install` e `init` agora inicializam o runtime no projeto
 - `execution_events` foi adicionado ao schema do runtime
 - `workflow:next` sincroniza task/run/eventos reais no SQLite via gateway
-- `agent:prompt` classifica handoffs diretos de `@squad` e `@orchestrator` no runtime
+- `agent:prompt` classifica handoffs diretos de agentes oficiais e cria a task/run inicial no runtime
+- `runtime:session:start|log|finish|status` oferece uma camada direta para manter sessoes de agentes oficiais abertas e visiveis no dashboard durante o trabalho iterativo
+- `live:start|handoff|status|close` e `runtime:emit` formam o launcher/supervisor oficial para clientes externos, mantendo uma `session_key` viva, trocando `active_agent` por handoff e persistindo estado compacto no SQLite com historico verbose em `.aioson/runtime/live/{session_key}/`
+- `runtime:status --json` agora expoe projecoes prontas para dashboard e scripts: `activeLiveSessions`, `activeMicroTasks`, `recentLiveSessions`, `recentMicroTasks` e `recentHandoffs`
+- ativacao por linguagem natural direto no cliente (ex.: mencionar `@deyvin` no Codex) ainda nao passa pelo gateway e, portanto, nao garante registros em `tasks` e `agent_runs`
 - `parallel:init`, `parallel:assign` e `parallel:status` registram operacoes canonicas de orquestracao
 - templates novos nao instruem mais o agente a chamar `runtime-log` por shell snippet
 

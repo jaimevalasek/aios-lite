@@ -51,26 +51,24 @@ When running Codex directly (without `aioson workflow:next`), these rules apply:
 
 **Hard constraints — no exceptions:**
 - For implementation requests (code changes, feature build, refactor, bugfix), default to workflow routing and execute via the next workflow stage agent (typically `@dev` after required upstream stages).
-- Exception: if the user explicitly activates `@deyvin` (or the compatibility alias `@pair`), it may work directly as a continuity / pair-programming agent. `@deyvin` must still hand off to `@product`, `@discovery-design-doc`, `@analyst`, `@architect`, `@ux-ui`, `@dev`, or `@qa` when the task clearly belongs there.
+- Exception: if the user explicitly activates `@deyvin` (or the compatibility alias `@pair`), it may work directly only as a continuity / pair-programming agent for existing known context and a small validated slice. If the request is a new project, greenfield build, new feature, broad redesign, vague or contradictory, or mixes product + UX + implementation scope, `@deyvin` must hand off immediately and must not code first.
 - Official workflow agents (`@setup`, `@product`, `@analyst`, `@architect`, `@ux-ui`, `@pm`, `@orchestrator`, `@dev`, `@qa`) must stay inside the workflow. Do not answer requests outside the current agent's scope.
 - Between agent handoffs, your ONLY valid output is: which agent is next and why. Do not continue into that agent's work.
 - If `project.context.md` is inconsistent, stale, or partially invalid, repair it inside the workflow when the correct value is objectively inferable from the active context and artifacts.
 - If a context field is still uncertain, route back to `@setup` inside the workflow instead of offering direct execution as a workaround.
 - Never silently bypass workflow after `@setup` or after collecting requirements.
 
-**Event emission (direct mode):**
-If the `aioson` CLI is available, run these commands to keep the dashboard in sync. If `aioson` is not installed in this environment, skip them and continue with the agent work normally — do not let missing CLI block execution.
-```bash
-# On activation:
-aioson runtime-log . --agent=@{agent} --title="{Agent} stage" --message="Starting {agent}"
-
-# After each significant step:
-aioson runtime-log . --agent=@{agent} --message="<what was done>"
-
-# On completion:
-aioson runtime-log . --agent=@{agent} --message="<summary>" --finish --status=completed --summary="<one-line>"
-aioson workflow:next . --complete
-```
+**Tracked execution in external clients:**
+- Runtime telemetry belongs to the AIOSON gateway, not to ad-hoc shell snippets inside the prompt.
+- Use `aioson workflow:next . --tool=<tool>` for tracked workflow sessions.
+- Use `aioson agent:prompt <agent> . --tool=<tool>` when the client does not support slash commands and you want a tracked direct handoff.
+- Use `aioson live:start . --tool=<tool> --agent=deyvin --no-launch` when you want an explicit tracked continuity session envelope before the external client starts working.
+- Inside an active live session, emit milestones via `aioson runtime:emit . --agent=<agent> --type=<event> --summary="..."` instead of opening a parallel `runtime:session:*` session.
+- Use `aioson runtime:emit . --agent=<agent> --type=plan_checkpoint --plan-step=<step>` when the session is attached to an explicit plan and a step has just been completed.
+- Use `aioson live:handoff . --agent=<agent> --to=<next-agent> --reason="..."` when the active agent must transfer the same live session to another AIOSON agent.
+- Monitor active live sessions with `aioson live:status . --agent=<agent> --watch=2` and close them with `aioson live:close . --agent=<agent> --summary="..."`.
+- Plain natural-language activation in external clients can execute agent instructions, but does not guarantee runtime records in the dashboard.
+- Do not try to synthesize dashboard telemetry by emitting `aioson runtime-log` shell snippets from inside the session.
 
 ## Agent files
 - @setup → `.aioson/agents/setup.md`

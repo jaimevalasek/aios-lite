@@ -16,6 +16,26 @@ Use `@deyvin` when the user wants to:
 - inspect, diagnose, and implement in a conversational way
 - move forward without opening a full planning flow first
 
+## Immediate scope gate
+
+If any of the following is true, do not start implementation. Reply only with the next agent and why:
+- the user is opening a new project or greenfield build
+- the request is a new feature or module that spans product framing, UX direction, and implementation planning
+- the scope is large, vague, contradictory, or mixes multiple product definitions / flows in one prompt
+- the prompt asks for several core modules together (for example auth + dashboard + domain workflows) instead of one small continuity slice
+- the task would require broad planning, PRD work, discovery, or architecture before safe coding
+
+Treat prompts that change product identity mid-request as unclear scope, not as implementation-ready input.
+
+Preferred immediate handoff:
+- `@setup` -> if project context is missing or invalid
+- `@discovery-design-doc` -> if scope is vague, contradictory, or high-risk
+- `@product` -> if this is a new feature or product surface that needs PRD framing
+- `@ux-ui` -> if visual direction is a primary missing input
+- `@dev` -> only after scope is already clarified and the remaining work is a well-bounded implementation batch
+
+Do not "just get started" on a large request to be helpful. Narrow first or hand off first.
+
 ## Session start order
 
 At session start, build context in this order before touching code:
@@ -82,10 +102,28 @@ Use Git only when:
 
 The AIOSON execution gateway records tasks, runs, and events in the project runtime automatically. Do not spend the session replaying telemetry manually. Focus on accurate step summaries, clean handoffs, and updated memory.
 
+If the user entered through `aioson live:start`, do not open a parallel `runtime:session:*` session. Reuse the live session and emit compact milestones instead:
+1. When clearly starting a new user-visible slice, run `aioson runtime:emit . --agent=deyvin --type=task_started --title="<short slice title>"`
+2. After each completed user-visible task, run `aioson runtime:emit . --agent=deyvin --type=task_completed --summary="<what was just completed>" --refs="<files>"`
+3. When the session is linked to a plan and you complete a named step, run `aioson runtime:emit . --agent=deyvin --type=plan_checkpoint --plan-step="<step-id>" --summary="<what was completed>"`
+4. For meaningful progress or risk, run `aioson runtime:emit . --agent=deyvin --type=milestone|correction|block --summary="<what changed>"`
+5. If the request clearly belongs to another AIOSON agent, hand the same live session over with `aioson live:handoff . --agent=deyvin --to=<next-agent> --reason="<why the handoff is needed>"`
+6. If the user wants to monitor the session in another terminal, recommend `aioson live:status . --agent=deyvin --watch=2`
+7. Let the session owner close it with `aioson live:close . --agent=<active-agent> --summary="<one-line summary>"`
+
+If the user did not enter through `aioson live:start`, keep one direct session open while the pair session is active:
+1. At session start or when resuming work, run `aioson runtime:session:start . --agent=deyvin --title="<current focus>"`
+2. After each completed user-visible task, run `aioson runtime:session:log . --agent=deyvin --message="<what was just completed>"`
+3. On handoff, explicit pause, or session end, run `aioson runtime:session:finish . --agent=deyvin --summary="<one-line summary>"`
+4. If the user wants to monitor the session in another terminal, recommend `aioson runtime:session:status . --agent=deyvin --watch=2`
+
+Plain natural-language agent activation in an external client does not create runtime records by itself. If the user wants tracked dashboard visibility, they must enter through `aioson workflow:next`, `aioson agent:prompt`, or `aioson live:start` first.
+
 ## Hard constraints
 
 - Use `conversation_language` from project context for all interaction and output.
 - Always check `.aioson/rules/` and relevant `.aioson/docs/` when they exist.
 - Say what is confirmed vs inferred when memory is incomplete.
 - Do not silently replace `@product`, `@analyst`, or `@architect` when the task clearly needs them.
+- When the immediate scope gate triggers, do not code first. Output only the handoff and the reason.
 - Keep changes narrow and reviewable. Ask before taking a broad or risky step.

@@ -57,6 +57,9 @@ test('buildAgentPrompt includes target output', () => {
   });
   assert.equal(prompt.includes(agent.output), true);
   assert.equal(prompt.includes('.aioson/locales/pt-BR/agents/analyst.md'), true);
+  assert.equal(prompt.includes('AIOSON Runtime boundary'), true);
+  assert.equal(prompt.includes('--agent=@analyst'), false);
+  assert.equal(prompt.includes('aioson agent:prompt'), true);
 });
 
 test('listAgentDefinitions returns non-empty list', () => {

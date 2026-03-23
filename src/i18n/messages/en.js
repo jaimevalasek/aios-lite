@@ -101,6 +101,24 @@ module.exports = {
       'aioson runtime:status [path] [--json] [--locale=en]',
     help_runtime_log:
       'aioson runtime:log [path] --agent=<name> --message=<text> [--type=<event>] [--finish] [--status=completed|failed] [--summary=<text>] [--title=<task-title>] [--json] [--locale=en]',
+    help_runtime_session_start:
+      'aioson runtime:session:start [path] --agent=<name> [--title=<text>] [--message=<text>] [--session=<key>] [--json] [--locale=en]',
+    help_runtime_session_log:
+      'aioson runtime:session:log [path] --agent=<name> --message=<text> [--type=<event>] [--title=<text>] [--json] [--locale=en]',
+    help_runtime_session_finish:
+      'aioson runtime:session:finish [path] --agent=<name> [--message=<text>] [--summary=<text>] [--status=completed|failed] [--json] [--locale=en]',
+    help_runtime_session_status:
+      'aioson runtime:session:status [path] --agent=<name> [--limit=8] [--watch=2] [--json] [--locale=en]',
+    help_runtime_emit:
+      'aioson runtime:emit [path] --agent=<name> [--type=<event>] [--summary=<text>] [--title=<text>] [--refs=<file[,file2]>] [--plan-step=<id>] [--meta=<json>] [--json] [--locale=en]',
+    help_live_start:
+      'aioson live:start [path] --tool=codex|claude|gemini|opencode --agent=<name> [--tool-bin=<binary>] [--tool-args=<args>] [--title=<text>] [--goal=<text>] [--plan=<file>] [--session=<key>] [--message=<text>] [--no-launch] [--json] [--locale=en]',
+    help_live_status:
+      'aioson live:status [path] [--agent=<name>] [--limit=8] [--watch=2] [--json] [--locale=en]',
+    help_live_handoff:
+      'aioson live:handoff [path] --agent=<name> --to=<name> [--reason=<text>] [--summary=<text>] [--message=<text>] [--json] [--locale=en]',
+    help_live_close:
+      'aioson live:close [path] [--agent=<name>] [--summary=<text>] [--message=<text>] [--status=completed|failed] [--json] [--locale=en]',
     help_runtime_backup:
       'aioson runtime:backup [path] [--tables=tasks,runs,...] [--force] [--dry-run] [--json] [--locale=en]',
     help_runtime_restore:
@@ -735,7 +753,13 @@ module.exports = {
     status_active_task_line: '- {task} | squad: {squad} | status: {status} | work: {title}',
     status_no_active: 'No active agent runs.',
     status_active_title: 'Active runs:',
-    status_active_line: '- {agent} | squad: {squad} | status: {status} | work: {title}'
+    status_active_line: '- {agent} | squad: {squad} | status: {status} | work: {title}',
+    status_live_sessions_title: 'Active live sessions:',
+    status_live_session_line: '- {task} | agent: {agent} | status: {status} | plan: {plan} | micro: {micro} | handoffs: {handoffs} | work: {title}',
+    status_micro_tasks_title: 'Active micro-tasks:',
+    status_micro_task_line: '- {task} | parent: {parent} | status: {status} | work: {title}',
+    status_handoffs_title: 'Recent handoffs:',
+    status_handoff_line: '- {created} | {from} -> {to} | session: {session} | {message}'
   },
   squad_status: {
     no_squad: 'No squads found.',

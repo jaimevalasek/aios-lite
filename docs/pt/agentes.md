@@ -167,6 +167,7 @@ Alias compativel:
 **Regra importante:**
 - `@deyvin` nao substitui discovery, produto ou arquitetura formal
 - quando a demanda cresce demais ou fica vaga, ele deve fazer handoff em vez de fingir que tudo cabe numa sessao de continuidade
+- se o pedido abrir projeto novo, greenfield, feature grande, escopo contraditorio ou misturar produto + UX + implementacao, o `@deyvin` deve fazer handoff imediato e nao comecar a codar
 - se voce quiser uma explicacao mais direta e focada no uso dele, consulte [Deyvin](./deyvin.md)
 
 ---

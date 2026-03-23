@@ -14,8 +14,17 @@ const {
   runRuntimeUpdate,
   runRuntimeTaskFinish,
   runRuntimeFinish,
-  runRuntimeStatus
+  runRuntimeStatus,
+  runRuntimeSessionStart,
+  runRuntimeSessionLog,
+  runRuntimeSessionFinish,
+  runRuntimeSessionStatus
 } = require('../src/commands/runtime');
+const {
+  runLiveStart,
+  runRuntimeEmit,
+  runLiveHandoff
+} = require('../src/commands/live');
 
 async function makeTempDir() {
   return fs.mkdtemp(path.join(os.tmpdir(), 'aioson-runtime-'));
@@ -147,6 +156,92 @@ test('runtime flow initializes store and tracks start/update/finish lifecycle', 
   assert.equal(status.recentExecutionEvents.some((event) => event.run_key === start.runKey && event.event_type === 'start'), true);
   assert.equal(status.recentExecutionEvents.some((event) => event.run_key === start.runKey && event.event_type === 'progress'), true);
   assert.equal(status.recentExecutionEvents.some((event) => event.run_key === start.runKey && event.event_type === 'finish'), true);
+});
+
+test('runtime direct session commands keep one tracked session open across multiple logs', async () => {
+  const dir = await makeTempDir();
+  const { t } = createTranslator('pt-BR');
+  const logger = createCollectLogger();
+
+  await runRuntimeInit({ args: [dir], options: {}, logger, t });
+
+  const start = await runRuntimeSessionStart({
+    args: [dir],
+    options: {
+      agent: 'deyvin',
+      title: 'Sessao de continuidade'
+    },
+    logger,
+    t
+  });
+
+  assert.equal(start.ok, true);
+  assert.equal(start.agent, '@deyvin');
+  assert.equal(start.open, true);
+  assert.equal(start.reused, false);
+  assert.equal(typeof start.runKey, 'string');
+  assert.equal(typeof start.taskKey, 'string');
+
+  const step = await runRuntimeSessionLog({
+    args: [dir],
+    options: {
+      agent: '@deyvin',
+      message: 'Corrigi validacao do modal de estoque'
+    },
+    logger,
+    t
+  });
+
+  assert.equal(step.ok, true);
+  assert.equal(step.autoStarted, false);
+  assert.equal(step.runKey, start.runKey);
+
+  const openStatus = await runRuntimeSessionStatus({
+    args: [dir],
+    options: {
+      agent: 'deyvin',
+      json: true
+    },
+    logger,
+    t
+  });
+
+  assert.equal(openStatus.ok, true);
+  assert.equal(openStatus.open, true);
+  assert.equal(openStatus.state, 'open');
+  assert.equal(openStatus.run.run_key, start.runKey);
+  assert.equal(openStatus.task.task_key, start.taskKey);
+  assert.equal(openStatus.recentEvents.some((event) => String(event.message).includes('Corrigi validacao do modal de estoque')), true);
+
+  const finish = await runRuntimeSessionFinish({
+    args: [dir],
+    options: {
+      agent: 'deyvin',
+      summary: 'Sessao encerrada com correcoes no estoque'
+    },
+    logger,
+    t
+  });
+
+  assert.equal(finish.ok, true);
+  assert.equal(finish.finished, true);
+  assert.equal(finish.open, false);
+
+  const closedStatus = await runRuntimeSessionStatus({
+    args: [dir],
+    options: {
+      agent: '@deyvin',
+      json: true
+    },
+    logger,
+    t
+  });
+
+  assert.equal(closedStatus.ok, true);
+  assert.equal(closedStatus.open, false);
+  assert.equal(closedStatus.state, 'closed');
+  assert.equal(closedStatus.run.status, 'completed');
+  assert.equal(closedStatus.recentEvents.some((event) => String(event.message).includes('Sessao encerrada com correcoes no estoque')), true);
 });
 
 test('runtime finish auto-registers content item when output package has index.html and content.json', async () => {
@@ -509,4 +604,106 @@ test('runtime finish auto-indexes standalone markdown outputs', async () => {
   assert.equal(status.recentContentItems.length, 1);
   assert.equal(status.recentContentItems[0].content_type, 'text-content');
   assert.equal(status.recentContentItems[0].squad_slug, 'composicao-gospel');
+});
+
+
+test('runtime status exposes live sessions, micro-tasks, and handoffs from the live runtime flow', async () => {
+  const dir = await makeTempDir();
+  const { t } = createTranslator('pt-BR');
+  const logger = createCollectLogger();
+
+  await fs.writeFile(path.join(dir, 'plan.md'), [
+    '# Plano',
+    '',
+    '### RF-01 - Entregar launcher rastreado'
+  ].join('\n'));
+
+  const start = await runLiveStart({
+    args: [dir],
+    options: {
+      tool: 'codex',
+      'tool-bin': 'node',
+      agent: 'deyvin',
+      title: 'Sessao viva do deyvin',
+      plan: 'plan.md',
+      'no-launch': true,
+      json: true
+    },
+    logger,
+    t
+  });
+
+  await runRuntimeEmit({
+    args: [dir],
+    options: {
+      agent: 'deyvin',
+      type: 'task_started',
+      title: 'Corrigir modal de estoque',
+      json: true
+    },
+    logger,
+    t
+  });
+
+  await runRuntimeEmit({
+    args: [dir],
+    options: {
+      agent: 'deyvin',
+      type: 'plan_checkpoint',
+      'plan-step': 'RF-01',
+      summary: 'Launcher entregue',
+      json: true
+    },
+    logger,
+    t
+  });
+
+  await runRuntimeEmit({
+    args: [dir],
+    options: {
+      agent: 'deyvin',
+      type: 'task_completed',
+      summary: 'Corrigi o modal de estoque',
+      json: true
+    },
+    logger,
+    t
+  });
+
+  await runLiveHandoff({
+    args: [dir],
+    options: {
+      agent: 'deyvin',
+      to: 'product',
+      reason: 'Escopo exige decisao de produto',
+      json: true
+    },
+    logger,
+    t
+  });
+
+  const status = await runRuntimeStatus({
+    args: [dir],
+    options: { json: true },
+    logger,
+    t
+  });
+
+  assert.equal(status.ok, true);
+  assert.equal(status.activeLiveSessions.length, 1);
+  assert.equal(status.activeLiveSessions[0].task_key, start.taskKey);
+  assert.equal(status.activeLiveSessions[0].latest_agent_name, '@product');
+  assert.equal(status.activeLiveSessions[0].plan_steps_done, 1);
+  assert.equal(status.activeLiveSessions[0].plan_steps_total, 1);
+  assert.equal(status.activeLiveSessions[0].child_task_count, 1);
+  assert.equal(status.activeLiveSessions[0].completed_child_task_count, 1);
+  assert.equal(status.activeLiveSessions[0].handoff_count, 1);
+  assert.equal(status.activeMicroTasks.length, 0);
+  assert.equal(status.recentMicroTasks.some((task) => task.parent_task_key === start.taskKey), true);
+  assert.equal(status.recentHandoffs.length > 0, true);
+  assert.equal(status.recentHandoffs[0].handoff_to, '@product');
+  assert.equal(status.recentHandoffs[0].handoff_from, '@deyvin');
+  assert.equal(status.activeRuns[0].agent_name, '@product');
+  assert.equal(status.activeRuns[0].is_handoff_child, true);
+  assert.equal(status.recentExecutionEvents.some((event) => event.is_handoff), true);
 });

@@ -55,12 +55,23 @@ const {
   runRuntimeFail,
   runRuntimeStatus,
   runRuntimeLog,
+  runRuntimeSessionStart,
+  runRuntimeSessionLog,
+  runRuntimeSessionFinish,
+  runRuntimeSessionStatus,
   runDeliver,
   runOutputStrategyExport,
   runOutputStrategyImport,
   runDevlogSync,
   runRuntimePrune
 } = require('./commands/runtime');
+const {
+  runLiveStart,
+  runRuntimeEmit,
+  runLiveHandoff,
+  runLiveStatus,
+  runLiveClose
+} = require('./commands/live');
 const {
   runCloudImportSquad,
   runCloudImportGenome,
@@ -185,6 +196,24 @@ const JSON_SUPPORTED_COMMANDS = new Set([
   'runtime-status',
   'runtime:log',
   'runtime-log',
+  'runtime:session:start',
+  'runtime-session-start',
+  'runtime:session:log',
+  'runtime-session-log',
+  'runtime:session:finish',
+  'runtime-session-finish',
+  'runtime:session:status',
+  'runtime-session-status',
+  'runtime:emit',
+  'runtime-emit',
+  'live:start',
+  'live-start',
+  'live:status',
+  'live-status',
+  'live:handoff',
+  'live-handoff',
+  'live:close',
+  'live-close',
   'deliver',
   'output-strategy:export',
   'output-strategy:import',
@@ -301,6 +330,15 @@ function printHelp(t, logger) {
   logHelpLine(t, logger, 'cli.help_runtime_task_fail');
   logHelpLine(t, logger, 'cli.help_runtime_fail');
   logHelpLine(t, logger, 'cli.help_runtime_status');
+  logHelpLine(t, logger, 'cli.help_runtime_session_start');
+  logHelpLine(t, logger, 'cli.help_runtime_session_log');
+  logHelpLine(t, logger, 'cli.help_runtime_session_finish');
+  logHelpLine(t, logger, 'cli.help_runtime_session_status');
+  logHelpLine(t, logger, 'cli.help_runtime_emit');
+  logHelpLine(t, logger, 'cli.help_live_start');
+  logHelpLine(t, logger, 'cli.help_live_status');
+  logHelpLine(t, logger, 'cli.help_live_handoff');
+  logHelpLine(t, logger, 'cli.help_live_close');
   logHelpLine(t, logger, 'cli.help_runtime_backup');
   logHelpLine(t, logger, 'cli.help_runtime_restore');
   logHelpLine(t, logger, 'cli.help_skill_install');
@@ -502,6 +540,24 @@ async function main() {
       result = await runRuntimeStatus({ args, options, logger: commandLogger, t });
     } else if (command === 'runtime:log' || command === 'runtime-log') {
       result = await runRuntimeLog({ args, options, logger: commandLogger, t });
+    } else if (command === 'runtime:session:start' || command === 'runtime-session-start') {
+      result = await runRuntimeSessionStart({ args, options, logger: commandLogger, t });
+    } else if (command === 'runtime:session:log' || command === 'runtime-session-log') {
+      result = await runRuntimeSessionLog({ args, options, logger: commandLogger, t });
+    } else if (command === 'runtime:session:finish' || command === 'runtime-session-finish') {
+      result = await runRuntimeSessionFinish({ args, options, logger: commandLogger, t });
+    } else if (command === 'runtime:session:status' || command === 'runtime-session-status') {
+      result = await runRuntimeSessionStatus({ args, options, logger: commandLogger, t });
+    } else if (command === 'runtime:emit' || command === 'runtime-emit') {
+      result = await runRuntimeEmit({ args, options, logger: commandLogger, t });
+    } else if (command === 'live:start' || command === 'live-start') {
+      result = await runLiveStart({ args, options, logger: commandLogger, t });
+    } else if (command === 'live:status' || command === 'live-status') {
+      result = await runLiveStatus({ args, options, logger: commandLogger, t });
+    } else if (command === 'live:handoff' || command === 'live-handoff') {
+      result = await runLiveHandoff({ args, options, logger: commandLogger, t });
+    } else if (command === 'live:close' || command === 'live-close') {
+      result = await runLiveClose({ args, options, logger: commandLogger, t });
     } else if (command === 'deliver') {
       result = await runDeliver({ args, options, logger: commandLogger, t });
     } else if (command === 'output-strategy:export') {

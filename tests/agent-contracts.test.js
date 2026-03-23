@@ -89,12 +89,15 @@ test('workflow gate contract is explicit in AGENTS and setup locales', async () 
     '## Workflow enforcement',
     'must stay inside the workflow',
     'repair it inside the workflow',
-    'Never silently bypass workflow'
+    'Never silently bypass workflow',
+    'Tracked execution in external clients',
+    'does not guarantee runtime records in the dashboard'
   ];
   for (const token of gatewayTokens) {
     assert.equal(agentsGateway.includes(token), true, `missing AGENTS workflow token: ${token}`);
   }
   assert.equal(agentsGateway.includes('Do you want to execute this directly outside the workflow?'), false);
+  assert.equal(agentsGateway.includes('aioson runtime-log . --agent=@{agent}'), false);
 
   const setupTokens = [
     [setupBase, 'Workflow gate after setup'],
@@ -495,6 +498,30 @@ test('deyvin contract prioritizes rules, memory, runtime, and git fallback', asy
 
   for (const token of ptTokens) {
     assert.equal(ptContent.includes(token), true, `missing deyvin pt token: ${token}`);
+  }
+});
+
+test('deyvin contract hard-gates greenfield and oversized requests', async () => {
+  const baseContent = await read(path.join(ROOT, 'template/.aioson/agents/deyvin.md'));
+  const ptContent = await read(path.join(ROOT, 'template/.aioson/locales/pt-BR/agents/deyvin.md'));
+
+  const expected = [
+    [baseContent, '## Immediate scope gate'],
+    [baseContent, 'do not start implementation'],
+    [baseContent, 'new project or greenfield build'],
+    [baseContent, 'scope is large, vague, contradictory'],
+    [baseContent, 'Reply only with the next agent and why:'],
+    [baseContent, 'Treat prompts that change product identity mid-request as unclear scope'],
+    [ptContent, '## Gate imediato de escopo'],
+    [ptContent, 'nao iniciar implementacao'],
+    [ptContent, 'projeto novo ou pedido greenfield'],
+    [ptContent, 'o escopo for grande, vago, contraditorio'],
+    [ptContent, 'Responder somente com o proximo agente e o motivo:'],
+    [ptContent, 'mudar a identidade do produto no meio do pedido']
+  ];
+
+  for (const [content, token] of expected) {
+    assert.equal(content.includes(token), true, `missing deyvin scope-gate token: ${token}`);
   }
 });
 

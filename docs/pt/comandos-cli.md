@@ -109,6 +109,15 @@
 | `runtime:fail` | Finaliza uma execução com falha | Quando a run falhou |
 | `runtime:status` | Mostra snapshot do runtime | Quando quer uma visão atual das runs |
 | `runtime:log` | Logger stateful de uma linha para agentes oficiais | Quando quer registrar eventos sem orquestrar vários comandos |
+| `runtime:session:start` | Abre ou reutiliza uma sessao direta de agente oficial | Quando quer manter uma sessao viva entre varias tarefas do `@deyvin` ou outro agente direto |
+| `runtime:session:log` | Adiciona um passo concluido na sessao direta ativa | Quando quer registrar cada tarefa concluida durante a sessao |
+| `runtime:session:finish` | Encerra a sessao direta ativa | Quando terminou a sessao ou vai fazer handoff |
+| `runtime:session:status` | Mostra o estado da sessao direta e os ultimos eventos | Quando quer saber se a sessao ainda esta aberta ou acompanhar com `--watch` |
+| `live:start` | Abre uma sessao viva rastreada para Codex, Claude, Gemini ou OpenCode | Quando quer iniciar o cliente externo a partir do AIOSON e manter status, agente ativo e logs no dashboard |
+| `runtime:emit` | Registra eventos compactos da sessao viva atual | Quando quer marcar tarefa concluida, milestone, block ou step de plano sem abrir uma sessao paralela |
+| `live:status` | Mostra o estado da sessao viva e do processo filho | Quando quer acompanhar `active_agent`, progresso do plano e se o cliente ainda esta vivo |
+| `live:handoff` | Transfere a mesma sessao viva para outro agente AIOSON | Quando o agente atual precisa passar a continuidade para `@product`, `@architect`, `@dev` ou outro agente |
+| `live:close` | Fecha a sessao viva e gera `summary.md` | Quando terminou a sessao externa e quer consolidar o historico compacto + verbose |
 | `runtime:backup` | Faz backup incremental do SQLite para S3 ou HTTP do cliente | Quando quer persistir dados de runtime na nuvem do cliente |
 | `runtime:restore` | Restaura dados de runtime a partir de um backup remoto | Quando quer recuperar dados em outra máquina ou após perda |
 | `runtime:prune` | Remove registros antigos do SQLite de runtime | Quando o banco está grande e quer liberar espaço |
@@ -297,7 +306,7 @@ aioson agents . --lang=pt-BR
 aioson agent:prompt architect . --tool=codex
 ```
 
-Use `agents` para ver quem existe e `agent:prompt` quando o cliente de IA não entende `/setup`, `@dev` ou slash commands.
+Use `agents` para ver quem existe e `agent:prompt` quando o cliente de IA nao entende `/setup`, `@dev` ou slash commands, ou quando voce quer um handoff direto rastreado no runtime antes de continuar em outro cliente.
 
 ### 10. Validar agentes e pacote antes de release
 
@@ -540,7 +549,39 @@ aioson runtime:task:finish . --task=task-001 --goal="Landing entregue"
 
 Use esse fluxo quando você quer rastreamento explícito de task, run, progresso e artefatos finais.
 
-### 21. Registrar eventos rápidos com `runtime:log`
+### 21. Manter uma sessao direta rastreada no terminal
+
+```bash
+aioson runtime:session:start . --agent=deyvin --title="Sessao de continuidade"
+aioson runtime:session:log . --agent=deyvin --message="Corrigi validacao do modal de estoque"
+aioson runtime:session:log . --agent=deyvin --message="Ajustei feedback visual de erro no formulario"
+aioson runtime:session:status . --agent=deyvin --watch=2
+aioson runtime:session:finish . --agent=deyvin --summary="Sessao encerrada com correcoes no estoque"
+```
+
+Use esse fluxo quando voce quer deixar uma sessao direta viva entre varios pedidos ao mesmo agente e ver no dashboard se ela ainda esta aberta, quais passos ja foram registrados e quando foi encerrada. Rode `runtime:session:status --watch=2` em outro terminal se quiser acompanhar ao vivo.
+
+### 22. Abrir uma sessao viva rastreada em cliente externo
+
+```bash
+aioson live:start . --tool=codex --agent=deyvin --plan=plan.md --no-launch
+aioson runtime:emit . --agent=deyvin --type=task_started --title="Corrigir modal de estoque"
+aioson runtime:emit . --agent=deyvin --type=plan_checkpoint --plan-step=RF-01 --summary="Launcher entregue"
+aioson runtime:emit . --agent=deyvin --type=task_completed --summary="Corrigi o modal de estoque" --refs="src/app.js,src/styles.css"
+aioson live:handoff . --agent=deyvin --to=product --reason="Escopo exige decisao de produto"
+aioson live:status . --agent=product --watch=2
+aioson live:close . --agent=product --summary="Sessao encerrada com handoff e resumo final"
+```
+
+Use esse fluxo quando voce quer iniciar Codex, Claude, Gemini ou OpenCode por fora do cliente, manter a mesma `session_key` viva entre varias tarefas e registrar no runtime:
+- agente ativo atual
+- marcos compactos no SQLite
+- `state.json`, `events.ndjson` e `summary.md` em `.aioson/runtime/live/{session_key}/`
+- handoffs entre agentes no mesmo envelope de sessao
+- progresso resumido de plano quando a sessao foi iniciada com `--plan`
+- projecoes prontas em `runtime:status --json` para `activeLiveSessions`, `recentMicroTasks` e `recentHandoffs`
+
+### 23. Registrar eventos rápidos com `runtime:log`
 
 ```bash
 aioson runtime:log . --agent=ux-ui --message="Comecei a revisar a landing"
@@ -549,7 +590,7 @@ aioson runtime:log . --agent=ux-ui --message="Entreguei a UI final" --finish --s
 
 Use quando quer um logger stateful de uma linha, sem precisar chamar manualmente `task:start`, `start`, `update` e `finish`.
 
-### 22. Fechar falhas de task ou run
+### 24. Fechar falhas de task ou run
 
 ```bash
 aioson runtime:task:fail . --task=task-001 --goal="Bloqueio em requisitos"
@@ -558,7 +599,7 @@ aioson runtime:fail . --run=run-001 --message="Dependencia externa indisponivel"
 
 Use quando a task ou a run precisa ser encerrada como falha, mantendo histórico no runtime.
 
-### 23. Publicar squads e genomes
+### 25. Publicar squads e genomes
 
 ```bash
 aioson cloud:publish:squad . --slug=marketing --resource-version=1.0.0 --base-url=https://aiosforge.com
@@ -567,7 +608,7 @@ aioson cloud:publish:genome . --slug=fintech --resource-version=1.0.0 --base-url
 
 Use quando você quer transformar artefatos locais em snapshots publicáveis e versionados.
 
-### 24. Importar squads e genomes publicados
+### 26. Importar squads e genomes publicados
 
 ```bash
 aioson cloud:import:squad . --url=https://aiosforge.com/snapshots/squads/marketing/1.0.0.json
@@ -576,7 +617,7 @@ aioson cloud:import:genome . --url=https://aiosforge.com/snapshots/genomes/finte
 
 Use quando vai instalar, atualizar ou sincronizar recursos publicados em outro projeto.
 
-### 25. Configurar e monitorar delivery de conteúdo
+### 27. Configurar e monitorar delivery de conteúdo
 
 ```bash
 # Validar output strategy antes de rodar

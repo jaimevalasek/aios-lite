@@ -103,6 +103,24 @@ module.exports = {
       'aioson runtime:status [path] [--json] [--locale=pt-BR]',
     help_runtime_log:
       'aioson runtime:log [path] --agent=<nome> --message=<texto> [--type=<evento>] [--finish] [--status=completed|failed] [--summary=<texto>] [--title=<titulo-task>] [--json] [--locale=pt-BR]',
+    help_runtime_session_start:
+      'aioson runtime:session:start [path] --agent=<nome> [--title=<texto>] [--message=<texto>] [--session=<chave>] [--json] [--locale=pt-BR]',
+    help_runtime_session_log:
+      'aioson runtime:session:log [path] --agent=<nome> --message=<texto> [--type=<evento>] [--title=<texto>] [--json] [--locale=pt-BR]',
+    help_runtime_session_finish:
+      'aioson runtime:session:finish [path] --agent=<nome> [--message=<texto>] [--summary=<texto>] [--status=completed|failed] [--json] [--locale=pt-BR]',
+    help_runtime_session_status:
+      'aioson runtime:session:status [path] --agent=<nome> [--limit=8] [--watch=2] [--json] [--locale=pt-BR]',
+    help_runtime_emit:
+      'aioson runtime:emit [path] --agent=<nome> [--type=<evento>] [--summary=<texto>] [--title=<texto>] [--refs=<arquivo[,arquivo2]>] [--plan-step=<id>] [--meta=<json>] [--json] [--locale=pt-BR]',
+    help_live_start:
+      'aioson live:start [path] --tool=codex|claude|gemini|opencode --agent=<nome> [--tool-bin=<binario>] [--tool-args=<args>] [--title=<texto>] [--goal=<texto>] [--plan=<arquivo>] [--session=<chave>] [--message=<texto>] [--no-launch] [--json] [--locale=pt-BR]',
+    help_live_status:
+      'aioson live:status [path] [--agent=<nome>] [--limit=8] [--watch=2] [--json] [--locale=pt-BR]',
+    help_live_handoff:
+      'aioson live:handoff [path] --agent=<nome> --to=<nome> [--reason=<texto>] [--summary=<texto>] [--message=<texto>] [--json] [--locale=pt-BR]',
+    help_live_close:
+      'aioson live:close [path] [--agent=<nome>] [--summary=<texto>] [--message=<texto>] [--status=completed|failed] [--json] [--locale=pt-BR]',
     help_runtime_backup:
       'aioson runtime:backup [caminho] [--tables=tasks,runs,...] [--force] [--dry-run] [--json] [--locale=pt-BR]',
     help_runtime_restore:
@@ -769,7 +787,13 @@ module.exports = {
     status_active_task_line: '- {task} | squad: {squad} | status: {status} | trabalho: {title}',
     status_no_active: 'Nenhuma execucao ativa de agente.',
     status_active_title: 'Execucoes ativas:',
-    status_active_line: '- {agent} | squad: {squad} | status: {status} | trabalho: {title}'
+    status_active_line: '- {agent} | squad: {squad} | status: {status} | trabalho: {title}',
+    status_live_sessions_title: 'Sessoes vivas ativas:',
+    status_live_session_line: '- {task} | agente: {agent} | status: {status} | plano: {plan} | micro: {micro} | handoffs: {handoffs} | trabalho: {title}',
+    status_micro_tasks_title: 'Micro-tarefas ativas:',
+    status_micro_task_line: '- {task} | pai: {parent} | status: {status} | trabalho: {title}',
+    status_handoffs_title: 'Handoffs recentes:',
+    status_handoff_line: '- {created} | {from} -> {to} | sessao: {session} | {message}'
   },
   squad_status: {
     no_squad: 'Nenhum squad encontrado.',

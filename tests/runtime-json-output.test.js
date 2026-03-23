@@ -80,6 +80,64 @@ test('runtime commands return structured JSON payloads', async () => {
   assert.equal(Array.isArray(statusParsed.recentContentItems), true);
 });
 
+test('runtime direct session commands return structured JSON payloads', async () => {
+  const dir = await makeTempDir();
+
+  const init = await runCli(['runtime:init', dir, '--json']);
+  assert.equal(init.code, 0);
+
+  const start = await runCli([
+    'runtime:session:start',
+    dir,
+    '--agent=deyvin',
+    '--title=Sessao de continuidade',
+    '--json'
+  ]);
+  assert.equal(start.code, 0);
+  const startParsed = JSON.parse(start.stdout);
+  assert.equal(startParsed.ok, true);
+  assert.equal(startParsed.agent, '@deyvin');
+  assert.equal(startParsed.open, true);
+
+  const log = await runCli([
+    'runtime:session:log',
+    dir,
+    '--agent=@deyvin',
+    '--message=Corrigi o fluxo de entrada de estoque',
+    '--json'
+  ]);
+  assert.equal(log.code, 0);
+  const logParsed = JSON.parse(log.stdout);
+  assert.equal(logParsed.ok, true);
+  assert.equal(logParsed.runKey, startParsed.runKey);
+
+  const statusOpen = await runCli(['runtime:session:status', dir, '--agent=deyvin', '--json']);
+  assert.equal(statusOpen.code, 0);
+  const statusOpenParsed = JSON.parse(statusOpen.stdout);
+  assert.equal(statusOpenParsed.ok, true);
+  assert.equal(statusOpenParsed.open, true);
+  assert.equal(statusOpenParsed.run.run_key, startParsed.runKey);
+
+  const finish = await runCli([
+    'runtime:session:finish',
+    dir,
+    '--agent=deyvin',
+    '--summary=Sessao encerrada',
+    '--json'
+  ]);
+  assert.equal(finish.code, 0);
+  const finishParsed = JSON.parse(finish.stdout);
+  assert.equal(finishParsed.ok, true);
+  assert.equal(finishParsed.finished, true);
+
+  const statusClosed = await runCli(['runtime:session:status', dir, '--agent=@deyvin', '--json']);
+  assert.equal(statusClosed.code, 0);
+  const statusClosedParsed = JSON.parse(statusClosed.stdout);
+  assert.equal(statusClosedParsed.ok, true);
+  assert.equal(statusClosedParsed.open, false);
+  assert.equal(statusClosedParsed.state, 'closed');
+});
+
 test('runtime ingest returns structured JSON payloads', async () => {
   const dir = await makeTempDir();
 
@@ -111,4 +169,76 @@ test('runtime ingest returns structured JSON payloads', async () => {
   assert.equal(status.code, 0);
   const statusParsed = JSON.parse(status.stdout);
   assert.deepEqual(statusParsed.recentContentItems[0].used_skills, ['gospel-lyrics', 'chorus-design']);
+});
+
+
+test('runtime status JSON exposes live sessions, micro-tasks, and handoffs', async () => {
+  const dir = await makeTempDir();
+  await fs.writeFile(path.join(dir, 'plan.md'), [
+    '# Plano',
+    '',
+    '### RF-01 - Entregar launcher rastreado'
+  ].join('\n'));
+
+  const start = await runCli([
+    'live:start',
+    dir,
+    '--tool=codex',
+    '--tool-bin=node',
+    '--agent=deyvin',
+    '--title=Sessao viva do deyvin',
+    '--plan=plan.md',
+    '--no-launch',
+    '--json'
+  ]);
+  assert.equal(start.code, 0);
+  const startParsed = JSON.parse(start.stdout);
+
+  await runCli([
+    'runtime:emit',
+    dir,
+    '--agent=deyvin',
+    '--type=task_started',
+    '--title=Corrigir modal de estoque',
+    '--json'
+  ]);
+  await runCli([
+    'runtime:emit',
+    dir,
+    '--agent=deyvin',
+    '--type=plan_checkpoint',
+    '--plan-step=RF-01',
+    '--summary=Launcher entregue',
+    '--json'
+  ]);
+  await runCli([
+    'runtime:emit',
+    dir,
+    '--agent=deyvin',
+    '--type=task_completed',
+    '--summary=Corrigi o modal de estoque',
+    '--json'
+  ]);
+  await runCli([
+    'live:handoff',
+    dir,
+    '--agent=deyvin',
+    '--to=product',
+    '--reason=Escopo exige decisao de produto',
+    '--json'
+  ]);
+
+  const status = await runCli(['runtime:status', dir, '--json']);
+  assert.equal(status.code, 0);
+  const statusParsed = JSON.parse(status.stdout);
+  assert.equal(statusParsed.ok, true);
+  assert.equal(statusParsed.activeLiveSessions.length, 1);
+  assert.equal(statusParsed.activeLiveSessions[0].task_key, startParsed.taskKey);
+  assert.equal(statusParsed.activeLiveSessions[0].latest_agent_name, '@product');
+  assert.equal(statusParsed.activeLiveSessions[0].plan_steps_done, 1);
+  assert.equal(statusParsed.activeLiveSessions[0].plan_steps_total, 1);
+  assert.equal(statusParsed.recentMicroTasks.some((task) => task.parent_task_key === startParsed.taskKey), true);
+  assert.equal(statusParsed.recentHandoffs.length > 0, true);
+  assert.equal(statusParsed.recentHandoffs[0].handoff_to, '@product');
+  assert.equal(statusParsed.activeRuns[0].is_handoff_child, true);
 });

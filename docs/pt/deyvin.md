@@ -76,6 +76,20 @@ O alias `@pair` continua aceito por compatibilidade.
 @deyvin leia as rules ativas e os docs relacionados antes de agir
 ```
 
+## Sessao viva rastreada
+
+Quando voce entrar por `aioson live:start`, o `@deyvin` deve continuar trabalhando na mesma `session_key` e registrar apenas marcos compactos:
+
+```bash
+aioson live:start . --tool=codex --agent=deyvin --plan=plan.md --no-launch
+aioson runtime:emit . --agent=deyvin --type=task_started --title="Corrigir modal de estoque"
+aioson runtime:emit . --agent=deyvin --type=task_completed --summary="Corrigi o modal de estoque" --refs="src/app.js,src/styles.css"
+aioson live:handoff . --agent=deyvin --to=product --reason="Escopo exige decisao de produto"
+```
+
+Nesse modo, o `@deyvin` nao deve abrir uma sessao paralela de `runtime:session:*`. O agente ativo passa a ser trocado por `live:handoff`, o status fica disponivel em `live:status` e o fechamento final fica em `live:close`.
+
+
 ## Quando escolher ele
 
 Escolha `@deyvin` quando:
@@ -93,5 +107,9 @@ Nao escolha `@deyvin` quando:
 - existe uma descoberta maior para fazer
 - a arquitetura ainda esta indefinida
 - a conversa precisa virar PRD, discovery ou plano formal
+- o pedido abre um projeto novo ou greenfield para construir um sistema inteiro
+- o prompt mistura mais de um produto, muda a identidade do sistema no meio do texto ou junta varios modulos centrais de uma vez
+
+Nesses casos, o comportamento correto e handoff imediato. `@deyvin` nao deve "ir codando para ajudar" quando o escopo ainda precisa ser enquadrado.
 
 Nesses casos, o caminho certo e acionar o agente especializado antes.

@@ -101,6 +101,34 @@ use @architect para desenhar a estrutura de pastas do projeto
 activate the @qa agent to write tests for the auth module
 ```
 
+### Sessao rastreada no dashboard
+
+Se voce quer que a ativacao apareca em `tasks`, `agent_runs` e no dashboard do runtime, nao dependa so da mencao natural ao agente na conversa.
+
+Use um gateway oficial antes de continuar no Codex:
+
+```bash
+aioson workflow:next . --tool=codex
+```
+
+ou, para handoff direto rastreado:
+
+```bash
+aioson agent:prompt deyvin . --tool=codex
+```
+
+Se quiser que o proprio AIOSON abra e supervisione uma sessao viva do cliente externo, use:
+
+```bash
+aioson live:start . --tool=codex --agent=deyvin --no-launch
+```
+
+Dentro dessa sessao viva, o agente passa a usar `runtime:emit`, `live:handoff`, `live:status` e `live:close` para manter o dashboard e os arquivos de sessao sincronizados.
+
+Depois cole o prompt gerado no Codex e continue a sessao.
+
+A ativacao por linguagem natural via `AGENTS.md` pode executar o contrato do agente, mas nao garante registros no dashboard porque esse caminho nao passa pelo gateway oficial.
+
 ### Exemplos completos
 
 **Iniciar projeto novo:**
@@ -144,6 +172,7 @@ Quando você menciona `@setup`, o Codex lê o arquivo correspondente e segue tod
 
 - **Seja explícito**: `use @dev` funciona melhor que apenas "implemente"
 - **Para continuidade**: `use @deyvin` funciona melhor que "ve o que fizemos ontem"
+- **Para rastreamento no dashboard**: prefira `aioson workflow:next . --tool=codex` ou `aioson agent:prompt <agente> . --tool=codex` antes de colar o prompt no Codex
 - **Passe contexto**: `use @dev to implement X — read spec.md first`
 - **Comece sempre com @setup** se `project.context.md` não existir
 - O Codex também lê o contexto do agente selecionado automaticamente via `AGENTS.md`

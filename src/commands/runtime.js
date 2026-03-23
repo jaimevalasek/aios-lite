@@ -14,7 +14,9 @@ const {
   upsertContentItem,
   getStatusSnapshot,
   logAgentEvent,
-  appendRunEvent
+  appendRunEvent,
+  readAgentSession,
+  clearAgentSession
 } = require('../runtime-store');
 const { runAutoDelivery } = require('../delivery-runner');
 const { writeHandoff, buildRuntimeLogHandoff } = require('../session-handoff');
@@ -32,6 +34,152 @@ function requireOption(options, key, t) {
     throw new Error(t('runtime.option_required', { option: `--${key}` }));
   }
   return String(value).trim();
+}
+
+function normalizeAgentHandle(value) {
+  const text = String(value || '').trim();
+  if (!text) return '';
+  return text.startsWith('@') ? text : `@${text}`;
+}
+
+function makeDirectSessionKey(agentName) {
+  return `direct-session:${Date.now()}:${String(agentName || '').replace(/^@/, '')}`;
+}
+
+function parseWatchSeconds(value) {
+  if (value === undefined || value === null || value === false) return null;
+  if (value === true || value === '') return 2;
+
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) return 2;
+  return parsed;
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function collectRuntimeSessionSnapshot(db, runtimeDir, agentName, options = {}) {
+  const normalizedAgent = normalizeAgentHandle(agentName);
+  const eventLimit = Math.max(1, Math.min(Number(options.limit) || 8, 20));
+  const session = await readAgentSession(runtimeDir, normalizedAgent);
+  const activeSession = session && !session.finished ? session : null;
+
+  let run = null;
+  if (activeSession && activeSession.runKey) {
+    run = db.prepare(`
+      SELECT
+        run_key, task_key, agent_name, agent_kind, squad_slug, session_key, source,
+        title, status, summary, output_path, started_at, updated_at, finished_at
+      FROM agent_runs
+      WHERE run_key = ?
+      LIMIT 1
+    `).get(activeSession.runKey);
+  }
+
+  if (!run) {
+    run = db.prepare(`
+      SELECT
+        run_key, task_key, agent_name, agent_kind, squad_slug, session_key, source,
+        title, status, summary, output_path, started_at, updated_at, finished_at
+      FROM agent_runs
+      WHERE agent_name = ?
+      ORDER BY updated_at DESC, started_at DESC
+      LIMIT 1
+    `).get(normalizedAgent);
+  }
+
+  const task = run && run.task_key
+    ? db.prepare(`
+        SELECT
+          task_key, squad_slug, session_key, title, goal, status, created_by, created_at, updated_at, finished_at
+        FROM tasks
+        WHERE task_key = ?
+        LIMIT 1
+      `).get(run.task_key)
+    : null;
+
+  const recentEvents = run
+    ? db.prepare(`
+        SELECT event_type, phase, status, message, created_at
+        FROM execution_events
+        WHERE run_key = ?
+        ORDER BY created_at DESC, id DESC
+        LIMIT ?
+      `).all(run.run_key, eventLimit).reverse()
+    : [];
+
+  const open = Boolean(activeSession && run && (run.status === 'running' || run.status === 'queued'));
+  const state = open ? 'open' : (run ? 'closed' : 'idle');
+
+  return {
+    agent: normalizedAgent,
+    state,
+    open,
+    sessionKey: activeSession?.sessionKey || run?.session_key || task?.session_key || null,
+    startedAt: activeSession?.startedAt || run?.started_at || task?.created_at || null,
+    updatedAt: run?.updated_at || task?.updated_at || null,
+    session: activeSession,
+    run,
+    task,
+    recentEvents
+  };
+}
+
+async function getRuntimeSessionSnapshot(targetDir, agentName, t, options = {}) {
+  const { dbPath, runtimeDir } = resolveRuntimePaths(targetDir);
+
+  if (!(await runtimeStoreExists(targetDir))) {
+    throw new Error(t('runtime.store_missing', { path: dbPath }));
+  }
+
+  const { db } = await openRuntimeDb(targetDir, { mustExist: true });
+  try {
+    const snapshot = await collectRuntimeSessionSnapshot(db, runtimeDir, agentName, options);
+    return {
+      ok: true,
+      targetDir,
+      dbPath,
+      ...snapshot
+    };
+  } finally {
+    db.close();
+  }
+}
+
+function printRuntimeSessionSnapshot(snapshot, logger) {
+  logger.log(`Direct session: ${snapshot.agent}`);
+  logger.log(`State: ${snapshot.state}`);
+
+  if (snapshot.sessionKey) {
+    logger.log(`Session: ${snapshot.sessionKey}`);
+  }
+
+  if (snapshot.task) {
+    logger.log(`Task: ${snapshot.task.task_key} | status: ${snapshot.task.status} | work: ${snapshot.task.title || '—'}`);
+  }
+
+  if (snapshot.run) {
+    logger.log(`Run: ${snapshot.run.run_key} | status: ${snapshot.run.status} | work: ${snapshot.run.title || snapshot.run.summary || '—'}`);
+  }
+
+  if (snapshot.startedAt) {
+    logger.log(`Started: ${snapshot.startedAt}`);
+  }
+
+  if (snapshot.updatedAt) {
+    logger.log(`Updated: ${snapshot.updatedAt}`);
+  }
+
+  if (snapshot.recentEvents.length === 0) {
+    logger.log('Recent events: none');
+    return;
+  }
+
+  logger.log('Recent events:');
+  for (const event of snapshot.recentEvents) {
+    logger.log(`- ${event.created_at} | ${event.event_type} | ${event.message || '—'}`);
+  }
 }
 
 async function readJsonIfExists(filePath) {
@@ -839,6 +987,11 @@ async function runRuntimeStatus({ args, options = {}, logger, t }) {
       recentTasks: snapshot.recentTasks,
       activeRuns: snapshot.activeRuns,
       recentRuns: snapshot.recentRuns,
+      activeLiveSessions: snapshot.activeLiveSessions,
+      activeMicroTasks: snapshot.activeMicroTasks,
+      recentLiveSessions: snapshot.recentLiveSessions,
+      recentMicroTasks: snapshot.recentMicroTasks,
+      recentHandoffs: snapshot.recentHandoffs,
       recentArtifacts: snapshot.recentArtifacts,
       recentContentItems: snapshot.recentContentItems,
       recentExecutionEvents: snapshot.recentExecutionEvents
@@ -889,6 +1042,49 @@ async function runRuntimeStatus({ args, options = {}, logger, t }) {
               squad: run.squad_slug || '—',
               status: run.status,
               title: run.title || run.summary || '—'
+            })
+          );
+        }
+      }
+      if (snapshot.activeLiveSessions.length > 0) {
+        logger.log(t('runtime.status_live_sessions_title'));
+        for (const task of snapshot.activeLiveSessions) {
+          logger.log(
+            t('runtime.status_live_session_line', {
+              task: task.task_key,
+              agent: task.latest_agent_name || task.created_by || '—',
+              status: task.status,
+              plan: task.plan_steps_total > 0 ? `${task.plan_steps_done}/${task.plan_steps_total}` : '—',
+              micro: `${task.completed_child_task_count || 0}/${task.child_task_count || 0}`,
+              handoffs: task.handoff_count || 0,
+              title: task.title || '—'
+            })
+          );
+        }
+      }
+      if (snapshot.activeMicroTasks.length > 0) {
+        logger.log(t('runtime.status_micro_tasks_title'));
+        for (const task of snapshot.activeMicroTasks) {
+          logger.log(
+            t('runtime.status_micro_task_line', {
+              task: task.task_key,
+              parent: task.parent_task_key || '—',
+              status: task.status,
+              title: task.title || task.goal || '—'
+            })
+          );
+        }
+      }
+      if (snapshot.recentHandoffs.length > 0) {
+        logger.log(t('runtime.status_handoffs_title'));
+        for (const event of snapshot.recentHandoffs.slice(0, 5)) {
+          logger.log(
+            t('runtime.status_handoff_line', {
+              created: event.created_at,
+              from: event.handoff_from || event.agent_name || '—',
+              to: event.handoff_to || '—',
+              session: event.session_key || '—',
+              message: event.message || '—'
             })
           );
         }
@@ -959,6 +1155,188 @@ async function runRuntimeLog({ args, options = {}, logger, t }) {
     };
   } finally {
     db.close();
+  }
+}
+
+
+async function runRuntimeSessionStart({ args, options = {}, logger, t }) {
+  const targetDir = resolveTargetDir(args);
+  const { db, dbPath, runtimeDir } = await openRuntimeDb(targetDir);
+
+  try {
+    const agentName = normalizeAgentHandle(requireOption(options, 'agent', t));
+    const existingSnapshot = await collectRuntimeSessionSnapshot(db, runtimeDir, agentName, { limit: options.limit });
+
+    if (existingSnapshot.session && !existingSnapshot.open) {
+      await clearAgentSession(runtimeDir, agentName);
+    }
+
+    if (existingSnapshot.open) {
+      if (!options.json) {
+        logger.log(`Direct session already active: ${agentName} | task: ${existingSnapshot.task?.task_key || '—'} | run: ${existingSnapshot.run?.run_key || '—'} (${dbPath})`);
+      }
+      return {
+        ok: true,
+        targetDir,
+        dbPath,
+        agent: agentName,
+        taskKey: existingSnapshot.task?.task_key || existingSnapshot.session?.taskKey || null,
+        runKey: existingSnapshot.run?.run_key || existingSnapshot.session?.runKey || null,
+        sessionKey: existingSnapshot.sessionKey,
+        status: existingSnapshot.run?.status || 'running',
+        reused: true,
+        open: true
+      };
+    }
+
+    const sessionKey = options.session ? String(options.session).trim() : makeDirectSessionKey(agentName);
+    const title = options.title ? String(options.title).trim() : `Direct session ${agentName}`;
+    const message = options.message ? String(options.message).trim() : `Session started for ${agentName}`;
+    const { runKey, taskKey } = await logAgentEvent(db, runtimeDir, {
+      agentName,
+      message,
+      type: options.type || 'session.start',
+      taskTitle: title,
+      sessionKey,
+      meta: options.meta ? (() => { try { return JSON.parse(options.meta); } catch { return { raw: options.meta }; } })() : undefined
+    });
+
+    if (!options.json) {
+      logger.log(`Direct session started: ${agentName} | task: ${taskKey} | run: ${runKey} (${dbPath})`);
+    }
+
+    return {
+      ok: true,
+      targetDir,
+      dbPath,
+      agent: agentName,
+      taskKey,
+      runKey,
+      sessionKey,
+      status: 'running',
+      reused: false,
+      open: true
+    };
+  } finally {
+    db.close();
+  }
+}
+
+async function runRuntimeSessionLog({ args, options = {}, logger, t }) {
+  const targetDir = resolveTargetDir(args);
+  const { db, dbPath, runtimeDir } = await openRuntimeDb(targetDir);
+
+  try {
+    const agentName = normalizeAgentHandle(requireOption(options, 'agent', t));
+    const message = requireOption(options, 'message', t);
+    const existingSnapshot = await collectRuntimeSessionSnapshot(db, runtimeDir, agentName, { limit: options.limit });
+
+    if (existingSnapshot.session && !existingSnapshot.open) {
+      await clearAgentSession(runtimeDir, agentName);
+    }
+
+    const autoStarted = !existingSnapshot.open;
+    const sessionKey = existingSnapshot.sessionKey || (options.session ? String(options.session).trim() : makeDirectSessionKey(agentName));
+    const title = options.title ? String(options.title).trim() : `Direct session ${agentName}`;
+    const { runKey, taskKey } = await logAgentEvent(db, runtimeDir, {
+      agentName,
+      message,
+      type: options.type || 'session.log',
+      taskTitle: title,
+      sessionKey,
+      meta: options.meta ? (() => { try { return JSON.parse(options.meta); } catch { return { raw: options.meta }; } })() : undefined
+    });
+
+    if (!options.json) {
+      logger.log(`Direct session log recorded: ${agentName} | run: ${runKey} (${dbPath})`);
+    }
+
+    return {
+      ok: true,
+      targetDir,
+      dbPath,
+      agent: agentName,
+      taskKey,
+      runKey,
+      sessionKey,
+      status: 'running',
+      autoStarted,
+      open: true
+    };
+  } finally {
+    db.close();
+  }
+}
+
+async function runRuntimeSessionFinish({ args, options = {}, logger, t }) {
+  const targetDir = resolveTargetDir(args);
+  const { db, dbPath, runtimeDir } = await openRuntimeDb(targetDir);
+
+  try {
+    const agentName = normalizeAgentHandle(requireOption(options, 'agent', t));
+    const existingSnapshot = await collectRuntimeSessionSnapshot(db, runtimeDir, agentName, { limit: options.limit });
+
+    if (!existingSnapshot.open) {
+      throw new Error(`No active direct session for ${agentName}.`);
+    }
+
+    const summary = options.summary ? String(options.summary).trim() : '';
+    const message = options.message ? String(options.message).trim() : (summary || `Session finished for ${agentName}`);
+    const { runKey, taskKey } = await logAgentEvent(db, runtimeDir, {
+      agentName,
+      message,
+      type: options.type || 'session.finish',
+      finish: true,
+      status: options.status || 'completed',
+      summary,
+      meta: options.meta ? (() => { try { return JSON.parse(options.meta); } catch { return { raw: options.meta }; } })() : undefined
+    });
+
+    if (!options.json) {
+      logger.log(`Direct session finished: ${agentName} | run: ${runKey} (${dbPath})`);
+    }
+
+    return {
+      ok: true,
+      targetDir,
+      dbPath,
+      agent: agentName,
+      taskKey,
+      runKey,
+      sessionKey: existingSnapshot.sessionKey,
+      status: options.status || 'completed',
+      finished: true,
+      open: false
+    };
+  } finally {
+    db.close();
+  }
+}
+
+async function runRuntimeSessionStatus({ args, options = {}, logger, t }) {
+  const targetDir = resolveTargetDir(args);
+  const agentName = normalizeAgentHandle(requireOption(options, 'agent', t));
+  const watchSeconds = parseWatchSeconds(options.watch);
+
+  if (watchSeconds && options.json) {
+    throw new Error('--watch cannot be combined with --json.');
+  }
+
+  if (!watchSeconds) {
+    const snapshot = await getRuntimeSessionSnapshot(targetDir, agentName, t, { limit: options.limit });
+    if (!options.json) {
+      printRuntimeSessionSnapshot(snapshot, logger);
+    }
+    return snapshot;
+  }
+
+  while (true) {
+    const snapshot = await getRuntimeSessionSnapshot(targetDir, agentName, t, { limit: options.limit });
+    if (process.stdout && process.stdout.isTTY) {
+      process.stdout.write('\x1Bc');
+    }
+    printRuntimeSessionSnapshot(snapshot, logger);
+    await sleep(Math.round(watchSeconds * 1000));
   }
 }
 
@@ -1389,6 +1767,10 @@ module.exports = {
   runRuntimeFail,
   runRuntimeStatus,
   runRuntimeLog,
+  runRuntimeSessionStart,
+  runRuntimeSessionLog,
+  runRuntimeSessionFinish,
+  runRuntimeSessionStatus,
   runDeliver,
   runOutputStrategyExport,
   runOutputStrategyImport,
