@@ -67,6 +67,13 @@ The npm package is scoped as `@jaimevalasek/aioson`, but the installed CLI comma
 - [`aioson agent:prompt`](docs/en/cli-reference.md#agentprompt) `<agent> [--tool=codex|claude|gemini|opencode]`
 - [`aioson workflow:plan`](docs/en/cli-reference.md#workflowplan) `[path] [--classification=MICRO|SMALL|MEDIUM] [--json]`
 
+**Tracked live sessions for external AI clients**
+- `aioson live:start [path] --tool=codex|claude|gemini|opencode --agent=<agent> [--plan=<file>] [--no-launch]`
+- `aioson runtime:emit [path] --agent=<agent> --type=task_started|task_completed|milestone|correction|block|plan_checkpoint --summary="..."`
+- `aioson live:handoff [path] --agent=<agent> --to=<next-agent> --reason="..."`
+- `aioson live:status [path] [--agent=<agent>] [--watch=2] [--json]`
+- `aioson live:close [path] [--agent=<agent>] [--status=completed|failed] --summary="..."`
+
 **Locale**
 - [`aioson i18n:add`](docs/en/i18n.md#create-a-locale-scaffold) `<locale>`
 - [`aioson locale:apply`](docs/en/i18n.md#apply-localized-agent-prompts) `[path] [--lang=en|pt-BR|es|fr]`
@@ -100,6 +107,14 @@ If your AI CLI does not show a visual agent picker, these commands let you inter
 - [`aioson agents`](docs/en/cli-reference.md#agents) — list all agents and their paths
 - [`aioson agent:prompt setup --tool=codex`](docs/en/cli-reference.md#agentprompt) — get activation prompt for any agent
 - [`aioson workflow:plan --classification=SMALL`](docs/en/cli-reference.md#workflowplan) — see the recommended agent sequence
+
+**Tracked live session flow**
+- `aioson live:start . --tool=codex --agent=deyvin --plan=plan.md --no-launch` — open a tracked session envelope before the AI client starts working
+- `aioson runtime:emit . --agent=deyvin --type=task_started --title="Fix stock modal"` — mark the start of a visible work slice
+- `aioson runtime:emit . --agent=deyvin --type=task_completed --summary="Stock modal fixed" --refs="src/app.js,src/styles.css"` — register a completed slice
+- `aioson live:handoff . --agent=deyvin --to=product --reason="Scope needs product decision"` — keep the same live session and switch active AIOSON agent
+- `aioson live:status . --agent=product --watch=2` — monitor status, active agent, plan progress, and process liveness
+- `aioson live:close . --agent=product --summary="Session closed"` — finish the session and generate `summary.md`
 
 **Setup and locale**
 - [`aioson init my-project --lang=pt-BR --tool=codex`](docs/en/cli-reference.md#init)
@@ -212,6 +227,8 @@ See the [Web3 guide](docs/en/web3.md) for the full reference.
 - [Browser QA guide](docs/en/qa-browser.md) — `qa:init`, `qa:doctor`, `qa:run`, `qa:scan`, `qa:report`
 - [Web3 guide](docs/en/web3.md) — `project_type=dapp`, framework detection, Web3 context fields
 - [JSON schemas](docs/en/json-schemas.md) — `--json` output contracts for all commands
+- [AI clients guide (PT-BR)](docs/pt/clientes-ai.md) — tracked usage with Codex, Claude, Gemini, and OpenCode
+- [Runtime observability (PT-BR)](docs/pt/runtime-observability.md) — `live:start`, `runtime:emit`, `live:handoff`, `live:status`, `live:close`, and dashboard projections
 
 **Release (internal)**
 - [Release guide](docs/en/release.md)
