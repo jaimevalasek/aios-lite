@@ -13,6 +13,6 @@
 - 
 
 ### Upgrade
-- `npx aios-forge@latest update`
-- `aios-forge doctor`
+- `npx @jaimevalasek/aioson@latest update`
+- `aioson doctor`
 

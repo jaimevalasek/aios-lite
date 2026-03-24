@@ -5,6 +5,7 @@ const path = require('node:path');
 const { openRuntimeDb } = require('../runtime-store');
 const { exists } = require('../utils');
 const { runSquadValidate } = require('./squad-validate');
+const { scoreCompletude, scoreProfundidade, scoreQualidadeEstrutural, scorePotencial, gradeFromScore } = require('./squad-score');
 
 function normalizeRel(value) {
   return String(value || '')
@@ -346,6 +347,27 @@ async function runSquadDoctor({ args, options = {}, logger, t }) {
   } else {
     checks.push(makeCheck('formal_validation', true, 'info', 'Manifest formally valid'));
   }
+
+  // Quality score
+  try {
+    const d1 = scoreCompletude(manifest);
+    const d2 = scoreProfundidade(manifest);
+    const d3 = scoreQualidadeEstrutural(manifest);
+    const d4 = scorePotencial(manifest);
+    const total = d1.score + d2.score + d3.score + d4.score;
+    const maxTotal = d1.max + d2.max + d3.max + d4.max;
+    const grade = gradeFromScore(total);
+    const isLow = total < 50;
+    checks.push(
+      makeCheck(
+        'quality_score',
+        !isLow,
+        isLow ? 'warn' : 'info',
+        `Quality score: ${total}/${maxTotal} — ${grade}`,
+        { qualityScore: { total, max: maxTotal, grade } }
+      )
+    );
+  } catch { /* scoring not critical */ }
 
   const summary = {
     failed: checks.filter((check) => check.severity === 'error' && !check.ok).length,

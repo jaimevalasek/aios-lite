@@ -870,6 +870,99 @@ Níveis de ação do gate:
 - `approve` — humano deve aprovar antes de prosseguir (alto risco)
 - `block` — não pode prosseguir sem autorização humana explícita (crítico)
 
+### Review loops (quando qualidade importa)
+
+Para fases que produzem output crítico, adicione um review loop.
+O reviewer deve ser tipicamente um executor diferente do criador.
+
+Árvore de decisão para adicionar review:
+- É um entregável final? → adicione review
+- É um artefato intermediário usado internamente? → pule review
+- O domínio é de alto risco (jurídico, financeiro, médico)? → adicione review + veto conditions
+- O squad roda em pipeline repetitivo? → adicione review
+
+Ao gerar workflows, avalie cada fase e adicione `review` quando apropriado.
+Adicione também `vetoConditions` para fases onde certas qualidades do output são inegociáveis.
+
+Adicione `review` à fase:
+```json
+{
+  "id": "create-content",
+  "title": "Criar Conteúdo",
+  "executor": "copywriter",
+  "executorType": "agent",
+  "dependsOn": ["research"],
+  "output": "rascunho de conteúdo",
+  "review": {
+    "reviewer": "editor",
+    "criteria": [
+      "Conteúdo alinhado com o tom do público-alvo",
+      "Todos os pontos-chave da pesquisa abordados",
+      "Sem afirmações factuais sem evidência"
+    ],
+    "onReject": "create-content",
+    "maxRetries": 2,
+    "retryStrategy": "feedback",
+    "escalateOnMaxRetries": "human"
+  },
+  "vetoConditions": [
+    {
+      "condition": "Output contém texto placeholder ou marcadores TODO",
+      "action": "block",
+      "message": "Conteúdo tem seções inacabadas"
+    },
+    {
+      "condition": "Output tem menos de 50% do tamanho esperado",
+      "action": "reject",
+      "message": "Conteúdo é superficial — precisa de mais substância"
+    }
+  ]
+}
+```
+
+Estratégias de retry:
+- `feedback` (padrão): O feedback específico do reviewer é enviado ao criador.
+  Melhor para trabalho criativo onde a direção importa.
+- `fresh`: O criador recomeça do zero sem ver a tentativa rejeitada.
+  Melhor quando a primeira tentativa foi na direção errada.
+- `alternative`: Um executor diferente (se disponível) assume a tarefa.
+  Melhor quando o executor original tem um ponto cego.
+
+O protocolo de review loop está definido em `.aioson/tasks/squad-review.md`.
+
+### Model tiering (obrigatório para todo executor)
+
+Atribua um `modelTier` a cada executor usando esta árvore de decisão:
+
+```
+EXECUTOR
+  ├── usesLLM: false (worker, determinístico)
+  │   └── tier: none (custo zero)
+  ├── Role criativo/generativo (escritor, copywriter, roteirista)
+  │   └── tier: powerful (qualidade é o produto)
+  ├── Role de orquestração/síntese (orquestrador, reviewer, editor)
+  │   └── tier: powerful (qualidade do julgamento importa)
+  ├── Role de pesquisa/análise (pesquisador, analista)
+  │   └── tier: fast (volume > profundidade)
+  ├── Role de formatação/estruturação (formatador, publisher)
+  │   └── tier: fast (maiormente mecânico)
+  └── Outro ou misto
+      └── tier: balanced (padrão)
+```
+
+Mostre a atribuição de tier na validação de classificação dos executores.
+
+### Decomposição em tasks (quando o executor tem processo multi-step)
+
+Nem todo executor precisa de tasks. Use a árvore de decisão em `.aioson/tasks/squad-task-decompose.md`.
+Quando decompor: mantenha o agent file focado na identidade, mova detalhes de processo para task files em `.aioson/squads/{squad-slug}/agents/{executor-slug}/tasks/`.
+Registre as tasks no array `tasks` do executor no manifest.
+
+### Injeção de formatos (para squads de conteúdo)
+
+Para squads orientados a conteúdo, verifique `.aioson/skills/squad/formats/catalog.json` para formatos disponíveis.
+Referencie formatos selecionados no campo `formats` do executor no manifest.
+
 ### Passo 3c — Gere o checklist de qualidade
 
 Gere `.aioson/squads/{squad-slug}/checklists/quality.md` para todo squad.
@@ -1057,6 +1150,18 @@ Limiares de score:
 - 5/5 → Excelente
 - 3-4/5 → Boa
 - 1-2/5 → Mínima — sugira o que adicionar em seguida
+
+**Score de qualidade (avaliação profunda — mostrar após cobertura):**
+
+Após o score de cobertura, sugira a avaliação profunda de qualidade:
+
+```
+Para uma análise detalhada em 4 dimensões (100 pontos):
+  aioson squad:score . --squad={slug}
+
+Dimensões: Completude (25), Profundidade (25), Qualidade Estrutural (25), Potencial (25)
+Notas: S (90+), A (80+), B (70+), C (50+), D (<50)
+```
 
 Depois execute imediatamente o aquecimento — mostre como cada especialista abordaria o objetivo declarado AGORA com substância mínima:
 - leitura do problema

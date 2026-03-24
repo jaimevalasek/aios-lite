@@ -11,7 +11,7 @@ const BLOCK_ORDER = ['A', 'B', 'C', 'D'];
 const BLOCKS = {
   A: {
     key: 'A',
-    label: 'Bloco A — Core do aios-forge',
+    label: 'Bloco A — Core do aioson',
     repo: 'core',
     command: ['npm', 'run', 'test:genome-2.0:block-a'],
     gate: [

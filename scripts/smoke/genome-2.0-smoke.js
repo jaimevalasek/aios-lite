@@ -40,7 +40,7 @@ async function ensureFixtureWorkspace(workspaceRoot) {
 async function runGenome20SmokeTest(options = {}) {
   const workspaceRoot = options.workspaceRoot
     ? path.resolve(options.workspaceRoot)
-    : await fs.mkdtemp(path.join(os.tmpdir(), 'aios-forge-genome-2-smoke-'));
+    : await fs.mkdtemp(path.join(os.tmpdir(), 'aioson-genome-2-smoke-'));
   const projectRoot = await ensureFixtureWorkspace(workspaceRoot);
   const steps = [];
 

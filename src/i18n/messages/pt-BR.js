@@ -85,6 +85,18 @@ module.exports = {
       'aioson squad:investigate [path] [--sub=list|show|score|link|register] [--investigation=<slug>] [--squad=<slug>] [--locale=pt-BR]',
     help_squad_learning:
       'aioson squad:learning [path] [--sub=list|stats|archive|promote|export] [--squad=<slug>] [--status=<status>] [--locale=pt-BR]',
+    help_squad_dashboard:
+      'aioson squad:dashboard [path] [--port=4180] [--squad=<slug>] [--locale=pt-BR]',
+    help_squad_worker:
+      'aioson squad:worker [path] [--sub=list|run|test|logs|scaffold] [--squad=<slug>] [--worker=<slug>] [--input=<json>] [--locale=pt-BR]',
+    help_squad_daemon:
+      'aioson squad:daemon [path] [--sub=start|status|stop|logs] [--squad=<slug>] [--port=<N>] [--locale=pt-BR]',
+    help_squad_mcp:
+      'aioson squad:mcp [path] [--sub=status|connectors|configure|test] [--squad=<slug>] [--mcp=<slug>] [--connector=<id>]',
+    help_squad_roi:
+      'aioson squad:roi [path] [--sub=config|metric|report|export] [--squad=<slug>] [--key=<metrica>] [--value=<N>]',
+    help_squad_score:
+      'aioson squad:score [path] --squad=<slug> [--locale=pt-BR]',
     help_learning:
       'aioson learning [path] [--sub=list|stats|promote] [--status=<status>] [--id=<learning-id>] [--locale=pt-BR]',
     help_runtime_init:
@@ -964,6 +976,90 @@ module.exports = {
     linked: 'Investigacao "{investigation}" vinculada ao squad "{squad}".',
     registered: 'Investigacao registrada: {slug} ({path})',
     unknown_sub: 'Subcomando desconhecido: {sub}. Use: list, show, score, link, register.'
+  },
+  squad_daemon: {
+    squad_required: 'Slug do squad e obrigatorio. Use --squad=<slug>.',
+    started: 'Daemon iniciado para squad "{squad}" na porta {port} ({workers} workers, {cron} cron jobs)',
+    webhook_hint: 'Endpoint webhook: POST http://127.0.0.1:{port}/webhook/<worker-slug>',
+    stop_hint: 'Pressione Ctrl+C para parar.',
+    stopping: 'Parando daemon...',
+    start_failed: 'Falha ao iniciar daemon: {error}',
+    no_runtime: 'Runtime store nao encontrado. Execute aioson runtime:init primeiro.',
+    no_daemons: 'Nenhum registro de daemon encontrado.',
+    not_found: 'Nenhum registro de daemon para o squad: {squad}',
+    not_running: 'O daemon do squad "{squad}" nao esta rodando.',
+    signal_sent: 'SIGTERM enviado ao daemon de "{squad}" (pid {pid}).',
+    process_gone: 'O processo do daemon de "{squad}" nao esta mais rodando.',
+    no_logs: 'Nenhum log de atividade do daemon encontrado.',
+    unknown_sub: 'Subcomando desconhecido: {sub}. Use: start, status, stop, logs.'
+  },
+
+  squad_mcp: {
+    squad_required: 'Slug do squad e obrigatorio. Use --squad=<slug>.',
+    connectors_title: 'Conectores MCP Integrados:',
+    actions: 'Acoes',
+    required_config: 'Obrigatorio',
+    no_integrations: 'Nenhuma integracao configurada para o squad "{squad}".',
+    missing_config: 'Config ausente',
+    calls: 'Chamadas',
+    mcp_required: 'Slug do MCP e obrigatorio. Use --mcp=<slug>.',
+    connector_required: 'ID do conector e obrigatorio. Use --connector=<id>.',
+    unknown_connector: 'Conector desconhecido: {connector}. Use --sub=connectors para listar.',
+    configured: 'Integracao "{mcp}" configurada com conector "{connector}" (status: {status}).',
+    still_missing: 'Ainda faltam env/config: {keys}',
+    not_configured: 'Integracao "{mcp}" nao esta configurada.',
+    test_missing: 'Integracao "{mcp}" tem config ausente: {keys}',
+    test_ok: 'Integracao "{mcp}" ({connector}) — config OK.',
+    health_url: 'URL de health check: {url}',
+    unknown_sub: 'Subcomando desconhecido: {sub}. Use: status, connectors, configure, test.'
+  },
+
+  squad_roi: {
+    squad_required: 'Slug do squad e obrigatorio. Use --squad=<slug>.',
+    config_saved: 'Config de ROI salva para o squad "{squad}".',
+    pricing_model: 'Modelo de precificacao',
+    setup_fee: 'Taxa de implantacao',
+    monthly_fee: 'Mensalidade',
+    percentage: 'Percentual',
+    contract: 'Contrato',
+    metric_required: 'Chave e valor da metrica sao obrigatorios. Use --key=<nome> --value=<N>.',
+    metric_saved: 'Metrica "{key}" = {value} salva para o squad "{squad}".',
+    no_metrics: 'Nenhuma metrica encontrada para o squad "{squad}".',
+    report_title: 'Relatorio de ROI — {squad}',
+    baseline: 'Baseline',
+    actual: 'Atual',
+    target: 'Meta',
+    period: 'Periodo',
+    cost_section: 'Resumo de Custos:',
+    monthly_cost: 'Custo mensal efetivo',
+    exported: 'Relatorio exportado para {file} ({format}).',
+    unknown_sub: 'Subcomando desconhecido: {sub}. Use: config, metric, report, export.'
+  },
+
+  squad_worker: {
+    squad_required: 'Slug do squad e obrigatorio. Use --squad=<slug>.',
+    no_workers: 'Nenhum worker encontrado para este squad.',
+    run_usage: 'Uso: aioson squad:worker --sub=run --squad=<slug> --worker=<slug> [--input=<json>]',
+    test_usage: 'Uso: aioson squad:worker --sub=test --squad=<slug> --worker=<slug>',
+    scaffold_usage: 'Uso: aioson squad:worker --sub=scaffold --squad=<slug> --worker=<slug> [--trigger=manual|event|scheduled]',
+    not_found: 'Worker nao encontrado: {worker}',
+    invalid_input: 'JSON invalido. Forneca JSON valido com --input.',
+    run_success: 'Worker "{worker}" concluido com sucesso.',
+    run_failed: 'Worker "{worker}" falhou: {error}',
+    test_passed: 'Worker "{worker}" teste aprovado.',
+    test_failed: 'Worker "{worker}" teste falhou: {error}',
+    scaffold_created: 'Worker "{worker}" criado em {path}',
+    no_runtime: 'Runtime store nao encontrado. Execute aioson runtime:init primeiro.',
+    no_logs: 'Nenhuma execucao de worker encontrada.',
+    unknown_sub: 'Subcomando desconhecido: {sub}. Use: list, run, test, logs, scaffold.'
+  },
+
+  squad_dashboard: {
+    started: 'Squad Dashboard rodando em {url} (porta {port})',
+    filtered: 'Filtrando para squad: {squad}',
+    stop_hint: 'Pressione Ctrl+C para parar.',
+    stopping: 'Parando Squad Dashboard...',
+    port_in_use: 'Porta {port} ja esta em uso. Tente --port=<outra>'
   },
   implementation_plan: {
     not_found: 'Plano de implementacao nao encontrado: {file}',

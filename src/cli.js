@@ -48,6 +48,12 @@ const { runImplementationPlan } = require('./commands/implementation-plan');
 const { runSquadPlan } = require('./commands/squad-plan');
 const { runSquadLearning } = require('./commands/squad-learning');
 const { runLearning } = require('./commands/learning');
+const { runSquadDashboard } = require('./commands/squad-dashboard');
+const { runSquadWorker } = require('./commands/squad-worker');
+const { runSquadDaemon } = require('./commands/squad-daemon');
+const { runSquadMcp } = require('./commands/squad-mcp');
+const { runSquadRoi } = require('./commands/squad-roi');
+const { runSquadScore } = require('./commands/squad-score');
 const {
   runRuntimeInit,
   runRuntimeIngest,
@@ -182,6 +188,18 @@ const JSON_SUPPORTED_COMMANDS = new Set([
   'squad-agent-create',
   'squad:investigate',
   'squad-investigate',
+  'squad:dashboard',
+  'squad-dashboard',
+  'squad:worker',
+  'squad-worker',
+  'squad:daemon',
+  'squad-daemon',
+  'squad:mcp',
+  'squad-mcp',
+  'squad:roi',
+  'squad-roi',
+  'squad:score',
+  'squad-score',
   'plan:show',
   'plan:status',
   'plan:checkpoint',
@@ -345,6 +363,12 @@ function printHelp(t, logger) {
   logHelpLine(t, logger, 'cli.help_squad_pipeline');
   logHelpLine(t, logger, 'cli.help_squad_agent_create');
   logHelpLine(t, logger, 'cli.help_squad_investigate');
+  logHelpLine(t, logger, 'cli.help_squad_dashboard');
+  logHelpLine(t, logger, 'cli.help_squad_worker');
+  logHelpLine(t, logger, 'cli.help_squad_daemon');
+  logHelpLine(t, logger, 'cli.help_squad_mcp');
+  logHelpLine(t, logger, 'cli.help_squad_roi');
+  logHelpLine(t, logger, 'cli.help_squad_score');
   logHelpLine(t, logger, 'cli.help_squad_learning');
   logHelpLine(t, logger, 'cli.help_learning');
   logHelpLine(t, logger, 'cli.help_runtime_init');
@@ -547,6 +571,22 @@ async function main() {
       result = await runSquadAgentCreate({ args, options, logger: commandLogger, t });
     } else if (command === 'squad:investigate' || command === 'squad-investigate') {
       result = await runSquadInvestigate({ args, options, logger: commandLogger, t });
+    } else if (command === 'squad:dashboard' || command === 'squad-dashboard') {
+      result = await runSquadDashboard({ args, options, logger: commandLogger, t });
+    } else if (command === 'squad:worker' || command === 'squad-worker') {
+      const sub = options.sub || 'list';
+      result = await runSquadWorker({ args, options: { ...options, sub }, logger: commandLogger, t });
+    } else if (command === 'squad:daemon' || command === 'squad-daemon') {
+      const sub = options.sub || 'status';
+      result = await runSquadDaemon({ args, options: { ...options, sub }, logger: commandLogger, t });
+    } else if (command === 'squad:mcp' || command === 'squad-mcp') {
+      const sub = options.sub || 'status';
+      result = await runSquadMcp({ args, options: { ...options, sub }, logger: commandLogger, t });
+    } else if (command === 'squad:roi' || command === 'squad-roi') {
+      const sub = options.sub || 'report';
+      result = await runSquadRoi({ args, options: { ...options, sub }, logger: commandLogger, t });
+    } else if (command === 'squad:score' || command === 'squad-score') {
+      result = await runSquadScore({ args, options, logger: commandLogger, translator: t });
     } else if (command === 'squad:plan' || command === 'squad-plan') {
       result = await runSquadPlan({ args, options, logger: commandLogger, t });
     } else if (command === 'squad:learning' || command === 'squad-learning') {

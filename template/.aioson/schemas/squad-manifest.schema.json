@@ -181,6 +181,33 @@
               }
             }
           },
+          "modelTier": {
+            "type": "string",
+            "enum": ["powerful", "balanced", "fast", "none"],
+            "default": "balanced",
+            "description": "Model tier for this executor. powerful: best model (Opus/o3). balanced: good model (Sonnet/GPT-4o). fast: cheap model (Haiku/Flash). none: no LLM (workers)."
+          },
+          "tasks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["slug", "title", "order"],
+              "properties": {
+                "slug": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+                "title": { "type": "string" },
+                "order": { "type": "integer", "minimum": 1 },
+                "file": { "type": "string", "description": "Path to the task .md file" },
+                "input": { "type": "string", "description": "What this task receives" },
+                "output": { "type": "string", "description": "What this task produces" }
+              }
+            },
+            "description": "Granular tasks within this executor, executed in order"
+          },
+          "formats": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Format slugs from the format catalog that this executor uses"
+          },
           "skills": { "type": "array", "items": { "type": "string" } },
           "genomes": {
             "type": "array",
@@ -389,7 +416,66 @@
                     "reason": { "type": "string" }
                   }
                 },
-                "checklist": { "type": "string", "description": "Path to quality checklist for this phase" }
+                "checklist": { "type": "string", "description": "Path to quality checklist for this phase" },
+                "review": {
+                  "type": "object",
+                  "properties": {
+                    "reviewer": {
+                      "type": "string",
+                      "description": "Executor slug that reviews this phase's output"
+                    },
+                    "criteria": {
+                      "type": "array",
+                      "items": { "type": "string" },
+                      "description": "What the reviewer checks"
+                    },
+                    "onReject": {
+                      "type": "string",
+                      "description": "Phase ID to return to on rejection"
+                    },
+                    "maxRetries": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 5,
+                      "default": 2,
+                      "description": "Max rejection cycles before escalation"
+                    },
+                    "retryStrategy": {
+                      "type": "string",
+                      "enum": ["feedback", "fresh", "alternative"],
+                      "default": "feedback",
+                      "description": "feedback: send rejection reason back. fresh: restart from scratch. alternative: ask a different executor."
+                    },
+                    "escalateOnMaxRetries": {
+                      "type": "string",
+                      "enum": ["human", "skip", "fail"],
+                      "default": "human",
+                      "description": "What to do when maxRetries exceeded"
+                    }
+                  }
+                },
+                "vetoConditions": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": ["condition", "action"],
+                    "properties": {
+                      "condition": {
+                        "type": "string",
+                        "description": "Natural language condition to check"
+                      },
+                      "action": {
+                        "type": "string",
+                        "enum": ["reject", "block", "warn"],
+                        "description": "reject: auto-retry. block: stop pipeline. warn: continue with warning."
+                      },
+                      "message": {
+                        "type": "string",
+                        "description": "Message to show when condition is triggered"
+                      }
+                    }
+                  }
+                }
               }
             }
           }

@@ -41,6 +41,10 @@
           "title": { "type": "string" },
           "role": { "type": "string" },
           "focus": { "type": "array", "items": { "type": "string" } },
+          "modelTier": {
+            "type": "string",
+            "enum": ["powerful", "balanced", "fast", "none"]
+          },
           "skills": { "type": "array", "items": { "type": "string" } },
           "genomes": {
             "type": "array",
@@ -168,6 +172,17 @@
         "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
         "dimensionsCovered": { "type": "integer", "minimum": 0, "maximum": 7 },
         "date": { "type": "string", "format": "date" }
+      }
+    },
+    "profiling": {
+      "type": "object",
+      "description": "Referência ao profiling de persona via pipeline profiler",
+      "properties": {
+        "person": { "type": "string" },
+        "genomePath": { "type": "string" },
+        "genomeSlug": { "type": "string" },
+        "evidenceMode": { "type": "string", "enum": ["verified", "inferred", "mixed"] },
+        "profiledAt": { "type": "string", "format": "date-time" }
       }
     },
     "confidence": {

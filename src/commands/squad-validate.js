@@ -197,7 +197,56 @@ async function validateSemanticDeep(projectDir, slug, manifest) {
     }
   }
 
-  // 6. Readiness não contradiz blockers
+  // 6. Task decomposition validation
+  for (const exec of executors) {
+    const tasks = Array.isArray(exec.tasks) ? exec.tasks : [];
+    if (tasks.length > 0) {
+      const orders = tasks.map(t => t.order).sort((a, b) => a - b);
+      for (let i = 0; i < orders.length; i++) {
+        if (orders[i] !== i + 1) {
+          warnings.push(`Executor "${exec.slug}": task order is not sequential (expected ${i + 1}, got ${orders[i]})`);
+          break;
+        }
+      }
+    }
+  }
+
+  // 6b. Model tiering validation
+  for (const exec of executors) {
+    if (exec.usesLLM === false && exec.modelTier && exec.modelTier !== 'none') {
+      warnings.push(`Executor "${exec.slug}": usesLLM is false but modelTier is "${exec.modelTier}" (expected "none")`);
+    }
+    if (exec.type === 'worker' && exec.modelTier && exec.modelTier !== 'none') {
+      warnings.push(`Executor "${exec.slug}": type is "worker" but modelTier is "${exec.modelTier}" (expected "none")`);
+    }
+  }
+
+  // 7. Review loop validation
+  const workflows = Array.isArray(manifest.workflows) ? manifest.workflows : [];
+  const executorSlugs = executors.map(e => e.slug);
+  for (const wf of workflows) {
+    const phases = Array.isArray(wf.phases) ? wf.phases : [];
+    const phaseIds = phases.map(p => p.id);
+    for (const phase of phases) {
+      if (phase.review) {
+        const rv = phase.review;
+        if (rv.reviewer && !executorSlugs.includes(rv.reviewer)) {
+          errors.push(`Workflow "${wf.slug}" phase "${phase.id}": reviewer "${rv.reviewer}" is not a declared executor`);
+        }
+        if (rv.onReject && !phaseIds.includes(rv.onReject)) {
+          errors.push(`Workflow "${wf.slug}" phase "${phase.id}": onReject target "${rv.onReject}" is not a valid phase ID`);
+        }
+        if (rv.reviewer && rv.reviewer === phase.executor) {
+          warnings.push(`Workflow "${wf.slug}" phase "${phase.id}": reviewer should not be the same as the creator executor`);
+        }
+      }
+      if (phase.review && (!phase.vetoConditions || phase.vetoConditions.length === 0)) {
+        warnings.push(`Workflow "${wf.slug}" phase "${phase.id}": has review but no vetoConditions — consider adding veto guards`);
+      }
+    }
+  }
+
+  // 7. Readiness não contradiz blockers
   if (manifest.readiness) {
     for (const [dim, val] of Object.entries(manifest.readiness)) {
       if (val && val.status === 'ready' && val.blocker) {

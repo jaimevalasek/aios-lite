@@ -496,6 +496,100 @@ async function openRuntimeDb(targetDir, options = {}) {
     CREATE INDEX IF NOT EXISTS idx_squad_learnings_status ON squad_learnings(status);
     CREATE INDEX IF NOT EXISTS idx_project_learnings_type ON project_learnings(type);
     CREATE INDEX IF NOT EXISTS idx_project_learnings_status ON project_learnings(status);
+
+    CREATE TABLE IF NOT EXISTS squad_metrics (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      squad_slug TEXT NOT NULL,
+      metric_key TEXT NOT NULL,
+      metric_value REAL NOT NULL,
+      metric_unit TEXT,
+      period TEXT,
+      baseline REAL,
+      target REAL,
+      source TEXT DEFAULT 'manual',
+      notes TEXT,
+      created_at TEXT DEFAULT (datetime('now')),
+      UNIQUE(squad_slug, metric_key, period)
+    );
+    CREATE INDEX IF NOT EXISTS idx_squad_metrics_squad ON squad_metrics(squad_slug, period DESC);
+
+    CREATE TABLE IF NOT EXISTS worker_runs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      squad_slug TEXT NOT NULL,
+      worker_slug TEXT NOT NULL,
+      trigger_type TEXT NOT NULL DEFAULT 'manual',
+      input_json TEXT,
+      output_json TEXT,
+      status TEXT DEFAULT 'running',
+      error_message TEXT,
+      duration_ms INTEGER,
+      attempt INTEGER DEFAULT 1,
+      created_at TEXT DEFAULT (datetime('now')),
+      completed_at TEXT
+    );
+    CREATE INDEX IF NOT EXISTS idx_worker_runs_squad ON worker_runs(squad_slug, created_at DESC);
+
+    CREATE TABLE IF NOT EXISTS squad_daemons (
+      squad_slug TEXT PRIMARY KEY,
+      status TEXT DEFAULT 'stopped',
+      pid INTEGER,
+      port INTEGER,
+      started_at TEXT,
+      last_heartbeat TEXT,
+      config_json TEXT,
+      error_message TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS mcp_status (
+      squad_slug TEXT NOT NULL,
+      mcp_slug TEXT NOT NULL,
+      connector TEXT NOT NULL,
+      status TEXT DEFAULT 'unconfigured',
+      last_check TEXT,
+      last_error TEXT,
+      calls_total INTEGER DEFAULT 0,
+      calls_failed INTEGER DEFAULT 0,
+      PRIMARY KEY (squad_slug, mcp_slug)
+    );
+
+    CREATE TABLE IF NOT EXISTS workflow_reviews (
+      review_id TEXT PRIMARY KEY,
+      squad_slug TEXT NOT NULL,
+      workflow_slug TEXT NOT NULL,
+      phase_id TEXT NOT NULL,
+      attempt_number INTEGER DEFAULT 1,
+      reviewer_slug TEXT NOT NULL,
+      verdict TEXT NOT NULL,
+      score REAL,
+      feedback TEXT,
+      veto_triggered TEXT,
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_workflow_reviews_squad ON workflow_reviews(squad_slug, workflow_slug);
+
+    CREATE TABLE IF NOT EXISTS squad_scores (
+      squad_slug TEXT NOT NULL,
+      dimension TEXT NOT NULL,
+      score INTEGER NOT NULL,
+      max_score INTEGER NOT NULL,
+      details_json TEXT,
+      scored_at TEXT DEFAULT (datetime('now')),
+      PRIMARY KEY (squad_slug, dimension, scored_at)
+    );
+    CREATE INDEX IF NOT EXISTS idx_squad_scores_squad ON squad_scores(squad_slug);
+
+    CREATE TABLE IF NOT EXISTS squad_roi_config (
+      squad_slug TEXT PRIMARY KEY,
+      pricing_model TEXT DEFAULT 'fixed',
+      setup_fee REAL,
+      monthly_fee REAL,
+      percentage_fee REAL,
+      percentage_base TEXT,
+      currency TEXT DEFAULT 'BRL',
+      contract_months INTEGER DEFAULT 12,
+      created_at TEXT DEFAULT (datetime('now')),
+      updated_at TEXT DEFAULT (datetime('now'))
+    );
   `);
 
   ensureLegacyColumns(db);
@@ -2185,6 +2279,149 @@ function getProjectLearningStats(db) {
   `).all();
 }
 
+// --- Squad Metrics CRUD ---
+
+function upsertSquadMetric(db, { squadSlug, metricKey, value, unit, period, baseline, target, source, notes }) {
+  db.prepare(`
+    INSERT INTO squad_metrics (squad_slug, metric_key, metric_value, metric_unit, period, baseline, target, source, notes)
+    VALUES (@squad_slug, @metric_key, @metric_value, @metric_unit, @period, @baseline, @target, @source, @notes)
+    ON CONFLICT(squad_slug, metric_key, period) DO UPDATE SET
+      metric_value = excluded.metric_value,
+      metric_unit = excluded.metric_unit,
+      baseline = COALESCE(excluded.baseline, squad_metrics.baseline),
+      target = COALESCE(excluded.target, squad_metrics.target),
+      source = excluded.source,
+      notes = COALESCE(excluded.notes, squad_metrics.notes)
+  `).run({
+    squad_slug: String(squadSlug).trim(),
+    metric_key: String(metricKey).trim(),
+    metric_value: Number(value),
+    metric_unit: unit ? String(unit).trim() : null,
+    period: period ? String(period).trim() : null,
+    baseline: baseline != null ? Number(baseline) : null,
+    target: target != null ? Number(target) : null,
+    source: source ? String(source).trim() : 'manual',
+    notes: notes ? String(notes).trim() : null
+  });
+}
+
+function listSquadMetrics(db, squadSlug, period) {
+  if (period) {
+    return db.prepare(
+      'SELECT * FROM squad_metrics WHERE squad_slug = ? AND period = ? ORDER BY metric_key ASC'
+    ).all(squadSlug, period);
+  }
+  return db.prepare(
+    'SELECT * FROM squad_metrics WHERE squad_slug = ? ORDER BY period DESC, metric_key ASC'
+  ).all(squadSlug);
+}
+
+function deleteSquadMetric(db, squadSlug, metricKey, period) {
+  db.prepare(
+    'DELETE FROM squad_metrics WHERE squad_slug = ? AND metric_key = ? AND period = ?'
+  ).run(squadSlug, metricKey, period);
+}
+
+// --- Worker Runs CRUD ---
+
+function insertWorkerRun(db, { squadSlug, workerSlug, triggerType, inputJson, outputJson, status, errorMessage, durationMs, attempt }) {
+  const now = nowIso();
+  return db.prepare(`
+    INSERT INTO worker_runs (squad_slug, worker_slug, trigger_type, input_json, output_json, status, error_message, duration_ms, attempt, created_at, completed_at)
+    VALUES (@squad_slug, @worker_slug, @trigger_type, @input_json, @output_json, @status, @error_message, @duration_ms, @attempt, @created_at, @completed_at)
+  `).run({
+    squad_slug: String(squadSlug).trim(),
+    worker_slug: String(workerSlug).trim(),
+    trigger_type: String(triggerType || 'manual').trim(),
+    input_json: inputJson || null,
+    output_json: outputJson || null,
+    status: String(status || 'running').trim(),
+    error_message: errorMessage || null,
+    duration_ms: durationMs != null ? Number(durationMs) : null,
+    attempt: Number(attempt || 1),
+    created_at: now,
+    completed_at: (status === 'completed' || status === 'failed') ? now : null
+  });
+}
+
+function listWorkerRuns(db, squadSlug, limit = 50) {
+  return db.prepare(
+    'SELECT * FROM worker_runs WHERE squad_slug = ? ORDER BY created_at DESC LIMIT ?'
+  ).all(squadSlug, limit);
+}
+
+function getWorkerRunStats(db, squadSlug) {
+  return db.prepare(`
+    SELECT worker_slug, status, COUNT(*) as count,
+           AVG(duration_ms) as avg_duration_ms
+    FROM worker_runs WHERE squad_slug = ?
+    GROUP BY worker_slug, status
+    ORDER BY worker_slug, status
+  `).all(squadSlug);
+}
+
+// --- MCP Status CRUD ---
+
+function upsertMcpStatus(db, { squadSlug, mcpSlug, connector, status, lastError }) {
+  db.prepare(`
+    INSERT INTO mcp_status (squad_slug, mcp_slug, connector, status, last_check, last_error)
+    VALUES (?, ?, ?, ?, datetime('now'), ?)
+    ON CONFLICT(squad_slug, mcp_slug) DO UPDATE SET
+      connector = excluded.connector,
+      status = excluded.status,
+      last_check = excluded.last_check,
+      last_error = excluded.last_error
+  `).run(squadSlug, mcpSlug, connector, status || 'unconfigured', lastError || null);
+}
+
+function incrementMcpCalls(db, squadSlug, mcpSlug, failed) {
+  if (failed) {
+    db.prepare(`
+      UPDATE mcp_status SET calls_total = calls_total + 1, calls_failed = calls_failed + 1
+      WHERE squad_slug = ? AND mcp_slug = ?
+    `).run(squadSlug, mcpSlug);
+  } else {
+    db.prepare(`
+      UPDATE mcp_status SET calls_total = calls_total + 1
+      WHERE squad_slug = ? AND mcp_slug = ?
+    `).run(squadSlug, mcpSlug);
+  }
+}
+
+function listMcpStatus(db, squadSlug) {
+  return db.prepare('SELECT * FROM mcp_status WHERE squad_slug = ? ORDER BY mcp_slug').all(squadSlug);
+}
+
+function getMcpStatus(db, squadSlug, mcpSlug) {
+  return db.prepare('SELECT * FROM mcp_status WHERE squad_slug = ? AND mcp_slug = ?').get(squadSlug, mcpSlug);
+}
+
+// --- ROI Config CRUD ---
+
+function upsertROIConfig(db, { squadSlug, pricingModel, setupFee, monthlyFee, percentageFee, percentageBase, currency, contractMonths }) {
+  db.prepare(`
+    INSERT INTO squad_roi_config (squad_slug, pricing_model, setup_fee, monthly_fee, percentage_fee, percentage_base, currency, contract_months)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(squad_slug) DO UPDATE SET
+      pricing_model = excluded.pricing_model,
+      setup_fee = excluded.setup_fee,
+      monthly_fee = excluded.monthly_fee,
+      percentage_fee = excluded.percentage_fee,
+      percentage_base = excluded.percentage_base,
+      currency = excluded.currency,
+      contract_months = excluded.contract_months,
+      updated_at = datetime('now')
+  `).run(squadSlug, pricingModel || 'fixed', setupFee || null, monthlyFee || null, percentageFee || null, percentageBase || null, currency || 'BRL', contractMonths || 12);
+}
+
+function getROIConfig(db, squadSlug) {
+  return db.prepare('SELECT * FROM squad_roi_config WHERE squad_slug = ?').get(squadSlug);
+}
+
+function deleteROIConfig(db, squadSlug) {
+  return db.prepare('DELETE FROM squad_roi_config WHERE squad_slug = ?').run(squadSlug);
+}
+
 module.exports = {
   resolveRuntimePaths,
   runtimeStoreExists,
@@ -2261,5 +2498,22 @@ module.exports = {
   updateProjectLearningStatus,
   reinforceProjectLearning,
   promoteProjectLearning,
-  getProjectLearningStats
+  getProjectLearningStats,
+  // Squad Metrics CRUD
+  upsertSquadMetric,
+  listSquadMetrics,
+  deleteSquadMetric,
+  // Worker Runs CRUD
+  insertWorkerRun,
+  listWorkerRuns,
+  getWorkerRunStats,
+  // MCP Status CRUD
+  upsertMcpStatus,
+  incrementMcpCalls,
+  listMcpStatus,
+  getMcpStatus,
+  // ROI Config CRUD
+  upsertROIConfig,
+  getROIConfig,
+  deleteROIConfig
 };

@@ -76,6 +76,18 @@ module.exports = {
       'aioson squad:investigate [path] [--sub=list|show|score|link|register] [--investigation=<slug>] [--squad=<slug>] [--locale=fr]',
     help_squad_learning:
       'aioson squad:learning [path] [--sub=list|stats|archive|promote|export] [--squad=<slug>] [--status=<status>] [--locale=fr]',
+    help_squad_dashboard:
+      'aioson squad:dashboard [path] [--port=4180] [--squad=<slug>] [--locale=fr]',
+    help_squad_worker:
+      'aioson squad:worker [path] [--sub=list|run|test|logs|scaffold] [--squad=<slug>] [--worker=<slug>] [--input=<json>] [--locale=fr]',
+    help_squad_daemon:
+      'aioson squad:daemon [path] [--sub=start|status|stop|logs] [--squad=<slug>] [--port=<N>] [--locale=fr]',
+    help_squad_mcp:
+      'aioson squad:mcp [path] [--sub=status|connectors|configure|test] [--squad=<slug>] [--mcp=<slug>] [--connector=<id>]',
+    help_squad_roi:
+      'aioson squad:roi [path] [--sub=config|metric|report|export] [--squad=<slug>] [--key=<metrique>] [--value=<N>]',
+    help_squad_score:
+      'aioson squad:score [path] --squad=<slug> [--locale=fr]',
     help_learning:
       'aioson learning [path] [--sub=list|stats|promote] [--status=<status>] [--id=<learning-id>] [--locale=fr]',
     dashboard_moved:
@@ -795,6 +807,90 @@ module.exports = {
     linked: 'Investigation "{investigation}" liee au squad "{squad}".',
     registered: 'Investigation enregistree : {slug} ({path})',
     unknown_sub: 'Sous-commande inconnue : {sub}. Utilisez : list, show, score, link, register.'
+  },
+  squad_daemon: {
+    squad_required: 'Le slug du squad est obligatoire. Utilisez --squad=<slug>.',
+    started: 'Daemon demarre pour le squad "{squad}" sur le port {port} ({workers} workers, {cron} cron jobs)',
+    webhook_hint: 'Endpoint webhook : POST http://127.0.0.1:{port}/webhook/<worker-slug>',
+    stop_hint: 'Appuyez sur Ctrl+C pour arreter.',
+    stopping: 'Arret du daemon...',
+    start_failed: 'Echec du demarrage du daemon : {error}',
+    no_runtime: 'Runtime store non trouve. Executez aioson runtime:init d\'abord.',
+    no_daemons: 'Aucun enregistrement de daemon trouve.',
+    not_found: 'Aucun enregistrement de daemon pour le squad : {squad}',
+    not_running: 'Le daemon du squad "{squad}" n\'est pas en cours d\'execution.',
+    signal_sent: 'SIGTERM envoye au daemon de "{squad}" (pid {pid}).',
+    process_gone: 'Le processus du daemon de "{squad}" n\'est plus en cours d\'execution.',
+    no_logs: 'Aucun journal d\'activite du daemon trouve.',
+    unknown_sub: 'Sous-commande inconnue : {sub}. Utilisez : start, status, stop, logs.'
+  },
+
+  squad_mcp: {
+    squad_required: 'Le slug du squad est obligatoire. Utilisez --squad=<slug>.',
+    connectors_title: 'Connecteurs MCP Integres :',
+    actions: 'Actions',
+    required_config: 'Requis',
+    no_integrations: 'Aucune integration configuree pour le squad "{squad}".',
+    missing_config: 'Config manquante',
+    calls: 'Appels',
+    mcp_required: 'Le slug du MCP est obligatoire. Utilisez --mcp=<slug>.',
+    connector_required: 'L\'ID du connecteur est obligatoire. Utilisez --connector=<id>.',
+    unknown_connector: 'Connecteur inconnu : {connector}. Utilisez --sub=connectors pour lister.',
+    configured: 'Integration "{mcp}" configuree avec le connecteur "{connector}" (statut : {status}).',
+    still_missing: 'Config env encore manquante : {keys}',
+    not_configured: 'L\'integration "{mcp}" n\'est pas configuree.',
+    test_missing: 'L\'integration "{mcp}" a une config manquante : {keys}',
+    test_ok: 'Integration "{mcp}" ({connector}) — config OK.',
+    health_url: 'URL de verification : {url}',
+    unknown_sub: 'Sous-commande inconnue : {sub}. Utilisez : status, connectors, configure, test.'
+  },
+
+  squad_roi: {
+    squad_required: 'Le slug du squad est obligatoire. Utilisez --squad=<slug>.',
+    config_saved: 'Config ROI enregistree pour le squad "{squad}".',
+    pricing_model: 'Modele tarifaire',
+    setup_fee: 'Frais d\'installation',
+    monthly_fee: 'Mensualite',
+    percentage: 'Pourcentage',
+    contract: 'Contrat',
+    metric_required: 'La cle et la valeur de la metrique sont obligatoires. Utilisez --key=<nom> --value=<N>.',
+    metric_saved: 'Metrique "{key}" = {value} enregistree pour le squad "{squad}".',
+    no_metrics: 'Aucune metrique trouvee pour le squad "{squad}".',
+    report_title: 'Rapport ROI — {squad}',
+    baseline: 'Baseline',
+    actual: 'Actuel',
+    target: 'Objectif',
+    period: 'Periode',
+    cost_section: 'Resume des Couts :',
+    monthly_cost: 'Cout mensuel effectif',
+    exported: 'Rapport exporte vers {file} ({format}).',
+    unknown_sub: 'Sous-commande inconnue : {sub}. Utilisez : config, metric, report, export.'
+  },
+
+  squad_worker: {
+    squad_required: 'Le slug du squad est obligatoire. Utilisez --squad=<slug>.',
+    no_workers: 'Aucun worker trouve pour ce squad.',
+    run_usage: 'Usage : aioson squad:worker --sub=run --squad=<slug> --worker=<slug> [--input=<json>]',
+    test_usage: 'Usage : aioson squad:worker --sub=test --squad=<slug> --worker=<slug>',
+    scaffold_usage: 'Usage : aioson squad:worker --sub=scaffold --squad=<slug> --worker=<slug> [--trigger=manual|event|scheduled]',
+    not_found: 'Worker non trouve : {worker}',
+    invalid_input: 'JSON invalide. Fournissez un JSON valide avec --input.',
+    run_success: 'Worker "{worker}" termine avec succes.',
+    run_failed: 'Worker "{worker}" echoue : {error}',
+    test_passed: 'Worker "{worker}" test reussi.',
+    test_failed: 'Worker "{worker}" test echoue : {error}',
+    scaffold_created: 'Worker "{worker}" cree dans {path}',
+    no_runtime: 'Runtime store non trouve. Executez aioson runtime:init d\'abord.',
+    no_logs: 'Aucune execution de worker trouvee.',
+    unknown_sub: 'Sous-commande inconnue : {sub}. Utilisez : list, run, test, logs, scaffold.'
+  },
+
+  squad_dashboard: {
+    started: 'Squad Dashboard en cours sur {url} (port {port})',
+    filtered: 'Filtrage sur le squad : {squad}',
+    stop_hint: 'Appuyez sur Ctrl+C pour arreter.',
+    stopping: 'Arret du Squad Dashboard...',
+    port_in_use: 'Le port {port} est deja utilise. Essayez --port=<autre>'
   },
   implementation_plan: {
     not_found: 'Plan d\'implementation introuvable : {file}',

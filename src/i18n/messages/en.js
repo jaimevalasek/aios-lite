@@ -87,6 +87,18 @@ module.exports = {
       'aioson squad:plan [path] [--sub=show|status|checkpoint|stale|register] [--squad=<slug>] [--round=<N>] [--locale=en]',
     help_squad_learning:
       'aioson squad:learning [path] [--sub=list|stats|archive|promote|export] [--squad=<slug>] [--status=<status>] [--locale=en]',
+    help_squad_dashboard:
+      'aioson squad:dashboard [path] [--port=4180] [--squad=<slug>] [--locale=en]',
+    help_squad_worker:
+      'aioson squad:worker [path] [--sub=list|run|test|logs|scaffold] [--squad=<slug>] [--worker=<slug>] [--input=<json>] [--locale=en]',
+    help_squad_daemon:
+      'aioson squad:daemon [path] [--sub=start|status|stop|logs] [--squad=<slug>] [--port=<N>] [--locale=en]',
+    help_squad_mcp:
+      'aioson squad:mcp [path] [--sub=status|connectors|configure|test] [--squad=<slug>] [--mcp=<slug>] [--connector=<id>]',
+    help_squad_roi:
+      'aioson squad:roi [path] [--sub=config|metric|report|export] [--squad=<slug>] [--key=<metric>] [--value=<N>]',
+    help_squad_score:
+      'aioson squad:score [path] --squad=<slug> [--locale=en]',
     help_learning:
       'aioson learning [path] [--sub=list|stats|promote] [--status=<status>] [--id=<learning-id>] [--locale=en]',
     help_runtime_init:
@@ -934,6 +946,91 @@ module.exports = {
     linked: 'Investigation "{investigation}" linked to squad "{squad}".',
     registered: 'Investigation registered: {slug} ({path})',
     unknown_sub: 'Unknown subcommand: {sub}. Use: list, show, score, link, register.'
+  },
+
+  squad_daemon: {
+    squad_required: 'Squad slug is required. Use --squad=<slug>.',
+    started: 'Daemon started for squad "{squad}" on port {port} ({workers} workers, {cron} cron jobs)',
+    webhook_hint: 'Webhook endpoint: POST http://127.0.0.1:{port}/webhook/<worker-slug>',
+    stop_hint: 'Press Ctrl+C to stop.',
+    stopping: 'Stopping daemon...',
+    start_failed: 'Failed to start daemon: {error}',
+    no_runtime: 'Runtime store not found. Run aioson runtime:init first.',
+    no_daemons: 'No daemon records found.',
+    not_found: 'No daemon record for squad: {squad}',
+    not_running: 'Daemon for squad "{squad}" is not running.',
+    signal_sent: 'SIGTERM sent to daemon for "{squad}" (pid {pid}).',
+    process_gone: 'Daemon process for "{squad}" is no longer running.',
+    no_logs: 'No daemon activity logs found.',
+    unknown_sub: 'Unknown subcommand: {sub}. Use: start, status, stop, logs.'
+  },
+
+  squad_mcp: {
+    squad_required: 'Squad slug is required. Use --squad=<slug>.',
+    connectors_title: 'Built-in MCP Connectors:',
+    actions: 'Actions',
+    required_config: 'Required',
+    no_integrations: 'No integrations configured for squad "{squad}".',
+    missing_config: 'Missing config',
+    calls: 'Calls',
+    mcp_required: 'MCP slug is required. Use --mcp=<slug>.',
+    connector_required: 'Connector ID is required. Use --connector=<id>.',
+    unknown_connector: 'Unknown connector: {connector}. Use --sub=connectors to list available.',
+    configured: 'Integration "{mcp}" configured with connector "{connector}" (status: {status}).',
+    still_missing: 'Still missing env/config: {keys}',
+    not_configured: 'Integration "{mcp}" is not configured.',
+    test_missing: 'Integration "{mcp}" has missing config: {keys}',
+    test_ok: 'Integration "{mcp}" ({connector}) — config OK.',
+    health_url: 'Health check URL: {url}',
+    unknown_sub: 'Unknown subcommand: {sub}. Use: status, connectors, configure, test.'
+  },
+
+  squad_roi: {
+    squad_required: 'Squad slug is required. Use --squad=<slug>.',
+    config_saved: 'ROI config saved for squad "{squad}".',
+    pricing_model: 'Pricing model',
+    setup_fee: 'Setup fee',
+    monthly_fee: 'Monthly fee',
+    percentage: 'Percentage',
+    contract: 'Contract',
+    metric_required: 'Metric key and value are required. Use --key=<name> --value=<N>.',
+    metric_saved: 'Metric "{key}" = {value} saved for squad "{squad}".',
+    no_metrics: 'No metrics found for squad "{squad}".',
+    report_title: 'ROI Report — {squad}',
+    baseline: 'Baseline',
+    actual: 'Current',
+    target: 'Target',
+    period: 'Period',
+    cost_section: 'Cost Summary:',
+    monthly_cost: 'Monthly effective cost',
+    exported: 'Report exported to {file} ({format}).',
+    unknown_sub: 'Unknown subcommand: {sub}. Use: config, metric, report, export.'
+  },
+
+  squad_worker: {
+    squad_required: 'Squad slug is required. Use --squad=<slug>.',
+    no_workers: 'No workers found for this squad.',
+    run_usage: 'Usage: aioson squad:worker --sub=run --squad=<slug> --worker=<slug> [--input=<json>]',
+    test_usage: 'Usage: aioson squad:worker --sub=test --squad=<slug> --worker=<slug>',
+    scaffold_usage: 'Usage: aioson squad:worker --sub=scaffold --squad=<slug> --worker=<slug> [--trigger=manual|event|scheduled]',
+    not_found: 'Worker not found: {worker}',
+    invalid_input: 'Invalid JSON input. Provide valid JSON with --input.',
+    run_success: 'Worker "{worker}" completed successfully.',
+    run_failed: 'Worker "{worker}" failed: {error}',
+    test_passed: 'Worker "{worker}" test passed.',
+    test_failed: 'Worker "{worker}" test failed: {error}',
+    scaffold_created: 'Worker "{worker}" scaffolded at {path}',
+    no_runtime: 'Runtime store not found. Run aioson runtime:init first.',
+    no_logs: 'No worker runs found.',
+    unknown_sub: 'Unknown subcommand: {sub}. Use: list, run, test, logs, scaffold.'
+  },
+
+  squad_dashboard: {
+    started: 'Squad Dashboard running at {url} (port {port})',
+    filtered: 'Filtering to squad: {squad}',
+    stop_hint: 'Press Ctrl+C to stop.',
+    stopping: 'Stopping Squad Dashboard...',
+    port_in_use: 'Port {port} is already in use. Try --port=<another>'
   },
 
   implementation_plan: {

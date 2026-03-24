@@ -236,6 +236,59 @@ Niveles de accion del gate:
 - `approve` — humano debe aprobar antes de continuar (alto riesgo)
 - `block` — no puede continuar sin autorizacion humana explicita (critico)
 
+### Review loops (cuando la calidad importa)
+
+Para fases que producen output critico, agregar un review loop.
+El reviewer debe ser tipicamente un executor diferente del creador.
+
+Arbol de decision para agregar review:
+- Es un entregable final? → agregar review
+- Es un artefacto intermedio usado internamente? → omitir review
+- El dominio es de alto riesgo (legal, financiero, medico)? → agregar review + veto conditions
+- El squad corre en pipeline repetitivo? → agregar review
+
+Al generar workflows, evaluar cada fase y agregar `review` cuando sea apropiado.
+Agregar tambien `vetoConditions` para fases donde ciertas cualidades del output son innegociables.
+
+Agregar `review` a la fase:
+```json
+{
+  "id": "create-content",
+  "review": {
+    "reviewer": "editor",
+    "criteria": ["Contenido alineado con el tono del publico objetivo"],
+    "onReject": "create-content",
+    "maxRetries": 2,
+    "retryStrategy": "feedback",
+    "escalateOnMaxRetries": "human"
+  },
+  "vetoConditions": [
+    { "condition": "Output contiene texto placeholder o marcadores TODO", "action": "block", "message": "Contenido tiene secciones incompletas" }
+  ]
+}
+```
+
+Estrategias de retry:
+- `feedback` (por defecto): El feedback especifico del reviewer se envia al creador.
+- `fresh`: El creador comienza desde cero sin ver el intento rechazado.
+- `alternative`: Un executor diferente (si esta disponible) asume la tarea.
+
+El protocolo de review loop esta definido en `.aioson/tasks/squad-review.md`.
+
+### Model tiering (obligatorio para cada executor)
+
+Asignar un `modelTier` a cada executor: `powerful` (creativo/orquestacion), `balanced` (mixto), `fast` (investigacion/formateo), `none` (workers sin LLM).
+
+### Descomposicion en tasks (cuando el executor tiene proceso multi-step)
+
+No todo executor necesita tasks. Use el arbol de decision en `.aioson/tasks/squad-task-decompose.md`.
+Registre las tasks en el array `tasks` del executor en el manifiesto.
+
+### Inyeccion de formatos (para squads de contenido)
+
+Para squads de contenido, verifique `.aioson/skills/squad/formats/catalog.json`.
+Referencie formatos seleccionados en el campo `formats` del executor.
+
 ### Paso 2c — Generar checklist de calidad
 
 Generar `.aioson/squads/{squad-slug}/checklists/quality.md` para todo squad.
@@ -333,6 +386,16 @@ Puedes invocar cualquier agente directamente (ej: `@guionista`) para trabajo enf
 o trabajar via @orquestrador para sesiones coordinadas.
 
 CLAUDE.md actualizado con atajos.
+```
+
+**Score de calidad (evaluacion profunda — mostrar despues de la creacion):**
+
+```
+Para un analisis detallado en 4 dimensiones (100 puntos):
+  aioson squad:score . --squad={slug}
+
+Dimensiones: Completud (25), Profundidad (25), Calidad Estructural (25), Potencial (25)
+Notas: S (90+), A (80+), B (70+), C (50+), D (<50)
 ```
 
 Luego ejecutar inmediatamente el calentamiento — mostrar como cada especialista aboradaria el objetivo declarado AHORA (2–3 frases cada uno). NO esperar que el usuario pregunte.

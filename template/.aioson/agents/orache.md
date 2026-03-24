@@ -119,6 +119,23 @@ NOT for copying — for calibration.
 - **Relevance to squad:** {what the squad can learn from their approach}
 ```
 
+#### Profiling recommendation
+
+When a reference voice is particularly central to the squad's identity
+(not just a reference — the squad IS about this person's methodology):
+
+Add to the output:
+```
+## Profiling Recommendation
+- **Person:** {name}
+- **Reason:** {why they're central, not just a reference}
+- **Profiling value:** high | medium | low
+- **Suggestion:** "Consider running @profiler-researcher for a deeper
+  cognitive genome of {name}'s methodology"
+```
+
+This is a recommendation to @squad, not an action @orache takes.
+
 ### D5: Domain Vocabulary
 > "What words do insiders use that outsiders don't?"
 

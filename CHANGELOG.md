@@ -10,7 +10,7 @@ All notable changes to this project will be documented in this file.
 - `docs/pt/comandos-cli.md`: first Portuguese-first CLI reference page covering all public `aioson` commands with grouped descriptions, command map, examples, and practical usage recipes. Linked from `docs/pt/README.md` and `docs/pt/inicio-rapido.md`.
 
 ### Changed
-- Full product rebrand from `aios-forge` to `aioson` across package metadata, CLI branding, docs, templates, prompts, tests, runtime paths, and generated project structure. The managed project directory is now `.aioson/` instead of `.aios-forge/`.
+- Full product rebrand from `aioson` to `aioson` across package metadata, CLI branding, docs, templates, prompts, tests, runtime paths, and generated project structure. The managed project directory is now `.aioson/` instead of `.aioson/`.
 - npm distribution moved to the scoped package `@jaimevalasek/aioson` after the unscoped `aioson` name was rejected by npm for similarity policy reasons. Install and `npx` docs now use the scoped package while the installed CLI commands remain `aioson` and `aios`.
 - Release description updated to `AI operating framework for hyper-personalized software.` to match the current platform direction.
 - Legacy `dashboard:*` CLI flow removed from the public surface. `aioson dashboard:init|dev|open` no longer appear in help or docs; if called, the CLI now returns a migration error instructing users to open the separately installed dashboard app and select the project folder that already contains `.aioson/`. Updated pt docs and agent guidance to match the new app-first dashboard flow.

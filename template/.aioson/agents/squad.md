@@ -140,6 +140,33 @@ Flow:
 When the squad is created with an investigation, the investigation report
 becomes part of the squad package and is saved alongside it.
 
+## Profiler integration (for persona-based squads)
+
+When the squad creation reveals that the domain revolves around a specific
+person, brand, or methodology creator, offer profiling:
+
+Detection heuristics:
+- User mentions a specific person by name
+- The goal includes "in the style of", "like {person}", "based on {person}'s approach"
+- The domain is personal branding, content creation for a specific creator, or methodology replication
+
+When detected:
+1. Ask: "This squad seems to be about {person}'s approach. Want me to profile
+   them for more authentic agents? (adds 5-10 min)"
+2. If yes:
+   a. Check if `.aioson/profiler-reports/{person-slug}/` already exists
+   b. If exists: read the enriched profile and skip to genome application
+   c. If not: invoke the profiler pipeline (researcher → enricher → forge)
+   d. Apply the resulting genome to relevant creative executors
+3. If no: continue with standard squad creation
+
+When a profiling genome is applied:
+- Record in the blueprint: `"profiling": { "person": "{name}", "genomePath": "{path}" }`
+- Mark affected executors with `genomeSource` pointing to the genome
+- Add a note in the squad docs: "This squad was profiled from {person}'s methodology"
+
+The profiling task protocol is defined in `.aioson/tasks/squad-profile.md`.
+
 ## Squad creation rules (extensible)
 
 Before creating any squad, check `.aioson/rules/squad/` for `.md` files.
@@ -1008,6 +1035,158 @@ Gate action levels:
 - `approve` — human must approve before proceeding (high risk)
 - `block` — cannot proceed without explicit human authorization (critical)
 
+### Review loops (when quality matters)
+
+For phases that produce critical output, add a review loop.
+The reviewer is typically a different executor from the creator.
+
+Decision tree for adding review:
+- Is this a final deliverable? → add review
+- Is this an intermediate artifact used internally? → skip review
+- Is the domain high-stakes (legal, financial, medical)? → add review + veto conditions
+- Is the squad running in a repeatable pipeline? → add review
+
+When generating workflows, evaluate each phase and add `review` when appropriate.
+Also add `vetoConditions` for phases where certain output qualities are non-negotiable.
+
+Add `review` to the phase:
+```json
+{
+  "id": "create-content",
+  "title": "Create Content",
+  "executor": "copywriter",
+  "executorType": "agent",
+  "dependsOn": ["research"],
+  "output": "draft content",
+  "review": {
+    "reviewer": "editor",
+    "criteria": [
+      "Content matches the target audience tone",
+      "All key points from research are addressed",
+      "No factual claims without evidence"
+    ],
+    "onReject": "create-content",
+    "maxRetries": 2,
+    "retryStrategy": "feedback",
+    "escalateOnMaxRetries": "human"
+  },
+  "vetoConditions": [
+    {
+      "condition": "Output contains placeholder text or TODO markers",
+      "action": "block",
+      "message": "Content has unfinished sections"
+    },
+    {
+      "condition": "Output is less than 50% of expected length",
+      "action": "reject",
+      "message": "Content is too thin — needs more substance"
+    }
+  ]
+}
+```
+
+Retry strategies:
+- `feedback` (default): The reviewer's specific feedback is sent back to the creator.
+  Best for creative work where direction matters.
+- `fresh`: The creator starts from scratch without seeing the rejected attempt.
+  Best when the first attempt went in a wrong direction entirely.
+- `alternative`: A different executor (if available) takes over the task.
+  Best when the original executor has a blind spot.
+
+The review loop protocol is defined in `.aioson/tasks/squad-review.md`.
+
+### Model tiering (mandatory for every executor)
+
+Assign a `modelTier` to each executor using this decision tree:
+
+```
+EXECUTOR
+  ├── usesLLM: false (worker, deterministic)
+  │   └── tier: none (zero cost)
+  │
+  ├── Role is creative/generative (writer, copywriter, scriptwriter, designer)
+  │   └── tier: powerful (quality is the product)
+  │
+  ├── Role is orchestration/synthesis (orquestrador, reviewer, editor)
+  │   └── tier: powerful (judgment quality matters)
+  │
+  ├── Role is research/analysis (researcher, analyst, data-gatherer)
+  │   └── tier: fast (volume > depth per query)
+  │
+  ├── Role is formatting/structuring (formatter, template-filler, publisher)
+  │   └── tier: fast (mostly mechanical)
+  │
+  └── Other or mixed
+      └── tier: balanced (default)
+```
+
+Show the tier assignment in the executor classification validation:
+
+```
+Executor classification review:
+- copywriter → type: agent, tier: powerful (creative output)
+- researcher → type: agent, tier: fast (search volume)
+- formatter → type: worker, tier: none (deterministic)
+- orquestrador → type: agent, tier: powerful (synthesis)
+
+Estimated cost per run: ~$0.18 (vs. ~$0.45 if all powerful)
+```
+
+### Task decomposition (when an executor has a multi-step process)
+
+Not every executor needs tasks. Use this decision tree:
+
+```
+EXECUTOR
+  ├── Does it do ONE thing well? (reviewer, validator, formatter)
+  │   └── NO tasks — the agent file is sufficient
+  │
+  ├── Does it have a repeatable multi-step process?
+  │   ├── 2 steps → probably no tasks (keep it simple)
+  │   ├── 3+ steps with distinct outputs → YES, decompose into tasks
+  │   └── 3+ steps but all internal → NO tasks (steps go in the agent)
+  │
+  ├── Will the tasks be reused by other executors or squads?
+  │   └── YES → decompose into tasks (reusability)
+  │
+  └── Is quality critical and each step needs its own criteria?
+      └── YES → decompose into tasks (granular quality control)
+```
+
+When decomposing:
+- Keep the agent file focused on identity (mission, focus, constraints)
+- Move process details to task files at `.aioson/squads/{squad-slug}/agents/{executor-slug}/tasks/`
+- Each task should be independently evaluable
+- Tasks execute sequentially — output of task N is input of task N+1
+- Register tasks in the manifest executor's `tasks` array
+
+Show the decision in the classification:
+
+```
+Task decomposition review:
+- copywriter → 3 tasks (research-brief → draft-content → optimize-hooks)
+- researcher → no tasks (single-purpose: find and organize sources)
+- orquestrador → no tasks (coordination is reactive, not sequential)
+- editor → 2 tasks (structural-review → copy-edit)
+```
+
+The task file format is defined in `.aioson/tasks/squad-task-decompose.md`.
+
+### Format injection (for content-oriented squads)
+
+When creating a content-oriented squad, check if the output targets a specific platform or format.
+
+If yes:
+1. Check `.aioson/skills/squad/formats/catalog.json` for matching formats
+2. List available formats to the user
+3. Reference selected formats in the executor's `formats` field in the manifest
+4. When generating executor agent files, include a reference:
+   `## Active formats: {format-slug} (see .aioson/skills/squad/formats/{path})`
+
+The executor should read the format file when producing output for that platform.
+Format injection is NOT automatic context stuffing — it's a reference that the
+executor follows when relevant. Keep the agent file lean.
+
 ### Step 3c — Generate quality checklist
 
 Generate `.aioson/squads/{squad-slug}/checklists/quality.md` for every squad.
@@ -1195,6 +1374,18 @@ Score thresholds:
 - 5/5 → Excellent
 - 3-4/5 → Good
 - 1-2/5 → Minimal — suggest what to add next
+
+**Quality score (deep assessment — show after coverage):**
+
+After the coverage score, suggest running the deep quality assessment:
+
+```
+For a detailed quality analysis across 4 dimensions (100 points):
+  aioson squad:score . --squad={slug}
+
+Dimensions: Completude (25), Profundidade (25), Qualidade Estrutural (25), Potencial (25)
+Grades: S (90+), A (80+), B (70+), C (50+), D (<50)
+```
 
 Then immediately run the warm-up — show how each specialist would approach the stated goal RIGHT NOW with minimum substance:
 - problem reading

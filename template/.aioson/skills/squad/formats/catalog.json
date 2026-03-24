@@ -1,0 +1,15 @@
+{
+  "version": "1.0.0",
+  "formats": [
+    { "slug": "instagram-feed", "title": "Instagram Feed Post", "category": "social", "platform": "Instagram", "file": "social/instagram-feed.md", "version": "1.0.0", "updated": "2026-03-24" },
+    { "slug": "youtube-long", "title": "YouTube Long-form Video", "category": "social", "platform": "YouTube", "file": "social/youtube-long.md", "version": "1.0.0", "updated": "2026-03-24" },
+    { "slug": "youtube-shorts", "title": "YouTube Shorts", "category": "social", "platform": "YouTube", "file": "social/youtube-shorts.md", "version": "1.0.0", "updated": "2026-03-24" },
+    { "slug": "linkedin-post", "title": "LinkedIn Post", "category": "social", "platform": "LinkedIn", "file": "social/linkedin-post.md", "version": "1.0.0", "updated": "2026-03-24" },
+    { "slug": "tiktok", "title": "TikTok Video", "category": "social", "platform": "TikTok", "file": "social/tiktok.md", "version": "1.0.0", "updated": "2026-03-24" },
+    { "slug": "twitter-thread", "title": "Twitter/X Thread", "category": "social", "platform": "Twitter/X", "file": "social/twitter-thread.md", "version": "1.0.0", "updated": "2026-03-24" },
+    { "slug": "blog-post", "title": "Blog Post", "category": "content", "platform": "Web", "file": "content/blog-post.md", "version": "1.0.0", "updated": "2026-03-24" },
+    { "slug": "newsletter", "title": "Email Newsletter", "category": "content", "platform": "Email", "file": "content/newsletter.md", "version": "1.0.0", "updated": "2026-03-24" },
+    { "slug": "podcast-script", "title": "Podcast Script", "category": "creative", "platform": "Audio", "file": "creative/podcast-script.md", "version": "1.0.0", "updated": "2026-03-24" },
+    { "slug": "video-script", "title": "Video Script", "category": "creative", "platform": "Video", "file": "creative/video-script.md", "version": "1.0.0", "updated": "2026-03-24" }
+  ]
+}
