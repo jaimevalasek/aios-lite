@@ -31,6 +31,7 @@ const MANAGED_FILES = [
   '.aioson/agents/qa.md',
   '.aioson/agents/orchestrator.md',
   '.aioson/agents/squad.md',
+  '.aioson/agents/orache.md',
   '.aioson/agents/genome.md',
   '.aioson/agents/profiler-researcher.md',
   '.aioson/agents/profiler-enricher.md',
@@ -48,6 +49,7 @@ const MANAGED_FILES = [
   '.aioson/locales/en/agents/qa.md',
   '.aioson/locales/en/agents/orchestrator.md',
   '.aioson/locales/en/agents/squad.md',
+  '.aioson/locales/en/agents/orache.md',
   '.aioson/locales/en/agents/genome.md',
   '.aioson/locales/en/agents/profiler-researcher.md',
   '.aioson/locales/en/agents/profiler-enricher.md',
@@ -65,6 +67,7 @@ const MANAGED_FILES = [
   '.aioson/locales/pt-BR/agents/qa.md',
   '.aioson/locales/pt-BR/agents/orchestrator.md',
   '.aioson/locales/pt-BR/agents/squad.md',
+  '.aioson/locales/pt-BR/agents/orache.md',
   '.aioson/locales/pt-BR/agents/genome.md',
   '.aioson/locales/pt-BR/agents/profiler-researcher.md',
   '.aioson/locales/pt-BR/agents/profiler-enricher.md',
@@ -82,6 +85,7 @@ const MANAGED_FILES = [
   '.aioson/locales/es/agents/qa.md',
   '.aioson/locales/es/agents/orchestrator.md',
   '.aioson/locales/es/agents/squad.md',
+  '.aioson/locales/es/agents/orache.md',
   '.aioson/locales/es/agents/genome.md',
   '.aioson/locales/es/agents/profiler-researcher.md',
   '.aioson/locales/es/agents/profiler-enricher.md',
@@ -99,6 +103,7 @@ const MANAGED_FILES = [
   '.aioson/locales/fr/agents/qa.md',
   '.aioson/locales/fr/agents/orchestrator.md',
   '.aioson/locales/fr/agents/squad.md',
+  '.aioson/locales/fr/agents/orache.md',
   '.aioson/locales/fr/agents/genome.md',
   '.aioson/locales/fr/agents/profiler-researcher.md',
   '.aioson/locales/fr/agents/profiler-enricher.md',
@@ -157,6 +162,7 @@ const MANAGED_FILES = [
   '.aioson/tasks/squad-export.md',
   '.aioson/tasks/squad-repair.md',
   '.aioson/tasks/squad-pipeline.md',
+  '.aioson/tasks/squad-learning-review.md',
   '.aioson/profiler-reports/.gitkeep',
   '.aioson/advisors/.gitkeep'
 ];
@@ -318,6 +324,14 @@ const AGENT_DEFINITIONS = [
     dependsOn: [],
     output:
       '.aioson/squads/{slug}/squad.manifest.json + .aioson/squads/{slug}/squad.md + .aioson/squads/{slug}/agents/ + .aioson/squads/{slug}/workers/ + .aioson/squads/{slug}/workflows/ + .aioson/squads/{slug}/checklists/ + .aioson/squads/{slug}/skills/ + .aioson/squads/{slug}/templates/ + .aioson/squads/{slug}/docs/ + output/{slug}/{session-id}.html + output/{slug}/{content-key}/content.json + output/{slug}/{content-key}/index.html + output/{slug}/latest.html + aioson-logs/{slug}/ + media/{slug}/'
+  },
+  {
+    id: 'orache',
+    displayName: 'Orache',
+    command: '@orache',
+    path: '.aioson/agents/orache.md',
+    dependsOn: [],
+    output: 'squad-searches/{squad-slug}/investigation-{date}.md or squad-searches/standalone/{domain-slug}-{date}.md'
   },
   {
     id: 'genome',

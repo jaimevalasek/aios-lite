@@ -383,6 +383,119 @@ async function openRuntimeDb(targetDir, options = {}) {
       remote_key TEXT NOT NULL
     );
     CREATE INDEX IF NOT EXISTS idx_backup_manifest_type ON backup_manifest(record_type, backed_up_at DESC);
+
+    CREATE TABLE IF NOT EXISTS squad_investigations (
+      investigation_slug TEXT PRIMARY KEY,
+      domain TEXT NOT NULL,
+      mode TEXT DEFAULT 'full',
+      dimensions_covered INTEGER DEFAULT 0,
+      total_dimensions INTEGER DEFAULT 7,
+      confidence REAL DEFAULT 0,
+      report_path TEXT,
+      linked_squad_slug TEXT,
+      created_at TEXT DEFAULT (datetime('now')),
+      updated_at TEXT DEFAULT (datetime('now'))
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_squad_investigations_domain ON squad_investigations(domain);
+    CREATE INDEX IF NOT EXISTS idx_squad_investigations_squad ON squad_investigations(linked_squad_slug);
+
+    CREATE TABLE IF NOT EXISTS implementation_plans (
+      plan_id TEXT PRIMARY KEY,
+      project_name TEXT,
+      scope TEXT DEFAULT 'project',
+      feature_slug TEXT,
+      status TEXT DEFAULT 'draft',
+      classification TEXT,
+      phases_total INTEGER DEFAULT 0,
+      phases_completed INTEGER DEFAULT 0,
+      source_artifacts TEXT,
+      source_hash TEXT,
+      created_at TEXT DEFAULT (datetime('now')),
+      updated_at TEXT DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS plan_phases (
+      plan_id TEXT NOT NULL,
+      phase_number INTEGER NOT NULL,
+      title TEXT NOT NULL,
+      status TEXT DEFAULT 'pending',
+      completed_at TEXT,
+      notes TEXT,
+      PRIMARY KEY (plan_id, phase_number),
+      FOREIGN KEY (plan_id) REFERENCES implementation_plans(plan_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS squad_execution_plans (
+      plan_slug TEXT PRIMARY KEY,
+      squad_slug TEXT NOT NULL,
+      status TEXT DEFAULT 'draft',
+      rounds_total INTEGER DEFAULT 0,
+      rounds_completed INTEGER DEFAULT 0,
+      based_on_blueprint TEXT,
+      based_on_investigation TEXT,
+      source_hash TEXT,
+      created_at TEXT DEFAULT (datetime('now')),
+      updated_at TEXT DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS squad_plan_rounds (
+      plan_slug TEXT NOT NULL,
+      round_number INTEGER NOT NULL,
+      executor_slug TEXT NOT NULL,
+      title TEXT NOT NULL,
+      status TEXT DEFAULT 'pending',
+      completed_at TEXT,
+      notes TEXT,
+      PRIMARY KEY (plan_slug, round_number),
+      FOREIGN KEY (plan_slug) REFERENCES squad_execution_plans(plan_slug)
+    );
+
+    CREATE TABLE IF NOT EXISTS squad_learnings (
+      learning_id TEXT PRIMARY KEY,
+      squad_slug TEXT NOT NULL,
+      type TEXT NOT NULL CHECK (type IN ('preference', 'process', 'domain', 'quality')),
+      title TEXT NOT NULL,
+      signal TEXT DEFAULT 'explicit' CHECK (signal IN ('explicit', 'implicit')),
+      confidence TEXT DEFAULT 'medium' CHECK (confidence IN ('high', 'medium', 'low')),
+      frequency INTEGER DEFAULT 1,
+      last_reinforced TEXT,
+      applies_to TEXT DEFAULT 'squad',
+      file_path TEXT,
+      promoted_to TEXT,
+      status TEXT DEFAULT 'active' CHECK (status IN ('active', 'stale', 'archived', 'promoted')),
+      source_session TEXT,
+      evidence TEXT,
+      created_at TEXT DEFAULT (datetime('now')),
+      updated_at TEXT DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS project_learnings (
+      learning_id TEXT PRIMARY KEY,
+      project_name TEXT,
+      feature_slug TEXT,
+      type TEXT NOT NULL CHECK (type IN ('preference', 'process', 'domain', 'quality')),
+      title TEXT NOT NULL,
+      confidence TEXT DEFAULT 'medium',
+      frequency INTEGER DEFAULT 1,
+      last_reinforced TEXT,
+      applies_to TEXT DEFAULT 'project',
+      promoted_to TEXT,
+      status TEXT DEFAULT 'active' CHECK (status IN ('active', 'stale', 'archived', 'promoted')),
+      source_session TEXT,
+      evidence TEXT,
+      created_at TEXT DEFAULT (datetime('now')),
+      updated_at TEXT DEFAULT (datetime('now'))
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_impl_plans_status ON implementation_plans(status);
+    CREATE INDEX IF NOT EXISTS idx_squad_exec_plans_squad ON squad_execution_plans(squad_slug);
+    CREATE INDEX IF NOT EXISTS idx_squad_exec_plans_status ON squad_execution_plans(status);
+    CREATE INDEX IF NOT EXISTS idx_squad_learnings_squad ON squad_learnings(squad_slug);
+    CREATE INDEX IF NOT EXISTS idx_squad_learnings_type ON squad_learnings(type);
+    CREATE INDEX IF NOT EXISTS idx_squad_learnings_status ON squad_learnings(status);
+    CREATE INDEX IF NOT EXISTS idx_project_learnings_type ON project_learnings(type);
+    CREATE INDEX IF NOT EXISTS idx_project_learnings_status ON project_learnings(status);
   `);
 
   ensureLegacyColumns(db);
@@ -549,35 +662,39 @@ function appendRunEvent(db, options) {
   const now = options.createdAt || nowIso();
   const payloadJson = options.payload ? JSON.stringify(options.payload) : null;
 
-  insertEvent(db, {
-    run_key: run.run_key,
-    event_type: String(options.eventType || 'update'),
-    message: String(options.message || ''),
-    payload_json: payloadJson,
-    created_at: now
+  const doInsert = db.transaction(() => {
+    insertEvent(db, {
+      run_key: run.run_key,
+      event_type: String(options.eventType || 'update'),
+      message: String(options.message || ''),
+      payload_json: payloadJson,
+      created_at: now
+    });
+
+    insertExecutionEvent(db, {
+      task_key: run.task_key,
+      run_key: run.run_key,
+      agent_name: run.agent_name,
+      agent_kind: run.agent_kind,
+      squad_slug: run.squad_slug,
+      session_key: run.session_key,
+      source: run.source,
+      workflow_id: run.workflow_id,
+      workflow_stage: run.workflow_stage,
+      parent_run_key: run.parent_run_key,
+      event_type: String(options.eventType || 'update'),
+      phase: options.phase ? String(options.phase).trim() : null,
+      status: options.status ? String(options.status).trim() : run.status || null,
+      tool_name: options.toolName ? String(options.toolName).trim() : null,
+      message: String(options.message || ''),
+      payload_json: payloadJson,
+      sequence_no: nextExecutionSequence(db, run.run_key),
+      parent_event_id: options.parentEventId || null,
+      created_at: now
+    });
   });
 
-  insertExecutionEvent(db, {
-    task_key: run.task_key,
-    run_key: run.run_key,
-    agent_name: run.agent_name,
-    agent_kind: run.agent_kind,
-    squad_slug: run.squad_slug,
-    session_key: run.session_key,
-    source: run.source,
-    workflow_id: run.workflow_id,
-    workflow_stage: run.workflow_stage,
-    parent_run_key: run.parent_run_key,
-    event_type: String(options.eventType || 'update'),
-    phase: options.phase ? String(options.phase).trim() : null,
-    status: options.status ? String(options.status).trim() : run.status || null,
-    tool_name: options.toolName ? String(options.toolName).trim() : null,
-    message: String(options.message || ''),
-    payload_json: payloadJson,
-    sequence_no: nextExecutionSequence(db, run.run_key),
-    parent_event_id: options.parentEventId || null,
-    created_at: now
-  });
+  doInsert();
 }
 
 function startTask(db, options) {
@@ -1222,7 +1339,7 @@ function startRun(db, options) {
 
   appendRunEvent(db, {
     runKey,
-    eventType: 'start',
+    eventType: String(options.eventType || 'start'),
     phase: options.phase || 'run',
     status,
     message: String(options.message || options.title || 'Agent started'),
@@ -1669,6 +1786,405 @@ async function logAgentEvent(db, runtimeDir, options) {
   return { runKey, taskKey };
 }
 
+// --- Squad Investigations CRUD ---
+
+function insertInvestigation(db, options = {}) {
+  const slug = options.investigationSlug || `inv-${slugify(options.domain || 'unknown')}-${Date.now()}`;
+  const now = nowIso();
+  db.prepare(`
+    INSERT OR REPLACE INTO squad_investigations
+      (investigation_slug, domain, mode, dimensions_covered, total_dimensions,
+       confidence, report_path, linked_squad_slug, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    slug,
+    String(options.domain || ''),
+    String(options.mode || 'full'),
+    Number(options.dimensionsCovered) || 0,
+    Number(options.totalDimensions) || 7,
+    Number(options.confidence) || 0,
+    options.reportPath || null,
+    options.linkedSquadSlug || null,
+    now,
+    now
+  );
+  return slug;
+}
+
+function listInvestigations(db) {
+  return db.prepare(`
+    SELECT * FROM squad_investigations ORDER BY created_at DESC
+  `).all();
+}
+
+function getInvestigation(db, slug) {
+  return db.prepare(`
+    SELECT * FROM squad_investigations WHERE investigation_slug = ?
+  `).get(slug) || null;
+}
+
+function linkInvestigation(db, investigationSlug, squadSlug) {
+  const now = nowIso();
+  const result = db.prepare(`
+    UPDATE squad_investigations
+    SET linked_squad_slug = ?, updated_at = ?
+    WHERE investigation_slug = ?
+  `).run(squadSlug, now, investigationSlug);
+  return result.changes > 0;
+}
+
+// --- Implementation Plans CRUD ---
+
+function upsertImplementationPlan(db, options = {}) {
+  const planId = options.planId || `plan-${slugify(options.projectName || 'proj')}-${Date.now()}`;
+  const now = nowIso();
+  db.prepare(`
+    INSERT OR REPLACE INTO implementation_plans
+      (plan_id, project_name, scope, feature_slug, status, classification,
+       phases_total, phases_completed, source_artifacts, source_hash, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    planId,
+    options.projectName || null,
+    options.scope || 'project',
+    options.featureSlug || null,
+    options.status || 'draft',
+    options.classification || null,
+    Number(options.phasesTotal) || 0,
+    Number(options.phasesCompleted) || 0,
+    options.sourceArtifacts ? JSON.stringify(options.sourceArtifacts) : null,
+    options.sourceHash || null,
+    now,
+    now
+  );
+  return planId;
+}
+
+function getImplementationPlan(db, planId) {
+  return db.prepare(`
+    SELECT * FROM implementation_plans WHERE plan_id = ?
+  `).get(planId) || null;
+}
+
+function listImplementationPlans(db) {
+  return db.prepare(`
+    SELECT * FROM implementation_plans ORDER BY created_at DESC
+  `).all();
+}
+
+function updateImplementationPlanStatus(db, planId, status) {
+  const now = nowIso();
+  const result = db.prepare(`
+    UPDATE implementation_plans SET status = ?, updated_at = ? WHERE plan_id = ?
+  `).run(status, now, planId);
+  return result.changes > 0;
+}
+
+function upsertPlanPhase(db, planId, phaseNumber, title, status) {
+  db.prepare(`
+    INSERT OR REPLACE INTO plan_phases (plan_id, phase_number, title, status, completed_at)
+    VALUES (?, ?, ?, ?, ?)
+  `).run(
+    planId,
+    phaseNumber,
+    title,
+    status || 'pending',
+    status === 'completed' ? nowIso() : null
+  );
+}
+
+function updatePlanPhaseStatus(db, planId, phaseNumber, status, notes) {
+  const now = nowIso();
+  const result = db.prepare(`
+    UPDATE plan_phases SET status = ?, completed_at = ?, notes = ?
+    WHERE plan_id = ? AND phase_number = ?
+  `).run(
+    status,
+    status === 'completed' ? now : null,
+    notes || null,
+    planId,
+    phaseNumber
+  );
+  if (result.changes > 0 && status === 'completed') {
+    db.prepare(`
+      UPDATE implementation_plans
+      SET phases_completed = (SELECT COUNT(*) FROM plan_phases WHERE plan_id = ? AND status = 'completed'),
+          updated_at = ?
+      WHERE plan_id = ?
+    `).run(planId, now, planId);
+  }
+  return result.changes > 0;
+}
+
+function getPlanPhases(db, planId) {
+  return db.prepare(`
+    SELECT * FROM plan_phases WHERE plan_id = ? ORDER BY phase_number
+  `).all(planId);
+}
+
+// --- Squad Execution Plans CRUD ---
+
+function upsertSquadExecutionPlan(db, options = {}) {
+  const planSlug = options.planSlug || `sqplan-${slugify(options.squadSlug || 'squad')}-${Date.now()}`;
+  const now = nowIso();
+  db.prepare(`
+    INSERT OR REPLACE INTO squad_execution_plans
+      (plan_slug, squad_slug, status, rounds_total, rounds_completed,
+       based_on_blueprint, based_on_investigation, source_hash, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    planSlug,
+    options.squadSlug || '',
+    options.status || 'draft',
+    Number(options.roundsTotal) || 0,
+    Number(options.roundsCompleted) || 0,
+    options.basedOnBlueprint || null,
+    options.basedOnInvestigation || null,
+    options.sourceHash || null,
+    now,
+    now
+  );
+  return planSlug;
+}
+
+function getSquadExecutionPlan(db, planSlug) {
+  return db.prepare(`
+    SELECT * FROM squad_execution_plans WHERE plan_slug = ?
+  `).get(planSlug) || null;
+}
+
+function getSquadExecutionPlanBySquad(db, squadSlug) {
+  return db.prepare(`
+    SELECT * FROM squad_execution_plans WHERE squad_slug = ? ORDER BY created_at DESC LIMIT 1
+  `).get(squadSlug) || null;
+}
+
+function listSquadExecutionPlans(db) {
+  return db.prepare(`
+    SELECT * FROM squad_execution_plans ORDER BY created_at DESC
+  `).all();
+}
+
+function updateSquadExecutionPlanStatus(db, planSlug, status) {
+  const now = nowIso();
+  const result = db.prepare(`
+    UPDATE squad_execution_plans SET status = ?, updated_at = ? WHERE plan_slug = ?
+  `).run(status, now, planSlug);
+  return result.changes > 0;
+}
+
+function upsertSquadPlanRound(db, planSlug, roundNumber, executorSlug, title, status) {
+  db.prepare(`
+    INSERT OR REPLACE INTO squad_plan_rounds (plan_slug, round_number, executor_slug, title, status, completed_at)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `).run(
+    planSlug,
+    roundNumber,
+    executorSlug,
+    title,
+    status || 'pending',
+    status === 'completed' ? nowIso() : null
+  );
+}
+
+function updateSquadPlanRoundStatus(db, planSlug, roundNumber, status, notes) {
+  const now = nowIso();
+  const result = db.prepare(`
+    UPDATE squad_plan_rounds SET status = ?, completed_at = ?, notes = ?
+    WHERE plan_slug = ? AND round_number = ?
+  `).run(
+    status,
+    status === 'completed' ? now : null,
+    notes || null,
+    planSlug,
+    roundNumber
+  );
+  if (result.changes > 0 && status === 'completed') {
+    db.prepare(`
+      UPDATE squad_execution_plans
+      SET rounds_completed = (SELECT COUNT(*) FROM squad_plan_rounds WHERE plan_slug = ? AND status = 'completed'),
+          updated_at = ?
+      WHERE plan_slug = ?
+    `).run(planSlug, now, planSlug);
+  }
+  return result.changes > 0;
+}
+
+function getSquadPlanRounds(db, planSlug) {
+  return db.prepare(`
+    SELECT * FROM squad_plan_rounds WHERE plan_slug = ? ORDER BY round_number
+  `).all(planSlug);
+}
+
+// --- Squad Learnings CRUD ---
+
+function insertSquadLearning(db, options = {}) {
+  const learningId = options.learningId || `sl-${slugify(options.squadSlug || 'squad')}-${Date.now()}`;
+  const now = nowIso();
+  db.prepare(`
+    INSERT OR REPLACE INTO squad_learnings
+      (learning_id, squad_slug, type, title, signal, confidence, frequency,
+       last_reinforced, applies_to, file_path, promoted_to, status,
+       source_session, evidence, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    learningId,
+    options.squadSlug || '',
+    options.type || 'preference',
+    options.title || '',
+    options.signal || 'explicit',
+    options.confidence || 'medium',
+    Number(options.frequency) || 1,
+    options.lastReinforced || now,
+    options.appliesTo || 'squad',
+    options.filePath || null,
+    options.promotedTo || null,
+    options.status || 'active',
+    options.sourceSession || null,
+    options.evidence || null,
+    now,
+    now
+  );
+  return learningId;
+}
+
+function listSquadLearnings(db, squadSlug, statusFilter) {
+  if (statusFilter) {
+    return db.prepare(`
+      SELECT * FROM squad_learnings WHERE squad_slug = ? AND status = ? ORDER BY created_at DESC
+    `).all(squadSlug, statusFilter);
+  }
+  return db.prepare(`
+    SELECT * FROM squad_learnings WHERE squad_slug = ? ORDER BY created_at DESC
+  `).all(squadSlug);
+}
+
+function getSquadLearning(db, learningId) {
+  return db.prepare(`
+    SELECT * FROM squad_learnings WHERE learning_id = ?
+  `).get(learningId) || null;
+}
+
+function updateSquadLearningStatus(db, learningId, status) {
+  const now = nowIso();
+  const result = db.prepare(`
+    UPDATE squad_learnings SET status = ?, updated_at = ? WHERE learning_id = ?
+  `).run(status, now, learningId);
+  return result.changes > 0;
+}
+
+function reinforceSquadLearning(db, learningId) {
+  const now = nowIso();
+  const result = db.prepare(`
+    UPDATE squad_learnings SET frequency = frequency + 1, last_reinforced = ?, updated_at = ? WHERE learning_id = ?
+  `).run(now, now, learningId);
+  return result.changes > 0;
+}
+
+function promoteSquadLearning(db, learningId, promotedTo) {
+  const now = nowIso();
+  const result = db.prepare(`
+    UPDATE squad_learnings SET status = 'promoted', promoted_to = ?, updated_at = ? WHERE learning_id = ?
+  `).run(promotedTo, now, learningId);
+  return result.changes > 0;
+}
+
+function archiveStaleSquadLearnings(db, squadSlug, staleDays) {
+  const days = Number(staleDays) || 90;
+  const cutoff = new Date(Date.now() - days * 86400000).toISOString();
+  const result = db.prepare(`
+    UPDATE squad_learnings SET status = 'stale', updated_at = datetime('now')
+    WHERE squad_slug = ? AND status = 'active' AND last_reinforced < ?
+  `).run(squadSlug, cutoff);
+  return result.changes;
+}
+
+function getSquadLearningStats(db, squadSlug) {
+  return db.prepare(`
+    SELECT type, status, COUNT(*) as count FROM squad_learnings
+    WHERE squad_slug = ? GROUP BY type, status ORDER BY type, status
+  `).all(squadSlug);
+}
+
+// --- Project Learnings CRUD ---
+
+function insertProjectLearning(db, options = {}) {
+  const learningId = options.learningId || `pl-${slugify(options.projectName || 'proj')}-${Date.now()}`;
+  const now = nowIso();
+  db.prepare(`
+    INSERT OR REPLACE INTO project_learnings
+      (learning_id, project_name, feature_slug, type, title, confidence, frequency,
+       last_reinforced, applies_to, promoted_to, status,
+       source_session, evidence, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    learningId,
+    options.projectName || null,
+    options.featureSlug || null,
+    options.type || 'preference',
+    options.title || '',
+    options.confidence || 'medium',
+    Number(options.frequency) || 1,
+    options.lastReinforced || now,
+    options.appliesTo || 'project',
+    options.promotedTo || null,
+    options.status || 'active',
+    options.sourceSession || null,
+    options.evidence || null,
+    now,
+    now
+  );
+  return learningId;
+}
+
+function listProjectLearnings(db, statusFilter) {
+  if (statusFilter) {
+    return db.prepare(`
+      SELECT * FROM project_learnings WHERE status = ? ORDER BY created_at DESC
+    `).all(statusFilter);
+  }
+  return db.prepare(`
+    SELECT * FROM project_learnings ORDER BY created_at DESC
+  `).all();
+}
+
+function getProjectLearning(db, learningId) {
+  return db.prepare(`
+    SELECT * FROM project_learnings WHERE learning_id = ?
+  `).get(learningId) || null;
+}
+
+function updateProjectLearningStatus(db, learningId, status) {
+  const now = nowIso();
+  const result = db.prepare(`
+    UPDATE project_learnings SET status = ?, updated_at = ? WHERE learning_id = ?
+  `).run(status, now, learningId);
+  return result.changes > 0;
+}
+
+function reinforceProjectLearning(db, learningId) {
+  const now = nowIso();
+  const result = db.prepare(`
+    UPDATE project_learnings SET frequency = frequency + 1, last_reinforced = ?, updated_at = ? WHERE learning_id = ?
+  `).run(now, now, learningId);
+  return result.changes > 0;
+}
+
+function promoteProjectLearning(db, learningId, promotedTo) {
+  const now = nowIso();
+  const result = db.prepare(`
+    UPDATE project_learnings SET status = 'promoted', promoted_to = ?, updated_at = ? WHERE learning_id = ?
+  `).run(promotedTo, now, learningId);
+  return result.changes > 0;
+}
+
+function getProjectLearningStats(db) {
+  return db.prepare(`
+    SELECT type, status, COUNT(*) as count FROM project_learnings
+    GROUP BY type, status ORDER BY type, status
+  `).all();
+}
+
 module.exports = {
   resolveRuntimePaths,
   runtimeStoreExists,
@@ -1706,5 +2222,44 @@ module.exports = {
   listArtisanSquads,
   deleteArtisanSquad,
   addArtisanMessage,
-  getArtisanMessages
+  getArtisanMessages,
+  // Investigation CRUD
+  insertInvestigation,
+  listInvestigations,
+  getInvestigation,
+  linkInvestigation,
+  // Implementation Plans CRUD
+  upsertImplementationPlan,
+  getImplementationPlan,
+  listImplementationPlans,
+  updateImplementationPlanStatus,
+  upsertPlanPhase,
+  updatePlanPhaseStatus,
+  getPlanPhases,
+  // Squad Execution Plans CRUD
+  upsertSquadExecutionPlan,
+  getSquadExecutionPlan,
+  getSquadExecutionPlanBySquad,
+  listSquadExecutionPlans,
+  updateSquadExecutionPlanStatus,
+  upsertSquadPlanRound,
+  updateSquadPlanRoundStatus,
+  getSquadPlanRounds,
+  // Squad Learnings CRUD
+  insertSquadLearning,
+  listSquadLearnings,
+  getSquadLearning,
+  updateSquadLearningStatus,
+  reinforceSquadLearning,
+  promoteSquadLearning,
+  archiveStaleSquadLearnings,
+  getSquadLearningStats,
+  // Project Learnings CRUD
+  insertProjectLearning,
+  listProjectLearnings,
+  getProjectLearning,
+  updateProjectLearningStatus,
+  reinforceProjectLearning,
+  promoteProjectLearning,
+  getProjectLearningStats
 };

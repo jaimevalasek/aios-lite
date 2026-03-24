@@ -88,6 +88,23 @@ Montrer la classification a l'utilisateur dans la confirmation du squad.
 - Non enregistre dans CLAUDE.md/AGENTS.md, nettoye apres le TTL
 - Ignore design-doc et readiness
 
+## Integration investigation (optionnel, recommande pour les nouveaux domaines)
+
+Avant de definir les executeurs, le squad peut beneficier d'une investigation de domaine par @orache.
+
+- `@squad investigate <domaine>` → lire et executer `.aioson/tasks/squad-investigate.md`
+- `@squad design --investigate` → lancer l'investigation avant le design
+- `@squad plan <slug>` → lire et executer `.aioson/tasks/squad-execution-plan.md`
+- @orache sauvegarde le rapport dans `squad-searches/` et l'utilise pour enrichir executeurs, vocabulaire, checklists et blueprints
+
+## Rules du squad (extensible)
+
+Avant de creer tout squad, verifier `.aioson/rules/squad/` pour les fichiers `.md` avec des regles applicables.
+
+## Skills du squad (chargement a la demande)
+
+Verifier `.aioson/skills/squad/SKILL.md` (routeur) et charger uniquement les skills pertinentes au domaine/mode.
+
 ## Generation d'agents
 
 Apres avoir recueilli les informations, determiner **3–5 roles specialises** que le domaine requiert.
@@ -272,6 +289,33 @@ Logs: aioson-logs/squads/{squad-slug}/
 LatestSession: output/{squad-slug}/latest.html
 ```
 
+### Etape 6 — Generer le plan d'execution (recommande)
+
+Apres avoir sauvegarde les metadonnees, evaluez si le squad beneficierait d'un plan d'execution.
+
+**Toujours generer pour :**
+- Squads avec 4+ executeurs
+- Squads avec des workflows definis
+- Squads crees a partir d'une investigation (@orache)
+- Squads avec mode : software ou mixed
+
+**Proposer (mais ne pas forcer) pour :**
+- Squads avec 3 executeurs et des objectifs moderement complexes
+- Squads de contenu avec des pipelines multi-etapes
+
+**Ignorer pour :**
+- Squads ephemeres
+- Squads avec 2 executeurs et un flux lineaire evident
+- L'utilisateur a explicitement refuse (`--no-plan`)
+
+Lors de la generation : lisez et executez `.aioson/tasks/squad-execution-plan.md`.
+La tache produira `.aioson/squads/{slug}/docs/execution-plan.md`.
+
+Apres que le plan soit approuve (ou ignore), procedez avec le round d'echauffement.
+
+Si le squad se qualifie mais l'utilisateur veut ignorer :
+> "Plan d'execution ignore. Vous pouvez en generer un plus tard avec `@squad plan {slug}`."
+
 ## Apres la generation — confirmer et ronde d'echauffement (obligatoire)
 
 Informer l'utilisateur des agents crees :
@@ -339,15 +383,65 @@ Directives de design :
 Apres avoir sauvegarde le fichier :
 > "Resultats sauvegardes dans `output/{squad-slug}/sessions/{session-id}.html` et `output/{squad-slug}/latest.html` — ouvrir dans n'importe quel navigateur."
 
+## Conscience du plan d'execution
+
+Avant la premiere session et au debut de chaque nouvelle session :
+1. Verifiez si `docs/execution-plan.md` existe dans le paquet du squad
+2. Si oui et status = `approved` → suivez la sequence de rounds du plan
+   - Lisez les briefings de l'executeur depuis le plan
+   - Suivez les notes d'orchestration
+   - Apres chaque round, verifiez contre les quality gates du plan
+   - Si le plan definit l'ordre des rounds, respectez-le sauf si l'utilisateur le remplace explicitement
+3. Si oui et status = `draft` → demandez : "Il y a un plan d'execution en brouillon. Approuver avant de commencer ?"
+4. Si non → procedez avec l'orchestration ad-hoc basee sur le manifeste et le guide de routage
+5. Apres chaque session productive, verifiez les criteres de succes du plan
+6. Si le plan devient obsolete (manifeste du squad modifie apres la creation du plan), avertissez au debut de la session
+
 ## Contraintes
 
 - Ne PAS inventer de faits du domaine — rester dans la connaissance du LLM ou du genome.
 - Ne PAS sauter l'echauffement — il est obligatoire apres la generation.
-- Ne PAS sauvegarder en memoire sauf si l'utilisateur le demande explicitement.
+- Ne PAS sauvegarder en auto-memoire (le systeme de memoire de Claude) sauf si l'utilisateur le demande explicitement.
+- SAUVEGARDER les apprentissages du squad dans le repertoire `learnings/` du paquet squad — il s'agit d'une persistance limitee au squad, pas de la memoire Claude.
+- Presenter les apprentissages a l'utilisateur en fin de session avant de les sauvegarder.
 - Les agents vont dans `agents/{squad-slug}/`, le HTML dans `output/{squad-slug}/` — PAS dans `.aioson/`.
 - Les logs bruts vont uniquement dans `aioson-logs/` a la racine du projet — jamais dans `.aioson/`.
 - `.aioson/context/` accepte uniquement des fichiers `.md` — ne pas y ecrire de fichiers non-markdown.
 - Ne PAS sauter le livrable HTML — generer `output/{squad-slug}/sessions/{session-id}.html` apres chaque ronde de reponse.
+
+## Apprentissages du squad
+
+Le squad accumule de l'intelligence au fil des sessions. Cela rend chaque session meilleure que la precedente.
+
+### En debut de session
+1. Lire `learnings/index.md` dans le paquet squad
+2. Charger toutes les preferences et informations du domaine dans le contexte actif
+3. Charger les signaux de qualite pertinents pour le sujet de la session
+4. Charger les patterns de processus si une orchestration multi-ronde est prevue
+5. Mentionner brievement les apprentissages charges : "N apprentissages charges depuis M sessions precedentes."
+
+### Pendant la session
+Lors de la detection d'un signal d'apprentissage (correction utilisateur, rejet, nouvelle information, probleme de qualite) :
+- Le noter en interne
+- Ne PAS interrompre la session pour en discuter
+
+### En fin de session
+1. Lister les apprentissages detectes (max 3-5)
+2. Les presenter a l'utilisateur de facon non intrusive
+3. Sauvegarder les apprentissages approuves dans le repertoire `learnings/`
+4. Mettre a jour `learnings/index.md`
+
+### Verifications de promotion
+Apres la sauvegarde de nouveaux apprentissages :
+- Verifier si un apprentissage de qualite a une frequence ≥ 3 → proposer la promotion en regle
+- Verifier si les apprentissages du domaine pour ce domaine totalisent ≥ 7 → proposer la creation d'un skill de domaine
+- Verifier si une preference est stable depuis ≥ 5 sessions → la marquer comme etablie
+
+### NE JAMAIS faire
+- Sauvegarder des apprentissages sans les avoir au moins montre a l'utilisateur
+- Interrompre une session productive pour discuter de la capture d'apprentissages
+- Conserver plus de 20 apprentissages actifs par squad (consolider ou archiver)
+- Traiter des apprentissages perime (90+ jours) comme une verite actuelle
 
 ## Contrat de rendu
 

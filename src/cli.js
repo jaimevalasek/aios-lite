@@ -43,6 +43,11 @@ const { runSquadValidate } = require('./commands/squad-validate');
 const { runSquadExport } = require('./commands/squad-export');
 const { runSquadPipeline } = require('./commands/squad-pipeline');
 const { runSquadAgentCreate } = require('./commands/squad-agent-create');
+const { runSquadInvestigate } = require('./commands/squad-investigate');
+const { runImplementationPlan } = require('./commands/implementation-plan');
+const { runSquadPlan } = require('./commands/squad-plan');
+const { runSquadLearning } = require('./commands/squad-learning');
+const { runLearning } = require('./commands/learning');
 const {
   runRuntimeInit,
   runRuntimeIngest,
@@ -70,7 +75,8 @@ const {
   runRuntimeEmit,
   runLiveHandoff,
   runLiveStatus,
-  runLiveClose
+  runLiveClose,
+  runLiveList
 } = require('./commands/live');
 const {
   runCloudImportSquad,
@@ -174,6 +180,22 @@ const JSON_SUPPORTED_COMMANDS = new Set([
   'squad-pipeline',
   'squad:agent-create',
   'squad-agent-create',
+  'squad:investigate',
+  'squad-investigate',
+  'plan:show',
+  'plan:status',
+  'plan:checkpoint',
+  'plan:stale',
+  'plan:register',
+  'plan',
+  'squad:plan',
+  'squad-plan',
+  'squad:learning',
+  'squad-learning',
+  'learning',
+  'learning:list',
+  'learning:stats',
+  'learning:promote',
   'runtime:init',
   'runtime-init',
   'runtime:ingest',
@@ -214,6 +236,8 @@ const JSON_SUPPORTED_COMMANDS = new Set([
   'live-handoff',
   'live:close',
   'live-close',
+  'live:list',
+  'live-list',
   'deliver',
   'output-strategy:export',
   'output-strategy:import',
@@ -320,6 +344,9 @@ function printHelp(t, logger) {
   logHelpLine(t, logger, 'cli.help_squad_export');
   logHelpLine(t, logger, 'cli.help_squad_pipeline');
   logHelpLine(t, logger, 'cli.help_squad_agent_create');
+  logHelpLine(t, logger, 'cli.help_squad_investigate');
+  logHelpLine(t, logger, 'cli.help_squad_learning');
+  logHelpLine(t, logger, 'cli.help_learning');
   logHelpLine(t, logger, 'cli.help_runtime_init');
   logHelpLine(t, logger, 'cli.help_runtime_ingest');
   logHelpLine(t, logger, 'cli.help_runtime_task_start');
@@ -518,6 +545,19 @@ async function main() {
       result = await runSquadPipeline({ args, options, logger: commandLogger, t });
     } else if (command === 'squad:agent-create' || command === 'squad-agent-create') {
       result = await runSquadAgentCreate({ args, options, logger: commandLogger, t });
+    } else if (command === 'squad:investigate' || command === 'squad-investigate') {
+      result = await runSquadInvestigate({ args, options, logger: commandLogger, t });
+    } else if (command === 'squad:plan' || command === 'squad-plan') {
+      result = await runSquadPlan({ args, options, logger: commandLogger, t });
+    } else if (command === 'squad:learning' || command === 'squad-learning') {
+      const sub = args[1] || 'list';
+      result = await runSquadLearning({ args, options: { ...options, sub }, logger: commandLogger, t });
+    } else if (command.startsWith('learning:') || command === 'learning') {
+      const sub = command === 'learning' ? (args[1] || 'list') : command.split(':')[1];
+      result = await runLearning({ args, options: { ...options, sub }, logger: commandLogger, t });
+    } else if (command.startsWith('plan:') || command === 'plan') {
+      const sub = command === 'plan' ? (args[1] || 'show') : command.split(':')[1];
+      result = await runImplementationPlan({ args, options: { ...options, sub }, logger: commandLogger, t });
     } else if (command === 'runtime:init' || command === 'runtime-init') {
       result = await runRuntimeInit({ args, options, logger: commandLogger, t });
     } else if (command === 'runtime:ingest' || command === 'runtime-ingest') {
@@ -558,6 +598,8 @@ async function main() {
       result = await runLiveHandoff({ args, options, logger: commandLogger, t });
     } else if (command === 'live:close' || command === 'live-close') {
       result = await runLiveClose({ args, options, logger: commandLogger, t });
+    } else if (command === 'live:list' || command === 'live-list') {
+      result = await runLiveList({ args, options, logger: commandLogger, t });
     } else if (command === 'deliver') {
       result = await runDeliver({ args, options, logger: commandLogger, t });
     } else if (command === 'output-strategy:export') {

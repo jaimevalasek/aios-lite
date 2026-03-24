@@ -29,6 +29,27 @@ Auth ──► Dashboard
 Emails        (totalmente independiente, puede correr en cualquier momento)
 ```
 
+### Paso 1b — Generar o verificar plan de implementacion
+
+Antes de paralelizar cualquier trabajo, asegura que un plan de implementacion existe:
+
+1. Verifica si `.aioson/context/implementation-plan.md` existe
+2. **Si no** → ejecuta `.aioson/tasks/implementation-plan.md` primero
+   - El plan identificara modulos, dependencias y fases paralelas vs secuenciales
+   - Usa la estrategia de ejecucion del plan para informar el secuenciamiento de modulos en el Paso 2
+   - Las "decisiones pre-tomadas" del plan son restricciones — no las sobrescribas
+3. **Si si** → verifica que siga siendo valido:
+   - Compara la fecha `created` en el frontmatter del plan con fechas de modificacion de artefactos fuente
+   - Si los artefactos cambiaron despues de la creacion del plan → advierte al usuario que el plan puede estar desactualizado
+   - Si el status del plan es `draft` → pide al usuario que apruebe antes de proceder
+4. Usa la estrategia de ejecucion del plan para informar el Paso 2 (clasificacion paralelo vs secuencial)
+   - Si el plan marca fases como `parallel: true`, usa eso como base
+   - Si el plan marca entidades compartidas entre fases, fuerza ejecucion secuencial
+5. El paquete de contexto del plan define lo que cada subagente debe leer — usalo al generar contexto de subagente en el Paso 3
+
+El plan de implementacion es la unica fuente de verdad para el orden de ejecucion.
+Archivos de contexto de subagentes deben referenciar las fases del plan, no re-derivar el analisis completo de dependencias.
+
 ### Paso 2 — Clasificar paralelo vs secuencial
 - **Secuencial** (debe completar antes de que el siguiente comience): modulos donde el output es necesario como input.
 - **Paralelo** (puede correr simultaneamente): modulos sin contratos de datos compartidos ni propiedad de archivos.
@@ -93,6 +114,15 @@ Usar al inicio y fin de cada sesion de trabajo, independientemente de la clasifi
 2. Listar lo que queda abierto o pendiente.
 3. Actualizar `spec.md`: mover elementos completados a Done, agregar nuevas decisiones o blockers.
 4. Sugerir el proximo paso logico.
+5. Escanear en busca de aprendizajes de sesion (ver abajo).
+
+## Aprendizajes de sesion
+
+Al final de cada sesion de orquestracion:
+1. Escanear en busca de aprendizajes en todos los outputs de los subagentes
+2. Registrar en `spec.md` bajo "Aprendizajes de Sesion"
+3. Prestar especial atencion a los patrones de proceso (orden de ejecucion, resultados de paralelizacion)
+4. Si un subagente produjo consistentemente output de baja calidad, registrarlo como senal de calidad
 
 ## Comando *update-spec
 Cuando el usuario escriba `*update-spec`, actualizar `.aioson/context/spec.md` con:

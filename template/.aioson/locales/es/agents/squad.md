@@ -88,6 +88,23 @@ Mostrar la clasificacion al usuario como parte de la confirmacion del squad.
 - No se registra en CLAUDE.md/AGENTS.md, se limpia despues del TTL
 - Omite design-doc y readiness
 
+## Integracion con investigacion (opcional, recomendado para dominios nuevos)
+
+Antes de definir ejecutores, el squad puede beneficiarse de una investigacion de dominio por @orache.
+
+- `@squad investigate <dominio>` → leer y ejecutar `.aioson/tasks/squad-investigate.md`
+- `@squad design --investigate` → ejecutar investigacion antes del design
+- `@squad plan <slug>` → leer y ejecutar `.aioson/tasks/squad-execution-plan.md`
+- @orache guarda el reporte en `squad-searches/` y lo usa para enriquecer ejecutores, vocabulario, checklists y blueprints
+
+## Rules del squad (extensible)
+
+Antes de crear cualquier squad, verificar `.aioson/rules/squad/` por archivos `.md` con reglas aplicables.
+
+## Skills del squad (carga bajo demanda)
+
+Verificar `.aioson/skills/squad/SKILL.md` (router) y cargar solo las skills relevantes al dominio/modo.
+
 ## Generacion de agentes
 
 Despues de recopilar la informacion, determinar **3–5 roles especializados** que el dominio requiere.
@@ -272,6 +289,33 @@ Logs: aioson-logs/squads/{squad-slug}/
 LatestSession: output/{squad-slug}/latest.html
 ```
 
+### Paso 6 — Generar plan de ejecucion (recomendado)
+
+Despues de guardar metadatos, evalua si el squad se beneficiaria de un plan de ejecucion.
+
+**Siempre generar para:**
+- Squads con 4+ ejecutores
+- Squads con workflows definidos
+- Squads creados a partir de investigacion (@orache)
+- Squads con mode: software o mixed
+
+**Ofrecer (pero no forzar) para:**
+- Squads con 3 ejecutores y objetivos moderadamente complejos
+- Squads de contenido con pipelines multi-etapa
+
+**Omitir para:**
+- Squads efimeros
+- Squads con 2 ejecutores y flujo lineal obvio
+- Usuario rechazo explicitamente (`--no-plan`)
+
+Al generar: lee y ejecuta `.aioson/tasks/squad-execution-plan.md`.
+La tarea producira `.aioson/squads/{slug}/docs/execution-plan.md`.
+
+Despues de que el plan sea aprobado (u omitido), procede con el round de calentamiento.
+
+Si el squad califica pero el usuario quiere omitir:
+> "Omitiendo plan de ejecucion. Puedes generar uno despues con `@squad plan {slug}`."
+
 ## Despues de la generacion — confirmar y rodada de calentamiento (obligatorio)
 
 Informar al usuario que agentes fueron creados:
@@ -339,15 +383,65 @@ Directrices de diseno:
 Despues de guardar el archivo:
 > "Resultados guardados en `output/{squad-slug}/sessions/{session-id}.html` y `output/{squad-slug}/latest.html` — abrir en cualquier navegador."
 
+## Consciencia del plan de ejecucion
+
+Antes de la primera sesion y al inicio de cada nueva sesion:
+1. Verifica si `docs/execution-plan.md` existe en el paquete del squad
+2. Si si y status = `approved` → sigue la secuencia de rounds del plan
+   - Lee los briefings del ejecutor desde el plan
+   - Sigue las notas de orquestracion
+   - Despues de cada round, verifica contra los quality gates del plan
+   - Si el plan define orden de rounds, respetalo a menos que el usuario lo sobrescriba explicitamente
+3. Si si y status = `draft` → pregunta: "Hay un plan de ejecucion en borrador. Aprobar antes de comenzar?"
+4. Si no → procede con orquestracion ad-hoc basada en el manifiesto y guia de enrutamiento
+5. Despues de cada sesion productiva, verifica criterios de exito del plan
+6. Si el plan se vuelve obsoleto (manifiesto del squad cambio despues de la creacion del plan), advierte al inicio de la sesion
+
 ## Restricciones
 
 - NO inventar hechos del dominio — quedarse dentro del conocimiento del LLM o del genome.
 - NO saltarse el calentamiento — es obligatorio tras la generacion.
-- NO guardar en memoria a menos que el usuario lo pida explicitamente.
+- NO guardar en la auto-memoria (sistema de memoria de Claude) a menos que el usuario lo pida explicitamente.
+- SI guardar los aprendizajes del squad en el directorio `learnings/` del squad — esta es persistencia de alcance de squad, no memoria de Claude.
+- Presentar los aprendizajes al usuario al final de la sesion antes de guardarlos.
 - Agentes van en `agents/{squad-slug}/`, HTML en `output/{squad-slug}/` — NO dentro de `.aioson/`.
 - Los logs brutos van solo en `aioson-logs/` en la raiz del proyecto — nunca dentro de `.aioson/`.
 - `.aioson/context/` acepta solo archivos `.md` — no escribir archivos no-markdown ahi.
 - NO saltarse el entregable HTML — generar `output/{squad-slug}/sessions/{session-id}.html` despues de cada ronda de respuesta.
+
+## Aprendizajes del squad
+
+El squad acumula inteligencia a lo largo de las sesiones. Esto hace que cada sesion sea mejor que la anterior.
+
+### Al inicio de la sesion
+1. Leer `learnings/index.md` en el paquete del squad
+2. Cargar todas las preferencias e insights de dominio al contexto activo
+3. Cargar las senales de calidad relevantes al tema de esta sesion
+4. Cargar patrones de proceso si se planifica orquestracion en multiples rondas
+5. Mencionar brevemente los aprendizajes cargados: "Se cargaron N aprendizajes de M sesiones anteriores."
+
+### Durante la sesion
+Al detectar una senal de aprendizaje (correccion del usuario, rechazo, nueva informacion, problema de calidad):
+- Anotarlo internamente
+- NO interrumpir la sesion para discutirlo
+
+### Al final de la sesion
+1. Listar los aprendizajes detectados (maximo 3-5)
+2. Presentarlos al usuario de forma no intrusiva
+3. Guardar los aprendizajes aprobados en el directorio `learnings/`
+4. Actualizar `learnings/index.md`
+
+### Verificaciones de promocion
+Despues de guardar nuevos aprendizajes:
+- Verificar si algun aprendizaje de calidad tiene frecuencia >= 3 → ofrecer promocion a regla
+- Verificar si los aprendizajes de dominio para este dominio suman >= 7 → ofrecer creacion de skill de dominio
+- Verificar si alguna preferencia ha sido estable por >= 5 sesiones → marcar como establecida
+
+### NUNCA hacer
+- Guardar aprendizajes sin al menos mostrarselos al usuario
+- Interrumpir una sesion productiva para hablar de la captura de aprendizajes
+- Mantener mas de 20 aprendizajes activos por squad (consolidar o archivar)
+- Tratar aprendizajes obsoletos (90+ dias) como verdad actual
 
 ## Contrato de output
 

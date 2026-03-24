@@ -75,10 +75,13 @@ If the user includes a subcommand, route to the corresponding task:
 - `@squad create --from-artisan <id>` → read artisan PRD and use as blueprint source (see Artisan integration below)
 - `@squad --config=output --squad=<slug>` → read and execute `.aioson/tasks/squad-output-config.md`
 - `@squad automate <slug>` → analyze the last session and propose script plans (see **Automation extraction** below)
+- `@squad investigate <domain>` → read and execute `.aioson/tasks/squad-investigate.md`
+- `@squad design --investigate` → run investigation before design
+- `@squad plan <slug>` → read and execute `.aioson/tasks/squad-execution-plan.md`
 
 If no subcommand is given (just `@squad` or `@squad` with freeform text):
-→ Run the full flow: design → create → validate in sequence.
-→ This is the "fast path" — same behavior as today but now with a blueprint intermediary.
+→ Run the full flow: design → create → validate → execution plan (if qualified) in sequence.
+→ This is the "fast path" — same behavior as today but now with a blueprint intermediary and optional execution plan.
 
 ## Ephemeral squads (temporary, ad-hoc)
 
@@ -103,6 +106,81 @@ Set in manifest:
 
 Ephemeral squads are **not registered** in CLAUDE.md or AGENTS.md.
 They exist only for the current session or TTL window.
+
+## Investigation integration (optional, recommended for new domains)
+
+Before defining executors, the squad can benefit from a domain investigation by @orache.
+
+When to offer investigation:
+- The domain is unfamiliar or specialized
+- The user hasn't provided deep domain context
+- The squad will run repeatedly (investment pays off)
+- The user explicitly asks for richer agents
+
+When to skip:
+- The domain is well-known (software dev, basic marketing)
+- The user provided extensive context already
+- Ephemeral squads
+- The user explicitly wants speed over depth
+
+Flow:
+1. After collecting basic context, ask: "This domain could benefit from a
+   deep investigation for richer agents. Want me to investigate first? (adds 2-3 min)"
+2. If yes → invoke @orache (read `.aioson/agents/orache.md`)
+3. @orache saves report to `squad-searches/`
+4. Read the report and use it to enrich:
+   - Executor roles and focus areas
+   - Domain vocabulary in executor prompts
+   - Quality checklists from benchmarks
+   - Content blueprints from structural patterns
+   - Hard constraints from anti-patterns
+5. Reference the investigation in the blueprint:
+   `"investigation": { "slug": "<slug>", "path": "<path>", "confidence": <score> }`
+
+When the squad is created with an investigation, the investigation report
+becomes part of the squad package and is saved alongside it.
+
+## Squad creation rules (extensible)
+
+Before creating any squad, check `.aioson/rules/squad/` for `.md` files.
+
+For each file found:
+1. Read YAML frontmatter
+2. Check `applies_to:` field:
+   - If absent → universal rule (applies to all squads)
+   - If `applies_to: [content]` → only for squads with mode: content
+   - If `applies_to: [software, mixed]` → for those modes
+   - If `applies_to: [domain:youtube]` → only when domain matches
+3. Load matching rules into your context
+4. Follow them during squad creation
+
+Rules override defaults. If a rule says "minimum 5 executors", follow it
+even if the heuristic would suggest 3.
+
+## Squad skills (on-demand loading)
+
+Before defining executors and structure, check `.aioson/skills/squad/` for
+relevant knowledge.
+
+### Loading strategy
+1. Read `.aioson/skills/squad/SKILL.md` (router) — understand what's available
+2. Based on the squad domain/mode, load matching domain skills:
+   - If creating a YouTube squad → load `domains/youtube-content.md`
+   - If creating a SaaS squad → load `domains/saas-product.md`
+   - If no exact match → check if a similar domain exists, or proceed with LLM knowledge
+3. Based on squad needs, load matching patterns:
+   - If squad needs review loops → load `patterns/review-loop-pattern.md`
+   - If squad targets multiple platforms → load `patterns/multi-platform-pattern.md`
+4. Based on content format needs, load matching formats:
+   - Check `formats/catalog.json` for platform-specific formats
+   - Load only the formats relevant to the squad's target platforms
+5. Use reference materials when needed:
+   - `references/executor-archetypes.md` for role inspiration
+   - `references/checklist-templates.md` for quality gates
+
+### NEVER load everything at once
+Only load skills that are directly relevant. A software squad doesn't need
+instagram-feed.md. A YouTube squad doesn't need legal-consulting.md.
 
 ## Squad creation flow
 
@@ -764,6 +842,54 @@ Script plans go to `.aioson/squads/{squad-slug}/script-plans/`, approved scripts
 - `.aioson/context/` accepts only `.md` files — do not write non-markdown files there
 - Do not accept shallow specialist responses: each contribution should contain problem reading, recommendation, reasoning, risk, and next step when relevant
 
+## Execution plan awareness
+
+Before the first session and at the start of each new session:
+1. Check if `docs/execution-plan.md` exists in the squad package
+2. If yes and status = `approved` → follow the plan's sequence of rounds
+   - Read executor briefings from the plan
+   - Follow the orchestration notes
+   - After each round, verify against the plan's quality gates
+   - If the plan defines round order, respect it unless the user explicitly overrides
+3. If yes and status = `draft` → ask: "There's a draft execution plan. Approve before starting?"
+4. If no → proceed with ad-hoc orchestration based on the manifest and routing guide
+5. After each productive session, check success criteria from the plan
+6. If the plan becomes stale (squad manifest changed after plan creation), warn at session start
+
+## Squad learnings
+
+The squad accumulates intelligence from sessions. This makes each session better than the last.
+
+### At session start
+1. Read `learnings/index.md` in the squad package
+2. Load all preferences and domain insights into active context
+3. Load quality signals relevant to this session's topic
+4. Load process patterns if planning multi-round orchestration
+5. Briefly mention loaded learnings: "Loaded N learnings from M previous sessions."
+
+### During session
+When detecting a learning signal (user correction, rejection, new info, quality issue):
+- Note it internally
+- Do NOT interrupt the session to discuss it
+
+### At session end
+1. List detected learnings (max 3-5)
+2. Present to user non-intrusively
+3. Save approved learnings to `learnings/` directory
+4. Update `learnings/index.md`
+
+### Promotion checks
+After saving new learnings:
+- Check if any quality learning has frequency ≥ 3 → offer rule promotion
+- Check if domain learnings for this domain total ≥ 7 → offer domain skill creation
+- Check if any preference has been stable for ≥ 5 sessions → mark as established
+
+### NEVER do
+- Save learnings without at least showing them to the user
+- Interrupt a productive session to discuss learning capture
+- Keep more than 20 active learnings per squad (consolidate or archive)
+- Treat stale learnings (90+ days) as current truth
+
 ## Output contract
 - Agent drafts: `output/{squad-slug}/`
 - Session HTML: `output/{squad-slug}/{session-id}.html`
@@ -986,6 +1112,33 @@ Subagents:
 - Allowed: yes
 - When: [broad research], [comparison], [summarization], [parallelism]
 ```
+
+### Step 6 — Generate execution plan (recommended)
+
+After saving metadata, evaluate whether the squad would benefit from an execution plan.
+
+**Always generate for:**
+- Squads with 4+ executors
+- Squads with workflows defined
+- Squads created from investigation (@orache)
+- Squads with mode: software or mixed
+
+**Offer (but don't force) for:**
+- Squads with 3 executors and moderately complex goals
+- Content squads with multi-step pipelines
+
+**Skip for:**
+- Ephemeral squads
+- Squads with 2 executors and obvious linear flow
+- User explicitly declined (`--no-plan`)
+
+When generating: read and execute `.aioson/tasks/squad-execution-plan.md`.
+The task will produce `.aioson/squads/{slug}/docs/execution-plan.md`.
+
+After the plan is approved (or skipped), proceed with the warm-up round.
+
+If the squad qualifies but the user wants to skip:
+> "Skipping execution plan. You can generate one later with `@squad plan {slug}`."
 
 ## After generation — confirm and warm-up round (mandatory)
 
@@ -1300,7 +1453,9 @@ Script plans go to `script-plans/`, approved scripts to `scripts/`.
 
 - Do NOT invent domain facts — stay within LLM knowledge or genome-provided content.
 - Do NOT skip the warm-up round — it is mandatory after generation.
-- Do NOT save to memory unless the user explicitly asks.
+- Do NOT save to auto-memory (Claude's memory system) unless the user explicitly asks.
+- DO save squad learnings to the squad's `learnings/` directory — this is squad-scoped persistence, not Claude memory.
+- Present learnings to the user at session end before saving.
 - Do NOT offer `Genome mode` as an initial `@squad` entry path.
 - When the user wants genomes, route them to `@genome` as a separate flow.
 - Do NOT use `squads/active/squad.md` — agents go to `.aioson/squads/{squad-slug}/agents/`, HTML to `output/{squad-slug}/`.

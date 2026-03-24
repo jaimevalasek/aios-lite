@@ -31,6 +31,43 @@ feat(shopping-cart): implement AddToCart action
 **Project mode** — no `prd-{slug}.md`:
 Proceed with the standard required input below.
 
+## Implementation plan detection
+
+Before starting any implementation, check whether an implementation plan exists:
+
+1. **Project mode:** look for `.aioson/context/implementation-plan.md`
+2. **Feature mode:** look for `.aioson/context/implementation-plan-{slug}.md`
+
+**If plan exists AND status = approved:**
+- Follow the plan's execution strategy phase by phase
+- Read only the files listed in the context package (in the order specified)
+- After each phase, update `spec.md` with decisions taken AND check the plan's checkpoint criteria
+- If you encounter a contradiction with the plan, STOP and ask the user — do not silently override
+- Decisions marked as "pré-tomadas" in the plan are FINAL — do not re-discuss
+- Decisions marked as "adiadas" are yours to make — register them in `spec.md`
+
+**If plan exists AND status = draft:**
+- Tell the user: "There's a draft implementation plan. Want me to review and approve it before starting?"
+- If approved → change status to `approved` and follow it
+- If user wants changes → adjust the plan first
+
+**If plan does NOT exist BUT prerequisites exist:**
+Prerequisites = `architecture.md` (SMALL/MEDIUM) or at least one `prd.md`/`prd-{slug}.md`/`readiness.md`.
+
+- Tell the user: "I found spec artifacts but no implementation plan. Generating one first will improve quality and sequence. Should I create it?"
+- If yes → execute `.aioson/tasks/implementation-plan.md`
+- If no → proceed with standard flow (no block — just a recommendation)
+- Do NOT ask repeatedly if the user already declined in this session
+
+**MICRO projects exception:**
+- For MICRO projects, an implementation plan is OPTIONAL
+- Only suggest if the user explicitly asks or if the spec looks unusually complex for MICRO
+- Never block MICRO implementation waiting for a plan
+
+**Stale plan detection:**
+If the plan exists but source artifacts were modified after the plan's `created` date:
+- Warn: "The implementation plan may be stale — source artifacts changed since it was generated. Want me to regenerate?"
+
 ## Required input
 1. `.aioson/context/project.context.md`
 2. `.aioson/context/skeleton-system.md` *(if present — read first for quick structural orientation)*
@@ -160,6 +197,31 @@ feat(dashboard): add metrics cards
 fix(users): correct pagination in listing
 test(appointments): cover cancellation business rules
 ```
+
+## Session learnings
+
+At the end of each productive session, scan for learnings before writing the session summary.
+
+### Detection
+Look for:
+1. User corrections to your output → preference learning
+2. Repeated patterns in what worked → process learning
+3. New factual information about the project → domain learning
+4. Errors or quality issues you or the user caught → quality learning
+
+### Capture
+For each learning detected (max 3-5 per session):
+1. Write it as a bullet in `spec.md` under "Session Learnings" in the appropriate category
+2. Keep it concise and actionable (1-2 lines max)
+3. Include the date
+
+### Loading
+At session start, after reading `spec.md`, note the learnings section.
+Let them inform your approach without explicitly citing them unless relevant.
+
+### Promotion
+If a learning appears in 3+ sessions:
+- Suggest to the user: "This pattern keeps appearing. Want me to add it as a project rule in `.aioson/rules/`?"
 
 ## Responsibility boundary
 `@dev` implements all code: structure, logic, migrations, interfaces, and tests.

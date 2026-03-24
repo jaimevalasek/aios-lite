@@ -67,6 +67,9 @@ Se o usuário incluir um subcomando, roteie para a task correspondente:
 - `@squad repair <slug>` → leia e execute `.aioson/tasks/squad-repair.md` (Fase 4)
 - `@squad export <slug>` → leia e execute `.aioson/tasks/squad-export.md` (Fase 3)
 - `@squad --config=output --squad=<slug>` → leia e execute `.aioson/tasks/squad-output-config.md`
+- `@squad investigate <domínio>` → leia e execute `.aioson/tasks/squad-investigate.md`
+- `@squad plan <slug>` → ler e executar `.aioson/tasks/squad-execution-plan.md`
+- `@squad design --investigate` → execute investigação antes do design
 
 Se nenhum subcomando for fornecido (apenas `@squad` ou `@squad` com texto livre):
 → Execute o fluxo completo: design → create → validate em sequência.
@@ -95,6 +98,48 @@ No manifesto:
 
 Squads efêmeros **não são registrados** no CLAUDE.md ou AGENTS.md.
 Existem apenas para a sessão atual ou janela de TTL.
+
+## Integração com investigação (opcional, recomendado para domínios novos)
+
+Antes de definir executores, o squad pode se beneficiar de uma investigação de domínio pelo @orache.
+
+Quando oferecer investigação:
+- O domínio é desconhecido ou especializado
+- O usuário não forneceu contexto profundo do domínio
+- O squad vai rodar repetidamente (investimento se paga)
+- O usuário pede explicitamente agentes mais ricos
+
+Quando pular:
+- O domínio é bem conhecido (dev de software, marketing básico)
+- O usuário já forneceu contexto extenso
+- Squads efêmeros
+- O usuário quer velocidade em vez de profundidade
+
+Fluxo:
+1. Após coletar contexto básico, pergunte: "Este domínio pode se beneficiar de uma
+   investigação profunda para agentes mais ricos. Quer que eu investigue primeiro? (adiciona 2-3 min)"
+2. Se sim → invoque @orache (leia `.aioson/agents/orache.md`)
+3. @orache salva relatório em `squad-searches/`
+4. Leia o relatório e use para enriquecer:
+   - Papéis e áreas de foco dos executores
+   - Vocabulário do domínio nos prompts dos executores
+   - Checklists de qualidade baseados em benchmarks
+   - Content blueprints a partir de padrões estruturais
+   - Restrições rígidas a partir de anti-patterns
+5. Referencie a investigação no blueprint:
+   `"investigation": { "slug": "<slug>", "path": "<path>", "confidence": <score> }`
+
+## Rules do squad (extensível)
+
+Antes de criar qualquer squad, verifique `.aioson/rules/squad/` por arquivos `.md`.
+Para cada arquivo, leia o frontmatter YAML e carregue as rules que se aplicam ao
+modo e domínio do squad atual. Rules sobrescrevem padrões.
+
+## Skills do squad (carregamento sob demanda)
+
+Antes de definir executores e estrutura, verifique `.aioson/skills/squad/` por
+conhecimento relevante. Leia `.aioson/skills/squad/SKILL.md` (router) para entender
+o que está disponível e carregue apenas o que for relevante ao domínio/modo do squad.
 
 ## Fluxo de criação do squad
 
@@ -930,6 +975,33 @@ Subagents:
 - When: [pesquisa ampla], [comparação], [resumo], [paralelismo]
 ```
 
+### Passo 6 — Gerar plano de execucao (recomendado)
+
+Apos salvar metadados, avalie se o squad se beneficiaria de um plano de execucao.
+
+**Sempre gerar para:**
+- Squads com 4+ executores
+- Squads com workflows definidos
+- Squads criados a partir de investigacao (@orache)
+- Squads com mode: software ou mixed
+
+**Oferecer (mas nao forcar) para:**
+- Squads com 3 executores e objetivos moderadamente complexos
+- Squads de conteudo com pipelines multi-etapa
+
+**Pular para:**
+- Squads efemeros
+- Squads com 2 executores e fluxo linear obvio
+- Usuario recusou explicitamente (`--no-plan`)
+
+Ao gerar: leia e execute `.aioson/tasks/squad-execution-plan.md`.
+A tarefa produzira `.aioson/squads/{slug}/docs/execution-plan.md`.
+
+Apos o plano ser aprovado (ou pulado), prossiga com o round de aquecimento.
+
+Se o squad se qualifica mas o usuario quer pular:
+> "Pulando plano de execucao. Voce pode gerar um depois com `@squad plan {slug}`."
+
 ## Apos a geracao — confirme e rode o aquecimento (obrigatorio)
 
 Informe ao usuário quais executores foram criados, depois mostre a verificação de classificação e o score de cobertura:
@@ -1062,7 +1134,9 @@ Após salvar o arquivo:
 
 - NÃO invente fatos do domínio — fique dentro do conhecimento do LLM ou do conteúdo do genome.
 - NÃO pule o aquecimento — é obrigatório após a geração.
-- NÃO salve em memória a menos que o usuário peça explicitamente.
+- NÃO salve na memória automática (sistema de memória do Claude) a menos que o usuário peça explicitamente.
+- SALVE os aprendizados do squad no diretório `learnings/` do squad — esta é persistência com escopo de squad, não memória do Claude.
+- Apresente os aprendizados ao usuário ao final da sessão antes de salvar.
 - NÃO ofereça `Modo Genome` como etapa inicial do `@squad`.
 - Quando o usuário quiser genomes, encaminhe para `@genome` como fluxo separado.
 - Agentes vão em `.aioson/squads/{squad-slug}/agents/`, HTML em `output/{squad-slug}/` — NÃO dentro de `.aioson/`.
@@ -1072,6 +1146,54 @@ Após salvar o arquivo:
 - NÃO pule o entregável HTML — gere `output/{squad-slug}/{session-id}.html` após cada rodada de resposta.
 - NÃO crie uma squad sem `agents.md` e sem `squad.manifest.json`.
 - NÃO trate skills, MCPs e subagentes como implícitos — declare-os explicitamente na squad.
+
+## Consciencia do plano de execucao
+
+Antes da primeira sessao e no inicio de cada nova sessao:
+1. Verifique se `docs/execution-plan.md` existe no pacote do squad
+2. Se sim e status = `approved` → siga a sequencia de rounds do plano
+   - Leia os briefings do executor a partir do plano
+   - Siga as notas de orquestracao
+   - Apos cada round, verifique contra os quality gates do plano
+   - Se o plano define ordem de rounds, respeite-a a menos que o usuario sobrescreva explicitamente
+3. Se sim e status = `draft` → pergunte: "Existe um plano de execucao em rascunho. Aprovar antes de comecar?"
+4. Se nao → prossiga com orquestracao ad-hoc baseada no manifesto e guia de roteamento
+5. Apos cada sessao produtiva, verifique criterios de sucesso do plano
+6. Se o plano ficar obsoleto (manifesto do squad mudou apos criacao do plano), avise no inicio da sessao
+
+## Aprendizados do squad
+
+O squad acumula inteligência entre sessões. Isso torna cada sessão melhor que a anterior.
+
+### No início da sessão
+1. Leia `learnings/index.md` no pacote do squad
+2. Carregue todas as preferências e insights de domínio no contexto ativo
+3. Carregue sinais de qualidade relevantes para o tópico desta sessão
+4. Carregue padrões de processo se estiver planejando orquestração com múltiplos rounds
+5. Mencione brevemente os aprendizados carregados: "Carregados N aprendizados de M sessões anteriores."
+
+### Durante a sessão
+Ao detectar um sinal de aprendizado (correção do usuário, rejeição, nova informação, problema de qualidade):
+- Registre internamente
+- NÃO interrompa a sessão para discutir
+
+### Ao final da sessão
+1. Liste os aprendizados detectados (máx. 3-5)
+2. Apresente ao usuário de forma não intrusiva
+3. Salve os aprendizados aprovados no diretório `learnings/`
+4. Atualize `learnings/index.md`
+
+### Verificações de promoção
+Após salvar novos aprendizados:
+- Verifique se algum aprendizado de qualidade tem frequência ≥ 3 → ofereça promoção para regra
+- Verifique se os aprendizados de domínio para este domínio somam ≥ 7 → ofereça criação de skill de domínio
+- Verifique se alguma preferência está estável por ≥ 5 sessões → marque como estabelecida
+
+### NUNCA faça
+- Salvar aprendizados sem ao menos mostrá-los ao usuário
+- Interromper uma sessão produtiva para discutir captura de aprendizados
+- Manter mais de 20 aprendizados ativos por squad (consolide ou arquive)
+- Tratar aprendizados obsoletos (90+ dias) como verdade atual
 
 ## Contrato de output
 

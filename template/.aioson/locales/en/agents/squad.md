@@ -166,6 +166,54 @@ synthesize outputs, manage the session HTML report.
 - Update `output/{squad-slug}/latest.html` with the latest session content
 - `.aioson/context/` accepts only `.md` files — do not write non-markdown files there
 
+## Execution plan awareness
+
+Before the first session and at the start of each new session:
+1. Check if `docs/execution-plan.md` exists in the squad package
+2. If yes and status = `approved` → follow the plan's sequence of rounds
+   - Read executor briefings from the plan
+   - Follow the orchestration notes
+   - After each round, verify against the plan's quality gates
+   - If the plan defines round order, respect it unless the user explicitly overrides
+3. If yes and status = `draft` → ask: "There's a draft execution plan. Approve before starting?"
+4. If no → proceed with ad-hoc orchestration based on the manifest and routing guide
+5. After each productive session, check success criteria from the plan
+6. If the plan becomes stale (squad manifest changed after plan creation), warn at session start
+
+## Squad learnings
+
+The squad accumulates intelligence from sessions. This makes each session better than the last.
+
+### At session start
+1. Read `learnings/index.md` in the squad package
+2. Load all preferences and domain insights into active context
+3. Load quality signals relevant to this session's topic
+4. Load process patterns if planning multi-round orchestration
+5. Briefly mention loaded learnings: "Loaded N learnings from M previous sessions."
+
+### During session
+When detecting a learning signal (user correction, rejection, new info, quality issue):
+- Note it internally
+- Do NOT interrupt the session to discuss it
+
+### At session end
+1. List detected learnings (max 3-5)
+2. Present to user non-intrusively
+3. Save approved learnings to `learnings/` directory
+4. Update `learnings/index.md`
+
+### Promotion checks
+After saving new learnings:
+- Check if any quality learning has frequency ≥ 3 → offer rule promotion
+- Check if domain learnings for this domain total ≥ 7 → offer domain skill creation
+- Check if any preference has been stable for ≥ 5 sessions → mark as established
+
+### NEVER do
+- Save learnings without at least showing them to the user
+- Interrupt a productive session to discuss learning capture
+- Keep more than 20 active learnings per squad (consolidate or archive)
+- Treat stale learnings (90+ days) as current truth
+
 ## Output contract
 - Session HTML: `output/{squad-slug}/sessions/{session-id}.html`
 - Latest HTML: `output/{squad-slug}/latest.html`
@@ -271,6 +319,33 @@ Logs: aioson-logs/squads/{squad-slug}/
 LatestSession: output/{squad-slug}/latest.html
 ```
 
+### Step 5 — Generate execution plan (recommended)
+
+After saving metadata, evaluate whether the squad would benefit from an execution plan.
+
+**Always generate for:**
+- Squads with 4+ executors
+- Squads with workflows defined
+- Squads created from investigation (@orache)
+- Squads with mode: software or mixed
+
+**Offer (but don't force) for:**
+- Squads with 3 executors and moderately complex goals
+- Content squads with multi-step pipelines
+
+**Skip for:**
+- Ephemeral squads
+- Squads with 2 executors and obvious linear flow
+- User explicitly declined (`--no-plan`)
+
+When generating: read and execute `.aioson/tasks/squad-execution-plan.md`.
+The task will produce `.aioson/squads/{slug}/docs/execution-plan.md`.
+
+After the plan is approved (or skipped), proceed with the warm-up round.
+
+If the squad qualifies but the user wants to skip:
+> "Skipping execution plan. You can generate one later with `@squad plan {slug}`."
+
 ## After generation — confirm and warm-up round (mandatory)
 
 Tell the user which agents were created:
@@ -342,7 +417,9 @@ After writing the file:
 
 - Do NOT invent domain facts — stay within LLM knowledge or genome-provided content.
 - Do NOT skip the warm-up round — it is mandatory after generation.
-- Do NOT save to memory unless the user explicitly asks.
+- Do NOT save to auto-memory (Claude's memory system) unless the user explicitly asks.
+- DO save squad learnings to the squad's `learnings/` directory — this is squad-scoped persistence, not Claude memory.
+- Present learnings to the user at session end before saving.
 - Agents go to `agents/{squad-slug}/`, HTML to `output/{squad-slug}/` — NOT inside `.aioson/`.
 - Store raw logs only in `aioson-logs/` at the project root — never inside `.aioson/`.
 - `.aioson/context/` accepts only `.md` files — do not write non-markdown files there.

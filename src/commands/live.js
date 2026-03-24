@@ -119,12 +119,13 @@ function parseToolArgs(value) {
   return text.split(/\s+/).filter(Boolean);
 }
 
-function normalizeLiveTool(value) {
+function normalizeLiveTool(value, t) {
   const tool = String(value || '').trim().toLowerCase();
   if (SUPPORTED_PROMPT_TOOLS.has(tool)) {
     return tool;
   }
-  throw new Error(`Unsupported live tool: ${value}. Supported tools: ${Array.from(SUPPORTED_PROMPT_TOOLS).join(', ')}`);
+  const supported = Array.from(SUPPORTED_PROMPT_TOOLS).join(', ');
+  throw new Error(t ? t('live.unsupported_tool', { tool: value, supported }) : `Unsupported live tool: ${value}. Supported: ${supported}`);
 }
 
 
@@ -181,7 +182,7 @@ async function loadPlanReference(targetDir, planRef) {
   try {
     markdown = await fs.readFile(planPath, 'utf8');
   } catch {
-    throw new Error(`Plan file not found: ${planRef}`);
+    throw new Error(`Plan file not found: ${planRef}`); // technical message, i18n at caller level
   }
 
   return {
@@ -242,7 +243,10 @@ function normalizeLiveStats(stats, fallback = {}) {
     tasks_completed: Number(stats?.tasks_completed || 0),
     events_total: Number(stats?.events_total || 0),
     plan_steps_done: Number(stats?.plan_steps_done ?? fallback.plan_steps_done ?? 0),
-    plan_steps_total: Number(stats?.plan_steps_total ?? fallback.plan_steps_total ?? 0)
+    plan_steps_total: Number(stats?.plan_steps_total ?? fallback.plan_steps_total ?? 0),
+    events_by_type: stats?.events_by_type && typeof stats.events_by_type === 'object'
+      ? { ...stats.events_by_type }
+      : {}
   };
 }
 
@@ -280,22 +284,34 @@ async function readLiveState(runtimeDir, sessionKey) {
 }
 
 async function writeLiveState(runtimeDir, sessionKey, state) {
-  const { statePath } = resolveLivePaths(runtimeDir, sessionKey);
-  await ensureDir(path.dirname(statePath));
-  await fs.writeFile(statePath, JSON.stringify(state, null, 2), 'utf8');
+  try {
+    const { statePath } = resolveLivePaths(runtimeDir, sessionKey);
+    await ensureDir(path.dirname(statePath));
+    await fs.writeFile(statePath, JSON.stringify(state, null, 2), 'utf8');
+  } catch {
+    // filesystem is auxiliary — SQLite is source of truth
+  }
 }
 
 async function appendLiveEvent(runtimeDir, sessionKey, record) {
-  const { eventsPath } = resolveLivePaths(runtimeDir, sessionKey);
-  await ensureDir(path.dirname(eventsPath));
-  await fs.appendFile(eventsPath, `${JSON.stringify(record)}\n`, 'utf8');
+  try {
+    const { eventsPath } = resolveLivePaths(runtimeDir, sessionKey);
+    await ensureDir(path.dirname(eventsPath));
+    await fs.appendFile(eventsPath, `${JSON.stringify(record)}\n`, 'utf8');
+  } catch {
+    // filesystem is auxiliary — SQLite is source of truth
+  }
 }
 
 async function writeLiveSummary(runtimeDir, sessionKey, markdown) {
-  const { summaryPath } = resolveLivePaths(runtimeDir, sessionKey);
-  await ensureDir(path.dirname(summaryPath));
-  await fs.writeFile(summaryPath, markdown, 'utf8');
-  return summaryPath;
+  try {
+    const { summaryPath } = resolveLivePaths(runtimeDir, sessionKey);
+    await ensureDir(path.dirname(summaryPath));
+    await fs.writeFile(summaryPath, markdown, 'utf8');
+    return summaryPath;
+  } catch {
+    return null;
+  }
 }
 
 async function listLiveStates(runtimeDir) {
@@ -522,12 +538,12 @@ async function requireActiveLiveContext(targetDir, agentName, t, options = {}) {
 
   if (!context.run || context.run.source !== 'live' || !context.sessionKey || !context.task) {
     db.close();
-    throw new Error(`No active live session found for ${normalizeAgentHandle(agentName)}.`);
+    throw new Error(t('live.no_active_session', { agent: normalizeAgentHandle(agentName) }));
   }
 
   if (context.phase !== 'active') {
     db.close();
-    throw new Error(`Live session for ${normalizeAgentHandle(agentName)} is not active.`);
+    throw new Error(t('live.session_not_active', { agent: normalizeAgentHandle(agentName) }));
   }
 
   return { db, dbPath, runtimeDir, context };
@@ -546,6 +562,9 @@ function applyEventToState(state, event, updates = {}) {
     summary: event.summary
   }].slice(-LIVE_EVENTS_LIMIT);
   next.stats.events_total += 1;
+  if (event.type) {
+    next.stats.events_by_type[event.type] = (next.stats.events_by_type[event.type] || 0) + 1;
+  }
 
   if (event.type === 'task_completed') {
     next.stats.tasks_completed += 1;
@@ -653,7 +672,21 @@ async function collectGitSnapshot(targetDir) {
   };
 }
 
+function formatDuration(startedAt, closedAt) {
+  if (!startedAt || !closedAt) return null;
+  const ms = Date.parse(closedAt) - Date.parse(startedAt);
+  if (!Number.isFinite(ms) || ms < 0) return null;
+  const seconds = Math.floor(ms / 1000);
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const secs = seconds % 60;
+  if (hours > 0) return `${hours}h ${minutes}m`;
+  if (minutes > 0) return `${minutes}m ${secs}s`;
+  return `${secs}s`;
+}
+
 function renderLiveSummary(snapshot) {
+  const duration = formatDuration(snapshot.startedAt, snapshot.closedAt);
   const lines = [
     '# Live Session Summary',
     '',
@@ -663,6 +696,7 @@ function renderLiveSummary(snapshot) {
     `- Status: ${snapshot.status}`,
     `- Started: ${snapshot.startedAt || 'unknown'}`,
     `- Closed: ${snapshot.closedAt || 'unknown'}`,
+    ...(duration ? [`- Duration: ${duration}`] : []),
     `- Summary: ${snapshot.summary || 'n/a'}`
   ];
 
@@ -806,7 +840,7 @@ async function getLiveStatusSnapshot(targetDir, t, options = {}) {
       stats: state.stats,
       recentEvents: Array.isArray(state.last_events) && state.last_events.length > 0 ? state.last_events : context.recentEvents,
       warning: context.processState === 'dead' && context.phase === 'active'
-        ? 'Process is dead while the live session is still open. Close it manually with `aioson live:close . --status=failed`.'
+        ? t('live.process_dead_warning')
         : null
     };
 
@@ -819,17 +853,17 @@ async function getLiveStatusSnapshot(targetDir, t, options = {}) {
 async function runLiveStart({ args, options = {}, logger, t }) {
   const targetDir = resolveTargetDir(args);
   const agentName = normalizeAgentHandle(requireOption(options, 'agent', t));
-  const tool = normalizeLiveTool(requireOption(options, 'tool', t));
+  const tool = normalizeLiveTool(requireOption(options, 'tool', t), t);
   const noLaunch = Boolean(options['no-launch']);
 
-  if (options.json && !noLaunch) {
-    throw new Error('--json requires --no-launch for live:start because foreground launch is interactive.');
+  if (options.json && !noLaunch && !options.attach) {
+    throw new Error(t('live.json_requires_no_launch'));
   }
 
   const toolBinary = String(options['tool-bin'] || tool).trim();
   const binaryPath = await resolveExecutablePath(toolBinary);
   if (!binaryPath) {
-    throw new Error(`Tool binary not found in PATH: ${toolBinary}`);
+    throw new Error(t('live.tool_binary_not_found', { binary: toolBinary }));
   }
 
   const { db, dbPath, runtimeDir } = await openRuntimeDb(targetDir);
@@ -846,10 +880,38 @@ async function runLiveStart({ args, options = {}, logger, t }) {
         activeAgent: existing.agentName,
         projectPath: targetDir
       });
+
+      const existingTool = state.tool_session || null;
+      if (existingTool && existingTool !== tool) {
+        throw new Error(t('live.tool_mismatch', { existing: existingTool, requested: tool }));
+      }
+
+      const attach = Boolean(options.attach);
+      let attachChild = null;
+      let attachResult = null;
+
+      if (attach && !noLaunch) {
+        attachChild = spawn(binaryPath, parseToolArgs(options['tool-args'] || options.toolArgs), {
+          cwd: targetDir,
+          env: process.env,
+          stdio: 'inherit'
+        });
+        state.child_pid = attachChild.pid || null;
+        if (existing.task?.task_key) {
+          const taskMeta = parseTaskMeta(existing.task);
+          taskMeta.child_pid = state.child_pid;
+          updateTask(db, { taskKey: existing.task.task_key, metaJson: taskMeta });
+        }
+      }
+
       await writeLiveState(runtimeDir, existing.sessionKey, state);
 
       if (!options.json) {
-        logger.log(`Live session already active: ${agentName} | session: ${existing.sessionKey} | run: ${existing.run.run_key} (${dbPath})`);
+        logger.log(t('live.session_already_active', { agent: agentName, session: existing.sessionKey, runKey: existing.run.run_key, dbPath }));
+      }
+
+      if (attachChild) {
+        attachResult = await waitForChild(attachChild);
       }
 
       return {
@@ -864,7 +926,10 @@ async function runLiveStart({ args, options = {}, logger, t }) {
         pid: state.child_pid || null,
         processState: detectProcessState(state.child_pid),
         reused: true,
-        open: true
+        open: true,
+        attached: attach,
+        childExitCode: attachResult?.code ?? null,
+        childSignal: attachResult?.signal ?? null
       };
     }
 
@@ -902,14 +967,8 @@ async function runLiveStart({ args, options = {}, logger, t }) {
       sessionKey,
       source: 'live',
       title,
-      message: startMessage
-    });
-
-    appendRunEvent(db, {
-      runKey,
       eventType: 'session_started',
       phase: 'live',
-      status: 'running',
       message: startMessage,
       payload: {
         tool_session: tool,
@@ -1000,7 +1059,7 @@ async function runLiveStart({ args, options = {}, logger, t }) {
     });
 
     if (!options.json) {
-      logger.log(`Live session started: ${agentName} | tool: ${tool} | session: ${sessionKey} (${dbPath})`);
+      logger.log(t('live.session_started', { agent: agentName, tool, session: sessionKey, dbPath }));
     }
 
     if (child) {
@@ -1060,7 +1119,7 @@ async function runRuntimeEmit({ args, options = {}, logger, t }) {
 
     if (eventType === 'task_started') {
       if (currentTaskKey) {
-        throw new Error(`A live micro-task is already open for ${agentName}. Emit task_completed before task_started again.`);
+        throw new Error(t('live.micro_task_already_open', { agent: agentName }));
       }
 
       currentTaskKey = startTask(db, {
@@ -1162,7 +1221,7 @@ async function runRuntimeEmit({ args, options = {}, logger, t }) {
     await writeLiveState(runtimeDir, context.sessionKey, nextState);
 
     if (!options.json) {
-      logger.log(`Live event recorded: ${agentName} | ${eventType} | ${context.sessionKey} (${dbPath})`);
+      logger.log(t('live.event_recorded', { agent: agentName, eventType, session: context.sessionKey, dbPath }));
     }
 
     return {
@@ -1189,7 +1248,7 @@ async function runLiveHandoff({ args, options = {}, logger, t }) {
   const nextAgent = normalizeAgentHandle(requireOption(options, 'to', t));
 
   if (agentName === nextAgent) {
-    throw new Error('live:handoff requires different --agent and --to values.');
+    throw new Error(t('live.handoff_same_agent'));
   }
 
   const reason = truncateMessage(
@@ -1203,7 +1262,7 @@ async function runLiveHandoff({ args, options = {}, logger, t }) {
 
   try {
     if (!context.run || context.run.agent_name !== agentName) {
-      throw new Error(`No active live session found for ${agentName}.`);
+      throw new Error(t('live.handoff_agent_mismatch', { agent: agentName }));
     }
 
     const now = new Date().toISOString();
@@ -1228,30 +1287,17 @@ async function runLiveHandoff({ args, options = {}, logger, t }) {
       runKey: context.run.run_key,
       status: 'completed',
       summary: reason,
-      eventType: 'finished',
-      phase: 'live',
-      message: truncateMessage(`Run closed for handoff to ${nextAgent}`),
-      payload: {
-        handoff_to: nextAgent,
-        reason,
-        closed_by: 'live:handoff'
-      }
-    });
-
-    appendRunEvent(db, {
-      runKey: context.run.run_key,
       eventType: 'handoff',
       phase: 'live',
-      status: 'completed',
       message: handoffSummary,
       payload: {
         from: agentName,
         to: nextAgent,
         reason,
         previous_run_key: context.run.run_key,
-        micro_task_key: state.current_task || null
-      },
-      createdAt: now
+        micro_task_key: state.current_task || null,
+        closed_by: 'live:handoff'
+      }
     });
 
     const nextRunKey = startRun(db, {
@@ -1308,7 +1354,7 @@ async function runLiveHandoff({ args, options = {}, logger, t }) {
     await writeLiveState(runtimeDir, context.sessionKey, nextState);
 
     if (!options.json) {
-      logger.log(`Live handoff recorded: ${agentName} -> ${nextAgent} | ${context.sessionKey} (${dbPath})`);
+      logger.log(t('live.handoff_recorded', { from: agentName, to: nextAgent, session: context.sessionKey, dbPath }));
     }
 
     return {
@@ -1333,7 +1379,7 @@ async function runLiveStatus({ args, options = {}, logger, t }) {
   const watchSeconds = parseWatchSeconds(options.watch);
 
   if (watchSeconds && options.json) {
-    throw new Error('--watch cannot be combined with --json.');
+    throw new Error(t('live.watch_json_conflict'));
   }
 
   if (!watchSeconds) {
@@ -1344,13 +1390,24 @@ async function runLiveStatus({ args, options = {}, logger, t }) {
     return snapshot;
   }
 
-  while (true) {
-    const snapshot = await getLiveStatusSnapshot(targetDir, t, options);
-    if (process.stdout && process.stdout.isTTY) {
-      process.stdout.write('\x1Bc');
+  let stopped = false;
+  const onSignal = () => { stopped = true; };
+  process.on('SIGINT', onSignal);
+  process.on('SIGTERM', onSignal);
+
+  try {
+    while (!stopped) {
+      const snapshot = await getLiveStatusSnapshot(targetDir, t, options);
+      if (process.stdout && process.stdout.isTTY) {
+        process.stdout.write('\x1Bc');
+      }
+      printLiveStatusSnapshot(snapshot, logger);
+      if (stopped) break;
+      await sleep(Math.round(watchSeconds * 1000));
     }
-    printLiveStatusSnapshot(snapshot, logger);
-    await sleep(Math.round(watchSeconds * 1000));
+  } finally {
+    process.removeListener('SIGINT', onSignal);
+    process.removeListener('SIGTERM', onSignal);
   }
 }
 
@@ -1367,12 +1424,12 @@ async function runLiveClose({ args, options = {}, logger, t }) {
 
     if (!context.run || context.run.source !== 'live' || !context.sessionKey || !context.task) {
       throw new Error(requestedAgent
-        ? `No live session found for ${requestedAgent}.`
-        : 'No live session found.');
+        ? t('live.no_session_for_agent', { agent: requestedAgent })
+        : t('live.no_session_found'));
     }
 
     if (context.phase !== 'active') {
-      throw new Error(`Live session ${context.sessionKey} is already closed.`);
+      throw new Error(t('live.session_already_closed', { session: context.sessionKey }));
     }
 
     const status = String(options.status || 'completed').trim().toLowerCase() === 'failed' ? 'failed' : 'completed';
@@ -1448,7 +1505,7 @@ async function runLiveClose({ args, options = {}, logger, t }) {
     await clearAgentSession(runtimeDir, context.agentName);
 
     if (!options.json) {
-      logger.log(`Live session closed: ${context.agentName} | ${context.sessionKey} (${dbPath})`);
+      logger.log(t('live.session_closed', { agent: context.agentName, session: context.sessionKey, dbPath }));
     }
 
     return {
@@ -1469,10 +1526,58 @@ async function runLiveClose({ args, options = {}, logger, t }) {
   }
 }
 
+async function runLiveList({ args, options = {}, logger, t }) {
+  const targetDir = resolveTargetDir(args);
+  const { dbPath } = resolveRuntimePaths(targetDir);
+
+  if (!(await runtimeStoreExists(targetDir))) {
+    throw new Error(t('runtime.store_missing', { path: dbPath }));
+  }
+
+  const { db, runtimeDir } = await openRuntimeDb(targetDir, { mustExist: true });
+  db.close();
+  const states = await listLiveStates(runtimeDir);
+
+  if (!options.json) {
+    if (states.length === 0) {
+      logger.log(t('live.list_empty'));
+    } else {
+      logger.log(t('live.list_title', { count: states.length }));
+      for (const state of states) {
+        logger.log(t('live.list_line', {
+          session: state.session_key || '-',
+          agent: state.active_agent || '-',
+          tool: state.tool_session || '-',
+          phase: state.phase || '-',
+          updatedAt: state.updated_at || state.started_at || '-'
+        }));
+      }
+    }
+  }
+
+  return {
+    ok: true,
+    targetDir,
+    dbPath,
+    count: states.length,
+    sessions: states.map((state) => ({
+      sessionKey: state.session_key,
+      agent: state.active_agent,
+      tool: state.tool_session,
+      phase: state.phase,
+      title: state.title,
+      startedAt: state.started_at,
+      updatedAt: state.updated_at,
+      closedAt: state.closed_at
+    }))
+  };
+}
+
 module.exports = {
   runLiveStart,
   runRuntimeEmit,
   runLiveHandoff,
   runLiveStatus,
-  runLiveClose
+  runLiveClose,
+  runLiveList
 };

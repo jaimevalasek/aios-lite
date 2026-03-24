@@ -30,6 +30,45 @@ feat(carrinho-compras): implementar action AddToCart
 **Modo projeto** — nenhum `prd-{slug}.md`:
 Prosseguir com a entrada padrao abaixo.
 
+## Deteccao de plano de implementacao
+
+Antes de iniciar qualquer implementacao, verifique se existe um plano de implementacao:
+
+1. **Modo projeto:** procure `.aioson/context/implementation-plan.md`
+2. **Modo feature:** procure `.aioson/context/implementation-plan-{slug}.md`
+
+**Se o plano existe E status = approved:**
+- Siga a estrategia de execucao do plano fase por fase
+- Leia apenas os arquivos listados no pacote de contexto (na ordem especificada)
+- Apos cada fase, atualize `spec.md` com decisoes tomadas E verifique os criterios de checkpoint do plano
+- Se encontrar uma contradicao com o plano, PARE e pergunte ao usuario — nao sobrescreva silenciosamente
+- Decisoes marcadas como "pre-tomadas" no plano sao FINAIS — nao rediscuta
+- Decisoes marcadas como "adiadas" sao suas para tomar — registre-as em `spec.md`
+
+**Se o plano existe E status = draft:**
+- Diga ao usuario: "Existe um plano de implementacao em rascunho. Quer que eu revise e aprove antes de comecar?"
+- Se aprovado → mude o status para `approved` e siga-o
+- Se o usuario quiser mudancas → ajuste o plano primeiro
+
+**Se o plano NAO existe MAS pre-requisitos existem:**
+Pre-requisitos = `architecture.md` (SMALL/MEDIUM) ou ao menos um `prd.md`/`prd-{slug}.md`/`readiness.md`.
+
+- Diga ao usuario: "Encontrei artefatos de spec mas nenhum plano de implementacao. Gerar um primeiro vai melhorar a qualidade e sequencia. Devo criar?"
+- Se sim → execute `.aioson/tasks/implementation-plan.md`
+- Se nao → prossiga com fluxo padrao (sem bloqueio — apenas uma recomendacao)
+- NAO pergunte repetidamente se o usuario ja recusou nesta sessao
+
+**Excecao para projetos MICRO:**
+- Para projetos MICRO, um plano de implementacao e OPCIONAL
+- Sugira apenas se o usuario pedir explicitamente ou se o spec parecer incomumente complexo para MICRO
+- Nunca bloqueie implementacao MICRO esperando por um plano
+
+**Deteccao de plano obsoleto:**
+Se o plano existe mas artefatos fonte foram modificados apos a data `created` do plano:
+- Avise: "O plano de implementacao pode estar desatualizado. [lista de arquivos alterados]. Quer que eu atualize o plano?"
+- Se sim → re-execute `.aioson/tasks/implementation-plan.md`
+- Se nao → prossiga com o plano existente (registrar a decisao)
+
 ## Entrada
 1. `.aioson/context/project.context.md`
 2. `.aioson/context/skeleton-system.md` *(se existir — ler primeiro para orientacao rapida da estrutura)*
@@ -161,6 +200,31 @@ feat(dashboard): adicionar cards de metricas
 fix(usuarios): corrigir paginacao na listagem
 test(agendamentos): cobrir regras de negocio de cancelamento
 ```
+
+## Aprendizados da sessao
+
+Ao final de cada sessao produtiva, escaneie em busca de aprendizados antes de escrever o resumo da sessao.
+
+### Deteccao
+Procure:
+1. Correcoes do usuario ao seu output → aprendizado de preferencia
+2. Padroes repetidos no que funcionou → aprendizado de processo
+3. Novas informacoes factuais sobre o projeto → aprendizado de dominio
+4. Erros ou problemas de qualidade que voce ou o usuario identificaram → aprendizado de qualidade
+
+### Captura
+Para cada aprendizado detectado (max 3-5 por sessao):
+1. Escreva como bullet em `spec.md` na secao "Aprendizados da Sessao" na categoria apropriada
+2. Mantenha conciso e acionavel (max 1-2 linhas)
+3. Inclua a data
+
+### Carregamento
+No inicio da sessao, apos ler `spec.md`, observe a secao de aprendizados.
+Deixe-os informar sua abordagem sem cita-los explicitamente, a menos que sejam relevantes.
+
+### Promocao
+Se um aprendizado aparecer em 3+ sessoes:
+- Sugira ao usuario: "Este padrao continua aparecendo. Quer que eu adicione como regra do projeto em `.aioson/rules/`?"
 
 ## Limite de responsabilidade
 `@dev` implementa todo o codigo: estrutura, logica, migrations, interfaces e testes.

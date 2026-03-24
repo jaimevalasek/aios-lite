@@ -159,6 +159,17 @@
       "type": "array",
       "items": { "type": "string" }
     },
+    "investigation": {
+      "type": "object",
+      "description": "Referência à investigação de domínio do @orache",
+      "properties": {
+        "slug": { "type": "string" },
+        "path": { "type": "string" },
+        "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+        "dimensionsCovered": { "type": "integer", "minimum": 0, "maximum": 7 },
+        "date": { "type": "string", "format": "date" }
+      }
+    },
     "confidence": {
       "type": "number",
       "minimum": 0,

@@ -28,6 +28,45 @@ feat(panier-achat): implementer action AddToCart
 **Mode projet** — pas de `prd-{slug}.md` :
 Continuer avec l'entree standard ci-dessous.
 
+## Detection du plan d'implementation
+
+Avant de commencer toute implementation, verifiez si un plan d'implementation existe :
+
+1. **Mode projet :** cherchez `.aioson/context/implementation-plan.md`
+2. **Mode feature :** cherchez `.aioson/context/implementation-plan-{slug}.md`
+
+**Si le plan existe ET status = approved :**
+- Suivez la strategie d'execution du plan phase par phase
+- Lisez uniquement les fichiers listes dans le paquet de contexte (dans l'ordre specifie)
+- Apres chaque phase, mettez a jour `spec.md` avec les decisions prises ET verifiez les criteres de checkpoint du plan
+- Si vous rencontrez une contradiction avec le plan, ARRETEZ et demandez a l'utilisateur — ne remplacez pas silencieusement
+- Les decisions marquees comme "pre-prises" dans le plan sont FINALES — ne les rediscutez pas
+- Les decisions marquees comme "reportees" sont les votres a prendre — enregistrez-les dans `spec.md`
+
+**Si le plan existe ET status = draft :**
+- Dites a l'utilisateur : "Il y a un plan d'implementation en brouillon. Voulez-vous que je le revise et l'approuve avant de commencer ?"
+- Si approuve → changez le status en `approved` et suivez-le
+- Si l'utilisateur veut des modifications → ajustez le plan d'abord
+
+**Si le plan N'EXISTE PAS MAIS les prerequis existent :**
+Prerequis = `architecture.md` (SMALL/MEDIUM) ou au moins un `prd.md`/`prd-{slug}.md`/`readiness.md`.
+
+- Dites a l'utilisateur : "J'ai trouve des artefacts de spec mais aucun plan d'implementation. En generer un d'abord ameliorera la qualite et la sequence. Dois-je le creer ?"
+- Si oui → executez `.aioson/tasks/implementation-plan.md`
+- Si non → procedez avec le flux standard (pas de blocage — juste une recommandation)
+- NE demandez PAS de maniere repetee si l'utilisateur a deja refuse dans cette session
+
+**Exception pour les projets MICRO :**
+- Pour les projets MICRO, un plan d'implementation est OPTIONNEL
+- Suggerez uniquement si l'utilisateur le demande explicitement ou si le spec semble inhabituellement complexe pour MICRO
+- Ne bloquez jamais l'implementation MICRO en attendant un plan
+
+**Detection de plan obsolete :**
+Si le plan existe mais les artefacts source ont ete modifies apres la date `created` du plan :
+- Avertissez : "Le plan d'implementation peut etre obsolete. [liste des fichiers modifies]. Voulez-vous que je mette a jour le plan ?"
+- Si oui → re-executez `.aioson/tasks/implementation-plan.md`
+- Si non → procedez avec le plan existant (enregistrer la decision)
+
 ## Entree
 1. `.aioson/context/project.context.md`
 2. `.aioson/context/skeleton-system.md` *(si present — lire en premier pour orientation rapide de la structure)*
@@ -136,6 +175,31 @@ feat(dashboard): ajouter les cartes de metriques
 fix(users): corriger la pagination dans la liste
 test(appointments): couvrir les regles metier d'annulation
 ```
+
+## Apprentissages de session
+
+En fin de chaque session productive, scanner les apprentissages avant d'ecrire le resume de session.
+
+### Detection
+Rechercher :
+1. Les corrections de l'utilisateur sur votre output → apprentissage de preference
+2. Les patterns repetes dans ce qui a fonctionne → apprentissage de processus
+3. Les nouvelles informations factuelles sur le projet → apprentissage de domaine
+4. Les erreurs ou problemes de qualite detectes par vous ou l'utilisateur → apprentissage de qualite
+
+### Capture
+Pour chaque apprentissage detecte (max 3-5 par session) :
+1. L'ecrire comme bullet dans `spec.md` sous "Apprentissages de Session" dans la categorie appropriee
+2. Le garder concis et actionnable (1-2 lignes max)
+3. Inclure la date
+
+### Chargement
+En debut de session, apres la lecture de `spec.md`, noter la section des apprentissages.
+Les laisser informer votre approche sans les citer explicitement sauf si c'est pertinent.
+
+### Promotion
+Si un apprentissage apparait dans 3+ sessions :
+- Suggerer a l'utilisateur : "Ce pattern revient regulierement. Voulez-vous que je l'ajoute comme regle de projet dans `.aioson/rules/` ?"
 
 ## Limite de responsabilite
 `@dev` implemente tout le code : structure, logique, migrations, interfaces et tests.

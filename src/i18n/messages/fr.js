@@ -72,6 +72,12 @@ module.exports = {
       'aioson squad:export [path] --squad=<slug> [--locale=fr]',
     help_squad_pipeline:
       'aioson squad:pipeline [path] [--sub=list|show|status] [--pipeline=<slug>] [--locale=fr]',
+    help_squad_investigate:
+      'aioson squad:investigate [path] [--sub=list|show|score|link|register] [--investigation=<slug>] [--squad=<slug>] [--locale=fr]',
+    help_squad_learning:
+      'aioson squad:learning [path] [--sub=list|stats|archive|promote|export] [--squad=<slug>] [--status=<status>] [--locale=fr]',
+    help_learning:
+      'aioson learning [path] [--sub=list|stats|promote] [--status=<status>] [--id=<learning-id>] [--locale=fr]',
     dashboard_moved:
       'Le flux `{command}` a été supprimé du CLI. Le dashboard AIOSON est désormais installé séparément. Ouvrez l application dashboard sur votre ordinateur, créez ou ajoutez un projet, puis sélectionnez le dossier qui contient déjà `.aioson/`.',
     dashboard_moved_line: '{message}\n',
@@ -775,5 +781,62 @@ module.exports = {
     step_analyst: '  1. Ouvrez votre session IA et lancez @analyst — revoit discovery.md + skeleton-system.md et consolide le scope courant',
     step_architect: '  2. Lancez @architect — genere architecture.md a partir du discovery consolide',
     step_dev: '  3. Lancez @dev — lit skeleton-system.md d\'abord, puis discovery.md + architecture.md + spec.md'
+  },
+  squad_investigate: {
+    no_runtime: 'Runtime store introuvable. Lancez aioson runtime:init d\'abord.',
+    no_investigations: 'Aucune investigation trouvee.',
+    not_found: 'Investigation introuvable : {slug}',
+    no_report: 'L\'investigation "{slug}" n\'a pas de fichier de rapport.',
+    report_missing: 'Fichier de rapport introuvable : {path}',
+    show_usage: 'Usage : aioson squad:investigate [path] --sub=show --investigation=<slug>',
+    score_usage: 'Usage : aioson squad:investigate [path] --sub=score --investigation=<slug>',
+    link_usage: 'Usage : aioson squad:investigate [path] --sub=link --investigation=<slug> --squad=<slug>',
+    register_usage: 'Usage : aioson squad:investigate [path] --sub=register --report=<chemin> [--domain=<nom>] [--squad=<slug>]',
+    linked: 'Investigation "{investigation}" liee au squad "{squad}".',
+    registered: 'Investigation enregistree : {slug} ({path})',
+    unknown_sub: 'Sous-commande inconnue : {sub}. Utilisez : list, show, score, link, register.'
+  },
+  implementation_plan: {
+    not_found: 'Plan d\'implementation introuvable : {file}',
+    no_runtime: 'Runtime store introuvable. Lancez aioson runtime:init d\'abord.',
+    no_plans: 'Aucun plan d\'implementation enregistre.',
+    no_created_date: 'Le plan n\'a pas de date de creation dans le frontmatter — impossible de verifier l\'obsolescence.',
+    is_stale: 'Le plan est OBSOLETE — les artefacts source ont change apres la creation du plan.',
+    is_fresh: 'Le plan est a jour.',
+    checkpoint_usage: 'Usage : aioson plan [path] --sub=checkpoint --feature=<slug> --phase=<N>',
+    phase_completed: 'Phase {phase} marquee comme terminee.',
+    phase_not_found: 'Phase {phase} introuvable dans le plan.',
+    registered: 'Plan d\'implementation enregistre : {planId} ({phases} phases)'
+  },
+  squad_plan: {
+    slug_required: 'Le slug du squad est obligatoire.',
+    not_found: 'Plan d\'execution introuvable pour le squad : {slug}',
+    no_runtime: 'Runtime store introuvable. Lancez aioson runtime:init d\'abord.',
+    no_plan: 'Aucun plan d\'execution enregistre pour le squad : {slug}',
+    no_created_date: 'Le plan n\'a pas de date de creation dans le frontmatter — impossible de verifier l\'obsolescence.',
+    is_stale: 'Le plan d\'execution est OBSOLETE — les artefacts du squad ont change apres la creation du plan.',
+    is_fresh: 'Le plan d\'execution est a jour.',
+    checkpoint_usage: 'Usage : aioson squad:plan [path] --sub=checkpoint --squad=<slug> --round=<N>',
+    round_completed: 'Round {round} marque comme termine.',
+    round_not_found: 'Round {round} introuvable dans le plan.',
+    registered: 'Plan d\'execution enregistre : {planSlug} ({rounds} rounds)'
+  },
+
+  squad_learning: {
+    slug_required: 'Le slug du squad est obligatoire.',
+    no_runtime: 'Runtime store introuvable. Lancez aioson runtime:init d\'abord.',
+    no_learnings: 'Aucun learning trouve pour le squad : {slug}',
+    not_found: 'Learning introuvable : {id}',
+    archived_count: '{count} learning(s) marque(s) comme obsolete(s) pour le squad : {slug}',
+    promote_usage: 'Usage : aioson squad:learning [path] --sub=promote --squad=<slug> --id=<learning-id> [--to=<chemin-regle>]',
+    promoted: 'Learning {id} promu en regle dans {path}'
+  },
+
+  learning: {
+    no_runtime: 'Runtime store introuvable. Lancez aioson runtime:init d\'abord.',
+    no_learnings: 'Aucun learning de projet trouve.',
+    not_found: 'Learning introuvable : {id}',
+    promote_usage: 'Usage : aioson learning [path] --sub=promote --id=<learning-id> [--to=<chemin-regle>]',
+    promoted: 'Learning {id} promu en regle dans {path}'
   }
 };

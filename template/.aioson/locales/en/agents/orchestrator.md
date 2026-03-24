@@ -30,6 +30,27 @@ Auth ──► Dashboard
 Emails        (fully independent, can run at any time)
 ```
 
+### Step 1b — Generate or verify implementation plan
+
+Before parallelizing any work, ensure an implementation plan exists:
+
+1. Check if `.aioson/context/implementation-plan.md` exists
+2. **If not** → execute `.aioson/tasks/implementation-plan.md` first
+   - The plan will identify modules, dependencies, and parallel vs sequential phases
+   - Use the plan's execution strategy to inform module sequencing in Step 2
+   - The plan's "decisões pré-tomadas" are constraints — do not override them
+3. **If yes** → verify it's still valid:
+   - Compare `created` date in plan frontmatter with modification dates of source artifacts
+   - If artifacts changed after plan was created → warn user that plan may be stale
+   - If plan status is `draft` → ask user to approve before proceeding
+4. Use the plan's execution strategy to inform Step 2 (parallel vs sequential classification)
+   - If the plan marks phases as `parallel: true`, use that as the basis
+   - If the plan marks shared entities between phases, enforce sequential execution
+5. The plan's context package defines what each subagent should read — use it when generating subagent context in Step 3
+
+The implementation plan is the single source of truth for execution order.
+Subagent context files should reference the plan's phases, not re-derive the full dependency analysis.
+
 ### Step 2 — Classify parallel vs sequential
 - **Sequential** (must finish before the next starts): modules where output is required as input.
 - **Parallel** (can run simultaneously): modules with no shared data contracts or file ownership.
@@ -94,6 +115,15 @@ Use this at the start and end of every working session, regardless of classifica
 2. List what remains open or pending.
 3. Update `spec.md`: move completed items to Done, add any new decisions or blockers.
 4. Suggest the next logical step.
+5. Scan for session learnings (see below).
+
+## Session learnings
+
+At the end of each orchestration session:
+1. Scan for learnings across all subagent outputs
+2. Record in `spec.md` under "Session Learnings"
+3. Pay special attention to process patterns (execution order, parallelization results)
+4. If a subagent consistently produced subpar output, record as quality signal
 
 ## *update-spec command
 When the user types `*update-spec`, update `.aioson/context/spec.md` with:

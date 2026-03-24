@@ -79,6 +79,16 @@ module.exports = {
       'aioson squad:pipeline [path] [--sub=list|show|status] [--pipeline=<slug>] [--locale=en]',
     help_squad_agent_create:
       'aioson squad:agent-create [path] --name=<name> [--scope=my-agents|squad] [--squad=<slug>] [--type=agent|assistant|clone|worker] [--tier=0|1|2|3] [--disc=<profile>] [--mission=<text>] [--domain=<text>] [--specialist=<name>] [--with-infra] [--locale=en]',
+    help_squad_investigate:
+      'aioson squad:investigate [path] [--sub=list|show|score|link|register] [--investigation=<slug>] [--squad=<slug>] [--locale=en]',
+    help_plan:
+      'aioson plan [path] [--sub=show|status|checkpoint|stale|register] [--feature=<slug>] [--phase=<N>] [--locale=en]',
+    help_squad_plan:
+      'aioson squad:plan [path] [--sub=show|status|checkpoint|stale|register] [--squad=<slug>] [--round=<N>] [--locale=en]',
+    help_squad_learning:
+      'aioson squad:learning [path] [--sub=list|stats|archive|promote|export] [--squad=<slug>] [--status=<status>] [--locale=en]',
+    help_learning:
+      'aioson learning [path] [--sub=list|stats|promote] [--status=<status>] [--id=<learning-id>] [--locale=en]',
     help_runtime_init:
       'aioson runtime:init [path] [--json] [--locale=en]',
     help_runtime_ingest:
@@ -112,13 +122,15 @@ module.exports = {
     help_runtime_emit:
       'aioson runtime:emit [path] --agent=<name> [--type=<event>] [--summary=<text>] [--title=<text>] [--refs=<file[,file2]>] [--plan-step=<id>] [--meta=<json>] [--json] [--locale=en]',
     help_live_start:
-      'aioson live:start [path] --tool=codex|claude|gemini|opencode --agent=<name> [--tool-bin=<binary>] [--tool-args=<args>] [--title=<text>] [--goal=<text>] [--plan=<file>] [--session=<key>] [--message=<text>] [--no-launch] [--json] [--locale=en]',
+      'aioson live:start [path] --tool=codex|claude|gemini|opencode --agent=<name> [--tool-bin=<binary>] [--tool-args=<args>] [--title=<text>] [--goal=<text>] [--plan=<file>] [--session=<key>] [--message=<text>] [--attach] [--no-launch] [--json] [--locale=en]',
     help_live_status:
       'aioson live:status [path] [--agent=<name>] [--limit=8] [--watch=2] [--json] [--locale=en]',
     help_live_handoff:
       'aioson live:handoff [path] --agent=<name> --to=<name> [--reason=<text>] [--summary=<text>] [--message=<text>] [--json] [--locale=en]',
     help_live_close:
       'aioson live:close [path] [--agent=<name>] [--summary=<text>] [--message=<text>] [--status=completed|failed] [--json] [--locale=en]',
+    help_live_list:
+      'aioson live:list [path] [--json] [--locale=en]',
     help_runtime_backup:
       'aioson runtime:backup [path] [--tables=tasks,runs,...] [--force] [--dry-run] [--json] [--locale=en]',
     help_runtime_restore:
@@ -761,6 +773,31 @@ module.exports = {
     status_handoffs_title: 'Recent handoffs:',
     status_handoff_line: '- {created} | {from} -> {to} | session: {session} | {message}'
   },
+  live: {
+    unsupported_tool: 'Unsupported live tool: {tool}. Supported tools: {supported}',
+    plan_not_found: 'Plan file not found: {plan}',
+    no_active_session: 'No active live session found for {agent}.',
+    session_not_active: 'Live session for {agent} is not active.',
+    json_requires_no_launch: '--json requires --no-launch for live:start because foreground launch is interactive.',
+    tool_binary_not_found: 'Tool binary not found in PATH: {binary}',
+    tool_mismatch: 'Active session uses tool "{existing}" but --tool={requested} was given. Close the session first or use the same tool.',
+    micro_task_already_open: 'A live micro-task is already open for {agent}. Emit task_completed before task_started again.',
+    handoff_same_agent: 'live:handoff requires different --agent and --to values.',
+    handoff_agent_mismatch: 'No active live session found for {agent}.',
+    watch_json_conflict: '--watch cannot be combined with --json.',
+    no_session_found: 'No live session found.',
+    no_session_for_agent: 'No live session found for {agent}.',
+    session_already_closed: 'Live session {session} is already closed.',
+    session_already_active: 'Live session already active: {agent} | session: {session} | run: {runKey} ({dbPath})',
+    session_started: 'Live session started: {agent} | tool: {tool} | session: {session} ({dbPath})',
+    event_recorded: 'Live event recorded: {agent} | {eventType} | {session} ({dbPath})',
+    handoff_recorded: 'Live handoff recorded: {from} -> {to} | {session} ({dbPath})',
+    session_closed: 'Live session closed: {agent} | {session} ({dbPath})',
+    process_dead_warning: 'Process is dead while the live session is still open. Close it manually with `aioson live:close . --status=failed`.',
+    list_title: 'Live sessions ({count}):',
+    list_empty: 'No live sessions found.',
+    list_line: '- {session} | {agent} | {tool} | {phase} | {updatedAt}'
+  },
   squad_status: {
     no_squad: 'No squads found.',
     hint: 'Use @squad in your AI session to assemble a squad.',
@@ -883,5 +920,64 @@ module.exports = {
     step_analyst: '  1. Open your AI coding session and run @analyst — review discovery.md + skeleton-system.md and consolidate the current scope',
     step_architect: '  2. Run @architect — generates architecture.md from the consolidated discovery',
     step_dev: '  3. Run @dev — reads skeleton-system.md first, then discovery.md + architecture.md + spec.md'
+  },
+  squad_investigate: {
+    no_runtime: 'Runtime store not found. Run aioson runtime:init first.',
+    no_investigations: 'No investigations found.',
+    not_found: 'Investigation not found: {slug}',
+    no_report: 'Investigation "{slug}" has no report file.',
+    report_missing: 'Report file not found: {path}',
+    show_usage: 'Usage: aioson squad:investigate [path] --sub=show --investigation=<slug>',
+    score_usage: 'Usage: aioson squad:investigate [path] --sub=score --investigation=<slug>',
+    link_usage: 'Usage: aioson squad:investigate [path] --sub=link --investigation=<slug> --squad=<slug>',
+    register_usage: 'Usage: aioson squad:investigate [path] --sub=register --report=<path> [--domain=<name>] [--squad=<slug>]',
+    linked: 'Investigation "{investigation}" linked to squad "{squad}".',
+    registered: 'Investigation registered: {slug} ({path})',
+    unknown_sub: 'Unknown subcommand: {sub}. Use: list, show, score, link, register.'
+  },
+
+  implementation_plan: {
+    not_found: 'Implementation plan not found: {file}',
+    no_runtime: 'Runtime store not found. Run aioson runtime:init first.',
+    no_plans: 'No implementation plans registered.',
+    no_created_date: 'Plan has no created date in frontmatter — cannot check staleness.',
+    is_stale: 'Plan is STALE — source artifacts changed after plan was created.',
+    is_fresh: 'Plan is up to date.',
+    checkpoint_usage: 'Usage: aioson plan [path] --sub=checkpoint --feature=<slug> --phase=<N>',
+    phase_completed: 'Phase {phase} marked as completed.',
+    phase_not_found: 'Phase {phase} not found in plan.',
+    registered: 'Implementation plan registered: {planId} ({phases} phases)'
+  },
+
+  squad_plan: {
+    slug_required: 'Squad slug is required.',
+    not_found: 'Execution plan not found for squad: {slug}',
+    no_runtime: 'Runtime store not found. Run aioson runtime:init first.',
+    no_plan: 'No execution plan registered for squad: {slug}',
+    no_created_date: 'Plan has no created date in frontmatter — cannot check staleness.',
+    is_stale: 'Execution plan is STALE — squad artifacts changed after plan was created.',
+    is_fresh: 'Execution plan is up to date.',
+    checkpoint_usage: 'Usage: aioson squad:plan [path] --sub=checkpoint --squad=<slug> --round=<N>',
+    round_completed: 'Round {round} marked as completed.',
+    round_not_found: 'Round {round} not found in plan.',
+    registered: 'Execution plan registered: {planSlug} ({rounds} rounds)'
+  },
+
+  squad_learning: {
+    slug_required: 'Squad slug is required.',
+    no_runtime: 'Runtime store not found. Run aioson runtime:init first.',
+    no_learnings: 'No learnings found for squad: {slug}',
+    not_found: 'Learning not found: {id}',
+    archived_count: '{count} learning(s) marked as stale for squad: {slug}',
+    promote_usage: 'Usage: aioson squad:learning [path] --sub=promote --squad=<slug> --id=<learning-id> [--to=<rule-path>]',
+    promoted: 'Learning {id} promoted to rule at {path}'
+  },
+
+  learning: {
+    no_runtime: 'Runtime store not found. Run aioson runtime:init first.',
+    no_learnings: 'No project learnings found.',
+    not_found: 'Learning not found: {id}',
+    promote_usage: 'Usage: aioson learning [path] --sub=promote --id=<learning-id> [--to=<rule-path>]',
+    promoted: 'Learning {id} promoted to rule at {path}'
   }
 };

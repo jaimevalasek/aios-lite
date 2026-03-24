@@ -11,7 +11,8 @@ const {
   runRuntimeEmit,
   runLiveHandoff,
   runLiveStatus,
-  runLiveClose
+  runLiveClose,
+  runLiveList
 } = require('../src/commands/live');
 const { openRuntimeDb, readAgentSession } = require('../src/runtime-store');
 
@@ -278,4 +279,238 @@ test('live session commands track start, plan progress, handoff and close for a 
   const summaryPath = path.join(dir, '.aioson', 'runtime', 'live', start.sessionKey, 'summary.md');
   const summary = await fs.readFile(summaryPath, 'utf8');
   assert.equal(summary.includes('Sessao encerrada com sucesso'), true);
+  assert.equal(summary.includes('Duration:'), true);
+});
+
+test('live:start rejects tool mismatch when session is already active', async () => {
+  const dir = await makeTempDir();
+  const { t } = createTranslator('en');
+  const logger = createCollectLogger();
+
+  await runLiveStart({
+    args: [dir],
+    options: { tool: 'codex', 'tool-bin': 'node', agent: 'deyvin', 'no-launch': true, json: true },
+    logger,
+    t
+  });
+
+  await assert.rejects(
+    () => runLiveStart({
+      args: [dir],
+      options: { tool: 'claude', 'tool-bin': 'node', agent: 'deyvin', 'no-launch': true, json: true },
+      logger,
+      t
+    }),
+    /tool/i
+  );
+});
+
+test('runtime:emit rejects back-to-back task_started without task_completed', async () => {
+  const dir = await makeTempDir();
+  const { t } = createTranslator('en');
+  const logger = createCollectLogger();
+
+  await runLiveStart({
+    args: [dir],
+    options: { tool: 'codex', 'tool-bin': 'node', agent: 'deyvin', 'no-launch': true, json: true },
+    logger,
+    t
+  });
+
+  await runRuntimeEmit({
+    args: [dir],
+    options: { agent: 'deyvin', type: 'task_started', title: 'First task', json: true },
+    logger,
+    t
+  });
+
+  await assert.rejects(
+    () => runRuntimeEmit({
+      args: [dir],
+      options: { agent: 'deyvin', type: 'task_started', title: 'Second task', json: true },
+      logger,
+      t
+    }),
+    /micro-task/i
+  );
+});
+
+test('live:handoff rejects same agent for --agent and --to', async () => {
+  const dir = await makeTempDir();
+  const { t } = createTranslator('en');
+  const logger = createCollectLogger();
+
+  await runLiveStart({
+    args: [dir],
+    options: { tool: 'codex', 'tool-bin': 'node', agent: 'deyvin', 'no-launch': true, json: true },
+    logger,
+    t
+  });
+
+  await assert.rejects(
+    () => runLiveHandoff({
+      args: [dir],
+      options: { agent: 'deyvin', to: 'deyvin', reason: 'test', json: true },
+      logger,
+      t
+    }),
+    /different/i
+  );
+});
+
+test('live:close with --status=failed marks session as failed', async () => {
+  const dir = await makeTempDir();
+  const { t } = createTranslator('en');
+  const logger = createCollectLogger();
+
+  const start = await runLiveStart({
+    args: [dir],
+    options: { tool: 'codex', 'tool-bin': 'node', agent: 'deyvin', 'no-launch': true, json: true },
+    logger,
+    t
+  });
+
+  const close = await runLiveClose({
+    args: [dir],
+    options: { agent: 'deyvin', status: 'failed', summary: 'Process crashed', json: true },
+    logger,
+    t
+  });
+
+  assert.equal(close.ok, true);
+  assert.equal(close.status, 'failed');
+
+  const { db } = await openRuntimeDb(dir, { mustExist: true });
+  try {
+    const task = db.prepare('SELECT status FROM tasks WHERE task_key = ?').get(start.taskKey);
+    assert.equal(task.status, 'failed');
+    const run = db.prepare('SELECT status FROM agent_runs WHERE run_key = ?').get(start.runKey);
+    assert.equal(run.status, 'failed');
+  } finally {
+    db.close();
+  }
+});
+
+test('live:list returns sessions after start and close', async () => {
+  const dir = await makeTempDir();
+  const { t } = createTranslator('en');
+  const logger = createCollectLogger();
+
+  // Initialize the runtime DB first via live:start
+  await runLiveStart({
+    args: [dir],
+    options: { tool: 'codex', 'tool-bin': 'node', agent: 'deyvin', 'no-launch': true, json: true },
+    logger,
+    t
+  });
+
+  const active = await runLiveList({
+    args: [dir],
+    options: { json: true },
+    logger,
+    t
+  });
+  assert.equal(active.ok, true);
+  assert.equal(active.count, 1);
+  assert.equal(active.sessions[0].phase, 'active');
+  assert.equal(active.sessions[0].tool, 'codex');
+
+  await runLiveClose({
+    args: [dir],
+    options: { agent: 'deyvin', summary: 'Done', json: true },
+    logger,
+    t
+  });
+
+  const afterClose = await runLiveList({
+    args: [dir],
+    options: { json: true },
+    logger,
+    t
+  });
+  assert.equal(afterClose.count, 1);
+  assert.equal(afterClose.sessions[0].phase, 'closed');
+});
+
+test('state.json contains events_by_type breakdown after emit', async () => {
+  const dir = await makeTempDir();
+  const { t } = createTranslator('en');
+  const logger = createCollectLogger();
+
+  const start = await runLiveStart({
+    args: [dir],
+    options: { tool: 'codex', 'tool-bin': 'node', agent: 'deyvin', 'no-launch': true, json: true },
+    logger,
+    t
+  });
+
+  await runRuntimeEmit({
+    args: [dir],
+    options: { agent: 'deyvin', type: 'milestone', summary: 'First milestone', json: true },
+    logger,
+    t
+  });
+
+  await runRuntimeEmit({
+    args: [dir],
+    options: { agent: 'deyvin', type: 'milestone', summary: 'Second milestone', json: true },
+    logger,
+    t
+  });
+
+  await runRuntimeEmit({
+    args: [dir],
+    options: { agent: 'deyvin', type: 'block', summary: 'Blocked on API', json: true },
+    logger,
+    t
+  });
+
+  const statePath = path.join(dir, '.aioson', 'runtime', 'live', start.sessionKey, 'state.json');
+  const state = JSON.parse(await fs.readFile(statePath, 'utf8'));
+  assert.equal(state.stats.events_by_type.milestone, 2);
+  assert.equal(state.stats.events_by_type.block, 1);
+  assert.equal(state.stats.events_total, 4);
+});
+
+test('execution_events in SQLite are consistent with ndjson events', async () => {
+  const dir = await makeTempDir();
+  const { t } = createTranslator('en');
+  const logger = createCollectLogger();
+
+  const start = await runLiveStart({
+    args: [dir],
+    options: { tool: 'codex', 'tool-bin': 'node', agent: 'deyvin', 'no-launch': true, json: true },
+    logger,
+    t
+  });
+
+  await runRuntimeEmit({
+    args: [dir],
+    options: { agent: 'deyvin', type: 'task_completed', summary: 'Done something', json: true },
+    logger,
+    t
+  });
+
+  await runLiveClose({
+    args: [dir],
+    options: { agent: 'deyvin', summary: 'All done', json: true },
+    logger,
+    t
+  });
+
+  const { db } = await openRuntimeDb(dir, { mustExist: true });
+  try {
+    const dbEvents = db.prepare(`
+      SELECT event_type FROM execution_events
+      WHERE session_key = ?
+      ORDER BY sequence_no ASC, created_at ASC
+    `).all(start.sessionKey);
+
+    const types = dbEvents.map((row) => row.event_type);
+    assert.equal(types.includes('session_started'), true);
+    assert.equal(types.includes('task_completed'), true);
+    assert.equal(types.includes('session_closed'), true);
+  } finally {
+    db.close();
+  }
 });

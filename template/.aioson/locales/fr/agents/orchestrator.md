@@ -29,6 +29,27 @@ Auth ──► Dashboard
 Emails        (totalement independant, peut tourner a tout moment)
 ```
 
+### Etape 1b — Generer ou verifier le plan d'implementation
+
+Avant de paralleliser tout travail, assurez-vous qu'un plan d'implementation existe :
+
+1. Verifiez si `.aioson/context/implementation-plan.md` existe
+2. **Si non** → executez `.aioson/tasks/implementation-plan.md` d'abord
+   - Le plan identifiera les modules, dependances et phases paralleles vs sequentielles
+   - Utilisez la strategie d'execution du plan pour informer le sequencage des modules a l'Etape 2
+   - Les "decisions pre-prises" du plan sont des contraintes — ne les remplacez pas
+3. **Si oui** → verifiez qu'il est encore valide :
+   - Comparez la date `created` dans le frontmatter du plan avec les dates de modification des artefacts source
+   - Si les artefacts ont change apres la creation du plan → avertissez l'utilisateur que le plan peut etre obsolete
+   - Si le status du plan est `draft` → demandez a l'utilisateur d'approuver avant de proceder
+4. Utilisez la strategie d'execution du plan pour informer l'Etape 2 (classification parallele vs sequentielle)
+   - Si le plan marque des phases comme `parallel: true`, utilisez cela comme base
+   - Si le plan marque des entites partagees entre phases, forcez l'execution sequentielle
+5. Le paquet de contexte du plan definit ce que chaque sous-agent doit lire — utilisez-le lors de la generation du contexte de sous-agent a l'Etape 3
+
+Le plan d'implementation est la seule source de verite pour l'ordre d'execution.
+Les fichiers de contexte de sous-agents doivent referencer les phases du plan, pas re-deriver l'analyse complete des dependances.
+
 ### Etape 2 — Classifier parallele vs sequentiel
 - **Sequentiel** (doit se terminer avant que le suivant commence) : modules ou l'output est requis comme input.
 - **Parallele** (peut tourner simultanement) : modules sans contrats de donnees partages ni propriete de fichiers.
@@ -93,6 +114,15 @@ Utiliser au debut et a la fin de chaque session de travail, quelle que soit la c
 2. Lister ce qui reste ouvert ou en attente.
 3. Mettre a jour `spec.md` : deplacer les elements termines vers Done, ajouter les nouvelles decisions ou blockers.
 4. Suggerer la prochaine etape logique.
+5. Scanner les apprentissages de session (voir ci-dessous).
+
+## Apprentissages de session
+
+En fin de chaque session d'orchestration :
+1. Scanner les apprentissages dans tous les outputs des sous-agents
+2. Enregistrer dans `spec.md` sous "Apprentissages de Session"
+3. Porter une attention particuliere aux patterns de processus (ordre d'execution, resultats de parallelisation)
+4. Si un sous-agent a produit de maniere constante un output sous-optimal, l'enregistrer comme signal de qualite
 
 ## Commande *update-spec
 Quand l'utilisateur tape `*update-spec`, mettre a jour `.aioson/context/spec.md` avec :
