@@ -2113,7 +2113,7 @@ function getSquadPlanRounds(db, planSlug) {
 // --- Squad Learnings CRUD ---
 
 function insertSquadLearning(db, options = {}) {
-  const learningId = options.learningId || `sl-${slugify(options.squadSlug || 'squad')}-${Date.now()}`;
+  const learningId = options.learningId || `sl-${slugify(options.squadSlug || 'squad')}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
   const now = nowIso();
   db.prepare(`
     INSERT OR REPLACE INTO squad_learnings
@@ -2346,7 +2346,7 @@ function insertWorkerRun(db, { squadSlug, workerSlug, triggerType, inputJson, ou
 
 function listWorkerRuns(db, squadSlug, limit = 50) {
   return db.prepare(
-    'SELECT * FROM worker_runs WHERE squad_slug = ? ORDER BY created_at DESC LIMIT ?'
+    'SELECT * FROM worker_runs WHERE squad_slug = ? ORDER BY created_at DESC, id DESC LIMIT ?'
   ).all(squadSlug, limit);
 }
 

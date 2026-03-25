@@ -823,7 +823,9 @@ module.exports = {
     sessions: '    Sessions    : {count} ({path})',
     latest_html: '    Latest HTML : {value}',
     logs: '    Logs        : {count} ({path})',
-    genomes: '    Genomes     : {count} squad-level / {agent_count} agent bindings'
+    genomes: '    Genomes     : {count} squad-level / {agent_count} agent bindings',
+    model_tiers: '    Model Tiers : {value}',
+    estimated_cost: '    Est. Cost   : ~${value}/run'
   },
   squad_agent_create: {
     no_name: 'Usage: aioson squad:agent-create [path] --name=<agent-name> [--type=agent|assistant|clone|worker] [--scope=my-agents|squad] [--squad=<slug>]',
@@ -982,7 +984,13 @@ module.exports = {
     test_missing: 'Integration "{mcp}" has missing config: {keys}',
     test_ok: 'Integration "{mcp}" ({connector}) — config OK.',
     health_url: 'Health check URL: {url}',
-    unknown_sub: 'Unknown subcommand: {sub}. Use: status, connectors, configure, test.'
+    testing_connection: 'Testing connection...',
+    health_ok: 'Connection OK (HTTP {statusCode})',
+    health_error: 'Connection error: {error}',
+    health_skipped: 'Health check not available for this connector',
+    action_required: 'Action slug is required. Use --action=<slug>.',
+    invalid_input: 'Invalid JSON. Provide valid JSON with --input.',
+    unknown_sub: 'Unknown subcommand: {sub}. Use: status, connectors, configure, test, call.'
   },
 
   squad_roi: {

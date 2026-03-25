@@ -5,7 +5,7 @@ const { spawn } = require('node:child_process');
 const { existsSync } = require('node:fs');
 
 const CORE_ROOT = path.resolve(__dirname, '..', '..');
-const DEFAULT_DASHBOARD_ROOT = path.resolve(CORE_ROOT, '..', 'aios-dashboard');
+const DEFAULT_DASHBOARD_ROOT = path.resolve(CORE_ROOT, '..', 'aioson-dashboard');
 const BLOCK_ORDER = ['A', 'B', 'C', 'D'];
 
 const BLOCKS = {

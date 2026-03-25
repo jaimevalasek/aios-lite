@@ -8,7 +8,9 @@ const {
   loadIntegrationConfig,
   saveIntegrationConfig,
   listIntegrations,
-  resolveConnectorEnv
+  resolveConnectorEnv,
+  runHealthCheck,
+  runAction
 } = require('../mcp-connectors/registry');
 
 async function runSquadMcp({ args, options, logger, t }) {
@@ -32,6 +34,9 @@ async function runSquadMcp({ args, options, logger, t }) {
   }
   if (sub === 'test') {
     return handleTest({ projectDir, squadSlug, options, logger, t });
+  }
+  if (sub === 'call') {
+    return handleCall({ projectDir, squadSlug, options, logger, t });
   }
 
   logger.log(t('squad_mcp.unknown_sub', { sub }));
@@ -185,27 +190,81 @@ async function handleTest({ projectDir, squadSlug, options, logger, t }) {
     return { ok: false, error: 'missing_config', missing };
   }
 
-  // If connector has a healthPath and baseUrl, report it (actual HTTP check skipped — zero-dep)
-  let healthUrl = null;
-  if (connectorDef.baseUrl && connectorDef.healthPath) {
-    healthUrl = connectorDef.baseUrl + connectorDef.healthPath;
-    for (const [key, val] of Object.entries(resolved)) {
-      healthUrl = healthUrl.replace(`{${key}}`, val);
-    }
-  }
+  logger.log(t('squad_mcp.testing_connection'));
+  const health = await runHealthCheck(config.connector, resolved);
 
-  // Update status in SQLite
+  const healthStatus = health.ok ? 'connected' : 'error';
   try {
     const handle = await openRuntimeDb(projectDir);
-    upsertMcpStatus(handle.db, { squadSlug, mcpSlug, connector: config.connector, status: 'connected', lastError: null });
+    upsertMcpStatus(handle.db, {
+      squadSlug, mcpSlug,
+      connector: config.connector,
+      status: healthStatus,
+      lastCheck: new Date().toISOString(),
+      lastError: health.ok ? null : (health.error || String(health.statusCode))
+    });
     handle.db.close();
   } catch { /* optional */ }
 
-  logger.log(t('squad_mcp.test_ok', { mcp: mcpSlug, connector: config.connector }));
-  if (healthUrl) {
-    logger.log(t('squad_mcp.health_url', { url: healthUrl }));
+  if (health.skipped) {
+    logger.log(t('squad_mcp.health_skipped'));
+    return { ok: true, slug: mcpSlug, status: 'skipped' };
   }
-  return { ok: true, slug: mcpSlug, status: 'connected', healthUrl };
+  if (health.ok) {
+    logger.log(t('squad_mcp.health_ok', { statusCode: health.statusCode }));
+    return { ok: true, slug: mcpSlug, status: 'connected', statusCode: health.statusCode };
+  }
+  logger.log(t('squad_mcp.health_error', { error: health.error || health.statusCode }));
+  return { ok: false, slug: mcpSlug, status: 'error', error: health.error };
+}
+
+async function handleCall({ projectDir, squadSlug, options, logger, t }) {
+  const mcpSlug = options.mcp;
+  const actionSlug = options.action;
+
+  if (!mcpSlug) {
+    logger.log(t('squad_mcp.mcp_required'));
+    return { ok: false, error: 'mcp_required' };
+  }
+  if (!actionSlug) {
+    logger.log(t('squad_mcp.action_required'));
+    return { ok: false, error: 'action_required' };
+  }
+
+  let input;
+  try {
+    input = JSON.parse(options.input || '{}');
+  } catch {
+    logger.log(t('squad_mcp.invalid_input'));
+    return { ok: false, error: 'invalid_input' };
+  }
+
+  const config = await loadIntegrationConfig(projectDir, squadSlug, mcpSlug);
+  if (!config) {
+    logger.log(t('squad_mcp.not_configured', { mcp: mcpSlug }));
+    return { ok: false, error: 'not_configured' };
+  }
+
+  const connectorDef = getBuiltInConnector(config.connector);
+  if (!connectorDef) {
+    logger.log(t('squad_mcp.unknown_connector', { connector: config.connector }));
+    return { ok: false, error: 'unknown_connector' };
+  }
+
+  const { resolved, missing } = resolveConnectorEnv(connectorDef, config.config);
+  if (missing.length > 0) {
+    logger.log(t('squad_mcp.test_missing', { mcp: mcpSlug, keys: missing.join(', ') }));
+    return { ok: false, error: 'missing_config', missing };
+  }
+
+  const result = await runAction(config.connector, actionSlug, input, resolved);
+
+  if (result.ok) {
+    logger.log(JSON.stringify(result.result, null, 2));
+  } else {
+    logger.log(`Error: ${result.error}`);
+  }
+  return result;
 }
 
 module.exports = { runSquadMcp };

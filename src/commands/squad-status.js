@@ -4,6 +4,34 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const { flattenGenomeBindings, mergeGenomeBindings } = require('../genomes/bindings');
 
+const TIER_COSTS = {
+  powerful: { inputPer1k: 0.015, outputPer1k: 0.075 },
+  balanced: { inputPer1k: 0.003, outputPer1k: 0.015 },
+  fast:     { inputPer1k: 0.0008, outputPer1k: 0.004 },
+  none:     { inputPer1k: 0, outputPer1k: 0 }
+};
+
+function estimateRunCost(executors) {
+  if (!Array.isArray(executors) || executors.length === 0) return null;
+  let total = 0;
+  for (const ex of executors) {
+    const tier = ex.modelTier || (ex.usesLLM === false ? 'none' : 'balanced');
+    const cost = TIER_COSTS[tier] || TIER_COSTS.balanced;
+    total += (cost.inputPer1k * 2) + (cost.outputPer1k * 1);
+  }
+  return Math.round(total * 1000) / 1000;
+}
+
+function buildTierSummary(executors) {
+  if (!Array.isArray(executors) || executors.length === 0) return null;
+  const counts = {};
+  for (const ex of executors) {
+    const tier = ex.modelTier || (ex.usesLLM === false ? 'none' : 'balanced');
+    counts[tier] = (counts[tier] || 0) + 1;
+  }
+  return Object.entries(counts).map(([t, n]) => `${t}×${n}`).join(' / ');
+}
+
 const SQUADS_DIR = '.aioson/squads';
 const AGENTS_ROOT = 'agents';
 const OUTPUT_ROOT = 'output';
@@ -278,7 +306,9 @@ async function buildSquadRecordFromPackageDir(targetDir, slug) {
       : outputExists && (await pathExists(path.join(targetDir, outputDir, 'session.html')))
         ? normalizeRel(path.join(outputDir, 'session.html'))
         : '—',
-    mtime: latestHtml?.mtime || manifestStat?.mtime || null
+    mtime: latestHtml?.mtime || manifestStat?.mtime || null,
+    tierSummary: buildTierSummary(manifest.executors),
+    estimatedCost: estimateRunCost(manifest.executors)
   };
 }
 
@@ -410,6 +440,12 @@ async function runSquadStatus({ args, logger, t }) {
         agent_count: squad.agentGenomes.length
       })
     );
+    if (squad.tierSummary) {
+      logger.log(t('squad_status.model_tiers', { value: squad.tierSummary }));
+    }
+    if (squad.estimatedCost != null) {
+      logger.log(t('squad_status.estimated_cost', { value: squad.estimatedCost.toFixed(3) }));
+    }
     if (i < squads.length - 1) logger.log('');
   }
 

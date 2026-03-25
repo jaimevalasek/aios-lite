@@ -2,7 +2,7 @@
 
 ## Goal
 
-Bring the full Genome 2.0 package into `aioson` and `aios-dashboard` with explicit gates, repeatable checks, and a non-destructive fallback path.
+Bring the full Genome 2.0 package into `aioson` and `aioson-dashboard` with explicit gates, repeatable checks, and a non-destructive fallback path.
 
 This document operationalizes Phase 09 from `notes-local/plano-genome-2/09-rollout-checklist.md`.
 
@@ -18,10 +18,10 @@ This document operationalizes Phase 09 from `notes-local/plano-genome-2/09-rollo
 1. `aioson` Phase 01
 2. `aioson` Phase 02
 3. `aioson` Phase 03
-4. `aios-dashboard` Phase 04
-5. `aios-dashboard` Phase 05
-6. `aios-dashboard` Phase 06
-7. `aios-dashboard` Phase 07
+4. `aioson-dashboard` Phase 04
+5. `aioson-dashboard` Phase 05
+6. `aioson-dashboard` Phase 06
+7. `aioson-dashboard` Phase 07
 8. Integration coverage from Phase 08
 9. This rollout phase and final docs
 
@@ -44,7 +44,7 @@ This executes:
 
 ### Block B
 
-Run from `aios-dashboard`:
+Run from `aioson-dashboard`:
 
 ```bash
 npm run test:genome-2.0:block-b
@@ -58,7 +58,7 @@ This covers:
 
 ### Block C
 
-Run from `aios-dashboard`:
+Run from `aioson-dashboard`:
 
 ```bash
 npm run test:genome-2.0:block-c
@@ -72,7 +72,7 @@ This covers:
 
 ### Block D
 
-Run from `aios-dashboard`:
+Run from `aioson-dashboard`:
 
 ```bash
 npm run test:genome-2.0:block-d
@@ -89,7 +89,7 @@ This executes the full dashboard gate:
 Run from `aioson`:
 
 ```bash
-npm run test:genome-2.0:rollout -- --dashboard-root ../aios-dashboard
+npm run test:genome-2.0:rollout -- --dashboard-root ../aioson-dashboard
 ```
 
 Useful options:

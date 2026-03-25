@@ -8,10 +8,10 @@
 | 2. Genome 2.0 is generated and saved | `aioson` core | Markdown and `.meta.json` are persisted together with v2 schema |
 | 3. New squad receives genome | `aioson` squad binding | Manifest, blueprint and readiness get synchronized bindings |
 | 4. Existing squad receives binding | `aioson` squad binding | Executor and squad scopes merge without breaking legacy executor genomes |
-| 5. Artisan generates Genome Brief | `aios-dashboard` Artisan API | Genome brief result returns markdown, confidence and fallback file write remains non-fatal |
-| 6. `/genomes` lists metadata | `aios-dashboard` catalog | Catalog returns local genome metadata, origin and binding counts |
-| 7. `/squads` shows bindings | `aios-dashboard` squads | Squad payload and UI consumers expose squad and executor bindings |
-| 8. `/pipelines` shows badges | `aios-dashboard` pipelines | Pipeline payload exposes contextual `genomeBindings` on squad nodes only |
+| 5. Artisan generates Genome Brief | `aioson-dashboard` Artisan API | Genome brief result returns markdown, confidence and fallback file write remains non-fatal |
+| 6. `/genomes` lists metadata | `aioson-dashboard` catalog | Catalog returns local genome metadata, origin and binding counts |
+| 7. `/squads` shows bindings | `aioson-dashboard` squads | Squad payload and UI consumers expose squad and executor bindings |
+| 8. `/pipelines` shows badges | `aioson-dashboard` pipelines | Pipeline payload exposes contextual `genomeBindings` on squad nodes only |
 | 9. Legacy data remains valid | cross-repo contract | Dashboard still reads manifests written by the core for legacy and v2 formats |
 
 ## Automated Coverage
@@ -24,7 +24,7 @@
 
 ## Rollout Entry Point
 
-- Full gated rollout: `npm run test:genome-2.0:rollout -- --dashboard-root ../aios-dashboard`
+- Full gated rollout: `npm run test:genome-2.0:rollout -- --dashboard-root ../aioson-dashboard`
 - Operational runbook: `genome-2.0-rollout.md`
 
 ## Shared Fixtures

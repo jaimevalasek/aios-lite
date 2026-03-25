@@ -184,6 +184,132 @@ function buildWorkerMcpEnv(projectDir, squadSlug, mcpSlugs, integrationConfigs) 
   return env;
 }
 
+// ---------------------------------------------------------------------------
+// HTTP execution helpers
+// ---------------------------------------------------------------------------
+
+function buildHeaders(connectorSlug, cfg) {
+  if (connectorSlug === 'whatsapp-business') {
+    return { 'Authorization': `Bearer ${cfg.api_token}` };
+  }
+  return {};
+}
+
+const EXECUTORS = {
+  'whatsapp-business': {
+    async send_message({ to, body }, cfg) {
+      const res = await fetch(`https://graph.facebook.com/v18.0/${cfg.phone_id}/messages`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${cfg.api_token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messaging_product: 'whatsapp', to, type: 'text', text: { body } }),
+        signal: AbortSignal.timeout(10000)
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error?.message || `HTTP ${res.status}`);
+      return { message_id: json.messages?.[0]?.id };
+    },
+    async send_template({ to, template_name, params = [] }, cfg) {
+      const components = params.length
+        ? [{ type: 'body', parameters: params.map(p => ({ type: 'text', text: String(p) })) }]
+        : [];
+      const res = await fetch(`https://graph.facebook.com/v18.0/${cfg.phone_id}/messages`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${cfg.api_token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messaging_product: 'whatsapp', to, type: 'template',
+          template: { name: template_name, language: { code: 'pt_BR' }, components }
+        }),
+        signal: AbortSignal.timeout(10000)
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error?.message || `HTTP ${res.status}`);
+      return { message_id: json.messages?.[0]?.id };
+    }
+  },
+
+  'telegram-bot': {
+    async send_message({ chat_id, text }, cfg) {
+      const id = chat_id || cfg.chat_id;
+      const res = await fetch(`https://api.telegram.org/bot${cfg.bot_token}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chat_id: id, text }),
+        signal: AbortSignal.timeout(10000)
+      });
+      const json = await res.json();
+      if (!res.ok || !json.ok) throw new Error(json.description || `HTTP ${res.status}`);
+      return { message_id: json.result?.message_id };
+    },
+    async get_updates(_input, cfg) {
+      const res = await fetch(`https://api.telegram.org/bot${cfg.bot_token}/getUpdates`, {
+        signal: AbortSignal.timeout(10000)
+      });
+      const json = await res.json();
+      if (!res.ok || !json.ok) throw new Error(json.description || `HTTP ${res.status}`);
+      return { updates: json.result };
+    }
+  },
+
+  'webhook-generic': {
+    async send({ url, payload, method = 'POST', headers: extraHeaders = {} }, cfg) {
+      const target = url || cfg.webhook_url;
+      const res = await fetch(target, {
+        method,
+        headers: { 'Content-Type': 'application/json', ...extraHeaders },
+        body: JSON.stringify(payload),
+        signal: AbortSignal.timeout(15000)
+      });
+      return { status: res.status, ok: res.ok };
+    }
+  }
+};
+
+/**
+ * Execute a health check for a connector.
+ * Returns { ok: boolean, statusCode?, error?, skipped?, url? }
+ */
+async function runHealthCheck(connectorSlug, resolvedConfig) {
+  const def = BUILT_IN_CONNECTORS[connectorSlug];
+  if (!def || !def.baseUrl || !def.healthPath) {
+    return { ok: true, skipped: true, reason: 'no_health_path' };
+  }
+
+  let url = def.baseUrl + def.healthPath;
+  for (const [key, val] of Object.entries(resolvedConfig)) {
+    url = url.replace(`{${key}}`, encodeURIComponent(val));
+  }
+
+  try {
+    const res = await fetch(url, {
+      method: 'GET',
+      headers: buildHeaders(connectorSlug, resolvedConfig),
+      signal: AbortSignal.timeout(8000)
+    });
+    return { ok: res.ok, statusCode: res.status, url };
+  } catch (err) {
+    return { ok: false, error: err.message, url };
+  }
+}
+
+/**
+ * Execute a connector action.
+ * Returns { ok: boolean, result?, error? }
+ */
+async function runAction(connectorSlug, actionSlug, input, resolvedConfig) {
+  const def = BUILT_IN_CONNECTORS[connectorSlug];
+  if (!def) return { ok: false, error: `Unknown connector: ${connectorSlug}` };
+  if (!def.actions[actionSlug]) return { ok: false, error: `Unknown action: ${actionSlug}` };
+
+  try {
+    const executor = EXECUTORS[connectorSlug]?.[actionSlug];
+    if (!executor) return { ok: false, error: 'No executor registered for this connector/action' };
+    const result = await executor(input, resolvedConfig);
+    return { ok: true, result };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+}
+
 async function loadCustomConnector(projectDir, squadSlug, connectorSlug) {
   const filePath = path.join(projectDir, SQUADS_DIR, squadSlug, 'connectors', `${connectorSlug}.js`);
   try {
@@ -205,5 +331,7 @@ module.exports = {
   resolveConnectorEnv,
   buildWorkerMcpEnv,
   loadCustomConnector,
-  integrationsDir
+  integrationsDir,
+  runHealthCheck,
+  runAction
 };

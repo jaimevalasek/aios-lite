@@ -199,6 +199,7 @@ const JSON_SUPPORTED_COMMANDS = new Set([
   'squad-daemon',
   'squad:mcp',
   'squad-mcp',
+  'squad:mcp:call',
   'squad:roi',
   'squad-roi',
   'squad:score',
@@ -590,6 +591,8 @@ async function main() {
     } else if (command === 'squad:daemon' || command === 'squad-daemon') {
       const sub = options.sub || 'status';
       result = await runSquadDaemon({ args, options: { ...options, sub }, logger: commandLogger, t });
+    } else if (command === 'squad:mcp:call') {
+      result = await runSquadMcp({ args, options: { ...options, sub: 'call' }, logger: commandLogger, t });
     } else if (command === 'squad:mcp' || command === 'squad-mcp') {
       const sub = options.sub || 'status';
       result = await runSquadMcp({ args, options: { ...options, sub }, logger: commandLogger, t });

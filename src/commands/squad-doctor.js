@@ -362,7 +362,7 @@ async function runSquadDoctor({ args, options = {}, logger, t }) {
       makeCheck(
         'quality_score',
         !isLow,
-        isLow ? 'warn' : 'info',
+        'info',
         `Quality score: ${total}/${maxTotal} — ${grade}`,
         { qualityScore: { total, max: maxTotal, grade } }
       )

@@ -853,7 +853,9 @@ module.exports = {
     sessions: '    Sessoes     : {count} ({path})',
     latest_html: '    Latest HTML : {value}',
     logs: '    Logs        : {count} ({path})',
-    genomes: '    Genomes     : {count} no squad / {agent_count} vinculos por agente'
+    genomes: '    Genomes     : {count} no squad / {agent_count} vinculos por agente',
+    model_tiers: '    Model Tiers : {value}',
+    estimated_cost: '    Custo Est.  : ~${value}/run'
   },
   squad_agent_create: {
     no_name: 'Uso: aioson squad:agent-create [path] --name=<nome-agente> [--type=agent|assistant|clone|worker] [--scope=my-agents|squad] [--squad=<slug>]',
@@ -1011,7 +1013,13 @@ module.exports = {
     test_missing: 'Integracao "{mcp}" tem config ausente: {keys}',
     test_ok: 'Integracao "{mcp}" ({connector}) — config OK.',
     health_url: 'URL de health check: {url}',
-    unknown_sub: 'Subcomando desconhecido: {sub}. Use: status, connectors, configure, test.'
+    testing_connection: 'Testando conexao...',
+    health_ok: 'Conexao OK (HTTP {statusCode})',
+    health_error: 'Erro na conexao: {error}',
+    health_skipped: 'Verificacao de saude nao disponivel para este connector',
+    action_required: 'Slug da acao e obrigatorio. Use --action=<slug>.',
+    invalid_input: 'JSON invalido. Forneca JSON valido com --input.',
+    unknown_sub: 'Subcomando desconhecido: {sub}. Use: status, connectors, configure, test, call.'
   },
 
   squad_roi: {
