@@ -278,27 +278,43 @@ For `project_type=dapp`, also load the matching Web3 skills:
 - If the `framework` value does not match any row above, apply generic separation principles (controller → service/use-case) and document deviations in architecture.md.
 
 ## Working rules
-- Keep changes small and reviewable.
+- Never implement more than one declared step before committing. If you did: stop, commit what works, discard the rest.
 - Enforce server-side validation and authorization.
 - Reuse project skills in `.aioson/skills/static` and `.aioson/skills/dynamic`. For `.aioson/skills/design`, load only the skill explicitly named in `design_skill` — never load other design skills from that folder.
 - Check `.aioson/installed-skills/` for user-installed third-party skills. Each subfolder has a `SKILL.md` with frontmatter describing when to use it. Load on-demand when the task matches the skill's description — do not load all installed skills at once.
 - Also reuse squad-installed skills in `.aioson/squads/{squad-slug}/skills/` when the task belongs to a squad package.
 - Load detailed skills and documents on demand, not all at once.
 - Decide the minimum context package for the current implementation batch before coding.
-- If an installed skill (third-party or squad) already covers the recurring technique, prefer reuse instead of inventing a new rule inside the agent or scattering instructions into code.
+- Before implementing a recurring pattern: check `.aioson/skills/static/` and `.aioson/installed-skills/`. Reinventing a covered pattern is a bug.
 
 ## Atomic execution
 Work in small, validated steps — never implement an entire feature in one pass:
-1. **Declare** the next step before writing code ("Next: migration for appointments table").
-2. **Implement** only that step.
-3. **Validate** — confirm it works before moving on. If uncertain, ask.
-4. **Commit** each working step with a semantic commit. Do not accumulate uncommitted changes.
-5. Repeat for the next step.
+1. **Declare** the next step ("Next: AddToCart action").
+2. **Write the test** — for new business logic: write the test first (RED).
+   - For config files, migrations without rules, and static content: skip this step.
+   - The test must fail before implementation. If it passes immediately, the test is wrong — rewrite it.
+3. **Implement** only that step (GREEN).
+4. **Verify** — run the test. Read the full output. Zero failures = proceed.
+   If the test still fails: fix implementation. Never skip this step.
+5. **Commit** with semantic message. Do not accumulate uncommitted changes.
+6. Repeat for the next step.
 
-If a step produces unexpected output, stop and report — do not continue on broken state.
+Unexpected output = STOP. Do not proceed. Do not attempt to fix silently. Report immediately.
+
+NO FEATURE IS DONE UNTIL ITS TESTS PASS. "I believe it works" is not a passing test.
 
 In **feature mode**: read `spec-{slug}.md` before starting; update it after each significant decision. `spec.md` is project-level — only update it if the change affects the whole project.
 In **project mode**: read `spec.md` if it exists; update it after significant decisions.
+
+## Before marking any task or feature done
+Execute this gate — no exceptions:
+1. Run the verification command for this step (test suite, build, or lint)
+2. Read the complete output — not a summary, the actual output
+3. Confirm exit code is 0 and zero failures
+4. Only then: mark done or proceed to next step
+
+"It should work" is not verification. "The test passed last time" is not verification.
+A passing run from 10 minutes ago is not verification.
 
 When you create, delete, or significantly modify a file, update the corresponding entry in `skeleton-system.md` (file map + module status). Keep the skeleton current — it is the living index other agents rely on.
 
@@ -311,6 +327,18 @@ When the user types `*update-skeleton`, rewrite `.aioson/context/skeleton-system
 - Add the date of the update at the top
 
 > **`.aioson/context/` rule:** this folder accepts only `.md` files. Never write `.html`, `.css`, `.js`, or any other non-markdown file inside `.aioson/`.
+
+## Debugging
+When a bug or failing test cannot be resolved in one attempt:
+1. STOP trying random fixes
+2. Load `.aioson/skills/static/debugging-protocol.md`
+3. Follow the protocol from step 1 (root cause investigation)
+
+After 3 failed fix attempts on the same issue: question the architecture, not the code.
+
+## Git worktrees (optional)
+For SMALL/MEDIUM features: consider using git worktrees to keep `main` clean while developing.
+If you want: `.aioson/skills/static/git-worktrees.md`. Never mandatory — user decides.
 
 ## Hard constraints
 - Use `conversation_language` from project context for all interaction/output.

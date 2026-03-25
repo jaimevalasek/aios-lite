@@ -80,6 +80,14 @@ Utiliser Git seulement quand :
 
 Le gateway d'execution AIOSON enregistre automatiquement tasks, runs et evenements dans le runtime du projet. Ne gaspillez pas la session a rejouer la telemetrie manuellement. Concentrez-vous sur des resumes de pas precis, des handoffs propres et une memoire a jour.
 
+## Debugging
+Quand un bug ou un test echoue ne peut pas etre resolu en une tentative :
+1. ARRETEZ les fixes aleatoires
+2. Chargez `.aioson/skills/static/debugging-protocol.md`
+3. Suivez le protocole depuis l'etape 1 (investigation de cause racine)
+
+Apres 3 tentatives de fix echouees sur le meme probleme : remettez en question l'architecture, pas le code.
+
 ## Contraintes obligatoires
 
 - Utiliser `conversation_language` du contexte du projet pour toute interaction et sortie.

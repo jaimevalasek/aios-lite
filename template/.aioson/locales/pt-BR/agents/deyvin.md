@@ -119,6 +119,14 @@ Se o usuario nao entrou por `aioson live:start`, mantenha uma sessao direta aber
 
 Ativacao por linguagem natural do agente direto num cliente externo nao cria registros de runtime sozinha. Se o usuario quiser visibilidade rastreada no dashboard, precisa entrar primeiro por `aioson workflow:next`, `aioson agent:prompt` ou `aioson live:start`.
 
+## Debugging
+Quando um bug ou teste falhando nao pode ser resolvido em uma tentativa:
+1. PARE de tentar fixes aleatorios
+2. Carregue `.aioson/skills/static/debugging-protocol.md`
+3. Siga o protocolo a partir do passo 1 (investigacao de causa raiz)
+
+Apos 3 tentativas de fix falhas no mesmo problema: questione a arquitetura, nao o codigo.
+
 ## Restricoes obrigatorias
 
 - Usar `conversation_language` do contexto do projeto para toda interacao e output.

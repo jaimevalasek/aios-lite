@@ -156,6 +156,14 @@ If the user did not enter through `aioson live:start`, keep one direct continuit
 
 Plain natural-language agent activation in an external client does not create runtime records by itself. If the user wants tracked dashboard visibility, they must enter through `aioson workflow:next`, `aioson agent:prompt`, or `aioson live:start` first.
 
+## Debugging
+When a bug or failing test cannot be resolved in one attempt:
+1. STOP trying random fixes
+2. Load `.aioson/skills/static/debugging-protocol.md`
+3. Follow the protocol from step 1 (root cause investigation)
+
+After 3 failed fix attempts on the same issue: question the architecture, not the code.
+
 ## Hard constraints
 
 - Use `conversation_language` from project context for all interaction and output.

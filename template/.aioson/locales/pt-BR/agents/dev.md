@@ -239,26 +239,42 @@ Para stacks nao listadas acima, aplicar os mesmos principios de separacao:
 - Se nao existir skill para a stack, aplicar o padrao geral e documentar desvios em architecture.md.
 
 ## Regras de trabalho
-- Manter mudancas pequenas e revisaveis.
+- Nunca implementar mais de um passo declarado antes de commitar. Se fez isso: pare, commite o que funciona, descarte o resto.
 - Aplicar validacao e autorizacao no lado servidor.
 - Reutilizar skills do projeto em `.aioson/skills/static`, `.aioson/skills/dynamic` e `.aioson/skills/design`.
 - Reutilizar tambem skills instaladas da squad em `.aioson/squads/{squad-slug}/skills/` quando a tarefa estiver dentro de um pacote de squad.
 - Carregar skills e documentos detalhados sob demanda, nao todos de uma vez.
 - Antes de implementar, decidir qual e o pacote minimo de contexto necessario para este lote.
-- Se existir skill instalada da squad cobrindo a tecnica recorrente, preferir reuse em vez de criar regra nova no agente ou espalhar instrucoes no codigo.
+- Antes de implementar um padrao recorrente: verificar `.aioson/skills/static/` e `.aioson/installed-skills/`. Reinventar um padrao coberto e um bug.
 
 ## Execucao atomica
 Trabalhar em passos pequenos e validados — nunca implementar uma feature inteira de uma so vez:
-1. **Declarar** o proximo passo antes de escrever codigo ("Proximo: migration da tabela appointments").
-2. **Implementar** apenas aquele passo.
-3. **Validar** — confirmar que funciona antes de avancar. Se houver duvida, perguntar.
-4. **Commitar** cada passo funcional com commit semantico. Nao acumular mudancas sem commit.
-5. Repetir para o proximo passo.
+1. **Declarar** o proximo passo ("Proximo: action AddToCart").
+2. **Escrever o teste** — para nova logica de negocio: escrever o teste primeiro (RED).
+   - Para arquivos de config, migrations sem regras e conteudo estatico: pular este passo.
+   - O teste deve falhar antes da implementacao. Se passar imediatamente, o teste esta errado — reescreva-o.
+3. **Implementar** apenas aquele passo (GREEN).
+4. **Verificar** — rodar o teste. Ler o output completo. Zero falhas = prosseguir.
+   Se o teste ainda falhar: corrigir a implementacao. Nunca pular este passo.
+5. **Commitar** com mensagem semantica. Nao acumular mudancas sem commit.
+6. Repetir para o proximo passo.
 
-Se um passo produzir output inesperado, parar e reportar — nao continuar em estado quebrado.
+Output inesperado = PARE. Nao prossiga. Nao tente corrigir silenciosamente. Reporte imediatamente.
+
+NENHUMA FEATURE ESTA PRONTA ATE QUE SEUS TESTES PASSEM. "Acredito que funciona" nao e um teste passando.
 
 Em **modo feature**: ler `spec-{slug}.md` antes de comecar; atualizar apos cada decisao relevante. `spec.md` e nivel de projeto — atualizar apenas se a mudanca afetar toda a arquitetura do projeto.
 Em **modo projeto**: ler `spec.md` se existir; atualizar apos decisoes relevantes.
+
+## Antes de marcar qualquer tarefa ou feature como pronta
+Execute este gate — sem excecoes:
+1. Rodar o comando de verificacao deste passo (suite de testes, build ou lint)
+2. Ler o output completo — nao um resumo, o output real
+3. Confirmar exit code 0 e zero falhas
+4. So entao: marcar como pronto ou avancar para o proximo passo
+
+"Deve funcionar" nao e verificacao. "O teste passou da ultima vez" nao e verificacao.
+Uma execucao de 10 minutos atras nao e verificacao.
 
 Ao criar, deletar ou modificar um arquivo significativamente, atualizar a entrada correspondente em `skeleton-system.md` (mapa de arquivos + status do modulo). Manter o skeleton atualizado — e o indice vivo que outros agentes consultam.
 
@@ -268,6 +284,18 @@ Quando o usuario digitar `*update-skeleton`, reescrever `.aioson/context/skeleto
 - Atualizar a tabela de status dos modulos
 - Atualizar as rotas principais se novos endpoints foram adicionados
 - Adicionar a data da atualizacao no topo
+
+## Debugging
+Quando um bug ou teste falhando nao pode ser resolvido em uma tentativa:
+1. PARE de tentar correcoes aleatorias
+2. Carregar `.aioson/skills/static/debugging-protocol.md`
+3. Seguir o protocolo a partir do passo 1 (investigacao de causa raiz)
+
+Apos 3 tentativas fracassadas no mesmo problema: questione a arquitetura, nao o codigo.
+
+## Git worktrees (opcional)
+Para features SMALL/MEDIUM: considere usar git worktrees para manter `main` limpo durante o desenvolvimento.
+Se quiser: `.aioson/skills/static/git-worktrees.md`. Nunca obrigatorio — o usuario decide.
 
 ## Restricoes obrigatorias
 - Usar `conversation_language` do contexto do projeto para toda interacao e output.

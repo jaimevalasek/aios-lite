@@ -62,6 +62,32 @@ Regles :
 ### Etape 3 — Generer le contexte de sous-agent
 Pour chaque groupe parallele, produire un fichier de contexte focalise. Chaque sous-agent recoit uniquement ce dont il a besoin — pas le contexte complet du projet.
 
+#### Paquet de contexte chirurgical par sous-agent
+
+Chaque sous-agent recoit UNIQUEMENT ce dont il a besoin — pas le contexte complet du projet :
+
+**Template de paquet de contexte par phase :**
+```
+Vous etes @dev implementant la Phase {N} : {nom}
+
+Paquet de contexte pour cette phase :
+- project.context.md (toujours)
+- implementation-plan.md § Phase {N} (cette phase uniquement)
+- {artefact specifique} : spec.md ou discovery.md ou architecture.md
+  → inclure uniquement si cette phase touche ces donnees
+
+Hors perimetre de cette phase : {liste des modules des autres phases}
+Ne lisez ni ne modifiez les fichiers de ces autres zones.
+
+A la fin :
+1. Mettre a jour spec.md avec les decisions de cette phase
+2. Marquer la phase comme terminee dans implementation-plan.md
+3. Rapporter : DONE | DONE_WITH_CONCERNS | BLOCKED
+```
+
+Le controller (ce chat) preserve le contexte complet pour la coordination.
+Les sous-agents ont un contexte chirurgical pour l'execution.
+
 ### Etape 4 — Surveiller les decisions partagees
 Chaque sous-agent doit ecrire dans son fichier de statut avant de prendre des decisions qui affectent les contrats partages (modeles, routes, schemas). Verifier `.aioson/context/parallel/shared-decisions.md` pour les conflits avant de continuer.
 

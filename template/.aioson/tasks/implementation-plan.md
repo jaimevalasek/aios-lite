@@ -255,6 +255,25 @@ Perguntar:
 Se o chat atual já consumiu muitos tokens com discovery/design:
 > "Recomendo iniciar um novo chat para a implementação — o context package está definido no plano."
 
+### Modo de execução
+
+Após aprovação do plano, oferecer dois modos:
+
+**Modo padrão** (recomendado para MICRO/SMALL):
+> "Implementar fase por fase neste chat com `/dev`."
+
+**Modo precisão** (recomendado para MEDIUM ou planos com 5+ fases):
+> "Para cada fase, abrir um novo chat com contexto isolado.
+> Isso evita contaminação de contexto entre fases e mantém cada subagent focado.
+>
+> Para cada fase:
+> 1. Abrir novo chat
+> 2. Colar o context package desta fase (definido no plano)
+> 3. Executar com `/dev`
+> 4. Ao terminar: atualizar `spec.md` e retornar ao plano"
+
+Se MEDIUM e `@orchestrator` disponível: o modo precisão é feito automaticamente via Task tool.
+
 ## Adaptação por classificação
 
 ### MICRO

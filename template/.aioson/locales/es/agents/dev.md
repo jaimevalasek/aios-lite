@@ -214,22 +214,39 @@ Para stacks no listadas arriba, aplicar los mismos principios de separacion:
 - Si no existe skill para el stack, aplicar el patron general y documentar desviaciones en architecture.md.
 
 ## Reglas de trabajo
-- Mantener cambios pequenos y revisables.
+- Nunca implementar mas de un paso declarado antes de commitear. Si lo hiciste: detente, commitea lo que funciona, descarta el resto.
 - Aplicar validacion y autorizacion del lado servidor.
 - Reutilizar skills del proyecto en `.aioson/skills/static` y `.aioson/skills/dynamic`.
+- Antes de implementar un patron recurrente: verificar `.aioson/skills/static/` y `.aioson/installed-skills/`. Reinventar un patron cubierto es un bug.
 
 ## Ejecucion atomica
 Trabajar en pasos pequenos y validados — nunca implementar una feature completa de una sola vez:
-1. **Declarar** el proximo paso antes de escribir codigo ("Proximo: migration de la tabla appointments").
-2. **Implementar** solo ese paso.
-3. **Validar** — confirmar que funciona antes de avanzar. Si hay duda, preguntar.
-4. **Commitear** cada paso funcional con commit semantico. No acumular cambios sin commit.
-5. Repetir para el proximo paso.
+1. **Declarar** el proximo paso ("Proximo: action AddToCart").
+2. **Escribir el test** — para nueva logica de negocio: escribir el test primero (RED).
+   - Para archivos de config, migraciones sin reglas y contenido estatico: omitir este paso.
+   - El test debe fallar antes de la implementacion. Si pasa inmediatamente, el test esta mal — reescribirlo.
+3. **Implementar** solo ese paso (GREEN).
+4. **Verificar** — ejecutar el test. Leer el output completo. Cero fallos = continuar.
+   Si el test sigue fallando: corregir la implementacion. Nunca saltarse este paso.
+5. **Commitear** con mensaje semantico. No acumular cambios sin commit.
+6. Repetir para el proximo paso.
 
-Si un paso produce output inesperado, detener y reportar — no continuar en estado roto.
+Output inesperado = DETENER. No continuar. No intentar corregir silenciosamente. Reportar inmediatamente.
+
+NINGUNA FEATURE ESTA LISTA HASTA QUE SUS TESTS PASEN. "Creo que funciona" no es un test pasando.
 
 En **modo feature**: leer `spec-{slug}.md` antes de comenzar; actualizarlo tras cada decision relevante. `spec.md` es nivel de proyecto — actualizarlo solo si el cambio afecta toda la arquitectura del proyecto.
 En **modo proyecto**: leer `spec.md` si existe; actualizarlo tras decisiones relevantes.
+
+## Antes de marcar cualquier tarea o feature como lista
+Ejecutar este gate — sin excepciones:
+1. Ejecutar el comando de verificacion de este paso (suite de tests, build o lint)
+2. Leer el output completo — no un resumen, el output real
+3. Confirmar exit code 0 y cero fallos
+4. Solo entonces: marcar como listo o pasar al proximo paso
+
+"Deberia funcionar" no es verificacion. "El test paso la ultima vez" no es verificacion.
+Una ejecucion de hace 10 minutos no es verificacion.
 
 Al crear, eliminar o modificar significativamente un archivo, actualizar la entrada correspondiente en `skeleton-system.md` (mapa de archivos + estado del modulo). Mantener el skeleton actualizado — es el indice vivo que otros agentes consultan.
 
@@ -239,6 +256,18 @@ Cuando el usuario escriba `*update-skeleton`, reescribir `.aioson/context/skelet
 - Actualizar la tabla de estado de modulos
 - Actualizar las rutas clave si se agregaron nuevos endpoints
 - Agregar la fecha de actualizacion al inicio
+
+## Debugging
+Cuando un bug o test fallando no puede resolverse en un intento:
+1. DETENER los intentos de correcciones aleatorias
+2. Cargar `.aioson/skills/static/debugging-protocol.md`
+3. Seguir el protocolo desde el paso 1 (investigacion de causa raiz)
+
+Despues de 3 intentos fallidos en el mismo problema: cuestionar la arquitectura, no el codigo.
+
+## Git worktrees (opcional)
+Para features SMALL/MEDIUM: considerar usar git worktrees para mantener `main` limpo durante el desarrollo.
+Si quieres: `.aioson/skills/static/git-worktrees.md`. Nunca obligatorio — el usuario decide.
 
 ## Restricciones obligatorias
 - Usar `conversation_language` del contexto del proyecto para toda interaccion y output.

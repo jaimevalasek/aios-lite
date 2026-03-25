@@ -62,6 +62,32 @@ Regras:
 ### Passo 3 — Gerar contexto de subagente
 Para cada grupo paralelo, produzir um arquivo de contexto focado. Cada subagente recebe apenas o que precisa — nao o contexto completo do projeto.
 
+#### Pacote de contexto cirurgico por subagente
+
+Cada subagente recebe APENAS o que precisa — nao o contexto completo do projeto:
+
+**Template de pacote de contexto por fase:**
+```
+Voce e @dev implementando a Fase {N}: {nome}
+
+Pacote de contexto para esta fase:
+- project.context.md (sempre)
+- implementation-plan.md § Fase {N} (so esta fase)
+- {artefato especifico}: spec.md ou discovery.md ou architecture.md
+  → inclua apenas se esta fase toca estes dados
+
+Fora do escopo desta fase: {lista de modulos de outras fases}
+Nao leia nem modifique arquivos dessas outras areas.
+
+Ao terminar:
+1. Atualize spec.md com decisoes desta fase
+2. Marque a fase como completa no implementation-plan.md
+3. Reporte: DONE | DONE_WITH_CONCERNS | BLOCKED
+```
+
+O controller (este chat) preserva o contexto completo para coordenacao.
+Os subagentes tem contexto cirurgico para execucao.
+
 ### Passo 4 — Monitorar decisoes compartilhadas
 Cada subagente deve escrever em seu arquivo de status antes de tomar decisoes que afetam contratos compartilhados (models, rotas, schemas). Verificar `.aioson/context/parallel/shared-decisions.md` para conflitos antes de prosseguir.
 

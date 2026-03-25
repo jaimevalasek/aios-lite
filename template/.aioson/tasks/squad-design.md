@@ -75,6 +75,34 @@ O JSON deve seguir o schema `squad-blueprint.schema.json`.
 
 Gere um UUID para o campo `id`. Use `new Date().toISOString()` para `createdAt`.
 
+### Passo 6.5 — Squad Spec Self-Review
+
+Antes de apresentar ao usuário, revisar o blueprint como se fosse outro agente lendo pela primeira vez:
+
+**Verificar completude:**
+- [ ] Cada executor tem role único e não sobrepõe outro executor
+- [ ] Cada executor tem focus com 3-5 bullets concretos (não vagos)
+- [ ] Sem "TBD", "a definir", "conforme necessário" em nenhum campo
+- [ ] Mission do squad é uma frase que explica o que faz E para quem
+
+**Verificar consistência:**
+- [ ] Sem contradições: tom/audiência do squad vs tone de cada executor
+- [ ] Se mode=content: content blueprints cobrem os outputs esperados
+- [ ] Se mode=software: executores cobrem as fases de desenvolvimento necessárias
+- [ ] Squad não tem mais responsabilidades do que os executores conseguem cobrir
+
+**Verificar scope:**
+- [ ] O squad resolve o problema declarado pelo usuário — nem mais, nem menos
+- [ ] Nenhum executor foi adicionado por "seria útil" sem relação com o objetivo
+- [ ] Se user pediu N executores: verificar que não foram adicionados extras silenciosamente
+
+**Calibração:** Só bloqueie se o problema causaria output fundamentalmente errado.
+Preferências de estilo não bloqueiam. Lacunas de detalhe não bloqueiam.
+Contradições de escopo e roles sem responsabilidade real = bloqueiam.
+
+Se encontrar problemas: corrigir no blueprint antes de apresentar ao usuário.
+Se tudo OK: prosseguir para Passo 7.
+
 ### Passo 7 — Apresentar resumo
 Mostre ao usuário:
 - Executores propostos com roles

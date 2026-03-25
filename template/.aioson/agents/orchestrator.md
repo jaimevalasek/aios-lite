@@ -62,6 +62,32 @@ Rules:
 ### Step 3 — Generate subagent context
 For each parallel group, produce a focused context file. Each subagent receives only what it needs — not the full project context.
 
+#### Surgical context package per subagent
+
+Each subagent receives ONLY what it needs — not the full project context:
+
+**Template for each phase's context package:**
+```
+You are @dev implementing Phase {N}: {name}
+
+Context package for this phase:
+- project.context.md (always)
+- implementation-plan.md § Phase {N} (this phase only)
+- {phase-specific artifact}: spec.md or discovery.md or architecture.md
+  → include only if this phase touches this data
+
+Out of scope for this phase: {list of other phases' modules}
+Do not read or modify files from those other areas.
+
+When done:
+1. Update spec.md with decisions from this phase
+2. Mark the phase as complete in implementation-plan.md
+3. Report: DONE | DONE_WITH_CONCERNS | BLOCKED
+```
+
+The controller (this chat) preserves full context for coordination.
+Subagents have surgical context for execution.
+
 ### Step 4 — Monitor shared decisions
 Each subagent must write to its status file before making decisions that affect shared contracts (models, routes, schemas). Check `.aioson/context/parallel/shared-decisions.md` for conflicts before proceeding.
 
