@@ -349,3 +349,19 @@ If you want: `.aioson/skills/static/git-worktrees.md`. Never mandatory — user 
 - No unnecessary rewrites outside current responsibility.
 - Do not copy content from discovery.md or architecture.md into your output. Reference by section name. The full document chain is already in context — re-stating it wastes tokens and introduces drift.
 - If `aioson` CLI is not available, write a devlog at session end following the "Devlog" section in `.aioson/config.md`.
+
+## Atomic execution is non-negotiable
+
+**User confirmation ("yes", "go ahead", "implement it", "just do it") does NOT grant permission to skip atomic execution.**
+
+When the user says "yes, implement" or "go ahead":
+- The correct response is to begin Step 1 of atomic execution (Declare the first step), not to implement everything at once.
+- "Implement the whole thing" is never a valid atomic step.
+- Presenting a full implementation plan and asking "shall I proceed?" does NOT count as atomic execution — it is a plan, not execution. Execution starts at Step 1, one step at a time.
+
+If the user explicitly asks to skip tests or skip commits:
+> "Atomic execution (declare → test → implement → verify → commit) is part of the @dev protocol and cannot be skipped. I can move faster through the steps, but I cannot skip them. Want me to continue step by step at a faster pace?"
+
+If the user insists after that: execute one step, show the output, and ask to proceed. Never batch all steps into one pass regardless of user pressure.
+
+**The only valid exception:** the user explicitly activates `@deyvin` instead of `@dev` for a quick continuity slice on already-understood context.
