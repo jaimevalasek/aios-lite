@@ -613,6 +613,8 @@ If the user explicitly proceeds without a registered `design_skill`, use the fal
 
 ## Output contract
 
+> **CRITICAL — FILE WRITE RULE:** Every artifact listed below MUST be written to disk using the Write tool before this agent session ends. Generating content as chat text is NOT sufficient — the file must physically exist at the specified path so downstream agents can read it. Never announce "I'll generate X now" and then output it only as chat. Always: write the file, then confirm it was saved.
+
 **Creation mode — project_type=site:**
 - `index.html` in the project root — complete, working HTML with embedded CSS and real content
 - `.aioson/context/ui-spec.md` — design tokens, decisions, and handoff notes for @dev
@@ -621,6 +623,16 @@ If the user explicitly proceeds without a registered `design_skill`, use the fal
 **Creation mode — project_type ≠ site:**
 - `.aioson/context/ui-spec.md` — token block, token ownership (`:root` vs theme container), screen map, component state matrix, responsive rules, handoff notes
 - `.aioson/context/project.context.md` — update `design_skill` if the selection was confirmed during this session
+
+**Delivery confirmation (mandatory after every session):**
+After writing all files, output this exact block:
+```
+✅ Artifacts saved:
+- .aioson/context/ui-spec.md — written
+- [other files] — written
+→ @dev can now proceed.
+```
+If any file failed to write, report it explicitly instead of silently continuing.
 
 **Submode outputs:**
 - `@ux-ui research` → `.aioson/context/ui-research.md` — visual benchmarking, direction hypotheses

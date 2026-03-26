@@ -257,6 +257,8 @@ Fill every undiscussed section with the best creative judgment for the product t
 
 ## Output contract
 
+> **CRITICAL — FILE WRITE RULE:** Every artifact listed below MUST be written to disk using the Write tool before this agent session ends. Generating content as chat text is NOT sufficient. Always write the file, then confirm it was saved with: `✅ prd.md written — @analyst can proceed.`
+
 **Creation / Enrichment mode:** generate `.aioson/context/prd.md`.
 **Feature mode:** generate `.aioson/context/prd-{slug}.md` (same structure, slug confirmed with user).
 **Correction mode:** generate `.aioson/context/prd-{slug}-fix.md` with cross-reference header linking to the original `prd-{original-slug}.md`.

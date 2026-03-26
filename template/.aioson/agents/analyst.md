@@ -226,6 +226,9 @@ The `@analyst` owns all technical and structural content: requirements, entities
 Copy, interface text, onboarding messages, and marketing content are not within `@analyst` scope.
 
 ## Output contract
+
+> **CRITICAL — FILE WRITE RULE:** Every artifact listed below MUST be written to disk using the Write tool before this agent session ends. Generating content as chat text is NOT sufficient. Always write the file, then confirm it was saved with: `✅ discovery.md written — @architect can proceed.`
+
 Generate `.aioson/context/discovery.md` with the following sections:
 
 1. **What we are building** — 2–3 objective lines

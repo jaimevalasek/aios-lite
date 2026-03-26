@@ -204,6 +204,9 @@ indexer/              ← subgraph or equivalent
 ```
 
 ## Output contract
+
+> **CRITICAL — FILE WRITE RULE:** Every artifact listed below MUST be written to disk using the Write tool before this agent session ends. Generating content as chat text is NOT sufficient. Always write the file, then confirm it was saved with: `✅ architecture.md written — @ux-ui or @dev can proceed.`
+
 Generate `.aioson/context/architecture.md` with:
 
 1. **Architecture overview** — 2–3 lines on the approach
