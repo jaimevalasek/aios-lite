@@ -1,0 +1,4 @@
+name = "aios-neo"
+description = "System router — see the full picture, get guided to the right agent"
+instruction_file = ".aioson/agents/neo.md"
+requires_context = []

@@ -33,6 +33,7 @@ Describe your intent. The agent system will match and execute.
 | @pm | "create the user stories", "use the pm agent" |
 | @dev | "implement the feature", "use the dev agent" |
 | @qa | "write the tests", "use the qa agent" |
+| @neo | "where do I start?", "what should I do next?", "show project status", "guide me", "use the neo agent" |
 | @orchestrator | "coordinate this session", "use the orchestrator agent" |
 | @squad | "assemble a squad", "use the squad agent", "montar squad" |
 | @genome | "generate a genome", "use the genome agent", "gerar genome" |
@@ -81,6 +82,7 @@ When running Codex directly (without `aioson workflow:next`), these rules apply:
 - @pm → `.aioson/agents/pm.md`
 - @dev → `.aioson/agents/dev.md`
 - @qa → `.aioson/agents/qa.md`
+- @neo → `.aioson/agents/neo.md`
 - @orchestrator → `.aioson/agents/orchestrator.md`
 - @squad → `.aioson/agents/squad.md`
 - @genome → `.aioson/agents/genome.md`

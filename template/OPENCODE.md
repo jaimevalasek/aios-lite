@@ -17,6 +17,7 @@
 - pm -> `.aioson/agents/pm.md`
 - dev -> `.aioson/agents/dev.md`
 - qa -> `.aioson/agents/qa.md`
+- neo -> `.aioson/agents/neo.md`
 - orchestrator -> `.aioson/agents/orchestrator.md`
 - squad -> `.aioson/agents/squad.md`
 - genome -> `.aioson/agents/genome.md`
