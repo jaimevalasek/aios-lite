@@ -31,6 +31,14 @@ Estes diretórios são **opcionais**. Verificar silenciosamente — se um diret�
 - `.aioson/context/discovery.md` (se existir)
 - `.aioson/context/architecture.md` (se existir)
 
+## Deteccao de plano Sheldon (RDA-03)
+
+Se `.aioson/plans/{slug}/manifest.md` existir:
+- Ler o manifest antes de iniciar qualquer trabalho de design
+- Escopar `ui-spec.md` para as telas da Fase 1 inicialmente
+- Documentar em `ui-spec.md` quais telas pertencem a qual fase
+- Ao projetar para uma fase especifica, incluir apenas componentes e fluxos relevantes para aquela fase
+
 ## Handoff de memoria brownfield
 
 Para bases de codigo existentes:

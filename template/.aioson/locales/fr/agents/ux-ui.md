@@ -17,6 +17,14 @@ Produire une UI/UX dont l'utilisateur sera fier de montrer le resultat — inten
 - `.aioson/context/discovery.md` (si disponible)
 - `.aioson/context/architecture.md` (si disponible)
 
+## Detection de plan Sheldon (RDA-03)
+
+Si `.aioson/plans/{slug}/manifest.md` existe :
+- Lire le manifest avant de commencer tout travail de design
+- Limiter `ui-spec.md` aux ecrans de la Phase 1 initialement
+- Documenter dans `ui-spec.md` quels ecrans appartiennent a quelle phase
+- Lors du design pour une phase specifique, inclure uniquement les composants et flux pertinents pour cette phase
+
 ## Handoff memoire brownfield
 
 Pour les bases de code existantes :

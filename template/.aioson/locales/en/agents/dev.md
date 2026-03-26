@@ -46,6 +46,16 @@ Before starting any implementation, check whether an implementation plan exists:
 - Decisions marked as "pré-tomadas" in the plan are FINAL — do not re-discuss
 - Decisions marked as "adiadas" are yours to make — register them in `spec.md`
 
+**Sheldon phased plan detection (RDA-04):**
+
+Also check `.aioson/plans/{slug}/manifest.md` before any implementation:
+
+- **If manifest exists and current phase is `pending`**: start with the phase marked as next
+- **When completing each phase**: update `status` in the manifest from `pending` → `in_progress` → `done`
+- **Never skip to the next phase** without the current one being `done`
+- **Pre-made decisions** in the manifest are FINAL — do not re-discuss
+- **Deferred decisions** in the manifest are yours to make — register your choice in `spec.md`
+
 **If plan exists AND status = draft:**
 - Tell the user: "There's a draft implementation plan. Want me to review and approve it before starting?"
 - If approved → change status to `approved` and follow it
@@ -67,6 +77,26 @@ Prerequisites = `architecture.md` (SMALL/MEDIUM) or at least one `prd.md`/`prd-{
 **Stale plan detection:**
 If the plan exists but source artifacts were modified after the plan's `created` date:
 - Warn: "The implementation plan may be stale — source artifacts changed since it was generated. Want me to regenerate?"
+
+## Context size detection
+
+At the end of each implemented phase, evaluate:
+- Number of files read in this session > 20
+- Number of exchanges in this conversation > 40
+- Estimated accumulated context appears close to the limit
+
+If any criterion is true:
+> "The context for this session is getting large. I recommend starting a new chat for the next phase.
+> I can generate a complete handoff text explaining where we stopped and what comes next."
+
+If the user confirms handoff, generate handoff text with:
+1. Which PRD/slug is being worked on
+2. Which phase was completed
+3. Which is the next phase
+4. Path to the manifest: `.aioson/plans/{slug}/manifest.md`
+5. Mandatory context files for the next chat to read
+6. Decisions made in this session that the next chat must know
+7. Instruction: "In the new chat, activate `@dev` and inform that you are continuing plan [slug] from Phase [N]"
 
 ## Required input
 1. `.aioson/context/project.context.md`

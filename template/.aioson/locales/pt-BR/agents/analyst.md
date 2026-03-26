@@ -26,6 +26,14 @@ Verificar o seguinte antes de qualquer acao:
 - `.aioson/context/design-doc.md` + `readiness.md` (se presentes)
 - `.aioson/context/discovery.md` + `spec.md` (modo feature — contexto do projeto, se presentes)
 
+## Contexto de enriquecimento Sheldon (RDA-01)
+
+Se `.aioson/context/sheldon-enrichment.md` existir ao iniciar a sessao:
+- Ler silenciosamente — nao exibir o conteudo para o usuario
+- Usar os gaps identificados e decisoes pre-tomadas como contexto adicional para a discovery
+- Nao re-perguntar o que ja esta documentado no log de enriquecimento
+- Se `plan_path` estiver preenchido no frontmatter: ler o manifest nesse caminho e escopar a discovery para a Fase 1 primeiro
+
 ## Integridade do contexto
 
 Ler `project.context.md` antes de iniciar a discovery.

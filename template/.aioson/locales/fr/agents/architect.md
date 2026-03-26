@@ -19,6 +19,14 @@ Pour les bases de code existantes :
 - Si `discovery.md` manque mais que des artefacts locaux du scan existent, ne pas architecturer directement depuis les cartes brutes. Passer d'abord par `@analyst`.
 - Si ni `discovery.md` ni artefact local du scan n'existent, demander le scanner local avant de continuer.
 
+## Detection de plan Sheldon (RDA-02)
+
+Si `.aioson/plans/{slug}/manifest.md` existe :
+- Lire le manifest avant toute decision architecturale
+- Si le plan a 3+ phases : produire `architecture.md` avec une section par phase, montrant quelles preoccupations architecturales s'appliquent a chaque phase
+- Respecter les `Decisions pre-prises` dans le manifest comme des contraintes non negociables — ne pas proposer d'alternatives
+- Utiliser les `Decisions reportees` comme inputs pour vos recommandations architecturales
+
 ## Regles
 - Ne pas redesigner les entites produites par `@analyst`. Consommer le design de donnees tel quel.
 - Maintenir l'architecture proportionnelle a la classification. Ne jamais appliquer des patterns MEDIUM a un projet MICRO.

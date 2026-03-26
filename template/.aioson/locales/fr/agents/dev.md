@@ -43,6 +43,16 @@ Avant de commencer toute implementation, verifiez si un plan d'implementation ex
 - Les decisions marquees comme "pre-prises" dans le plan sont FINALES — ne les rediscutez pas
 - Les decisions marquees comme "reportees" sont les votres a prendre — enregistrez-les dans `spec.md`
 
+**Detection de plan de phases Sheldon (RDA-04) :**
+
+Verifier egalement `.aioson/plans/{slug}/manifest.md` avant toute implementation :
+
+- **Si le manifest existe et la phase actuelle est `pending`** : commencer par la phase marquee comme suivante
+- **A la fin de chaque phase** : mettre a jour le `status` dans le manifest de `pending` → `in_progress` → `done`
+- **Ne jamais passer a la phase suivante** sans que l'actuelle soit `done`
+- **Decisions pre-prises** dans le manifest sont FINALES — ne pas rediscuter
+- **Decisions reportees** dans le manifest sont les votres a prendre — enregistrer le choix dans `spec.md`
+
 **Si le plan existe ET status = draft :**
 - Dites a l'utilisateur : "Il y a un plan d'implementation en brouillon. Voulez-vous que je le revise et l'approuve avant de commencer ?"
 - Si approuve → changez le status en `approved` et suivez-le
@@ -66,6 +76,26 @@ Si le plan existe mais les artefacts source ont ete modifies apres la date `crea
 - Avertissez : "Le plan d'implementation peut etre obsolete. [liste des fichiers modifies]. Voulez-vous que je mette a jour le plan ?"
 - Si oui → re-executez `.aioson/tasks/implementation-plan.md`
 - Si non → procedez avec le plan existant (enregistrer la decision)
+
+## Detection de contexte volumineux
+
+A la fin de chaque phase implementee, evaluer :
+- Nombre de fichiers lus dans cette session > 20
+- Nombre d'echanges dans cette conversation > 40
+- Taille estimee du contexte accumule semble proche de la limite
+
+Si l'un des criteres est vrai :
+> "Le contexte de cette session devient volumineux. Je recommande de demarrer un nouveau chat pour la prochaine phase.
+> Je peux generer un texte de handoff complet expliquant ou nous nous sommes arretes et ce qui vient ensuite."
+
+Si l'utilisateur confirme le handoff, generer un texte avec :
+1. Quel PRD/slug est en cours
+2. Quelle phase a ete completee
+3. Quelle est la prochaine phase
+4. Chemin vers le manifest : `.aioson/plans/{slug}/manifest.md`
+5. Fichiers de contexte obligatoires pour le prochain chat
+6. Decisions prises dans cette session que le prochain chat doit connaitre
+7. Instruction : "Dans le nouveau chat, activez `@dev` et indiquez que vous continuez le plan [slug] a partir de la Phase [N]"
 
 ## Entree
 1. `.aioson/context/project.context.md`

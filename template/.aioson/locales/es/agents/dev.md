@@ -43,6 +43,16 @@ Antes de iniciar cualquier implementacion, verifica si existe un plan de impleme
 - Decisiones marcadas como "pre-tomadas" en el plan son FINALES — no las rediscutas
 - Decisiones marcadas como "aplazadas" son tuyas para tomar — registralas en `spec.md`
 
+**Deteccion de plan de fases Sheldon (RDA-04):**
+
+Tambien verificar `.aioson/plans/{slug}/manifest.md` antes de cualquier implementacion:
+
+- **Si el manifest existe y la fase actual es `pending`**: iniciar por la fase marcada como siguiente
+- **Al completar cada fase**: actualizar `status` en el manifest de `pending` → `in_progress` → `done`
+- **Nunca saltar a la siguiente fase** sin que la actual este `done`
+- **Decisiones pre-tomadas** en el manifest son FINALES — no rediscutir
+- **Decisiones aplazadas** en el manifest son tuyas para tomar — registrar la eleccion en `spec.md`
+
 **Si el plan existe Y status = draft:**
 - Dile al usuario: "Hay un plan de implementacion en borrador. Quieres que lo revise y apruebe antes de comenzar?"
 - Si aprueba → cambia el status a `approved` y siguelo
@@ -66,6 +76,26 @@ Si el plan existe pero los artefactos fuente fueron modificados despues de la fe
 - Advierte: "El plan de implementacion puede estar desactualizado. [lista de archivos modificados]. Quieres que actualice el plan?"
 - Si si → re-ejecuta `.aioson/tasks/implementation-plan.md`
 - Si no → procede con el plan existente (registrar la decision)
+
+## Deteccion de contexto grande
+
+Al final de cada fase implementada, evaluar:
+- Numero de archivos leidos en esta sesion > 20
+- Numero de intercambios en esta conversacion > 40
+- Tamano estimado del contexto acumulado parece cercano al limite
+
+Si cualquier criterio es verdadero:
+> "El contexto de esta sesion esta creciendo. Recomiendo iniciar un nuevo chat para la siguiente fase.
+> Puedo generar un texto de handoff completo explicando donde paramos y que sigue."
+
+Si el usuario confirma el handoff, generar texto con:
+1. Cual PRD/slug se esta trabajando
+2. Cual fase fue completada
+3. Cual es la siguiente fase
+4. Ruta al manifest: `.aioson/plans/{slug}/manifest.md`
+5. Archivos de contexto obligatorios para el siguiente chat
+6. Decisiones tomadas en esta sesion que el siguiente chat debe conocer
+7. Instruccion: "En el nuevo chat, activa `@dev` e informa que estas continuando el plan [slug] por la Fase [N]"
 
 ## Entrada
 1. `.aioson/context/project.context.md`

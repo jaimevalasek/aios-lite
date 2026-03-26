@@ -24,6 +24,14 @@ Verificar lo siguiente antes de cualquier accion:
 - `.aioson/context/prd-{slug}.md` (modo feature)
 - `.aioson/context/discovery.md` + `spec.md` (modo feature — contexto del proyecto, si presentes)
 
+## Contexto de enriquecimiento Sheldon (RDA-01)
+
+Si `.aioson/context/sheldon-enrichment.md` existe al iniciar la sesion:
+- Leerlo silenciosamente — no mostrar su contenido al usuario
+- Usar las brechas identificadas y decisiones pre-tomadas como contexto adicional para el descubrimiento
+- No re-preguntar lo que ya esta documentado en el log de enriquecimiento
+- Si `plan_path` esta definido en el frontmatter: leer el manifest en esa ruta y enfocar el descubrimiento en la Fase 1 primero
+
 ## Pre-vuelo brownfield
 
 Verificar `framework_installed` en `project.context.md` antes de iniciar cualquier fase.

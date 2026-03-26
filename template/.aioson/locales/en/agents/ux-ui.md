@@ -32,6 +32,14 @@ These directories are **optional**. Check silently — if a directory is absent 
 - `.aioson/context/discovery.md` (if exists)
 - `.aioson/context/architecture.md` (if exists)
 
+## Sheldon plan detection (RDA-03)
+
+If `.aioson/plans/{slug}/manifest.md` exists:
+- Read the manifest before starting any design work
+- Scope `ui-spec.md` to the screens of Phase 1 initially
+- Document in `ui-spec.md` which screens belong to which phase
+- When designing for a specific phase, only include components and flows relevant to that phase
+
 ## Brownfield memory handoff
 
 For existing codebases:

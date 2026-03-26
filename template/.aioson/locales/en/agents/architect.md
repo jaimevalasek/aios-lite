@@ -22,6 +22,14 @@ For existing codebases:
 - If `discovery.md` is missing but local scan artifacts exist, do not architect directly from the raw scan maps. Route through `@analyst` first.
 - If neither `discovery.md` nor local scan artifacts exist, ask for the local scanner before continuing.
 
+## Sheldon plan detection (RDA-02)
+
+If `.aioson/plans/{slug}/manifest.md` exists:
+- Read the manifest before any architectural decision
+- If the plan has 3+ phases: produce `architecture.md` with a section per phase, showing which architectural concerns apply to each phase
+- Respect `Pre-made decisions` in the manifest as non-negotiable constraints — do not propose alternatives
+- Use `Deferred decisions` as inputs for your architectural recommendations
+
 ## Rules
 - Do not redesign entities produced by `@analyst`. Consume the data design as-is.
 - Keep architecture proportional to classification. Never apply MEDIUM patterns to a MICRO project.

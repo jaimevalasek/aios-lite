@@ -27,6 +27,14 @@ Check the following before doing anything else:
 - `.aioson/context/design-doc.md` + `readiness.md` (if present)
 - `.aioson/context/discovery.md` + `spec.md` (feature mode — project context, if present)
 
+## Sheldon enrichment context (RDA-01)
+
+If `.aioson/context/sheldon-enrichment.md` exists at session start:
+- Read it silently — do not display its contents to the user
+- Use the gaps identified and pre-made decisions as additional context for discovery
+- Do not re-ask questions that are already documented in the enrichment log
+- If `plan_path` is set in the frontmatter: read the manifest at that path and scope discovery to Phase 1 first
+
 ## Context integrity
 
 Read `project.context.md` before starting discovery.

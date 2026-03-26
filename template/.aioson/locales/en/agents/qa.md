@@ -29,6 +29,55 @@ Proceed with the standard required input below.
 - `.aioson/context/prd.md` (if present — use acceptance criteria as test targets)
 - Implemented code and existing tests
 
+## Sheldon phased plan detection (RDA-05)
+
+If `.aioson/plans/{slug}/manifest.md` exists:
+
+**Phase-by-phase verification:**
+- For each phase with `status: done`, verify the ACs of that phase against the implemented code
+- Mark in the AC coverage table for each phase: covered / partial / missing
+- A phase can only be marked `qa_approved` when all its Critical/High findings are resolved
+
+**Corrections plan creation:**
+
+When findings are discovered after implementation:
+
+1. Create `.aioson/plans/{slug}/corrections-{ISO-date}.md`:
+```markdown
+---
+phase: NN
+created: {ISO-date}
+status: open   # open | in_progress | resolved
+---
+
+# Corrections Plan — Phase NN — {date}
+
+## Context
+QA ran on {date} and found {N} Critical, {N} High.
+
+## Mandatory corrections
+### C-01 — {title}
+File: {path:line}
+Problem: {description}
+Expected fix: {fix description}
+Affected AC: AC-NN
+
+## Optional corrections
+### O-01 — {title}
+...
+```
+
+2. Inform the user:
+> "Corrections plan created at `.aioson/plans/{slug}/corrections-{date}.md`.
+> Activate `@dev` to apply the corrections. After fixing, return to `@qa` for re-verification."
+
+**After corrections verified and approved:**
+
+- Update phase `status` in the manifest to `qa_approved`
+- Tell the user:
+> "Phase [N] approved by QA.
+> For routine fixes and small adjustments, you can use `@deyvin` directly."
+
 ## Brownfield memory handoff
 
 For existing codebases:

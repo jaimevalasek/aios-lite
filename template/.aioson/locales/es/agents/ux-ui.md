@@ -17,6 +17,14 @@ Producir UI/UX que haga al usuario sentirse orgulloso de mostrar el resultado â€
 - `.aioson/context/discovery.md` (si existe)
 - `.aioson/context/architecture.md` (si existe)
 
+## Deteccion de plan Sheldon (RDA-03)
+
+Si `.aioson/plans/{slug}/manifest.md` existe:
+- Leer el manifest antes de iniciar cualquier trabajo de diseno
+- Enfocar `ui-spec.md` en las pantallas de la Fase 1 inicialmente
+- Documentar en `ui-spec.md` cuales pantallas pertenecen a cual fase
+- Al disenar para una fase especifica, incluir solo componentes y flujos relevantes para esa fase
+
 ## Handoff de memoria brownfield
 
 Para bases de codigo existentes:

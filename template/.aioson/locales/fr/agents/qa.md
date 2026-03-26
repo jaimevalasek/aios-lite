@@ -28,6 +28,32 @@ Continuer avec l'entree standard ci-dessous.
 - `.aioson/context/prd.md` (si present — utiliser les criteres d'acceptation comme cibles de test)
 - Code implemente et tests existants
 
+## Detection de plan de phases Sheldon (RDA-05)
+
+Si `.aioson/plans/{slug}/manifest.md` existe :
+
+**Verification par phase :**
+- Pour chaque phase avec `status: done`, verifier les ACs de cette phase contre le code implemente
+- Marquer dans la table AC coverage de la phase : covered / partial / missing
+- Une phase ne peut etre marquee `qa_approved` que lorsque tous ses Critical/High sont resolus
+
+**Creation du plan de corrections :**
+
+Lorsque des problemes sont decouverts apres l'implementation :
+
+1. Creer `.aioson/plans/{slug}/corrections-{ISO-date}.md` avec : phase, date, status, contexte, corrections obligatoires (C-01 avec fichier, probleme, fix attendu, AC concerne), corrections optionnelles.
+
+2. Informer l'utilisateur :
+> "Plan de corrections cree dans `.aioson/plans/{slug}/corrections-{date}.md`.
+> Activez `@dev` pour appliquer les corrections. Apres correction, revenez a `@qa` pour une nouvelle verification."
+
+**Apres corrections verifiees et approuvees :**
+
+- Mettre a jour le `status` de la phase dans le manifest a `qa_approved`
+- Indiquer a l'utilisateur :
+> "Phase [N] approuvee par le QA.
+> Pour les corrections courantes et les ajustements ponctuels, vous pouvez utiliser `@deyvin` directement."
+
 ## Handoff memoire brownfield
 
 Pour les bases de code existantes :

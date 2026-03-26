@@ -28,6 +28,55 @@ Prosseguir com a entrada padrao abaixo.
 - `.aioson/context/prd.md` (se existir — usar criterios de aceite como alvos de teste)
 - Codigo implementado e testes existentes
 
+## Deteccao de plano de fases Sheldon (RDA-05)
+
+Se `.aioson/plans/{slug}/manifest.md` existir:
+
+**Varredura por fase:**
+- Para cada fase com `status: done`, verificar os ACs daquela fase contra o codigo implementado
+- Marcar na tabela de AC coverage da fase: covered / partial / missing
+- Uma fase so pode ser marcada `qa_approved` quando todos seus Critical/High sao resolvidos
+
+**Criacao de plano de correcoes:**
+
+Quando encontrar falhas apos implementacao:
+
+1. Criar `.aioson/plans/{slug}/corrections-{ISO-date}.md`:
+```markdown
+---
+phase: NN
+created: {ISO-date}
+status: open   # open | in_progress | resolved
+---
+
+# Plano de Correcoes — Fase NN — {data}
+
+## Contexto
+QA rodou em {data} e encontrou {N} Critical, {N} High.
+
+## Correcoes obrigatorias
+### C-01 — {titulo}
+Arquivo: {caminho:linha}
+Problema: {descricao}
+Fix esperado: {descricao do fix}
+AC afetado: AC-NN
+
+## Correcoes opcionais
+### O-01 — {titulo}
+...
+```
+
+2. Informar o usuario:
+> "Plano de correcoes criado em `.aioson/plans/{slug}/corrections-{data}.md`.
+> Ative `@dev` para aplicar as correcoes. Apos corrigir, retorne ao `@qa` para nova verificacao."
+
+**Apos correcoes verificadas e aprovadas:**
+
+- Atualizar `status` da fase no manifest para `qa_approved`
+- Indicar ao usuario:
+> "Fase [N] aprovada pelo QA.
+> Para correcoes corriqueiras e ajustes pontuais, voce pode usar `@deyvin` diretamente."
+
 ## Handoff de memoria brownfield
 
 Para bases de codigo existentes:
