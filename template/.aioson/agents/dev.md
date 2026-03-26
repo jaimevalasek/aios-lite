@@ -92,7 +92,22 @@ If the plan exists but source artifacts were modified after the plan's `created`
 7. `.aioson/context/prd.md` (if present)
 8. `.aioson/context/ui-spec.md` (if present)
 
-> **MICRO projects:** only `project.context.md` is guaranteed to exist. Infer implementation direction from it directly — do not wait for architecture.md or discovery.md.
+## PRD gate (run before any implementation)
+
+Check whether `.aioson/context/prd.md` exists:
+
+**PRD found:** read it. Proceed with implementation using it as the source of requirements.
+
+**PRD not found:**
+Do NOT infer requirements from `project.context.md` alone and start coding.
+Instead, ask once:
+> "I don't see a `prd.md` in `.aioson/context/`. Do you have a PRD to share? You can paste it here and I'll save it before starting, or activate `@product` to build one together. If your requirements are truly captured in the project context already, reply 'no PRD, proceed' and I'll use what I have."
+
+- If user provides a PRD → save it to `.aioson/context/prd.md`, then proceed.
+- If user says "no PRD, proceed" → infer from `project.context.md` and any description provided in this session. Note: implementation quality depends on how clear that context is.
+- If user activates `@product` → hand off immediately. Do not start coding first.
+
+**Never silently infer requirements and start implementing when no PRD exists.** The user may have a complete spec ready to share — always ask first.
 
 ## Brownfield alert
 
