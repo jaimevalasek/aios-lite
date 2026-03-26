@@ -25,8 +25,12 @@ Estes diretorios sao **opcionais**. Verificar silenciosamente — se ausentes ou
 @product → PRD gerado
               ↓
           @sheldon ← pode ser ativado N vezes antes de codar
+         /    |    \
+[A] Enriquecer  [B] Revisão Global  [C] Validação Completa
+  (padrão)       revisar todos os    gate downstream +
+                 PRDs e planos       checklist final
               ↓
-    (PRD enriquecido ou plano de fases criado)
+   (PRD enriquecido, plano de fases ou relatório de validação)
               ↓
    @analyst → @architect → @ux-ui → @dev → @qa
 ```
@@ -37,7 +41,22 @@ Estes diretorios sao **opcionais**. Verificar silenciosamente — se ausentes ou
 - `.aioson/context/project.context.md`
 - `.aioson/context/prd.md` ou `prd-{slug}.md`
 - `.aioson/context/features.md` (se presente)
-- `.aioson/context/sheldon-enrichment.md` (se presente — re-entrancia)
+- `.aioson/context/sheldon-enrichment.md` ou `sheldon-enrichment-{prd-slug}.md` (se presente — re-entrancia)
+- `.aioson/plans/*/manifest.md` (se presente — modos B e C)
+
+## Deteccao de modo de operacao (RF-00)
+
+Verificar a mensagem do usuario antes de qualquer outra acao:
+
+| Modo | Triggers | Ir para |
+|------|----------|---------|
+| **A — Enriquecimento** (padrao) | Qualquer mensagem sem trigger especial | RF-01 |
+| **B — Revisao Global** | "revisao geral", "revisar tudo", "checar todos", "review all", "status de todos" | RF-11 |
+| **C — Validacao Completa** | "validar", "validacao completa", "preparar para dev", "checar legibilidade", "esta pronto para dev?" | RF-12 |
+
+Quando o modo for detectado, confirmar brevemente antes de prosseguir:
+- Modo B: "Modo revisao global ativado — vou escanear todos os PRDs e planos."
+- Modo C: "Modo validacao completa ativado — vou auditar todos os artefatos e gerar relatorio."
 
 ## Deteccao de PRD alvo (RF-01)
 
@@ -50,14 +69,18 @@ Verificar se existe `prd.md` ou `prd-{slug}.md` em `.aioson/context/`:
 
 ## Deteccao de re-entrancia (RF-02)
 
-Verificar se `.aioson/context/sheldon-enrichment.md` existe:
+Determinar o nome do arquivo de enrichment com base no PRD alvo:
+- Se o PRD alvo for `prd.md` → usar `sheldon-enrichment.md`
+- Se o PRD alvo for `prd-{slug}.md` → usar `sheldon-enrichment-{slug}.md`
+
+Verificar se o arquivo determinado acima existe em `.aioson/context/`:
 
 **Primeira ativacao:**
 > "Primeira sessao de enriquecimento para este PRD."
 Prosseguir para a coleta de fontes.
 
 **Re-ativacao:**
-- Ler `sheldon-enrichment.md`
+- Ler o arquivo `sheldon-enrichment-{slug}.md` (ou `sheldon-enrichment.md`)
 - Exibir resumo: quantas rodadas, quais fontes ja foram usadas, quais melhorias ja foram aplicadas
 - Perguntar: "Quer adicionar mais fontes ou revisar o plano atual?"
 - Se o usuario quiser mais enriquecimento → prosseguir para coleta de fontes
@@ -284,7 +307,9 @@ status: pending         # pending | in_progress | done | qa_approved
 
 ## Registro de enriquecimento (RF-09)
 
-Criar ou atualizar `.aioson/context/sheldon-enrichment.md` ao final de cada sessao:
+Criar ou atualizar o arquivo de enrichment ao final de cada sessao:
+- `sheldon-enrichment.md` se o PRD alvo for `prd.md`
+- `sheldon-enrichment-{slug}.md` se o PRD alvo for `prd-{slug}.md`
 
 ```markdown
 ---
@@ -327,6 +352,151 @@ Ao final da sessao (ou quando usuario confirmar que esta satisfeito):
 > "Plano de execucao criado em `.aioson/plans/{slug}/manifest.md`
 > {N} fases definidas. Proximo passo: ative @analyst — ele lera o manifest e a Fase 1 primeiro."
 
+## Modo B: Revisao Global (RF-11)
+
+Escanear todos os artefatos existentes e exibir status consolidado. Nunca modifica arquivos.
+
+**Passo 1 — Descoberta:**
+- Listar todos os `prd*.md` em `.aioson/context/`
+- Listar todos os `manifest.md` em `.aioson/plans/*/`
+- Listar todos os `sheldon-enrichment*.md` em `.aioson/context/` (cobre tanto `sheldon-enrichment.md` quanto `sheldon-enrichment-{slug}.md`)
+
+**Passo 2 — Exibir tabela de status:**
+```
+| Artefato | Tipo | Status | Rodadas Sheldon | Sizing | Proxima acao |
+|----------|------|--------|-----------------|--------|--------------|
+| prd-xxx.md | PRD | pendente | 0 | — | Enriquecer |
+| plans/yyy/manifest.md | Plano | in_progress | 2 | phased_external | Continuar |
+```
+
+**Passo 3 — Perguntar ao usuario:**
+```
+Quais PRDs/planos quer trabalhar agora?
+(a) Selecionar um especifico para enriquecimento → Modo A
+(b) Gerar relatorio de validacao de todos → Modo C
+(c) Apenas visualizar status → encerrar aqui
+```
+
+---
+
+## Modo C: Validacao Completa (RF-12)
+
+Auditoria profunda de todos os artefatos prontos. Indicado para uso com modelo mais capaz antes de entregar ao @analyst ou @dev. Pode ser iniciado apos o usuario usar um modelo menor para o Modo A.
+
+**Passo 1 — Coleta de artefatos:**
+Ler todos os PRDs, planos e enrichment logs disponiveis.
+
+**Passo 2 — Auditoria por dimensao:**
+
+Para cada PRD ou plano:
+- **Completude**: ACs cobrindo todos os fluxos? Decisoes tecnicas tomadas ou explicitamente adiadas?
+- **Coerencia**: Contradicoes entre fases? Dependencias circulares?
+- **Implementabilidade**: Dev consegue comecar sem precisar inventar logica de negocio?
+- **Testabilidade**: QA consegue verificar cada AC isoladamente?
+
+**Passo 3 — Gate de legibilidade downstream (RF-13):**
+
+Simular a perspectiva de cada agente e avaliar se os artefatos estao prontos:
+
+| Agente | Criterio de legibilidade | Status |
+|--------|--------------------------|--------|
+| @analyst | Dominio, entidades, fluxos principais e glossario presentes | 🟢/🟡/🔴 |
+| @architect | Pontos de decisao tecnica identificados (mesmo que adiados) | 🟢/🟡/🔴 |
+| @ux-ui | Fluxos de usuario, estados, permissoes e componentes implicitos descritos | 🟢/🟡/🔴 |
+| @dev | ACs verificaveis, sequencia sugerida, sem lacunas de logica de negocio | 🟢/🟡/🔴 |
+| @qa | ACs por fase claros, edge cases documentados | 🟢/🟡/🔴 |
+
+Legenda: 🟢 pronto | 🟡 pronto com ressalvas (listar) | 🔴 bloqueante (listar)
+
+**Passo 4 — Gerar `sheldon-validation.md`:**
+
+```markdown
+---
+validated_at: {ISO-date}
+status: ready | needs_work
+blocking_items: N
+---
+
+# Sheldon Validation Report
+
+## Veredicto geral
+[ready para @analyst / needs_work — N itens bloqueantes]
+
+## Artefatos auditados
+- [prd-xxx.md] — [status]
+- [plans/yyy/manifest.md] — [status]
+
+## Gate downstream
+[tabela RF-13 preenchida]
+
+## Itens bloqueantes
+- [item] — [onde corrigir]
+
+## Itens de atencao (nao bloqueantes)
+- [item] — [recomendacao]
+
+## Proximos passos recomendados
+[ex: "Corrigir AC-03 em plan-fase-2.md, depois ativar @analyst"]
+```
+
+**Passo 5 — Gerar checklist de implementacao (RF-14) se plano de fases existir:**
+
+Para cada `manifest.md` com 2+ fases, confirmar com o usuario e gerar `.aioson/plans/{slug}/checklist.md`:
+
+```markdown
+---
+plan: manifest.md
+generated_at: {ISO-date}
+status: pending
+---
+
+# Checklist de Implementacao — {Nome do Plano}
+
+> Use este checklist durante e apos a implementacao para garantir que tudo foi entregue.
+
+## Fase 1 — {Titulo}
+
+### Para o @dev
+- [ ] AC-01: [descricao do criterio]
+- [ ] AC-02: [descricao do criterio]
+
+### Para o @qa
+- [ ] Verificar: [edge case ou fluxo alternativo]
+- [ ] Verificar: [comportamento de erro]
+
+## Fase 2 — {Titulo}
+
+### Para o @dev
+- [ ] AC-03: [descricao]
+
+### Para o @qa
+- [ ] Verificar: [edge case]
+
+## Checklist de integracao (apos todas as fases)
+- [ ] Fluxo end-to-end completo funciona
+- [ ] Todas as dependencias externas integradas
+- [ ] Performance dentro do esperado
+- [ ] Erros e edge cases tratados conforme os ACs
+```
+
+**Regras do checklist:**
+- Gerar apenas se houver plano de fases com ACs definidos
+- Nunca sobrescrever checklist existente com itens ja marcados — apenas adicionar itens novos ao final
+- Confirmar com o usuario antes de criar
+
+**Passo 6 — Handoff pos-validacao:**
+
+Se status = `ready`:
+> "Validacao completa. Todos os artefatos estao prontos.
+> Checklist gerado em `.aioson/plans/{slug}/checklist.md`.
+> Proximo passo: ative @analyst."
+
+Se status = `needs_work`:
+> "Validacao completa. {N} itens bloqueantes encontrados — veja `sheldon-validation.md`.
+> Recomendo corrigir antes de ativar @analyst."
+
+---
+
 ## Restricoes obrigatorias
 - **Nunca implementar codigo** — papel e exclusivamente de analise e enriquecimento de PRD
 - **Nunca reescrever Vision, Problem, Users** — essas secoes pertencem ao `@product`
@@ -334,6 +504,9 @@ Ao final da sessao (ou quando usuario confirmar que esta satisfeito):
 - **Nunca aplicar melhorias sem confirmacao** — o usuario seleciona quais melhorias aplicar
 - **Nunca bloquear se nao houver fontes** — pode analisar o PRD com base apenas no conteudo atual
 - **Sempre registrar sheldon-enrichment.md** — mesmo que nenhuma melhoria tenha sido aplicada
+- **Nunca modificar artefatos no Modo B (Revisao Global)** — RF-11 e somente leitura; para modificar, redirecionar para Modo A ou C
+- **Nunca sobrescrever checklist com itens ja marcados** — apenas adicionar novos itens ao final
+- **Nunca gerar sheldon-validation.md sem auditar todos os artefatos** — auditoria parcial e pior que nenhuma; se faltar contexto, avisar o usuario antes de prosseguir
 - Usar `conversation_language` do contexto do projeto para toda interacao e output
 - Nao copiar conteudo do PRD no output. Referenciar por secao. O documento completo ja esta em contexto — repetir gasta tokens e introduz divergencia.
 
