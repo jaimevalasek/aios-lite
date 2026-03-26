@@ -52,12 +52,16 @@ Proceed with detection and full onboarding below.
 
 `@setup` must not make `@discovery-design-doc` mandatory.
 
-After setup, recommend the next step contextually:
+After setup, recommend the next step contextually using the routing table in section 4:
 
-- **Go straight to `@dev`** when the request is small, clear, and already has enough context
-- **Recommend `@discovery-design-doc`** when the scope is ambiguous, the feature is large, rework risk is high, or there is still no good `design-doc.md`
+- **Go straight to `@dev`** only when a complete PRD already exists AND there is no detailed visual spec
+- **Recommend `@product`** when no PRD exists yet — even for MICRO web_app projects
+- **Recommend `@ux-ui`** when a PRD exists and it has a detailed visual spec (colors, typography, animations, custom theme)
+- **Recommend `@discovery-design-doc`** when the scope is ambiguous, the feature is large, or rework risk is high
 - **Recommend `@analyst`** when the main problem is domain modeling, entities, and business rules
 - **Recommend `@architect`** when discovery is already mature and the main need is technical direction
+
+Never route a `web_app` directly to `@dev` when the project has no PRD yet — even MICRO projects need at least a clear product definition before coding.
 
 If the user asks for operational visualization or the local AIOSON dashboard:
 
@@ -457,17 +461,27 @@ If `framework_installed=true` (code was detected in the workspace), always inclu
 
 After setup is complete, always close with the recommended next step. Use the exact `@agent` name so the AI client (Codex, Claude Code, Gemini) can trigger it:
 
-| project_type | classification | Next agent |
-|---|---|---|
-| `site` | any | **@ux-ui** |
-| `web_app` / `api` / `script` | MICRO | **@product** (optional) or **@dev** |
-| `web_app` / `api` | SMALL | **@product** → then @analyst |
-| `web_app` / `api` | MEDIUM | **@product** → then @analyst → @architect |
-| `dapp` | any | **@product** (optional) → then @analyst |
+| project_type | classification | PRD / visual spec? | Next agent |
+|---|---|---|---|
+| `site` | any | — | **@ux-ui** |
+| `web_app` | MICRO | No PRD yet — requirements not defined | **@product** |
+| `web_app` | MICRO | PRD exists, no detailed visual spec | **@dev** |
+| `web_app` | MICRO | PRD exists, detailed visual spec (colors, typography, animations, custom theme) | **@ux-ui** → then @dev |
+| `web_app` / `api` | SMALL | — | **@product** → then @analyst |
+| `web_app` / `api` | MEDIUM | — | **@product** → then @analyst → @architect |
+| `api` / `script` | MICRO | — | **@dev** |
+| `dapp` | any | — | **@product** → then @analyst |
+
+**Routing rules:**
+- `@product` is NOT optional for `web_app` MICRO when there is no PRD yet. Skip it only when a clear, complete PRD already exists in `.aioson/context/`.
+- A "detailed visual spec" means the PRD or user description includes 2+ of: specific color palette, typography choices, animation/motion requirements, depth effects (glassmorphism, shadows), or an overall aesthetic direction (futuristic, branded, etc.). "Clean and responsive" does NOT qualify.
+- When in doubt between `@product` and `@dev`, prefer `@product` — an unclear PRD produces poor implementation.
 
 Say it clearly at the end of setup, for example:
-> "Setup complete. Next step: activate **@ux-ui** to design your landing page."
+> "Setup complete. Next step: activate **@product** to define what you're building."
 > or
-> "Setup complete. Next step: activate **@analyst** to map out the requirements."
+> "Setup complete. Next step: activate **@ux-ui** — your PRD has a detailed visual spec that needs a `ui-spec.md` before implementation."
+> or
+> "Setup complete. Next step: activate **@dev** — your PRD is clear and no visual spec is needed."
 
 This ensures the user knows exactly what to do next without having to remember the workflow sequence.
