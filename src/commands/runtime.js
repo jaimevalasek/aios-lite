@@ -1159,6 +1159,72 @@ async function runRuntimeLog({ args, options = {}, logger, t }) {
 }
 
 
+/**
+ * aioson agent:done . --agent=<name> --summary="..." [--title="..."] [--status=completed|failed]
+ *
+ * Safe self-registration for official agents invoked directly (not via workflow:next or live:start).
+ * - If an active live session exists for the agent: appends a completion event without closing the session.
+ * - If no session exists: creates a standalone task+run and immediately marks it completed.
+ *
+ * Intended to be called ONCE at the very end of an agent session, after delivering the main artifact.
+ */
+async function runAgentDone({ args, options = {}, logger, t }) {
+  const targetDir = resolveTargetDir(args);
+  const agentName = String(options.agent || '').trim();
+  if (!agentName) {
+    throw new Error('--agent is required');
+  }
+  const normalizedAgent = agentName.startsWith('@') ? agentName : `@${agentName}`;
+  const summary = String(options.summary || options.message || `${normalizedAgent} session completed`).trim();
+  const title = options.title ? String(options.title).trim() : null;
+  const status = options.status || 'completed';
+
+  const { db, dbPath, runtimeDir } = await openRuntimeDb(targetDir);
+
+  try {
+    const session = await readAgentSession(runtimeDir, normalizedAgent);
+    const hasActiveSession = session && !session.finished && session.runKey;
+
+    if (hasActiveSession) {
+      // Live or tracked session is already open — only append a completion note.
+      // Do NOT close the session: live:handoff or live:close owns the lifecycle.
+      appendRunEvent(db, {
+        runKey: session.runKey,
+        eventType: 'agent_done',
+        phase: 'live',
+        status: 'running',
+        message: summary
+      });
+
+      if (!options.json) {
+        logger.log(`agent:done — ${normalizedAgent} | live session active, event logged | run: ${session.runKey} (${dbPath})`);
+      }
+
+      return { ok: true, targetDir, dbPath, agent: normalizedAgent, mode: 'live_event', runKey: session.runKey };
+    }
+
+    // No active session — create a standalone task+run and immediately complete it.
+    const { runKey, taskKey } = await logAgentEvent(db, runtimeDir, {
+      agentName: normalizedAgent,
+      message: summary,
+      type: 'completed',
+      taskTitle: title || normalizedAgent,
+      finish: true,
+      status,
+      summary
+    });
+
+    if (!options.json) {
+      logger.log(`agent:done — ${normalizedAgent} | task: ${taskKey} | run: ${runKey} (${dbPath})`);
+    }
+
+    return { ok: true, targetDir, dbPath, agent: normalizedAgent, mode: 'standalone', runKey, taskKey };
+  } finally {
+    db.close();
+  }
+}
+
+
 async function runRuntimeSessionStart({ args, options = {}, logger, t }) {
   const targetDir = resolveTargetDir(args);
   const { db, dbPath, runtimeDir } = await openRuntimeDb(targetDir);
@@ -1684,6 +1750,171 @@ function parseFrontmatter(content) {
 }
 
 /**
+ * Parses a duration string like "24h", "30m", "7d" into milliseconds.
+ * Falls back to treating the raw value as hours.
+ */
+function parseDurationMs(value, defaultHours = 24) {
+  const text = String(value || '').trim().toLowerCase();
+  if (!text) return defaultHours * 60 * 60 * 1000;
+
+  const match = text.match(/^(\d+(?:\.\d+)?)\s*([hmd]?)$/);
+  if (!match) return defaultHours * 60 * 60 * 1000;
+
+  const n = parseFloat(match[1]);
+  const unit = match[2] || 'h';
+  if (unit === 'd') return n * 24 * 60 * 60 * 1000;
+  if (unit === 'm') return n * 60 * 1000;
+  return n * 60 * 60 * 1000; // hours (default)
+}
+
+/**
+ * aioson agent:recover [targetDir] [--older-than=<duration>] [--dry-run]
+ *
+ * Detects and closes agent sessions that were abandoned (Claude Code closed before
+ * agent:done was called, or live:start session was never closed).
+ *
+ * Sources checked:
+ *   1. Session files in .aioson/.sessions/ with finished=false older than threshold.
+ *   2. agent_runs rows with status='running'/'queued' and started_at older than threshold
+ *      that have no corresponding live session file (orphaned DB records).
+ *
+ * --older-than  Duration threshold. Accepts: 24h (default), 8h, 30m, 7d.
+ * --dry-run     Report what would be recovered without making any changes.
+ * --json        Output JSON result.
+ */
+async function runAgentRecover({ args, options = {}, logger }) {
+  const targetDir = resolveTargetDir(args);
+  const dryRun = Boolean(options['dry-run'] || options.dryRun);
+  const olderThanMs = parseDurationMs(options['older-than'] || options.olderThan, 24);
+  const cutoffMs = Date.now() - olderThanMs;
+  const cutoffIso = new Date(cutoffMs).toISOString();
+  const now = new Date().toISOString();
+
+  const { db, dbPath, runtimeDir } = await openRuntimeDb(targetDir);
+
+  const recovered = [];
+  const skipped = [];
+
+  try {
+    // ── 1. Scan session files ─────────────────────────────────────────────────
+    const sessionsDir = path.join(runtimeDir, '.sessions');
+    let sessionFiles = [];
+    try {
+      const entries = await fs.readdir(sessionsDir);
+      sessionFiles = entries.filter((f) => f.endsWith('.json'));
+    } catch {
+      // .sessions dir may not exist — that's fine
+    }
+
+    for (const file of sessionFiles) {
+      const filePath = path.join(sessionsDir, file);
+      let session;
+      try {
+        session = JSON.parse(await fs.readFile(filePath, 'utf8'));
+      } catch {
+        continue;
+      }
+
+      if (session.finished) continue;
+
+      const startedAt = session.startedAt ? new Date(session.startedAt).getTime() : 0;
+      if (startedAt > cutoffMs) {
+        skipped.push({ source: 'session_file', file, reason: 'within_threshold', startedAt: session.startedAt });
+        continue;
+      }
+
+      const agentName = file.replace(/\.json$/, '');
+      const runKey = session.runKey || null;
+      const taskKey = session.taskKey || null;
+
+      if (!dryRun) {
+        // Mark run as abandoned
+        if (runKey) {
+          const runRow = db.prepare('SELECT run_key, status FROM agent_runs WHERE run_key = ?').get(runKey);
+          if (runRow && (runRow.status === 'running' || runRow.status === 'queued')) {
+            db.prepare(`
+              UPDATE agent_runs
+              SET status = 'abandoned', summary = 'Recovered: session abandoned without close', updated_at = ?, finished_at = ?
+              WHERE run_key = ?
+            `).run(now, now, runKey);
+          }
+        }
+        // Mark task as abandoned
+        if (taskKey) {
+          const taskRow = db.prepare('SELECT task_key, status FROM tasks WHERE task_key = ?').get(taskKey);
+          if (taskRow && (taskRow.status === 'running' || taskRow.status === 'queued')) {
+            db.prepare(`
+              UPDATE tasks
+              SET status = 'abandoned', updated_at = ?, finished_at = ?
+              WHERE task_key = ?
+            `).run(now, now, taskKey);
+          }
+        }
+        // Remove session file
+        try { await fs.unlink(filePath); } catch { /* noop */ }
+      }
+
+      recovered.push({ source: 'session_file', agent: agentName, runKey, taskKey, startedAt: session.startedAt });
+    }
+
+    // ── 2. Scan DB for orphaned running runs (no session file) ────────────────
+    const orphanedRuns = db.prepare(`
+      SELECT run_key, task_key, agent_name, started_at
+      FROM agent_runs
+      WHERE status IN ('running', 'queued')
+        AND source = 'direct'
+        AND started_at < ?
+    `).all(cutoffIso);
+
+    for (const run of orphanedRuns) {
+      // Skip if already recovered via session file
+      if (recovered.some((r) => r.runKey === run.run_key)) continue;
+
+      if (!dryRun) {
+        db.prepare(`
+          UPDATE agent_runs
+          SET status = 'abandoned', summary = 'Recovered: orphaned run with no session file', updated_at = ?, finished_at = ?
+          WHERE run_key = ?
+        `).run(now, now, run.run_key);
+
+        if (run.task_key) {
+          const taskRow = db.prepare('SELECT task_key, status FROM tasks WHERE task_key = ?').get(run.task_key);
+          if (taskRow && (taskRow.status === 'running' || taskRow.status === 'queued')) {
+            db.prepare(`
+              UPDATE tasks
+              SET status = 'abandoned', updated_at = ?, finished_at = ?
+              WHERE task_key = ?
+            `).run(now, now, run.task_key);
+          }
+        }
+      }
+
+      recovered.push({ source: 'orphaned_run', agent: run.agent_name, runKey: run.run_key, taskKey: run.task_key, startedAt: run.started_at });
+    }
+
+    // ── Output ────────────────────────────────────────────────────────────────
+    const olderThanLabel = options['older-than'] || options.olderThan || '24h';
+    if (recovered.length === 0) {
+      logger.log(`agent:recover — no abandoned sessions found older than ${olderThanLabel} (${dbPath})`);
+    } else {
+      const verb = dryRun ? '[dry-run] would recover' : 'recovered';
+      logger.log(`agent:recover — ${verb} ${recovered.length} abandoned session(s) older than ${olderThanLabel} (${dbPath})`);
+      for (const r of recovered) {
+        logger.log(`  ${r.agent}  started: ${r.startedAt || '?'}  run: ${r.runKey || '—'}  [${r.source}]`);
+      }
+    }
+    if (skipped.length > 0) {
+      logger.log(`  skipped ${skipped.length} session(s) within threshold.`);
+    }
+
+    return { ok: true, targetDir, dbPath, dryRun, cutoff: cutoffIso, recovered, skipped };
+  } finally {
+    db.close();
+  }
+}
+
+
+/**
  * aioson runtime:prune [targetDir] --older-than=<days>
  *
  * Removes execution_events, agent_events, and completed agent_runs
@@ -1767,6 +1998,8 @@ module.exports = {
   runRuntimeFail,
   runRuntimeStatus,
   runRuntimeLog,
+  runAgentDone,
+  runAgentRecover,
   runRuntimeSessionStart,
   runRuntimeSessionLog,
   runRuntimeSessionFinish,

@@ -52,8 +52,8 @@ When running Claude Code directly (without `aioson workflow:next`), these rules 
 - Use `aioson runtime:emit . --agent=<agent> --type=plan_checkpoint --plan-step=<step>` when the session is attached to an explicit plan and a step has just been completed.
 - Use `aioson live:handoff . --agent=<agent> --to=<next-agent> --reason="..."` when the active agent must transfer the same live session to another AIOSON agent.
 - Monitor active live sessions with `aioson live:status . --agent=<agent> --watch=2` and close them with `aioson live:close . --agent=<agent> --summary="..."`.
-- Plain slash-command activation can execute agent instructions, but does not guarantee runtime records in the dashboard by itself.
-- Do not try to synthesize dashboard telemetry by emitting `aioson runtime-log` shell snippets from inside the session.
+- Plain slash-command activation registers in the dashboard automatically via `aioson agent:done` at the end of each agent session — each agent file has the call in its "Observability" section.
+- Do not call `aioson runtime-log` directly from inside the session — use `aioson agent:done` instead, which is safe in both direct and live-session contexts.
 
 ## Golden rule
 Small project, small solution.

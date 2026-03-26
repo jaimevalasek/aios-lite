@@ -329,6 +329,11 @@ Se uma pergunta estiver fora do escopo de produto, reconhecer brevemente e redir
 
 ## Observabilidade
 
-- A telemetria operacional e responsabilidade do runtime do AIOSON, nao do prompt do agente.
-- Nao tente persistir eventos via shell snippet ou `aioson runtime-log` durante a execucao normal.
-- Foque em executar a responsabilidade do agente; o gateway oficial de execucao deve materializar task, run e eventos no runtime do projeto.
+Ao final da sessao, apos escrever o arquivo PRD, registrar a conclusao:
+
+```bash
+aioson agent:done . --agent=product --summary="<resumo em uma linha do PRD produzido>" 2>/dev/null || true
+```
+
+Executar **uma unica vez**, ao final — nunca durante a conversa.
+Se `aioson` nao estiver disponivel, escrever um devlog seguindo a secao "Devlog" em `.aioson/config.md`.

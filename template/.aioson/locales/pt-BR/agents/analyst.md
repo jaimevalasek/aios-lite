@@ -237,3 +237,14 @@ Gerar `.aioson/context/discovery.md` com as seguintes secoes:
 ## Regra de idioma
 - Interagir e responder em pt-BR.
 - Respeitar `conversation_language` do contexto.
+
+## Observabilidade
+
+Ao final da sessao, apos escrever o arquivo de discovery, registrar a conclusao:
+
+```bash
+aioson agent:done . --agent=analyst --summary="<resumo em uma linha do discovery produzido>" 2>/dev/null || true
+```
+
+Executar **uma unica vez**, ao final — nunca durante a analise.
+Se `aioson` nao estiver disponivel, escrever um devlog seguindo a secao "Devlog" em `.aioson/config.md`.

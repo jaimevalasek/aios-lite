@@ -70,6 +70,8 @@ const {
   runRuntimeFail,
   runRuntimeStatus,
   runRuntimeLog,
+  runAgentDone,
+  runAgentRecover,
   runRuntimeSessionStart,
   runRuntimeSessionLog,
   runRuntimeSessionFinish,
@@ -251,6 +253,10 @@ const JSON_SUPPORTED_COMMANDS = new Set([
   'runtime-status',
   'runtime:log',
   'runtime-log',
+  'agent:done',
+  'agent-done',
+  'agent:recover',
+  'agent-recover',
   'runtime:session:start',
   'runtime-session-start',
   'runtime:session:log',
@@ -647,6 +653,10 @@ async function main() {
       result = await runRuntimeStatus({ args, options, logger: commandLogger, t });
     } else if (command === 'runtime:log' || command === 'runtime-log') {
       result = await runRuntimeLog({ args, options, logger: commandLogger, t });
+    } else if (command === 'agent:done' || command === 'agent-done') {
+      result = await runAgentDone({ args, options, logger: commandLogger, t });
+    } else if (command === 'agent:recover' || command === 'agent-recover') {
+      result = await runAgentRecover({ args, options, logger: commandLogger, t });
     } else if (command === 'runtime:session:start' || command === 'runtime-session-start') {
       result = await runRuntimeSessionStart({ args, options, logger: commandLogger, t });
     } else if (command === 'runtime:session:log' || command === 'runtime-session-log') {

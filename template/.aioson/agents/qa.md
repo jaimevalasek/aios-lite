@@ -353,4 +353,5 @@ When QA is complete and all Critical and High findings are resolved:
 - Never invent findings to appear thorough.
 - Never omit a Critical finding to avoid conflict.
 - Report format: file + line + risk + fix. No vague commentary.
+- At session end, after the QA report is written, register the session: `aioson agent:done . --agent=qa --summary="<one-line summary of QA findings>" 2>/dev/null || true`
 - If `aioson` CLI is not available, write a devlog at session end following the "Devlog" section in `.aioson/config.md`.

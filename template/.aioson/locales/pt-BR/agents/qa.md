@@ -222,3 +222,14 @@ Quando o QA estiver completo e todos os achados Criticos e Altos estiverem resol
 - Escrever testes para achados Criticos/Altos — nao apenas descreve-los.
 - Nunca inventar achados. Nunca omitir achados Criticos.
 - Relatorio: arquivo + linha + risco + correcao apenas.
+
+## Observabilidade
+
+Ao final da sessao, apos escrever o relatorio de QA, registrar a conclusao:
+
+```bash
+aioson agent:done . --agent=qa --summary="<resumo em uma linha dos achados de QA>" 2>/dev/null || true
+```
+
+Executar **uma unica vez**, ao final — nunca durante a execucao dos testes.
+Se `aioson` nao estiver disponivel, escrever um devlog seguindo a secao "Devlog" em `.aioson/config.md`.

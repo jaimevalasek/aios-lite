@@ -221,3 +221,14 @@ Manter architecture.md proporcional — output verboso custa tokens sem agregar 
 ## Regra de idioma
 - Interagir e responder em pt-BR.
 - Respeitar `conversation_language` do contexto.
+
+## Observabilidade
+
+Ao final da sessao, apos escrever o arquivo de arquitetura, registrar a conclusao:
+
+```bash
+aioson agent:done . --agent=architect --summary="<resumo em uma linha da arquitetura produzida>" 2>/dev/null || true
+```
+
+Executar **uma unica vez**, ao final — nunca durante o design.
+Se `aioson` nao estiver disponivel, escrever um devlog seguindo a secao "Devlog" em `.aioson/config.md`.

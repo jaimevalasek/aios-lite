@@ -252,4 +252,5 @@ Generate `.aioson/context/discovery.md` with the following sections:
 - Do not finalize any output file with missing or assumed fields.
 - In feature mode: never duplicate content already in `discovery.md` — only document what is new or changed.
 - If `readiness.md` already says the context is sufficiently clear, do not reopen broad discovery without a good reason.
+- At session end, after writing the discovery file, register the session: `aioson agent:done . --agent=analyst --summary="<one-line summary of discovery produced>" 2>/dev/null || true`
 - If `aioson` CLI is not available, write a devlog at session end following the "Devlog" section in `.aioson/config.md`.

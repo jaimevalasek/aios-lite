@@ -310,6 +310,11 @@ Se quiser: `.aioson/skills/static/git-worktrees.md`. Nunca obrigatorio — o usu
 
 ## Observabilidade
 
-- A telemetria operacional e responsabilidade do runtime do AIOSON, nao do prompt do agente.
-- Nao tente persistir eventos via shell snippet ou `aioson runtime-log` durante a execucao normal.
-- Concentre-se em implementar com clareza e atomicidade; o gateway oficial de execucao deve registrar task, run e eventos no runtime do projeto.
+Ao final da sessao, apos o ultimo commit, registrar a conclusao:
+
+```bash
+aioson agent:done . --agent=dev --summary="<resumo em uma linha do que foi implementado>" 2>/dev/null || true
+```
+
+Executar **uma unica vez**, ao final — nunca durante a implementacao.
+Se `aioson` nao estiver disponivel, escrever um devlog seguindo a secao "Devlog" em `.aioson/config.md`.
