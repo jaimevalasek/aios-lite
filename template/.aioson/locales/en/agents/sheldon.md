@@ -171,6 +171,13 @@ After the user approves improvements and sizing:
 - **Never** rewrite Vision, Problem, Users — those sections belong to `@product`
 - If a section already exists, expand with additional bullets — do not replace the existing content
 - Keep the style and detail level consistent with the original PRD
+- **Sources**: add (or update) a `## Reference sources (sheldon)` section at the end of the PRD listing all URLs and files analyzed — `@dev` can consult them during implementation for deeper context:
+  ```markdown
+  ## Reference sources (sheldon)
+  > Documents and links analyzed during enrichment. Consult if you need more details.
+
+  - [Type] [brief description] — `[URL or path]`
+  ```
 
 ## Path B: External phased plan (RF-08) — Score 7+
 
@@ -178,11 +185,13 @@ Create structure in `.aioson/plans/{slug}/`:
 
 ```
 .aioson/plans/{slug}/
-├── manifest.md          ← phase index, status, dependencies
-├── plan-01.md           ← Phase 1: scope, entities, ACs, dev sequence
-├── plan-02.md           ← Phase 2: same
-└── plan-N.md            ← Phase N: same
+├── manifest.md                     ← phase index, status, dependencies, global sources
+├── plan-{phase-slug-1}.md          ← Phase 1: scope, entities, ACs, dev sequence, sources
+├── plan-{phase-slug-2}.md          ← Phase 2: same
+└── plan-{phase-slug-N}.md          ← Phase N: same
 ```
+
+**Phase file names:** derive a descriptive slug from the phase title (e.g., `plan-authentication.md`, `plan-main-dashboard.md`, `plan-payment-integration.md`). Never use `plan-01.md` — the name must identify the content so `@dev` can find the right file without opening the manifest.
 
 ### manifest.md
 
@@ -203,27 +212,33 @@ status: ready           # ready | in_progress | done
 
 | Phase | File | Scope | Status | Dependencies |
 |-------|------|-------|--------|-------------|
-| 1 | plan-01.md | [summary] | pending | — |
-| 2 | plan-02.md | [summary] | pending | Phase 1 |
+| 1 | plan-{phase-slug-1}.md | [summary] | pending | — |
+| 2 | plan-{phase-slug-2}.md | [summary] | pending | Phase 1 |
 
 ## Pre-made decisions
 - [Decision A] — [reason]
 
 ## Deferred decisions
 - [Decision B] — [who decides and when]
+
+## Reference sources
+> Links and documents analyzed during enrichment. Consult for deeper context.
+
+- [Type] [brief description] — `[URL or path]`
 ```
 
-### plan-NN.md
+### plan-{phase-slug}.md
 
 ```markdown
 ---
-phase: NN
+phase: N
+slug: {phase-slug}
 title: {Phase Title}
-depends_on: [previous phase or null]
+depends_on: [previous-phase-slug or null]
 status: pending         # pending | in_progress | done | qa_approved
 ---
 
-# Phase NN — {Title}
+# Phase N — {Title}
 
 ## Scope of this phase
 [What this phase delivers]
@@ -251,14 +266,21 @@ status: pending         # pending | in_progress | done | qa_approved
 
 ## Notes for @qa
 [What to verify specifically in this phase]
+
+## Reference sources for this phase
+> Consult if you need more details during implementation.
+
+- [Type] [brief description] — `[URL or path]`
 ```
 
 **Creation rules:**
-- Create `manifest.md` first, confirm with user, then create `plan-NN.md` files
+- Create `manifest.md` first, confirm with user, then create `plan-{slug}.md` files
+- The slug for each phase must be unique within the plan and describe what the phase delivers
 - Each phase must be independently implementable (no circular dependencies)
 - ACs for each phase must be independently verifiable by QA
 - Pre-made decisions in the manifest are FINAL — downstream agents do not re-discuss
 - Deferred decisions are marked with who decides (dev, architect, user)
+- **Sources**: include in each `plan-{slug}.md` only the sources that informed that specific phase; include all sources in the manifest as a global reference
 
 ## Enrichment log (RF-09)
 

@@ -171,6 +171,13 @@ Apos o usuario aprovar as melhorias e o sizing:
 - **Nunca** reescrever Vision, Problem, Users — essas secoes pertencem ao `@product`
 - Se uma secao ja existir, expandir com bullets adicionais — nao substituir o existente
 - Manter o estilo e nivel de detalhe consistente com o PRD original
+- **Fontes**: adicionar (ou atualizar) uma secao `## Fontes de referencia (sheldon)` ao final do PRD listando todas as URLs e arquivos analisados — o `@dev` pode consultar essas fontes durante a implementacao para aprofundar contexto:
+  ```markdown
+  ## Fontes de referencia (sheldon)
+  > Documentos e links analisados durante o enriquecimento. Consulte se precisar de mais detalhes.
+
+  - [Tipo] [descricao breve] — `[URL ou caminho]`
+  ```
 
 ## Caminho B: Plano de fases externo (RF-08) — Score 7+
 
@@ -178,11 +185,13 @@ Criar estrutura em `.aioson/plans/{slug}/`:
 
 ```
 .aioson/plans/{slug}/
-├── manifest.md          ← indice de fases, status, dependencias
-├── plan-01.md           ← Fase 1: escopo, entidades, ACs, sequencia de dev
-├── plan-02.md           ← Fase 2: idem
-└── plan-N.md            ← Fase N: idem
+├── manifest.md                     ← indice de fases, status, dependencias, fontes globais
+├── plan-{slug-fase-1}.md           ← Fase 1: escopo, entidades, ACs, sequencia de dev, fontes
+├── plan-{slug-fase-2}.md           ← Fase 2: idem
+└── plan-{slug-fase-N}.md           ← Fase N: idem
 ```
+
+**Nomes dos arquivos de fase:** derivar um slug descritivo do titulo da fase (ex: `plan-autenticacao.md`, `plan-dashboard-principal.md`, `plan-integracao-pagamentos.md`). Nunca usar `plan-01.md` — o nome deve identificar o conteudo para que o `@dev` encontre o arquivo certo sem abrir o manifest.
 
 ### manifest.md
 
@@ -203,27 +212,33 @@ status: ready           # ready | in_progress | done
 
 | Fase | Arquivo | Escopo | Status | Dependencias |
 |------|---------|--------|--------|-------------|
-| 1 | plan-01.md | [resumo] | pending | — |
-| 2 | plan-02.md | [resumo] | pending | Fase 1 |
+| 1 | plan-{slug-fase-1}.md | [resumo] | pending | — |
+| 2 | plan-{slug-fase-2}.md | [resumo] | pending | Fase 1 |
 
 ## Decisoes pre-tomadas
 - [Decisao A] — [razao]
 
 ## Decisoes adiadas
 - [Decisao B] — [quem decide e quando]
+
+## Fontes de referencia
+> Links e documentos analisados durante o enriquecimento. Consulte para aprofundar contexto.
+
+- [Tipo] [descricao breve] — `[URL ou caminho]`
 ```
 
-### plan-NN.md
+### plan-{slug-da-fase}.md
 
 ```markdown
 ---
-phase: NN
+phase: N
+slug: {slug-da-fase}
 title: {Titulo da Fase}
-depends_on: [fase anterior ou null]
+depends_on: [slug-da-fase-anterior ou null]
 status: pending         # pending | in_progress | done | qa_approved
 ---
 
-# Fase NN — {Titulo}
+# Fase N — {Titulo}
 
 ## Escopo desta fase
 [O que esta fase entrega]
@@ -251,14 +266,21 @@ status: pending         # pending | in_progress | done | qa_approved
 
 ## Notas para @qa
 [O que verificar especificamente nesta fase]
+
+## Fontes de referencia desta fase
+> Consulte se precisar de mais detalhes durante a implementacao.
+
+- [Tipo] [descricao breve] — `[URL ou caminho]`
 ```
 
 **Regras de criacao:**
-- Criar `manifest.md` primeiro, confirmar com o usuario, depois criar os `plan-NN.md`
+- Criar `manifest.md` primeiro, confirmar com o usuario, depois criar os `plan-{slug}.md`
+- O slug de cada fase deve ser unico dentro do plano e descrever o que a fase entrega
 - Cada fase deve ser independentemente implementavel (sem dependencias circulares)
 - ACs de cada fase devem ser verificaveis isoladamente pelo QA
 - Decisoes pre-tomadas no manifest sao FINAIS — agentes downstream nao re-discutem
 - Decisoes adiadas sao marcadas com quem decide (dev, architect, usuario)
+- **Fontes**: incluir em cada `plan-{slug}.md` apenas as fontes que informaram aquela fase especificamente; incluir todas no manifest como referencia global
 
 ## Registro de enriquecimento (RF-09)
 

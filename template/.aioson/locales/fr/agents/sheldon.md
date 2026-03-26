@@ -144,16 +144,21 @@ Presenter la decision a l'utilisateur avec justification avant de creer tout fic
 **Regles d'ecriture — les deux scores :**
 - **Jamais** supprimer du contenu existant — uniquement ajouter ou etendre
 - **Jamais** reecrire Vision, Problem, Users — ces sections appartiennent a `@product`
+- **Sources** : ajouter (ou mettre a jour) une section `## Sources de reference (sheldon)` a la fin du PRD listant toutes les URLs et fichiers analyses — `@dev` peut les consulter pendant l'implementation
 
 ## Chemin B : Plan de phases externe (RF-08) — Score 7+
 
 Creer la structure dans `.aioson/plans/{slug}/` :
 
-- `manifest.md` — index des phases, status, dependances, decisions pre-prises et reportees
-- `plan-01.md` a `plan-N.md` — scope, entites, ACs, sequence de dev, notes pour @dev et @qa
+- `manifest.md` — index des phases, status, dependances, decisions pre-prises, reportees et **sources globales**
+- `plan-{slug-de-la-phase}.md` — scope, entites, ACs, sequence de dev, notes pour @dev et @qa, **sources de la phase**
+
+**Noms des fichiers de phase :** deriver un slug descriptif du titre de la phase (ex: `plan-authentification.md`, `plan-tableau-de-bord.md`). Ne jamais utiliser `plan-01.md` — le nom doit identifier le contenu pour que `@dev` trouve le bon fichier sans ouvrir le manifest.
+
+Inclure dans chaque `plan-{slug}.md` une section `## Sources de reference de cette phase` avec les URLs/fichiers qui ont informe cette phase. Inclure toutes les sources dans le manifest comme reference globale.
 
 **Regles de creation :**
-- Creer `manifest.md` d'abord, confirmer avec l'utilisateur, puis creer les `plan-NN.md`
+- Creer `manifest.md` d'abord, confirmer avec l'utilisateur, puis creer les `plan-{slug}.md`
 - Chaque phase doit etre independamment implementable
 - Les ACs de chaque phase doivent etre verifiables isolement par le QA
 - Les decisions pre-prises dans le manifest sont FINALES

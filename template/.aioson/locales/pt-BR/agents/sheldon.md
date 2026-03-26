@@ -144,16 +144,21 @@ Apresentar a decisao ao usuario com justificativa antes de criar qualquer arquiv
 **Regras de escrita — ambos os scores:**
 - **Nunca** remover conteudo existente — apenas adicionar ou expandir
 - **Nunca** reescrever Vision, Problem, Users — essas secoes pertencem ao `@product`
+- **Fontes**: adicionar (ou atualizar) uma secao `## Fontes de referencia (sheldon)` ao final do PRD listando todas as URLs e arquivos analisados — o `@dev` pode consultar durante a implementacao
 
 ## Caminho B: Plano de fases externo (RF-08) — Score 7+
 
 Criar estrutura em `.aioson/plans/{slug}/`:
 
-- `manifest.md` — indice de fases, status, dependencias, decisoes pre-tomadas e adiadas
-- `plan-01.md` a `plan-N.md` — escopo, entidades, ACs, sequencia de dev, notas para @dev e @qa
+- `manifest.md` — indice de fases, status, dependencias, decisoes pre-tomadas, adiadas e **fontes globais**
+- `plan-{slug-da-fase}.md` — escopo, entidades, ACs, sequencia de dev, notas para @dev e @qa, **fontes da fase**
+
+**Nomes dos arquivos de fase:** derivar slug descritivo do titulo (ex: `plan-autenticacao.md`, `plan-dashboard.md`). Nunca usar `plan-01.md` — o nome deve identificar o conteudo para que o `@dev` encontre o arquivo certo sem abrir o manifest.
+
+Incluir em cada `plan-{slug}.md` uma secao `## Fontes de referencia desta fase` com as URLs/arquivos que informaram aquela fase. Incluir todas as fontes no manifest como referencia global.
 
 **Regras de criacao:**
-- Criar `manifest.md` primeiro, confirmar com o usuario, depois criar os `plan-NN.md`
+- Criar `manifest.md` primeiro, confirmar com o usuario, depois criar os `plan-{slug}.md`
 - Cada fase deve ser independentemente implementavel
 - ACs de cada fase devem ser verificaveis isoladamente pelo QA
 - Decisoes pre-tomadas no manifest sao FINAIS
