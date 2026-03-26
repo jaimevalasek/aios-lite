@@ -208,19 +208,35 @@ Before writing `project.context.md` for `site` or `web_app`, inspect `.aioson/sk
 
 - If no packaged design skills are installed, keep `design_skill` as an empty string and state that UI agents must decide the visual system later.
 - If exactly one design skill is installed, do not auto-select it. Ask for explicit confirmation before registering it.
-- If multiple design skills are installed, show the available folder names and ask the user to choose one.
-- Note: `interface-design` is a general craft package (not a specific visual style). Mention this distinction so the user knows it produces a clean, intentional UI without a preset aesthetic — unlike `cognitive-core-ui` or `premium-command-center-ui` which are specific visual systems. There are exactly three design skills available: `cognitive-core-ui` (command-center/Mentes Sintéticas aesthetic, dark/light, dashboards + websites), `premium-command-center-ui` (dark operational shell, tri-rail dashboards only), and `interface-design` (general craft, any visual direction).
-- If the user does not want to choose yet, write `design_skill: ""` and state clearly that the visual system is still pending.
+- If multiple design skills are installed, use the **signal-based recommendation logic** below before asking.
 
-Question format:
+**Signal-based recommendation logic:**
+
+Read the project description, PRD text, or any aesthetic signals the user provided. Then:
+
+| If the user described… | Recommend |
+|---|---|
+| Dark theme, dashboard, admin panel, command center, inventory, analytics, control, monitoring, operational UI, mission control, "like Mentes Sintéticas", cyberpunk, futuristic, dark + ciano/teal/cyan accent, glassmorphism | **`cognitive-core-ui`** |
+| Operational shell, tri-rail layout, premium dark software, "command center only" | **`premium-command-center-ui`** |
+| Light theme, clean/minimal, custom brand, no preset aesthetic, content-heavy, e-commerce, institutional, "clean and modern" | **`interface-design`** |
+| No aesthetic signals, or the description is purely functional | Ask without a recommendation |
+
+When a signal match is found, lead with the recommendation:
+> "Based on your description ([dark dashboard / futuristic UI / etc.]), `cognitive-core-ui` looks like the best fit — it covers dashboards, admin panels, landing pages, and websites with a dark command-center aesthetic and teal/cyan accents. Want to use it, or choose a different skill?"
+
+If the user confirms the recommendation, register it immediately. Do not show the full skill list again.
+
+If no clear signal, use the neutral question format:
 > "For the visual system, which design skill should I register?
 >
 > Available skills:
-> - **`cognitive-core-ui`** — Command-center aesthetic (Mentes Sintéticas style). Dark/light themes. Works for dashboards, admin panels, landing pages, and websites.
+> - **`cognitive-core-ui`** — Command-center aesthetic (Mentes Sintéticas style). Dark/light themes. Works for dashboards, admin panels, landing pages, and websites. Best for dark, data-heavy, or futuristic UIs.
 > - **`premium-command-center-ui`** — Dark operational shell. Tri-rail layout. Dashboards and command centers only.
-> - **`interface-design`** — General craft package. Clean, intentional UI without a preset visual style.
+> - **`interface-design`** — General craft package. Clean, intentional UI without a preset visual style. Best for light themes and custom brand directions.
 >
 > Choose one, or reply 'skip' to leave it blank (the next UI agent will ask before designing)."
+
+- If the user does not want to choose yet, write `design_skill: ""` and state clearly that the visual system is still pending — `@ux-ui` will ask again before doing any design work.
 
 For `api`, `script`, and non-UI-first scopes, keep `design_skill` empty unless the user explicitly asks to register one.
 

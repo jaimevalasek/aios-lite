@@ -209,10 +209,26 @@ Before asking more visual questions, read `design_skill` from `project.context.m
 
 Rules:
 - If `design_skill` is already set, preserve it in the PRD. Do not silently replace it with another style system.
-- If `project_type=site` or `project_type=web_app` and `design_skill` is blank, ask explicitly whether to register one of the installed design skills under `.aioson/skills/design/`.
+- If `project_type=site` or `project_type=web_app` and `design_skill` is blank, use the **signal-based recommendation logic** below before asking.
 - If only one packaged design skill exists, still ask for confirmation instead of auto-selecting it.
 - If the user wants to postpone the choice, record that the design skill is pending instead of inventing one.
 - `@product` captures the decision, `@ux-ui` applies it, and `@dev` only consumes it.
+
+**Signal-based recommendation logic:**
+
+Read the visual or aesthetic description from the PRD text or the user's messages. Then:
+
+| If the user described… | Recommend |
+|---|---|
+| Dark theme, dashboard, admin panel, command center, inventory, analytics, control, monitoring, operational UI, cyberpunk, futuristic, dark + ciano/teal/cyan accent, glassmorphism | **`cognitive-core-ui`** |
+| Operational shell, tri-rail layout, premium dark software, "command center only" | **`premium-command-center-ui`** |
+| Light theme, clean/minimal, custom brand, no preset aesthetic, content-heavy, e-commerce, institutional | **`interface-design`** |
+| No aesthetic signals | Ask without a recommendation |
+
+When a signal match is found, surface it directly — do not bury it in a list of equal options:
+> "Your description mentions [dark dashboard / futuristic + ciano / etc.]. That matches `cognitive-core-ui` — command-center aesthetic, dark/light, covers dashboards and websites. Want to register it, or choose a different skill?"
+
+If the user confirms, update `design_skill` in `project.context.md` before producing the PRD.
 
 ## Conversation flow
 
