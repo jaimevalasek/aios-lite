@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-03-27
+### Added
+- Native web map and scrape commands for first-party web discovery and extraction workflows.
+- New agent capabilities and orchestration surface including `@neo`, the Sheldon PRD enrichment flow, richer downstream gates, and improved locale-aware runtime execution rules.
+- Squad-level operational improvements including webhook/channel bridge integration, daemon and registry evolution, and dashboard/design-system refinements for the squad experience.
+- Cognitive Core UI design skill upgrades with stronger art direction, composition libraries, anti-generic guardrails, and more robust interaction/contrast guidance.
+
+### Changed
+- Project license changed from `MIT` to `AGPL-3.0-only` for new releases going forward.
+- Package metadata and lockfile versioning are now aligned at `1.5.0`.
+- Agent workflows now enforce PRD gating, stronger atomic execution behavior, and more explicit routing for MICRO and product/design-driven flows.
+
 ## [1.3.0] - 2026-03-15
 ### Added
 - Canonical runtime observability for installed projects: runtime SQLite now acts as the primary execution store with task/run/event lifecycle tracking, workflow event synchronization, and an execution gateway prepared to instrument direct agent entrypoints, workflow enforcement, squads, and operational runs from the project runtime itself.
