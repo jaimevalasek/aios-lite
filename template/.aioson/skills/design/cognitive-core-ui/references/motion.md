@@ -108,6 +108,37 @@ CTA buttons: fadeInUp  450ms   500ms
 
 ---
 
+## Expression-Aware Motion
+
+Match motion to the expression mode chosen in `references/art-direction.md`.
+
+### Tactical Monolith
+- Keep motion short, directional, and low drama
+- Prefer panel reveals, status updates, and quiet count-up behavior
+- Avoid floaty motion, oversized parallax, or decorative loops
+
+### Quiet Graphite
+- Use soft fades, small elevation shifts, and measured reveal delays
+- Let motion reinforce polish, not spectacle
+
+### Signal Editorial
+- Use more narrative sequencing: headings, side notes, proof blocks, and media can enter in layered stages
+- Favor stagger and reveal rhythm over obvious bounce or glow pulses
+
+### Luminous Light
+- Keep motion crisp and clean
+- Favor focus, control feedback, and gentle surface lifts over cinematic effects
+
+### Industrial Flow
+- Motion should feel functional and linear
+- Sliding panels, queue shifts, progress fills, and status transitions work better than float or blur-heavy effects
+
+### Gallery Intelligence
+- Let media frames, profile blocks, and showcase surfaces reveal with slightly richer sequencing
+- Keep metadata motion subtle so the content remains primary
+
+---
+
 ## Hover Effects
 
 ### Card Hover
@@ -235,3 +266,12 @@ const TT = { transition: 'background 240ms ease, color 240ms ease, border-color 
 | Modal/Detail | Light | scaleIn entrance, fadeIn backdrop |
 | Loading state | Ambient | Skeleton shimmer, pulse glow |
 | Admin CRUD | None/minimal | Only theme transition + hover states |
+
+---
+
+## Anti-Generic Motion Rules
+
+- Do not use the same stagger recipe on every page type.
+- Do not animate everything just because motion is available.
+- One memorable sequence beats constant moving surfaces.
+- If motion draws more attention than hierarchy or content, reduce it.

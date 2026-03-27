@@ -35,6 +35,65 @@ A commercial page using this skill should feel **premium and technical, but stil
 
 ---
 
+## Website Composition Library
+
+Choose one primary composition before building sections. Do not default to the same centered hero every time.
+
+### 1. Split Narrative
+
+Use when:
+- the product needs both message and visual proof above the fold
+
+Composition:
+- headline and CTA on one side
+- product frame, screenshot, or visual artifact on the other
+- secondary proof rail below
+
+### 2. Editorial Stack
+
+Use when:
+- the brand needs intelligence, depth, or cultural weight
+
+Composition:
+- offset headline
+- side notes, quote blocks, or pull metrics
+- more asymmetry, more narrative rhythm
+
+### 3. Proof-First
+
+Use when:
+- credibility matters more than storytelling flourish
+
+Composition:
+- immediate outcomes, metrics, logos, or customer proof near the hero
+- product explanation follows
+
+### 4. Product Theater
+
+Use when:
+- the interface itself is the main differentiator
+
+Composition:
+- immersive product frame
+- layered caption rails
+- supporting sections explain workflows and advantages
+
+### 5. Institutional Precision
+
+Use when:
+- the site must feel trustworthy, executive, and polished
+
+Composition:
+- concise hero
+- structured value blocks
+- case study or trust strip
+- elegant CTA instead of hype-heavy spectacle
+
+Rule:
+- pick one composition and one signature move from `references/art-direction.md`, then propagate them intentionally
+
+---
+
 ## Default theme for websites
 
 - **Light theme**: Institutional sites, corporate, marketing pages, client-facing products
@@ -55,7 +114,7 @@ If the user does not specify, use **dark with a light option toggle** for tech/S
 │  HERO SECTION (padding: space-24 top, space-20 bottom) │
 │  ┌──────────────────────────────────────────────────┐  │
 │  │ MONO LABEL: tagline (centered)                   │  │
-│  │ DISPLAY HEADING text-5xl, weight-black (centered)│  │
+│  │ DISPLAY HEADING text-5xl, weight-bold (centered) │  │
 │  │ Subtitle: text-lg, text-secondary (centered)     │  │
 │  │ [CTA Primary Button]  [Secondary Button]         │  │
 │  └──────────────────────────────────────────────────┘  │
@@ -85,11 +144,14 @@ If the user does not specify, use **dark with a light option toggle** for tech/S
 
 ### Hero section (required elements)
 
-1. **Mono label** above heading — category / tagline in monospace uppercase
-2. **Display heading** — `text-5xl`, `weight-black`, `tracking-tight`, `line-height: 1.1`
+1. **Mono label** above heading — category / tagline in monospace uppercase, used sparingly
+2. **Display heading** — `text-5xl`, `weight-bold` or `weight-black` only when the hero truly needs extra emphasis, `tracking-tight`, `line-height: 1.1`
 3. **Subtitle** — 1–2 sentences, `text-lg`, `text-secondary`
 4. **Two CTAs** — primary (solid accent) + secondary (outline or ghost)
 5. **Optional**: hero visual (screenshot, illustration, or abstract mesh)
+
+Hero rule:
+- If the page would benefit from split, editorial, or proof-first composition, do not force all five elements into a centered stack.
 
 ```css
 .hero {
@@ -108,7 +170,7 @@ If the user does not specify, use **dark with a light option toggle** for tech/S
 }
 .hero-heading {
   font-family: var(--font-display); font-size: var(--text-5xl);
-  font-weight: var(--weight-black); color: var(--text-heading);
+  font-weight: var(--weight-bold); color: var(--text-heading);
   letter-spacing: var(--tracking-tight); line-height: 1.05;
   margin-bottom: var(--space-5);
 }
@@ -142,7 +204,7 @@ If the user does not specify, use **dark with a light option toggle** for tech/S
 }
 .section-heading {
   font-family: var(--font-display); font-size: var(--text-3xl);
-  font-weight: var(--weight-black); color: var(--text-heading);
+  font-weight: var(--weight-bold); color: var(--text-heading);
   letter-spacing: var(--tracking-tight); line-height: var(--leading-tight);
 }
 ```
@@ -303,18 +365,23 @@ Two columns: [Left: contact info cards] [Right: form card]
 Primary CTA button:
 ```css
 .btn-primary {
-  background: var(--accent); color: var(--bg-base);
-  font-family: var(--font-mono); font-size: var(--text-sm);
+  background: var(--accent); color: var(--accent-contrast);
+  font-family: var(--font-body); font-size: var(--text-sm);
   font-weight: var(--weight-semibold); letter-spacing: var(--tracking-wide);
-  text-transform: uppercase; padding: var(--space-3) var(--space-6);
+  text-transform: none; padding: var(--space-3) var(--space-6);
+  min-height: var(--control-md);
   border-radius: var(--radius-md); border: none; cursor: pointer;
-  transition: var(--transition-base);
+  transition: var(--transition-base), transform 150ms ease, box-shadow 150ms ease;
   box-shadow: 0 0 20px var(--accent-glow);
 }
 .btn-primary:hover {
   background: var(--accent-hover);
   box-shadow: 0 0 32px var(--accent-glow), 0 4px 12px rgba(0,0,0,0.2);
   transform: translateY(-1px);
+}
+.btn-primary:focus-visible {
+  outline: var(--focus-ring-width) solid var(--accent);
+  outline-offset: var(--focus-ring-offset);
 }
 ```
 
@@ -323,17 +390,28 @@ Secondary button:
 .btn-secondary {
   background: transparent; color: var(--text-primary);
   border: 1px solid var(--border-medium);
-  font-family: var(--font-mono); font-size: var(--text-sm);
+  font-family: var(--font-body); font-size: var(--text-sm);
   font-weight: var(--weight-semibold); letter-spacing: var(--tracking-wide);
-  text-transform: uppercase; padding: var(--space-3) var(--space-6);
+  text-transform: none; padding: var(--space-3) var(--space-6);
+  min-height: var(--control-md);
   border-radius: var(--radius-md); cursor: pointer;
-  transition: var(--transition-base);
+  transition: var(--transition-base), transform 150ms ease;
 }
 .btn-secondary:hover {
+  background: var(--accent-subtle);
   border-color: var(--border-accent);
   color: var(--accent);
 }
+.btn-secondary:focus-visible {
+  outline: var(--focus-ring-width) solid var(--accent);
+  outline-offset: var(--focus-ring-offset);
+}
 ```
+
+Guardrails:
+- Do not use `color: var(--bg-base)` for accent buttons in light theme.
+- Default website CTAs should read like polished product buttons, not terminal labels.
+- If uppercase mono is desired for branding reasons, keep the label very short and re-check contrast in hover/focus states.
 
 ---
 
@@ -348,3 +426,12 @@ Secondary button:
 | Cards | Dense, compact | Spacious, feature-oriented |
 | Navigation | Tab-heavy, sidebar | Linear anchors, single bar |
 | Background alternation | Same bg-base | Alternates `bg-base` / `bg-surface` |
+
+---
+
+## Anti-Generic Website Rules
+
+- Do not repeat the same section rhythm from top to bottom.
+- Do not rely on centered text alone to create impact.
+- Use at least one memorable section transition, composition break, or proof rail.
+- If the page looks like "SaaS template with nicer colors", it is not finished.

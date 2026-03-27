@@ -17,7 +17,7 @@ Default to **system fonts** first. Add Google Fonts only when the agent decides 
 
 **Google Fonts (optional — use when building the Mentes Sintéticas aesthetic explicitly):**
 ```css
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
 --font-display: 'Inter', system-ui, sans-serif;
 --font-body:    'Inter', system-ui, sans-serif;
@@ -108,6 +108,10 @@ Include this full block in every project.
   --transition-slow:  300ms ease;
   --transition-theme: background 240ms ease, color 240ms ease, border-color 240ms ease, box-shadow 240ms ease;
 
+  /* Shared interaction tokens */
+  --focus-ring-width: 2px;
+  --focus-ring-offset: 2px;
+
   /* Z-index */
   --z-base:     0;
   --z-elevated: 10;
@@ -150,6 +154,7 @@ Include this full block in every project.
   --accent-glow:   rgba(34, 211, 238, 0.12);
   --accent-subtle: rgba(34, 211, 238, 0.08);
   --accent-hover:  #06b6d4;
+  --accent-contrast: #07131a;
 
   /* Semantic */
   --semantic-green:      #16c784;
@@ -198,16 +203,17 @@ Include this full block in every project.
   --text-primary:   #334155;
   --text-secondary: #61748a;
   --text-muted:     #8b9aae;
-  --text-accent:    #0f8cc7;
+  --text-accent:    #0f766e;
   --text-inverse:   #f8fbff;
 
-  /* Accent — sky blue (legible on white) */
-  --accent:        #0ea5e9;
-  --accent-strong: #0284c7;
-  --accent-dim:    rgba(14, 165, 233, 0.10);
-  --accent-glow:   rgba(14, 165, 233, 0.08);
-  --accent-subtle: rgba(14, 165, 233, 0.05);
-  --accent-hover:  #0284c7;
+  /* Accent — deeper teal for AA-friendly buttons and links */
+  --accent:        #0f766e;
+  --accent-strong: #115e59;
+  --accent-dim:    rgba(15, 118, 110, 0.10);
+  --accent-glow:   rgba(15, 118, 110, 0.08);
+  --accent-subtle: rgba(15, 118, 110, 0.05);
+  --accent-hover:  #115e59;
+  --accent-contrast: #f8fbff;
 
   /* Semantic */
   --semantic-green:      #059669;
@@ -284,6 +290,18 @@ body { font-family: var(--font-body); }
 .shell[data-theme="dark"] { --bg-base: #0b0f15; font-family: var(--font-body); }
 ```
 
+---
+
+## Interaction Guardrails
+
+These rules exist to stop the most common quality failures: illegible hover states, washed-out light theme buttons, and decorative overload.
+
+1. Primary actions on accent backgrounds must use `var(--accent-contrast)`, not `var(--bg-base)`.
+2. Hover states may change brightness, but must preserve or improve text contrast.
+3. Focus styles must be visible on both themes. Minimum: `outline: var(--focus-ring-width) solid var(--accent)` with `outline-offset: var(--focus-ring-offset)`.
+4. If a control background becomes lighter on hover, its foreground must be re-evaluated. Do not assume the base text color still works.
+5. Favor one accent family and two neutral text tiers over adding extra decorative colors.
+
 **Unsafe (font breaks silently):**
 ```css
 /* WRONG */
@@ -344,6 +362,20 @@ line-height: var(--leading-relaxed);
 color: var(--text-primary);
 ```
 
+### Primary Action
+
+```css
+background: var(--accent);
+color: var(--accent-contrast);
+border: none;
+font-family: var(--font-body);
+font-size: var(--text-sm);
+font-weight: var(--weight-semibold);
+letter-spacing: var(--tracking-wide);
+```
+
+Use mono only for short command-like labels. Default buttons should stay in the body family for better readability.
+
 ### Numbers in tables and lists
 
 ```css
@@ -361,6 +393,7 @@ font-feature-settings: "tnum" 1;
 4. Above the fold: prefer 1 primary content block + 1 support block + 1 contextual rail — not a wall of equal cards.
 5. Mono labels are separators, not decoration. If everything is uppercase mono, nothing is important.
 6. In brownfield: fix cascade and token-scope errors before changing colors, layout, or density.
+7. Interactive controls must align on shared heights (`--control-sm`, `--control-md`, `--control-lg`) and shared text baselines.
 
 ---
 
@@ -488,3 +521,4 @@ Never keep secondary tools always visible — they crowd the primary content.
 6. Keep **one obvious focal block** per viewport.
 7. Fix token scope and cascade bugs before redesigning colors or layout.
 8. In admin/operational UI, apply the **Compact Density** scale — never carry consumer/marketing spacing into dense panels.
+9. Validate contrast and hover/focus parity before considering a screen finished.

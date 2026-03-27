@@ -89,7 +89,7 @@ For viewing a single entity (person, product, contact, project).
   object-fit: cover;
 }
 .profile-name {
-  font-family: var(--font-display); font-weight: var(--weight-black);
+  font-family: var(--font-display); font-weight: var(--weight-bold);
   font-size: var(--text-3xl); color: var(--text-heading);
   letter-spacing: var(--tracking-tight); line-height: var(--leading-tight);
 }

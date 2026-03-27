@@ -105,7 +105,7 @@ Entity header with avatar, name, role, badges, and stat cards.
 ```
 
 - Avatar: `96px`, `border-radius: var(--radius-lg)`, `border: 2px solid var(--border-subtle)`
-- Name: `--text-3xl`, `--weight-black`, `--tracking-tight`, `--text-heading`
+- Name: `--text-3xl`, `--weight-bold` by default, `--weight-black` only for a deliberately dramatic hero/profile treatment, `--tracking-tight`, `--text-heading`
 - Role: `color: var(--text-accent)`, `font-style: italic`, `--text-lg`
 - Tagline: mono, `--text-xs`, `--text-muted`, `--tracking-widest`, uppercase
 - ID: mono, `--text-xs`, muted, absolute positioned below avatar

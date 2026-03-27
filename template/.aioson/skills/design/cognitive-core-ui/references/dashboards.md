@@ -11,6 +11,106 @@ These presets help choose a fitting operational composition instead of defaultin
 1. Start from the product's **main operational pressure**, not from a visual trope.
 2. Pick **one dominant preset** per screen.
 3. Mix small traits from another preset only when the primary composition is already clear.
+4. Choose one opening composition from the library below before placing a stat row.
+
+---
+
+## Opening Composition Library
+
+Do not let every dashboard begin with `4 KPI cards + tabs + equal grid`.
+
+Choose one primary opening move:
+
+### 1. Dominant Hero Surface
+
+Use when:
+- the screen has one main operational story
+- users need a fast read on what matters most
+
+Composition:
+- one large hero analysis panel
+- 2-3 supporting metrics beside or below
+- secondary cards deferred downward
+
+Best for:
+- control centers
+- analytics
+- AI orchestration
+
+### 2. Alert and Queue First
+
+Use when:
+- urgency beats summary
+- users act from exceptions, incidents, or pending work
+
+Composition:
+- alert cluster or priority queue above the fold
+- supporting health metrics nearby
+- context rail for recent events
+
+Best for:
+- ops
+- support
+- logistics
+- monitoring
+
+### 3. Trend First
+
+Use when:
+- change over time matters more than static totals
+- the main question is movement, not snapshot
+
+Composition:
+- chart or trend ribbon as the hero
+- compact stat strip
+- ranked list or narrative summary below
+
+Best for:
+- revenue
+- analytics
+- performance
+
+### 4. Profile or Entity First
+
+Use when:
+- one active entity anchors the workflow
+- the user is working inside a person, account, project, or agent
+
+Composition:
+- profile header or entity summary surface
+- focused stat cards
+- detail tabs and contextual rails
+
+Best for:
+- CRM
+- account management
+- AI agent panels
+
+### 5. Workspace First
+
+Use when:
+- the dashboard is really a working surface, not just a summary
+- users spend time editing, reviewing, or operating from this page
+
+Composition:
+- tool surface or main work pane dominates
+- navigation and status become secondary chrome
+- metrics move to support rails
+
+Best for:
+- admin tools
+- builder UIs
+- review flows
+
+---
+
+## Anti-Template Rules
+
+- Never open every dashboard with four equal stat cards unless the product truly lives and dies by four equal KPIs.
+- Never let the stat row be the most memorable part of the page.
+- If the layout could be mistaken for a generic admin starter after removing the colors, redesign the composition.
+- One strong focal block beats six medium-interest cards.
+- Use `references/art-direction.md` to choose a signature move before styling panels.
 
 ---
 

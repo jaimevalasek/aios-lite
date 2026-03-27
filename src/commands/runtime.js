@@ -20,6 +20,7 @@ const {
 } = require('../runtime-store');
 const { runAutoDelivery } = require('../delivery-runner');
 const { writeHandoff, buildRuntimeLogHandoff } = require('../session-handoff');
+const { backupAiosonDocs, isDocCreatingAgent } = require('../backup-local');
 
 const ALLOWED_LAYOUTS = new Set(['document', 'tabs', 'accordion', 'stack', 'mixed']);
 const DEFAULT_TEXT_FIELDS = ['content', 'text', 'body', 'lyrics', 'markdown'];
@@ -1200,6 +1201,10 @@ async function runAgentDone({ args, options = {}, logger, t }) {
         logger.log(`agent:done — ${normalizedAgent} | live session active, event logged | run: ${session.runKey} (${dbPath})`);
       }
 
+      if (isDocCreatingAgent(normalizedAgent)) {
+        backupAiosonDocs(targetDir).catch(() => {});
+      }
+
       return { ok: true, targetDir, dbPath, agent: normalizedAgent, mode: 'live_event', runKey: session.runKey };
     }
 
@@ -1216,6 +1221,10 @@ async function runAgentDone({ args, options = {}, logger, t }) {
 
     if (!options.json) {
       logger.log(`agent:done — ${normalizedAgent} | task: ${taskKey} | run: ${runKey} (${dbPath})`);
+    }
+
+    if (isDocCreatingAgent(normalizedAgent)) {
+      backupAiosonDocs(targetDir).catch(() => {});
     }
 
     return { ok: true, targetDir, dbPath, agent: normalizedAgent, mode: 'standalone', runKey, taskKey };

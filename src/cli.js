@@ -108,6 +108,7 @@ const {
   runSkillList,
   runSkillRemove
 } = require('./commands/skill');
+const { runBackupLocal } = require('./commands/backup-local-cmd');
 
 const JSON_SUPPORTED_COMMANDS = new Set([
   'init',
@@ -709,6 +710,8 @@ async function main() {
       result = await runRuntimeBackup({ args, options, logger: commandLogger, t });
     } else if (command === 'runtime:restore' || command === 'runtime-restore') {
       result = await runRuntimeRestore({ args, options, logger: commandLogger, t });
+    } else if (command === 'backup:local' || command === 'backup-local') {
+      result = await runBackupLocal({ args, options, logger: commandLogger, t });
     } else if (command === 'skill:install' || command === 'skill-install') {
       result = await runSkillInstall({ args, options, logger: commandLogger, t });
     } else if (command === 'skill:list' || command === 'skill-list') {

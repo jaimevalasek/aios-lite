@@ -15,6 +15,7 @@ The Cognitive Core system sits at the intersection of **military-grade data dash
 .aioson/skills/design/cognitive-core-ui/
   SKILL.md                      ← you are here (load this first)
   references/
+    art-direction.md            ← intent, domain exploration, expression modes, signature moves, anti-generic tests
     design-tokens.md            ← CSS variables dark + light, typography, token scope guardrails
     components.md               ← All reusable components (nav, stat card, badges, table, modal, DNA panel, etc.)
     patterns.md                 ← Page layouts: dashboard shell, detail/profile, settings, auth, list-detail
@@ -53,15 +54,15 @@ Always load only what the current task needs:
 |---|---|
 | Any UI work | `references/design-tokens.md` |
 | Reusable components | `references/design-tokens.md` + `references/components.md` |
-| Dashboard or admin panel | `references/design-tokens.md` + `references/components.md` + `references/patterns.md` + `references/dashboards.md` |
-| Detail / profile page | `references/design-tokens.md` + `references/components.md` + `references/patterns.md` |
-| Landing page or website | `references/design-tokens.md` + `references/components.md` + `references/websites.md` |
+| Dashboard or admin panel | `references/art-direction.md` + `references/design-tokens.md` + `references/components.md` + `references/patterns.md` + `references/dashboards.md` |
+| Detail / profile page | `references/art-direction.md` + `references/design-tokens.md` + `references/components.md` + `references/patterns.md` |
+| Landing page or website | `references/art-direction.md` + `references/design-tokens.md` + `references/components.md` + `references/websites.md` |
 | Motion / animation | add `references/motion.md` when animation materially improves the result |
-| Full UI build | all six reference files |
+| Full UI build | all seven reference files |
 
 ## Visual signature — three pillars
 
-1. **Command-center authority** — Dense information when the product is operational. Monospaced uppercase labels on every section. Large numeric stat readouts. Everything feels like a mission control panel.
+1. **Command-center authority** — Dense information when the product is operational. Monospaced labels are used as metadata rails, not as the default reading style. Large numeric stat readouts. Everything feels like a mission control panel.
 2. **Premium refinement** — Three depth levels minimum (void → base → surface → elevated). Subtle borders (`rgba(255,255,255,0.06)` in dark). Teal/cyan as the only accent — used for active states, borders, glow effects. Never harsh contrasts.
 3. **Structured rhythm** — Tab navigation, sidebar trees, card grids, section headers with icons. Information is organized into labeled zones. One focal block per viewport.
 
@@ -99,9 +100,9 @@ If the user does not specify: default to **dark with a theme toggle** in the top
 - Text primary: `#334155`
 
 ### Typography
-- Headings: `Inter`, `weight-black (900)`, `letter-spacing: -0.02em`
+- Headings: `Inter`, usually `weight-bold (700)` or `weight-black (800)` only for hero/page title emphasis, `letter-spacing: -0.02em`
 - Body: `Inter`, `weight-normal (400)`, `line-height: 1.6`
-- Labels (most distinctive): `JetBrains Mono`, `weight-semibold`, `uppercase`, `letter-spacing: 0.15em`, `font-size: 0.675rem`
+- Labels (supporting only): `JetBrains Mono`, `weight-semibold`, `uppercase`, `letter-spacing: 0.12em`, `font-size: 0.675rem`
 - Stats: `Inter`, `weight-bold (700)`, `font-size: 2.75rem`
 
 ### Layout structure (dashboards)
@@ -123,7 +124,7 @@ If the user does not specify: default to **dark with a theme toggle** in the top
 ```
 
 ### Signature details
-- Monospace uppercase labels on every section (never skip this)
+- Monospace uppercase labels on major sections, stats, IDs, and metadata rails only
 - Badge chips with teal/cyan glow in dark mode
 - Progress bars with colored semantic fills (green/red/amber/purple)
 - Featured quote blocks: italic large text + mono attribution
@@ -135,11 +136,55 @@ If the user does not specify: default to **dark with a theme toggle** in the top
 ## Application rules
 
 - Treat `references/design-tokens.md` as the source of truth for ALL tokens.
+- Treat `references/art-direction.md` as the source of truth for expression, signature move, and anti-generic decisions.
 - Resolve the page variant before composing: dashboard uses dense operational rhythm; website/landing page uses more whitespace, hero typography, and narrative hierarchy.
 - Never combine this package with `interface-design`, `premium-command-center-ui`, or any other design skill in the same task.
 - Reuse the project's component library if one exists — map Cognitive Core tokens onto it instead of rebuilding primitives.
 - Adapt code examples to the active stack. Reference snippets are design specifications, not copy-paste code.
 - Accessibility, responsiveness, and production semantics are the agent's responsibility (not this skill).
+
+## Intent before visuals
+
+Before choosing layout, answer all three:
+
+1. Who is the human using this page right now?
+2. What is the main action or decision they must complete?
+3. How should this interface feel in concrete words, not generic labels?
+
+Bad answers:
+- "for users"
+- "manage data"
+- "clean and modern"
+
+Good answers:
+- "operations lead checking what needs intervention in under 30 seconds"
+- "sales manager comparing pipeline risk before a weekly meeting"
+- "calm, cold, exact, premium, slightly tactical"
+
+## Workflow discipline
+
+Extracted from stronger design-system practice, this skill must behave like a controlled system, not a moodboard:
+
+1. Audit the current page or existing UI before changing visuals.
+2. Explore the product domain and choose one expression mode from `references/art-direction.md`.
+3. Name one signature move and repeat it intentionally across the page.
+4. Consolidate repeating patterns instead of inventing new card/button/table variants for each screen.
+5. Build from tokens first, then components, then page composition.
+6. Validate state parity before finishing: default, hover, active, focus, disabled.
+7. Validate contrast before shipping: body text must meet WCAG AA, controls must stay legible in all themes and states.
+
+## Non-negotiable quality gates
+
+- Never use a lighter hover state if it reduces text contrast.
+- Never put near-white text on a bright accent in light theme. Use a darker accent or a darker foreground token.
+- Do not use mono for navigation groups, paragraphs, or long button copy.
+- Do not use `weight-black` as the default heading weight across the entire app.
+- Keep one spacing rhythm per surface: 4px/8px increments, aligned text edges, consistent control heights.
+- When a layout feels chaotic, reduce variant count first. Do not add more decorative layers.
+- Hardcoded colors, arbitrary shadows, and one-off font choices are design-system failures, not creative flourishes.
+- Sameness is failure. If the result could be mistaken for a default AI dashboard or centered SaaS hero, iterate before presenting.
+- Every full page must have one memorable structural or visual signature, not just "good spacing and cards".
+- Do not reuse the same hero, stat-row, or card-grid composition across unrelated products without a domain reason.
 
 ## Delivery modes
 
@@ -154,4 +199,5 @@ If the user does not specify: default to **dark with a theme toggle** in the top
 1. Audit existing UI before rewriting
 2. Map Cognitive Core tokens onto the existing component library
 3. Fix token scope issues (font/color variables must be on the correct container)
-4. Prefer targeted upgrades over full rewrites unless the user asks for a redesign
+4. Consolidate duplicate variants before introducing new ones
+5. Prefer targeted upgrades over full rewrites unless the user asks for a redesign
