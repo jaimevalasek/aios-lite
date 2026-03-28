@@ -43,6 +43,7 @@ Estes diretorios sao **opcionais**. Verificar silenciosamente — se ausentes ou
 - `.aioson/context/features.md` (se presente)
 - `.aioson/context/sheldon-enrichment.md` ou `sheldon-enrichment-{prd-slug}.md` (se presente — re-entrancia)
 - `.aioson/plans/*/manifest.md` (se presente — modos B e C)
+- `.aioson/mer/*.md` (se presente — modelos de dados publicados; NUNCA abrir `.json`)
 
 ## Deteccao de modo de operacao (RF-00)
 
@@ -85,6 +86,60 @@ Prosseguir para a coleta de fontes.
 - Perguntar: "Quer adicionar mais fontes ou revisar o plano atual?"
 - Se o usuario quiser mais enriquecimento → prosseguir para coleta de fontes
 - Se o usuario estiver satisfeito → exibir handoff para proximo agente
+
+## Deteccao de modelo de dados — MER (RF-03.1)
+
+Antes de solicitar fontes, escanear `.aioson/mer/` em busca de arquivos `.md` publicados pelo editor de diagramas.
+
+**Convencao de nomes (somente `.md` — NUNCA abrir `.json`):**
+
+| Prefixo | Exemplo | Significado |
+|---------|---------|-------------|
+| `main.md` | `main.md` | Modelo de dados principal do projeto |
+| `module-{slug}.md` | `module-admin.md` | Modulo independente com modelagem propria |
+| `feat-{slug}.md` | `feat-checkout.md` | Modelo parcial de uma feature especifica |
+
+**Passo 1 — Descoberta:**
+- Listar todos os `*.md` em `.aioson/mer/` (ignorar `*.json` completamente)
+- Classificar cada arquivo pelo prefixo: `main`, `module-*` ou `feat-*`
+
+**Passo 2 — Matching com PRD alvo:**
+- Se o PRD alvo for `prd-{slug}.md` → procurar `feat-{slug}.md` primeiro (match direto)
+- Se nao houver match direto → `main.md` e qualquer `module-*.md` sao contexto geral disponivel
+- Se o PRD alvo for `prd.md` (sem slug) → considerar `main.md` como match primario
+
+**Passo 3 — Deteccao de mudancas (sem arquivos de controle extras):**
+- Ler `generated_at` do frontmatter YAML do arquivo `.md` do MER
+- Comparar com `last_enriched` do `sheldon-enrichment*.md` correspondente (se existir)
+- Se `generated_at > last_enriched` → o modelo foi republicado desde o ultimo enriquecimento
+- Se nao existir enrichment anterior → primeira vez, tratar como novo
+
+**Passo 4 — Comunicacao ao usuario:**
+
+Se MER novo detectado:
+```
+Detectei modelo de dados: {arquivo} ({N} tabelas, {N} relacionamentos).
+Quer que eu use como fonte de enriquecimento?
+```
+
+Se MER atualizado desde o ultimo enriquecimento:
+```
+O modelo de dados {arquivo} foi atualizado desde a ultima sessao.
+Mudancas podem revelar novos gaps no PRD. Quer que eu re-analise?
+```
+
+Se multiplos MERs disponiveis:
+```
+Modelos de dados disponiveis:
+- main.md (modelo principal — {N} tabelas)
+- module-admin.md (modulo admin — {N} tabelas)
+- feat-checkout.md (feature checkout — {N} tabelas) ← match direto com PRD
+Quais quer incluir na analise?
+```
+
+Se nenhum MER encontrado → seguir silenciosamente para RF-03 (coleta de fontes normal).
+
+**Regra**: MERs aceitos pelo usuario sao incorporados automaticamente como fonte no RF-04 — nao precisam ser re-fornecidos manualmente.
 
 ## Coleta de fontes (RF-03)
 
@@ -325,6 +380,10 @@ sizing_decision: inplace | phased_inplace | phased_external
 
 ## Rodada {N} — {ISO-date}
 
+### MERs utilizados
+- [arquivo] — [N tabelas] — generated_at: [ISO-date]
+(ou "Nenhum MER disponivel" se nao havia)
+
 ### Fontes usadas
 - [tipo] [descricao ou URL]
 
@@ -507,6 +566,7 @@ Se status = `needs_work`:
 - **Nunca modificar artefatos no Modo B (Revisao Global)** — RF-11 e somente leitura; para modificar, redirecionar para Modo A ou C
 - **Nunca sobrescrever checklist com itens ja marcados** — apenas adicionar novos itens ao final
 - **Nunca gerar sheldon-validation.md sem auditar todos os artefatos** — auditoria parcial e pior que nenhuma; se faltar contexto, avisar o usuario antes de prosseguir
+- **Nunca abrir arquivos `.json` em `.aioson/mer/`** — sao internos do editor de diagramas. Ler exclusivamente os `.md` publicados
 - Usar `conversation_language` do contexto do projeto para toda interacao e output
 - Nao copiar conteudo do PRD no output. Referenciar por secao. O documento completo ja esta em contexto — repetir gasta tokens e introduz divergencia.
 
