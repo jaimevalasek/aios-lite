@@ -129,8 +129,24 @@ Se voce estiver entrando num projeto ja existente e quiser um companheiro tecnic
 | Tamanho do projeto | Sequência de agentes |
 |---|---|
 | **MICRO** — 0–1 ponto | `@setup → @dev` |
-| **SMALL** — 2–3 pontos | `@setup → @product → @analyst → @architect → @ux-ui → @dev → @qa` |
-| **MEDIUM** — 4–6 pontos | `@setup → @product → @analyst → @architect → @ux-ui → @pm → @orchestrator → @dev → @qa` |
+| **SMALL** — 2–3 pontos | `@setup → @product → [@sheldon] → @analyst → @architect → @dev → @qa → [@tester]` |
+| **MEDIUM** — 4–6 pontos | `@setup → @product → [@sheldon] → @analyst → @architect → @ux-ui → @pm → @orchestrator → @dev → @qa → [@tester]` |
+
+`[@sheldon]` — opcional, recomendado para validar e enriquecer o PRD antes de codar.
+`[@tester]` — opcional, para cobertura sistemática quando o `@dev` implementou sem testes adequados.
+
+### Estratégia de documentos de kickoff
+
+Antes de ativar `@product`, você pode criar arquivos de entrada na raiz do projeto:
+
+```
+plans/minha-ideia.md     ← suas notas brutas, esboços, referências
+prds/visao-produto.md    ← rascunhos de requisitos, inspirações
+```
+
+O `@product` e o `@sheldon` detectam esses arquivos automaticamente e perguntam se devem usá-los como fonte para gerar os artefatos formais em `.aioson/context/`. Os arquivos originais nunca são modificados — você decide quando deletá-los.
+
+Esses arquivos de kickoff **não são versionados por padrão** (estão no `.gitignore`). Eles são documentos de trabalho do desenvolvedor, não artefatos do projeto.
 
 ### Atalho recomendado quando o escopo ainda está nebuloso
 

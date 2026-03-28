@@ -305,6 +305,14 @@ const AGENT_DEFINITIONS = [
     output: 'QA report'
   },
   {
+    id: 'tester',
+    displayName: 'Tester',
+    command: '@tester',
+    path: '.aioson/agents/tester.md',
+    dependsOn: ['.aioson/context/project.context.md'],
+    output: '.aioson/context/test-inventory.md + .aioson/context/test-plan.md'
+  },
+  {
     id: 'orchestrator',
     displayName: 'Orchestrator',
     command: '@orchestrator',

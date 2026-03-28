@@ -209,6 +209,7 @@ function applyExplicitOverrides(data, options, detectedInstalled) {
   const langValue = options.language ?? options.lang;
   if (langValue !== undefined) output.conversationLanguage = String(langValue);
   if (hasOption(options, 'design-skill')) output.designSkill = String(options['design-skill']);
+  if (hasOption(options, 'test-runner')) output.testRunner = String(options['test-runner']);
   if (hasOption(options, 'web3-enabled')) {
     output.web3Enabled = normalizeBoolean(options['web3-enabled'], output.web3Enabled);
   }
@@ -470,6 +471,7 @@ async function runSetupContext({ args, options, logger, t }) {
     frameworkInstalled: detectedInstalled,
     conversationLanguage: 'en',
     designSkill: '',
+    testRunner: '',
     web3Enabled: inferredWeb3Enabled,
     web3Networks: inferredWeb3Enabled ? inferWeb3Network(detectedFramework) : '',
     contractFramework: inferredWeb3Enabled ? detectedFramework : '',

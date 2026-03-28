@@ -124,6 +124,22 @@ Objetivo: gerar o PRD base antes de mapear pacientes, médicos, agendamentos e r
 
 ### Passo 4: @product — PRD base
 
+**Atalho com documento de kickoff (opcional):**
+
+Se você já tiver uma ideia esboçada, crie um arquivo de entrada antes de ativar o `@product`:
+
+```bash
+# Crie plans/agendamentos.md com suas notas brutas:
+# - quero que pacientes agendem consultas online
+# - médico pode bloquear horários
+# - notificação por email na confirmação
+```
+
+Ao ativar `/product`, o agente detecta `plans/agendamentos.md` e pergunta:
+> "Encontrei `plans/agendamentos.md`. Quer que eu use como fonte para o PRD?"
+
+Se sim, ele sintetiza o conteúdo e gera o PRD formal. Você pode deletar o arquivo original depois.
+
 ```
 /product
 ```
@@ -260,7 +276,7 @@ tests/Feature/AppointmentTest.php
 - N+1: Eager loading em todos os índices (with('doctor.user', 'patient.user'))
 - Timezone: UTC no banco, conversão na camada de apresentação
 
-### Passo 6: @dev — Implementação
+### Passo 6: @dev — Implementação com TDD Gate
 
 ```
 /dev
@@ -269,8 +285,32 @@ Implemente a feature de agendamentos primeiro.
 Comece pela migration, model, action e controller.
 ```
 
-**O @dev implementa seguindo as convenções:**
+O `@dev` detecta o test runner (`pest.xml` encontrado → Pest PHP) e aplica o TDD Gate antes de implementar qualquer lógica de negócio:
 
+**1. Escreve o teste com falha (RED):**
+```php
+// tests/Feature/CreateAppointmentTest.php
+it('throws exception on doctor schedule conflict', function () {
+    $doctor = Doctor::factory()->create();
+    $slot = now()->addDay()->setHour(10)->setMinute(0);
+
+    Appointment::factory()->create([
+        'doctor_id' => $doctor->id,
+        'date'      => $slot,
+        'status'    => 'confirmed',
+    ]);
+
+    expect(fn () => (new CreateAppointmentAction)->execute([
+        'doctor_id'  => $doctor->id,
+        'patient_id' => Patient::factory()->create()->id,
+        'date'       => $slot,
+    ]))->toThrow(AppointmentConflictException::class);
+});
+```
+
+Roda o teste → **falha** (RED confirmado). Só então implementa:
+
+**2. Implementa o suficiente para passar (GREEN):**
 ```php
 // app/Actions/CreateAppointmentAction.php
 class CreateAppointmentAction
@@ -304,6 +344,8 @@ class CreateAppointmentAction
 }
 ```
 
+Roda o teste → **passa** (GREEN). Commit. Próximo passo.
+
 ### Passo 7: @qa — Testes
 
 ```
@@ -317,6 +359,8 @@ Revise a CreateAppointmentAction e escreva os testes para:
 ```
 
 **O @qa entrega** `tests/Feature/AppointmentTest.php` com todos os casos.
+
+> **Quando usar @tester em vez de @qa:** Se após o `@dev` a cobertura estiver em zero ou muito baixa, ative `/tester` em vez de `/qa`. O `@tester` começa por um inventário completo (`test-inventory.md`), mapeia os riscos, escolhe a estratégia e escreve testes em ordem de prioridade — Auth/Authorization > Business rules > Data integrity > UI. O `@qa` é um revisor pontual; o `@tester` é um engenheiro de testes que parte do zero.
 
 ---
 

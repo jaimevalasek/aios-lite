@@ -109,6 +109,47 @@ Instead, ask once:
 
 **Never silently infer requirements and start implementing when no PRD exists.** The user may have a complete spec ready to share — always ask first.
 
+## TDD Gate (run before any business logic implementation)
+
+Check `test_runner` in `project.context.md`.
+
+**If `test_runner` is blank:**
+Scan the project root for known config files:
+- `phpunit.xml`, `pest.xml` → PHP/Pest
+- `jest.config.*`, `vitest.config.*` → JS/TS
+- `pytest.ini`, `pyproject.toml` with `[tool.pytest]` → Python
+- `.rspec`, `spec/spec_helper.rb` → Ruby/RSpec
+- `foundry.toml` → Solidity/Foundry
+
+If detected: use it and note which runner is active.
+If not detected: ask the user once:
+> "No test runner detected. Do you want to configure one before we start?
+> Options for [framework]: [suggest 1-2 relevant options].
+> Or reply 'skip tests' to proceed without a test gate (not recommended for business logic)."
+
+**If user says 'skip tests':**
+Proceed — but annotate every business logic step in `spec.md` with `[no-test]` so @qa can target them.
+
+**TDD mandate by classification:**
+
+| Classification | Rule |
+|---|---|
+| MICRO | Write test alongside implementation — mandatory before commit |
+| SMALL | Write failing test FIRST (RED). It must fail before you write any implementation code. If it passes immediately, the test is wrong — rewrite it |
+| MEDIUM | Same as SMALL. Additionally: note test in implementation plan checkpoint |
+
+**Exceptions (no test required):**
+- Config files and environment setup
+- Migrations with no business rule logic
+- Static content (translations, seed data with no conditions)
+- Pure UI scaffolding with no state logic
+
+**Hard enforcement:**
+If the user says "just implement it" or "skip the test":
+> "TDD Gate: I need to write the failing test before implementing this business logic. This is non-negotiable for [SMALL/MEDIUM] projects. I'll write the test first — it should take less than 2 minutes. Want me to proceed?"
+
+If the user insists after that: write the test anyway, then implement. Never implement business logic without a test existing first.
+
 ## Brownfield alert
 
 If `framework_installed=true` in `project.context.md`:
@@ -135,7 +176,9 @@ Rules:
 ## Implementation strategy
 - Start from data layer (migrations/models/contracts).
 - Implement services/use-cases before UI handlers.
-- Add tests or validation checks aligned with risk.
+- Write the failing test first (RED) before any implementation — see TDD Gate.
+- Implement only enough to pass the test (GREEN).
+- Verify the test passes. Then commit. Then move to the next step.
 - Follow the architecture sequence — do not skip dependencies.
 - If `readiness.md` says `needs more discovery` or `needs architecture clarification`, do not act as if the scope were implementation-ready.
 
@@ -303,6 +346,10 @@ For `project_type=dapp`, also load the matching Web3 skills:
 - Before implementing a recurring pattern: check `.aioson/skills/static/` and `.aioson/installed-skills/`. Reinventing a covered pattern is a bug.
 
 ## Atomic execution
+
+> Test-first mandate: see **TDD Gate** above. The rules here mirror those above —
+> the TDD Gate is the enforcement point, atomic execution is the execution rhythm.
+
 Work in small, validated steps — never implement an entire feature in one pass:
 1. **Declare** the next step ("Next: AddToCart action").
 2. **Write the test** — rules by classification:

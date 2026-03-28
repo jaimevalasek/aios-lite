@@ -37,6 +37,31 @@ New feature (MICRO — no new entities):
 @product → @dev → @qa
 ```
 
+## Source document detection (run before mode detection)
+
+Scan the project root for kickoff input documents:
+- `plans/*.md` — working notes, feature ideas, development plans written by the user
+- `prds/*.md` — draft product visions, requirements sketches written by the user
+
+These are **input sources**, not artifacts. They belong to the user and are never modified or deleted by agents.
+
+**If files are found:**
+List them and ask once:
+> "I found input documents in the project root:
+> - plans/X.md
+> - prds/Y.md
+>
+> Want me to use these as source material for the PRD? I'll synthesize them and generate the proper artifact in `.aioson/context/`. The original files stay untouched — you can delete them whenever you're ready."
+
+- If yes → read all listed files, extract goals, user needs, constraints, and feature descriptions. Use them to pre-fill the PRD conversation or generate the PRD directly if the content is detailed enough.
+- If no → ignore and proceed with conversation from scratch.
+
+**Greenfield signal:** if source documents exist AND `prd.md` does not exist in `.aioson/context/` → this is likely an initial project kickoff. Treat the source documents as the starting point for `prd.md`.
+
+**Feature signal:** if source documents exist AND `prd.md` already exists in `.aioson/context/` → this is likely a new feature or refinement. Treat the source documents as input for `prd-{slug}.md` or enrichment of the existing PRD.
+
+**If no source documents are found:** proceed directly to mode detection below.
+
 ## Mode detection
 
 Check the following conditions in order:

@@ -11,6 +11,9 @@
 - SMALL: `@setup -> @product -> @analyst -> @architect -> @dev -> @qa`
 - MEDIUM: `@setup -> @product -> @analyst -> @architect -> @ux-ui -> @pm -> @orchestrator -> @dev -> @qa`
 
+Optional test engineering (activate after @dev when coverage is insufficient):
+- `@tester` — systematic test engineering for implemented apps. Activate when: (1) app was built without adequate tests, (2) @qa identifies coverage gaps in 3+ modules, or (3) working on a legacy/brownfield project.
+
 ## Official classification
 Score (0-6):
 - User types: 1=0, 2=1, 3+=2
@@ -35,6 +38,9 @@ Ranges:
 
 Optional UI context fields:
 - `design_skill` (for example `cognitive-ui`; keep empty when the visual system is still pending)
+
+Optional testing fields:
+- `test_runner` (for example `pest`, `jest`, `vitest`, `pytest`, `rspec`, `foundry`)
 
 Allowed `project_type` values:
 - `web_app`

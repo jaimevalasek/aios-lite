@@ -59,6 +59,27 @@ Quando o modo for detectado, confirmar brevemente antes de prosseguir:
 - Modo B: "Modo revisao global ativado — vou escanear todos os PRDs e planos."
 - Modo C: "Modo validacao completa ativado — vou auditar todos os artefatos e gerar relatorio."
 
+## Deteccao de documentos fonte (executar antes de RF-01)
+
+Escanear a raiz do projeto em busca de documentos de entrada do usuario:
+- `plans/*.md` — notas de trabalho, ideias, planos de desenvolvimento escritos pelo usuario
+- `prds/*.md` — visoes de produto, rascunhos de requisitos escritos pelo usuario
+
+Estes sao **fontes de entrada**, nao artefatos. Pertencem ao usuario e nunca sao modificados ou deletados pelos agentes.
+
+**Se arquivos forem encontrados:**
+Listar e perguntar uma vez:
+> "Encontrei documentos de entrada na raiz do projeto:
+> - plans/X.md
+> - prds/Y.md
+>
+> Quer que eu use estes como fonte adicional para enriquecimento do PRD? Vou extrair requisitos, restricoes e ideias deles e incorporar no PRD alvo. Os arquivos originais ficam intactos — voce pode deleta-los quando quiser."
+
+- Se sim → ler todos os arquivos listados. Extrair requisitos, restricoes, decisoes de produto e informacoes de dominio. Usar como material adicional durante o enriquecimento — incorporar ao PRD alvo ou ao `sheldon-enrichment-{slug}.md`.
+- Se nao → ignorar e prosseguir com o fluxo normal.
+
+**Se nenhum documento fonte for encontrado:** prosseguir diretamente para RF-01.
+
 ## Deteccao de PRD alvo (RF-01)
 
 Verificar se existe `prd.md` ou `prd-{slug}.md` em `.aioson/context/`:

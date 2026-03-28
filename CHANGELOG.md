@@ -4,6 +4,24 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.5.1] - 2026-03-28
+### Added
+- **TDD Gate no `@dev`**: novo bloqueador explícito antes de qualquer implementação de lógica de negócio. Detecta test runner via `test_runner` em `project.context.md` ou varre a raiz em busca de `pest.xml`, `vitest.config.*`, `pytest.ini`, `.rspec`, `foundry.toml`. Mandato RED → GREEN → commit por classificação (MICRO/SMALL/MEDIUM) com exceções para migrations, configurações e conteúdo estático.
+- **Novo agente `@tester`**: engenheiro de testes para aplicações já implementadas. Produz `test-inventory.md` (mapa de cobertura), `test-plan.md` (estratégia escolhida + cobertura antes/depois) e escreve testes por módulo em ordem de risco. Suporta Characterization Testing, Test Pyramid, Risk-first Gap Filling, Property-based, Contract e Mutation Testing. Mapeamento completo de frameworks: Laravel/Pest, Next.js/Vitest+RTL, Django/pytest, FastAPI/httpx, Rails/RSpec, Solidity/Foundry.
+- **Detecção de documentos de kickoff no `@product` e `@sheldon`**: ambos os agentes agora varrem `plans/*.md` e `prds/*.md` na raiz do projeto antes de iniciar o fluxo. Detectam contexto (greenfield vs feature), oferecem sintetizar o conteúdo nos artefatos formais em `.aioson/context/`, e nunca modificam os arquivos fonte — o usuário decide quando deletá-los.
+- Campo `test_runner` adicionado ao Context contract em `config.md` e ao template de `project.context.md` gerado pelo `@setup` (todos os 4 locales).
+- Detecção automática de test runner no `@setup`: varre a raiz e preenche `test_runner` em `project.context.md` quando um runner é detectado.
+- `@tester` registrado em `CLAUDE.md`, `AGENTS.md`, `OPENCODE.md`, `.gemini/commands/aios-tester.toml`, `src/constants.js` (AGENT_DEFINITIONS) e `template/.claude/commands/aioson/agent/tester.md`.
+- Documentação `docs/pt` atualizada: `agentes.md` (seções `@dev`, `@qa`, `@product`, `@sheldon` novo, `@tester` novo, fluxos atualizados), `cenarios.md` (exemplo TDD no Cenário 2, exemplo kickoff doc, nota @tester vs @qa), `inicio-rapido.md` (tabela de sequências e seção de estratégia de kickoff docs).
+
+### Changed
+- `src/context-writer.js` e `src/commands/setup-context.js`: suporte ao campo `testRunner` na geração e override de `project.context.md`.
+- `template/.aioson/agents/dev.md`: seção "Implementation strategy" reescrita com mandato RED→GREEN→commit; seção "Atomic execution" atualizada com referência cruzada ao TDD Gate.
+- `template/.aioson/agents/product.md`: seção "Source document detection" adicionada antes de "Mode detection".
+- `template/.aioson/agents/sheldon.md`: seção "Detecção de documentos fonte" adicionada antes de RF-01.
+- `template/.aioson/config.md`: campo `test_runner` no Context contract; `@tester` no workflow opcional.
+- Versão de referência nos templates de `project.context.md` atualizada de `0.1.25` para `1.5.1`.
+
 ## [1.5.0] - 2026-03-27
 ### Added
 - Native web map and scrape commands for first-party web discovery and extraction workflows.

@@ -64,6 +64,7 @@ function renderProjectContext(data) {
   const codeCommentLanguage = data.codeCommentLanguage || language;
   const generatedAt = data.generatedAt || new Date().toISOString();
   const designSkill = data.designSkill || '';
+  const testRunner = data.testRunner || '';
   const web3Enabled = Boolean(data.web3Enabled);
   const web3Networks = data.web3Networks || '';
   const contractFramework = data.contractFramework || '';
@@ -81,6 +82,7 @@ framework_installed: ${data.frameworkInstalled ? 'true' : 'false'}
 classification: "${data.classification}"
 conversation_language: "${language}"
 design_skill: "${designSkill}"
+test_runner: "${testRunner}"
 web3_enabled: ${web3Enabled ? 'true' : 'false'}
 web3_networks: "${web3Networks}"
 contract_framework: "${contractFramework}"

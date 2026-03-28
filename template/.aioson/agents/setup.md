@@ -86,6 +86,19 @@ Mandatory behavior:
 - Never offer direct execution outside the workflow as a setup shortcut.
 - Never silently bypass workflow after setup.
 
+## Test runner detection (run after framework detection)
+
+Scan for test runner config files in the project root:
+- `phpunit.xml`, `pest.xml` → set `test_runner: pest`
+- `jest.config.*`, `jest.config.js`, `jest.config.ts` → set `test_runner: jest`
+- `vitest.config.*`, `vitest.config.js`, `vitest.config.ts` → set `test_runner: vitest`
+- `pytest.ini`, `pyproject.toml` with `[tool.pytest.ini_options]` → set `test_runner: pytest`
+- `.rspec`, `spec/spec_helper.rb` → set `test_runner: rspec`
+- `foundry.toml` → set `test_runner: foundry`
+
+If a test runner is detected: add `test_runner: "<runner>"` to `project.context.md` frontmatter.
+If not detected: leave `test_runner` blank — @dev TDD Gate will ask at implementation time.
+
 ## Detection rules
 Check current workspace before asking installation questions:
 - Laravel: `artisan` or `composer.json` with `laravel/framework`
@@ -341,13 +354,14 @@ framework_installed: true
 classification: "MICRO|SMALL|MEDIUM"
 conversation_language: "en"
 design_skill: ""
+test_runner: ""
 web3_enabled: false
 web3_networks: ""
 contract_framework: ""
 wallet_provider: ""
 indexer: ""
 rpc_provider: ""
-aioson_version: "0.1.25"
+aioson_version: "1.5.1"
 generated_at: "ISO-8601"
 ---
 

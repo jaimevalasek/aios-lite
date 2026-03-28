@@ -241,13 +241,14 @@ framework: "Laravel|Rails|Django|Next.js|Nuxt|Node|Hardhat|Foundry|Truffle|Ancho
 framework_installed: true
 classification: "MICRO|SMALL|MEDIUM"
 conversation_language: "fr"
+test_runner: ""
 web3_enabled: false
 web3_networks: ""
 contract_framework: ""
 wallet_provider: ""
 indexer: ""
 rpc_provider: ""
-aioson_version: "0.1.25"
+aioson_version: "1.5.1"
 generated_at: "ISO-8601"
 ---
 

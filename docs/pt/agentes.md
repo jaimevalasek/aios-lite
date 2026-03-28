@@ -90,12 +90,28 @@ Regras do fluxo:
 **Quando usar:** Depois do `@setup` em projetos novos. Em features novas de projeto existente, pode entrar direto sem repetir `@setup`.
 
 **O que faz:**
+- varre a raiz do projeto em busca de documentos de entrada (`plans/*.md`, `prds/*.md`) antes de iniciar a conversa
 - conduz a conversa de produto e gera o `PRD base`
 - registra visão, problema, usuários, escopo inicial e perguntas em aberto
 - detecta sinais visuais cedo e preserva a intenção no PRD
 - faz classificação preliminar do escopo
 - aponta o próximo agente do fluxo
 - em brownfield, usa `discovery.md` quando já existir e trata os artefatos locais do scan apenas como orientação estrutural, nunca como substituto do `@analyst`
+
+**Documentos de kickoff (plans/ e prds/ na raiz):**
+
+Você pode criar arquivos de entrada na raiz do projeto antes de ativar o `@product`:
+
+```
+plans/minha-ideia.md     ← notas, esboços, planos escritos por você
+prds/visao-produto.md    ← rascunhos de requisitos, referências
+```
+
+O `@product` detecta esses arquivos automaticamente e pergunta se deve usá-los como fonte. Se sim, ele sintetiza o conteúdo e gera o PRD formal em `.aioson/context/`. Os arquivos originais nunca são modificados — você pode deletá-los depois que o PRD estiver gerado.
+
+**Sinal de greenfield vs feature:**
+- `plans/*.md` ou `prds/*.md` existem + `prd.md` ainda não existe → kickoff de projeto novo
+- `plans/*.md` ou `prds/*.md` existem + `prd.md` já existe → nova feature ou refinamento
 
 **Como ativar:**
 ```
@@ -481,12 +497,25 @@ Depois disso, ela passa a ser parte real do pacote local da squad e deve ser con
 - Seguir as convenções nativas do framework do projeto
 - Verificar skills disponíveis em `.aioson/skills/static/` antes de implementar
 
+**TDD Gate** — Antes de qualquer implementação de lógica de negócio, o `@dev` verifica o test runner configurado em `project.context.md`. Se não houver nenhum configurado, escaneia a raiz em busca de arquivos de configuração conhecidos (`pest.xml`, `vitest.config.*`, `pytest.ini`, `.rspec`, `foundry.toml`) e pergunta ao usuário se deseja configurar um antes de começar.
+
+| Classificação | Mandato |
+|---|---|
+| MICRO | Escrever o teste junto com a implementação — obrigatório antes do commit |
+| SMALL | Escrever o teste com falha (RED) **antes** de qualquer código de implementação |
+| MEDIUM | Igual ao SMALL. Anotar o teste no checkpoint do plano de implementação |
+
+**Exceções ao TDD** (nenhum teste exigido): arquivos de configuração, migrations sem regras de negócio, conteúdo estático, scaffolding de UI sem lógica de estado.
+
+Se o usuário pedir para pular o teste, o `@dev` resiste, explica, e só cede após insistência — nunca implementa lógica de negócio sem teste existindo primeiro.
+
 **Execução atômica** — O @dev trabalha em passos pequenos e validados, nunca implementa uma feature inteira de uma vez:
 1. Declara o próximo passo antes de escrever código
-2. Implementa apenas aquele passo
-3. Valida antes de avançar — se houver dúvida, pergunta
-4. Faz commit do passo funcional antes de seguir
-5. Para e reporta se algo der errado — não continua em estado quebrado
+2. Escreve o teste com falha (RED) — o teste deve falhar antes de qualquer implementação
+3. Implementa apenas o suficiente para o teste passar (GREEN)
+4. Verifica que o teste passa — lê o output completo, não um resumo
+5. Faz commit com mensagem semântica
+6. Repete para o próximo passo
 
 **Em projetos com Laravel especificamente:**
 - Form Requests para validação (nunca inline no controller)
@@ -505,7 +534,7 @@ Depois disso, ela passa a ser parte real do pacote local da squad e deve ser con
 
 **O que faz:**
 - Revisa o código implementado
-- Escreve testes unitários e de integração
+- Escreve testes para achados Critical e High
 - Identifica casos de borda não cobertos
 - Valida se os critérios de aceite foram atendidos
 - usa `discovery.md` como fonte de regras e relacionamentos; se só existirem artefatos de scan, o fluxo correto ainda passa por `@analyst`
@@ -516,9 +545,91 @@ Depois disso, ela passa a ser parte real do pacote local da squad e deve ser con
 ```
 
 **Entrega:**
-- Suite de testes
-- Lista de problemas encontrados
+- Lista de problemas encontrados por severidade
+- Testes para achados críticos
 - Relatório de cobertura
+
+> **@qa vs @tester** — O `@qa` é um revisor: lê o que foi implementado, aponta riscos e escreve testes pontuais para achados críticos. O `@tester` é um engenheiro de testes: parte de cobertura zero e constrói uma estratégia sistemática (inventário, mapa de risco, estratégia por camada). Use `@tester` quando a aplicação foi implementada sem testes adequados ou quando `@qa` identificar lacunas em 3+ módulos.
+
+---
+
+## @tester
+
+**Quando usar:** Após `@dev`, quando a aplicação foi implementada sem testes adequados. Também em projetos legados ou quando `@qa` identificar cobertura insuficiente em múltiplos módulos.
+
+**O que faz:**
+- Produz um inventário completo de cobertura (`test-inventory.md`)
+- Mapeia regras de negócio descobertas vs testes existentes, priorizando por risco
+- Escolhe e documenta a estratégia de teste antes de escrever qualquer linha
+- Escreve testes por módulo em ordem de prioridade, com commit atômico por módulo
+- Gera relatório de cobertura antes vs depois
+
+**Estratégias disponíveis:**
+
+| Cenário | Estratégia |
+|---|---|
+| Código legado sem testes, precisa refatorar | Characterization Testing |
+| App implementada, cobertura zero | Test Pyramid Bottom-up |
+| Cobertura razoável, regras descobertas | Risk-first Gap Filling |
+| Código crítico com edge cases complexos | Property-based Testing |
+| APIs entre times | Contract Testing |
+| Suspeita de testes fracos que sempre passam | Mutation Testing |
+
+**Frameworks detectados automaticamente por stack:**
+
+| Stack | Test Runner | Unit | Integration | E2E |
+|---|---|---|---|---|
+| Laravel | Pest PHP | Pest unit | Pest feature (HTTP) | Dusk/Playwright |
+| Next.js | Vitest | Vitest + RTL | MSW + Vitest | Playwright |
+| Django | pytest-django | pytest | pytest + client | Playwright |
+| FastAPI | pytest + httpx | pytest | AsyncClient | — |
+| Rails | RSpec | RSpec unit | Request specs | Capybara |
+| Solidity | Foundry | forge unit | forge integration | — |
+
+**Como ativar:**
+```
+/tester
+```
+
+**Entrega:**
+- `.aioson/context/test-inventory.md` — mapa de cobertura por arquivo
+- `.aioson/context/test-plan.md` — estratégia escolhida + cobertura antes/depois
+- Testes escritos por módulo, commitados incrementalmente
+
+**Restrições:**
+- Nunca modifica código de produção
+- Se encontrar um bug real: documenta em `test-plan.md` e para — não corrige silenciosamente
+- Testes sem assertions são proibidos
+
+---
+
+## @sheldon
+
+**Quando usar:** Após `@product`, antes de iniciar a cadeia de execução — para garantir que o PRD está completo, sem lacunas e pronto para gerar código correto.
+
+**O que faz:**
+- Detecta documentos de entrada na raiz (`plans/*.md`, `prds/*.md`) e oferece incorporá-los ao enriquecimento do PRD
+- Analisa o PRD por prioridade de melhorias
+- Decide entre enriquecimento in-place ou plano de fases externo
+- Valida se o PRD está legível e implementável antes de ativar `@dev`
+
+**Modos de operação:**
+
+| Modo | Como ativar | O que faz |
+|---|---|---|
+| A — Enriquecimento (padrão) | `/sheldon` | Analisa o PRD alvo e sugere melhorias prioritárias |
+| B — Revisão Global | `/sheldon` + "revisão geral" | Escaneia todos os PRDs e planos ativos |
+| C — Validação Completa | `/sheldon` + "validar" ou "preparar para dev" | Auditoria completa + checklist final antes de codar |
+
+**Como ativar:**
+```
+/sheldon
+```
+
+**Entrega:**
+- PRD enriquecido in-place (Modo A)
+- Relatório de status de todos os PRDs (Modo B)
+- Checklist de validação + decisão go/no-go para implementação (Modo C)
 
 ---
 
@@ -532,15 +643,18 @@ Duração típica: minutos a horas. Sem análise, sem arquitetura formal.
 
 ### SMALL
 ```
-@setup → @product → @analyst → @architect → @ux-ui → @dev → @qa
+@setup → @product → [@sheldon] → @analyst → @architect → @dev → @qa → [@tester]
 ```
 Duração típica: horas a dias. Análise leve, estrutura clara.
 
 ### MEDIUM
 ```
-@setup → @product → @analyst → @architect → @ux-ui → @pm → @orchestrator → @dev → @qa
+@setup → @product → [@sheldon] → @analyst → @architect → @ux-ui → @pm → @orchestrator → @dev → @qa → [@tester]
 ```
-Duração típica: dias a semanas. Análise completa, parallelismo, backlog formal.
+Duração típica: dias a semanas. Análise completa, paralelismo, backlog formal.
+
+`[@sheldon]` — opcional, recomendado antes de iniciar a cadeia de execução para validar o PRD.
+`[@tester]` — opcional, recomendado quando a cobertura de testes for insuficiente após `@dev`.
 
 ---
 
