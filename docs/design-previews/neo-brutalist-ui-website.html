@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DRFT — Developer Tool Landing / Neo-Brutalist UI Preview</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #FFFDF5;
+      --black: #1A1A1A;
+      --yellow: #FACC15;
+      --white: #FFFFFF;
+      --border: 2px solid #1A1A1A;
+      --shadow-card: 6px 6px 0 #1A1A1A;
+      --shadow-btn: 3px 3px 0 #1A1A1A;
+      --muted: #555555;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--black);
+      overflow-x: hidden;
+    }
+
+    .container {
+      max-width: 1160px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* === NAV === */
+    nav {
+      background: var(--bg);
+      border-bottom: 3px solid var(--black);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .nav-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 64px;
+      max-width: 1160px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+    .logo {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.6rem;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      color: var(--black);
+    }
+    .logo-dot {
+      display: inline-block;
+      width: 8px; height: 8px;
+      background: var(--yellow);
+      border: 2px solid var(--black);
+      border-radius: 50%;
+      vertical-align: middle;
+      margin-left: 2px;
+      margin-bottom: 4px;
+    }
+    .nav-links {
+      display: flex;
+      gap: 32px;
+      list-style: none;
+    }
+    .nav-links a {
+      font-family: 'JetBrains Mono', monospace;
+      text-decoration: none;
+      color: var(--black);
+      font-size: 0.82rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      transition: color 0.15s;
+    }
+    .nav-links a:hover { color: var(--muted); }
+    .btn-yellow {
+      background: var(--yellow);
+      color: var(--black);
+      border: var(--border);
+      box-shadow: var(--shadow-btn);
+      border-radius: 0;
+      padding: 10px 20px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 0.88rem;
+      font-weight: 700;
+      cursor: pointer;
+      letter-spacing: -0.01em;
+      transition: box-shadow 0.1s, transform 0.1s;
+    }
+    .btn-yellow:hover {
+      box-shadow: 1px 1px 0 var(--black);
+      transform: translate(2px, 2px);
+    }
+    .btn-ghost {
+      background: transparent;
+      color: var(--black);
+      border: var(--border);
+      box-shadow: var(--shadow-btn);
+      border-radius: 0;
+      padding: 10px 20px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 0.88rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: box-shadow 0.1s, transform 0.1s;
+    }
+    .btn-ghost:hover {
+      box-shadow: 1px 1px 0 var(--black);
+      transform: translate(2px, 2px);
+    }
+
+    /* === HERO === */
+    .hero {
+      padding: 96px 0 72px;
+      border-bottom: 3px solid var(--black);
+    }
+    .hero-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.78rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .hero-label::before {
+      content: '';
+      display: block;
+      width: 32px; height: 2px;
+      background: var(--yellow);
+      border: 1px solid var(--black);
+    }
+    .hero h1 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: clamp(52px, 8vw, 80px);
+      font-weight: 800;
+      line-height: 0.95;
+      letter-spacing: -0.04em;
+      color: var(--black);
+      margin-bottom: 28px;
+      max-width: 800px;
+    }
+    .hero h1 em {
+      font-style: normal;
+      background: var(--yellow);
+      padding: 0 6px;
+      border: 2px solid var(--black);
+    }
+    .hero-sub {
+      font-size: 1.1rem;
+      color: var(--muted);
+      max-width: 520px;
+      line-height: 1.65;
+      margin-bottom: 40px;
+      font-weight: 400;
+    }
+    .hero-ctas {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-bottom: 56px;
+    }
+    .btn-large { padding: 14px 32px; font-size: 1rem; }
+
+    /* Terminal block */
+    .terminal {
+      background: var(--black);
+      border: 2px solid var(--black);
+      box-shadow: var(--shadow-card);
+      border-radius: 0;
+      max-width: 680px;
+      overflow: hidden;
+    }
+    .terminal-bar {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 12px 16px;
+      border-bottom: 2px solid #2D2D2D;
+    }
+    .t-dot { width: 11px; height: 11px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.15); }
+    .t-dot.red { background: #FF5F57; }
+    .t-dot.yellow { background: #FFBD2E; }
+    .t-dot.green { background: #28C840; }
+    .terminal-title {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.72rem;
+      color: #666;
+      margin-left: auto;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .terminal-body {
+      padding: 20px 20px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.82rem;
+      line-height: 1.8;
+      color: #C9D1D9;
+    }
+    .t-prompt { color: #FACC15; }
+    .t-cmd { color: #E8E8E8; }
+    .t-comment { color: #6B7280; }
+    .t-success { color: #34D399; }
+    .t-dim { color: #6B7280; }
+    .t-string { color: #A5F3FC; }
+    .t-num { color: #FCA5A5; }
+
+    /* === STATS BAR === */
+    .stats-bar {
+      background: var(--yellow);
+      border-bottom: 3px solid var(--black);
+      padding: 0;
+    }
+    .stats-bar-inner {
+      max-width: 1160px;
+      margin: 0 auto;
+      padding: 0 24px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+    }
+    .stat-item {
+      padding: 28px 32px;
+      text-align: center;
+      border-right: 3px solid var(--black);
+    }
+    .stat-item:last-child { border-right: none; }
+    .stat-num {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: var(--black);
+      display: block;
+      letter-spacing: -0.02em;
+      margin-bottom: 4px;
+    }
+    .stat-lbl {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.68rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--black);
+      opacity: 0.65;
+    }
+
+    /* === FEATURES === */
+    .features-section {
+      padding: 96px 0;
+      border-bottom: 3px solid var(--black);
+    }
+    .section-overline {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+    .section-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: clamp(28px, 4vw, 40px);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      color: var(--black);
+      margin-bottom: 52px;
+      line-height: 1.1;
+    }
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0;
+      border: 2px solid var(--black);
+      box-shadow: var(--shadow-card);
+    }
+    .feature-card {
+      background: var(--white);
+      border-right: 2px solid var(--black);
+      padding: 36px 28px;
+    }
+    .feature-card:last-child { border-right: none; }
+    .feature-num {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 2.8rem;
+      font-weight: 700;
+      color: var(--yellow);
+      -webkit-text-stroke: 2px var(--black);
+      margin-bottom: 16px;
+      display: block;
+      line-height: 1;
+    }
+    .feature-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--black);
+      margin-bottom: 10px;
+      letter-spacing: -0.02em;
+    }
+    .feature-desc {
+      font-size: 0.88rem;
+      color: var(--muted);
+      line-height: 1.65;
+    }
+    .feature-tag {
+      display: inline-block;
+      margin-top: 16px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.68rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 4px 10px;
+      border: 2px solid var(--black);
+      border-radius: 9999px;
+      color: var(--black);
+    }
+
+    /* === PRICING === */
+    .pricing-section {
+      padding: 96px 0;
+      border-bottom: 3px solid var(--black);
+    }
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+    .pricing-card {
+      background: var(--white);
+      border: 2px solid var(--black);
+      box-shadow: var(--shadow-card);
+      overflow: hidden;
+    }
+    .pricing-card.featured {
+      border: 3px solid var(--black);
+      box-shadow: 8px 8px 0 var(--black);
+    }
+    .pricing-header {
+      padding: 24px 28px;
+      border-bottom: 2px solid var(--black);
+    }
+    .pricing-card.featured .pricing-header {
+      background: var(--yellow);
+    }
+    .pricing-name {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      margin-bottom: 8px;
+    }
+    .pricing-price {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 2.2rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+    .pricing-price span {
+      font-size: 0.9rem;
+      font-weight: 400;
+      color: var(--muted);
+    }
+    .pricing-body { padding: 28px; }
+    .pricing-features {
+      list-style: none;
+      margin-bottom: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .pricing-features li {
+      font-size: 0.88rem;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .pricing-features li::before {
+      content: '→';
+      color: var(--black);
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    /* === FOOTER === */
+    footer {
+      background: var(--black);
+      border-top: 3px solid var(--black);
+      padding: 48px 0;
+    }
+    .footer-inner {
+      max-width: 1160px;
+      margin: 0 auto;
+      padding: 0 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 24px;
+    }
+    .footer-logo {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.4rem;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      color: var(--yellow);
+    }
+    .footer-links {
+      display: flex;
+      gap: 28px;
+      flex-wrap: wrap;
+    }
+    .footer-links a {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #888;
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+    .footer-links a:hover { color: var(--yellow); }
+    .footer-copy {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem;
+      color: #555;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    @media (max-width: 768px) {
+      .features-grid, .pricing-grid { grid-template-columns: 1fr; }
+      .stats-bar-inner { grid-template-columns: 1fr; }
+      .stat-item { border-right: none; border-bottom: 3px solid var(--black); }
+      .stat-item:last-child { border-bottom: none; }
+      .nav-links { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav>
+    <div class="nav-inner">
+      <div class="logo">DRFT<span class="logo-dot"></span></div>
+      <ul class="nav-links">
+        <li><a href="#">docs</a></li>
+        <li><a href="#">pricing</a></li>
+        <li><a href="#">changelog</a></li>
+      </ul>
+      <button class="btn-yellow">GET DRFT FREE →</button>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="container">
+      <div class="hero-label">Git Workflow Automation · v2.4.1</div>
+      <h1>SHIP CODE.<br /><em>NOT MEETINGS.</em></h1>
+      <p class="hero-sub">DRFT automates your entire Git workflow — from branch naming to PR creation, changelog generation, and release tagging. Stop context-switching. Start shipping.</p>
+      <div class="hero-ctas">
+        <button class="btn-yellow btn-large">Install in 30 seconds</button>
+        <button class="btn-ghost btn-large">Read the docs</button>
+      </div>
+
+      <!-- Terminal -->
+      <div class="terminal">
+        <div class="terminal-bar">
+          <div class="t-dot red"></div>
+          <div class="t-dot yellow"></div>
+          <div class="t-dot green"></div>
+          <div class="terminal-title">bash · ~/my-project</div>
+        </div>
+        <div class="terminal-body">
+          <div><span class="t-prompt">$</span> <span class="t-cmd">npm install -g drft</span></div>
+          <div><span class="t-dim">✓ installed drft@2.4.1 globally</span></div>
+          <br />
+          <div><span class="t-prompt">$</span> <span class="t-cmd">drft init</span></div>
+          <div><span class="t-success">✓ Detected GitHub remote</span></div>
+          <div><span class="t-success">✓ Conventional commits enabled</span></div>
+          <div><span class="t-success">✓ Auto-PR template configured</span></div>
+          <br />
+          <div><span class="t-prompt">$</span> <span class="t-cmd">drft ship</span> <span class="t-string">"add user auth"</span></div>
+          <div><span class="t-comment"># → branch:  feat/add-user-auth-8f2c</span></div>
+          <div><span class="t-comment"># → commit:  feat: add user auth</span></div>
+          <div><span class="t-comment"># → PR #47:  opened · 2 reviewers assigned</span></div>
+          <div><span class="t-success">✓ Done in <span class="t-num">1.2s</span></span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STATS BAR -->
+  <div class="stats-bar">
+    <div class="stats-bar-inner">
+      <div class="stat-item">
+        <span class="stat-num">47K+</span>
+        <span class="stat-lbl">ACTIVE REPOS</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-num">12M+</span>
+        <span class="stat-lbl">DEPLOYS SHIPPED</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-num">&lt; 200ms</span>
+        <span class="stat-lbl">CLI RESPONSE TIME</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- FEATURES -->
+  <section class="features-section">
+    <div class="container">
+      <div class="section-overline">// core features</div>
+      <div class="section-title">One command.<br />Everything done.</div>
+      <div class="features-grid">
+        <div class="feature-card">
+          <span class="feature-num">01</span>
+          <div class="feature-title">Smart Branch Creation</div>
+          <p class="feature-desc">Describe what you're building in plain English. DRFT creates the right branch name, linked to your issue tracker, in one shot.</p>
+          <span class="feature-tag">branch · jira · linear</span>
+        </div>
+        <div class="feature-card">
+          <span class="feature-num">02</span>
+          <div class="feature-title">Auto PR with Context</div>
+          <p class="feature-desc">Generates PR descriptions from your diff — what changed, why it changed, and how to test it. No more blank PR templates.</p>
+          <span class="feature-tag">gh · gitlab · bitbucket</span>
+        </div>
+        <div class="feature-card">
+          <span class="feature-num">03</span>
+          <div class="feature-title">Zero-Config Releases</div>
+          <p class="feature-desc">Semantic versioning, changelog generation, and tag publishing — all from one command. Works with monorepos.</p>
+          <span class="feature-tag">semver · changelog · tags</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRICING -->
+  <section class="pricing-section">
+    <div class="container">
+      <div class="section-overline">// pricing</div>
+      <div class="section-title">Simple. No tricks.</div>
+      <div class="pricing-grid">
+        <div class="pricing-card">
+          <div class="pricing-header">
+            <div class="pricing-name">INDIE</div>
+            <div class="pricing-price">$0 <span>/ forever</span></div>
+          </div>
+          <div class="pricing-body">
+            <ul class="pricing-features">
+              <li>Unlimited repos</li>
+              <li>Smart branch creation</li>
+              <li>Auto PR descriptions</li>
+              <li>GitHub + GitLab</li>
+              <li>CLI only</li>
+            </ul>
+            <button class="btn-ghost" style="width:100%;">Start Free →</button>
+          </div>
+        </div>
+        <div class="pricing-card featured">
+          <div class="pricing-header">
+            <div class="pricing-name">TEAM</div>
+            <div class="pricing-price">$12 <span>/ seat / mo</span></div>
+          </div>
+          <div class="pricing-body">
+            <ul class="pricing-features">
+              <li>Everything in Indie</li>
+              <li>Shared team templates</li>
+              <li>Release automation</li>
+              <li>Slack notifications</li>
+              <li>Priority support</li>
+            </ul>
+            <button class="btn-yellow" style="width:100%;">Get Team Plan →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-logo">DRFT</div>
+      <div class="footer-links">
+        <a href="#">docs</a>
+        <a href="#">changelog</a>
+        <a href="#">github</a>
+        <a href="#">privacy</a>
+        <a href="#">status</a>
+      </div>
+      <div class="footer-copy">© 2025 DRFT LABS · MIT LICENSE</div>
+    </div>
+  </footer>
+
+</body>
+</html>

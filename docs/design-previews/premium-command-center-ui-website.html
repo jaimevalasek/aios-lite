@@ -1,0 +1,1217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CTRL — Operational SaaS Landing / Premium Command Center UI Preview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0b1015;
+    --surface: #10161d;
+    --elevated: #151c24;
+    --border: rgba(255,255,255,0.08);
+    --border-accent: rgba(99,179,237,0.30);
+    --accent: #63b3ed;
+    --accent-muted: #4a90a4;
+    --accent-bg: rgba(99,179,237,0.10);
+    --accent-bg-solid: rgba(99,179,237,0.15);
+    --fg: #f3f7fb;
+    --fg-secondary: #b7c2cf;
+    --fg-muted: #7f8b99;
+    --green: #38a169;
+    --amber: #d97706;
+    --red: #e53e3e;
+    --green-bg: rgba(56,161,105,0.12);
+    --amber-bg: rgba(217,119,6,0.12);
+    --red-bg: rgba(229,62,62,0.12);
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--fg-secondary);
+    background: var(--bg);
+    /* Aurora effect */
+    background-image: radial-gradient(ellipse 800px 600px at 60% 20%, rgba(99,179,237,0.04) 0%, transparent 100%);
+    background-attachment: fixed;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(11,16,21,0.94);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 36px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .nav-logo {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 17px;
+    font-weight: 500;
+    color: var(--fg);
+    text-decoration: none;
+    letter-spacing: 0.08em;
+  }
+
+  .nav-logo span { color: var(--accent); }
+
+  .nav-center {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 14px;
+    width: 240px;
+  }
+
+  .nav-search-icon {
+    color: var(--fg-muted);
+    font-size: 12px;
+    flex-shrink: 0;
+  }
+
+  .nav-search-text {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--fg-muted);
+  }
+
+  .nav-search-kbd {
+    margin-left: auto;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--fg-muted);
+    background: var(--elevated);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 1px 6px;
+  }
+
+  .nav-links {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    list-style: none;
+  }
+
+  .nav-links a {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--fg-secondary);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+
+  .nav-links a:hover { color: var(--fg); }
+
+  .nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .btn-ghost-nav {
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--fg-secondary);
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 14px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: border-color 0.2s, color 0.2s;
+  }
+
+  .btn-ghost-nav:hover { border-color: var(--border-accent); color: var(--fg); }
+
+  .btn-solid-nav {
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--bg);
+    background: var(--accent);
+    border: none;
+    border-radius: 6px;
+    padding: 7px 16px;
+    cursor: pointer;
+    text-decoration: none;
+  }
+
+  /* ── LAYOUT ── */
+  section { padding: 80px 36px; }
+  .container { max-width: 1120px; margin: 0 auto; }
+
+  /* ── HERO ── */
+  .hero { padding: 72px 36px 0; }
+
+  .hero-inner { max-width: 1120px; margin: 0 auto; }
+
+  .hero-overline {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--fg-muted);
+    margin-bottom: 18px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .hero-overline::before {
+    content: '';
+    display: block;
+    width: 24px;
+    height: 1px;
+    background: var(--accent);
+    opacity: 0.5;
+  }
+
+  .hero h1 {
+    font-size: 44px;
+    font-weight: 700;
+    color: var(--fg);
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    max-width: 680px;
+    margin-bottom: 18px;
+  }
+
+  .hero-sub {
+    font-size: 16px;
+    color: var(--fg-secondary);
+    max-width: 520px;
+    margin-bottom: 36px;
+    line-height: 1.65;
+  }
+
+  .hero-ctas {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 60px;
+  }
+
+  .btn-solid-lg {
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--bg);
+    background: var(--accent);
+    border: none;
+    border-radius: 6px;
+    padding: 11px 24px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .btn-ghost-lg {
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--fg-secondary);
+    background: var(--accent-bg-solid);
+    border: 1px solid var(--border-accent);
+    border-radius: 6px;
+    padding: 11px 24px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--accent);
+  }
+
+  /* Dashboard mock */
+  .product-mock {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.5);
+  }
+
+  .mock-chrome {
+    background: var(--elevated);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .chrome-dot { width: 9px; height: 9px; border-radius: 50%; }
+  .chrome-dot.r { background: rgba(229,62,62,0.6); }
+  .chrome-dot.y { background: rgba(217,119,6,0.6); }
+  .chrome-dot.g { background: rgba(56,161,105,0.6); }
+
+  .chrome-url {
+    margin-left: 10px;
+    flex: 1;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 3px 10px;
+    display: flex;
+    align-items: center;
+  }
+
+  .chrome-url-text {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--fg-muted);
+  }
+
+  .mock-layout {
+    display: flex;
+    height: 380px;
+  }
+
+  /* Left nav rail */
+  .mock-rail-left {
+    width: 52px;
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 14px 0;
+    gap: 6px;
+    background: var(--bg);
+    flex-shrink: 0;
+  }
+
+  .rail-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    color: var(--fg-muted);
+  }
+
+  .rail-icon.active {
+    background: var(--accent-bg-solid);
+    color: var(--accent);
+    border: 1px solid var(--border-accent);
+  }
+
+  /* Center workspace */
+  .mock-workspace {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .workspace-header {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .workspace-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--fg);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .ws-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    background: var(--accent-bg-solid);
+    color: var(--accent);
+    border: 1px solid var(--border-accent);
+    border-radius: 4px;
+    padding: 1px 7px;
+  }
+
+  .workspace-actions {
+    display: flex;
+    gap: 6px;
+  }
+
+  .ws-btn {
+    font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--fg-muted);
+    background: var(--elevated);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 3px 10px;
+    cursor: pointer;
+  }
+
+  .workspace-body {
+    flex: 1;
+    overflow: hidden;
+    padding: 12px;
+  }
+
+  .ws-table { width: 100%; border-collapse: collapse; }
+
+  .ws-table th {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--fg-muted);
+    text-align: left;
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .ws-table td {
+    padding: 8px 8px;
+    font-size: 11px;
+    color: var(--fg-secondary);
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+    vertical-align: middle;
+  }
+
+  .status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    font-weight: 500;
+    border-radius: 4px;
+    padding: 2px 8px;
+  }
+
+  .status-pill::before {
+    content: '';
+    display: block;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+
+  .status-pill.green { color: var(--green); background: var(--green-bg); }
+  .status-pill.amber { color: var(--amber); background: var(--amber-bg); }
+  .status-pill.red { color: var(--red); background: var(--red-bg); }
+  .status-pill.accent { color: var(--accent); background: var(--accent-bg); }
+
+  .mono-id {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--fg-muted);
+  }
+
+  .mono-ts {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    color: var(--fg-muted);
+  }
+
+  /* Right rail */
+  .mock-rail-right {
+    width: 220px;
+    border-left: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    background: var(--bg);
+  }
+
+  .rail-section-header {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--fg-muted);
+    padding: 10px 12px 6px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .rail-metric {
+    padding: 10px 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .rail-metric-label {
+    font-size: 11px;
+    color: var(--fg-muted);
+  }
+
+  .rail-metric-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--fg);
+  }
+
+  .rail-metric-value.green { color: var(--green); }
+  .rail-metric-value.amber { color: var(--amber); }
+  .rail-metric-value.accent { color: var(--accent); }
+
+  /* ── WHY SECTION ── */
+  .why-section { background: var(--surface); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+
+  .section-label-mono {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    display: block;
+    margin-bottom: 14px;
+  }
+
+  .section-heading {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--fg);
+    letter-spacing: -0.02em;
+    margin-bottom: 12px;
+    line-height: 1.2;
+  }
+
+  .section-sub {
+    font-size: 15px;
+    color: var(--fg-secondary);
+    max-width: 440px;
+    margin-bottom: 48px;
+    line-height: 1.65;
+  }
+
+  .feature-rows { display: flex; flex-direction: column; gap: 0; }
+
+  .feature-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 24px;
+    padding: 28px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .feature-row:last-child { border-bottom: none; }
+
+  .feature-row-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 6px;
+    background: var(--accent-bg-solid);
+    border: 1px solid var(--border-accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+    position: relative;
+  }
+
+  .feature-row-icon::before {
+    content: '';
+    position: absolute;
+    left: -25px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 100%;
+    background: var(--accent);
+    border-radius: 0 2px 2px 0;
+    opacity: 0.6;
+  }
+
+  .feature-row-body { flex: 1; }
+
+  .feature-row h3 {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--fg);
+    margin-bottom: 6px;
+  }
+
+  .feature-row p {
+    font-size: 13px;
+    color: var(--fg-secondary);
+    line-height: 1.6;
+    max-width: 600px;
+  }
+
+  /* ── LIVE METRICS ── */
+  .live-section { background: var(--bg); }
+
+  .live-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+
+  .live-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .live-panel-header {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .live-panel-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--fg);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .live-indicator {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 6px rgba(56,161,105,0.8);
+    animation: pulse-green 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse-green {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+
+  .live-ts {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--fg-muted);
+  }
+
+  .live-panel-body { padding: 16px; }
+
+  .live-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+  }
+
+  .live-row:last-child { border-bottom: none; }
+
+  .live-row-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--fg-secondary);
+  }
+
+  .live-row-label::before {
+    content: '';
+    display: block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+  }
+
+  .live-row-label.green::before { background: var(--green); }
+  .live-row-label.amber::before { background: var(--amber); }
+  .live-row-label.red::before { background: var(--red); }
+  .live-row-label.accent::before { background: var(--accent); }
+
+  .live-row-val {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--fg);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .live-row-delta {
+    font-size: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+
+  .delta-up { color: var(--green); background: var(--green-bg); }
+  .delta-down { color: var(--red); background: var(--red-bg); }
+
+  /* ── INTEGRATIONS ── */
+  .integrations-section { background: var(--surface); border-top: 1px solid var(--border); }
+
+  .integrations-grid {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 14px;
+    margin-top: 40px;
+  }
+
+  .integration-tile {
+    background: var(--elevated);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--accent);
+    transition: border-color 0.2s;
+    cursor: pointer;
+  }
+
+  .integration-tile:hover { border-color: var(--border-accent); }
+
+  /* ── QUOTE ── */
+  .quote-section { background: var(--bg); }
+
+  .quote-card {
+    max-width: 720px;
+    margin: 0 auto;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 40px 44px;
+    position: relative;
+  }
+
+  .quote-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    opacity: 0.3;
+    border-radius: 8px 8px 0 0;
+  }
+
+  .quote-text {
+    font-size: 16px;
+    color: var(--fg);
+    line-height: 1.65;
+    margin-bottom: 24px;
+    font-style: italic;
+  }
+
+  .quote-author {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .quote-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: var(--accent-bg-solid);
+    border: 1px solid var(--border-accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--accent);
+    flex-shrink: 0;
+  }
+
+  .quote-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--fg);
+    margin-bottom: 2px;
+  }
+
+  .quote-role {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--fg-muted);
+  }
+
+  /* ── CTA ── */
+  .cta-section {
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    padding: 80px 36px;
+    text-align: center;
+  }
+
+  .cta-section h2 {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--fg);
+    letter-spacing: -0.02em;
+    margin-bottom: 14px;
+  }
+
+  .cta-section p {
+    font-size: 15px;
+    color: var(--fg-secondary);
+    margin-bottom: 36px;
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    background: #080d11;
+    border-top: 1px solid var(--border);
+    padding: 56px 36px 28px;
+  }
+
+  .footer-inner { max-width: 1120px; margin: 0 auto; }
+
+  .footer-grid {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr 1fr 1fr;
+    gap: 48px;
+    margin-bottom: 44px;
+  }
+
+  .footer-brand-sub {
+    font-size: 13px;
+    color: var(--fg-muted);
+    margin-top: 12px;
+    line-height: 1.6;
+    max-width: 240px;
+  }
+
+  .footer-col-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--fg-muted);
+    margin-bottom: 16px;
+  }
+
+  .footer-links { list-style: none; }
+  .footer-links li { margin-bottom: 9px; }
+
+  .footer-links a {
+    font-size: 13px;
+    color: var(--fg-secondary);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+
+  .footer-links a:hover { color: var(--fg); }
+
+  .footer-bottom {
+    border-top: 1px solid var(--border);
+    padding-top: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .footer-mono {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--fg-muted);
+  }
+
+  .footer-mono .accent { color: var(--accent); }
+
+  .text-center { text-align: center; }
+  .mb-48 { margin-bottom: 48px; }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="#" class="nav-logo">C<span>T</span>RL</a>
+
+  <div class="nav-center">
+    <span class="nav-search-icon">⌕</span>
+    <span class="nav-search-text">Search CTRL...</span>
+    <span class="nav-search-kbd">⌘K</span>
+  </div>
+
+  <ul class="nav-links">
+    <li><a href="#">Platform</a></li>
+    <li><a href="#">Integrations</a></li>
+    <li><a href="#">Enterprise</a></li>
+    <li><a href="#">Pricing</a></li>
+  </ul>
+
+  <div class="nav-actions">
+    <a href="#" class="btn-ghost-nav">Sign in</a>
+    <a href="#" class="btn-solid-nav">Request access</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-inner">
+    <div class="hero-overline">Real-Time Operations Platform</div>
+    <h1>Command every layer of your infrastructure.</h1>
+    <p class="hero-sub">CTRL gives engineering organizations a unified control plane — live metrics, incident management, and deployment orchestration in one premium interface.</p>
+    <div class="hero-ctas">
+      <a href="#" class="btn-solid-lg">Request access →</a>
+      <a href="#" class="btn-ghost-lg">See the platform</a>
+    </div>
+
+    <!-- Product screenshot mock -->
+    <div class="product-mock">
+      <div class="mock-chrome">
+        <div class="chrome-dot r"></div>
+        <div class="chrome-dot y"></div>
+        <div class="chrome-dot g"></div>
+        <div class="chrome-url"><span class="chrome-url-text">app.ctrl.io/operations</span></div>
+      </div>
+      <div class="mock-layout">
+        <!-- Left nav rail -->
+        <div class="mock-rail-left">
+          <div class="rail-icon active">⚡</div>
+          <div class="rail-icon">📊</div>
+          <div class="rail-icon">🔔</div>
+          <div class="rail-icon">📋</div>
+          <div class="rail-icon">⚙</div>
+        </div>
+
+        <!-- Center workspace -->
+        <div class="mock-workspace">
+          <div class="workspace-header">
+            <div class="workspace-title">
+              Operations Feed
+              <span class="ws-badge">Live</span>
+            </div>
+            <div class="workspace-actions">
+              <button class="ws-btn">Filter</button>
+              <button class="ws-btn">Group by</button>
+            </div>
+          </div>
+          <div class="workspace-body">
+            <table class="ws-table">
+              <thead>
+                <tr>
+                  <th>Status</th>
+                  <th>Service</th>
+                  <th>Event</th>
+                  <th>Environment</th>
+                  <th>Timestamp</th>
+                  <th>ID</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><span class="status-pill red">Critical</span></td>
+                  <td>api-gateway</td>
+                  <td>P99 latency &gt; 2s threshold</td>
+                  <td><span class="mono-id">prod-us-east-1</span></td>
+                  <td><span class="mono-ts">14:02:31</span></td>
+                  <td><span class="mono-id">OPS-4821</span></td>
+                </tr>
+                <tr>
+                  <td><span class="status-pill amber">Warning</span></td>
+                  <td>db-primary</td>
+                  <td>Connection pool at 89% capacity</td>
+                  <td><span class="mono-id">prod-us-east-1</span></td>
+                  <td><span class="mono-ts">14:01:08</span></td>
+                  <td><span class="mono-id">OPS-4820</span></td>
+                </tr>
+                <tr>
+                  <td><span class="status-pill accent">Deploying</span></td>
+                  <td>user-service</td>
+                  <td>Release v2.14.1 rollout 40%</td>
+                  <td><span class="mono-id">prod-eu-west-1</span></td>
+                  <td><span class="mono-ts">13:58:44</span></td>
+                  <td><span class="mono-id">OPS-4819</span></td>
+                </tr>
+                <tr>
+                  <td><span class="status-pill green">Healthy</span></td>
+                  <td>auth-service</td>
+                  <td>Deployment v3.2.0 complete</td>
+                  <td><span class="mono-id">prod-us-east-1</span></td>
+                  <td><span class="mono-ts">13:47:19</span></td>
+                  <td><span class="mono-id">OPS-4818</span></td>
+                </tr>
+                <tr>
+                  <td><span class="status-pill green">Healthy</span></td>
+                  <td>billing-service</td>
+                  <td>Autoscale: 3 → 6 replicas</td>
+                  <td><span class="mono-id">prod-us-west-2</span></td>
+                  <td><span class="mono-ts">13:39:55</span></td>
+                  <td><span class="mono-id">OPS-4817</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Right rail -->
+        <div class="mock-rail-right">
+          <div class="rail-section-header">System Health</div>
+          <div class="rail-metric">
+            <span class="rail-metric-label">API Gateway</span>
+            <span class="rail-metric-value red">Critical</span>
+          </div>
+          <div class="rail-metric">
+            <span class="rail-metric-label">Database</span>
+            <span class="rail-metric-value amber">Warning</span>
+          </div>
+          <div class="rail-metric">
+            <span class="rail-metric-label">CDN</span>
+            <span class="rail-metric-value green">Healthy</span>
+          </div>
+          <div class="rail-metric">
+            <span class="rail-metric-label">Auth</span>
+            <span class="rail-metric-value green">Healthy</span>
+          </div>
+          <div class="rail-section-header" style="margin-top:4px">Uptime Today</div>
+          <div class="rail-metric">
+            <span class="rail-metric-label">P99 Latency</span>
+            <span class="rail-metric-value accent">2.1s</span>
+          </div>
+          <div class="rail-metric">
+            <span class="rail-metric-label">Error Rate</span>
+            <span class="rail-metric-value amber">0.8%</span>
+          </div>
+          <div class="rail-metric">
+            <span class="rail-metric-label">Uptime</span>
+            <span class="rail-metric-value green">99.94%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- WHY -->
+<section class="why-section">
+  <div class="container">
+    <span class="section-label-mono">Built different</span>
+    <h2 class="section-heading">Built for operations under pressure.</h2>
+    <p class="section-sub">Every design decision in CTRL was made with one question: what does an engineer need in the first 60 seconds of an incident?</p>
+
+    <div class="feature-rows">
+      <div class="feature-row">
+        <div class="feature-row-icon">⚡</div>
+        <div class="feature-row-body">
+          <h3>Sub-second event propagation</h3>
+          <p>CTRL uses a push-based architecture — events reach your dashboard in under 200ms from source systems. No polling, no refresh buttons. When things break, you know immediately.</p>
+        </div>
+      </div>
+      <div class="feature-row">
+        <div class="feature-row-icon">🎯</div>
+        <div class="feature-row-body">
+          <h3>Signal over noise</h3>
+          <p>Intelligent deduplication and severity routing ensures critical signals reach the right person without notification fatigue. Configurable thresholds per service, per team.</p>
+        </div>
+      </div>
+      <div class="feature-row">
+        <div class="feature-row-icon">🏗</div>
+        <div class="feature-row-body">
+          <h3>Multi-environment by default</h3>
+          <p>Manage production, staging, and canary environments from a single control plane. Environment context is always visible — never ambiguous, never costly to switch.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- LIVE METRICS -->
+<section class="live-section">
+  <div class="container">
+    <span class="section-label-mono">Live data</span>
+    <h2 class="section-heading" style="margin-bottom:40px">Operational intelligence in real time.</h2>
+    <div class="live-grid">
+      <div class="live-panel">
+        <div class="live-panel-header">
+          <div class="live-panel-title">
+            <div class="live-indicator"></div>
+            Service Health
+          </div>
+          <span class="live-ts">Updated 14:02:31</span>
+        </div>
+        <div class="live-panel-body">
+          <div class="live-row">
+            <div class="live-row-label green">api-gateway</div>
+            <div class="live-row-val">99.1% <span class="live-row-delta delta-down">↓0.3%</span></div>
+          </div>
+          <div class="live-row">
+            <div class="live-row-label green">auth-service</div>
+            <div class="live-row-val">100% <span class="live-row-delta delta-up">↑</span></div>
+          </div>
+          <div class="live-row">
+            <div class="live-row-label amber">db-primary</div>
+            <div class="live-row-val">98.7% <span class="live-row-delta delta-down">↓1.1%</span></div>
+          </div>
+          <div class="live-row">
+            <div class="live-row-label green">cdn</div>
+            <div class="live-row-val">100% <span class="live-row-delta delta-up">↑</span></div>
+          </div>
+          <div class="live-row">
+            <div class="live-row-label green">billing-service</div>
+            <div class="live-row-val">99.9% <span class="live-row-delta delta-up">↑</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="live-panel">
+        <div class="live-panel-header">
+          <div class="live-panel-title">
+            <div class="live-indicator"></div>
+            Request Metrics
+          </div>
+          <span class="live-ts">Updated 14:02:31</span>
+        </div>
+        <div class="live-panel-body">
+          <div class="live-row">
+            <div class="live-row-label accent">Req/s (p50)</div>
+            <div class="live-row-val">4,821 <span class="live-row-delta delta-up">↑12%</span></div>
+          </div>
+          <div class="live-row">
+            <div class="live-row-label accent">P99 Latency</div>
+            <div class="live-row-val">211ms <span class="live-row-delta delta-down">↑18ms</span></div>
+          </div>
+          <div class="live-row">
+            <div class="live-row-label amber">Error rate</div>
+            <div class="live-row-val">0.08% <span class="live-row-delta delta-down">↓</span></div>
+          </div>
+          <div class="live-row">
+            <div class="live-row-label green">Cache hit</div>
+            <div class="live-row-val">94.2% <span class="live-row-delta delta-up">↑</span></div>
+          </div>
+          <div class="live-row">
+            <div class="live-row-label green">Active users</div>
+            <div class="live-row-val">12,440 <span class="live-row-delta delta-up">↑</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- INTEGRATIONS -->
+<section class="integrations-section">
+  <div class="container">
+    <div class="text-center">
+      <span class="section-label-mono">Integrations</span>
+      <h2 class="section-heading">Works with your stack.</h2>
+      <p class="section-sub" style="margin: 0 auto 0;">Connect in minutes. No custom code required.</p>
+    </div>
+    <div class="integrations-grid">
+      <div class="integration-tile">DD</div>
+      <div class="integration-tile">PD</div>
+      <div class="integration-tile">GH</div>
+      <div class="integration-tile">SL</div>
+      <div class="integration-tile">GF</div>
+      <div class="integration-tile">K8</div>
+      <div class="integration-tile">TF</div>
+      <div class="integration-tile">AWS</div>
+    </div>
+  </div>
+</section>
+
+<!-- QUOTE -->
+<section class="quote-section">
+  <div class="container">
+    <div class="quote-card">
+      <p class="quote-text">"We replaced four different dashboards with CTRL. The signal-to-noise improvement alone paid for the subscription in the first week. Our MTTR dropped 60% because the right people now see the right alerts instantly."</p>
+      <div class="quote-author">
+        <div class="quote-avatar">AP</div>
+        <div>
+          <div class="quote-name">Alexei Petrov</div>
+          <div class="quote-role">Head of SRE @ Northvault</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<div class="cta-section">
+  <div class="container">
+    <h2>Operational excellence starts here.</h2>
+    <p>Enterprise-grade platform. Ready in under a day. No vendor lock-in.</p>
+    <a href="#" class="btn-solid-lg">Request access →</a>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-grid">
+      <div>
+        <a href="#" style="font-family:'JetBrains Mono',monospace;font-size:17px;font-weight:500;color:var(--fg);text-decoration:none;letter-spacing:0.08em;">C<span style="color:var(--accent)">T</span>RL</a>
+        <p class="footer-brand-sub">The premium control plane for engineering organizations who demand reliability and clarity at every scale.</p>
+      </div>
+      <div>
+        <div class="footer-col-title">Platform</div>
+        <ul class="footer-links">
+          <li><a href="#">Operations Feed</a></li>
+          <li><a href="#">Incident Manager</a></li>
+          <li><a href="#">Deploy Tracker</a></li>
+          <li><a href="#">Analytics</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="footer-col-title">Enterprise</div>
+        <ul class="footer-links">
+          <li><a href="#">SSO & SAML</a></li>
+          <li><a href="#">Audit Logs</a></li>
+          <li><a href="#">SLA Agreements</a></li>
+          <li><a href="#">Data Residency</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="footer-col-title">Company</div>
+        <ul class="footer-links">
+          <li><a href="#">About</a></li>
+          <li><a href="#">Security</a></li>
+          <li><a href="#">Status</a></li>
+          <li><a href="#">Careers</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span class="footer-mono">© 2024 <span class="accent">CTRL</span> Technologies, Inc.</span>
+      <span class="footer-mono">sys_ts: <span class="accent">2024-01-15T14:02:31Z</span> · Premium Command Center UI — Design Skill Preview</span>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

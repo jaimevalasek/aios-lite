@@ -1,0 +1,1187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ORBIT — General SaaS Landing / Interface Design Skill Preview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #FAFAF9;
+    --bg-white: #FFFFFF;
+    --bg-dark: #1A1A1A;
+    --border: #E8E8E5;
+    --border-light: #EBEBEB;
+    --accent: #5B5CF6;
+    --accent-hover: #4A4AE0;
+    --accent-light: rgba(91,92,246,0.08);
+    --text-heading: #1A1A1A;
+    --text-body: #4A4A4A;
+    --text-secondary: #8A8A8A;
+    --text-muted: #B0B0B0;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    font-size: 15px;
+    line-height: 1.65;
+    color: var(--text-body);
+    background: var(--bg);
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: var(--bg-white);
+    border-bottom: 1px solid var(--border-light);
+    padding: 0 40px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .nav-logo {
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--text-heading);
+    text-decoration: none;
+    letter-spacing: -0.03em;
+  }
+
+  .nav-logo span { color: var(--accent); }
+
+  .nav-links {
+    display: flex;
+    align-items: center;
+    gap: 32px;
+    list-style: none;
+  }
+
+  .nav-links a {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+
+  .nav-links a:hover { color: var(--text-heading); }
+
+  .nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .btn-ghost {
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-body);
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 18px;
+    cursor: pointer;
+    text-decoration: none;
+  }
+
+  .btn-primary {
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    color: white;
+    background: var(--accent);
+    border: none;
+    border-radius: 8px;
+    padding: 9px 20px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .btn-primary:hover { background: var(--accent-hover); }
+
+  /* ── LAYOUT ── */
+  .container { max-width: 1080px; margin: 0 auto; }
+
+  /* ── HERO ── */
+  .hero {
+    background: var(--bg-white);
+    padding: 88px 40px 72px;
+  }
+
+  .hero-inner {
+    max-width: 1080px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 80px;
+    align-items: center;
+  }
+
+  .hero-mono {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    display: block;
+    margin-bottom: 20px;
+  }
+
+  .hero h1 {
+    font-size: 48px;
+    font-weight: 700;
+    color: var(--text-heading);
+    line-height: 1.1;
+    letter-spacing: -0.03em;
+    margin-bottom: 20px;
+  }
+
+  .hero-sub {
+    font-size: 18px;
+    color: var(--text-secondary);
+    line-height: 1.65;
+    margin-bottom: 36px;
+    font-weight: 400;
+  }
+
+  .hero-ctas {
+    display: flex;
+    gap: 10px;
+  }
+
+  .btn-primary-lg {
+    font-family: 'Inter', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    color: white;
+    background: var(--accent);
+    border: none;
+    border-radius: 8px;
+    padding: 13px 26px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .btn-ghost-lg {
+    font-family: 'Inter', sans-serif;
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text-body);
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 13px 26px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* Product mock */
+  .hero-mock {
+    background: var(--bg-white);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05), 0 24px 64px rgba(0,0,0,0.06);
+    overflow: hidden;
+  }
+
+  .mock-header {
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .mock-header-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-heading);
+  }
+
+  .mock-header-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--accent);
+    background: var(--accent-light);
+    border: 1px solid rgba(91,92,246,0.15);
+    border-radius: 4px;
+    padding: 2px 8px;
+  }
+
+  .mock-body-inner {
+    display: flex;
+    gap: 0;
+  }
+
+  .mock-left {
+    width: 160px;
+    border-right: 1px solid var(--border);
+    padding: 16px 0;
+    flex-shrink: 0;
+  }
+
+  .mock-left-item {
+    padding: 7px 16px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+  }
+
+  .mock-left-item.active {
+    background: var(--accent-light);
+    color: var(--accent);
+    font-weight: 600;
+    border-left: 2px solid var(--accent);
+  }
+
+  .mock-item-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+    opacity: 0.4;
+  }
+
+  .mock-right {
+    flex: 1;
+    padding: 16px;
+  }
+
+  .mock-card {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .mock-card:last-child { margin-bottom: 0; }
+
+  .mock-card-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-heading);
+    margin-bottom: 3px;
+  }
+
+  .mock-card-sub {
+    font-size: 11px;
+    color: var(--text-secondary);
+  }
+
+  .mock-card-status {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-weight: 500;
+  }
+
+  .status-active { background: rgba(91,92,246,0.1); color: var(--accent); }
+  .status-review { background: rgba(217,119,6,0.1); color: #D97706; }
+  .status-done { background: rgba(22,163,74,0.1); color: #16A34A; }
+
+  /* ── FEATURES ── */
+  .features-section {
+    padding: 96px 40px;
+    background: var(--bg);
+  }
+
+  .features-inner { max-width: 1080px; margin: 0 auto; }
+
+  .features-header {
+    margin-bottom: 72px;
+    text-align: center;
+  }
+
+  .section-mono {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    display: block;
+    margin-bottom: 14px;
+  }
+
+  .section-h2 {
+    font-size: 36px;
+    font-weight: 700;
+    color: var(--text-heading);
+    letter-spacing: -0.025em;
+    margin-bottom: 12px;
+    line-height: 1.15;
+  }
+
+  .section-sub {
+    font-size: 16px;
+    color: var(--text-secondary);
+    max-width: 480px;
+    margin: 0 auto;
+    line-height: 1.65;
+  }
+
+  .feature-block {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 80px;
+    align-items: center;
+    padding: 56px 0;
+    border-top: 1px solid var(--border);
+  }
+
+  .feature-block:last-child { border-bottom: 1px solid var(--border); }
+
+  .feature-block.reverse { }
+  .feature-block.reverse .feature-text { order: 2; }
+  .feature-block.reverse .feature-visual { order: 1; }
+
+  .feature-text-meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 16px;
+  }
+
+  .feature-text h3 {
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--text-heading);
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+    margin-bottom: 14px;
+  }
+
+  .feature-text p {
+    font-size: 15px;
+    color: var(--text-secondary);
+    line-height: 1.7;
+  }
+
+  .feature-visual {
+    background: var(--bg-white);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px;
+    min-height: 200px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  }
+
+  .visual-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .visual-label {
+    font-size: 12px;
+    color: var(--text-secondary);
+    width: 80px;
+    flex-shrink: 0;
+  }
+
+  .visual-bar-wrap {
+    flex: 1;
+    height: 8px;
+    background: var(--bg);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .visual-bar {
+    height: 100%;
+    border-radius: 4px;
+    background: var(--accent);
+  }
+
+  .visual-bar.muted { background: var(--border); }
+
+  .visual-val {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-secondary);
+    width: 36px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  /* File tree visual */
+  .visual-tree { gap: 8px; }
+
+  .tree-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--text-body);
+    padding: 5px 8px;
+    border-radius: 6px;
+  }
+
+  .tree-item.selected {
+    background: var(--accent-light);
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  .tree-item-icon {
+    width: 16px;
+    height: 16px;
+    border-radius: 3px;
+    background: var(--border);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 8px;
+    flex-shrink: 0;
+  }
+
+  .tree-item.selected .tree-item-icon { background: var(--accent); color: white; }
+
+  .tree-indent { margin-left: 16px; }
+
+  /* Comment visual */
+  .visual-comments { gap: 10px; }
+
+  .comment-item {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    font-size: 12px;
+  }
+
+  .comment-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--accent-light);
+    border: 1px solid rgba(91,92,246,0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 11px;
+    color: var(--accent);
+    flex-shrink: 0;
+  }
+
+  .comment-body {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 12px;
+    flex: 1;
+  }
+
+  .comment-author {
+    font-weight: 600;
+    color: var(--text-heading);
+    font-size: 11px;
+    margin-bottom: 3px;
+  }
+
+  .comment-text { color: var(--text-secondary); line-height: 1.4; }
+
+  /* ── SOCIAL PROOF ── */
+  .social-proof {
+    background: var(--bg-white);
+    padding: 48px 40px;
+    border-top: 1px solid var(--border-light);
+    border-bottom: 1px solid var(--border-light);
+  }
+
+  .social-proof-inner {
+    max-width: 1080px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 48px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .social-proof-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-muted);
+    flex-shrink: 0;
+  }
+
+  .social-divider {
+    width: 1px;
+    height: 20px;
+    background: var(--border);
+    flex-shrink: 0;
+  }
+
+  .company-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-muted);
+    letter-spacing: -0.01em;
+  }
+
+  /* ── HOW IT WORKS ── */
+  .how-section {
+    background: var(--bg);
+    padding: 96px 40px;
+  }
+
+  .how-inner { max-width: 1080px; margin: 0 auto; }
+
+  .how-steps {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 48px;
+    margin-top: 56px;
+  }
+
+  .how-step {
+    position: relative;
+  }
+
+  .step-number {
+    font-size: 80px;
+    font-weight: 800;
+    color: var(--border);
+    line-height: 1;
+    letter-spacing: -0.04em;
+    margin-bottom: 20px;
+    display: block;
+  }
+
+  .how-step h3 {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-heading);
+    letter-spacing: -0.02em;
+    margin-bottom: 10px;
+  }
+
+  .how-step p {
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.7;
+  }
+
+  /* ── PRICING ── */
+  .pricing-section {
+    background: var(--bg-white);
+    padding: 96px 40px;
+    border-top: 1px solid var(--border-light);
+  }
+
+  .pricing-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    max-width: 720px;
+    margin: 56px auto 0;
+  }
+
+  .pricing-card {
+    background: var(--bg-white);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  }
+
+  .pricing-card.featured {
+    border-color: var(--accent);
+    box-shadow: 0 4px 24px rgba(91,92,246,0.12);
+  }
+
+  .pricing-head {
+    padding: 28px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .pricing-card.featured .pricing-head {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+
+  .pricing-tier-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+
+  .pricing-card.featured .pricing-tier-name { color: rgba(255,255,255,0.75); }
+
+  .pricing-amount {
+    font-size: 42px;
+    font-weight: 700;
+    color: var(--text-heading);
+    letter-spacing: -0.03em;
+    line-height: 1;
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+  }
+
+  .pricing-card.featured .pricing-amount { color: white; }
+
+  .pricing-amount-unit {
+    font-size: 14px;
+    font-weight: 400;
+    color: var(--text-muted);
+  }
+
+  .pricing-card.featured .pricing-amount-unit { color: rgba(255,255,255,0.6); }
+
+  .pricing-head-desc {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-top: 10px;
+  }
+
+  .pricing-card.featured .pricing-head-desc { color: rgba(255,255,255,0.75); }
+
+  .pricing-body {
+    padding: 24px 28px;
+  }
+
+  .pricing-items { list-style: none; margin-bottom: 24px; }
+
+  .pricing-items li {
+    font-size: 14px;
+    color: var(--text-body);
+    padding: 8px 0;
+    border-bottom: 1px solid var(--bg);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .pricing-items li::before {
+    content: '→';
+    color: var(--accent);
+    font-size: 12px;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+
+  .pricing-btn {
+    display: block;
+    text-align: center;
+    padding: 11px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  .pricing-btn.cta-primary {
+    background: var(--accent);
+    color: white;
+    border: none;
+  }
+
+  .pricing-btn.cta-ghost {
+    background: var(--bg);
+    color: var(--text-body);
+    border: 1px solid var(--border);
+  }
+
+  /* ── DARK STATEMENT ── */
+  .dark-statement {
+    background: var(--bg-dark);
+    padding: 96px 40px;
+    text-align: center;
+  }
+
+  .dark-statement h2 {
+    font-size: 52px;
+    font-weight: 800;
+    color: white;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+    max-width: 720px;
+    margin: 0 auto 24px;
+  }
+
+  .dark-statement h2 span { color: var(--accent); }
+
+  .dark-statement p {
+    font-size: 17px;
+    color: rgba(255,255,255,0.5);
+    max-width: 500px;
+    margin: 0 auto 40px;
+    line-height: 1.65;
+  }
+
+  .btn-accent-outline {
+    font-family: 'Inter', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--accent);
+    background: rgba(91,92,246,0.1);
+    border: 1px solid rgba(91,92,246,0.3);
+    border-radius: 8px;
+    padding: 13px 28px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    background: var(--bg-white);
+    border-top: 1px solid var(--border-light);
+    padding: 64px 40px 32px;
+  }
+
+  .footer-inner { max-width: 1080px; margin: 0 auto; }
+
+  .footer-grid {
+    display: grid;
+    grid-template-columns: 1.6fr 1fr 1fr 1fr;
+    gap: 48px;
+    margin-bottom: 48px;
+  }
+
+  .footer-logo {
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--text-heading);
+    text-decoration: none;
+    letter-spacing: -0.03em;
+    display: block;
+    margin-bottom: 12px;
+  }
+
+  .footer-logo span { color: var(--accent); }
+
+  .footer-brand-text {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.65;
+    max-width: 240px;
+  }
+
+  .footer-col-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-heading);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 16px;
+  }
+
+  .footer-links { list-style: none; }
+  .footer-links li { margin-bottom: 10px; }
+
+  .footer-links a {
+    font-size: 14px;
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+
+  .footer-links a:hover { color: var(--text-heading); }
+
+  .footer-bottom {
+    border-top: 1px solid var(--border-light);
+    padding-top: 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .footer-bottom-text {
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+
+  .footer-bottom-mono {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  .text-center { text-align: center; }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="#" class="nav-logo">ORBIT<span>.</span></a>
+  <ul class="nav-links">
+    <li><a href="#">Product</a></li>
+    <li><a href="#">Templates</a></li>
+    <li><a href="#">Pricing</a></li>
+    <li><a href="#">Blog</a></li>
+  </ul>
+  <div class="nav-actions">
+    <a href="#" class="btn-ghost">Sign in</a>
+    <a href="#" class="btn-primary">Get started →</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-inner">
+    <div class="hero-text">
+      <span class="hero-mono">Project Collaboration</span>
+      <h1>Every project, one place. Always.</h1>
+      <p class="hero-sub">The workspace that brings your work, your team, and your decisions together — without the noise.</p>
+      <div class="hero-ctas">
+        <a href="#" class="btn-primary-lg">Start for free →</a>
+        <a href="#" class="btn-ghost-lg">See how it works</a>
+      </div>
+    </div>
+
+    <!-- Product mock -->
+    <div class="hero-mock">
+      <div class="mock-header">
+        <span class="mock-header-title">Q1 Product Launch</span>
+        <span class="mock-header-tag">6 tasks open</span>
+      </div>
+      <div class="mock-body-inner">
+        <div class="mock-left">
+          <div class="mock-left-item active">
+            <div class="mock-item-dot"></div>
+            All Projects
+          </div>
+          <div class="mock-left-item">
+            <div class="mock-item-dot"></div>
+            Assigned to me
+          </div>
+          <div class="mock-left-item">
+            <div class="mock-item-dot"></div>
+            Design
+          </div>
+          <div class="mock-left-item">
+            <div class="mock-item-dot"></div>
+            Engineering
+          </div>
+          <div class="mock-left-item">
+            <div class="mock-item-dot"></div>
+            Marketing
+          </div>
+        </div>
+        <div class="mock-right">
+          <div class="mock-card">
+            <div>
+              <div class="mock-card-title">Finalize landing page copy</div>
+              <div class="mock-card-sub">Marketing · Due Mar 15</div>
+            </div>
+            <span class="mock-card-status status-review">In review</span>
+          </div>
+          <div class="mock-card">
+            <div>
+              <div class="mock-card-title">API endpoint documentation</div>
+              <div class="mock-card-sub">Engineering · Due Mar 18</div>
+            </div>
+            <span class="mock-card-status status-active">In progress</span>
+          </div>
+          <div class="mock-card">
+            <div>
+              <div class="mock-card-title">Set up analytics tracking</div>
+              <div class="mock-card-sub">Engineering · Due Mar 20</div>
+            </div>
+            <span class="mock-card-status status-active">In progress</span>
+          </div>
+          <div class="mock-card">
+            <div>
+              <div class="mock-card-title">Brand asset export package</div>
+              <div class="mock-card-sub">Design · Due Mar 12</div>
+            </div>
+            <span class="mock-card-status status-done">Done</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SOCIAL PROOF -->
+<div class="social-proof">
+  <div class="social-proof-inner">
+    <span class="social-proof-label">Trusted by teams at</span>
+    <div class="social-divider"></div>
+    <span class="company-name">Streamline</span>
+    <span class="company-name">Northvault</span>
+    <span class="company-name">Cascadeio</span>
+    <span class="company-name">Meridian</span>
+    <span class="company-name">Apertive</span>
+    <span class="company-name">Helix Group</span>
+  </div>
+</div>
+
+<!-- FEATURES -->
+<section class="features-section">
+  <div class="features-inner">
+    <div class="features-header">
+      <span class="section-mono">Features</span>
+      <h2 class="section-h2">Discipline in every detail.</h2>
+      <p class="section-sub">ORBIT is built on the principle that great collaboration tools get out of the way. The craft is in what we don't add.</p>
+    </div>
+
+    <div class="feature-block">
+      <div class="feature-text">
+        <div class="feature-text-meta">01 / Visibility</div>
+        <h3>See the whole picture at a glance.</h3>
+        <p>ORBIT gives every project a clear progress view without configuration. Status, assignee, due date — always visible, never buried under menus. Your team knows what's done, what's next, and what's stuck.</p>
+      </div>
+      <div class="feature-visual">
+        <div class="visual-row">
+          <span class="visual-label">Design</span>
+          <div class="visual-bar-wrap"><div class="visual-bar" style="width:88%"></div></div>
+          <span class="visual-val">88%</span>
+        </div>
+        <div class="visual-row">
+          <span class="visual-label">Engineering</span>
+          <div class="visual-bar-wrap"><div class="visual-bar" style="width:62%"></div></div>
+          <span class="visual-val">62%</span>
+        </div>
+        <div class="visual-row">
+          <span class="visual-label">Marketing</span>
+          <div class="visual-bar-wrap"><div class="visual-bar" style="width:44%"></div></div>
+          <span class="visual-val">44%</span>
+        </div>
+        <div class="visual-row">
+          <span class="visual-label">Legal</span>
+          <div class="visual-bar-wrap"><div class="visual-bar muted" style="width:10%"></div></div>
+          <span class="visual-val">10%</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="feature-block reverse">
+      <div class="feature-visual visual-tree">
+        <div class="tree-item">
+          <div class="tree-item-icon">📁</div>
+          Q1 Launch
+        </div>
+        <div class="tree-item tree-indent">
+          <div class="tree-item-icon">📄</div>
+          Brief.md
+        </div>
+        <div class="tree-item tree-indent selected">
+          <div class="tree-item-icon">📋</div>
+          Product spec v3
+        </div>
+        <div class="tree-item tree-indent">
+          <div class="tree-item-icon">📄</div>
+          Launch checklist
+        </div>
+        <div class="tree-item">
+          <div class="tree-item-icon">📁</div>
+          Assets
+        </div>
+      </div>
+      <div class="feature-text">
+        <div class="feature-text-meta">02 / Organization</div>
+        <h3>One home for every file, doc, and decision.</h3>
+        <p>Files, specs, briefs, and links — structured the way your project actually works. ORBIT's document model is flexible enough for any team, with enough structure to keep things findable six months later.</p>
+      </div>
+    </div>
+
+    <div class="feature-block">
+      <div class="feature-text">
+        <div class="feature-text-meta">03 / Communication</div>
+        <h3>Decisions happen in context — not in threads.</h3>
+        <p>Comments, approvals, and feedback attach directly to the work they're about. No more hunting through Slack for the decision made two weeks ago. The project is the record of truth.</p>
+      </div>
+      <div class="feature-visual visual-comments">
+        <div class="comment-item">
+          <div class="comment-avatar">LM</div>
+          <div class="comment-body">
+            <div class="comment-author">Laura M.</div>
+            <div class="comment-text">Copy approved. Final version looks great.</div>
+          </div>
+        </div>
+        <div class="comment-item">
+          <div class="comment-avatar">JK</div>
+          <div class="comment-body">
+            <div class="comment-author">James K.</div>
+            <div class="comment-text">Marking as ready for dev handoff.</div>
+          </div>
+        </div>
+        <div class="comment-item">
+          <div class="comment-avatar">AN</div>
+          <div class="comment-body">
+            <div class="comment-author">Ana N.</div>
+            <div class="comment-text">Deployed to staging. Link in description.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="how-section">
+  <div class="how-inner">
+    <div class="text-center">
+      <span class="section-mono">Process</span>
+      <h2 class="section-h2">Up and running in minutes.</h2>
+    </div>
+    <div class="how-steps">
+      <div class="how-step">
+        <span class="step-number">01</span>
+        <h3>Create your workspace</h3>
+        <p>Set up an ORBIT workspace for your team in under two minutes. Invite members, create your first project, and you're in.</p>
+      </div>
+      <div class="how-step">
+        <span class="step-number">02</span>
+        <h3>Organize your work</h3>
+        <p>Add tasks, documents, and deadlines. Structure your project the way your team actually thinks — no forced methodology.</p>
+      </div>
+      <div class="how-step">
+        <span class="step-number">03</span>
+        <h3>Ship together</h3>
+        <p>Everyone sees the same picture. Decisions are recorded. Work moves forward. That's the whole promise.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section class="pricing-section">
+  <div class="container">
+    <div class="text-center">
+      <span class="section-mono">Pricing</span>
+      <h2 class="section-h2">No tricks. No tiers nobody needs.</h2>
+      <p class="section-sub">Two plans. Both genuinely useful. Pick the one that fits.</p>
+    </div>
+    <div class="pricing-grid">
+      <div class="pricing-card">
+        <div class="pricing-head">
+          <div class="pricing-tier-name">Simple</div>
+          <div class="pricing-amount">Free <span class="pricing-amount-unit">forever</span></div>
+          <div class="pricing-head-desc">For individuals and small teams just getting started.</div>
+        </div>
+        <div class="pricing-body">
+          <ul class="pricing-items">
+            <li>Up to 3 projects</li>
+            <li>10 members</li>
+            <li>5 GB file storage</li>
+            <li>Basic task management</li>
+            <li>14-day history</li>
+          </ul>
+          <a href="#" class="pricing-btn cta-ghost">Start for free</a>
+        </div>
+      </div>
+
+      <div class="pricing-card featured">
+        <div class="pricing-head">
+          <div class="pricing-tier-name">Pro</div>
+          <div class="pricing-amount">$12 <span class="pricing-amount-unit">/ member / mo</span></div>
+          <div class="pricing-head-desc">Everything your team needs to ship real work.</div>
+        </div>
+        <div class="pricing-body">
+          <ul class="pricing-items">
+            <li>Unlimited projects</li>
+            <li>Unlimited members</li>
+            <li>100 GB file storage</li>
+            <li>Advanced permissions</li>
+            <li>Full history + exports</li>
+          </ul>
+          <a href="#" class="pricing-btn cta-primary">Start Pro trial</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- DARK STATEMENT -->
+<div class="dark-statement">
+  <div class="container">
+    <h2>The best tool is the one your team <span>actually uses.</span></h2>
+    <p>ORBIT is built to stay out of the way. No training required. No six-week rollout. Just work, organized.</p>
+    <a href="#" class="btn-accent-outline">Try ORBIT free →</a>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-grid">
+      <div>
+        <a href="#" class="footer-logo">ORBIT<span>.</span></a>
+        <p class="footer-brand-text">The project collaboration tool for teams who want clarity, not complexity.</p>
+      </div>
+      <div>
+        <div class="footer-col-title">Product</div>
+        <ul class="footer-links">
+          <li><a href="#">Features</a></li>
+          <li><a href="#">Templates</a></li>
+          <li><a href="#">Integrations</a></li>
+          <li><a href="#">Changelog</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="footer-col-title">Resources</div>
+        <ul class="footer-links">
+          <li><a href="#">Documentation</a></li>
+          <li><a href="#">API</a></li>
+          <li><a href="#">Blog</a></li>
+          <li><a href="#">Status</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="footer-col-title">Company</div>
+        <ul class="footer-links">
+          <li><a href="#">About</a></li>
+          <li><a href="#">Careers</a></li>
+          <li><a href="#">Privacy</a></li>
+          <li><a href="#">Terms</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span class="footer-bottom-text">© 2024 Orbit Technologies, Inc. All rights reserved.</span>
+      <span class="footer-bottom-mono">Interface Design Skill Preview</span>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

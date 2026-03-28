@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TEMPO — Productivity Landing / Warm Craft UI Preview</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400;1,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #F8F6F3;
+      --surface: #FFFFFF;
+      --nav-bg: #FDFCFA;
+      --nav-border: #E8E5E0;
+      --accent: #E07A5F;
+      --accent-light: rgba(224, 122, 95, 0.10);
+      --accent-mid: rgba(224, 122, 95, 0.20);
+      --text-head: #2D3436;
+      --text-body: #4A5568;
+      --text-muted: #8896A6;
+      --warm-shadow: rgba(120, 80, 60, 0.08);
+      --warm-shadow-md: rgba(120, 80, 60, 0.12);
+      --strip-bg: #F3F1ED;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text-body);
+      overflow-x: hidden;
+    }
+
+    .container {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 0 28px;
+    }
+
+    /* === NAV === */
+    nav {
+      background: var(--nav-bg);
+      border-bottom: 1px solid var(--nav-border);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .nav-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 66px;
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 0 28px;
+    }
+    .logo {
+      font-family: 'Source Serif 4', Georgia, serif;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text-head);
+      letter-spacing: -0.02em;
+    }
+    .logo-dot {
+      color: var(--accent);
+    }
+    .nav-links {
+      display: flex;
+      gap: 34px;
+      list-style: none;
+    }
+    .nav-links a {
+      text-decoration: none;
+      color: var(--text-body);
+      font-size: 0.9rem;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--accent); }
+    .btn-accent {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 14px;
+      padding: 10px 22px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      box-shadow: 0 4px 12px rgba(224,122,95,0.28);
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .btn-accent:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 18px rgba(224,122,95,0.36);
+    }
+    .btn-soft {
+      background: var(--surface);
+      color: var(--text-head);
+      border: 1.5px solid var(--nav-border);
+      border-radius: 14px;
+      padding: 10px 22px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      box-shadow: 0 2px 8px var(--warm-shadow);
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .btn-soft:hover {
+      border-color: var(--accent);
+      box-shadow: 0 2px 12px var(--warm-shadow-md);
+    }
+
+    /* === HERO === */
+    .hero {
+      padding: 100px 0 80px;
+      position: relative;
+      overflow: hidden;
+    }
+    /* Subtle dot pattern */
+    .hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: radial-gradient(circle, rgba(120,80,60,0.07) 1.5px, transparent 1.5px);
+      background-size: 28px 28px;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .hero-content { position: relative; z-index: 1; }
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--surface);
+      border: 1px solid var(--nav-border);
+      border-radius: 100px;
+      padding: 6px 16px 6px 8px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      margin-bottom: 32px;
+      box-shadow: 0 2px 8px var(--warm-shadow);
+    }
+    .badge-icon {
+      width: 22px; height: 22px;
+      background: var(--accent-light);
+      border-radius: 100px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.75rem;
+    }
+    .hero h1 {
+      font-family: 'Source Serif 4', Georgia, serif;
+      font-size: clamp(44px, 6vw, 58px);
+      font-weight: 600;
+      color: var(--text-head);
+      line-height: 1.18;
+      letter-spacing: -0.02em;
+      margin-bottom: 22px;
+      max-width: 680px;
+    }
+    .hero h1 strong {
+      font-weight: 700;
+      color: var(--accent);
+    }
+    .hero-sub {
+      font-family: 'Source Serif 4', Georgia, serif;
+      font-size: 1.15rem;
+      color: var(--text-muted);
+      max-width: 520px;
+      line-height: 1.75;
+      margin-bottom: 38px;
+      font-weight: 400;
+      font-style: italic;
+    }
+    .hero-ctas {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-bottom: 48px;
+      align-items: center;
+    }
+    .hero-ctas .btn-accent { padding: 14px 30px; font-size: 0.95rem; }
+    .hero-ctas .btn-soft { padding: 14px 30px; font-size: 0.95rem; }
+    .social-proof {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .avatars {
+      display: flex;
+    }
+    .avatar {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      border: 2px solid var(--bg);
+      font-size: 0.75rem;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 600;
+      color: #fff;
+      margin-left: -8px;
+    }
+    .avatar:first-child { margin-left: 0; }
+    .social-text {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+    .social-text strong { color: var(--text-body); font-weight: 600; }
+
+    /* === FEATURES === */
+    .features-section {
+      padding: 100px 0;
+    }
+    .section-eyebrow {
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--accent);
+      margin-bottom: 12px;
+    }
+    .section-title {
+      font-family: 'Source Serif 4', Georgia, serif;
+      font-size: clamp(28px, 4vw, 40px);
+      font-weight: 600;
+      color: var(--text-head);
+      letter-spacing: -0.02em;
+      margin-bottom: 14px;
+      line-height: 1.2;
+    }
+    .section-sub {
+      font-size: 1rem;
+      color: var(--text-muted);
+      max-width: 480px;
+      line-height: 1.70;
+      margin-bottom: 56px;
+    }
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+    }
+    .feature-card {
+      background: var(--surface);
+      border-radius: 20px;
+      box-shadow: 0 4px 20px var(--warm-shadow);
+      padding: 36px 28px;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .feature-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 28px var(--warm-shadow-md);
+    }
+    .feature-icon-wrap {
+      width: 52px; height: 52px;
+      background: var(--accent-light);
+      border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.5rem;
+      margin-bottom: 20px;
+    }
+    .feature-title {
+      font-family: 'Source Serif 4', Georgia, serif;
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--text-head);
+      margin-bottom: 10px;
+      letter-spacing: -0.01em;
+    }
+    .feature-desc {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      line-height: 1.70;
+    }
+
+    /* === TESTIMONIALS === */
+    .testimonials-section {
+      background: var(--strip-bg);
+      padding: 96px 0;
+    }
+    .testimonials-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-top: 52px;
+    }
+    .testimonial-card {
+      background: var(--surface);
+      border-radius: 20px;
+      box-shadow: 0 4px 20px var(--warm-shadow);
+      padding: 36px 32px;
+    }
+    .quote {
+      font-family: 'Source Serif 4', Georgia, serif;
+      font-size: 1.05rem;
+      font-style: italic;
+      color: var(--text-head);
+      line-height: 1.75;
+      margin-bottom: 24px;
+      font-weight: 400;
+    }
+    .quote::before {
+      content: '\201C';
+      color: var(--accent);
+      font-size: 2rem;
+      font-family: 'Source Serif 4', Georgia, serif;
+      line-height: 0;
+      vertical-align: -0.5rem;
+      margin-right: 2px;
+    }
+    .testimonial-author {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .author-avatar {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #fff;
+      flex-shrink: 0;
+    }
+    .author-name {
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--text-head);
+      margin-bottom: 2px;
+    }
+    .author-role {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
+    /* === PRICING === */
+    .pricing-section {
+      padding: 100px 0;
+    }
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      margin-top: 56px;
+    }
+    .pricing-card {
+      background: var(--surface);
+      border-radius: 20px;
+      box-shadow: 0 4px 20px var(--warm-shadow);
+      overflow: hidden;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .pricing-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 28px var(--warm-shadow-md);
+    }
+    .pricing-card.featured {
+      box-shadow: 0 8px 32px rgba(224,122,95,0.18);
+    }
+    .pricing-card-header {
+      padding: 28px;
+      border-bottom: 1px solid var(--nav-border);
+    }
+    .pricing-card.featured .pricing-card-header {
+      background: var(--accent);
+      border-bottom: none;
+    }
+    .pricing-card.featured .pricing-name,
+    .pricing-card.featured .pricing-price,
+    .pricing-card.featured .pricing-period { color: #fff; }
+    .pricing-name {
+      font-family: 'Source Serif 4', Georgia, serif;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text-head);
+      margin-bottom: 10px;
+      letter-spacing: -0.01em;
+    }
+    .pricing-price {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--text-head);
+      letter-spacing: -0.03em;
+    }
+    .pricing-period {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      font-weight: 400;
+    }
+    .pricing-body { padding: 28px; }
+    .pricing-features {
+      list-style: none;
+      margin-bottom: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .pricing-features li {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+    }
+    .check {
+      color: var(--accent);
+      font-weight: 700;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    /* === CTA SECTION === */
+    .cta-section {
+      background: var(--accent);
+      padding: 96px 0;
+      text-align: center;
+    }
+    .cta-section .section-title {
+      color: #fff;
+      max-width: 560px;
+      margin: 0 auto 16px;
+    }
+    .cta-sub {
+      color: rgba(255,255,255,0.80);
+      font-size: 1rem;
+      margin-bottom: 36px;
+    }
+    .btn-white {
+      background: #fff;
+      color: var(--accent);
+      border: none;
+      border-radius: 14px;
+      padding: 14px 32px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .btn-white:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.20);
+    }
+
+    /* === FOOTER === */
+    footer {
+      background: #F0EDE8;
+      border-top: 1px solid var(--nav-border);
+      padding: 48px 0;
+    }
+    .footer-inner {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 0 28px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+    .footer-logo {
+      font-family: 'Source Serif 4', Georgia, serif;
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--text-head);
+    }
+    .footer-links {
+      display: flex;
+      gap: 28px;
+      flex-wrap: wrap;
+    }
+    .footer-links a {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      text-decoration: none;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+    .footer-links a:hover { color: var(--accent); }
+    .footer-copy {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
+    @media (max-width: 768px) {
+      .features-grid, .testimonials-grid, .pricing-grid { grid-template-columns: 1fr; }
+      .nav-links { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav>
+    <div class="nav-inner">
+      <div class="logo">Tempo<span class="logo-dot">.</span></div>
+      <ul class="nav-links">
+        <li><a href="#">Features</a></li>
+        <li><a href="#">Pricing</a></li>
+        <li><a href="#">Blog</a></li>
+        <li><a href="#">About</a></li>
+      </ul>
+      <button class="btn-accent">Try Tempo Free</button>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="container">
+      <div class="hero-content">
+        <div class="hero-badge">
+          <span class="badge-icon">🌿</span>
+          New — Async video messages now in Tempo
+        </div>
+        <h1>Work at your own pace.<br /><strong>Together.</strong></h1>
+        <p class="hero-sub">Tempo replaces the chaos of real-time chat with thoughtful async communication — so your team can do deep work and still stay aligned.</p>
+        <div class="hero-ctas">
+          <button class="btn-accent">Start for free</button>
+          <button class="btn-soft">Watch 2-min demo</button>
+        </div>
+        <div class="social-proof">
+          <div class="avatars">
+            <div class="avatar" style="background: #E07A5F;">A</div>
+            <div class="avatar" style="background: #81B29A;">M</div>
+            <div class="avatar" style="background: #F2CC8F;">S</div>
+            <div class="avatar" style="background: #3D405B;">R</div>
+            <div class="avatar" style="background: #D4A5A5;">K</div>
+          </div>
+          <span class="social-text">Trusted by <strong>50,000+ teams</strong> worldwide</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section class="features-section">
+    <div class="container">
+      <div class="section-eyebrow">Why Tempo</div>
+      <h2 class="section-title">Built for how humans<br />actually think</h2>
+      <p class="section-sub">Deep work requires uninterrupted time. Tempo gives your team the tools to communicate richly without the constant ping.</p>
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon-wrap">🌊</div>
+          <div class="feature-title">Async by Design</div>
+          <p class="feature-desc">Write messages, record short videos, or share context docs — your teammates reply when they're in the right headspace, not when the notification fires.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon-wrap">🧭</div>
+          <div class="feature-title">Focus Timelines</div>
+          <p class="feature-desc">Set your working hours and focus windows. Tempo intelligently surfaces what needs your attention, ordered by importance — never by recency alone.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon-wrap">✍️</div>
+          <div class="feature-title">Rich Context Threads</div>
+          <p class="feature-desc">Every conversation stays contextual. Attach files, link tasks, embed designs, and write in a beautiful editor — all in one thread, always findable.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TESTIMONIALS -->
+  <section class="testimonials-section">
+    <div class="container">
+      <div class="section-eyebrow">What teams say</div>
+      <h2 class="section-title">Work has never felt<br />this calm before</h2>
+      <div class="testimonials-grid">
+        <div class="testimonial-card">
+          <p class="quote">Tempo changed our entire culture. We went from 600 Slack messages a day to thoughtful, well-written updates that everyone actually reads. Deep work is back.</p>
+          <div class="testimonial-author">
+            <div class="author-avatar" style="background: #E07A5F;">SR</div>
+            <div>
+              <div class="author-name">Sofia Reyes</div>
+              <div class="author-role">Head of Product, Brightly</div>
+            </div>
+          </div>
+        </div>
+        <div class="testimonial-card">
+          <p class="quote">Our distributed team spans 9 time zones. Tempo is the first tool that actually respects that. Nobody has to be online at the same time to stay in sync anymore.</p>
+          <div class="testimonial-author">
+            <div class="author-avatar" style="background: #81B29A;">MK</div>
+            <div>
+              <div class="author-name">Marcus Klein</div>
+              <div class="author-role">Engineering Lead, Cortex</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRICING -->
+  <section class="pricing-section">
+    <div class="container">
+      <div class="section-eyebrow">Simple Pricing</div>
+      <h2 class="section-title">One price. No surprises.</h2>
+      <div class="pricing-grid">
+        <div class="pricing-card">
+          <div class="pricing-card-header">
+            <div class="pricing-name">Starter</div>
+            <div class="pricing-price">$0 <span class="pricing-period">/ free forever</span></div>
+          </div>
+          <div class="pricing-body">
+            <ul class="pricing-features">
+              <li><span class="check">✓</span> Up to 5 teammates</li>
+              <li><span class="check">✓</span> 90-day message history</li>
+              <li><span class="check">✓</span> Basic video messages</li>
+              <li><span class="check">✓</span> 5GB file storage</li>
+            </ul>
+            <button class="btn-soft" style="width:100%">Get started free</button>
+          </div>
+        </div>
+        <div class="pricing-card featured">
+          <div class="pricing-card-header">
+            <div class="pricing-name">Team</div>
+            <div class="pricing-price">$9 <span class="pricing-period">/ seat / month</span></div>
+          </div>
+          <div class="pricing-body">
+            <ul class="pricing-features">
+              <li><span class="check" style="color: var(--accent)">✓</span> Unlimited teammates</li>
+              <li><span class="check" style="color: var(--accent)">✓</span> Unlimited history</li>
+              <li><span class="check" style="color: var(--accent)">✓</span> Focus timelines</li>
+              <li><span class="check" style="color: var(--accent)">✓</span> Priority + integrations</li>
+            </ul>
+            <button class="btn-accent" style="width:100%">Start 14-day trial</button>
+          </div>
+        </div>
+        <div class="pricing-card">
+          <div class="pricing-card-header">
+            <div class="pricing-name">Enterprise</div>
+            <div class="pricing-price">Custom</div>
+          </div>
+          <div class="pricing-body">
+            <ul class="pricing-features">
+              <li><span class="check">✓</span> SSO + SCIM</li>
+              <li><span class="check">✓</span> Dedicated support</li>
+              <li><span class="check">✓</span> SLA guarantee</li>
+              <li><span class="check">✓</span> On-prem option</li>
+            </ul>
+            <button class="btn-soft" style="width:100%">Talk to sales</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA SECTION -->
+  <section class="cta-section">
+    <div class="container">
+      <h2 class="section-title" style="font-family: 'Source Serif 4', Georgia, serif;">Your team deserves<br />to breathe.</h2>
+      <p class="cta-sub">Start with Tempo free. No credit card required.</p>
+      <button class="btn-white">Get started — it's free</button>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-logo">Tempo.</div>
+      <div class="footer-links">
+        <a href="#">Features</a>
+        <a href="#">Pricing</a>
+        <a href="#">Privacy</a>
+        <a href="#">Terms</a>
+        <a href="#">Blog</a>
+      </div>
+      <div class="footer-copy">© 2025 Tempo, Inc. All rights reserved.</div>
+    </div>
+  </footer>
+
+</body>
+</html>

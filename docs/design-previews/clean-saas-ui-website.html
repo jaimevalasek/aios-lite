@@ -1,0 +1,1202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Runbook — Incident Management Landing / Clean SaaS UI Preview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg-gray: #F9FAFB;
+    --bg-white: #FFFFFF;
+    --border: #E5E7EB;
+    --accent: #2563EB;
+    --accent-hover: #1D4ED8;
+    --text-heading: #111827;
+    --text-body: #374151;
+    --text-secondary: #6B7280;
+    --text-muted: #9CA3AF;
+    --green: #16A34A;
+    --red: #DC2626;
+    --yellow: #D97706;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    font-size: 15px;
+    line-height: 1.6;
+    color: var(--text-body);
+    background: var(--bg-gray);
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: var(--bg-white);
+    border-bottom: 1px solid var(--border);
+    padding: 0 32px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .nav-logo {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-heading);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+  }
+
+  .nav-logo-icon {
+    width: 28px;
+    height: 28px;
+    background: var(--accent);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  .nav-links {
+    display: flex;
+    align-items: center;
+    gap: 28px;
+    list-style: none;
+  }
+
+  .nav-links a {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-body);
+    text-decoration: none;
+  }
+
+  .nav-links a:hover { color: var(--text-heading); }
+
+  .nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .btn-ghost {
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-body);
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 7px 16px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .btn-primary {
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    color: white;
+    background: var(--accent);
+    border: none;
+    border-radius: 6px;
+    padding: 8px 18px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .btn-primary:hover { background: var(--accent-hover); }
+
+  .btn-primary-lg {
+    font-family: 'Inter', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    color: white;
+    background: var(--accent);
+    border: none;
+    border-radius: 6px;
+    padding: 12px 24px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .btn-ghost-lg {
+    font-family: 'Inter', sans-serif;
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text-body);
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 12px 24px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* ── SECTIONS ── */
+  section { padding: 80px 32px; }
+
+  .container { max-width: 1120px; margin: 0 auto; }
+
+  /* ── HERO ── */
+  .hero {
+    background: var(--bg-white);
+    padding: 80px 32px 60px;
+  }
+
+  .hero-inner {
+    max-width: 1120px;
+    margin: 0 auto;
+  }
+
+  .overline {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    display: inline-block;
+    margin-bottom: 20px;
+  }
+
+  .hero h1 {
+    font-size: 52px;
+    font-weight: 700;
+    color: var(--text-heading);
+    line-height: 1.12;
+    letter-spacing: -0.02em;
+    max-width: 700px;
+    margin-bottom: 20px;
+  }
+
+  .hero-sub {
+    font-size: 18px;
+    color: var(--text-secondary);
+    max-width: 560px;
+    margin-bottom: 36px;
+    line-height: 1.6;
+  }
+
+  .hero-ctas {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 56px;
+    flex-wrap: wrap;
+  }
+
+  /* Dashboard mock */
+  .dashboard-mock {
+    background: var(--bg-white);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+    overflow: hidden;
+  }
+
+  .mock-topbar {
+    background: var(--bg-gray);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .mock-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .mock-dot.red { background: #FC5F5A; }
+  .mock-dot.yellow { background: #FDBC40; }
+  .mock-dot.green { background: #35C759; }
+
+  .mock-bar {
+    background: var(--bg-white);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    height: 22px;
+    flex: 1;
+    margin-left: 8px;
+    padding: 0 10px;
+    display: flex;
+    align-items: center;
+  }
+
+  .mock-bar-text {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-muted);
+  }
+
+  .mock-body {
+    display: flex;
+  }
+
+  .mock-sidebar {
+    width: 200px;
+    border-right: 1px solid var(--border);
+    padding: 16px 0;
+    flex-shrink: 0;
+  }
+
+  .mock-sidebar-item {
+    padding: 7px 16px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .mock-sidebar-item.active {
+    color: var(--accent);
+    background: #EFF6FF;
+    border-left: 3px solid var(--accent);
+  }
+
+  .mock-sidebar-icon {
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+    background: currentColor;
+    opacity: 0.3;
+  }
+
+  .mock-main {
+    flex: 1;
+    padding: 20px;
+  }
+
+  .mock-table-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+
+  .mock-table-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-heading);
+  }
+
+  .mock-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    background: #EFF6FF;
+    color: var(--accent);
+    border: 1px solid #BFDBFE;
+    border-radius: 4px;
+    padding: 2px 8px;
+  }
+
+  .mock-table { width: 100%; border-collapse: collapse; }
+
+  .mock-table th {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    text-align: left;
+    padding: 6px 10px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .mock-table td {
+    padding: 9px 10px;
+    font-size: 12px;
+    color: var(--text-body);
+    border-bottom: 1px solid var(--bg-gray);
+  }
+
+  .status-dot {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .status-dot::before {
+    content: '';
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+  }
+
+  .status-dot.critical::before { background: var(--red); }
+  .status-dot.warning::before { background: var(--yellow); }
+  .status-dot.resolved::before { background: var(--green); }
+  .status-dot.monitoring::before { background: var(--accent); }
+
+  .severity-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-weight: 500;
+  }
+
+  .sev-p1 { background: #FEF2F2; color: var(--red); }
+  .sev-p2 { background: #FFFBEB; color: var(--yellow); }
+  .sev-p3 { background: #EFF6FF; color: var(--accent); }
+
+  /* ── TRUSTED BY ── */
+  .trusted { background: var(--bg-gray); padding: 48px 32px; }
+
+  .trusted-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-muted);
+    text-align: center;
+    margin-bottom: 28px;
+  }
+
+  .logos-row {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 48px;
+    flex-wrap: wrap;
+  }
+
+  .logo-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-muted);
+    letter-spacing: -0.01em;
+  }
+
+  /* ── FEATURES ── */
+  .features { background: var(--bg-white); }
+
+  .section-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    display: block;
+    margin-bottom: 12px;
+  }
+
+  .section-heading {
+    font-size: 36px;
+    font-weight: 700;
+    color: var(--text-heading);
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+    margin-bottom: 12px;
+  }
+
+  .section-sub {
+    font-size: 16px;
+    color: var(--text-secondary);
+    max-width: 480px;
+    margin-bottom: 52px;
+  }
+
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+  }
+
+  .feature-card {
+    background: var(--bg-white);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 28px;
+    position: relative;
+    transition: box-shadow 0.2s;
+  }
+
+  .feature-card:hover {
+    box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+  }
+
+  .feature-card.featured {
+    border-top: 3px solid var(--accent);
+  }
+
+  .feature-icon {
+    width: 40px;
+    height: 40px;
+    background: #EFF6FF;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 16px;
+    color: var(--accent);
+    font-size: 18px;
+  }
+
+  .feature-card h3 {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-heading);
+    margin-bottom: 8px;
+  }
+
+  .feature-card p {
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.55;
+  }
+
+  /* ── METRICS ── */
+  .metrics { background: var(--bg-gray); padding: 60px 32px; }
+
+  .metrics-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2px;
+    max-width: 1120px;
+    margin: 0 auto;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .metric-cell {
+    background: var(--bg-white);
+    padding: 40px 36px;
+    text-align: center;
+  }
+
+  .metric-value {
+    font-size: 42px;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: -0.02em;
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+
+  .metric-label {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text-heading);
+    margin-bottom: 4px;
+  }
+
+  .metric-sub {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  /* ── TESTIMONIAL ── */
+  .testimonial-section { background: var(--bg-white); }
+
+  .testimonial-card {
+    max-width: 760px;
+    margin: 0 auto;
+    background: var(--bg-white);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 44px 48px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+
+  .testimonial-quote {
+    font-size: 20px;
+    font-weight: 400;
+    color: var(--text-heading);
+    line-height: 1.55;
+    margin-bottom: 28px;
+    font-style: italic;
+  }
+
+  .testimonial-author {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .author-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: #DBEAFE;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 16px;
+    color: var(--accent);
+    flex-shrink: 0;
+  }
+
+  .author-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-heading);
+    margin-bottom: 2px;
+  }
+
+  .author-role {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  /* ── PRICING ── */
+  .pricing { background: var(--bg-gray); }
+
+  .pricing-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+    margin-bottom: 40px;
+  }
+
+  .pricing-card {
+    background: var(--bg-white);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+
+  .pricing-card.featured {
+    border-color: var(--accent);
+    box-shadow: 0 4px 20px rgba(37,99,235,0.12);
+  }
+
+  .pricing-header {
+    padding: 28px 28px 24px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .pricing-card.featured .pricing-header {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+
+  .pricing-tier {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    margin-bottom: 12px;
+  }
+
+  .pricing-card.featured .pricing-tier { color: rgba(255,255,255,0.8); }
+
+  .pricing-price {
+    font-size: 36px;
+    font-weight: 700;
+    color: var(--text-heading);
+    letter-spacing: -0.02em;
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+  }
+
+  .pricing-card.featured .pricing-price { color: white; }
+
+  .pricing-price-unit {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-muted);
+  }
+
+  .pricing-card.featured .pricing-price-unit { color: rgba(255,255,255,0.7); }
+
+  .pricing-desc {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-top: 8px;
+  }
+
+  .pricing-card.featured .pricing-desc { color: rgba(255,255,255,0.8); }
+
+  .pricing-body {
+    padding: 24px 28px;
+  }
+
+  .pricing-feature-list {
+    list-style: none;
+    margin-bottom: 24px;
+  }
+
+  .pricing-feature-list li {
+    font-size: 13px;
+    color: var(--text-body);
+    padding: 6px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-bottom: 1px solid var(--bg-gray);
+  }
+
+  .pricing-feature-list li::before {
+    content: '✓';
+    color: var(--green);
+    font-weight: 700;
+    font-size: 12px;
+    flex-shrink: 0;
+  }
+
+  .pricing-feature-list li.unavailable {
+    color: var(--text-muted);
+  }
+
+  .pricing-feature-list li.unavailable::before {
+    content: '–';
+    color: var(--text-muted);
+    font-weight: 400;
+  }
+
+  .pricing-cta {
+    display: block;
+    text-align: center;
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  .pricing-cta.primary {
+    background: var(--accent);
+    color: white;
+    border: none;
+  }
+
+  .pricing-cta.secondary {
+    background: var(--bg-white);
+    color: var(--accent);
+    border: 1px solid var(--accent);
+  }
+
+  .pricing-cta.ghost {
+    background: var(--bg-white);
+    color: var(--text-body);
+    border: 1px solid var(--border);
+  }
+
+  /* Comparison table */
+  .compare-table { width: 100%; border-collapse: collapse; background: var(--bg-white); border-radius: 8px; overflow: hidden; border: 1px solid var(--border); }
+
+  .compare-table th {
+    padding: 12px 20px;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-heading);
+    background: var(--bg-gray);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .compare-table th:first-child { text-align: left; }
+
+  .compare-table td {
+    padding: 12px 20px;
+    font-size: 13px;
+    color: var(--text-body);
+    border-bottom: 1px solid var(--bg-gray);
+    text-align: center;
+  }
+
+  .compare-table td:first-child { text-align: left; font-weight: 500; color: var(--text-heading); }
+
+  .check { color: var(--green); font-weight: 700; }
+  .cross { color: var(--text-muted); }
+
+  /* ── CTA SECTION ── */
+  .cta-section {
+    background: var(--accent);
+    padding: 80px 32px;
+    text-align: center;
+  }
+
+  .cta-section h2 {
+    font-size: 36px;
+    font-weight: 700;
+    color: white;
+    letter-spacing: -0.02em;
+    margin-bottom: 16px;
+  }
+
+  .cta-section p {
+    font-size: 17px;
+    color: rgba(255,255,255,0.8);
+    margin-bottom: 36px;
+  }
+
+  .btn-white {
+    font-family: 'Inter', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--accent);
+    background: white;
+    border: none;
+    border-radius: 6px;
+    padding: 13px 28px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    background: var(--bg-white);
+    border-top: 1px solid var(--border);
+    padding: 60px 32px 32px;
+  }
+
+  .footer-inner {
+    max-width: 1120px;
+    margin: 0 auto;
+  }
+
+  .footer-grid {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr 1fr 1fr;
+    gap: 48px;
+    margin-bottom: 48px;
+  }
+
+  .footer-brand p {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-top: 12px;
+    line-height: 1.6;
+    max-width: 240px;
+  }
+
+  .footer-col h4 {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-heading);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+
+  .footer-col ul { list-style: none; }
+
+  .footer-col li { margin-bottom: 10px; }
+
+  .footer-col a {
+    font-size: 14px;
+    color: var(--text-secondary);
+    text-decoration: none;
+  }
+
+  .footer-col a:hover { color: var(--text-heading); }
+
+  .footer-bottom {
+    border-top: 1px solid var(--border);
+    padding-top: 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .footer-bottom-text {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  /* MISC */
+  .text-center { text-align: center; }
+  .mb-8 { margin-bottom: 8px; }
+  .mb-16 { margin-bottom: 16px; }
+  .mb-24 { margin-bottom: 24px; }
+  .mb-48 { margin-bottom: 48px; }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="#" class="nav-logo">
+    <div class="nav-logo-icon">R</div>
+    Runbook
+  </a>
+  <ul class="nav-links">
+    <li><a href="#">Product</a></li>
+    <li><a href="#">Integrations</a></li>
+    <li><a href="#">Pricing</a></li>
+    <li><a href="#">Docs</a></li>
+  </ul>
+  <div class="nav-actions">
+    <a href="#" class="btn-ghost">Sign in</a>
+    <a href="#" class="btn-primary">Start free</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-inner">
+    <span class="overline">Incident Management / For Engineering Teams</span>
+    <h1>Resolve incidents faster. Ship with confidence.</h1>
+    <p class="hero-sub">Runbook gives on-call engineers a single pane of glass — from alert to postmortem, without the chaos.</p>
+    <div class="hero-ctas">
+      <a href="#" class="btn-primary-lg">Start free trial →</a>
+      <a href="#" class="btn-ghost-lg">View live demo</a>
+    </div>
+
+    <!-- Dashboard mock -->
+    <div class="dashboard-mock">
+      <div class="mock-topbar">
+        <div class="mock-dot red"></div>
+        <div class="mock-dot yellow"></div>
+        <div class="mock-dot green"></div>
+        <div class="mock-bar"><span class="mock-bar-text">app.runbook.io/incidents</span></div>
+      </div>
+      <div class="mock-body">
+        <div class="mock-sidebar">
+          <div class="mock-sidebar-item active">
+            <div class="mock-sidebar-icon"></div>
+            Incidents
+          </div>
+          <div class="mock-sidebar-item">
+            <div class="mock-sidebar-icon"></div>
+            On-call
+          </div>
+          <div class="mock-sidebar-item">
+            <div class="mock-sidebar-icon"></div>
+            Runbooks
+          </div>
+          <div class="mock-sidebar-item">
+            <div class="mock-sidebar-icon"></div>
+            Postmortems
+          </div>
+          <div class="mock-sidebar-item">
+            <div class="mock-sidebar-icon"></div>
+            Integrations
+          </div>
+          <div class="mock-sidebar-item">
+            <div class="mock-sidebar-icon"></div>
+            Analytics
+          </div>
+        </div>
+        <div class="mock-main">
+          <div class="mock-table-header">
+            <span class="mock-table-title">Active Incidents</span>
+            <span class="mock-badge">3 open</span>
+          </div>
+          <table class="mock-table">
+            <thead>
+              <tr>
+                <th>Status</th>
+                <th>Title</th>
+                <th>Severity</th>
+                <th>Assignee</th>
+                <th>Duration</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="status-dot critical">Critical</span></td>
+                <td>API gateway latency spike — prod</td>
+                <td><span class="severity-tag sev-p1">P1</span></td>
+                <td>Sarah K.</td>
+                <td><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--red)">00:14:33</span></td>
+              </tr>
+              <tr>
+                <td><span class="status-dot warning">Monitoring</span></td>
+                <td>Elevated error rate — payment service</td>
+                <td><span class="severity-tag sev-p2">P2</span></td>
+                <td>Marcus L.</td>
+                <td><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--yellow)">01:02:17</span></td>
+              </tr>
+              <tr>
+                <td><span class="status-dot monitoring">Investigating</span></td>
+                <td>CDN cache miss ratio above threshold</td>
+                <td><span class="severity-tag sev-p3">P3</span></td>
+                <td>Priya M.</td>
+                <td><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--accent)">00:28:05</span></td>
+              </tr>
+              <tr>
+                <td><span class="status-dot resolved">Resolved</span></td>
+                <td>Database connection pool exhausted</td>
+                <td><span class="severity-tag sev-p2">P2</span></td>
+                <td>James T.</td>
+                <td><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--green)">Resolved</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TRUSTED BY -->
+<div class="trusted">
+  <p class="trusted-label">Trusted by 1,200+ engineering teams worldwide</p>
+  <div class="logos-row">
+    <span class="logo-name">Streamline</span>
+    <span class="logo-name">Northvault</span>
+    <span class="logo-name">Cascadeio</span>
+    <span class="logo-name">Meridian</span>
+    <span class="logo-name">Apertive</span>
+  </div>
+</div>
+
+<!-- FEATURES -->
+<section class="features">
+  <div class="container">
+    <span class="section-label">Product</span>
+    <h2 class="section-heading">Everything you need during an incident</h2>
+    <p class="section-sub">Built for speed and clarity when pressure is highest.</p>
+
+    <div class="features-grid">
+      <div class="feature-card featured">
+        <div class="feature-icon">⚡</div>
+        <h3>Instant Alert Routing</h3>
+        <p>Connect PagerDuty, Datadog, or Grafana. Alerts land in Slack in seconds with full context attached.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📋</div>
+        <h3>Runbook Automation</h3>
+        <p>Auto-surface the right runbook for each incident type. Reduce time-to-action from minutes to seconds.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🧭</div>
+        <h3>Incident Commander</h3>
+        <p>Assign roles, track actions, and maintain a clean timeline — all from one command center.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📊</div>
+        <h3>Postmortem Generator</h3>
+        <p>One-click postmortems with a full incident timeline, action log, and customizable templates.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔔</div>
+        <h3>On-Call Scheduling</h3>
+        <p>Visual schedules, overrides, and escalation policies. No spreadsheet needed.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📈</div>
+        <h3>MTTR Analytics</h3>
+        <p>Track MTTA, MTTR, and incident frequency. Spot patterns before they become outages.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- METRICS -->
+<div class="metrics">
+  <div class="metrics-row">
+    <div class="metric-cell">
+      <div class="metric-value">99.9%</div>
+      <div class="metric-label">Uptime SLA</div>
+      <div class="metric-sub">Guaranteed reliability</div>
+    </div>
+    <div class="metric-cell">
+      <div class="metric-value">&lt; 5 min</div>
+      <div class="metric-label">Median MTTR</div>
+      <div class="metric-sub">Across all customers</div>
+    </div>
+    <div class="metric-cell">
+      <div class="metric-value">10,000+</div>
+      <div class="metric-label">Incidents resolved</div>
+      <div class="metric-sub">In the last 30 days</div>
+    </div>
+  </div>
+</div>
+
+<!-- TESTIMONIAL -->
+<section class="testimonial-section">
+  <div class="container">
+    <div class="testimonial-card">
+      <p class="testimonial-quote">"Runbook cut our mean time to resolution in half. The runbook automation feature alone is worth the subscription — our junior engineers can handle incidents that used to require senior escalation."</p>
+      <div class="testimonial-author">
+        <div class="author-avatar">SK</div>
+        <div>
+          <div class="author-name">Sarah Kim</div>
+          <div class="author-role">Director of Engineering @ Streamline</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section class="pricing">
+  <div class="container">
+    <div class="text-center mb-48">
+      <span class="section-label">Pricing</span>
+      <h2 class="section-heading">Simple, transparent pricing</h2>
+      <p class="section-sub" style="margin: 0 auto;">Start free. Scale as your team grows.</p>
+    </div>
+
+    <div class="pricing-grid">
+      <div class="pricing-card">
+        <div class="pricing-header">
+          <div class="pricing-tier">Free</div>
+          <div class="pricing-price">$0 <span class="pricing-price-unit">/ month</span></div>
+          <div class="pricing-desc">For small teams getting started</div>
+        </div>
+        <div class="pricing-body">
+          <ul class="pricing-feature-list">
+            <li>Up to 5 users</li>
+            <li>50 incidents / month</li>
+            <li>Basic runbooks</li>
+            <li>Slack integration</li>
+            <li class="unavailable">Custom escalation policies</li>
+            <li class="unavailable">Analytics dashboard</li>
+            <li class="unavailable">Postmortem templates</li>
+          </ul>
+          <a href="#" class="pricing-cta ghost">Get started free</a>
+        </div>
+      </div>
+
+      <div class="pricing-card featured">
+        <div class="pricing-header">
+          <div class="pricing-tier">Pro</div>
+          <div class="pricing-price">$29 <span class="pricing-price-unit">/ user / mo</span></div>
+          <div class="pricing-desc">For growing engineering teams</div>
+        </div>
+        <div class="pricing-body">
+          <ul class="pricing-feature-list">
+            <li>Unlimited users</li>
+            <li>Unlimited incidents</li>
+            <li>Advanced runbooks</li>
+            <li>All integrations</li>
+            <li>Custom escalation policies</li>
+            <li>Analytics dashboard</li>
+            <li>Postmortem templates</li>
+          </ul>
+          <a href="#" class="pricing-cta primary">Start free trial</a>
+        </div>
+      </div>
+
+      <div class="pricing-card">
+        <div class="pricing-header">
+          <div class="pricing-tier">Enterprise</div>
+          <div class="pricing-price">Custom</div>
+          <div class="pricing-desc">For large orgs with specific needs</div>
+        </div>
+        <div class="pricing-body">
+          <ul class="pricing-feature-list">
+            <li>Everything in Pro</li>
+            <li>SSO / SAML</li>
+            <li>Audit logs</li>
+            <li>SLA guarantees</li>
+            <li>Dedicated CSM</li>
+            <li>Custom integrations</li>
+            <li>On-prem deployment</li>
+          </ul>
+          <a href="#" class="pricing-cta secondary">Contact sales</a>
+        </div>
+      </div>
+    </div>
+
+    <table class="compare-table">
+      <thead>
+        <tr>
+          <th>Feature</th>
+          <th>Free</th>
+          <th>Pro</th>
+          <th>Enterprise</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Incident tracking</td><td class="check">✓</td><td class="check">✓</td><td class="check">✓</td></tr>
+        <tr><td>Slack / Teams alerts</td><td class="check">✓</td><td class="check">✓</td><td class="check">✓</td></tr>
+        <tr><td>Custom runbooks</td><td class="cross">—</td><td class="check">✓</td><td class="check">✓</td></tr>
+        <tr><td>MTTR analytics</td><td class="cross">—</td><td class="check">✓</td><td class="check">✓</td></tr>
+        <tr><td>SSO / SAML</td><td class="cross">—</td><td class="cross">—</td><td class="check">✓</td></tr>
+        <tr><td>Dedicated support</td><td class="cross">—</td><td class="cross">—</td><td class="check">✓</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- CTA -->
+<div class="cta-section">
+  <div class="container">
+    <h2>Ready to stop firefighting?</h2>
+    <p>Join 1,200+ engineering teams that resolve incidents faster with Runbook.</p>
+    <a href="#" class="btn-white">Start your free trial — no credit card required →</a>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <a href="#" class="nav-logo" style="display:inline-flex;">
+          <div class="nav-logo-icon">R</div>
+          Runbook
+        </a>
+        <p>Incident management built for engineering teams who care about reliability.</p>
+      </div>
+      <div class="footer-col">
+        <h4>Product</h4>
+        <ul>
+          <li><a href="#">Features</a></li>
+          <li><a href="#">Integrations</a></li>
+          <li><a href="#">Changelog</a></li>
+          <li><a href="#">Roadmap</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Resources</h4>
+        <ul>
+          <li><a href="#">Documentation</a></li>
+          <li><a href="#">API Reference</a></li>
+          <li><a href="#">Status Page</a></li>
+          <li><a href="#">Blog</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Company</h4>
+        <ul>
+          <li><a href="#">About</a></li>
+          <li><a href="#">Careers</a></li>
+          <li><a href="#">Security</a></li>
+          <li><a href="#">Privacy</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span class="footer-bottom-text">© 2024 Runbook, Inc. All rights reserved.</span>
+      <span class="footer-bottom-text">Clean SaaS UI — Design Skill Preview</span>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LUMEX — Fintech Landing Page / Glassmorphism UI Preview</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --violet: #7C3AED;
+      --blue: #3B82F6;
+      --gradient: linear-gradient(135deg, #7C3AED, #3B82F6);
+      --text-head: #1A1A2E;
+      --text-body: #2D2D44;
+      --text-muted: #6B6B8A;
+      --glass-bg: rgba(255,255,255,0.55);
+      --glass-bg-strong: rgba(255,255,255,0.70);
+      --glass-border: rgba(255,255,255,0.40);
+      --shadow: rgba(124, 58, 237, 0.10);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      color: var(--text-body);
+      background: linear-gradient(135deg, #F0EEF6 0%, #E0DFF0 30%, #D8E0F0 70%, #EDE8F0 100%);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Decorative blobs */
+    .blob-container {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+    .blob {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(80px);
+      opacity: 0.55;
+    }
+    .blob-violet {
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, rgba(124,58,237,0.38), rgba(124,58,237,0.10));
+      top: -180px; left: -180px;
+    }
+    .blob-blue {
+      width: 700px; height: 700px;
+      background: radial-gradient(circle, rgba(59,130,246,0.32), rgba(59,130,246,0.08));
+      bottom: -220px; right: -200px;
+    }
+    .blob-indigo {
+      width: 400px; height: 400px;
+      background: radial-gradient(circle, rgba(99,102,241,0.22), transparent);
+      top: 50%; left: 55%;
+    }
+
+    /* Layout helpers */
+    .container {
+      max-width: 1160px;
+      margin: 0 auto;
+      padding: 0 24px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Glass mixin */
+    .glass {
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 20px;
+      box-shadow: 0 8px 32px var(--shadow), 0 1px 0 rgba(255,255,255,0.6) inset;
+    }
+
+    /* === NAV === */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      background: rgba(255,255,255,0.70);
+      border-bottom: 1px solid rgba(255,255,255,0.40);
+      box-shadow: 0 2px 20px rgba(124,58,237,0.07);
+    }
+    .nav-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 68px;
+      max-width: 1160px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+    .logo {
+      font-size: 1.35rem;
+      font-weight: 800;
+      background: var(--gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: -0.03em;
+    }
+    .logo span {
+      font-weight: 300;
+      opacity: 0.7;
+    }
+    .nav-links {
+      display: flex;
+      gap: 36px;
+      list-style: none;
+    }
+    .nav-links a {
+      text-decoration: none;
+      color: var(--text-body);
+      font-size: 0.9rem;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--violet); }
+    .btn-gradient {
+      background: var(--gradient);
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      padding: 10px 22px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      box-shadow: 0 4px 14px rgba(124,58,237,0.30);
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .btn-gradient:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(124,58,237,0.40);
+    }
+
+    /* === HERO === */
+    .hero {
+      padding: 100px 0 60px;
+      text-align: center;
+      position: relative;
+      z-index: 1;
+    }
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      backdrop-filter: blur(12px);
+      background: rgba(255,255,255,0.60);
+      border: 1px solid rgba(255,255,255,0.50);
+      border-radius: 100px;
+      padding: 6px 16px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--violet);
+      margin-bottom: 28px;
+      box-shadow: 0 2px 12px var(--shadow);
+    }
+    .badge-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--gradient);
+    }
+    .hero h1 {
+      font-size: clamp(44px, 6vw, 60px);
+      font-weight: 800;
+      color: var(--text-head);
+      line-height: 1.1;
+      letter-spacing: -0.03em;
+      margin-bottom: 20px;
+    }
+    .hero h1 .gradient-text {
+      background: var(--gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero-sub {
+      font-size: 1.15rem;
+      color: var(--text-muted);
+      max-width: 520px;
+      margin: 0 auto 36px;
+      line-height: 1.65;
+      font-weight: 400;
+    }
+    .hero-ctas {
+      display: flex;
+      gap: 14px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 64px;
+    }
+    .btn-outline {
+      background: rgba(255,255,255,0.55);
+      backdrop-filter: blur(10px);
+      color: var(--violet);
+      border: 1px solid rgba(124,58,237,0.30);
+      border-radius: 12px;
+      padding: 10px 22px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      transition: background 0.2s, border-color 0.2s;
+    }
+    .btn-outline:hover {
+      background: rgba(124,58,237,0.08);
+      border-color: rgba(124,58,237,0.50);
+    }
+    .hero-btn-large {
+      padding: 14px 32px;
+      font-size: 1rem;
+    }
+
+    /* Portfolio card */
+    .portfolio-card {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 32px;
+    }
+    .portfolio-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 28px;
+    }
+    .portfolio-title { font-size: 0.8rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; }
+    .portfolio-value { font-size: 2rem; font-weight: 800; color: var(--text-head); letter-spacing: -0.03em; }
+    .portfolio-change { font-size: 0.85rem; font-weight: 600; color: #10B981; background: rgba(16,185,129,0.12); padding: 4px 10px; border-radius: 8px; }
+
+    /* Chart bars */
+    .chart {
+      display: flex;
+      align-items: flex-end;
+      gap: 6px;
+      height: 120px;
+      margin-bottom: 16px;
+    }
+    .bar-wrap {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      height: 100%;
+      justify-content: flex-end;
+    }
+    .bar {
+      width: 100%;
+      border-radius: 6px 6px 0 0;
+      background: var(--gradient);
+      opacity: 0.85;
+      transition: opacity 0.2s;
+    }
+    .bar:nth-child(odd) { opacity: 0.45; }
+    .chart-label { font-size: 0.65rem; color: var(--text-muted); font-weight: 500; }
+    .chart-footer {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      padding-top: 12px;
+      border-top: 1px solid rgba(255,255,255,0.50);
+    }
+
+    /* === STATS === */
+    .stats-section {
+      padding: 20px 0 80px;
+    }
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+    .stat-card {
+      padding: 32px;
+      text-align: center;
+    }
+    .stat-value {
+      font-size: 2.2rem;
+      font-weight: 800;
+      color: var(--text-head);
+      letter-spacing: -0.03em;
+      margin-bottom: 6px;
+    }
+    .stat-value .accent { background: var(--gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .stat-label { font-size: 0.85rem; color: var(--text-muted); font-weight: 500; }
+
+    /* === FEATURES === */
+    .features-section {
+      padding: 0 0 100px;
+    }
+    .section-label {
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--violet);
+      margin-bottom: 12px;
+    }
+    .section-title {
+      font-size: clamp(28px, 4vw, 40px);
+      font-weight: 800;
+      color: var(--text-head);
+      letter-spacing: -0.025em;
+      margin-bottom: 16px;
+      line-height: 1.15;
+    }
+    .section-sub {
+      font-size: 1rem;
+      color: var(--text-muted);
+      max-width: 480px;
+      line-height: 1.65;
+      margin-bottom: 52px;
+    }
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+    }
+    .feature-card {
+      padding: 32px 28px;
+    }
+    .feature-icon {
+      font-size: 2rem;
+      margin-bottom: 18px;
+      display: block;
+      width: 56px; height: 56px;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(255,255,255,0.70);
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.60);
+      box-shadow: 0 2px 8px var(--shadow);
+      margin-bottom: 20px;
+    }
+    .feature-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--text-head);
+      margin-bottom: 10px;
+    }
+    .feature-desc {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      line-height: 1.65;
+    }
+
+    /* === CTA SECTION === */
+    .cta-section {
+      padding: 0 0 100px;
+    }
+    .cta-inner {
+      padding: 72px 48px;
+      text-align: center;
+    }
+    .cta-inner .section-title {
+      max-width: 500px;
+      margin: 0 auto 16px;
+    }
+    .cta-inner .section-title .gradient-text {
+      background: var(--gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .cta-sub {
+      font-size: 1rem;
+      color: var(--text-muted);
+      margin-bottom: 36px;
+      max-width: 380px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .btn-cta-large {
+      padding: 16px 40px;
+      font-size: 1rem;
+    }
+    .cta-note {
+      margin-top: 16px;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
+    /* === FOOTER === */
+    footer {
+      position: relative;
+      z-index: 1;
+    }
+    .footer-inner {
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      background: rgba(255,255,255,0.50);
+      border-top: 1px solid rgba(255,255,255,0.40);
+      padding: 36px 24px;
+    }
+    .footer-content {
+      max-width: 1160px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    .footer-logo { font-size: 1.1rem; font-weight: 800; background: var(--gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .footer-links { display: flex; gap: 28px; }
+    .footer-links a { font-size: 0.82rem; color: var(--text-muted); text-decoration: none; font-weight: 500; }
+    .footer-links a:hover { color: var(--violet); }
+    .footer-copy { font-size: 0.78rem; color: var(--text-muted); }
+
+    @media (max-width: 768px) {
+      .stats-row, .features-grid { grid-template-columns: 1fr; }
+      .nav-links { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Background blobs -->
+  <div class="blob-container">
+    <div class="blob blob-violet"></div>
+    <div class="blob blob-blue"></div>
+    <div class="blob blob-indigo"></div>
+  </div>
+
+  <!-- NAV -->
+  <nav>
+    <div class="nav-inner">
+      <div class="logo">Lumex<span>Finance</span></div>
+      <ul class="nav-links">
+        <li><a href="#">Markets</a></li>
+        <li><a href="#">Portfolio</a></li>
+        <li><a href="#">Earn</a></li>
+      </ul>
+      <button class="btn-gradient">Get Started</button>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="container">
+      <div class="hero-badge">
+        <span class="badge-dot"></span>
+        Now live on 40+ blockchains
+      </div>
+      <h1>Your Portfolio,<br /><span class="gradient-text">Crystal Clear</span></h1>
+      <p class="hero-sub">Invest, trade, and grow your digital assets with institutional-grade security and a beautifully simple interface.</p>
+      <div class="hero-ctas">
+        <button class="btn-gradient hero-btn-large">Start Investing Free</button>
+        <button class="btn-outline hero-btn-large">View Live Markets</button>
+      </div>
+
+      <!-- Floating portfolio card -->
+      <div class="glass portfolio-card">
+        <div class="portfolio-header">
+          <div>
+            <div class="portfolio-title">Total Portfolio Value</div>
+            <div class="portfolio-value">$84,291.40</div>
+          </div>
+          <div class="portfolio-change">▲ +12.4% this month</div>
+        </div>
+        <div class="chart">
+          <div class="bar-wrap"><div class="bar" style="height:40%"></div></div>
+          <div class="bar-wrap"><div class="bar" style="height:55%"></div></div>
+          <div class="bar-wrap"><div class="bar" style="height:38%"></div></div>
+          <div class="bar-wrap"><div class="bar" style="height:70%"></div></div>
+          <div class="bar-wrap"><div class="bar" style="height:48%"></div></div>
+          <div class="bar-wrap"><div class="bar" style="height:62%"></div></div>
+          <div class="bar-wrap"><div class="bar" style="height:52%"></div></div>
+          <div class="bar-wrap"><div class="bar" style="height:78%"></div></div>
+          <div class="bar-wrap"><div class="bar" style="height:65%"></div></div>
+          <div class="bar-wrap"><div class="bar" style="height:88%"></div></div>
+          <div class="bar-wrap"><div class="bar" style="height:72%"></div></div>
+          <div class="bar-wrap"><div class="bar" style="height:95%"></div></div>
+        </div>
+        <div class="chart-footer">
+          <span>Jan</span><span>Feb</span><span>Mar</span><span>Apr</span><span>May</span><span>Jun</span>
+          <span>Jul</span><span>Aug</span><span>Sep</span><span>Oct</span><span>Nov</span><span>Dec</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STATS -->
+  <section class="stats-section">
+    <div class="container">
+      <div class="stats-row">
+        <div class="glass stat-card">
+          <div class="stat-value"><span class="accent">$2.4B+</span></div>
+          <div class="stat-label">Total Volume Traded</div>
+        </div>
+        <div class="glass stat-card">
+          <div class="stat-value"><span class="accent">180K+</span></div>
+          <div class="stat-label">Active Investors</div>
+        </div>
+        <div class="glass stat-card">
+          <div class="stat-value"><span class="accent">99.9%</span></div>
+          <div class="stat-label">Platform Uptime</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section class="features-section">
+    <div class="container">
+      <div class="section-label">Why Lumex</div>
+      <h2 class="section-title">Built for the next generation<br />of investors</h2>
+      <p class="section-sub">Everything you need to manage your digital wealth — from real-time data to automated strategies.</p>
+      <div class="features-grid">
+        <div class="glass feature-card">
+          <div class="feature-icon">💎</div>
+          <div class="feature-title">Real-Time Analytics</div>
+          <p class="feature-desc">Live price feeds across 10,000+ assets. Candlestick charts, depth maps, and volatility signals — all in one view.</p>
+        </div>
+        <div class="glass feature-card">
+          <div class="feature-icon">🔐</div>
+          <div class="feature-title">Institutional Security</div>
+          <p class="feature-desc">MPC cold storage, biometric auth, and 256-bit encryption keep your assets safer than any bank vault.</p>
+        </div>
+        <div class="glass feature-card">
+          <div class="feature-icon">⚡</div>
+          <div class="feature-title">Automated Strategies</div>
+          <p class="feature-desc">Set DCA schedules, stop-loss triggers, and portfolio rebalancing. Your wealth works while you sleep.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA SECTION -->
+  <section class="cta-section">
+    <div class="container">
+      <div class="glass cta-inner">
+        <div class="section-label">Get Started Today</div>
+        <h2 class="section-title">Ready to see your future<br /><span class="gradient-text">crystal clear?</span></h2>
+        <p class="cta-sub">Join 180,000+ investors who trust Lumex with their digital portfolios. No fees for the first 3 months.</p>
+        <button class="btn-gradient btn-cta-large">Create Free Account</button>
+        <p class="cta-note">No credit card required · Withdraw anytime · SOC 2 certified</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-content">
+        <div class="footer-logo">Lumex</div>
+        <div class="footer-links">
+          <a href="#">Privacy</a>
+          <a href="#">Terms</a>
+          <a href="#">Security</a>
+          <a href="#">Status</a>
+        </div>
+        <div class="footer-copy">© 2025 Lumex Technologies, Inc.</div>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>

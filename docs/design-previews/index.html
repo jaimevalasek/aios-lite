@@ -358,7 +358,13 @@
       border: 1px solid rgba(255,255,255,0.07);
     }
 
+    .card-links {
+      display: flex;
+      gap: 8px;
+    }
+
     .card-link {
+      flex: 1;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -370,9 +376,10 @@
       font-weight: 500;
       color: #9CA3AF;
       transition: background 0.15s, color 0.15s;
+      text-decoration: none;
     }
 
-    .skill-card:hover .card-link {
+    .card-link:hover {
       background: rgba(255,255,255,0.07);
       color: #E5E7EB;
     }
@@ -423,7 +430,7 @@
     <p>Each skill is a complete visual system — colors, typography, components, and patterns. Pick one and your app gets a coherent, intentional identity from the start.</p>
     <div class="hero-meta">
       <span><span class="dot"></span> 8 design skills</span>
-      <span><span class="dot" style="background:#E07A5F"></span> Light &amp; dark themes</span>
+      <span><span class="dot" style="background:#E07A5F"></span> App + landing page previews</span>
       <span><span class="dot" style="background:#FF4D2A"></span> Stack-agnostic</span>
     </div>
   </section>
@@ -431,7 +438,7 @@
   <div class="gallery">
 
     <!-- Glassmorphism UI -->
-    <a class="skill-card" href="glassmorphism-ui.html" target="_blank">
+    <div class="skill-card">
       <div class="preview-thumb thumb-glassmorphism">
         <span class="preview-label">Glass · Depth · Blur</span>
       </div>
@@ -447,15 +454,15 @@
           <span class="meta-pill">Mobile apps</span>
           <span class="meta-pill">Portfolio</span>
         </div>
-        <div class="card-link">
-          <span>Open preview</span>
-          <span class="card-link-arrow">→</span>
+        <div class="card-links">
+          <a class="card-link" href="glassmorphism-ui.html" target="_blank"><span>App preview</span><span>→</span></a>
+          <a class="card-link" href="glassmorphism-ui-website.html" target="_blank"><span>Landing page</span><span>→</span></a>
         </div>
       </div>
-    </a>
+    </div>
 
     <!-- Neo-Brutalist UI -->
-    <a class="skill-card" href="neo-brutalist-ui.html" target="_blank">
+    <div class="skill-card">
       <div class="preview-thumb thumb-neo-brutalist">
         <span class="preview-label">Bold · Raw · Honest</span>
       </div>
@@ -471,15 +478,15 @@
           <span class="meta-pill">Creative tools</span>
           <span class="meta-pill">Side projects</span>
         </div>
-        <div class="card-link">
-          <span>Open preview</span>
-          <span class="card-link-arrow">→</span>
+        <div class="card-links">
+          <a class="card-link" href="neo-brutalist-ui.html" target="_blank"><span>App preview</span><span>→</span></a>
+          <a class="card-link" href="neo-brutalist-ui-website.html" target="_blank"><span>Landing page</span><span>→</span></a>
         </div>
       </div>
-    </a>
+    </div>
 
     <!-- Warm Craft UI -->
-    <a class="skill-card" href="warm-craft-ui.html" target="_blank">
+    <div class="skill-card">
       <div class="preview-thumb thumb-warm-craft">
         <span class="preview-label">Human · Warm · Breathable</span>
       </div>
@@ -495,15 +502,15 @@
           <span class="meta-pill">Health</span>
           <span class="meta-pill">Education</span>
         </div>
-        <div class="card-link">
-          <span>Open preview</span>
-          <span class="card-link-arrow">→</span>
+        <div class="card-links">
+          <a class="card-link" href="warm-craft-ui.html" target="_blank"><span>App preview</span><span>→</span></a>
+          <a class="card-link" href="warm-craft-ui-website.html" target="_blank"><span>Landing page</span><span>→</span></a>
         </div>
       </div>
-    </a>
+    </div>
 
     <!-- Bold Editorial UI -->
-    <a class="skill-card" href="bold-editorial-ui.html" target="_blank">
+    <div class="skill-card">
       <div class="preview-thumb thumb-bold-editorial">
         <span class="preview-label">IMPACT</span>
       </div>
@@ -519,15 +526,15 @@
           <span class="meta-pill">Portfolios</span>
           <span class="meta-pill">SaaS marketing</span>
         </div>
-        <div class="card-link">
-          <span>Open preview</span>
-          <span class="card-link-arrow">→</span>
+        <div class="card-links">
+          <a class="card-link" href="bold-editorial-ui.html" target="_blank"><span>App preview</span><span>→</span></a>
+          <a class="card-link" href="bold-editorial-ui-website.html" target="_blank"><span>Landing page</span><span>→</span></a>
         </div>
       </div>
-    </a>
+    </div>
 
     <!-- Clean SaaS UI -->
-    <a class="skill-card" href="clean-saas-ui.html" target="_blank">
+    <div class="skill-card">
       <div class="preview-thumb thumb-clean-saas">
         <span class="preview-label">Efficient · Precise · Invisible</span>
       </div>
@@ -543,15 +550,15 @@
           <span class="meta-pill">CRM / ERP</span>
           <span class="meta-pill">Internal tools</span>
         </div>
-        <div class="card-link">
-          <span>Open preview</span>
-          <span class="card-link-arrow">→</span>
+        <div class="card-links">
+          <a class="card-link" href="clean-saas-ui.html" target="_blank"><span>App preview</span><span>→</span></a>
+          <a class="card-link" href="clean-saas-ui-website.html" target="_blank"><span>Landing page</span><span>→</span></a>
         </div>
       </div>
-    </a>
+    </div>
 
     <!-- Cognitive Core UI -->
-    <a class="skill-card" href="cognitive-core-ui.html" target="_blank">
+    <div class="skill-card">
       <div class="preview-thumb thumb-cognitive-core">
         <span class="preview-label">Dense · Tactical · Premium</span>
       </div>
@@ -567,15 +574,15 @@
           <span class="meta-pill">Dev tools</span>
           <span class="meta-pill">AI platforms</span>
         </div>
-        <div class="card-link">
-          <span>Open preview</span>
-          <span class="card-link-arrow">→</span>
+        <div class="card-links">
+          <a class="card-link" href="cognitive-core-ui.html" target="_blank"><span>App preview</span><span>→</span></a>
+          <a class="card-link" href="cognitive-core-ui-website.html" target="_blank"><span>Landing page</span><span>→</span></a>
         </div>
       </div>
-    </a>
+    </div>
 
     <!-- Premium Command Center UI -->
-    <a class="skill-card" href="premium-command-center-ui.html" target="_blank">
+    <div class="skill-card">
       <div class="preview-thumb thumb-premium-command">
         <span class="preview-label" style="position:relative;z-index:3">Tri-Rail · Aurora · Operational</span>
       </div>
@@ -591,15 +598,15 @@
           <span class="meta-pill">Operations</span>
           <span class="meta-pill">Monitoring</span>
         </div>
-        <div class="card-link">
-          <span>Open preview</span>
-          <span class="card-link-arrow">→</span>
+        <div class="card-links">
+          <a class="card-link" href="premium-command-center-ui.html" target="_blank"><span>App preview</span><span>→</span></a>
+          <a class="card-link" href="premium-command-center-ui-website.html" target="_blank"><span>Landing page</span><span>→</span></a>
         </div>
       </div>
-    </a>
+    </div>
 
     <!-- Interface Design -->
-    <a class="skill-card" href="interface-design.html" target="_blank">
+    <div class="skill-card">
       <div class="preview-thumb thumb-interface-design">
         <span class="preview-label">Craft · System · Continuity</span>
       </div>
@@ -615,12 +622,12 @@
           <span class="meta-pill">Redesigns</span>
           <span class="meta-pill">Multi-screen</span>
         </div>
-        <div class="card-link">
-          <span>Open preview</span>
-          <span class="card-link-arrow">→</span>
+        <div class="card-links">
+          <a class="card-link" href="interface-design.html" target="_blank"><span>App preview</span><span>→</span></a>
+          <a class="card-link" href="interface-design-website.html" target="_blank"><span>Landing page</span><span>→</span></a>
         </div>
       </div>
-    </a>
+    </div>
 
   </div>
 

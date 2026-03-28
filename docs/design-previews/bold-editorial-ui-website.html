@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FORGE — Infrastructure Landing / Bold Editorial UI Preview</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --void: #050505;
+      --dark: #0A0A0A;
+      --surface: #141414;
+      --surface-2: #1C1C1C;
+      --border: rgba(255,255,255,0.08);
+      --border-mid: rgba(255,255,255,0.12);
+      --red: #FF4D2A;
+      --red-glow: rgba(255,77,42,0.15);
+      --red-glow-strong: rgba(255,77,42,0.25);
+      --white: #FFFFFF;
+      --body: #B8B8B8;
+      --muted: #787878;
+      --dim: #4A4A4A;
+    }
+
+    /* Display font stack — Clash Display via system fallback + Impact for the editorial punch */
+    @font-face {
+      font-family: 'Display';
+      src: local('Impact'), local('Haettenschweiler'), local('Arial Narrow'), local('Arial Black');
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--dark);
+      color: var(--body);
+      overflow-x: hidden;
+    }
+
+    .container {
+      max-width: 1160px;
+      margin: 0 auto;
+      padding: 0 28px;
+    }
+
+    /* Mono overline style */
+    .overline {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+    }
+    .overline-accent { color: var(--red); }
+
+    /* === NAV === */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(5,5,5,0.90);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 60px;
+      max-width: 1160px;
+      margin: 0 auto;
+      padding: 0 28px;
+    }
+    .logo {
+      font-family: Impact, 'Arial Black', sans-serif;
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--white);
+      letter-spacing: -0.02em;
+    }
+    .logo-accent { color: var(--red); }
+    .nav-links {
+      display: flex;
+      gap: 36px;
+      list-style: none;
+    }
+    .nav-links a {
+      font-family: 'JetBrains Mono', monospace;
+      text-decoration: none;
+      color: var(--muted);
+      font-size: 0.75rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--white); }
+    .btn-red {
+      background: var(--red);
+      color: var(--white);
+      border: none;
+      border-radius: 6px;
+      padding: 9px 20px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      letter-spacing: 0.01em;
+      transition: opacity 0.15s, transform 0.15s;
+    }
+    .btn-red:hover {
+      opacity: 0.88;
+      transform: translateY(-1px);
+    }
+    .btn-ghost-white {
+      background: transparent;
+      color: var(--white);
+      border: 1px solid var(--border-mid);
+      border-radius: 6px;
+      padding: 9px 20px;
+      font-size: 0.82rem;
+      font-weight: 500;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .btn-ghost-white:hover {
+      border-color: rgba(255,255,255,0.25);
+      background: rgba(255,255,255,0.04);
+    }
+
+    /* === HERO === */
+    .hero {
+      padding: 96px 0 80px;
+      border-bottom: 1px solid var(--border);
+    }
+    .hero-overline {
+      margin-bottom: 28px;
+    }
+    .hero h1 {
+      font-family: Impact, 'Arial Black', 'Haettenschweiler', sans-serif;
+      font-size: clamp(64px, 9vw, 100px);
+      font-weight: 700;
+      line-height: 0.92;
+      letter-spacing: -0.04em;
+      color: var(--white);
+      margin-bottom: 28px;
+      max-width: 860px;
+      text-transform: uppercase;
+    }
+    .hero h1 .red-word { color: var(--red); }
+    .hero-sub {
+      font-size: 1.05rem;
+      color: var(--body);
+      max-width: 520px;
+      line-height: 1.65;
+      margin-bottom: 36px;
+      font-weight: 300;
+    }
+    .hero-ctas {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 60px;
+    }
+    .hero-ctas .btn-red { padding: 13px 28px; font-size: 0.9rem; font-weight: 700; }
+    .hero-ctas .btn-ghost-white { padding: 13px 28px; font-size: 0.9rem; }
+
+    /* Code window */
+    .code-window {
+      max-width: 700px;
+      border: 1px solid var(--border-mid);
+      border-radius: 8px;
+      background: var(--surface);
+      box-shadow: 0 0 60px var(--red-glow), 0 8px 24px rgba(0,0,0,0.35);
+      overflow: hidden;
+    }
+    .code-titlebar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface-2);
+    }
+    .cb-dot { width: 11px; height: 11px; border-radius: 50%; }
+    .cb-dot.r { background: #FF5F57; }
+    .cb-dot.y { background: #FFBD2E; }
+    .cb-dot.g { background: #28C840; }
+    .cb-filename {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--muted);
+      margin-left: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .cb-badge {
+      margin-left: auto;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.65rem;
+      padding: 2px 8px;
+      border: 1px solid rgba(255,77,42,0.30);
+      border-radius: 4px;
+      color: var(--red);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .code-body {
+      padding: 20px 22px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      line-height: 1.9;
+    }
+    .c-dim { color: var(--dim); }
+    .c-muted { color: var(--muted); }
+    .c-white { color: var(--white); }
+    .c-red { color: var(--red); }
+    .c-green { color: #4ADE80; }
+    .c-blue { color: #60A5FA; }
+    .c-yellow { color: #FCD34D; }
+    .c-purple { color: #A78BFA; }
+    .c-orange { color: #FB923C; }
+
+    /* === STATS ROW === */
+    .stats-row {
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      background: var(--void);
+    }
+    .stats-inner {
+      max-width: 1160px;
+      margin: 0 auto;
+      padding: 0 28px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+    }
+    .stat-item {
+      padding: 48px 32px;
+      border-right: 1px solid var(--border);
+      text-align: center;
+    }
+    .stat-item:last-child { border-right: none; }
+    .stat-num {
+      font-family: Impact, 'Arial Black', sans-serif;
+      font-size: 3.2rem;
+      font-weight: 700;
+      color: var(--white);
+      letter-spacing: -0.04em;
+      line-height: 1;
+      margin-bottom: 8px;
+      display: block;
+    }
+    .stat-num .red { color: var(--red); }
+    .stat-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+    }
+
+    /* === WHITE SECTION === */
+    .white-section {
+      background: #FAFAF7;
+      padding: 100px 0;
+    }
+    .white-section .overline { color: #999; }
+    .white-section .overline-accent { color: var(--red); }
+    .white-section-title {
+      font-family: Impact, 'Arial Black', sans-serif;
+      font-size: clamp(36px, 5vw, 54px);
+      font-weight: 700;
+      color: #111;
+      letter-spacing: -0.04em;
+      line-height: 1.0;
+      margin-bottom: 56px;
+      text-transform: uppercase;
+    }
+    .ws-features {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 40px;
+      border-top: 2px solid #111;
+      padding-top: 40px;
+    }
+    .ws-feature {
+      padding-top: 8px;
+    }
+    .ws-feature-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--red);
+      margin-bottom: 12px;
+    }
+    .ws-feature-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #111;
+      margin-bottom: 10px;
+      letter-spacing: -0.02em;
+    }
+    .ws-feature-desc {
+      font-size: 0.88rem;
+      color: #555;
+      line-height: 1.70;
+    }
+
+    /* === TESTIMONIAL === */
+    .testimonial-section {
+      padding: 100px 0;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+    .testimonial-inner {
+      max-width: 860px;
+    }
+    .pull-quote {
+      font-family: Impact, 'Arial Black', sans-serif;
+      font-size: clamp(28px, 4vw, 44px);
+      font-weight: 700;
+      color: var(--white);
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+      text-transform: uppercase;
+      margin-bottom: 32px;
+    }
+    .pull-quote .red { color: var(--red); }
+    .quote-author {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .qa-avatar {
+      width: 44px; height: 44px;
+      border-radius: 8px;
+      background: var(--surface-2);
+      border: 1px solid var(--border-mid);
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--white);
+    }
+    .qa-name {
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--white);
+      margin-bottom: 3px;
+    }
+    .qa-role {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+    }
+    .qa-company {
+      margin-left: 40px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .company-name {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--dim);
+    }
+
+    /* === CTA SECTION === */
+    .cta-section {
+      padding: 120px 0;
+      text-align: center;
+      border-bottom: 1px solid var(--border);
+      position: relative;
+      overflow: hidden;
+    }
+    .cta-section::before {
+      content: '';
+      position: absolute;
+      bottom: -100px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 600px;
+      height: 300px;
+      background: radial-gradient(ellipse, var(--red-glow) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .cta-headline {
+      font-family: Impact, 'Arial Black', sans-serif;
+      font-size: clamp(52px, 8vw, 88px);
+      font-weight: 700;
+      color: var(--white);
+      letter-spacing: -0.04em;
+      line-height: 0.95;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+    .cta-headline .red { color: var(--red); }
+    .cta-sub {
+      font-size: 1rem;
+      color: var(--muted);
+      margin-bottom: 40px;
+      font-weight: 300;
+    }
+    .btn-red-glow {
+      background: var(--red);
+      color: var(--white);
+      border: none;
+      border-radius: 6px;
+      padding: 16px 40px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      box-shadow: 0 0 40px var(--red-glow-strong), 0 4px 16px rgba(255,77,42,0.35);
+      transition: box-shadow 0.2s, transform 0.15s;
+      position: relative;
+      z-index: 1;
+    }
+    .btn-red-glow:hover {
+      box-shadow: 0 0 60px rgba(255,77,42,0.35), 0 8px 24px rgba(255,77,42,0.40);
+      transform: translateY(-2px);
+    }
+
+    /* === FOOTER === */
+    footer {
+      background: var(--void);
+      padding: 48px 0;
+    }
+    .footer-inner {
+      max-width: 1160px;
+      margin: 0 auto;
+      padding: 0 28px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 24px;
+    }
+    .footer-logo {
+      font-family: Impact, 'Arial Black', sans-serif;
+      font-size: 1.2rem;
+      color: var(--white);
+      letter-spacing: -0.02em;
+    }
+    .footer-logo .red { color: var(--red); }
+    .footer-links {
+      display: flex;
+      gap: 28px;
+      flex-wrap: wrap;
+    }
+    .footer-links a {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--dim);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    .footer-links a:hover { color: var(--muted); }
+    .footer-copy {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--dim);
+    }
+
+    /* Intentional grid break */
+    .grid-break {
+      display: grid;
+      grid-template-columns: 1.4fr 1fr;
+      gap: 0;
+      border-top: 1px solid var(--border);
+    }
+    .grid-break-main { padding: 48px 28px 48px 0; border-right: 1px solid var(--border); }
+    .grid-break-aside { padding: 48px 0 48px 48px; }
+
+    @media (max-width: 768px) {
+      .stats-inner, .ws-features { grid-template-columns: 1fr; }
+      .stat-item { border-right: none; border-bottom: 1px solid var(--border); }
+      .stat-item:last-child { border-bottom: none; }
+      .nav-links { display: none; }
+      .grid-break { grid-template-columns: 1fr; }
+      .grid-break-main { border-right: none; border-bottom: 1px solid var(--border); padding-right: 0; }
+      .grid-break-aside { padding-left: 0; padding-top: 32px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav>
+    <div class="nav-inner">
+      <div class="logo">FORGE<span class="logo-accent">.</span></div>
+      <ul class="nav-links">
+        <li><a href="#">Platform</a></li>
+        <li><a href="#">Pricing</a></li>
+        <li><a href="#">Docs</a></li>
+        <li><a href="#">Blog</a></li>
+      </ul>
+      <button class="btn-red">Deploy Now →</button>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="container">
+      <div class="overline hero-overline">
+        <span class="overline-accent">Infrastructure Platform</span>
+        <span> / V3 — Now Generally Available</span>
+      </div>
+      <h1>EDGE.<br /><span class="red-word">FAST.</span><br />ALWAYS.</h1>
+      <p class="hero-sub">Forge is the compute layer the internet runs on. Deploy globally in under 30 seconds. Serve millions without thinking about infrastructure.</p>
+      <div class="hero-ctas">
+        <button class="btn-red">Start building free</button>
+        <button class="btn-ghost-white">Read the docs</button>
+      </div>
+
+      <!-- Code window -->
+      <div class="code-window">
+        <div class="code-titlebar">
+          <div class="cb-dot r"></div>
+          <div class="cb-dot y"></div>
+          <div class="cb-dot g"></div>
+          <div class="cb-filename">forge.config.ts</div>
+          <div class="cb-badge">Live · 47 regions</div>
+        </div>
+        <div class="code-body">
+          <span class="c-muted">// Deploy to 47 edge regions in one push</span><br />
+          <span class="c-purple">import</span> <span class="c-white">{ forge }</span> <span class="c-purple">from</span> <span class="c-yellow">'@forge/edge'</span><br />
+          <br />
+          <span class="c-purple">export default</span> <span class="c-blue">forge</span><span class="c-white">.config({</span><br />
+          &nbsp;&nbsp;<span class="c-white">regions:</span> <span class="c-yellow">'all'</span><span class="c-white">,</span><br />
+          &nbsp;&nbsp;<span class="c-white">runtime:</span> <span class="c-yellow">'edge-v8'</span><span class="c-white">,</span><br />
+          &nbsp;&nbsp;<span class="c-white">cache:</span> <span class="c-white">{</span> <span class="c-white">ttl:</span> <span class="c-orange">3600</span><span class="c-white">,</span> <span class="c-white">stale:</span> <span class="c-green">true</span> <span class="c-white">},</span><br />
+          &nbsp;&nbsp;<span class="c-white">observability:</span> <span class="c-green">true</span><br />
+          <span class="c-white">})</span><br />
+          <br />
+          <span class="c-dim">$ forge deploy --prod</span><br />
+          <span class="c-green">✓ Built in 2.1s · Deployed to 47 regions · 100ms p99</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STATS ROW -->
+  <div class="stats-row">
+    <div class="stats-inner">
+      <div class="stat-item">
+        <span class="stat-num">10<span class="red">M+</span></span>
+        <span class="stat-label">Requests / second</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-num">&lt;<span class="red">12</span>ms</span>
+        <span class="stat-label">P99 latency globally</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-num">99.<span class="red">99</span>%</span>
+        <span class="stat-label">Uptime SLA</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- WHITE SECTION — cinematic cut -->
+  <section class="white-section">
+    <div class="container">
+      <div class="overline" style="margin-bottom: 16px;">
+        <span class="overline-accent">Platform capabilities</span>
+      </div>
+      <div class="white-section-title">The full stack.<br />Zero ops.</div>
+      <div class="ws-features">
+        <div class="ws-feature">
+          <div class="ws-feature-label">Compute / Runtime</div>
+          <div class="ws-feature-title">Edge Workers</div>
+          <p class="ws-feature-desc">V8 isolates that start in under 1ms. No cold starts. No containers. Your code, running 50ms from every user on earth.</p>
+        </div>
+        <div class="ws-feature">
+          <div class="ws-feature-label">Storage / Data</div>
+          <div class="ws-feature-title">Global KV + R2</div>
+          <p class="ws-feature-desc">Distributed key-value storage replicated across all 47 regions. Read anywhere, write once, consistent everywhere.</p>
+        </div>
+        <div class="ws-feature">
+          <div class="ws-feature-label">Delivery / CDN</div>
+          <div class="ws-feature-title">Smart CDN</div>
+          <p class="ws-feature-desc">Automatic cache warming, real-time purge, stale-while-revalidate, and cache analytics — all included, no configuration.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TESTIMONIAL -->
+  <section class="testimonial-section">
+    <div class="container">
+      <div class="testimonial-inner">
+        <div class="overline" style="margin-bottom: 20px;">
+          <span class="overline-accent">// field report</span>
+        </div>
+        <div class="pull-quote">"Forge cut our<br />global P99 from<br /><span class="red">800ms to 11ms.</span><br />That's the product."</div>
+        <div class="quote-author">
+          <div class="qa-avatar">JP</div>
+          <div>
+            <div class="qa-name">James Park</div>
+            <div class="qa-role">CTO · Meridian Systems</div>
+          </div>
+          <div class="qa-company">
+            <div class="company-name">Meridian Systems</div>
+            <div class="overline">Series B · 40M req/day</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA SECTION -->
+  <section class="cta-section">
+    <div class="container">
+      <div class="cta-headline">READY TO<br /><span class="red">BUILD?</span></div>
+      <p class="cta-sub">First 100,000 requests free every day. No credit card required.</p>
+      <button class="btn-red-glow">Deploy your first app →</button>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-logo">FORGE<span class="red">.</span></div>
+      <div class="footer-links">
+        <a href="#">platform</a>
+        <a href="#">docs</a>
+        <a href="#">pricing</a>
+        <a href="#">status</a>
+        <a href="#">privacy</a>
+        <a href="#">terms</a>
+      </div>
+      <div class="footer-copy">© 2025 Forge Technologies, Inc.</div>
+    </div>
+  </footer>
+
+</body>
+</html>
