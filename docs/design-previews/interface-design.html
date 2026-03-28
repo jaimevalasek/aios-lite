@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Interface Design — AIOSON Design Skill</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #F5F5F5;
+      --surface: #FFFFFF;
+      --border: #E2E2E2;
+      --border-focus: #6366F1;
+      --heading: #0F172A;
+      --body: #334155;
+      --secondary: #475569;
+      --muted: #94A3B8;
+      --accent: #6366F1;
+      --accent-light: #EEF2FF;
+      --accent-text: #4338CA;
+      --danger: #EF4444;
+      --danger-light: #FEF2F2;
+      --success: #10B981;
+      --success-light: #ECFDF5;
+      --sidebar: 240px;
+      --topbar: 60px;
+      --shadow-card: 0 2px 6px rgba(0,0,0,0.05);
+    }
+
+    html, body { height: 100%; font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--body); font-size: 14px; line-height: 1.6; }
+
+    /* AIOSON badge */
+    .aioson-badge {
+      position: fixed; top: 12px; right: 12px; z-index: 9999;
+      background: var(--accent); color: #fff;
+      font-family: 'Inter', sans-serif; font-size: 10px; font-weight: 600;
+      letter-spacing: 0.05em; padding: 4px 10px; border-radius: 9999px;
+      box-shadow: 0 2px 8px rgba(99,102,241,0.3);
+      pointer-events: none;
+    }
+
+    /* Shell */
+    .shell { display: flex; height: 100vh; overflow: hidden; }
+
+    /* Sidebar */
+    .sidebar {
+      width: var(--sidebar); flex-shrink: 0;
+      background: var(--surface); border-right: 1px solid var(--border);
+      display: flex; flex-direction: column;
+      padding-top: var(--topbar);
+    }
+
+    /* Logo area (absolute to overlap topbar border) */
+    .sidebar-top {
+      position: absolute; top: 0; left: 0; width: var(--sidebar);
+      height: var(--topbar);
+      background: var(--surface); border-right: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; padding: 0 20px; gap: 10px;
+    }
+    .logo-block {
+      width: 30px; height: 30px; border-radius: 8px;
+      background: var(--accent); display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .logo-block svg { width: 15px; height: 15px; }
+    .logo-name { font-size: 15px; font-weight: 700; color: var(--heading); letter-spacing: -0.02em; }
+
+    /* Sidebar nav */
+    .sidebar-nav { padding: 16px 0; flex: 1; overflow-y: auto; }
+    .nav-group { margin-bottom: 24px; }
+    .nav-group-label {
+      padding: 0 20px; margin-bottom: 6px;
+      font-size: 10.5px; font-weight: 600; letter-spacing: 0.08em;
+      color: var(--muted); text-transform: uppercase;
+    }
+    .nav-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 0 20px; height: 38px; cursor: pointer;
+      font-size: 13.5px; font-weight: 500; color: var(--secondary);
+      border-radius: 0; position: relative;
+      transition: background 0.12s, color 0.12s;
+    }
+    .nav-item:hover { background: var(--bg); color: var(--heading); }
+    .nav-item.active {
+      color: var(--accent); background: var(--accent-light);
+      font-weight: 600;
+    }
+    .nav-item.active::before {
+      content: ''; position: absolute; left: 0; top: 4px; bottom: 4px;
+      width: 3px; border-radius: 0 3px 3px 0; background: var(--accent);
+    }
+    .nav-icon {
+      width: 18px; height: 18px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+    }
+    .nav-icon-box { width: 14px; height: 14px; border-radius: 3px; background: currentColor; opacity: 0.3; }
+    .nav-item.active .nav-icon-box { opacity: 0.65; }
+    .sidebar-footer {
+      padding: 12px 16px; border-top: 1px solid var(--border);
+    }
+    .user-block {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px; border-radius: 8px; cursor: pointer;
+    }
+    .user-block:hover { background: var(--bg); }
+    .user-av {
+      width: 32px; height: 32px; border-radius: 9999px;
+      background: var(--accent-light); border: 2px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 700; color: var(--accent); flex-shrink: 0;
+    }
+    .user-name { font-size: 13px; font-weight: 600; color: var(--heading); }
+    .user-email { font-size: 11.5px; color: var(--muted); }
+
+    /* Main */
+    .main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+
+    /* Topbar */
+    .topbar {
+      height: var(--topbar); flex-shrink: 0;
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 32px;
+    }
+    .page-title { font-size: 16px; font-weight: 700; color: var(--heading); letter-spacing: -0.02em; }
+    .page-title-sub { font-size: 12px; color: var(--muted); font-weight: 400; margin-top: 1px; }
+    .topbar-right { display: flex; align-items: center; gap: 10px; }
+    .btn {
+      display: inline-flex; align-items: center; gap: 7px;
+      height: 36px; padding: 0 16px; border-radius: 8px; border: none;
+      font-family: 'Inter', sans-serif; font-size: 13.5px; font-weight: 500;
+      cursor: pointer; transition: opacity 0.12s, background 0.12s;
+    }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover { opacity: 0.9; }
+    .btn-ghost { background: none; color: var(--secondary); border: 1px solid var(--border); }
+    .btn-ghost:hover { background: var(--bg); }
+    .btn-danger { background: none; color: var(--danger); border: 1px solid #FCA5A5; }
+    .btn-danger:hover { background: var(--danger-light); }
+
+    /* Page content */
+    .page { flex: 1; overflow-y: auto; }
+
+    /* Settings layout */
+    .settings-layout { display: flex; min-height: 100%; }
+    .settings-nav { width: 200px; flex-shrink: 0; padding: 28px 0; border-right: 1px solid var(--border); }
+    .settings-nav-item {
+      display: flex; align-items: center; gap: 8px;
+      padding: 0 20px; height: 36px; cursor: pointer;
+      font-size: 13px; font-weight: 500; color: var(--secondary);
+      border-radius: 0; border-left: 2px solid transparent;
+      transition: background 0.1s, color 0.1s;
+    }
+    .settings-nav-item:hover { background: var(--bg); color: var(--heading); }
+    .settings-nav-item.active {
+      border-left-color: var(--accent);
+      background: var(--accent-light); color: var(--accent-text);
+    }
+    .settings-nav-label {
+      padding: 0 20px; margin-top: 20px; margin-bottom: 6px;
+      font-size: 10.5px; font-weight: 600; letter-spacing: 0.08em;
+      color: var(--muted); text-transform: uppercase;
+    }
+    .settings-nav-label:first-child { margin-top: 0; }
+
+    /* Settings content */
+    .settings-content { flex: 1; padding: 32px 40px; max-width: 680px; }
+
+    /* Form sections */
+    .form-section {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; box-shadow: var(--shadow-card); margin-bottom: 24px;
+      overflow: hidden;
+    }
+    .form-section-header {
+      padding: 20px 24px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .form-section-title { font-size: 15px; font-weight: 600; color: var(--heading); letter-spacing: -0.01em; }
+    .form-section-desc { font-size: 13px; color: var(--muted); margin-top: 3px; }
+    .form-body { padding: 20px 24px; display: flex; flex-direction: column; gap: 18px; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .form-field { display: flex; flex-direction: column; gap: 6px; }
+    .form-field.full { grid-column: 1 / -1; }
+    .field-label { font-size: 13px; font-weight: 600; color: var(--heading); }
+    .field-hint { font-size: 11.5px; color: var(--muted); }
+    .field-input {
+      height: 38px; padding: 0 12px;
+      border: 1px solid var(--border); border-radius: 8px;
+      background: var(--surface);
+      font-family: 'Inter', sans-serif; font-size: 13.5px; color: var(--body);
+      outline: none; transition: border-color 0.15s, box-shadow 0.15s;
+      width: 100%;
+    }
+    .field-input:focus { border-color: var(--border-focus); box-shadow: 0 0 0 3px rgba(99,102,241,0.1); }
+    .field-input::placeholder { color: var(--muted); }
+    .field-input.danger { border-color: var(--danger); }
+    .field-textarea {
+      padding: 10px 12px; height: 80px; resize: none;
+      border: 1px solid var(--border); border-radius: 8px;
+      background: var(--surface);
+      font-family: 'Inter', sans-serif; font-size: 13.5px; color: var(--body);
+      outline: none; transition: border-color 0.15s, box-shadow 0.15s;
+      width: 100%; line-height: 1.5;
+    }
+    .field-textarea:focus { border-color: var(--border-focus); box-shadow: 0 0 0 3px rgba(99,102,241,0.1); }
+    .field-select {
+      height: 38px; padding: 0 12px;
+      border: 1px solid var(--border); border-radius: 8px;
+      background: var(--surface);
+      font-family: 'Inter', sans-serif; font-size: 13.5px; color: var(--body);
+      outline: none; cursor: pointer; appearance: none; width: 100%;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394A3B8' d='M2 4l4 4 4-4'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 12px center;
+    }
+    .form-footer { padding: 14px 24px; border-top: 1px solid var(--border); background: var(--bg); display: flex; align-items: center; justify-content: space-between; }
+    .save-row { display: flex; align-items: center; gap: 10px; }
+    .save-hint { font-size: 12px; color: var(--muted); }
+
+    /* Toggle */
+    .toggle-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 24px; border-bottom: 1px solid var(--border);
+    }
+    .toggle-row:last-child { border-bottom: none; }
+    .toggle-info { flex: 1; }
+    .toggle-title { font-size: 13.5px; font-weight: 600; color: var(--heading); }
+    .toggle-desc { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .toggle {
+      width: 40px; height: 22px; border-radius: 9999px;
+      border: none; cursor: pointer; flex-shrink: 0; position: relative;
+      transition: background 0.2s;
+    }
+    .toggle.on { background: var(--accent); }
+    .toggle.off { background: var(--border); }
+    .toggle::after {
+      content: ''; position: absolute; top: 3px;
+      width: 16px; height: 16px; border-radius: 9999px; background: #fff;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.15); transition: left 0.2s;
+    }
+    .toggle.on::after { left: 21px; }
+    .toggle.off::after { left: 3px; }
+
+    /* Danger zone */
+    .danger-section {
+      border: 1px solid #FCA5A5; border-radius: 10px;
+      background: var(--surface); overflow: hidden; margin-bottom: 24px;
+    }
+    .danger-header { padding: 16px 24px; border-bottom: 1px solid #FCA5A5; background: var(--danger-light); }
+    .danger-header-title { font-size: 13.5px; font-weight: 700; color: var(--danger); }
+    .danger-header-desc { font-size: 12.5px; color: #B91C1C; margin-top: 2px; }
+    .danger-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 24px; border-bottom: 1px solid #FEE2E2;
+    }
+    .danger-row:last-child { border-bottom: none; }
+    .danger-row-title { font-size: 13.5px; font-weight: 600; color: var(--heading); }
+    .danger-row-desc { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  </style>
+</head>
+<body>
+
+<div class="aioson-badge">AIOSON Design Skill</div>
+
+<div class="shell">
+
+  <!-- Sidebar top (logo) -->
+  <div class="sidebar-top">
+    <div class="logo-block">
+      <svg viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="2" y="2" width="4.5" height="4.5" rx="1" fill="white"/>
+        <rect x="8.5" y="2" width="4.5" height="4.5" rx="1" fill="white" opacity="0.6"/>
+        <rect x="2" y="8.5" width="4.5" height="4.5" rx="1" fill="white" opacity="0.6"/>
+        <rect x="8.5" y="8.5" width="4.5" height="4.5" rx="1" fill="white"/>
+      </svg>
+    </div>
+    <span class="logo-name">Workspace</span>
+  </div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <nav class="sidebar-nav">
+      <div class="nav-group">
+        <div class="nav-group-label">Main</div>
+        <div class="nav-item">
+          <div class="nav-icon"><div class="nav-icon-box"></div></div>
+          Dashboard
+        </div>
+        <div class="nav-item">
+          <div class="nav-icon"><div class="nav-icon-box"></div></div>
+          Projects
+        </div>
+        <div class="nav-item">
+          <div class="nav-icon"><div class="nav-icon-box"></div></div>
+          Team
+        </div>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-label">Account</div>
+        <div class="nav-item active">
+          <div class="nav-icon"><div class="nav-icon-box"></div></div>
+          Settings
+        </div>
+        <div class="nav-item">
+          <div class="nav-icon"><div class="nav-icon-box"></div></div>
+          Billing
+        </div>
+        <div class="nav-item">
+          <div class="nav-icon"><div class="nav-icon-box"></div></div>
+          Integrations
+        </div>
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-block">
+        <div class="user-av">JD</div>
+        <div>
+          <div class="user-name">Jordan Davies</div>
+          <div class="user-email">jordan@workspace.io</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="main">
+
+    <!-- Topbar -->
+    <header class="topbar">
+      <div>
+        <div class="page-title">Settings</div>
+        <div class="page-title-sub">Interface Design — AIOSON Design Skill Preview</div>
+      </div>
+      <div class="topbar-right">
+        <button class="btn btn-ghost">Discard</button>
+        <button class="btn btn-primary">Save Changes</button>
+      </div>
+    </header>
+
+    <!-- Page -->
+    <div class="page">
+      <div class="settings-layout">
+
+        <!-- Settings nav -->
+        <div class="settings-nav">
+          <div class="settings-nav-label">General</div>
+          <div class="settings-nav-item active">Profile</div>
+          <div class="settings-nav-item">Workspace</div>
+          <div class="settings-nav-item">Appearance</div>
+          <div class="settings-nav-label">Access</div>
+          <div class="settings-nav-item">Security</div>
+          <div class="settings-nav-item">Notifications</div>
+          <div class="settings-nav-item">API Keys</div>
+          <div class="settings-nav-label">Billing</div>
+          <div class="settings-nav-item">Plan</div>
+          <div class="settings-nav-item">Invoices</div>
+        </div>
+
+        <!-- Settings content -->
+        <div class="settings-content">
+
+          <!-- Profile section -->
+          <div class="form-section">
+            <div class="form-section-header">
+              <div class="form-section-title">Profile Information</div>
+              <div class="form-section-desc">Update your personal details and public profile.</div>
+            </div>
+            <div class="form-body">
+              <div class="form-row">
+                <div class="form-field">
+                  <label class="field-label">First Name</label>
+                  <input class="field-input" type="text" value="Jordan" />
+                </div>
+                <div class="form-field">
+                  <label class="field-label">Last Name</label>
+                  <input class="field-input" type="text" value="Davies" />
+                </div>
+              </div>
+              <div class="form-field full">
+                <label class="field-label">Email Address</label>
+                <input class="field-input" type="email" value="jordan@workspace.io" />
+                <span class="field-hint">Used for login and notifications. Changes require email verification.</span>
+              </div>
+              <div class="form-field full">
+                <label class="field-label">Bio</label>
+                <textarea class="field-textarea" placeholder="A short description about yourself...">Product designer and engineer. Building tools that make teams move faster.</textarea>
+              </div>
+            </div>
+            <div class="form-footer">
+              <span class="save-hint">Last saved 2 hours ago</span>
+              <div class="save-row">
+                <button class="btn btn-ghost" style="height:32px;font-size:13px;">Cancel</button>
+                <button class="btn btn-primary" style="height:32px;font-size:13px;">Save Profile</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Workspace section -->
+          <div class="form-section">
+            <div class="form-section-header">
+              <div class="form-section-title">Workspace</div>
+              <div class="form-section-desc">Manage your workspace name, timezone, and language settings.</div>
+            </div>
+            <div class="form-body">
+              <div class="form-row">
+                <div class="form-field">
+                  <label class="field-label">Workspace Name</label>
+                  <input class="field-input" type="text" value="Acme Corp" />
+                </div>
+                <div class="form-field">
+                  <label class="field-label">Workspace URL</label>
+                  <input class="field-input" type="text" value="acme-corp" />
+                  <span class="field-hint">workspace.io/acme-corp</span>
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-field">
+                  <label class="field-label">Timezone</label>
+                  <select class="field-select">
+                    <option selected>UTC+00:00 — London</option>
+                    <option>UTC-05:00 — New York</option>
+                    <option>UTC-08:00 — Los Angeles</option>
+                    <option>UTC+01:00 — Berlin</option>
+                  </select>
+                </div>
+                <div class="form-field">
+                  <label class="field-label">Language</label>
+                  <select class="field-select">
+                    <option selected>English (US)</option>
+                    <option>English (UK)</option>
+                    <option>Português (BR)</option>
+                    <option>Español</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div class="form-footer">
+              <span class="save-hint">Affects all members in this workspace</span>
+              <div class="save-row">
+                <button class="btn btn-primary" style="height:32px;font-size:13px;">Save Workspace</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Notifications section -->
+          <div class="form-section">
+            <div class="form-section-header">
+              <div class="form-section-title">Notifications</div>
+              <div class="form-section-desc">Choose what you want to be notified about.</div>
+            </div>
+            <div class="toggle-row">
+              <div class="toggle-info">
+                <div class="toggle-title">Email Digest</div>
+                <div class="toggle-desc">Receive a weekly summary of workspace activity.</div>
+              </div>
+              <button class="toggle on"></button>
+            </div>
+            <div class="toggle-row">
+              <div class="toggle-info">
+                <div class="toggle-title">Task Assignments</div>
+                <div class="toggle-desc">Get notified when a task is assigned to you.</div>
+              </div>
+              <button class="toggle on"></button>
+            </div>
+            <div class="toggle-row">
+              <div class="toggle-info">
+                <div class="toggle-title">Project Updates</div>
+                <div class="toggle-desc">Notify when project status or milestones change.</div>
+              </div>
+              <button class="toggle off"></button>
+            </div>
+            <div class="toggle-row">
+              <div class="toggle-info">
+                <div class="toggle-title">Marketing & Announcements</div>
+                <div class="toggle-desc">Product news, feature releases, and tips.</div>
+              </div>
+              <button class="toggle off"></button>
+            </div>
+          </div>
+
+          <!-- Danger zone -->
+          <div class="danger-section">
+            <div class="danger-header">
+              <div class="danger-header-title">Danger Zone</div>
+              <div class="danger-header-desc">These actions are irreversible. Please proceed with care.</div>
+            </div>
+            <div class="danger-row">
+              <div>
+                <div class="danger-row-title">Transfer Workspace</div>
+                <div class="danger-row-desc">Transfer ownership to another member of this workspace.</div>
+              </div>
+              <button class="btn btn-danger" style="height:32px;font-size:12.5px;white-space:nowrap;flex-shrink:0;margin-left:24px;">Transfer</button>
+            </div>
+            <div class="danger-row">
+              <div>
+                <div class="danger-row-title">Delete Workspace</div>
+                <div class="danger-row-desc">Permanently delete this workspace and all its data. No recovery.</div>
+              </div>
+              <button class="btn btn-danger" style="height:32px;font-size:12.5px;white-space:nowrap;flex-shrink:0;margin-left:24px;">Delete</button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

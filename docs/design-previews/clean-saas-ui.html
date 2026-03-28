@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Clean SaaS UI — AIOSON Design Skill</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #F9FAFB;
+      --surface: #FFFFFF;
+      --border: #E5E7EB;
+      --border-input: #D1D5DB;
+      --accent: #2563EB;
+      --accent-light: #EFF6FF;
+      --accent-text: #1D4ED8;
+      --text-heading: #111827;
+      --text-body: #374151;
+      --text-secondary: #6B7280;
+      --sidebar-width: 256px;
+      --topbar-height: 56px;
+      --shadow-card: 0 1px 3px rgba(0,0,0,0.06);
+    }
+
+    html, body { height: 100%; font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text-body); font-size: 14px; line-height: 1.5; }
+
+    /* AIOSON badge */
+    .aioson-badge {
+      position: fixed; top: 12px; right: 12px; z-index: 9999;
+      background: var(--accent); color: #fff;
+      font-family: 'Inter', sans-serif; font-size: 10px; font-weight: 600;
+      letter-spacing: 0.05em; padding: 4px 10px; border-radius: 9999px;
+      box-shadow: 0 2px 8px rgba(37,99,235,0.35);
+      pointer-events: none;
+    }
+
+    /* Layout */
+    .shell { display: flex; height: 100vh; overflow: hidden; }
+
+    /* Sidebar */
+    .sidebar {
+      width: var(--sidebar-width); flex-shrink: 0;
+      background: var(--surface); border-right: 1px solid var(--border);
+      display: flex; flex-direction: column;
+      padding-top: var(--topbar-height);
+    }
+    .sidebar-logo {
+      position: absolute; top: 0; left: 0; width: var(--sidebar-width);
+      height: var(--topbar-height); display: flex; align-items: center;
+      padding: 0 20px; border-bottom: 1px solid var(--border); border-right: 1px solid var(--border);
+      background: var(--surface);
+    }
+    .sidebar-logo-mark {
+      width: 28px; height: 28px; background: var(--accent); border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-weight: 700; font-size: 13px; letter-spacing: -0.03em; flex-shrink: 0;
+    }
+    .sidebar-logo-text {
+      margin-left: 10px; font-weight: 700; font-size: 15px;
+      color: var(--text-heading); letter-spacing: -0.02em;
+    }
+    .sidebar-nav { padding: 12px 0; flex: 1; }
+    .nav-section-label {
+      padding: 0 20px; margin-bottom: 4px; margin-top: 16px;
+      font-size: 10px; font-weight: 600; letter-spacing: 0.08em;
+      color: var(--text-secondary); text-transform: uppercase;
+    }
+    .nav-section-label:first-child { margin-top: 4px; }
+    .nav-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 0 20px; height: 36px; cursor: pointer;
+      font-size: 13.5px; font-weight: 500; color: var(--text-body);
+      border-left: 2px solid transparent;
+      transition: background 0.1s, color 0.1s;
+    }
+    .nav-item:hover { background: var(--bg); }
+    .nav-item.active {
+      border-left-color: var(--accent);
+      background: var(--accent-light);
+      color: var(--accent-text); font-weight: 600;
+    }
+    .nav-icon {
+      width: 16px; height: 16px; border-radius: 3px; flex-shrink: 0;
+      background: currentColor; opacity: 0.25;
+    }
+    .nav-item.active .nav-icon { opacity: 0.7; }
+    .sidebar-footer {
+      padding: 12px 16px; border-top: 1px solid var(--border);
+    }
+    .user-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px; border-radius: 6px; cursor: pointer;
+    }
+    .user-row:hover { background: var(--bg); }
+    .avatar {
+      width: 28px; height: 28px; border-radius: 9999px;
+      background: var(--accent-light); border: 1.5px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700; color: var(--accent-text); flex-shrink: 0;
+    }
+    .user-name { font-size: 13px; font-weight: 600; color: var(--text-heading); }
+    .user-role { font-size: 11px; color: var(--text-secondary); }
+
+    /* Main */
+    .main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+
+    /* Top bar */
+    .topbar {
+      height: var(--topbar-height); flex-shrink: 0;
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 28px;
+    }
+    .breadcrumb {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 13px; color: var(--text-secondary);
+    }
+    .breadcrumb-sep { color: var(--border-input); }
+    .breadcrumb-current { color: var(--text-heading); font-weight: 600; }
+    .topbar-actions { display: flex; align-items: center; gap: 10px; }
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      height: 36px; padding: 0 14px; border-radius: 6px; border: none;
+      font-family: 'Inter', sans-serif; font-size: 13.5px; font-weight: 500;
+      cursor: pointer; transition: opacity 0.1s, background 0.1s;
+    }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover { opacity: 0.9; }
+    .btn-secondary {
+      background: var(--surface); color: var(--text-body);
+      border: 1px solid var(--border-input);
+    }
+    .btn-secondary:hover { background: var(--bg); }
+    .btn-icon { width: 16px; height: 16px; border-radius: 2px; background: currentColor; opacity: 0.6; flex-shrink: 0; }
+
+    /* Page */
+    .page { flex: 1; overflow-y: auto; padding: 28px; }
+
+    /* Page header */
+    .page-header {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      margin-bottom: 24px;
+    }
+    .page-title { font-size: 22px; font-weight: 700; color: var(--text-heading); letter-spacing: -0.02em; }
+    .page-subtitle { font-size: 13.5px; color: var(--text-secondary); margin-top: 3px; }
+
+    /* Filter bar */
+    .filter-bar {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 20px;
+    }
+    .input-search {
+      height: 36px; padding: 0 12px; border-radius: 6px;
+      border: 1px solid var(--border-input); background: var(--surface);
+      font-family: 'Inter', sans-serif; font-size: 13.5px; color: var(--text-body);
+      outline: none; width: 260px;
+      transition: border-color 0.15s;
+    }
+    .input-search:focus { border-color: var(--accent); }
+    .input-search::placeholder { color: var(--text-secondary); }
+    .select-filter {
+      height: 36px; padding: 0 10px; border-radius: 6px;
+      border: 1px solid var(--border-input); background: var(--surface);
+      font-family: 'Inter', sans-serif; font-size: 13.5px; color: var(--text-body);
+      outline: none; cursor: pointer; appearance: none;
+      padding-right: 28px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236B7280' d='M2 4l4 4 4-4'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 10px center;
+    }
+    .tab-bar { display: flex; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
+    .tab {
+      height: 36px; padding: 0 14px; display: flex; align-items: center;
+      font-size: 13.5px; font-weight: 500; color: var(--text-secondary);
+      border-bottom: 2px solid transparent; margin-bottom: -1px; cursor: pointer;
+      transition: color 0.1s;
+    }
+    .tab:hover { color: var(--text-heading); }
+    .tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+    .tab-count {
+      margin-left: 6px; background: var(--bg); border: 1px solid var(--border);
+      border-radius: 9999px; font-size: 11px; font-weight: 600; color: var(--text-secondary);
+      padding: 0 7px; height: 18px; display: inline-flex; align-items: center;
+    }
+    .tab.active .tab-count { background: var(--accent-light); border-color: transparent; color: var(--accent-text); }
+
+    /* Stat cards */
+    .stat-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;
+      margin-bottom: 24px;
+    }
+    .stat-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; box-shadow: var(--shadow-card);
+      padding: 20px 22px;
+    }
+    .stat-label { font-size: 12px; font-weight: 600; color: var(--text-secondary); letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 10px; }
+    .stat-value { font-size: 28px; font-weight: 700; color: var(--text-heading); letter-spacing: -0.03em; line-height: 1; }
+    .stat-change { margin-top: 8px; font-size: 12px; color: var(--text-secondary); }
+    .stat-change .up { color: #059669; font-weight: 600; }
+    .stat-change .down { color: #DC2626; font-weight: 600; }
+
+    /* Table */
+    .table-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; box-shadow: var(--shadow-card); overflow: hidden;
+    }
+    .table-header-bar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 20px; border-bottom: 1px solid var(--border);
+    }
+    .table-title { font-size: 15px; font-weight: 600; color: var(--text-heading); letter-spacing: -0.01em; }
+    .table-meta { font-size: 12.5px; color: var(--text-secondary); }
+    table { width: 100%; border-collapse: collapse; }
+    thead th {
+      padding: 10px 20px; text-align: left;
+      font-size: 11px; font-weight: 600; color: var(--text-secondary);
+      letter-spacing: 0.06em; text-transform: uppercase;
+      background: var(--bg); border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    tbody tr {
+      border-bottom: 1px solid var(--border); transition: background 0.1s;
+    }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: var(--bg); }
+    tbody td { padding: 13px 20px; vertical-align: middle; }
+    .td-project { display: flex; align-items: center; gap: 10px; }
+    .project-dot { width: 8px; height: 8px; border-radius: 9999px; flex-shrink: 0; }
+    .project-name { font-size: 13.5px; font-weight: 600; color: var(--text-heading); }
+    .project-desc { font-size: 12px; color: var(--text-secondary); margin-top: 1px; }
+    .mono { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--text-secondary); }
+    .badge {
+      display: inline-flex; align-items: center; height: 20px;
+      padding: 0 8px; border-radius: 9999px; font-size: 11px; font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+    .badge-green { background: #D1FAE5; color: #065F46; }
+    .badge-amber { background: #FEF3C7; color: #92400E; }
+    .badge-red { background: #FEE2E2; color: #991B1B; }
+    .badge-blue { background: var(--accent-light); color: var(--accent-text); }
+    .progress-wrap { display: flex; align-items: center; gap: 10px; }
+    .progress-bar { flex: 1; height: 6px; background: var(--bg); border-radius: 9999px; overflow: hidden; border: 1px solid var(--border); }
+    .progress-fill { height: 100%; border-radius: 9999px; transition: width 0.3s; }
+    .progress-pct { font-size: 12px; font-weight: 600; color: var(--text-body); width: 32px; text-align: right; }
+    .row-actions { display: flex; align-items: center; gap: 6px; opacity: 0; transition: opacity 0.15s; }
+    tbody tr:hover .row-actions { opacity: 1; }
+    .action-btn {
+      height: 26px; padding: 0 10px; border-radius: 4px;
+      border: 1px solid var(--border-input); background: var(--surface);
+      font-family: 'Inter', sans-serif; font-size: 11.5px; font-weight: 500;
+      color: var(--text-body); cursor: pointer;
+    }
+    .action-btn:hover { background: var(--bg); }
+
+    /* Pagination */
+    .pagination {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 20px; border-top: 1px solid var(--border);
+    }
+    .pagination-info { font-size: 12.5px; color: var(--text-secondary); }
+    .pagination-pages { display: flex; gap: 4px; }
+    .page-btn {
+      width: 30px; height: 30px; border-radius: 6px;
+      border: 1px solid var(--border); background: var(--surface);
+      font-family: 'Inter', sans-serif; font-size: 12.5px; font-weight: 500;
+      color: var(--text-body); cursor: pointer; display: flex; align-items: center; justify-content: center;
+    }
+    .page-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .page-btn:hover:not(.active) { background: var(--bg); }
+  </style>
+</head>
+<body>
+
+<div class="aioson-badge">AIOSON Design Skill</div>
+
+<div class="shell">
+
+  <!-- Sidebar logo (absolute so it sits above the sidebar padding) -->
+  <div class="sidebar-logo">
+    <div class="sidebar-logo-mark">A</div>
+    <span class="sidebar-logo-text">Workbench</span>
+  </div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Navigation</div>
+      <div class="nav-item">
+        <div class="nav-icon"></div>
+        Dashboard
+      </div>
+      <div class="nav-item active">
+        <div class="nav-icon"></div>
+        Projects
+      </div>
+      <div class="nav-item">
+        <div class="nav-icon"></div>
+        Team
+      </div>
+      <div class="nav-section-label">Account</div>
+      <div class="nav-item">
+        <div class="nav-icon"></div>
+        Settings
+      </div>
+      <div class="nav-item">
+        <div class="nav-icon"></div>
+        Billing
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-row">
+        <div class="avatar">JD</div>
+        <div>
+          <div class="user-name">Jordan Davies</div>
+          <div class="user-role">Admin</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="main">
+
+    <!-- Top bar -->
+    <header class="topbar">
+      <div class="breadcrumb">
+        <span>Workbench</span>
+        <span class="breadcrumb-sep">/</span>
+        <span class="breadcrumb-current">Projects</span>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-secondary">
+          <div class="btn-icon"></div>
+          Import
+        </button>
+        <button class="btn btn-primary">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style="flex-shrink:0"><path d="M7 2v10M2 7h10" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></svg>
+          New Project
+        </button>
+      </div>
+    </header>
+
+    <!-- Page content -->
+    <main class="page">
+
+      <!-- Page header -->
+      <div class="page-header">
+        <div>
+          <div class="page-title">Projects</div>
+          <div class="page-subtitle">Manage and track all your active projects across teams.</div>
+        </div>
+      </div>
+
+      <!-- Stat cards -->
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="stat-label">Active Projects</div>
+          <div class="stat-value">24</div>
+          <div class="stat-change"><span class="up">+3</span> since last month</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Open Tasks</div>
+          <div class="stat-value">147</div>
+          <div class="stat-change"><span class="down">+12</span> this week</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Team Members</div>
+          <div class="stat-value">18</div>
+          <div class="stat-change"><span class="up">+2</span> new this month</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">This Month</div>
+          <div class="stat-value">94<span style="font-size:18px;font-weight:600;color:var(--text-secondary)">%</span></div>
+          <div class="stat-change"><span class="up">+4%</span> vs last month</div>
+        </div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="tab-bar">
+        <div class="tab active">All Projects <span class="tab-count">24</span></div>
+        <div class="tab">Active <span class="tab-count">18</span></div>
+        <div class="tab">On Hold <span class="tab-count">4</span></div>
+        <div class="tab">Completed <span class="tab-count">2</span></div>
+      </div>
+
+      <!-- Filter bar -->
+      <div class="filter-bar">
+        <input class="input-search" type="text" placeholder="Search projects..." value="" />
+        <select class="select-filter">
+          <option>All Status</option>
+          <option>Active</option>
+          <option>On Hold</option>
+          <option>At Risk</option>
+        </select>
+        <select class="select-filter">
+          <option>All Owners</option>
+          <option>Jordan D.</option>
+          <option>Sam P.</option>
+        </select>
+        <div style="margin-left:auto; display:flex; gap:8px;">
+          <button class="btn btn-secondary" style="font-size:12.5px; padding:0 12px;">Export</button>
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="table-card">
+        <div class="table-header-bar">
+          <div class="table-title">Project List</div>
+          <div class="table-meta">Showing 5 of 24 projects</div>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th style="width:36%">Project</th>
+              <th style="width:12%">Status</th>
+              <th style="width:12%">Owner</th>
+              <th style="width:14%">Due Date</th>
+              <th style="width:18%">Progress</th>
+              <th style="width:8%"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                <div class="td-project">
+                  <div class="project-dot" style="background:#2563EB"></div>
+                  <div>
+                    <div class="project-name">Platform Redesign v2</div>
+                    <div class="project-desc">Core UI refresh and component library</div>
+                  </div>
+                </div>
+              </td>
+              <td><span class="badge badge-green">Active</span></td>
+              <td><span class="mono">JD</span></td>
+              <td><span class="mono">2026-04-15</span></td>
+              <td>
+                <div class="progress-wrap">
+                  <div class="progress-bar"><div class="progress-fill" style="width:78%;background:#2563EB"></div></div>
+                  <span class="progress-pct">78%</span>
+                </div>
+              </td>
+              <td><div class="row-actions"><button class="action-btn">Edit</button></div></td>
+            </tr>
+            <tr>
+              <td>
+                <div class="td-project">
+                  <div class="project-dot" style="background:#059669"></div>
+                  <div>
+                    <div class="project-name">API Gateway Migration</div>
+                    <div class="project-desc">Move to microservices architecture</div>
+                  </div>
+                </div>
+              </td>
+              <td><span class="badge badge-green">Active</span></td>
+              <td><span class="mono">SP</span></td>
+              <td><span class="mono">2026-05-01</span></td>
+              <td>
+                <div class="progress-wrap">
+                  <div class="progress-bar"><div class="progress-fill" style="width:52%;background:#059669"></div></div>
+                  <span class="progress-pct">52%</span>
+                </div>
+              </td>
+              <td><div class="row-actions"><button class="action-btn">Edit</button></div></td>
+            </tr>
+            <tr>
+              <td>
+                <div class="td-project">
+                  <div class="project-dot" style="background:#D97706"></div>
+                  <div>
+                    <div class="project-name">Mobile App Beta</div>
+                    <div class="project-desc">iOS & Android companion app launch</div>
+                  </div>
+                </div>
+              </td>
+              <td><span class="badge badge-amber">On Hold</span></td>
+              <td><span class="mono">MK</span></td>
+              <td><span class="mono">2026-06-20</span></td>
+              <td>
+                <div class="progress-wrap">
+                  <div class="progress-bar"><div class="progress-fill" style="width:34%;background:#D97706"></div></div>
+                  <span class="progress-pct">34%</span>
+                </div>
+              </td>
+              <td><div class="row-actions"><button class="action-btn">Edit</button></div></td>
+            </tr>
+            <tr>
+              <td>
+                <div class="td-project">
+                  <div class="project-dot" style="background:#DC2626"></div>
+                  <div>
+                    <div class="project-name">Security Audit Q1</div>
+                    <div class="project-desc">Penetration testing and compliance review</div>
+                  </div>
+                </div>
+              </td>
+              <td><span class="badge badge-red">At Risk</span></td>
+              <td><span class="mono">RC</span></td>
+              <td><span class="mono">2026-03-31</span></td>
+              <td>
+                <div class="progress-wrap">
+                  <div class="progress-bar"><div class="progress-fill" style="width:61%;background:#DC2626"></div></div>
+                  <span class="progress-pct">61%</span>
+                </div>
+              </td>
+              <td><div class="row-actions"><button class="action-btn">Edit</button></div></td>
+            </tr>
+            <tr>
+              <td>
+                <div class="td-project">
+                  <div class="project-dot" style="background:#7C3AED"></div>
+                  <div>
+                    <div class="project-name">Data Pipeline Rebuild</div>
+                    <div class="project-desc">ETL modernization and real-time streaming</div>
+                  </div>
+                </div>
+              </td>
+              <td><span class="badge badge-blue">Active</span></td>
+              <td><span class="mono">AL</span></td>
+              <td><span class="mono">2026-07-10</span></td>
+              <td>
+                <div class="progress-wrap">
+                  <div class="progress-bar"><div class="progress-fill" style="width:19%;background:#7C3AED"></div></div>
+                  <span class="progress-pct">19%</span>
+                </div>
+              </td>
+              <td><div class="row-actions"><button class="action-btn">Edit</button></div></td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="pagination">
+          <div class="pagination-info">Showing 1–5 of 24 projects</div>
+          <div class="pagination-pages">
+            <button class="page-btn active">1</button>
+            <button class="page-btn">2</button>
+            <button class="page-btn">3</button>
+            <button class="page-btn" style="width:auto;padding:0 10px;">›</button>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+</body>
+</html>

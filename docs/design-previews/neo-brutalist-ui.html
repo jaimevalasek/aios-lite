@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Neo-Brutalist UI — AIOSON Design Skill Preview</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --yellow: #FACC15;
+      --black: #1A1A1A;
+      --body: #2A2A2A;
+      --secondary: #666666;
+      --bg: #FFFDF5;
+      --white: #FFFFFF;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      font-family: 'Space Grotesk', system-ui, sans-serif;
+      font-size: 14px;
+      color: var(--body);
+      overflow: hidden;
+    }
+
+    /* ── Layout ── */
+    .shell {
+      display: flex;
+      height: 100vh;
+    }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      width: 240px;
+      flex-shrink: 0;
+      background: var(--bg);
+      border-right: 3px solid var(--black);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .sidebar-logo {
+      padding: 22px 20px;
+      border-bottom: 3px solid var(--black);
+    }
+    .logo-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .logo-box {
+      width: 36px;
+      height: 36px;
+      background: var(--yellow);
+      border: 2px solid var(--black);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      font-size: 13px;
+      color: var(--black);
+      letter-spacing: -1px;
+    }
+    .logo-name {
+      font-weight: 800;
+      font-size: 16px;
+      color: var(--black);
+      letter-spacing: -0.5px;
+    }
+    .logo-version {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      color: var(--secondary);
+      margin-top: 2px;
+    }
+
+    .nav-section {
+      padding: 16px 12px;
+      flex: 1;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 11px 12px;
+      cursor: pointer;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 600;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--secondary);
+      border: 2px solid transparent;
+      margin-bottom: 4px;
+    }
+    .nav-item:hover {
+      background: rgba(250,204,21,0.20);
+      color: var(--black);
+    }
+    .nav-item.active {
+      background: var(--yellow);
+      color: var(--black);
+      border: 2px solid var(--black);
+    }
+
+    .nav-icon {
+      width: 14px;
+      height: 14px;
+      flex-shrink: 0;
+    }
+
+    .nav-count {
+      margin-left: auto;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      font-weight: 700;
+      border: 2px solid var(--black);
+      padding: 1px 6px;
+    }
+    .nav-item.active .nav-count {
+      background: var(--black);
+      color: var(--yellow);
+    }
+
+    .sidebar-footer {
+      padding: 16px 16px 20px;
+      border-top: 3px solid var(--black);
+    }
+    .user-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px;
+      border: 2px solid var(--black);
+      box-shadow: 3px 3px 0 var(--black);
+      cursor: pointer;
+      background: var(--white);
+    }
+    .avatar-box {
+      width: 30px;
+      height: 30px;
+      background: var(--yellow);
+      border: 2px solid var(--black);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      font-size: 11px;
+      color: var(--black);
+      flex-shrink: 0;
+    }
+    .user-name {
+      font-weight: 700;
+      font-size: 12px;
+      color: var(--black);
+    }
+    .user-role {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      color: var(--secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    /* ── Main ── */
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── Top bar ── */
+    .topbar {
+      height: 56px;
+      background: var(--bg);
+      border-bottom: 3px solid var(--black);
+      display: flex;
+      align-items: center;
+      padding: 0 28px;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+    .topbar-title {
+      font-weight: 800;
+      font-size: 13.5px;
+      color: var(--black);
+      flex: 1;
+      letter-spacing: -0.2px;
+    }
+    .topbar-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      background: var(--black);
+      color: var(--yellow);
+      padding: 4px 10px;
+      border: 2px solid var(--black);
+    }
+    .topbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .topbar-btn {
+      height: 34px;
+      padding: 0 14px;
+      border: 2px solid var(--black);
+      background: var(--white);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--black);
+      cursor: pointer;
+      box-shadow: 2px 2px 0 var(--black);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .topbar-btn svg { width: 13px; height: 13px; }
+
+    /* ── Content ── */
+    .content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 28px 32px 40px;
+    }
+    .content::-webkit-scrollbar { width: 8px; }
+    .content::-webkit-scrollbar-track { background: var(--bg); border-left: 2px solid var(--black); }
+    .content::-webkit-scrollbar-thumb { background: var(--black); }
+
+    /* ── Page header ── */
+    .page-header {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      margin-bottom: 24px;
+      padding-bottom: 20px;
+      border-bottom: 3px solid var(--black);
+    }
+    .page-eyebrow {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--secondary);
+      margin-bottom: 6px;
+    }
+    .page-title {
+      font-size: 28px;
+      font-weight: 800;
+      color: var(--black);
+      letter-spacing: -0.8px;
+      line-height: 1.1;
+    }
+    .page-title span {
+      background: var(--yellow);
+      padding: 0 4px;
+    }
+    .page-date {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--secondary);
+      text-align: right;
+    }
+
+    /* ── Stat cards ── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .stat-card {
+      background: var(--white);
+      border: 2px solid var(--black);
+      box-shadow: 4px 4px 0 var(--black);
+      padding: 20px 20px 18px;
+    }
+
+    .stat-tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--secondary);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .stat-tag::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--black);
+      opacity: 0.2;
+    }
+
+    .stat-number {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 44px;
+      font-weight: 700;
+      color: var(--black);
+      letter-spacing: -2px;
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+    .stat-number.yellow { color: var(--yellow); -webkit-text-stroke: 1.5px var(--black); }
+
+    .stat-delta {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 600;
+      margin-top: 10px;
+      display: inline-block;
+      padding: 2px 8px;
+      border: 2px solid var(--black);
+    }
+    .delta-up { background: #D1FAE5; }
+    .delta-down { background: #FEE2E2; }
+    .delta-neutral { background: #FEF9C3; }
+
+    /* ── Table ── */
+    .table-card {
+      background: var(--white);
+      border: 2px solid var(--black);
+      box-shadow: 4px 4px 0 var(--black);
+      margin-bottom: 24px;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      border-bottom: 2px solid var(--black);
+      background: var(--black);
+    }
+    .card-title {
+      font-weight: 800;
+      font-size: 14px;
+      color: var(--yellow);
+      letter-spacing: -0.2px;
+    }
+    .card-title-sub {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      color: rgba(255,255,255,0.5);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-top: 2px;
+    }
+    .card-action-btn {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      background: var(--yellow);
+      border: 2px solid var(--yellow);
+      color: var(--black);
+      padding: 6px 14px;
+      cursor: pointer;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    thead th {
+      background: #F5F5F0;
+      padding: 10px 20px;
+      text-align: left;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--secondary);
+      border: 1px solid var(--black);
+      border-top: none;
+    }
+    tbody tr { }
+    tbody td {
+      padding: 12px 20px;
+      font-size: 13px;
+      color: var(--body);
+      border: 1px solid var(--black);
+      vertical-align: middle;
+    }
+    tbody tr:nth-child(odd) td { background: var(--white); }
+    tbody tr:nth-child(even) td { background: #FAFAF5; }
+
+    .build-id {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      font-size: 12px;
+      color: var(--black);
+    }
+    .branch-name {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: var(--secondary);
+    }
+    .branch-name::before {
+      content: '⌥ ';
+      opacity: 0.5;
+    }
+    .duration {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--body);
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 10px;
+      border-radius: 9999px;
+      border: 2px solid var(--black);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .badge-pass { background: #D1FAE5; color: #065F46; }
+    .badge-fail { background: #FEE2E2; color: #991B1B; }
+    .badge-run  { background: var(--yellow); color: var(--black); }
+    .badge-skip { background: #F3F4F6; color: var(--secondary); }
+
+    /* ── Bottom row ── */
+    .bottom-row {
+      display: grid;
+      grid-template-columns: 1fr 280px;
+      gap: 16px;
+    }
+
+    .info-card {
+      background: var(--white);
+      border: 2px solid var(--black);
+      box-shadow: 4px 4px 0 var(--black);
+      padding: 20px;
+    }
+    .info-card-title {
+      font-weight: 800;
+      font-size: 13px;
+      color: var(--black);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 14px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid var(--black);
+    }
+
+    .kv-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(0,0,0,0.12);
+    }
+    .kv-row:last-child { border-bottom: none; }
+    .kv-key {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--secondary);
+    }
+    .kv-val {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--black);
+    }
+    .kv-val.green { color: #065F46; }
+    .kv-val.red { color: #991B1B; }
+
+    /* ── Primary button ── */
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--yellow);
+      border: 2px solid var(--black);
+      box-shadow: 3px 3px 0 var(--black);
+      color: var(--black);
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 10px 20px;
+      cursor: pointer;
+      transition: transform 0.1s, box-shadow 0.1s;
+    }
+    .btn-primary:hover {
+      transform: translate(-1px, -1px);
+      box-shadow: 5px 5px 0 var(--black);
+    }
+    .btn-primary:active {
+      transform: translate(2px, 2px);
+      box-shadow: 1px 1px 0 var(--black);
+    }
+
+    .btn-secondary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--white);
+      border: 2px solid var(--black);
+      box-shadow: 3px 3px 0 var(--black);
+      color: var(--black);
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 600;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 10px 20px;
+      cursor: pointer;
+    }
+
+    .action-row {
+      display: flex;
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    /* ── Watermark ── */
+    .watermark {
+      position: fixed;
+      top: 12px;
+      right: 14px;
+      background: var(--black);
+      color: var(--yellow);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      padding: 4px 10px;
+      border: 2px solid var(--yellow);
+      z-index: 100;
+    }
+  </style>
+</head>
+<body>
+
+<div class="watermark">AIOSON Design Skill Preview</div>
+
+<div class="shell">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-row">
+        <div class="logo-box">CI</div>
+        <div>
+          <div class="logo-name">BuildForge</div>
+          <div class="logo-version">v3.8.1 · STABLE</div>
+        </div>
+      </div>
+    </div>
+
+    <nav class="nav-section">
+
+      <div class="nav-item active">
+        <svg class="nav-icon" viewBox="0 0 14 14" fill="currentColor"><rect x="1" y="1" width="5" height="5"/><rect x="8" y="1" width="5" height="5"/><rect x="1" y="8" width="5" height="5"/><rect x="8" y="8" width="5" height="5"/></svg>
+        Dashboard
+        <span class="nav-count">3</span>
+      </div>
+
+      <div class="nav-item">
+        <svg class="nav-icon" viewBox="0 0 14 14" fill="currentColor"><path d="M7 1L13 4v6L7 13 1 10V4L7 1z"/></svg>
+        Analytics
+      </div>
+
+      <div class="nav-item">
+        <svg class="nav-icon" viewBox="0 0 14 14" fill="currentColor"><circle cx="7" cy="7" r="6"/><path d="M5 4l5 3-5 3V4z" fill="white"/></svg>
+        Builds
+        <span class="nav-count">47</span>
+      </div>
+
+      <div class="nav-item">
+        <svg class="nav-icon" viewBox="0 0 14 14" fill="currentColor"><path d="M7 1l1.5 3 3 .5-2 2 .5 3L7 8 4 10l.5-3-2-2 3-.5z"/></svg>
+        Settings
+      </div>
+
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="user-row">
+        <div class="avatar-box">JR</div>
+        <div>
+          <div class="user-name">J. Rodriguez</div>
+          <div class="user-role">Lead Engineer</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="main">
+    <header class="topbar">
+      <span class="topbar-title">Neo-Brutalist UI — AIOSON Design Skill Preview</span>
+      <span class="topbar-badge">Bold · Grid · Flat</span>
+      <div class="topbar-actions">
+        <button class="topbar-btn">
+          <svg viewBox="0 0 14 14" fill="currentColor"><circle cx="6" cy="6" r="5" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="m10 10 3 3" stroke="currentColor" stroke-width="1.5"/></svg>
+          Filter
+        </button>
+        <button class="topbar-btn" style="background: var(--yellow); border-color: var(--black);">
+          + Trigger Build
+        </button>
+      </div>
+    </header>
+
+    <div class="content">
+
+      <!-- Page header -->
+      <div class="page-header">
+        <div>
+          <div class="page-eyebrow">// MAIN WORKSPACE</div>
+          <h1 class="page-title">Build <span>Dashboard</span></h1>
+        </div>
+        <div class="page-date">
+          <div>MARCH 28, 2026</div>
+          <div style="margin-top:4px; color: var(--black); font-weight: 700;">14:32:07 UTC</div>
+          <div style="margin-top:4px; display:flex; align-items:center; gap:6px;">
+            <span style="width:7px;height:7px;background:#22C55E;border:1px solid #000;display:inline-block;"></span>
+            ALL SYSTEMS OPERATIONAL
+          </div>
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div class="stats-grid">
+
+        <div class="stat-card">
+          <div class="stat-tag">Builds Today</div>
+          <div class="stat-number">47</div>
+          <span class="stat-delta delta-up">+12 vs yesterday</span>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-tag">Success Rate</div>
+          <div class="stat-number yellow">91.2<span style="font-size:24px;letter-spacing:-1px;">%</span></div>
+          <span class="stat-delta delta-neutral">-0.4% this week</span>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-tag">Open Issues</div>
+          <div class="stat-number">13</div>
+          <span class="stat-delta delta-down">+5 since morning</span>
+        </div>
+
+      </div>
+
+      <!-- Build history table -->
+      <div class="table-card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Build History</div>
+            <div class="card-title-sub">Last 4 pipeline runs · ci/cd queue</div>
+          </div>
+          <button class="card-action-btn">⟳ Refresh</button>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Build ID</th>
+              <th>Branch</th>
+              <th>Status</th>
+              <th>Duration</th>
+              <th>Triggered</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><div class="build-id">#BUILD-0891</div></td>
+              <td><div class="branch-name">main</div></td>
+              <td><span class="status-badge badge-pass">PASSED</span></td>
+              <td><div class="duration">02:14</div></td>
+              <td><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--secondary);">2m ago · push</span></td>
+            </tr>
+            <tr>
+              <td><div class="build-id">#BUILD-0890</div></td>
+              <td><div class="branch-name">feat/auth-v2</div></td>
+              <td><span class="status-badge badge-run">RUNNING</span></td>
+              <td><div class="duration">00:47…</div></td>
+              <td><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--secondary);">5m ago · PR</span></td>
+            </tr>
+            <tr>
+              <td><div class="build-id">#BUILD-0889</div></td>
+              <td><div class="branch-name">fix/rate-limit</div></td>
+              <td><span class="status-badge badge-fail">FAILED</span></td>
+              <td><div class="duration">01:03</div></td>
+              <td><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--secondary);">22m ago · push</span></td>
+            </tr>
+            <tr>
+              <td><div class="build-id">#BUILD-0888</div></td>
+              <td><div class="branch-name">chore/deps</div></td>
+              <td><span class="status-badge badge-skip">SKIPPED</span></td>
+              <td><div class="duration">00:00</div></td>
+              <td><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--secondary);">1h ago · bot</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Bottom row -->
+      <div class="bottom-row">
+
+        <div class="info-card">
+          <div class="info-card-title">Pipeline Health — This Week</div>
+          <div class="kv-row">
+            <span class="kv-key">Total Builds</span>
+            <span class="kv-val">214</span>
+          </div>
+          <div class="kv-row">
+            <span class="kv-key">Passed</span>
+            <span class="kv-val green">195</span>
+          </div>
+          <div class="kv-row">
+            <span class="kv-key">Failed</span>
+            <span class="kv-val red">19</span>
+          </div>
+          <div class="kv-row">
+            <span class="kv-key">Avg Duration</span>
+            <span class="kv-val">01:52</span>
+          </div>
+          <div class="kv-row">
+            <span class="kv-key">Deploy Freq</span>
+            <span class="kv-val green">8.6 / day</span>
+          </div>
+          <div class="kv-row">
+            <span class="kv-key">MTTR</span>
+            <span class="kv-val">04:21</span>
+          </div>
+          <div class="action-row">
+            <button class="btn-primary">▶ New Build</button>
+            <button class="btn-secondary">⬇ Export CSV</button>
+          </div>
+        </div>
+
+        <div class="info-card">
+          <div class="info-card-title">Active Runners</div>
+          <div class="kv-row">
+            <span class="kv-key">runner-prod-01</span>
+            <span class="kv-val green">BUSY</span>
+          </div>
+          <div class="kv-row">
+            <span class="kv-key">runner-prod-02</span>
+            <span class="kv-val green">IDLE</span>
+          </div>
+          <div class="kv-row">
+            <span class="kv-key">runner-prod-03</span>
+            <span class="kv-val green">BUSY</span>
+          </div>
+          <div class="kv-row">
+            <span class="kv-key">runner-eu-01</span>
+            <span class="kv-val" style="color:var(--secondary);">OFFLINE</span>
+          </div>
+          <div class="kv-row">
+            <span class="kv-key">Queue Depth</span>
+            <span class="kv-val">3 pending</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

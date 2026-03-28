@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AIOSON Design Skills — Preview Gallery</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: #0A0A0F;
+      color: #E5E7EB;
+      min-height: 100vh;
+      padding: 0;
+    }
+
+    /* Header */
+    .header {
+      background: #111118;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      padding: 0 48px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .header-logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo-mark {
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, #7C3AED, #3B82F6);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 800;
+      color: white;
+      letter-spacing: -0.03em;
+    }
+
+    .logo-text {
+      font-size: 16px;
+      font-weight: 700;
+      color: #F9FAFB;
+      letter-spacing: -0.02em;
+    }
+
+    .header-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: #6B7280;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    /* Hero */
+    .hero {
+      padding: 80px 48px 64px;
+      max-width: 1200px;
+      margin: 0 auto;
+      text-align: center;
+    }
+
+    .hero-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: #6B7280;
+      margin-bottom: 20px;
+    }
+
+    .hero h1 {
+      font-size: 48px;
+      font-weight: 800;
+      color: #F9FAFB;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+      margin-bottom: 20px;
+    }
+
+    .hero h1 span {
+      background: linear-gradient(135deg, #7C3AED, #3B82F6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero p {
+      font-size: 18px;
+      color: #9CA3AF;
+      line-height: 1.6;
+      max-width: 600px;
+      margin: 0 auto 48px;
+    }
+
+    .hero-meta {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 32px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: #4B5563;
+    }
+
+    .hero-meta span {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .hero-meta .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #22D3EE;
+      display: inline-block;
+    }
+
+    /* Grid */
+    .gallery {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 48px 80px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+      gap: 24px;
+    }
+
+    /* Card */
+    .skill-card {
+      background: #111118;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 16px;
+      overflow: hidden;
+      transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+      cursor: pointer;
+      text-decoration: none;
+      display: block;
+    }
+
+    .skill-card:hover {
+      border-color: rgba(255,255,255,0.16);
+      transform: translateY(-2px);
+      box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+    }
+
+    /* Preview thumbnail — colored top strip */
+    .preview-thumb {
+      height: 160px;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .preview-label {
+      position: relative;
+      z-index: 2;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      opacity: 0.9;
+    }
+
+    /* Each skill thumb style */
+    .thumb-glassmorphism {
+      background: linear-gradient(135deg, #F0EEF6 0%, #E0DFF0 30%, #D8E0F0 70%, #EDE8F0 100%);
+    }
+    .thumb-glassmorphism .preview-label { color: #1A1A2E; }
+    .thumb-glassmorphism::before {
+      content: '';
+      position: absolute;
+      inset: 20px;
+      background: rgba(255,255,255,0.60);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255,255,255,0.40);
+      border-radius: 16px;
+      box-shadow: 0 8px 24px rgba(124,58,237,0.10);
+    }
+
+    .thumb-neo-brutalist {
+      background: #FFFDF5;
+    }
+    .thumb-neo-brutalist .preview-label { color: #1A1A1A; }
+    .thumb-neo-brutalist::before {
+      content: '';
+      position: absolute;
+      inset: 20px;
+      background: #FACC15;
+      border: 2px solid #1A1A1A;
+      box-shadow: 5px 5px 0 #1A1A1A;
+      border-radius: 0;
+    }
+
+    .thumb-warm-craft {
+      background: #F8F6F3;
+    }
+    .thumb-warm-craft .preview-label { color: #2D3436; }
+    .thumb-warm-craft::before {
+      content: '';
+      position: absolute;
+      inset: 20px;
+      background: #FFFFFF;
+      border-radius: 16px;
+      box-shadow: 0 4px 16px rgba(120,80,60,0.12);
+      border-left: 4px solid #E07A5F;
+    }
+
+    .thumb-bold-editorial {
+      background: #0A0A0A;
+    }
+    .thumb-bold-editorial .preview-label { color: #FFFFFF; font-size: 22px; font-weight: 800; letter-spacing: -0.04em; }
+    .thumb-bold-editorial::after {
+      content: '';
+      position: absolute;
+      inset: 20px;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 8px;
+      background: #141414;
+      box-shadow: 0 0 60px rgba(255,77,42,0.15);
+    }
+
+    .thumb-clean-saas {
+      background: #F9FAFB;
+    }
+    .thumb-clean-saas .preview-label { color: #111827; }
+    .thumb-clean-saas::before {
+      content: '';
+      position: absolute;
+      inset: 20px;
+      background: #FFFFFF;
+      border: 1px solid #E5E7EB;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+      border-left: 3px solid #2563EB;
+    }
+
+    .thumb-cognitive-core {
+      background: #0B0F15;
+    }
+    .thumb-cognitive-core .preview-label { color: #22D3EE; }
+    .thumb-cognitive-core::before {
+      content: '';
+      position: absolute;
+      inset: 20px;
+      background: #111827;
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 8px;
+      box-shadow: 0 0 20px rgba(34,211,238,0.12);
+      border-top: 2px solid #22D3EE;
+    }
+
+    .thumb-premium-command {
+      background: #0b1015;
+    }
+    .thumb-premium-command .preview-label { color: #63b3ed; }
+    .thumb-premium-command::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse 400px 300px at 20% 20%, rgba(99,179,237,0.06), transparent 70%);
+    }
+    .thumb-premium-command::after {
+      content: '';
+      position: absolute;
+      inset: 20px;
+      background: #10161d;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 8px;
+      display: grid;
+      grid-template-columns: 60px 1fr 80px;
+    }
+
+    .thumb-interface-design {
+      background: #F5F5F5;
+    }
+    .thumb-interface-design .preview-label { color: #0F172A; }
+    .thumb-interface-design::before {
+      content: '';
+      position: absolute;
+      inset: 20px;
+      background: #FFFFFF;
+      border: 1px solid #E2E2E2;
+      border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+      border-top: 3px solid #6366F1;
+    }
+
+    /* Card body */
+    .card-body {
+      padding: 20px 24px 24px;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    .card-name {
+      font-size: 16px;
+      font-weight: 700;
+      color: #F9FAFB;
+      letter-spacing: -0.02em;
+    }
+
+    .card-tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 3px 8px;
+      border-radius: 9999px;
+      border: 1px solid rgba(255,255,255,0.12);
+      color: #6B7280;
+      white-space: nowrap;
+    }
+
+    .card-description {
+      font-size: 13px;
+      color: #6B7280;
+      line-height: 1.6;
+      margin-bottom: 16px;
+    }
+
+    .card-meta {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+
+    .meta-pill {
+      font-size: 11px;
+      font-weight: 500;
+      padding: 3px 10px;
+      border-radius: 9999px;
+      background: rgba(255,255,255,0.05);
+      color: #9CA3AF;
+      border: 1px solid rgba(255,255,255,0.07);
+    }
+
+    .card-link {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 500;
+      color: #9CA3AF;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .skill-card:hover .card-link {
+      background: rgba(255,255,255,0.07);
+      color: #E5E7EB;
+    }
+
+    .card-link-arrow {
+      font-size: 14px;
+    }
+
+    /* Footer */
+    .footer {
+      border-top: 1px solid rgba(255,255,255,0.06);
+      padding: 32px 48px;
+      text-align: center;
+    }
+
+    .footer p {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: #374151;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    /* Accent colors per skill for card-name */
+    .accent-glass { color: #7C3AED; }
+    .accent-neo { color: #FACC15; }
+    .accent-warm { color: #E07A5F; }
+    .accent-bold { color: #FF4D2A; }
+    .accent-clean { color: #2563EB; }
+    .accent-cognitive { color: #22D3EE; }
+    .accent-command { color: #63b3ed; }
+    .accent-interface { color: #6366F1; }
+  </style>
+</head>
+<body>
+
+  <header class="header">
+    <div class="header-logo">
+      <div class="logo-mark">A</div>
+      <span class="logo-text">AIOSON</span>
+    </div>
+    <span class="header-badge">Design Skills — Preview Gallery</span>
+  </header>
+
+  <section class="hero">
+    <p class="hero-label">Visual Identity System</p>
+    <h1>Choose your <span>design skill</span></h1>
+    <p>Each skill is a complete visual system — colors, typography, components, and patterns. Pick one and your app gets a coherent, intentional identity from the start.</p>
+    <div class="hero-meta">
+      <span><span class="dot"></span> 8 design skills</span>
+      <span><span class="dot" style="background:#E07A5F"></span> Light &amp; dark themes</span>
+      <span><span class="dot" style="background:#FF4D2A"></span> Stack-agnostic</span>
+    </div>
+  </section>
+
+  <div class="gallery">
+
+    <!-- Glassmorphism UI -->
+    <a class="skill-card" href="glassmorphism-ui.html" target="_blank">
+      <div class="preview-thumb thumb-glassmorphism">
+        <span class="preview-label">Glass · Depth · Blur</span>
+      </div>
+      <div class="card-body">
+        <div class="card-header">
+          <span class="card-name accent-glass">Glassmorphism UI</span>
+          <span class="card-tag">Light default</span>
+        </div>
+        <p class="card-description">Frosted glass surfaces floating over gradient backgrounds. Perceived depth through transparency, luminous borders, and violet-blue accents. Apple-like, iOS-grade.</p>
+        <div class="card-meta">
+          <span class="meta-pill">Fintech</span>
+          <span class="meta-pill">Crypto dashboards</span>
+          <span class="meta-pill">Mobile apps</span>
+          <span class="meta-pill">Portfolio</span>
+        </div>
+        <div class="card-link">
+          <span>Open preview</span>
+          <span class="card-link-arrow">→</span>
+        </div>
+      </div>
+    </a>
+
+    <!-- Neo-Brutalist UI -->
+    <a class="skill-card" href="neo-brutalist-ui.html" target="_blank">
+      <div class="preview-thumb thumb-neo-brutalist">
+        <span class="preview-label">Bold · Raw · Honest</span>
+      </div>
+      <div class="card-body">
+        <div class="card-header">
+          <span class="card-name accent-neo">Neo-Brutalist UI</span>
+          <span class="card-tag">Light default</span>
+        </div>
+        <p class="card-description">Thick borders, hard shadows with zero blur, and saturated yellow accent. Structural honesty — every component shows its construction. Anti-corporate by design.</p>
+        <div class="card-meta">
+          <span class="meta-pill">Indie products</span>
+          <span class="meta-pill">Devtools</span>
+          <span class="meta-pill">Creative tools</span>
+          <span class="meta-pill">Side projects</span>
+        </div>
+        <div class="card-link">
+          <span>Open preview</span>
+          <span class="card-link-arrow">→</span>
+        </div>
+      </div>
+    </a>
+
+    <!-- Warm Craft UI -->
+    <a class="skill-card" href="warm-craft-ui.html" target="_blank">
+      <div class="preview-thumb thumb-warm-craft">
+        <span class="preview-label">Human · Warm · Breathable</span>
+      </div>
+      <div class="card-body">
+        <div class="card-header">
+          <span class="card-name accent-warm">Warm Craft UI</span>
+          <span class="card-tag">Light default</span>
+        </div>
+        <p class="card-description">Serif headings, terracotta accents, generous whitespace. Feels handcrafted, trustworthy, and immediately approachable — like a well-designed physical notebook.</p>
+        <div class="card-meta">
+          <span class="meta-pill">Productivity</span>
+          <span class="meta-pill">SaaS B2C</span>
+          <span class="meta-pill">Health</span>
+          <span class="meta-pill">Education</span>
+        </div>
+        <div class="card-link">
+          <span>Open preview</span>
+          <span class="card-link-arrow">→</span>
+        </div>
+      </div>
+    </a>
+
+    <!-- Bold Editorial UI -->
+    <a class="skill-card" href="bold-editorial-ui.html" target="_blank">
+      <div class="preview-thumb thumb-bold-editorial">
+        <span class="preview-label">IMPACT</span>
+      </div>
+      <div class="card-body">
+        <div class="card-header">
+          <span class="card-name accent-bold">Bold Editorial UI</span>
+          <span class="card-tag">Dark default</span>
+        </div>
+        <p class="card-description">Typography as architecture. Display fonts at 80–120px. Red-orange accent. Cinematic contrast, editorial rhythm — every scroll feels like turning a magazine page.</p>
+        <div class="card-meta">
+          <span class="meta-pill">Landing pages</span>
+          <span class="meta-pill">Marketing</span>
+          <span class="meta-pill">Portfolios</span>
+          <span class="meta-pill">SaaS marketing</span>
+        </div>
+        <div class="card-link">
+          <span>Open preview</span>
+          <span class="card-link-arrow">→</span>
+        </div>
+      </div>
+    </a>
+
+    <!-- Clean SaaS UI -->
+    <a class="skill-card" href="clean-saas-ui.html" target="_blank">
+      <div class="preview-thumb thumb-clean-saas">
+        <span class="preview-label">Efficient · Precise · Invisible</span>
+      </div>
+      <div class="card-body">
+        <div class="card-header">
+          <span class="card-name accent-clean">Clean SaaS UI</span>
+          <span class="card-tag">Light default</span>
+        </div>
+        <p class="card-description">Professional neutrality with systematic precision. Blue accent, Inter-only, medium density. Optimized for the humans who live inside B2B software for 8 hours a day.</p>
+        <div class="card-meta">
+          <span class="meta-pill">B2B SaaS</span>
+          <span class="meta-pill">Admin panels</span>
+          <span class="meta-pill">CRM / ERP</span>
+          <span class="meta-pill">Internal tools</span>
+        </div>
+        <div class="card-link">
+          <span>Open preview</span>
+          <span class="card-link-arrow">→</span>
+        </div>
+      </div>
+    </a>
+
+    <!-- Cognitive Core UI -->
+    <a class="skill-card" href="cognitive-core-ui.html" target="_blank">
+      <div class="preview-thumb thumb-cognitive-core">
+        <span class="preview-label">Dense · Tactical · Premium</span>
+      </div>
+      <div class="card-body">
+        <div class="card-header">
+          <span class="card-name accent-cognitive">Cognitive Core UI</span>
+          <span class="card-tag">Dark default</span>
+        </div>
+        <p class="card-description">Military-grade dashboard meets refined SaaS. Teal/cyan accent with glow, 3 depth levels, monospace metadata rails, large numeric stat readouts. Mission control feel.</p>
+        <div class="card-meta">
+          <span class="meta-pill">Command centers</span>
+          <span class="meta-pill">Analytics</span>
+          <span class="meta-pill">Dev tools</span>
+          <span class="meta-pill">AI platforms</span>
+        </div>
+        <div class="card-link">
+          <span>Open preview</span>
+          <span class="card-link-arrow">→</span>
+        </div>
+      </div>
+    </a>
+
+    <!-- Premium Command Center UI -->
+    <a class="skill-card" href="premium-command-center-ui.html" target="_blank">
+      <div class="preview-thumb thumb-premium-command">
+        <span class="preview-label" style="position:relative;z-index:3">Tri-Rail · Aurora · Operational</span>
+      </div>
+      <div class="card-body">
+        <div class="card-header">
+          <span class="card-name accent-command">Premium Command Center UI</span>
+          <span class="card-tag">Dark only</span>
+        </div>
+        <p class="card-description">Tri-rail shell: left nav, center workspace, right activity rail. Aurora-glass surfaces, deep graphite, search-first interaction. For products under real operational pressure.</p>
+        <div class="card-meta">
+          <span class="meta-pill">Orchestration</span>
+          <span class="meta-pill">Control towers</span>
+          <span class="meta-pill">Operations</span>
+          <span class="meta-pill">Monitoring</span>
+        </div>
+        <div class="card-link">
+          <span>Open preview</span>
+          <span class="card-link-arrow">→</span>
+        </div>
+      </div>
+    </a>
+
+    <!-- Interface Design -->
+    <a class="skill-card" href="interface-design.html" target="_blank">
+      <div class="preview-thumb thumb-interface-design">
+        <span class="preview-label">Craft · System · Continuity</span>
+      </div>
+      <div class="card-body">
+        <div class="card-header">
+          <span class="card-name accent-interface">Interface Design</span>
+          <span class="card-tag">Adaptive</span>
+        </div>
+        <p class="card-description">General craft package — no preset visual language. Use when you want strong design decisions without committing to a specific aesthetic. Hierarchy through discipline, not decoration.</p>
+        <div class="card-meta">
+          <span class="meta-pill">Web apps</span>
+          <span class="meta-pill">Websites</span>
+          <span class="meta-pill">Redesigns</span>
+          <span class="meta-pill">Multi-screen</span>
+        </div>
+        <div class="card-link">
+          <span>Open preview</span>
+          <span class="card-link-arrow">→</span>
+        </div>
+      </div>
+    </a>
+
+  </div>
+
+  <footer class="footer">
+    <p>AIOSON Design Skills · 8 visual systems · Each skill is a complete, standalone package</p>
+  </footer>
+
+</body>
+</html>

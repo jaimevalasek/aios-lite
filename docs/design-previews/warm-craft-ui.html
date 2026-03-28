@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Warm Craft UI — AIOSON Design Skill Preview</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,300;0,400;0,600;0,700;1,400;1,600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --accent: #E07A5F;
+      --accent-light: #F4BFAD;
+      --accent-xlight: #FDF2EE;
+      --bg: #F8F6F3;
+      --sidebar-bg: #F3F1ED;
+      --topbar-bg: #FDFCFA;
+      --card-bg: #FFFFFF;
+      --text-heading: #2D3436;
+      --text-body: #4A5568;
+      --text-secondary: #8896A6;
+      --border: #E8E5E0;
+      --shadow: 0 2px 8px rgba(120, 80, 60, 0.08);
+      --shadow-md: 0 4px 16px rgba(120, 80, 60, 0.10);
+    }
+
+    html, body {
+      height: 100%;
+      font-family: 'Inter', -apple-system, system-ui, sans-serif;
+      font-size: 14px;
+      color: var(--text-body);
+      background: var(--bg);
+      overflow: hidden;
+    }
+
+    /* ── Layout ── */
+    .shell {
+      display: flex;
+      height: 100vh;
+    }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      width: 200px;
+      flex-shrink: 0;
+      background: var(--sidebar-bg);
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid var(--border);
+    }
+
+    .sidebar-logo {
+      padding: 28px 20px 22px;
+      border-bottom: 1px solid var(--border);
+    }
+    .bloom-mark {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .bloom-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--accent);
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .bloom-name {
+      font-family: 'Source Serif 4', Georgia, serif;
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--text-heading);
+      letter-spacing: -0.5px;
+      line-height: 1;
+    }
+    .bloom-tagline {
+      font-size: 11px;
+      color: var(--text-secondary);
+      margin-top: 6px;
+      line-height: 1.5;
+    }
+
+    .nav-section {
+      padding: 18px 12px;
+      flex: 1;
+    }
+    .nav-label {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+      padding: 0 10px;
+      margin-bottom: 6px;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 9px 10px;
+      border-radius: 10px;
+      cursor: pointer;
+      color: var(--text-secondary);
+      font-size: 13px;
+      font-weight: 500;
+      margin-bottom: 2px;
+      transition: all 0.15s ease;
+    }
+    .nav-item:hover {
+      background: rgba(224,122,95,0.07);
+      color: var(--text-body);
+    }
+    .nav-item.active {
+      background: var(--card-bg);
+      color: var(--accent);
+      box-shadow: var(--shadow);
+    }
+    .nav-icon {
+      width: 16px;
+      height: 16px;
+      flex-shrink: 0;
+    }
+    .nav-count {
+      margin-left: auto;
+      font-size: 10px;
+      font-weight: 600;
+      background: var(--accent-xlight);
+      color: var(--accent);
+      padding: 2px 7px;
+      border-radius: 20px;
+    }
+
+    .sidebar-footer {
+      padding: 16px 12px 20px;
+      border-top: 1px solid var(--border);
+    }
+    .user-card {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px;
+      border-radius: 12px;
+      background: var(--card-bg);
+      box-shadow: var(--shadow);
+    }
+    .avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+    .av-terracotta { background: var(--accent); color: #fff; }
+    .av-sage       { background: #81B29A; color: #fff; }
+    .av-mustard    { background: #F2CC8F; color: #7A6030; }
+    .av-slate      { background: #6B8CAE; color: #fff; }
+
+    .user-name { font-size: 12px; font-weight: 600; color: var(--text-heading); }
+    .user-role { font-size: 11px; color: var(--text-secondary); }
+
+    /* ── Main ── */
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── Topbar ── */
+    .topbar {
+      height: 60px;
+      background: var(--topbar-bg);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 28px;
+      gap: 14px;
+      flex-shrink: 0;
+    }
+    .topbar-title {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-body);
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .topbar-badge {
+      background: var(--accent-xlight);
+      color: var(--accent);
+      font-size: 10.5px;
+      font-weight: 600;
+      padding: 4px 11px;
+      border-radius: 20px;
+      white-space: nowrap;
+    }
+    .topbar-avatar {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    /* ── Content ── */
+    .content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 32px 36px 48px;
+    }
+    .content::-webkit-scrollbar { width: 5px; }
+    .content::-webkit-scrollbar-track { background: transparent; }
+    .content::-webkit-scrollbar-thumb { background: var(--accent-light); border-radius: 3px; }
+
+    /* ── Page header ── */
+    .page-header { margin-bottom: 28px; }
+    .page-greeting {
+      font-family: 'Source Serif 4', Georgia, serif;
+      font-size: 30px;
+      font-weight: 600;
+      color: var(--text-heading);
+      letter-spacing: -0.5px;
+      line-height: 1.25;
+    }
+    .page-greeting em {
+      font-style: italic;
+      color: var(--accent);
+    }
+    .page-subtitle {
+      font-size: 13.5px;
+      color: var(--text-secondary);
+      margin-top: 7px;
+      line-height: 1.7;
+    }
+
+    /* ── Stat cards ── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+    }
+
+    .stat-card {
+      padding: 22px 20px 20px;
+    }
+    .stat-icon-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+    .stat-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 12px;
+      background: var(--accent-xlight);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
+    .stat-trend {
+      font-size: 11px;
+      font-weight: 600;
+      color: #5B8C5A;
+      background: #EDF6EC;
+      padding: 3px 9px;
+      border-radius: 20px;
+    }
+    .stat-trend.warn { color: #A27B2B; background: #FEF9EA; }
+
+    .stat-number {
+      font-family: 'Source Serif 4', Georgia, serif;
+      font-size: 38px;
+      font-weight: 700;
+      color: var(--text-heading);
+      letter-spacing: -1.5px;
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+    .stat-label {
+      font-size: 12.5px;
+      font-weight: 500;
+      color: var(--text-secondary);
+    }
+    .stat-sub {
+      font-size: 11.5px;
+      color: var(--text-secondary);
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid var(--border);
+      line-height: 1.5;
+    }
+    .stat-sub strong { color: var(--text-body); font-weight: 600; }
+
+    /* ── Content grid ── */
+    .content-grid {
+      display: grid;
+      grid-template-columns: 1fr 320px;
+      gap: 16px;
+    }
+
+    /* ── Activity feed ── */
+    .card-header {
+      padding: 18px 22px 14px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .card-title {
+      font-family: 'Source Serif 4', Georgia, serif;
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-heading);
+      letter-spacing: -0.2px;
+    }
+    .card-title-sub {
+      font-size: 11.5px;
+      color: var(--text-secondary);
+      margin-top: 2px;
+    }
+    .card-link {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--accent);
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .feed-list {}
+    .feed-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 14px 22px;
+      border-bottom: 1px solid var(--border);
+      transition: background 0.12s;
+    }
+    .feed-item:last-child { border-bottom: none; }
+    .feed-item:hover { background: var(--bg); }
+
+    .feed-avatar {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+    .feed-body { flex: 1; min-width: 0; }
+    .feed-text {
+      font-size: 13px;
+      color: var(--text-body);
+      line-height: 1.5;
+    }
+    .feed-text strong { color: var(--text-heading); font-weight: 600; }
+    .feed-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 4px;
+    }
+    .feed-time { font-size: 11px; color: var(--text-secondary); }
+    .feed-tag {
+      font-size: 10.5px;
+      font-weight: 600;
+      background: var(--accent-xlight);
+      color: var(--accent);
+      padding: 2px 8px;
+      border-radius: 20px;
+    }
+
+    /* ── Settings card ── */
+    .settings-card {}
+    .setting-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+    .setting-row:last-child { border-bottom: none; }
+    .setting-label { font-size: 13px; font-weight: 500; color: var(--text-heading); }
+    .setting-desc { font-size: 11px; color: var(--text-secondary); margin-top: 2px; }
+
+    /* Toggle */
+    .toggle {
+      width: 38px;
+      height: 22px;
+      border-radius: 11px;
+      position: relative;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .toggle.on { background: var(--accent); }
+    .toggle.off { background: #D1D5DB; }
+    .toggle::after {
+      content: '';
+      position: absolute;
+      top: 3px;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.20);
+      transition: left 0.15s;
+    }
+    .toggle.on::after { left: 19px; }
+    .toggle.off::after { left: 3px; }
+
+    /* Select-like chip */
+    .select-chip {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 5px 12px;
+      font-size: 12px;
+      color: var(--text-body);
+      font-weight: 500;
+    }
+
+    /* ── Button ── */
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      padding: 10px 20px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      box-shadow: 0 2px 8px rgba(224,122,95,0.25);
+    }
+    .btn-secondary {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      background: var(--bg);
+      color: var(--text-body);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px 20px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .card-footer {
+      padding: 14px 20px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      gap: 10px;
+    }
+
+    /* ── Watermark ── */
+    .watermark {
+      position: fixed;
+      top: 14px;
+      right: 16px;
+      background: var(--accent-xlight);
+      border: 1px solid var(--accent-light);
+      border-radius: 20px;
+      padding: 4px 12px;
+      font-size: 10.5px;
+      font-weight: 600;
+      color: var(--accent);
+      z-index: 100;
+      letter-spacing: 0.02em;
+    }
+  </style>
+</head>
+<body>
+
+<div class="watermark">AIOSON Design Skill Preview</div>
+
+<div class="shell">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="bloom-mark">
+        <div class="bloom-dot"></div>
+        <div class="bloom-name">Bloom</div>
+      </div>
+      <div class="bloom-tagline">Your workspace,<br>warmly organized.</div>
+    </div>
+
+    <nav class="nav-section">
+      <div class="nav-label">Navigation</div>
+
+      <div class="nav-item active">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="currentColor">
+          <path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm0 1a6 6 0 1 1 0 12A6 6 0 0 1 8 2zm0 3a1 1 0 0 1 1 1v2.586l1.707 1.707a1 1 0 0 1-1.414 1.414l-2-2A1 1 0 0 1 7 9V6a1 1 0 0 1 1-1z"/>
+        </svg>
+        Overview
+      </div>
+
+      <div class="nav-item">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="currentColor">
+          <path d="M1.5 2A1.5 1.5 0 0 0 0 3.5v9A1.5 1.5 0 0 0 1.5 14h13a1.5 1.5 0 0 0 1.5-1.5v-9A1.5 1.5 0 0 0 14.5 2h-13zm1 2h11v7h-11V4z"/>
+        </svg>
+        Projects
+        <span class="nav-count">5</span>
+      </div>
+
+      <div class="nav-item">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="currentColor">
+          <path d="M7 14s-1 0-1-1 1-4 5-4 5 3 5 4-1 1-1 1H7zm4-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM5.216 14A2.238 2.238 0 0 1 5 13c0-1.355.68-2.75 1.936-3.72A6.325 6.325 0 0 0 5 9c-4 0-5 3-5 4s1 1 1 1h4.216z"/>
+        </svg>
+        Team
+      </div>
+
+      <div class="nav-item">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="currentColor">
+          <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4H1z"/>
+        </svg>
+        Calendar
+      </div>
+
+      <div class="nav-item">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="currentColor">
+          <path d="M8 4.754a3.246 3.246 0 1 0 0 6.492 3.246 3.246 0 0 0 0-6.492zM5.754 8a2.246 2.246 0 1 1 4.492 0 2.246 2.246 0 0 1-4.492 0z"/><path d="M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 0 1-1.255.52l-.292-.16c-1.64-.892-3.433.902-2.54 2.541l.159.292a.873.873 0 0 1-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 0 1 .52 1.255l-.16.292c-.892 1.64.901 3.434 2.541 2.54l.292-.159a.873.873 0 0 1 1.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 0 1 1.255-.52l.292.16c1.64.893 3.434-.902 2.54-2.541l-.159-.292a.873.873 0 0 1 .52-1.255l.319-.094c1.79-.527 1.79-3.065 0-3.592l-.319-.094a.873.873 0 0 1-.52-1.255l.16-.292c.893-1.64-.902-3.433-2.541-2.54l-.292.159a.873.873 0 0 1-1.255-.52l-.094-.319z"/>
+        </svg>
+        Settings
+      </div>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="user-card">
+        <div class="avatar av-terracotta">LM</div>
+        <div>
+          <div class="user-name">Lena Müller</div>
+          <div class="user-role">Design Lead</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="main">
+    <header class="topbar">
+      <span class="topbar-title">Warm Craft UI — AIOSON Design Skill Preview</span>
+      <span class="topbar-badge">Serif · Warmth · Rounded</span>
+      <div class="topbar-avatar">LM</div>
+    </header>
+
+    <div class="content">
+
+      <!-- Page header -->
+      <div class="page-header">
+        <h1 class="page-greeting">Good morning, <em>Lena.</em></h1>
+        <p class="page-subtitle">You have 7 tasks in progress and 3 items waiting for your review. It's a good day to ship.</p>
+      </div>
+
+      <!-- Stat cards -->
+      <div class="stats-grid">
+
+        <div class="card stat-card">
+          <div class="stat-icon-row">
+            <div class="stat-icon">✅</div>
+            <div class="stat-trend">+6 this week</div>
+          </div>
+          <div class="stat-number">24</div>
+          <div class="stat-label">Tasks Done</div>
+          <div class="stat-sub">Last completed: <strong>Landing page copy</strong> · 1h ago</div>
+        </div>
+
+        <div class="card stat-card">
+          <div class="stat-icon-row">
+            <div class="stat-icon">🔄</div>
+            <div class="stat-trend warn">3 overdue</div>
+          </div>
+          <div class="stat-number">7</div>
+          <div class="stat-label">In Progress</div>
+          <div class="stat-sub">Oldest active: <strong>API integration</strong> · 4 days</div>
+        </div>
+
+        <div class="card stat-card">
+          <div class="stat-icon-row">
+            <div class="stat-icon">👥</div>
+            <div class="stat-trend">Full capacity</div>
+          </div>
+          <div class="stat-number">12</div>
+          <div class="stat-label">Team Members</div>
+          <div class="stat-sub">Online now: <strong>5 active</strong> · 2 in meetings</div>
+        </div>
+
+      </div>
+
+      <!-- Content grid -->
+      <div class="content-grid">
+
+        <!-- Activity feed -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Team Activity</div>
+              <div class="card-title-sub">Live updates from your workspace</div>
+            </div>
+            <span class="card-link">View all →</span>
+          </div>
+          <div class="feed-list">
+            <div class="feed-item">
+              <div class="feed-avatar av-sage">PK</div>
+              <div class="feed-body">
+                <div class="feed-text"><strong>Petra K.</strong> completed the onboarding flow redesign and marked it ready for dev handoff</div>
+                <div class="feed-meta">
+                  <span class="feed-time">Just now</span>
+                  <span class="feed-tag">Design</span>
+                </div>
+              </div>
+            </div>
+            <div class="feed-item">
+              <div class="feed-avatar av-mustard">TW</div>
+              <div class="feed-body">
+                <div class="feed-text"><strong>Tom W.</strong> added a comment on the Q2 roadmap — requesting a timeline review by Friday</div>
+                <div class="feed-meta">
+                  <span class="feed-time">14 min ago</span>
+                  <span class="feed-tag">Planning</span>
+                </div>
+              </div>
+            </div>
+            <div class="feed-item">
+              <div class="feed-avatar av-slate">AO</div>
+              <div class="feed-body">
+                <div class="feed-text"><strong>Aisha O.</strong> merged the billing module — all 38 tests passing, deploy queued</div>
+                <div class="feed-meta">
+                  <span class="feed-time">1 hour ago</span>
+                  <span class="feed-tag">Engineering</span>
+                </div>
+              </div>
+            </div>
+            <div class="feed-item">
+              <div class="feed-avatar av-terracotta">LM</div>
+              <div class="feed-body">
+                <div class="feed-text"><strong>You</strong> updated the brand guide with new typeface guidelines for mobile screens</div>
+                <div class="feed-meta">
+                  <span class="feed-time">3 hours ago</span>
+                  <span class="feed-tag">Brand</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Settings card -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Workspace</div>
+              <div class="card-title-sub">Preferences</div>
+            </div>
+          </div>
+
+          <div class="setting-row">
+            <div>
+              <div class="setting-label">Email Digests</div>
+              <div class="setting-desc">Daily summary at 08:00</div>
+            </div>
+            <div class="toggle on"></div>
+          </div>
+
+          <div class="setting-row">
+            <div>
+              <div class="setting-label">Slack Notifications</div>
+              <div class="setting-desc">Task updates & mentions</div>
+            </div>
+            <div class="toggle on"></div>
+          </div>
+
+          <div class="setting-row">
+            <div>
+              <div class="setting-label">Auto-assign</div>
+              <div class="setting-desc">Round-robin assignment</div>
+            </div>
+            <div class="toggle off"></div>
+          </div>
+
+          <div class="setting-row">
+            <div>
+              <div class="setting-label">Week starts on</div>
+              <div class="setting-desc">First day of calendar</div>
+            </div>
+            <div class="select-chip">Monday</div>
+          </div>
+
+          <div class="setting-row">
+            <div>
+              <div class="setting-label">Timezone</div>
+              <div class="setting-desc">Display time in</div>
+            </div>
+            <div class="select-chip">UTC+1</div>
+          </div>
+
+          <div class="card-footer">
+            <button class="btn-primary">Save changes</button>
+            <button class="btn-secondary">Cancel</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>
