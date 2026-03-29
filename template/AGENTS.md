@@ -91,6 +91,16 @@ When running Codex directly (without `aioson workflow:next`), these rules apply:
 - @profiler-enricher → `.aioson/agents/profiler-enricher.md`
 - @profiler-forge → `.aioson/agents/profiler-forge.md`
 
+## Process skill: aioson-spec-driven
+
+Located at: `.aioson/skills/process/aioson-spec-driven/SKILL.md`
+
+This is a first-party process skill. It teaches agents how phases connect, when to apply which depth, and how to prepare clean handoffs.
+
+Agents that load it: @product, @analyst, @architect, @sheldon, @dev, @deyvin
+When to load: at the start of any spec work (PRD, requirements, architecture, implementation)
+What to load: `SKILL.md` first, then only the `references/` file relevant to the current phase
+
 ## Session protocol
 If `.aioson/context/spec.md` exists, read it at session start and update it at session end.
 

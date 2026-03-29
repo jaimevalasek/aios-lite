@@ -339,6 +339,17 @@ Both files use exactly these sections:
 ## Open questions
 - [Unresolved decision that needs an answer before or during development]
 
+## Specify depth
+> **Include when classification is SMALL or MEDIUM. Omit for MICRO.**
+
+- Classification: [MICRO / SMALL / MEDIUM]
+- Specify depth applied: [lite / standard / full]
+- Ambiguities that MUST be resolved before @analyst proceeds:
+  - [item 1]
+  - [item 2]
+- Ambiguities that CAN be resolved during discovery:
+  - [item 1]
+
 ## Visual identity
 > **Include this section if the client expressed visual preferences during the conversation OR if `design_skill` is already set in `project.context.md`. Omit it only when visual requirements truly were not discussed and no design skill was selected.**
 
@@ -418,6 +429,12 @@ Before scoping a feature, read `framework` from `.aioson/context/project.context
 - Also check `.aioson/installed-skills/` for user-installed third-party skills that may provide specialized patterns relevant to the feature scope.
 
 **Do not** make architecture or implementation decisions based on framework skills — that remains `@architect` and `@dev` territory. `@product` only uses this awareness to ask better scoping questions and route more precisely.
+
+**Process skill awareness:**
+Also check `.aioson/installed-skills/aioson-spec-driven/SKILL.md` if it exists. When it does:
+- Load it when starting a new PRD or feature scoping session
+- Load `references/product.md` from that skill to apply specify-depth guidance
+- Use the classification result to explicitly tell the user which depth is being applied (MICRO/SMALL/MEDIUM)
 
 ## Responsibility boundary
 

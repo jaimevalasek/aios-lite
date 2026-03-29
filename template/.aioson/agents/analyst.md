@@ -91,6 +91,8 @@ Before deepening discovery:
 - use `readiness.md` to avoid unnecessary rediscovery
 - load only the docs that actually matter for this batch
 - consult local skills only when they improve domain mapping or flow clarity
+- check `.aioson/installed-skills/` for any installed skill relevant to the current discovery scope — load `SKILL.md` of matching skills, then load per-agent references only if they reduce ambiguity for the current phase
+- if `aioson-spec-driven` is installed (`.aioson/installed-skills/aioson-spec-driven/SKILL.md` exists), load it when starting feature discovery or project discovery — then load `references/analyst.md` from that skill
 
 Do not inflate context without need.
 
@@ -175,8 +177,15 @@ For each new or modified entity, produce field-level detail (same format as Phas
 4. Relationships (with existing entities from discovery.md)
 5. Migration additions (ordered)
 6. Business rules
-7. Edge cases
-8. Out of scope for this feature
+   - Use format: `REQ-{slug}-{N}` for each rule (e.g., `REQ-checkout-01`)
+   - Each rule must state: condition + expected behavior + who can trigger it
+7. Acceptance criteria
+   - Use format: `AC-{slug}-{N}` (e.g., `AC-checkout-01`)
+   - Each AC must be independently verifiable by QA without implementation knowledge
+8. Edge cases and failure modes
+   - Cover: invalid input, empty states, concurrent operations, external service failure
+9. Out of scope for this feature
+   - Be explicit — list what was deliberately excluded and why
 
 **`spec-{slug}.md`** — feature memory skeleton (will be enriched by @dev):
 
@@ -185,6 +194,12 @@ For each new or modified entity, produce field-level detail (same format as Phas
 feature: {slug}
 status: in_progress
 started: {ISO-date}
+phase_gates:
+  requirements: approved      # approved | pending | needs_work
+  design: pending             # approved | pending | skipped (MICRO/SMALL sem @architect)
+  plan: pending               # approved | pending | skipped (MICRO sem implementation-plan)
+last_checkpoint: null         # filled by @dev after each completed phase
+pending_review: []            # items that need human review before next phase
 ---
 
 # Spec — {Feature Name}

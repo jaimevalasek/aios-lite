@@ -45,6 +45,14 @@ Estes diretorios sao **opcionais**. Verificar silenciosamente — se ausentes ou
 - `.aioson/plans/*/manifest.md` (se presente — modos B e C)
 - `.aioson/mer/*.md` (se presente — modelos de dados publicados; NUNCA abrir `.json`)
 
+## Skills sob demanda
+
+Antes de iniciar qualquer modo:
+
+- verificar `.aioson/installed-skills/` para skills relevantes ao escopo de enriquecimento atual
+- carregar apenas o que for necessário para a sessão corrente — não inflar contexto
+- se `aioson-spec-driven` estiver instalada (`.aioson/installed-skills/aioson-spec-driven/SKILL.md` existir), carregar ao iniciar enriquecimento — depois carregar `references/sheldon.md` dessa skill
+
 ## Deteccao de modo de operacao (RF-00)
 
 Verificar a mensagem do usuario antes de qualquer outra acao:
@@ -395,6 +403,8 @@ enrichment_rounds: {N}
 plan_path: .aioson/plans/{slug}/manifest.md   # ou null se in-place
 sizing_score: {score}
 sizing_decision: inplace | phased_inplace | phased_external
+readiness: needs_enrichment | ready_for_downstream | needs_work
+readiness_notes: ""   # razão curta se readiness != ready_for_downstream
 ---
 
 # Sheldon Enrichment Log — {Nome do PRD}
@@ -423,14 +433,22 @@ Justificativa: [1 linha]
 
 ## Handoff ao proximo agente (RF-10)
 
-Ao final da sessao (ou quando usuario confirmar que esta satisfeito):
+Ao final da sessão, atualizar o campo `readiness` em `sheldon-enrichment-{slug}.md`:
 
-**Se enriquecimento in-place:**
-> "PRD enriquecido. Proximo passo: ative @analyst."
+- `ready_for_downstream` — todos os gaps críticos resolvidos, ACs verificáveis, sem contradições
+- `needs_work` — há itens bloqueantes que impedem @analyst ou @dev de prosseguir com qualidade
+- `needs_enrichment` — enriquecimento iniciado mas não concluído nesta sessão
 
-**Se plano de fases criado:**
-> "Plano de execucao criado em `.aioson/plans/{slug}/manifest.md`
-> {N} fases definidas. Proximo passo: ative @analyst — ele lera o manifest e a Fase 1 primeiro."
+**Se enriquecimento in-place e readiness = ready_for_downstream:**
+> "PRD enriquecido e spec-hardened. Próximo passo: ative @analyst."
+
+**Se plano de fases criado e readiness = ready_for_downstream:**
+> "Plano de execução criado em `.aioson/plans/{slug}/manifest.md`
+> {N} fases definidas. PRD spec-hardened. Próximo passo: ative @analyst — ele lerá o manifest e a Fase 1 primeiro."
+
+**Se readiness = needs_work:**
+> "Enriquecimento incompleto. {N} itens bloqueantes ainda abertos — ver lista acima.
+> Recomendo resolver antes de ativar @analyst."
 
 ## Modo B: Revisao Global (RF-11)
 

@@ -52,6 +52,14 @@ Preferred immediate handoff:
 
 Do not "just get started" on a large request to be helpful. Narrow first or hand off first.
 
+## Skills sob demanda
+
+Antes de iniciar qualquer lote de trabalho:
+
+- verificar `.aioson/installed-skills/` para skills relevantes ao escopo atual
+- se `aioson-spec-driven` estiver instalada (`.aioson/installed-skills/aioson-spec-driven/SKILL.md` existir), carregar ao retomar trabalho em feature ou projeto — depois carregar `references/deyvin.md` dessa skill
+- verificar `phase_gates` no frontmatter de `spec-{slug}.md` para saber quais fases já foram aprovadas antes de avançar
+
 ## Session start order
 
 At session start, build context in this order before touching code:
@@ -70,6 +78,15 @@ At session start, build context in this order before touching code:
 12. Use Git only as a fallback when memory + runtime + rules/docs are not enough
 
 If the user asks "what did we do yesterday?" or "where did we stop?", answer from memory and runtime first. Go to Git only if those sources are insufficient.
+
+### Sequência de leitura para retomada (spec-driven)
+
+1. `spec-{slug}.md` — ler `phase_gates` e `last_checkpoint` no frontmatter primeiro
+2. `implementation-plan-{slug}.md` — identificar qual fase estava em progresso e qual o critério de done
+3. `spec.md` — convenções e padrões do projeto (se presente)
+4. Ler apenas o que o `last_checkpoint` indica como próximo — não reler tudo
+
+Nunca reiniciar pesquisa ou redescoberta se `last_checkpoint` e `phase_gates` já indicam o estado atual.
 
 ## Brownfield guardrails
 

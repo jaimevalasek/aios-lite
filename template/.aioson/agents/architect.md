@@ -35,6 +35,15 @@ For existing codebases:
 - If `discovery.md` is missing but local scan artifacts exist, do not architect directly from the raw scan maps. Route through `@analyst` first.
 - If neither `discovery.md` nor local scan artifacts exist, ask for the local scanner before continuing.
 
+## Skills and docs on demand
+
+Before producing architecture:
+
+- check `.aioson/installed-skills/` for any installed skill relevant to the current stack or architecture scope
+- load only the docs that actually matter for this batch — do not inflate context
+- if `aioson-spec-driven` is installed (`.aioson/installed-skills/aioson-spec-driven/SKILL.md` exists), load it when starting architecture work — then load `references/architect.md` from that skill
+- also check `.aioson/skills/static/` for framework patterns matching `framework` from `project.context.md`
+
 ## Rules
 - Do not redesign entities produced by `@analyst`. Consume the data design as-is.
 - Keep architecture proportional to classification. Never apply MEDIUM patterns to a MICRO project.
@@ -217,6 +226,7 @@ Generate `.aioson/context/architecture.md` with:
 6. **Cross-cutting concerns** — auth, validation, logging, error handling decisions
 7. **Implementation sequence for `@dev`** — order in which modules should be built
 8. **Explicit non-goals/deferred items** — what was deliberately excluded and why
+9. **Decision rationale** — for each non-obvious architectural choice, one line explaining *why* this approach reduces future debugging or maintenance cost (not just *what* was decided). Format: `Decision: [what] — Reason: [why this protects long-term quality]`
 
 When frontend quality is important, add a handoff section for `@ux-ui` covering:
 - Key screens
@@ -232,6 +242,7 @@ Keep architecture.md proportional — verbose output costs tokens without adding
 > **`.aioson/context/` rule:** this folder accepts only `.md` files. Never write `.html`, `.css`, `.js`, or any other non-markdown file inside `.aioson/`.
 
 ## Hard constraints
+- After writing `architecture.md`, add a closing line to the file: `> **Gate B:** Architecture approved — @dev can proceed with implementation plan.` Only write this line after confirming with the user that the architecture is ready. If the user wants changes, resolve them first.
 - Use `conversation_language` from project context for all interaction and output.
 - Ensure output can be executed directly by `@dev` without ambiguity.
 - Do not introduce patterns that do not exist in the chosen stack's conventions.

@@ -340,6 +340,8 @@ For `project_type=dapp`, also load the matching Web3 skills:
 - Enforce server-side validation and authorization.
 - Reuse project skills in `.aioson/skills/static` and `.aioson/skills/dynamic`. For `.aioson/skills/design`, load only the skill explicitly named in `design_skill` — never load other design skills from that folder.
 - Check `.aioson/installed-skills/` for user-installed third-party skills. Each subfolder has a `SKILL.md` with frontmatter describing when to use it. Load on-demand when the task matches the skill's description — do not load all installed skills at once.
+- if `aioson-spec-driven` exists in `installed-skills/` OR in `.aioson/skills/process/`, load `SKILL.md` when starting work on a feature that has `prd-{slug}.md` — then load `references/dev.md` from that skill
+- check `phase_gates` in `spec-{slug}.md` frontmatter before starting — if `plan: pending` and classification is SMALL/MEDIUM, suggest creating an implementation plan before proceeding
 - Also reuse squad-installed skills in `.aioson/squads/{squad-slug}/skills/` when the task belongs to a squad package.
 - Load detailed skills and documents on demand, not all at once.
 - Decide the minimum context package for the current implementation batch before coding.
