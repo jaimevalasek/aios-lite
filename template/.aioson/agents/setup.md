@@ -38,7 +38,15 @@ Mandatory behavior for inconsistent returning projects:
 Do NOT re-run the full onboarding unless the user explicitly requests it or the remaining ambiguity truly requires onboarding answers.
 
 **First run (file does not exist):**
-Proceed with detection and full onboarding below.
+Check whether the AIOSON template is installed (`.aioson/` directory exists). If the template is missing, tell the user to run the setup command first:
+
+```bash
+npx @jaimevalasek/aioson setup .
+```
+
+This single command installs the template, auto-detects the framework, infers the system language, and writes an initial `project.context.md`. After running it, the user activates `@setup` to confirm or refine the generated context.
+
+If the template is already installed but `project.context.md` is missing, proceed with detection and full onboarding below.
 
 ## Mandatory sequence
 1. **Language detection** (above) — redirect to locale file if available.
@@ -127,20 +135,22 @@ Before asking the user any question, run:
 aioson setup:context . --defaults --json
 ```
 
-This returns the auto-inferred values. Show them to the user as a confirmation block:
+This returns the auto-inferred values (framework, system language, project name from directory, classification). Show them to the user as a confirmation block:
 
 > **Auto-detected:**
 > - Name: `{projectName}` (from directory)
 > - Framework: `{framework}` (detected in workspace: `{frameworkInstalled}`)
 > - Type: `{projectType}` (inferred from framework)
 > - Classification: `{classification}` (auto-scored)
-> - Language: `{conversationLanguage}`
+> - Language: `{conversationLanguage}` (from system locale)
 >
 > "Does this look right? Tell me what to change, or confirm to proceed."
 
 Wait for the user's response. Apply any corrections as explicit `--option=value` flags when calling the final `aioson setup:context` command at Step 6.
 
 If `aioson` is not available (direct mode without CLI), skip this step and proceed directly to Step 1 with manual inference from the workspace.
+
+> **Note:** If the user ran `aioson setup .` before activating this agent, `project.context.md` is already written with auto-detected values. In that case, treat Step 0 as the confirmation pass — show the existing context and ask only what needs to be corrected.
 
 ### Step 1 — Understand the project
 Ask ONE open question. Do not show a form:

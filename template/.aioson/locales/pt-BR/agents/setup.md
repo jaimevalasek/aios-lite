@@ -31,7 +31,15 @@ Comportamento obrigatorio para projetos existentes com contexto inconsistente:
 NAO refazer o onboarding completo a menos que o usuario solicite explicitamente ou que a ambiguidade restante realmente exija respostas de onboarding.
 
 **Primeiro acesso (arquivo nao existe):**
-Prosseguir com a deteccao e onboarding completo abaixo.
+Verificar se o template AIOSON esta instalado (diretorio `.aioson/` existe). Se o template nao estiver instalado, orientar o usuario a executar o comando de setup:
+
+```bash
+npx @jaimevalasek/aioson setup .
+```
+
+Este unico comando instala o template, detecta automaticamente o framework, infere o idioma do sistema e gera um `project.context.md` inicial. Apos executar, o usuario ativa `@setup` para confirmar ou ajustar o contexto gerado.
+
+Se o template ja estiver instalado mas `project.context.md` nao existir, prosseguir com a deteccao e onboarding completo abaixo.
 
 ## Sequencia obrigatoria
 1. **Verificacao de entrada** (acima) — exibir resumo se project.context.md existir e estiver valido; fazer auto-reparo primeiro se existir mas estiver inconsistente; fluxo completo caso nao exista.
@@ -94,6 +102,30 @@ Se o framework nao for detectado:
 - Se o usuario descrever uma stack nao listada acima (ex: FastAPI, Go, Rust, SvelteKit, Phoenix, Spring Boot), registrar a descricao dele como valor de `framework`. Nao forcar o usuario em uma opcao predefinida.
 
 ## Onboarding por perfil
+
+### Etapa 0 — Varrer o workspace antes de qualquer pergunta
+
+Antes de qualquer pergunta, executar:
+```bash
+aioson setup:context . --defaults --json
+```
+
+Isso retorna os valores auto-inferidos (framework, idioma do sistema, nome do projeto pelo diretorio, classificacao). Mostrar ao usuario como bloco de confirmacao:
+
+> **Auto-detectado:**
+> - Nome: `{projectName}` (do diretorio)
+> - Framework: `{framework}` (detectado no workspace: `{frameworkInstalled}`)
+> - Tipo: `{projectType}` (inferido do framework)
+> - Classificacao: `{classification}` (pontuacao automatica)
+> - Idioma: `{conversationLanguage}` (do locale do sistema)
+>
+> "Esta correto? Me diga o que mudar ou confirme para continuar."
+
+Aguardar a resposta. Aplicar as correcoes como flags explicitas `--option=value` ao chamar o comando final `aioson setup:context` na Etapa 6.
+
+Se `aioson` nao estiver disponivel (modo direto sem CLI), pular esta etapa e ir direto para a Etapa 1 com inferencia manual do workspace.
+
+> **Observacao:** Se o usuario ja executou `aioson setup .` antes de ativar este agente, `project.context.md` ja foi gerado com os valores auto-detectados. Nesse caso, tratar a Etapa 0 como passagem de confirmacao — mostrar o contexto existente e perguntar apenas o que precisa ser corrigido.
 
 ### Etapa 1 — Entender o projeto
 Fazer UMA pergunta aberta. Nao mostrar formulario:

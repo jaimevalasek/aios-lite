@@ -5,6 +5,7 @@ const { parseArgv } = require('./parser');
 const { createTranslator, normalizeLocale } = require('./i18n');
 const { runInit } = require('./commands/init');
 const { runInstall } = require('./commands/install');
+const { runSetup } = require('./commands/setup');
 const { runUpdate } = require('./commands/update');
 const { runInfo } = require('./commands/info');
 const { runDoctorCommand } = require('./commands/doctor');
@@ -113,6 +114,7 @@ const { runBackupLocal } = require('./commands/backup-local-cmd');
 const JSON_SUPPORTED_COMMANDS = new Set([
   'init',
   'install',
+  'setup',
   'update',
   'i18n:add',
   'i18n-add',
@@ -354,6 +356,7 @@ function printHelp(t, logger) {
   logger.log(t('cli.usage'));
   logHelpLine(t, logger, 'cli.help_init');
   logHelpLine(t, logger, 'cli.help_install');
+  logHelpLine(t, logger, 'cli.help_setup');
   logHelpLine(t, logger, 'cli.help_update');
   logHelpLine(t, logger, 'cli.help_info');
   logHelpLine(t, logger, 'cli.help_doctor');
@@ -489,6 +492,8 @@ async function main() {
 
     if (command === 'init') {
       result = await runInit({ args, options, logger: commandLogger, t });
+    } else if (command === 'setup') {
+      result = await runSetup({ args, options, logger: commandLogger, t });
     } else if (command === 'install') {
       result = await runInstall({ args, options, logger: commandLogger, t });
     } else if (command === 'update') {

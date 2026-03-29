@@ -10,6 +10,8 @@ module.exports = {
       'aioson init <project-name> [--force] [--dry-run] [--lang=en|pt-BR|es|fr] [--tool=codex|claude|gemini|opencode] [--locale=en]',
     help_install:
       'aioson install [path] [--force] [--dry-run] [--lang=en|pt-BR|es|fr] [--tool=codex|claude|gemini|opencode] [--locale=en]',
+    help_setup:
+      'aioson setup [path] [--defaults] [--framework=<name>] [--lang=en|pt-BR|es|fr] [--project-name=<name>] [--force] [--dry-run] [--tool=codex|claude|gemini|opencode] [--locale=en]',
     help_update: 'aioson update [path] [--dry-run] [--lang=en|pt-BR|es|fr] [--locale=en]',
     help_info: 'aioson info [path] [--json] [--locale=en]',
     help_doctor: 'aioson doctor [path] [--fix] [--dry-run] [--json] [--locale=en]',
@@ -337,6 +339,22 @@ module.exports = {
     selected_title: 'Files included in the pack:',
     selected_line: '  {index}. {path} — {reason}',
     hint_use: 'Use {path} as the minimum starting context in your AI session.'
+  },
+  setup: {
+    installing: 'Installing AIOSON template...',
+    installed: 'Template installed ({count} files).',
+    no_framework_detected: 'No framework detected in this directory (greenfield project).',
+    framework_detected: 'Detected framework: {framework} (installed={installed})',
+    writing_context: 'Writing project context...',
+    done: 'Setup complete.',
+    step_agents: '  Next: open your AI client and activate @setup to confirm or refine the context.',
+    step_agent_prompt: '  Or run: aioson agent:prompt setup . --tool={tool}',
+    q_project_name: 'Project name',
+    q_framework: 'Main framework / stack (e.g. Python, Node, Laravel, Django)',
+    q_lang: 'Language for agent responses (e.g. en, pt-BR, es, fr)',
+    q_confirm_framework: 'Use detected framework? (true/false)',
+    q_override_framework: 'Framework',
+    q_framework_installed: 'Framework installed? (true/false)'
   },
   setup_context: {
     detected: 'Detected framework: {framework} (installed={installed})',

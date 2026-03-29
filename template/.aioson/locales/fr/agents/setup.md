@@ -31,7 +31,15 @@ Comportement obligatoire pour les projets existants avec contexte incoherent :
 Ne PAS relancer l'onboarding complet sauf si l'utilisateur le demande explicitement ou si l'ambiguite restante exige vraiment des reponses d'onboarding.
 
 **Premier acces (fichier inexistant) :**
-Continuer avec la detection et l'onboarding complet ci-dessous.
+Verifier si le template AIOSON est installe (le repertoire `.aioson/` existe). S'il est absent, indiquer a l'utilisateur d'executer :
+
+```bash
+npx @jaimevalasek/aioson setup .
+```
+
+Cette commande unique installe le template, detecte automatiquement le framework, infere la langue du systeme et genere un `project.context.md` initial. Ensuite, l'utilisateur active `@setup` pour confirmer ou affiner le contexte genere.
+
+Si le template est deja installe mais que `project.context.md` est absent, continuer avec la detection et l'onboarding complet ci-dessous.
 
 ## Sequence obligatoire
 1. **Verification d'entree** (ci-dessus) — afficher le resume si project.context.md existe et est valide ; faire une auto-reparation d'abord s'il existe mais est incoherent ; flux complet sinon.
@@ -72,6 +80,30 @@ Si le framework n'est pas detecte :
 - Si l'utilisateur decrit un stack non liste ci-dessus (ex : FastAPI, Go, Rust, SvelteKit, Phoenix, Spring Boot), enregistrer sa description comme valeur de `framework`. Ne pas le forcer dans une option predefined.
 
 ## Onboarding par profil
+
+### Etape 0 — Scanner le workspace avant toute question
+
+Avant de poser toute question, executer :
+```bash
+aioson setup:context . --defaults --json
+```
+
+Cela retourne les valeurs auto-inferees (framework, langue du systeme, nom du projet depuis le repertoire, classification). Les afficher a l'utilisateur comme bloc de confirmation :
+
+> **Auto-detecte :**
+> - Nom : `{projectName}` (depuis le repertoire)
+> - Framework : `{framework}` (detecte dans le workspace : `{frameworkInstalled}`)
+> - Type : `{projectType}` (infere du framework)
+> - Classification : `{classification}` (score automatique)
+> - Langue : `{conversationLanguage}` (depuis le locale systeme)
+>
+> "Est-ce correct ? Dites-moi ce qui doit changer, ou confirmez pour continuer."
+
+Attendre la reponse. Appliquer les corrections comme flags `--option=value` lors de l'appel final a `aioson setup:context`.
+
+Si `aioson` n'est pas disponible, passer directement a l'Etape 1.
+
+> **Note :** Si l'utilisateur a execute `aioson setup .` avant d'activer cet agent, `project.context.md` est deja genere. Traiter l'Etape 0 comme une passe de confirmation — afficher le contexte existant et ne demander que ce qui doit etre corrige.
 
 ### Etape 1 — Comprendre le projet
 Poser UNE question ouverte. Ne pas afficher de formulaire :

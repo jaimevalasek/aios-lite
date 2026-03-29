@@ -3,6 +3,25 @@
 const path = require('node:path');
 const readline = require('node:readline/promises');
 const { detectFramework, isMonorepoDetection } = require('../detector');
+
+/**
+ * Infer conversation language from the OS locale environment variables.
+ * Supports LANGUAGE, LANG, and LC_ALL in priority order.
+ * Maps POSIX locale codes (e.g. pt_BR.UTF-8) to AIOSON locale codes (e.g. pt-BR).
+ */
+function detectSystemLanguage() {
+  const raw = process.env.LANGUAGE || process.env.LANG || process.env.LC_ALL || '';
+  const base = raw.split(':')[0].split('.')[0].trim();
+  if (!base || base === 'C' || base === 'POSIX') return 'en';
+  const normalized = base.replace('_', '-');
+  const supported = ['en', 'pt-BR', 'es', 'fr'];
+  if (supported.includes(normalized)) return normalized;
+  const lang = normalized.split('-')[0].toLowerCase();
+  if (lang === 'pt') return 'pt-BR';
+  if (lang === 'es') return 'es';
+  if (lang === 'fr') return 'fr';
+  return 'en';
+}
 const { getCliVersionSync } = require('../version');
 const {
   calculateClassification,
@@ -469,7 +488,7 @@ async function runSetupContext({ args, options, logger, t }) {
     profile: 'developer',
     framework: detectedFramework,
     frameworkInstalled: detectedInstalled,
-    conversationLanguage: 'en',
+    conversationLanguage: detectSystemLanguage(),
     designSkill: '',
     testRunner: '',
     web3Enabled: inferredWeb3Enabled,
@@ -674,5 +693,6 @@ module.exports = {
   runSetupContext,
   servicesToContextFields,
   mergeProfileData,
-  applyExplicitOverrides
+  applyExplicitOverrides,
+  detectSystemLanguage
 };

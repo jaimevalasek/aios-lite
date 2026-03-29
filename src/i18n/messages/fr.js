@@ -10,6 +10,8 @@ module.exports = {
       'aioson init <project-name> [--force] [--dry-run] [--lang=en|pt-BR|es|fr] [--tool=codex|claude|gemini|opencode] [--locale=fr]',
     help_install:
       'aioson install [path] [--force] [--dry-run] [--lang=en|pt-BR|es|fr] [--tool=codex|claude|gemini|opencode] [--locale=fr]',
+    help_setup:
+      'aioson setup [path] [--defaults] [--framework=<nom>] [--lang=en|pt-BR|es|fr] [--project-name=<nom>] [--force] [--dry-run] [--tool=codex|claude|gemini|opencode] [--locale=fr]',
     help_update:
       'aioson update [path] [--dry-run] [--lang=en|pt-BR|es|fr] [--locale=fr]',
     help_info: 'aioson info [path] [--json] [--locale=fr]',
@@ -263,6 +265,22 @@ module.exports = {
     selected_title: 'Fichiers inclus dans le pack :',
     selected_line: '  {index}. {path} — {reason}',
     hint_use: 'Utilisez {path} comme contexte minimal de depart dans votre session IA.'
+  },
+  setup: {
+    installing: 'Installation du template AIOSON...',
+    installed: 'Template installe ({count} fichiers).',
+    no_framework_detected: 'Aucun framework detecte dans ce repertoire (projet vierge).',
+    framework_detected: 'Framework detecte : {framework} (installe={installed})',
+    writing_context: 'Ecriture du contexte du projet...',
+    done: 'Setup termine.',
+    step_agents: '  Etape suivante : ouvrez votre client IA et activez @setup pour confirmer ou ajuster le contexte.',
+    step_agent_prompt: '  Ou executez : aioson agent:prompt setup . --tool={tool}',
+    q_project_name: 'Nom du projet',
+    q_framework: 'Framework / stack principal (ex : Python, Node, Laravel, Django)',
+    q_lang: 'Langue pour les reponses des agents (ex : en, pt-BR, es, fr)',
+    q_confirm_framework: 'Utiliser le framework detecte ? (true/false)',
+    q_override_framework: 'Framework',
+    q_framework_installed: 'Framework installe ? (true/false)'
   },
   setup_context: {
     detected: 'Framework detecte : {framework} (installed={installed})',
