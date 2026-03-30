@@ -15,8 +15,15 @@
 ### Novo projeto (recomendado)
 
 ```bash
+npx @jaimevalasek/aioson init meu-projeto
+cd meu-projeto
+```
+
+Se voce preferir criar a pasta manualmente antes, use `install` dentro dela:
+
+```bash
 mkdir meu-projeto && cd meu-projeto
-npx @jaimevalasek/aioson init
+npx @jaimevalasek/aioson install .
 ```
 
 ### Projeto existente
