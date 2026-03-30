@@ -25,6 +25,21 @@ Ranges:
 - 2-3: SMALL
 - 4-6: MEDIUM
 
+## Context budget warning
+
+Configuração: `context_warning_threshold` (padrão: 65%)
+
+| Classificação | Threshold recomendado |
+|---------------|-----------------------|
+| MICRO | 75% (fases curtas, ok chegar mais alto) |
+| SMALL | 65% (padrão) |
+| MEDIUM | 55% (fases longas, aviso mais cedo) |
+
+Quando o agente perceber que está próximo do threshold:
+1. Escrever todos os artefatos em progresso (disk‑first)
+2. Emitir aviso: "⚠ Contexto em {X}% — recomendo `/clear` antes da próxima fase"
+3. Incluir no `last_checkpoint` o que estava sendo feito
+
 ## Context contract
 `project.context.md` must contain YAML frontmatter with:
 - `project_name`
