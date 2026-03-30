@@ -12,18 +12,18 @@
 
 ## 1. Instalação
 
+Ao rodar o `init` ou `install`, um **wizard interativo** aparece para você escolher:
+
+1. **Quais ferramentas AI** usar (Claude Code, Codex, Gemini, OpenCode)
+2. **Qual modo** (Development ou Development + Squads)
+
+Só os arquivos relevantes são copiados. Nenhuma dependência extra é instalada.
+
 ### Novo projeto (recomendado)
 
 ```bash
 npx @jaimevalasek/aioson init meu-projeto
 cd meu-projeto
-```
-
-Se voce preferir criar a pasta manualmente antes, use `install` dentro dela:
-
-```bash
-mkdir meu-projeto && cd meu-projeto
-npx @jaimevalasek/aioson install .
 ```
 
 ### Projeto existente
@@ -33,7 +33,29 @@ cd meu-projeto
 npx @jaimevalasek/aioson install
 ```
 
-Isso cria a pasta `.aioson/` com todos os arquivos de configuração, agentes e contexto.
+### Re-configurar depois
+
+Se precisar adicionar uma ferramenta ou ativar Squads depois:
+
+```bash
+npx @jaimevalasek/aioson install --reconfigure
+```
+
+### CI / automação (sem wizard)
+
+```bash
+npx @jaimevalasek/aioson install --no-interactive
+```
+
+Instala todos os arquivos sem perguntar (comportamento padrão antes do wizard).
+
+### Atualizar para nova versão
+
+```bash
+npx @jaimevalasek/aioson update
+```
+
+O update respeita o perfil salvo — só atualiza os arquivos que foram instalados originalmente.
 
 Se o projeto já for brownfield e você quiser gerar um panorama inicial da base, rode depois:
 

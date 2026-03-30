@@ -5,6 +5,9 @@ const path = require('node:path');
 const { installTemplate } = require('../installer');
 const { applyAgentLocale } = require('../locales');
 const { resolvePromptTool } = require('../prompt-tool');
+const { runInstallWizard } = require('../install-wizard');
+const { renderRevealAnimation, renderInstallSummary, renderProgress } = require('../install-animation');
+const { getCliVersion } = require('../version');
 
 async function directoryIsEmpty(dirPath) {
   try {
@@ -25,6 +28,7 @@ async function runInit({ args, options, logger, t }) {
   const targetDir = path.resolve(process.cwd(), projectName);
   const force = Boolean(options.force);
   const dryRun = Boolean(options['dry-run']);
+  const noInteractive = Boolean(options['no-interactive']);
   const requestedLanguage = options.lang || options.language;
   const promptTool = resolvePromptTool(options.tool);
 
@@ -34,10 +38,21 @@ async function runInit({ args, options, logger, t }) {
     throw new Error(t('init.non_empty_dir', { targetDir }));
   }
 
+  // Run wizard for new projects (TTY only)
+  const isTTY = process.stdin.isTTY && process.stdout.isTTY;
+  let installProfile = null;
+
+  if (!noInteractive && !dryRun && isTTY) {
+    installProfile = await runInstallWizard({ noInteractive });
+    // null = user cancelled → fall back to full install
+  }
+
   const result = await installTemplate(targetDir, {
     overwrite: true,
     dryRun,
-    mode: 'init'
+    mode: 'init',
+    installProfile,
+    onProgress: isTTY && !dryRun ? renderProgress : null
   });
 
   let localeApply = null;
@@ -50,22 +65,32 @@ async function runInit({ args, options, logger, t }) {
     }
   }
 
-  logger.log(t('init.created_at', { targetDir }));
-  logger.log(t('init.files_copied', { count: result.copied.length }));
-  if (result.skipped.length > 0) {
-    logger.log(t('init.files_skipped', { count: result.skipped.length }));
+  // Reveal animation + summary (TTY only, not dry-run)
+  if (isTTY && !dryRun) {
+    const version = await getCliVersion();
+    await renderRevealAnimation(version);
+    renderInstallSummary({ result, installProfile });
+    logger.log('');
+    logger.log(t('init.step_cd', { projectName }));
+  } else {
+    logger.log(t('init.created_at', { targetDir }));
+    logger.log(t('init.files_copied', { count: result.copied.length }));
+    if (result.skipped.length > 0) {
+      logger.log(t('init.files_skipped', { count: result.skipped.length }));
+    }
+    logger.log(t('init.next_steps'));
+    logger.log(t('init.step_cd', { projectName }));
+    logger.log(t('init.step_setup'));
+    logger.log(t('init.step_agents'));
+    logger.log(t('init.step_agent_prompt', { tool: promptTool }));
   }
-  logger.log(t('init.next_steps'));
-  logger.log(t('init.step_cd', { projectName }));
-  logger.log(t('init.step_setup'));
-  logger.log(t('init.step_agents'));
-  logger.log(t('init.step_agent_prompt', { tool: promptTool }));
 
   return {
     ok: true,
     targetDir,
     ...result,
-    localeApply
+    localeApply,
+    installProfile
   };
 }
 

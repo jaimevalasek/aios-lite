@@ -6,39 +6,50 @@ Complete reference for all `aioson` commands.
 
 ## init
 
-Create a new project directory and install AIOSON inside it.
+Create a new project directory and install AIOSON inside it. In interactive terminals, an **install wizard** runs first so you choose which AI tools and modes to install.
 
 ```bash
 aioson init <project-name>
 aioson init my-app --lang=pt-BR
 aioson init my-app --tool=codex
-aioson init my-app --lang=es --tool=gemini --json
+aioson init my-app --no-interactive
 ```
 
 **Options:**
 - `--lang=en|pt-BR|es|fr` — sets `conversation_language` in the generated context and applies the matching agent locale pack. Default: `en`.
 - `--tool=codex|claude|gemini|opencode` — configures the primary AI client. Affects which gateway file is used. Default: `codex`.
+- `--no-interactive` — skip the wizard and install all files (CI / automation).
 - `--json` — prints structured JSON result instead of human-readable output.
 
 **What it does:**
 1. Creates `<project-name>/` directory.
-2. Copies all template files into it.
-3. Applies the selected locale pack.
-4. Prints the recommended first command (`@setup`).
+2. Runs the install wizard (tools + mode selection).
+3. Copies only the files matching your profile.
+4. Shows the AIOSON reveal animation and install summary.
+5. Applies the selected locale pack.
 
 ---
 
 ## install
 
-Install AIOSON in an existing directory (or the current directory).
+Install AIOSON in an existing directory (or the current directory). Runs the same wizard as `init` when in a TTY.
 
 ```bash
 aioson install
 aioson install ./my-project
 aioson install --lang=pt-BR --tool=claude
+aioson install --reconfigure
+aioson install --no-interactive
 ```
 
-**Options:** same as `init`.
+**Options:**
+- `--lang=en|pt-BR|es|fr` — sets locale pack.
+- `--tool=codex|claude|gemini|opencode` — configures AI client.
+- `--reconfigure` — re-run the wizard even if a profile already exists (e.g. to add Gemini later).
+- `--no-interactive` — skip the wizard and install all files.
+- `--force` — overwrite existing files.
+- `--dry-run` — preview without writing.
+- `--json` — prints structured JSON result.
 
 **Use this when:**
 - The project already exists (legacy codebase, existing repo).
@@ -48,7 +59,7 @@ aioson install --lang=pt-BR --tool=claude
 
 ## update
 
-Update managed files to the latest template version. Preserves context files and anything not in the managed file list.
+Update managed files to the latest template version. Respects the saved install profile — only updates files that were originally installed.
 
 ```bash
 aioson update
@@ -60,7 +71,7 @@ aioson update --lang=pt-BR
 - `--lang=en|pt-BR|es|fr` — re-applies the locale pack after updating. If omitted, re-applies whatever locale is currently active.
 - `--json` — prints structured JSON result.
 
-**What it updates:** all files in the `MANAGED_FILES` list (agents, config, gateway files, skills). Does not touch `project.context.md`, `discovery.md`, `architecture.md`, or other context files you created.
+**What it updates:** all files in the `MANAGED_FILES` list that match your install profile (agents, config, gateway files, skills). Does not touch `project.context.md`, `discovery.md`, `architecture.md`, or other context files you created.
 
 ---
 
