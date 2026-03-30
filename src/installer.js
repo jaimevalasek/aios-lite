@@ -6,6 +6,7 @@ const { MANAGED_FILES } = require('./constants');
 const { getCliVersion } = require('./version');
 const { exists, ensureDir, copyFileWithDir, nowStamp, toRelativeSafe } = require('./utils');
 const { ensureProjectRuntime } = require('./execution-gateway');
+const { shouldIncludeForProfile } = require('./install-profile');
 
 const ROOT_DIR = path.join(__dirname, '..');
 const TEMPLATE_DIR = path.join(ROOT_DIR, 'template');
@@ -121,17 +122,21 @@ async function listFilesRecursive(dir) {
   return out;
 }
 
-function shouldSkipTemplatePath(rel) {
+function shouldSkipTemplatePath(rel, profile = null) {
   if (rel.startsWith('.aioson/context/')) return true;
   if (rel === '.aioson/context/.gitkeep') return false;
   // Never overwrite user-installed skills (only the .gitkeep is created)
   if (rel.startsWith('.aioson/installed-skills/') && rel !== '.aioson/installed-skills/.gitkeep') return true;
   // Never overwrite custom agents (only the .gitkeep is created)
   if (rel.startsWith('.aioson/my-agents/') && rel !== '.aioson/my-agents/.gitkeep') return true;
+
+  // Profile-based filtering
+  if (profile && !shouldIncludeForProfile(rel, profile)) return true;
+
   return false;
 }
 
-async function writeInstallMetadata(targetDir, action, frameworkDetection) {
+async function writeInstallMetadata(targetDir, action, frameworkDetection, installProfile) {
   const metaPath = path.join(targetDir, '.aioson/install.json');
   await ensureDir(path.dirname(metaPath));
   const existing = (await exists(metaPath)) ? JSON.parse(await fs.readFile(metaPath, 'utf8')) : {};
@@ -143,10 +148,22 @@ async function writeInstallMetadata(targetDir, action, frameworkDetection) {
     template_version: version,
     last_action: action,
     last_action_at: new Date().toISOString(),
-    framework_detected: frameworkDetection || existing.framework_detected || null
+    framework_detected: frameworkDetection || existing.framework_detected || null,
+    install_profile: installProfile || existing.install_profile || null
   };
 
   await fs.writeFile(metaPath, `${JSON.stringify(data, null, 2)}\n`, 'utf8');
+}
+
+async function readInstallProfile(targetDir) {
+  const metaPath = path.join(targetDir, '.aioson/install.json');
+  if (!(await exists(metaPath))) return null;
+  try {
+    const data = JSON.parse(await fs.readFile(metaPath, 'utf8'));
+    return data.install_profile || null;
+  } catch {
+    return null;
+  }
 }
 
 async function backupManagedFile(targetDir, relPath, backupRoot) {
@@ -164,7 +181,9 @@ async function installTemplate(targetDir, options = {}) {
     dryRun = false,
     mode = 'install',
     backupOnOverwrite = mode === 'update',
-    frameworkDetection = null
+    frameworkDetection = null,
+    installProfile = null,
+    onProgress = null
   } = options;
 
   await ensureDir(targetDir);
@@ -183,8 +202,8 @@ async function installTemplate(targetDir, options = {}) {
 
   for (const absPath of templateFiles) {
     const rel = toRelativeSafe(TEMPLATE_DIR, absPath);
-    if (shouldSkipTemplatePath(rel)) {
-      skipped.push({ path: rel, reason: 'context-protected' });
+    if (shouldSkipTemplatePath(rel, installProfile)) {
+      skipped.push({ path: rel, reason: installProfile && rel !== '.aioson/context/.gitkeep' ? 'not-in-profile' : 'context-protected' });
       continue;
     }
 
@@ -215,6 +234,10 @@ async function installTemplate(targetDir, options = {}) {
     }
 
     copied.push(rel);
+
+    if (onProgress) {
+      onProgress({ copied: copied.length, total: templateFiles.length, file: rel });
+    }
   }
 
   if (!dryRun) {
@@ -225,7 +248,7 @@ async function installTemplate(targetDir, options = {}) {
       await fs.writeFile(gitkeep, '', 'utf8');
     }
 
-    await writeInstallMetadata(targetDir, mode, frameworkDetection);
+    await writeInstallMetadata(targetDir, mode, frameworkDetection, installProfile);
 
     await ensureProjectGitignorePolicy(targetDir);
 
@@ -252,6 +275,7 @@ module.exports = {
   TEMPLATE_DIR,
   detectExistingInstall,
   installTemplate,
+  readInstallProfile,
   listFilesRecursive,
   ensureGitignoreEntry,
   ensureGitignoreEntries,

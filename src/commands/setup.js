@@ -2,12 +2,13 @@
 
 const path = require('node:path');
 const readline = require('node:readline/promises');
-const { installTemplate } = require('../installer');
+const { installTemplate, readInstallProfile } = require('../installer');
 const { detectFramework } = require('../detector');
 const { detectSystemLanguage } = require('./setup-context');
 const { runSetupContext } = require('./setup-context');
 const { resolvePromptTool } = require('../prompt-tool');
 const { normalizeBoolean } = require('../context-writer');
+const { runInstallWizard } = require('../install-wizard');
 
 async function ask(rl, question, fallback = '') {
   const suffix = fallback ? ` (${fallback})` : '';
@@ -24,16 +25,30 @@ async function runSetup({ args, options, logger, t }) {
   const defaultsMode = Boolean(options.defaults);
   const promptTool = resolvePromptTool(options.tool);
 
-  // Step 1 — install template
+  // Step 1 — detect install profile (wizard if first time in TTY)
+  const isTTY = process.stdin.isTTY && process.stdout.isTTY;
+  let installProfile = null;
+
+  if (!dryRun && isTTY) {
+    const existingProfile = await readInstallProfile(targetDir);
+    if (!existingProfile) {
+      installProfile = await runInstallWizard({});
+    } else {
+      installProfile = existingProfile;
+    }
+  }
+
+  // Step 2 — install template
   logger.log(t('setup.installing'));
   const installResult = await installTemplate(targetDir, {
     overwrite: force,
     dryRun,
-    mode: 'install'
+    mode: 'install',
+    installProfile
   });
   logger.log(t('setup.installed', { count: installResult.copied.length }));
 
-  // Step 2 — detect framework and system language
+  // Step 3 — detect framework and system language
   const detection = await detectFramework(targetDir);
   const detectedFramework = detection.framework;
   const detectedInstalled = detection.installed;
@@ -135,7 +150,7 @@ async function runSetup({ args, options, logger, t }) {
     }
   }
 
-  // Step 3 — run setup:context with fully resolved options
+  // Step 4 — run setup:context with fully resolved options
   logger.log(t('setup.writing_context'));
   const contextResult = await runSetupContext({
     args: [targetDir],

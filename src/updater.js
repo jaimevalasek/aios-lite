@@ -1,7 +1,7 @@
 'use strict';
 
 const path = require('node:path');
-const { detectExistingInstall, installTemplate } = require('./installer');
+const { detectExistingInstall, installTemplate, readInstallProfile } = require('./installer');
 
 async function updateInstallation(targetDir, options = {}) {
   const installed = await detectExistingInstall(targetDir);
@@ -13,12 +13,15 @@ async function updateInstallation(targetDir, options = {}) {
     };
   }
 
+  const savedProfile = await readInstallProfile(targetDir);
+
   const result = await installTemplate(targetDir, {
     overwrite: true,
     dryRun: Boolean(options.dryRun),
     mode: 'update',
     backupOnOverwrite: true,
-    frameworkDetection: options.frameworkDetection || null
+    frameworkDetection: options.frameworkDetection || null,
+    installProfile: savedProfile
   });
 
   return {
