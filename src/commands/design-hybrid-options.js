@@ -98,16 +98,16 @@ function getUiText(locale) {
   };
 }
 
-function clearScreen() {
-  process.stdout.write('\x1Bc');
+function clearScreen(stdout = process.stdout) {
+  stdout.write('\x1Bc');
 }
 
-function renderGroup(group, cursor, selected, ui) {
-  clearScreen();
-  process.stdout.write(`${ui.title}\n\n`);
-  process.stdout.write(`${group.title}\n`);
-  process.stdout.write(`${group.guidance}\n`);
-  process.stdout.write(`${ui.instructions}\n\n`);
+function renderGroup(group, cursor, selected, ui, stdout = process.stdout) {
+  clearScreen(stdout);
+  stdout.write(`${ui.title}\n\n`);
+  stdout.write(`${group.title}\n`);
+  stdout.write(`${group.guidance}\n`);
+  stdout.write(`${ui.instructions}\n\n`);
 
   for (let i = 0; i < group.options.length; i++) {
     const option = group.options[i];
@@ -115,29 +115,41 @@ function renderGroup(group, cursor, selected, ui) {
     const isSelected = selected.has(option.id);
     const marker = isSelected ? '[x]' : '[ ]';
     const pointer = isActive ? '>' : ' ';
-    process.stdout.write(`${pointer} ${marker} ${option.label}\n`);
-    process.stdout.write(`    ${option.description}\n`);
+    stdout.write(`${pointer} ${marker} ${option.label}\n`);
+    stdout.write(`    ${option.description}\n`);
   }
 }
 
-async function promptMultiSelectGroup(group, ui) {
-  if (!process.stdin.isTTY || !process.stdout.isTTY) {
+async function promptMultiSelectGroup(group, ui, io = {}) {
+  const stdin = io.stdin || process.stdin;
+  const stdout = io.stdout || process.stdout;
+
+  if (!stdin.isTTY || !stdout.isTTY) {
     throw new Error('Interactive design-hybrid:options requires a TTY terminal.');
   }
 
-  readline.emitKeypressEvents(process.stdin);
-  const wasRaw = Boolean(process.stdin.isRaw);
-  process.stdin.setRawMode(true);
-  process.stdin.resume();
+  readline.emitKeypressEvents(stdin);
+  const wasRaw = Boolean(stdin.isRaw);
+  const wasPaused = typeof stdin.isPaused === 'function' ? stdin.isPaused() : true;
+  if (typeof stdin.setRawMode === 'function') stdin.setRawMode(true);
+  if (typeof stdin.resume === 'function') stdin.resume();
 
   let cursor = 0;
   const selected = new Set();
 
   return new Promise((resolve, reject) => {
+    let cleanedUp = false;
+
     function cleanup() {
-      process.stdin.removeListener('keypress', onKeypress);
-      process.stdin.setRawMode(wasRaw);
-      process.stdout.write('\n');
+      if (cleanedUp) return;
+      cleanedUp = true;
+      stdin.removeListener('keypress', onKeypress);
+      if (stdin.listenerCount('keypress') === 0 && stdin.listenerCount('data') > 0) {
+        stdin.emit('data', Buffer.alloc(0));
+      }
+      if (typeof stdin.setRawMode === 'function') stdin.setRawMode(wasRaw);
+      if (wasPaused && typeof stdin.pause === 'function') stdin.pause();
+      stdout.write('\n');
     }
 
     function onKeypress(_str, key) {
@@ -155,13 +167,13 @@ async function promptMultiSelectGroup(group, ui) {
 
       if (key && key.name === 'up') {
         cursor = cursor === 0 ? group.options.length - 1 : cursor - 1;
-        renderGroup(group, cursor, selected, ui);
+        renderGroup(group, cursor, selected, ui, stdout);
         return;
       }
 
       if (key && key.name === 'down') {
         cursor = cursor === group.options.length - 1 ? 0 : cursor + 1;
-        renderGroup(group, cursor, selected, ui);
+        renderGroup(group, cursor, selected, ui, stdout);
         return;
       }
 
@@ -169,7 +181,7 @@ async function promptMultiSelectGroup(group, ui) {
         const id = group.options[cursor].id;
         if (selected.has(id)) selected.delete(id);
         else selected.add(id);
-        renderGroup(group, cursor, selected, ui);
+        renderGroup(group, cursor, selected, ui, stdout);
         return;
       }
 
@@ -179,8 +191,8 @@ async function promptMultiSelectGroup(group, ui) {
       }
     }
 
-    process.stdin.on('keypress', onKeypress);
-    renderGroup(group, cursor, selected, ui);
+    stdin.on('keypress', onKeypress);
+    renderGroup(group, cursor, selected, ui, stdout);
   });
 }
 
@@ -265,10 +277,12 @@ function buildSummary(selections) {
   return parts;
 }
 
-async function runDesignHybridOptions({ args, options = {}, logger }) {
+async function runDesignHybridOptions({ args, options = {}, logger, io = {} }) {
   const targetDir = resolveTargetDir(args);
   const presetPath = path.join(targetDir, '.aioson/context/design-variation-preset.md');
   const historyDir = path.join(targetDir, '.aioson/context/history/design-variation-presets');
+  const stdin = io.stdin || process.stdin;
+  const stdout = io.stdout || process.stdout;
   const projectLocaleResult = await detectProjectLocale(targetDir);
   const projectLocale = projectLocaleResult.locale;
   const localeOption = options.locale || options.language || options.lang;
@@ -296,7 +310,7 @@ async function runDesignHybridOptions({ args, options = {}, logger }) {
     };
   }
 
-  if (!process.stdin.isTTY || !process.stdout.isTTY) {
+  if (!stdin.isTTY || !stdout.isTTY) {
     return {
       ok: false,
       error: 'TTY required',
@@ -311,7 +325,7 @@ async function runDesignHybridOptions({ args, options = {}, logger }) {
   };
 
   for (const group of groups) {
-    const chosen = await promptMultiSelectGroup(group, ui);
+    const chosen = await promptMultiSelectGroup(group, ui, { stdin, stdout });
     selections[group.id] = chosen;
   }
 
@@ -359,5 +373,9 @@ async function runDesignHybridOptions({ args, options = {}, logger }) {
 }
 
 module.exports = {
-  runDesignHybridOptions
+  runDesignHybridOptions,
+  __test__: {
+    getUiText,
+    promptMultiSelectGroup
+  }
 };
