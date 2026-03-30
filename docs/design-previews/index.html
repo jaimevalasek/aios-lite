@@ -412,6 +412,42 @@
     .accent-cognitive { color: #22D3EE; }
     .accent-command { color: #63b3ed; }
     .accent-interface { color: #6366F1; }
+    .accent-aurora { color: #00C8E8; }
+
+    .thumb-aurora-command {
+      background: linear-gradient(135deg, #060910 0%, #0A0818 30%, #060C1A 70%, #08060F 100%);
+    }
+    .thumb-aurora-command .preview-label { color: #00C8E8; letter-spacing: 0.02em; }
+    .thumb-aurora-command::before {
+      content: '';
+      position: absolute;
+      inset: 20px;
+      background: rgba(10,14,26,0.65);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255,255,255,0.09);
+      border-radius: 12px;
+      box-shadow: 0 0 30px rgba(0,200,232,0.14), 0 8px 24px rgba(0,0,0,0.50);
+    }
+    .thumb-aurora-command::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse 280px 200px at 70% 20%, rgba(0,200,232,0.12), transparent 70%),
+                  radial-gradient(ellipse 200px 160px at 20% 80%, rgba(124,58,237,0.12), transparent 70%);
+      border-radius: 0;
+      pointer-events: none;
+    }
+    .hybrid-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9.5px; font-weight: 600;
+      letter-spacing: 0.10em; text-transform: uppercase;
+      padding: 3px 10px; border-radius: 9999px;
+      background: linear-gradient(135deg, rgba(0,200,232,0.15), rgba(124,58,237,0.15));
+      border: 1px solid rgba(0,200,232,0.25);
+      color: #00C8E8;
+    }
   </style>
 </head>
 <body>
@@ -429,7 +465,7 @@
     <h1>Choose your <span>design skill</span></h1>
     <p>Each skill is a complete visual system — colors, typography, components, and patterns. Pick one and your app gets a coherent, intentional identity from the start.</p>
     <div class="hero-meta">
-      <span><span class="dot"></span> 8 design skills</span>
+      <span><span class="dot"></span> 9 design skills</span>
       <span><span class="dot" style="background:#E07A5F"></span> App + landing page previews</span>
       <span><span class="dot" style="background:#FF4D2A"></span> Stack-agnostic</span>
     </div>
@@ -605,6 +641,30 @@
       </div>
     </div>
 
+    <!-- Aurora Command UI (Hybrid) -->
+    <div class="skill-card">
+      <div class="preview-thumb thumb-aurora-command">
+        <span class="preview-label">Glass · Command · Aurora</span>
+      </div>
+      <div class="card-body">
+        <div class="card-header">
+          <span class="card-name accent-aurora">Aurora Command UI</span>
+          <span class="hybrid-badge">✦ Hybrid</span>
+        </div>
+        <p class="card-description">Cognitive Core × Glassmorphism. Dark aurora gradient substrate with dark-tinted glass panels. Military command structure — mono rails, dense stats — living inside an aurora space. Teal-electric + violet gradient pair.</p>
+        <div class="card-meta">
+          <span class="meta-pill">SOC / Security</span>
+          <span class="meta-pill">AI platforms</span>
+          <span class="meta-pill">Dev tools</span>
+          <span class="meta-pill">Infra cockpits</span>
+        </div>
+        <div class="card-links">
+          <a class="card-link" href="aurora-command-ui.html" target="_blank"><span>Dashboard</span><span>→</span></a>
+          <a class="card-link" href="aurora-command-ui-website.html" target="_blank"><span>Landing page</span><span>→</span></a>
+        </div>
+      </div>
+    </div>
+
     <!-- Interface Design -->
     <div class="skill-card">
       <div class="preview-thumb thumb-interface-design">
@@ -632,7 +692,7 @@
   </div>
 
   <footer class="footer">
-    <p>AIOSON Design Skills · 8 visual systems · Each skill is a complete, standalone package</p>
+    <p>AIOSON Design Skills · 9 visual systems · 1 hybrid · Each skill is a complete, standalone package</p>
   </footer>
 
 </body>

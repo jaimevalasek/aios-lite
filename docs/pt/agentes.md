@@ -125,6 +125,7 @@ O `@product` detecta esses arquivos automaticamente e pergunta se deve usá-los 
 - métricas de sucesso
 - perguntas em aberto
 - identidade visual inicial, quando houver sinal suficiente
+- `## Specify depth` (projetos SMALL e MEDIUM) — classificação aplicada, profundidade de spec escolhida e lista de ambiguidades que devem ser resolvidas antes que `@analyst` avance
 
 > Se o pedido mencionar explicitamente um command center premium, control tower, tri-rail shell ou estilo AIOS Dashboard, o `@product` deve registrar a skill `premium-command-center-ui` na seção de identidade visual do PRD.
 
@@ -223,6 +224,10 @@ Alias compativel:
 - Riscos identificados
 - Referências visuais (wireframes, links)
 
+Em **modo feature**, entrega adicionalmente:
+- `requirements-{slug}.md` — regras de negócio com IDs rastreáveis (`REQ-{slug}-N`) e acceptance criteria verificáveis por QA (`AC-{slug}-N`)
+- `spec-{slug}.md` — esqueleto de memória da feature, com `phase_gates` no frontmatter para que `@dev` e `@deyvin` saibam quais fases já foram aprovadas
+
 ---
 
 ## @discovery-design-doc
@@ -290,8 +295,9 @@ tests/
 **Entrega:** Arquivo `.aioson/context/architecture.md` com:
 - Estrutura de pastas (proporcional ao tamanho)
 - Stack definitiva
-- Decisões técnicas documentadas
+- Decisões técnicas documentadas com **rationale** — não só o que foi decidido, mas por que aquela escolha reduz risco de debug e manutenção futura
 - Padrões de código
+- **Gate B** — sinal explícito de aprovação ao final do arquivo (`@dev` só pode iniciar implementação após este gate)
 
 ---
 
@@ -627,7 +633,7 @@ Se o usuário pedir para pular o teste, o `@dev` resiste, explica, e só cede ap
 ```
 
 **Entrega:**
-- PRD enriquecido in-place (Modo A)
+- PRD enriquecido in-place com sinal de **spec-hardened** ao final — o campo `readiness` em `sheldon-enrichment-{slug}.md` indica se o PRD está pronto para downstream (`ready_for_downstream`) ou ainda tem itens bloqueantes (`needs_work`) (Modo A)
 - Relatório de status de todos os PRDs (Modo B)
 - Checklist de validação + decisão go/no-go para implementação (Modo C)
 

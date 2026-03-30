@@ -36,13 +36,17 @@ Estrutura:
 │   ├── ethereum-docs.md
 │   ├── solana-docs.md
 │   └── cardano-docs.md
-└── design/          ← design systems visuais
-    ├── cognitive-core-ui/
-    ├── interface-design/
-    └── premium-command-center-ui/
+├── design/          ← design systems visuais
+│   ├── cognitive-core-ui/
+│   ├── interface-design/
+│   └── premium-command-center-ui/
+└── process/         ← metodologia de fluxo e contratos entre agentes
+    └── aioson-spec-driven/
 ```
 
 **Carregamento condicional:** O agente `@dev` carrega apenas as skills que correspondem ao valor de `framework` em `project.context.md`. Exemplo: se `framework=Laravel`, carrega `laravel-conventions.md` e opcionalmente `tall-stack-patterns.md` se o stack for TALL.
+
+**Process skills** são carregadas pelos agentes de spec (`@product`, `@analyst`, `@architect`, `@sheldon`, `@dev`, `@deyvin`) no início de sessões de especificação, requirements e design — nunca todas de uma vez. Cada agente carrega o `SKILL.md` central e depois apenas o arquivo de `references/` relevante para sua fase atual.
 
 ### Skills instaladas (`.aioson/installed-skills/`)
 
@@ -149,6 +153,39 @@ Skills de design disponíveis:
 - `cognitive-core-ui` — UI com foco cognitivo
 - `interface-design` — Design de interfaces (dashboards, apps, ferramentas)
 - `premium-command-center-ui` — UI premium para command centers
+
+## Skills de processo
+
+Skills de processo ensinam os agentes **como as fases do AIOSON se conectam** — não o que implementar, mas como sequenciar, quando aprofundar e como fazer handoff limpo entre agentes.
+
+Diferente das skills de framework (que são por stack) e das skills de design (que são por sistema visual), process skills são transversais: carregadas por qualquer agente de spec conforme a fase em que ele se encontra.
+
+### `aioson-spec-driven`
+
+Localização: `.aioson/skills/process/aioson-spec-driven/`
+
+A skill central de metodologia do AIOSON. Cobre:
+
+- **Sequência de fases** — quais fases existem, quais artefatos cada uma produz e quem é o agente responsável
+- **Profundidade por classificação** — MICRO usa fluxo mínimo, SMALL usa fluxo padrão, MEDIUM usa pacote completo
+- **Gates de aprovação** — Gate A (requirements), Gate B (design), Gate C (plan) — critérios do que deve estar pronto antes de avançar para a próxima fase
+- **Hardening lane** — como identificar quando um input ainda está em modo "exploratório/vibe" e o que fazer para convertê-lo em spec executável
+- **Manutenção e estado** — como escrever checkpoints úteis em `spec-{slug}.md` para que qualquer agente ou sessão futura possa retomar sem redescobrir o que já foi decidido
+
+**Estrutura:**
+
+```
+.aioson/skills/process/aioson-spec-driven/
+├── SKILL.md                          ← entry point curto — carregue sempre primeiro
+└── references/
+    ├── artifact-map.md               ← qual artefato fica onde e quem é o dono
+    ├── classification-map.md         ← profundidade de fase por MICRO/SMALL/MEDIUM
+    ├── approval-gates.md             ← critérios dos Gates A, B e C
+    ├── hardening-lane.md             ← quando endurecer vs quando explorar
+    └── maintenance-and-state.md      ← como escrever spec e checkpoints úteis
+```
+
+**Carregamento:** Os agentes `@product`, `@analyst`, `@architect`, `@sheldon`, `@dev` e `@deyvin` verificam automaticamente se esta skill está disponível e carregam `SKILL.md` + apenas o arquivo de `references/` relevante para a fase atual. Nunca carregam a pasta inteira de uma vez.
 
 ## Skills de squad
 

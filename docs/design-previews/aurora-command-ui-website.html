@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Aurora Command UI — Landing Page Preview</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-gradient: linear-gradient(135deg, #060910 0%, #0A0818 30%, #060C1A 70%, #08060F 100%);
+      --glass-shell:    rgba(8, 12, 22, 0.70);
+      --glass-surface:  rgba(10, 14, 26, 0.60);
+      --glass-elevated: rgba(14, 20, 36, 0.75);
+      --glass-border:   rgba(255,255,255,0.09);
+      --glass-border-strong: rgba(255,255,255,0.18);
+      --glass-highlight: linear-gradient(180deg, rgba(255,255,255,0.07) 0%, transparent 50%);
+      --accent-primary:  #00C8E8;
+      --accent-violet:   #7C3AED;
+      --accent-gradient: linear-gradient(135deg, #00C8E8, #7C3AED);
+      --text-heading:    #F0F4FA;
+      --text-primary:    #C8D4E8;
+      --text-secondary:  #8898B0;
+      --text-muted:      #556070;
+      --green:  #00D68F;
+      --amber:  #F4A91D;
+    }
+
+    html {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg-gradient);
+      background-attachment: fixed;
+      color: var(--text-primary);
+      line-height: 1.6;
+      scroll-behavior: smooth;
+    }
+
+    /* AIOSON badge */
+    .aioson-badge {
+      position: fixed; top: 10px; right: 10px; z-index: 9999;
+      background: var(--accent-gradient);
+      color: #fff;
+      font-size: 9.5px; font-weight: 700;
+      letter-spacing: 0.08em;
+      padding: 3px 10px; border-radius: 9999px;
+      box-shadow: 0 0 16px rgba(0,200,232,0.35);
+      pointer-events: none;
+    }
+
+    .mono { font-family: 'JetBrains Mono', monospace; }
+    .mono-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.625rem; font-weight: 600;
+      letter-spacing: 0.14em; text-transform: uppercase;
+    }
+
+    /* Glass base */
+    .glass {
+      background: var(--glass-surface);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--glass-border);
+      position: relative;
+    }
+    .glass::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: var(--glass-highlight);
+      pointer-events: none;
+    }
+
+    /* AURORA ORBS */
+    .aurora-orb {
+      position: fixed;
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 0;
+      animation: aurora-drift 22s ease-in-out infinite;
+    }
+    .orb-1 {
+      width: 600px; height: 600px;
+      top: -100px; right: -80px;
+      background: radial-gradient(circle, rgba(0,200,232,0.18), rgba(124,58,237,0.12), transparent 70%);
+      filter: blur(80px);
+    }
+    .orb-2 {
+      width: 500px; height: 500px;
+      bottom: -80px; left: -60px;
+      background: radial-gradient(circle, rgba(124,58,237,0.18), rgba(0,200,232,0.10), transparent 70%);
+      filter: blur(70px);
+      animation-direction: reverse;
+      animation-duration: 28s;
+    }
+    .orb-3 {
+      width: 350px; height: 350px;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      background: radial-gradient(circle, rgba(0,200,232,0.08), transparent 70%);
+      filter: blur(60px);
+      animation-duration: 35s;
+    }
+    @keyframes aurora-drift {
+      0%   { transform: translate(0,0) scale(1); }
+      33%  { transform: translate(-30px,15px) scale(1.04); }
+      66%  { transform: translate(15px,-20px) scale(0.97); }
+      100% { transform: translate(0,0) scale(1); }
+    }
+
+    /* NAVIGATION */
+    .nav {
+      position: fixed; top: 0; left: 0; right: 0;
+      height: 64px; z-index: 100;
+      background: rgba(8,12,22,0.50);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--glass-border);
+      display: flex; align-items: center;
+      padding: 0 64px;
+    }
+    .nav-logo {
+      display: flex; align-items: center; gap: 10px;
+      margin-right: auto;
+    }
+    .nav-logo-mark {
+      width: 32px; height: 32px; border-radius: 8px;
+      background: var(--accent-gradient);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: 13px; color: #fff;
+      letter-spacing: -0.04em;
+    }
+    .nav-logo-text {
+      font-size: 15px; font-weight: 700;
+      color: var(--text-heading); letter-spacing: -0.02em;
+    }
+    .nav-links {
+      display: flex; align-items: center; gap: 2px;
+    }
+    .nav-link {
+      padding: 6px 16px; font-size: 13px; font-weight: 500;
+      color: var(--text-secondary); border-radius: 7px;
+      cursor: pointer; transition: color 160ms, background 160ms;
+    }
+    .nav-link:hover { color: var(--text-primary); background: rgba(255,255,255,0.04); }
+    .nav-cta {
+      margin-left: 16px;
+      background: var(--accent-gradient);
+      color: #fff; border: none;
+      padding: 7px 18px; border-radius: 8px;
+      font-size: 13px; font-weight: 600; cursor: pointer;
+      box-shadow: 0 0 18px rgba(0,200,232,0.25);
+    }
+
+    /* PAGE CONTENT */
+    .page { position: relative; z-index: 1; }
+
+    /* HERO */
+    .hero {
+      padding-top: 120px;
+      padding-bottom: 80px;
+      padding-left: 64px;
+      padding-right: 64px;
+      display: grid;
+      grid-template-columns: 56% 44%;
+      align-items: center;
+      gap: 0;
+      min-height: 100vh;
+      max-width: 1280px;
+      margin: 0 auto;
+    }
+    .hero-text {}
+    .hero-eyebrow {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 4px 12px 4px 8px;
+      background: rgba(0,200,232,0.08);
+      border: 1px solid rgba(0,200,232,0.20);
+      border-radius: 9999px;
+      margin-bottom: 28px;
+    }
+    .hero-eyebrow-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--accent-primary);
+      box-shadow: 0 0 6px var(--accent-primary);
+      animation: pulse-dot 2s ease-in-out infinite;
+    }
+    @keyframes pulse-dot {
+      0%,100% { box-shadow: 0 0 4px var(--accent-primary); }
+      50%      { box-shadow: 0 0 10px var(--accent-primary); }
+    }
+    .hero-eyebrow-text {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.65rem; font-weight: 600;
+      letter-spacing: 0.12em; text-transform: uppercase;
+      color: var(--accent-primary);
+    }
+
+    .hero-heading {
+      font-size: 3.8rem; font-weight: 800;
+      line-height: 1.06; letter-spacing: -0.03em;
+      color: var(--text-heading);
+      margin-bottom: 20px;
+    }
+    .hero-heading-grad {
+      background: var(--accent-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero-subtext {
+      font-size: 1.1rem; color: var(--text-secondary);
+      line-height: 1.7; max-width: 480px;
+      margin-bottom: 36px;
+    }
+    .hero-ctas {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 48px;
+    }
+    .btn-primary {
+      background: var(--accent-gradient);
+      color: #fff; border: none;
+      padding: 13px 28px; border-radius: 10px;
+      font-size: 14px; font-weight: 600; cursor: pointer;
+      box-shadow: 0 0 24px rgba(0,200,232,0.30), 0 4px 16px rgba(0,0,0,0.30);
+      transition: box-shadow 200ms, transform 200ms;
+    }
+    .btn-primary:hover {
+      box-shadow: 0 0 36px rgba(0,200,232,0.45), 0 4px 20px rgba(0,0,0,0.35);
+      transform: translateY(-1px);
+    }
+    .btn-secondary {
+      background: rgba(255,255,255,0.06);
+      color: var(--text-primary);
+      border: 1px solid var(--glass-border-strong);
+      padding: 13px 24px; border-radius: 10px;
+      font-size: 14px; font-weight: 500; cursor: pointer;
+      backdrop-filter: blur(8px);
+    }
+    .hero-proof {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 12px; color: var(--text-muted);
+    }
+    .hero-avatars {
+      display: flex;
+    }
+    .hero-avatar {
+      width: 28px; height: 28px; border-radius: 50%;
+      border: 2px solid rgba(10,14,26,0.9);
+      margin-right: -8px;
+      font-size: 9px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      color: #fff;
+    }
+
+    /* Product frame */
+    .hero-visual {
+      position: relative;
+      padding-left: 40px;
+    }
+    .product-frame {
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 0 60px rgba(0,200,232,0.12), 0 24px 60px rgba(0,0,0,0.50);
+      position: relative;
+    }
+    .product-frame-inner {
+      background: var(--glass-elevated);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--glass-border-strong);
+      border-radius: 16px;
+      overflow: hidden;
+      padding: 16px;
+    }
+    .product-frame-inner::before {
+      content: '';
+      position: absolute; inset: 0;
+      border-radius: inherit;
+      background: var(--glass-highlight);
+      pointer-events: none;
+    }
+    .product-topbar {
+      display: flex; align-items: center; gap: 6px;
+      margin-bottom: 12px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--glass-border);
+    }
+    .dot-ctrl { width: 8px; height: 8px; border-radius: 50%; }
+    .product-stats-mini {
+      display: grid; grid-template-columns: repeat(2,1fr); gap: 8px;
+      margin-bottom: 10px;
+    }
+    .pstat {
+      background: rgba(10,14,26,0.60);
+      border: 1px solid var(--glass-border);
+      border-radius: 8px; padding: 10px;
+    }
+    .pstat-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.52rem; font-weight: 600;
+      letter-spacing: 0.10em; text-transform: uppercase;
+      color: var(--text-muted); margin-bottom: 4px;
+    }
+    .pstat-num {
+      font-size: 1.2rem; font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+    .product-chart-mini {
+      background: rgba(10,14,26,0.60);
+      border: 1px solid var(--glass-border);
+      border-radius: 8px; padding: 12px;
+      height: 80px; position: relative;
+      overflow: hidden;
+    }
+    .product-table-mini {
+      background: rgba(10,14,26,0.60);
+      border: 1px solid var(--glass-border);
+      border-radius: 8px; overflow: hidden;
+    }
+    .ptable-row {
+      display: flex; align-items: center; gap: 8px;
+      padding: 7px 10px; font-size: 10.5px;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+    .ptable-row:last-child { border-bottom: none; }
+    .ptable-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink:0; }
+    .ptable-name { flex: 1; color: var(--text-primary); }
+    .ptable-val { font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; color: var(--text-muted); }
+
+    /* PROOF RAIL */
+    .proof-rail-section {
+      padding: 0 64px;
+      max-width: 1280px; margin: 0 auto;
+    }
+    .proof-rail {
+      border-top: 1px solid var(--glass-border);
+      border-bottom: 1px solid var(--glass-border);
+      background: var(--glass-surface);
+      backdrop-filter: blur(16px);
+      display: grid;
+      grid-template-columns: repeat(4,1fr);
+    }
+    .proof-item {
+      padding: 32px 24px; text-align: center;
+      border-right: 1px solid var(--glass-border);
+    }
+    .proof-item:last-child { border-right: none; }
+    .proof-num {
+      font-size: 2rem; font-weight: 800;
+      background: var(--accent-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      display: block; margin-bottom: 6px;
+    }
+    .proof-desc {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.60rem; font-weight: 600;
+      letter-spacing: 0.10em; text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    /* FEATURES SECTION */
+    .section {
+      padding: 96px 64px;
+      max-width: 1280px; margin: 0 auto;
+    }
+    .section-eyebrow {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.65rem; font-weight: 600;
+      letter-spacing: 0.14em; text-transform: uppercase;
+      color: var(--accent-primary);
+      margin-bottom: 12px;
+    }
+    .section-heading {
+      font-size: 2.4rem; font-weight: 800;
+      letter-spacing: -0.025em; line-height: 1.15;
+      color: var(--text-heading); margin-bottom: 12px;
+    }
+    .section-subtext {
+      font-size: 1rem; color: var(--text-secondary);
+      max-width: 520px; margin-bottom: 48px;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3,1fr);
+      gap: 16px;
+    }
+    .feature-card {
+      border-radius: 14px;
+      padding: 24px;
+      transition: transform 200ms, box-shadow 200ms;
+    }
+    .feature-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 0 30px rgba(0,200,232,0.10), 0 8px 24px rgba(0,0,0,0.30);
+    }
+    .feature-icon {
+      width: 40px; height: 40px; border-radius: 10px;
+      background: rgba(0,200,232,0.10);
+      border: 1px solid rgba(0,200,232,0.20);
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 16px;
+    }
+    .feature-title {
+      font-size: 14px; font-weight: 600;
+      color: var(--text-heading); margin-bottom: 8px;
+    }
+    .feature-desc {
+      font-size: 13px; color: var(--text-secondary); line-height: 1.6;
+    }
+
+    /* COMMAND STRIP preview */
+    .command-strip-preview {
+      background: rgba(0,200,232,0.05);
+      border-top: 1px solid rgba(0,200,232,0.12);
+      border-bottom: 1px solid rgba(0,200,232,0.12);
+      display: flex; align-items: center;
+      padding: 8px 64px; gap: 24px;
+      max-width: 100%;
+    }
+    .cs-preview-item {
+      display: flex; align-items: center; gap: 6px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.60rem; font-weight: 600;
+      letter-spacing: 0.10em; text-transform: uppercase;
+      color: var(--text-secondary);
+    }
+    .cs-preview-dot {
+      width: 5px; height: 5px; border-radius: 50%;
+      background: var(--accent-primary);
+      box-shadow: 0 0 5px var(--accent-primary);
+    }
+
+    /* PRICING */
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(3,1fr);
+      gap: 16px; align-items: start;
+    }
+    .pricing-card {
+      border-radius: 16px; padding: 28px;
+    }
+    .pricing-card-featured {
+      background: var(--glass-elevated);
+      backdrop-filter: blur(24px);
+      box-shadow: 0 0 40px rgba(0,200,232,0.14), 0 12px 32px rgba(0,0,0,0.40);
+      position: relative;
+    }
+    .pricing-card-featured::after {
+      content: '';
+      position: absolute; inset: 0;
+      border-radius: 16px;
+      padding: 1px;
+      background: var(--accent-gradient);
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      pointer-events: none;
+    }
+    .pricing-badge {
+      display: inline-block;
+      background: var(--accent-gradient);
+      color: #fff; font-size: 9.5px; font-weight: 700;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      padding: 3px 10px; border-radius: 9999px;
+      margin-bottom: 16px;
+    }
+    .pricing-tier {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.62rem; font-weight: 600;
+      letter-spacing: 0.12em; text-transform: uppercase;
+      color: var(--text-muted); margin-bottom: 8px;
+    }
+    .pricing-price {
+      font-size: 2.4rem; font-weight: 800;
+      letter-spacing: -0.03em; color: var(--text-heading);
+      margin-bottom: 4px;
+    }
+    .pricing-price.gradient-text {
+      background: var(--accent-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .pricing-period {
+      font-size: 12px; color: var(--text-muted); margin-bottom: 20px;
+    }
+    .pricing-features {
+      list-style: none; display: flex; flex-direction: column; gap: 10px;
+      margin-bottom: 24px;
+    }
+    .pricing-feature {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 12.5px; color: var(--text-secondary);
+    }
+    .pricing-check {
+      width: 16px; height: 16px; border-radius: 50%;
+      background: rgba(0,200,232,0.12);
+      border: 1px solid rgba(0,200,232,0.25);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      color: var(--accent-primary);
+      font-size: 9px;
+    }
+    .pricing-cta {
+      width: 100%; padding: 11px;
+      border-radius: 9px; font-size: 13px; font-weight: 600;
+      cursor: pointer; border: none; letter-spacing: 0.01em;
+    }
+    .pricing-cta.primary {
+      background: var(--accent-gradient);
+      color: #fff;
+      box-shadow: 0 0 20px rgba(0,200,232,0.25);
+    }
+    .pricing-cta.ghost {
+      background: rgba(255,255,255,0.06);
+      color: var(--text-secondary);
+      border: 1px solid var(--glass-border);
+    }
+
+    /* FOOTER */
+    .footer {
+      border-top: 1px solid var(--glass-border);
+      background: var(--glass-shell);
+      backdrop-filter: blur(20px);
+      padding: 32px 64px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .footer-brand {
+      display: flex; align-items: center; gap: 10px;
+    }
+    .footer-logo-mark {
+      width: 28px; height: 28px; border-radius: 7px;
+      background: var(--accent-gradient);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: 11px; color: #fff;
+    }
+    .footer-copy {
+      font-size: 11.5px; color: var(--text-muted);
+    }
+    .footer-links {
+      display: flex; gap: 24px;
+    }
+    .footer-link {
+      font-size: 11.5px; color: var(--text-muted); cursor: pointer;
+    }
+    .footer-link:hover { color: var(--text-secondary); }
+  </style>
+</head>
+<body>
+
+<!-- Aurora orbs -->
+<div class="aurora-orb orb-1"></div>
+<div class="aurora-orb orb-2"></div>
+<div class="aurora-orb orb-3"></div>
+
+<div class="aioson-badge">AURORA COMMAND UI</div>
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="nav-logo">
+    <div class="nav-logo-mark">N</div>
+    <div class="nav-logo-text">NEXUS OPS</div>
+  </div>
+  <div class="nav-links">
+    <div class="nav-link">Platform</div>
+    <div class="nav-link">Security</div>
+    <div class="nav-link">Integrations</div>
+    <div class="nav-link">Docs</div>
+    <div class="nav-link">Pricing</div>
+  </div>
+  <button class="nav-cta">Start Free Trial</button>
+</nav>
+
+<!-- PAGE -->
+<div class="page">
+
+  <!-- HERO -->
+  <section>
+    <div class="hero">
+
+      <!-- Text side -->
+      <div class="hero-text">
+        <div class="hero-eyebrow">
+          <span class="hero-eyebrow-dot"></span>
+          <span class="hero-eyebrow-text">Now in GA — Platform v2.0</span>
+        </div>
+
+        <h1 class="hero-heading">
+          Command your<br>
+          infrastructure.<br>
+          <span class="hero-heading-grad">At any scale.</span>
+        </h1>
+
+        <p class="hero-subtext">
+          Aurora Command gives your operations team the precision of a SOC and the clarity of a glass command center. Real-time, secure, and built for teams that cannot afford blind spots.
+        </p>
+
+        <div class="hero-ctas">
+          <button class="btn-primary">Get started free →</button>
+          <button class="btn-secondary">Watch demo</button>
+        </div>
+
+        <div class="hero-proof">
+          <div class="hero-avatars">
+            <div class="hero-avatar" style="background:rgba(0,200,232,0.30)">AK</div>
+            <div class="hero-avatar" style="background:rgba(124,58,237,0.30)">RM</div>
+            <div class="hero-avatar" style="background:rgba(0,214,143,0.25)">LC</div>
+            <div class="hero-avatar" style="background:rgba(244,169,29,0.25)">PD</div>
+          </div>
+          <span style="margin-left:14px">Trusted by <strong style="color:var(--text-primary)">4,200+ teams</strong> worldwide</span>
+        </div>
+      </div>
+
+      <!-- Visual side -->
+      <div class="hero-visual">
+        <div class="product-frame">
+          <div class="product-frame-inner">
+            <!-- mini topbar -->
+            <div class="product-topbar">
+              <span class="dot-ctrl" style="background:#FF5F57"></span>
+              <span class="dot-ctrl" style="background:#FFBD2E"></span>
+              <span class="dot-ctrl" style="background:#28CA41"></span>
+              <span style="margin-left:8px; font-family:'JetBrains Mono', monospace; font-size:9px; color:var(--text-muted); letter-spacing:0.08em">NEXUS OPS — OVERVIEW</span>
+              <span style="margin-left:auto; width:5px; height:5px; border-radius:50%; background:var(--accent-primary); box-shadow:0 0 5px var(--accent-primary)"></span>
+            </div>
+
+            <!-- mini stats -->
+            <div class="product-stats-mini">
+              <div class="pstat">
+                <div class="pstat-label">INCIDENTS</div>
+                <div class="pstat-num" style="color:var(--amber)">3</div>
+              </div>
+              <div class="pstat">
+                <div class="pstat-label">EVENTS 24H</div>
+                <div class="pstat-num" style="background:var(--accent-gradient); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;">48,291</div>
+              </div>
+            </div>
+
+            <!-- mini chart -->
+            <div class="product-chart-mini">
+              <svg width="100%" height="60" viewBox="0 0 300 60" preserveAspectRatio="none">
+                <defs>
+                  <linearGradient id="miniGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#00C8E8" stop-opacity="0.4"/>
+                    <stop offset="100%" stop-color="#7C3AED" stop-opacity="0"/>
+                  </linearGradient>
+                </defs>
+                <path d="M0,50 C20,42 40,48 70,35 S110,15 140,22 S180,38 210,25 S250,8 300,15 L300,60 L0,60 Z"
+                  fill="url(#miniGrad)"/>
+                <path d="M0,50 C20,42 40,48 70,35 S110,15 140,22 S180,38 210,25 S250,8 300,15"
+                  fill="none" stroke="#00C8E8" stroke-width="1.5"/>
+              </svg>
+              <span style="position:absolute; bottom:8px; right:10px; font-family:'JetBrains Mono',monospace; font-size:0.55rem; color:var(--text-muted); letter-spacing:0.08em; text-transform:uppercase">THREAT EVENTS 24H</span>
+            </div>
+
+            <div style="height:8px"></div>
+
+            <!-- mini table -->
+            <div class="product-table-mini">
+              <div class="ptable-row" style="background:rgba(255,255,255,0.02);">
+                <span class="ptable-dot" style="background:var(--red); box-shadow:0 0 4px var(--red)"></span>
+                <span class="ptable-name">INC-2841 — SQL Injection</span>
+                <span class="ptable-val">CRITICAL</span>
+              </div>
+              <div class="ptable-row">
+                <span class="ptable-dot" style="background:var(--amber); box-shadow:0 0 4px var(--amber)"></span>
+                <span class="ptable-name">INC-2840 — Brute Force</span>
+                <span class="ptable-val">HIGH</span>
+              </div>
+              <div class="ptable-row">
+                <span class="ptable-dot" style="background:var(--green); box-shadow:0 0 4px var(--green)"></span>
+                <span class="ptable-name">INC-2839 — Memory Spike</span>
+                <span class="ptable-val">RESOLVED</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- PROOF RAIL -->
+  <div class="proof-rail-section">
+    <div class="proof-rail">
+      <div class="proof-item">
+        <span class="proof-num">4,200+</span>
+        <span class="proof-desc">Teams worldwide</span>
+      </div>
+      <div class="proof-item">
+        <span class="proof-num">99.9%</span>
+        <span class="proof-desc">Uptime SLA</span>
+      </div>
+      <div class="proof-item">
+        <span class="proof-num">&lt;500ms</span>
+        <span class="proof-desc">Avg detection</span>
+      </div>
+      <div class="proof-item">
+        <span class="proof-num">SOC 2</span>
+        <span class="proof-desc">Type II certified</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- FEATURES -->
+  <section class="section">
+    <div class="section-eyebrow">Platform Capabilities</div>
+    <h2 class="section-heading">The command center<br>you always wanted.</h2>
+    <p class="section-subtext">Built for teams that need precision, not noise. Every panel reveals the signal. Every surface earns its place.</p>
+
+    <div class="features-grid">
+      <div class="feature-card glass">
+        <div class="feature-icon">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+            <path d="M9 2L16 6V12L9 16L2 12V6L9 2Z" stroke="#00C8E8" stroke-width="1.5"/>
+            <circle cx="9" cy="9" r="2.5" fill="#00C8E8" fill-opacity="0.5"/>
+          </svg>
+        </div>
+        <div class="feature-title">Real-time Threat Detection</div>
+        <div class="feature-desc">Live event streams with sub-500ms detection latency. Every anomaly is classified, scored, and routed — automatically.</div>
+      </div>
+
+      <div class="feature-card glass">
+        <div class="feature-icon" style="background:rgba(124,58,237,0.10); border-color:rgba(124,58,237,0.20);">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+            <rect x="2" y="4" width="14" height="10" rx="2" stroke="#7C3AED" stroke-width="1.5"/>
+            <path d="M6 8H12M6 11H10" stroke="#7C3AED" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="feature-title">Glass Command Dashboard</div>
+        <div class="feature-desc">Aurora-depth panels that surface critical data without cognitive overload. Command structure meets immersive glass UI.</div>
+      </div>
+
+      <div class="feature-card glass">
+        <div class="feature-icon" style="background:rgba(0,214,143,0.10); border-color:rgba(0,214,143,0.20);">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+            <circle cx="6" cy="9" r="3" stroke="#00D68F" stroke-width="1.5"/>
+            <circle cx="13" cy="6" r="2" stroke="#00D68F" stroke-width="1.5"/>
+            <circle cx="13" cy="12" r="2" stroke="#00D68F" stroke-width="1.5"/>
+            <path d="M9 8L11 7M9 10L11 11" stroke="#00D68F" stroke-width="1" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="feature-title">Multi-Agent Orchestration</div>
+        <div class="feature-desc">Deploy and monitor AI agents across environments. Health, coverage, and latency tracked in a single control plane.</div>
+      </div>
+
+      <div class="feature-card glass">
+        <div class="feature-icon">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+            <path d="M3 9L7 13L15 5" stroke="#00C8E8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="feature-title">Automated Incident Response</div>
+        <div class="feature-desc">Runbooks execute in seconds, not minutes. Escalation paths, deduplication, and SLA tracking built in.</div>
+      </div>
+
+      <div class="feature-card glass">
+        <div class="feature-icon" style="background:rgba(167,139,250,0.10); border-color:rgba(167,139,250,0.20);">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+            <path d="M9 2V5M9 13V16M2 9H5M13 9H16" stroke="#A78BFA" stroke-width="1.5" stroke-linecap="round"/>
+            <circle cx="9" cy="9" r="3" stroke="#A78BFA" stroke-width="1.5"/>
+          </svg>
+        </div>
+        <div class="feature-title">Intelligence Integrations</div>
+        <div class="feature-desc">Connect SIEM, SOAR, cloud providers, and custom data sources. 200+ integrations, zero friction setup.</div>
+      </div>
+
+      <div class="feature-card glass">
+        <div class="feature-icon" style="background:rgba(244,169,29,0.10); border-color:rgba(244,169,29,0.20);">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+            <rect x="2" y="2" width="6" height="6" rx="1.5" stroke="#F4A91D" stroke-width="1.5"/>
+            <rect x="10" y="2" width="6" height="6" rx="1.5" stroke="#F4A91D" stroke-width="1.5"/>
+            <rect x="2" y="10" width="6" height="6" rx="1.5" stroke="#F4A91D" stroke-width="1.5"/>
+            <rect x="10" y="10" width="6" height="6" rx="1.5" stroke="#F4A91D" stroke-width="1.5"/>
+          </svg>
+        </div>
+        <div class="feature-title">Role-Based Command Views</div>
+        <div class="feature-desc">Analyst, lead, and executive views. Each role gets the signal they need — nothing more, nothing less.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- COMMAND STRIP (demo) -->
+  <div class="command-strip-preview">
+    <div class="cs-preview-item">
+      <span class="cs-preview-dot"></span>
+      LIVE MONITORING
+    </div>
+    <div class="cs-preview-item">
+      <span class="cs-preview-dot"></span>
+      12 AGENTS ONLINE
+    </div>
+    <div class="cs-preview-item">
+      <span class="cs-preview-dot" style="background:var(--green); box-shadow:0 0 5px var(--green)"></span>
+      ALL SYSTEMS NOMINAL
+    </div>
+    <div class="cs-preview-item" style="margin-left:auto;">
+      <span style="color:var(--text-muted)">SEE IT IN ACTION →</span>
+    </div>
+  </div>
+
+  <!-- PRICING -->
+  <section class="section">
+    <div class="section-eyebrow">Pricing Plans</div>
+    <h2 class="section-heading">Start free.<br>Scale confidently.</h2>
+    <p class="section-subtext">No seat limits on the Starter plan. Upgrade when your team needs enterprise-grade controls and SLAs.</p>
+
+    <div class="pricing-grid">
+
+      <!-- Starter -->
+      <div class="pricing-card glass">
+        <div class="pricing-tier">Starter</div>
+        <div class="pricing-price">$0</div>
+        <div class="pricing-period">Free forever · up to 3 users</div>
+        <ul class="pricing-features">
+          <li class="pricing-feature"><span class="pricing-check">✓</span> 5,000 events/day</li>
+          <li class="pricing-feature"><span class="pricing-check">✓</span> Basic threat detection</li>
+          <li class="pricing-feature"><span class="pricing-check">✓</span> 2 agent connections</li>
+          <li class="pricing-feature"><span class="pricing-check">✓</span> 7-day data retention</li>
+          <li class="pricing-feature" style="opacity:0.4"><span class="pricing-check" style="border-color:var(--glass-border)">–</span> No SLA</li>
+        </ul>
+        <button class="pricing-cta ghost">Get started free</button>
+      </div>
+
+      <!-- Pro (featured) -->
+      <div class="pricing-card pricing-card-featured">
+        <div class="pricing-badge">Most Popular</div>
+        <div class="pricing-tier" style="color:var(--accent-primary)">Pro</div>
+        <div class="pricing-price gradient-text">$49</div>
+        <div class="pricing-period">per month · unlimited users</div>
+        <ul class="pricing-features">
+          <li class="pricing-feature"><span class="pricing-check">✓</span> 500,000 events/day</li>
+          <li class="pricing-feature"><span class="pricing-check">✓</span> Full threat intelligence</li>
+          <li class="pricing-feature"><span class="pricing-check">✓</span> Unlimited agent connections</li>
+          <li class="pricing-feature"><span class="pricing-check">✓</span> 90-day data retention</li>
+          <li class="pricing-feature"><span class="pricing-check">✓</span> 99.9% uptime SLA</li>
+        </ul>
+        <button class="pricing-cta primary">Start 14-day trial</button>
+      </div>
+
+      <!-- Enterprise -->
+      <div class="pricing-card glass">
+        <div class="pricing-tier">Enterprise</div>
+        <div class="pricing-price">Custom</div>
+        <div class="pricing-period">Annual contract · dedicated SRE</div>
+        <ul class="pricing-features">
+          <li class="pricing-feature"><span class="pricing-check">✓</span> Unlimited events</li>
+          <li class="pricing-feature"><span class="pricing-check">✓</span> Custom integrations</li>
+          <li class="pricing-feature"><span class="pricing-check">✓</span> On-premise deployment</li>
+          <li class="pricing-feature"><span class="pricing-check">✓</span> Unlimited retention</li>
+          <li class="pricing-feature"><span class="pricing-check">✓</span> 99.99% SLA + MSA</li>
+        </ul>
+        <button class="pricing-cta ghost">Contact sales</button>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="footer-brand">
+      <div class="footer-logo-mark">N</div>
+      <span style="font-size:13px; font-weight:600; color:var(--text-heading)">NEXUS OPS</span>
+      <span class="footer-copy" style="margin-left:16px">© 2026 · aurora-command-ui preview</span>
+    </div>
+    <div class="footer-links">
+      <span class="footer-link">Privacy</span>
+      <span class="footer-link">Terms</span>
+      <span class="footer-link">Security</span>
+      <span class="footer-link">Status</span>
+      <span class="footer-link" style="color:var(--accent-primary)">AIOSON Design Skill</span>
+    </div>
+  </footer>
+
+</div><!-- /page -->
+
+</body>
+</html>

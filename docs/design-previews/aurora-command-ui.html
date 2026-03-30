@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Aurora Command UI — Dashboard Preview</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-gradient: linear-gradient(135deg, #060910 0%, #0A0818 30%, #060C1A 70%, #08060F 100%);
+      --glass-shell:    rgba(8, 12, 22, 0.78);
+      --glass-surface:  rgba(10, 14, 26, 0.65);
+      --glass-elevated: rgba(14, 20, 36, 0.78);
+      --glass-border:   rgba(255,255,255,0.09);
+      --glass-border-strong: rgba(255,255,255,0.16);
+      --glass-highlight: linear-gradient(180deg, rgba(255,255,255,0.07) 0%, transparent 50%);
+      --accent-primary:  #00C8E8;
+      --accent-violet:   #7C3AED;
+      --accent-gradient: linear-gradient(135deg, #00C8E8, #7C3AED);
+      --accent-dim:      rgba(0,200,232,0.12);
+      --text-heading:    #F0F4FA;
+      --text-primary:    #C8D4E8;
+      --text-secondary:  #8898B0;
+      --text-muted:      #556070;
+      --green:  #00D68F;
+      --amber:  #F4A91D;
+      --red:    #FF5A67;
+      --purple: #A78BFA;
+    }
+
+    html, body {
+      height: 100%;
+      font-family: 'Inter', system-ui, sans-serif;
+      font-size: 13px;
+      line-height: 1.5;
+      background: var(--bg-gradient);
+      background-attachment: fixed;
+      color: var(--text-primary);
+      overflow: hidden;
+    }
+
+    /* AIOSON badge */
+    .aioson-badge {
+      position: fixed; top: 10px; right: 10px; z-index: 9999;
+      background: var(--accent-gradient);
+      color: #fff;
+      font-size: 9.5px; font-weight: 700;
+      letter-spacing: 0.08em;
+      padding: 3px 10px; border-radius: 9999px;
+      box-shadow: 0 0 16px rgba(0,200,232,0.35);
+      pointer-events: none;
+    }
+
+    .mono { font-family: 'JetBrains Mono', monospace; }
+    .mono-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.625rem; font-weight: 600;
+      letter-spacing: 0.12em; text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    /* Glass mixin base */
+    .glass {
+      background: var(--glass-surface);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--glass-border);
+      position: relative;
+    }
+    .glass::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: var(--glass-highlight);
+      pointer-events: none;
+    }
+
+    /* SHELL */
+    .shell { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+
+    /* COMMAND STRIP */
+    .command-strip {
+      height: 28px;
+      background: rgba(0,200,232,0.05);
+      border-bottom: 1px solid rgba(0,200,232,0.12);
+      display: flex; align-items: center;
+      padding: 0 20px; gap: 24px;
+      flex-shrink: 0;
+    }
+    .cs-item {
+      display: flex; align-items: center; gap: 6px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.58rem; font-weight: 600;
+      letter-spacing: 0.10em; text-transform: uppercase;
+      color: var(--text-secondary);
+      white-space: nowrap;
+    }
+    .cs-dot {
+      width: 5px; height: 5px; border-radius: 50%;
+      background: var(--accent-primary);
+      box-shadow: 0 0 5px var(--accent-primary);
+      animation: pulse-dot 2s ease-in-out infinite;
+    }
+    .cs-dot.amber { background: var(--amber); box-shadow: 0 0 5px var(--amber); }
+    .cs-dot.green { background: var(--green); box-shadow: 0 0 5px var(--green); }
+    @keyframes pulse-dot {
+      0%,100% { opacity:1; box-shadow: 0 0 4px currentColor; }
+      50%      { opacity:0.7; box-shadow: 0 0 8px currentColor; }
+    }
+
+    /* TOP BAR */
+    .topbar {
+      height: 48px; flex-shrink: 0;
+      background: var(--glass-shell);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border-bottom: 1px solid var(--glass-border);
+      display: flex; align-items: center;
+      padding: 0 20px; gap: 0;
+      position: relative; z-index: 10;
+    }
+    .topbar-logo {
+      width: 200px; flex-shrink: 0;
+      display: flex; align-items: center; gap: 9px;
+    }
+    .logo-mark {
+      width: 26px; height: 26px; border-radius: 6px;
+      background: var(--accent-gradient);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .logo-mark svg { width: 12px; height: 12px; }
+    .logo-text { font-size: 13px; font-weight: 700; color: var(--text-heading); letter-spacing: -0.02em; }
+
+    .tab-nav {
+      flex: 1; display: flex; align-items: stretch;
+      justify-content: center; gap: 0; height: 100%;
+    }
+    .tab {
+      display: flex; align-items: center; padding: 0 18px;
+      font-size: 12px; font-weight: 500; color: var(--text-secondary);
+      border-bottom: 2px solid transparent;
+      cursor: pointer; transition: color 160ms, border-color 160ms;
+      white-space: nowrap;
+    }
+    .tab.active { color: var(--text-heading); border-bottom-color: var(--accent-primary); }
+    .tab:hover:not(.active) { color: var(--text-primary); }
+
+    .topbar-actions {
+      display: flex; align-items: center; gap: 8px; margin-left: auto;
+    }
+    .avatar {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: var(--accent-dim);
+      border: 1px solid rgba(0,200,232,0.30);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px; font-weight: 600; color: var(--accent-primary);
+    }
+
+    /* BODY */
+    .body-row { display: flex; flex: 1; overflow: hidden; }
+
+    /* SIDEBAR */
+    .sidebar {
+      width: 200px; flex-shrink: 0;
+      background: var(--glass-shell);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-right: 1px solid var(--glass-border);
+      overflow-y: auto; padding: 16px 10px;
+      display: flex; flex-direction: column; gap: 4px;
+    }
+    .nav-section-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.56rem; font-weight: 600;
+      letter-spacing: 0.14em; text-transform: uppercase;
+      color: var(--text-muted);
+      padding: 10px 10px 4px;
+    }
+    .nav-item {
+      display: flex; align-items: center; gap: 8px;
+      padding: 7px 10px; border-radius: 7px;
+      font-size: 12px; font-weight: 500; color: var(--text-secondary);
+      cursor: pointer;
+      border-left: 2px solid transparent;
+      transition: all 160ms;
+    }
+    .nav-item:hover { background: rgba(255,255,255,0.04); color: var(--text-primary); }
+    .nav-item.active {
+      border-left-color: var(--accent-primary);
+      background: var(--glass-elevated);
+      color: var(--text-heading);
+    }
+    .nav-dot { width: 14px; height: 14px; border-radius: 4px; flex-shrink: 0; opacity:0.7; }
+
+    /* CONTENT */
+    .content { flex: 1; overflow-y: auto; padding: 20px 24px; }
+
+    /* SECTION HEADER */
+    .section-header {
+      display: flex; align-items: center; gap: 8px;
+      margin-bottom: 12px; margin-top: 20px;
+    }
+    .section-header:first-child { margin-top: 0; }
+    .section-icon { width: 16px; height: 16px; color: var(--accent-primary); }
+
+    /* STAT ROW */
+    .stat-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px; margin-bottom: 16px;
+    }
+    .stat-card {
+      border-radius: 12px;
+      padding: 14px 16px;
+    }
+    .stat-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.58rem; font-weight: 600;
+      letter-spacing: 0.12em; text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+    .stat-number {
+      font-size: 1.8rem; font-weight: 700;
+      line-height: 1; letter-spacing: -0.02em;
+      font-variant-numeric: tabular-nums;
+      color: var(--text-heading);
+    }
+    .stat-number.gradient-text {
+      background: var(--accent-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .stat-trend {
+      font-size: 11px; font-weight: 500;
+      margin-top: 4px;
+      display: flex; align-items: center; gap: 3px;
+    }
+    .trend-up { color: var(--green); }
+    .trend-down { color: var(--red); }
+    .trend-neutral { color: var(--text-muted); }
+
+    /* SPLIT ROW */
+    .split-row {
+      display: grid;
+      grid-template-columns: 1fr 300px;
+      gap: 12px; margin-bottom: 16px;
+    }
+
+    /* GLASS PANEL */
+    .panel {
+      border-radius: 14px;
+      padding: 18px 20px;
+    }
+    .panel-title {
+      font-size: 12.5px; font-weight: 600;
+      color: var(--text-heading); margin-bottom: 14px;
+    }
+
+    /* CHART (simulated) */
+    .chart-area {
+      height: 140px; position: relative;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .chart-grid-line {
+      position: absolute; left: 0; right: 0;
+      border-top: 1px solid rgba(255,255,255,0.05);
+    }
+    .chart-bars {
+      display: flex; align-items: flex-end;
+      gap: 6px; height: 100%; padding: 0 8px 0;
+    }
+    .bar {
+      flex: 1; border-radius: 4px 4px 0 0;
+      background: linear-gradient(180deg, rgba(0,200,232,0.7) 0%, rgba(124,58,237,0.4) 100%);
+      transition: opacity 200ms;
+    }
+    .bar:hover { opacity: 0.8; }
+
+    /* AREA CHART */
+    .area-chart {
+      width: 100%; height: 100%;
+    }
+
+    /* FEED */
+    .alert-feed {
+      display: flex; flex-direction: column; gap: 6px;
+    }
+    .alert-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 10px; border-radius: 8px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--glass-border);
+      font-size: 11.5px;
+    }
+    .alert-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+    .alert-dot.critical { background: var(--red); box-shadow: 0 0 5px var(--red); }
+    .alert-dot.warning { background: var(--amber); box-shadow: 0 0 5px var(--amber); }
+    .alert-dot.info { background: var(--accent-primary); box-shadow: 0 0 5px var(--accent-primary); }
+    .alert-text { flex: 1; color: var(--text-primary); }
+    .alert-time { font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; color: var(--text-muted); }
+
+    /* TABLE */
+    .glass-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .glass-table th {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.58rem; font-weight: 600;
+      letter-spacing: 0.10em; text-transform: uppercase;
+      color: var(--text-muted);
+      padding: 8px 12px; text-align: left;
+      border-bottom: 1px solid var(--glass-border);
+    }
+    .glass-table td {
+      padding: 9px 12px; color: var(--text-primary);
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+    .glass-table tr:hover td { background: rgba(255,255,255,0.02); }
+    .status-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 2px 8px; border-radius: 9999px;
+      font-size: 10px; font-weight: 600;
+    }
+    .status-badge.active {
+      background: rgba(0,214,143,0.12);
+      color: var(--green); border: 1px solid rgba(0,214,143,0.25);
+    }
+    .status-badge.warning {
+      background: rgba(244,169,29,0.12);
+      color: var(--amber); border: 1px solid rgba(244,169,29,0.25);
+    }
+    .status-badge.critical {
+      background: rgba(255,90,103,0.12);
+      color: var(--red); border: 1px solid rgba(255,90,103,0.25);
+    }
+
+    /* Button */
+    .btn-gradient {
+      background: var(--accent-gradient);
+      color: #fff; border: none;
+      padding: 6px 14px; border-radius: 7px;
+      font-size: 11px; font-weight: 600;
+      cursor: pointer; letter-spacing: 0.02em;
+      box-shadow: 0 0 14px rgba(0,200,232,0.25);
+    }
+    .btn-ghost {
+      background: rgba(255,255,255,0.06);
+      color: var(--text-secondary); border: 1px solid var(--glass-border);
+      padding: 6px 12px; border-radius: 7px;
+      font-size: 11px; font-weight: 500; cursor: pointer;
+    }
+
+    /* Search */
+    .search-bar {
+      background: var(--glass-elevated);
+      border: 1px solid var(--glass-border);
+      border-radius: 7px;
+      padding: 5px 12px;
+      font-size: 11.5px; color: var(--text-secondary);
+      width: 180px; outline: none;
+      font-family: 'Inter', sans-serif;
+    }
+    .search-bar::placeholder { color: var(--text-muted); }
+    .search-bar:focus { border-color: rgba(0,200,232,0.30); }
+  </style>
+</head>
+<body>
+
+<div class="aioson-badge">AURORA COMMAND UI</div>
+
+<div class="shell">
+
+  <!-- COMMAND STRIP -->
+  <div class="command-strip">
+    <div class="cs-item">
+      <span class="cs-dot"></span>
+      LIVE
+    </div>
+    <div class="cs-item">
+      <span class="cs-dot amber"></span>
+      3 ACTIVE ALERTS
+    </div>
+    <div class="cs-item">
+      <span class="cs-dot green"></span>
+      12 AGENTS ONLINE
+    </div>
+    <div class="cs-item" style="margin-left:auto; margin-right: 50px;">
+      <span style="color: var(--text-muted)">LATENCY p99 —</span>&nbsp;
+      <span style="color: var(--accent-primary); font-family: 'JetBrains Mono', monospace;">847ms</span>
+    </div>
+  </div>
+
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <div class="topbar-logo">
+      <div class="logo-mark">
+        <svg viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M6 1L11 4V8L6 11L1 8V4L6 1Z" fill="white" fill-opacity="0.9"/>
+        </svg>
+      </div>
+      <div>
+        <div class="logo-text">NEXUS OPS</div>
+      </div>
+    </div>
+
+    <div class="tab-nav">
+      <div class="tab active">Overview</div>
+      <div class="tab">Incidents</div>
+      <div class="tab">Agents</div>
+      <div class="tab">Intel</div>
+      <div class="tab">Config</div>
+    </div>
+
+    <div class="topbar-actions">
+      <input class="search-bar" type="text" placeholder="Search..." />
+      <button class="btn-ghost">Export</button>
+      <button class="btn-gradient">+ New Incident</button>
+      <div class="avatar">JR</div>
+    </div>
+  </div>
+
+  <!-- BODY -->
+  <div class="body-row">
+
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+      <div class="nav-section-label">Monitoring</div>
+      <div class="nav-item active">
+        <svg class="nav-dot" viewBox="0 0 14 14" fill="none">
+          <rect x="1" y="1" width="12" height="12" rx="3" fill="rgba(0,200,232,0.4)"/>
+        </svg>
+        Dashboard
+      </div>
+      <div class="nav-item">
+        <svg class="nav-dot" viewBox="0 0 14 14" fill="none">
+          <circle cx="7" cy="7" r="5" fill="rgba(255,90,103,0.35)"/>
+        </svg>
+        Alerts
+        <span style="margin-left:auto; background:rgba(255,90,103,0.18); color:var(--red); border-radius:9999px; padding:1px 7px; font-size:9px; font-weight:700;">3</span>
+      </div>
+      <div class="nav-item">
+        <svg class="nav-dot" viewBox="0 0 14 14" fill="none">
+          <rect x="1" y="6" width="12" height="2" rx="1" fill="rgba(167,139,250,0.5)"/>
+          <rect x="1" y="2" width="8" height="2" rx="1" fill="rgba(167,139,250,0.35)"/>
+          <rect x="1" y="10" width="10" height="2" rx="1" fill="rgba(167,139,250,0.35)"/>
+        </svg>
+        Activity Feed
+      </div>
+
+      <div class="nav-section-label" style="margin-top: 6px;">Infrastructure</div>
+      <div class="nav-item">
+        <svg class="nav-dot" viewBox="0 0 14 14" fill="none">
+          <rect x="1" y="3" width="12" height="3" rx="1.5" fill="rgba(0,214,143,0.4)"/>
+          <rect x="1" y="8" width="12" height="3" rx="1.5" fill="rgba(0,214,143,0.25)"/>
+        </svg>
+        Clusters
+      </div>
+      <div class="nav-item">
+        <svg class="nav-dot" viewBox="0 0 14 14" fill="none">
+          <path d="M7 1 L13 4 L13 10 L7 13 L1 10 L1 4 Z" fill="rgba(0,200,232,0.3)"/>
+        </svg>
+        Deployments
+      </div>
+      <div class="nav-item">
+        <svg class="nav-dot" viewBox="0 0 14 14" fill="none">
+          <circle cx="4" cy="7" r="2.5" fill="rgba(244,169,29,0.5)"/>
+          <circle cx="10" cy="7" r="2.5" fill="rgba(244,169,29,0.3)"/>
+          <line x1="6.5" y1="7" x2="7.5" y2="7" stroke="rgba(244,169,29,0.5)" stroke-width="1"/>
+        </svg>
+        Services
+      </div>
+
+      <div class="nav-section-label" style="margin-top: 6px;">Intelligence</div>
+      <div class="nav-item">
+        <svg class="nav-dot" viewBox="0 0 14 14" fill="none">
+          <path d="M7 1 C7 1 13 5 13 9 C13 11 10 13 7 13 C4 13 1 11 1 9 C1 5 7 1 7 1Z" fill="rgba(124,58,237,0.4)"/>
+        </svg>
+        Threat Intel
+      </div>
+      <div class="nav-item">
+        <svg class="nav-dot" viewBox="0 0 14 14" fill="none">
+          <rect x="2" y="2" width="4" height="4" rx="1" fill="rgba(0,200,232,0.4)"/>
+          <rect x="8" y="2" width="4" height="4" rx="1" fill="rgba(124,58,237,0.3)"/>
+          <rect x="2" y="8" width="4" height="4" rx="1" fill="rgba(0,200,232,0.25)"/>
+          <rect x="8" y="8" width="4" height="4" rx="1" fill="rgba(124,58,237,0.2)"/>
+        </svg>
+        Reports
+      </div>
+    </div>
+
+    <!-- CONTENT -->
+    <div class="content">
+
+      <!-- STAT ROW -->
+      <div class="section-header">
+        <svg class="section-icon" viewBox="0 0 16 16" fill="none">
+          <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M8 5V8L10 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        <span class="mono-label">Platform Status</span>
+      </div>
+
+      <div class="stat-row">
+        <div class="stat-card glass">
+          <div class="stat-label">Active Incidents</div>
+          <div class="stat-number" style="color:var(--amber)">3</div>
+          <div class="stat-trend"><span style="color:var(--amber)">▲</span>&nbsp;<span class="trend-neutral">+2 from yesterday</span></div>
+        </div>
+        <div class="stat-card glass">
+          <div class="stat-label">Events (24h)</div>
+          <div class="stat-number gradient-text">48,291</div>
+          <div class="stat-trend"><span class="trend-up">▲ 8.4%</span>&nbsp;<span class="trend-neutral">vs avg</span></div>
+        </div>
+        <div class="stat-card glass">
+          <div class="stat-label">Mean TTD</div>
+          <div class="stat-number" style="font-size:1.4rem; font-family:'JetBrains Mono'; color:var(--text-heading)">00:04:12</div>
+          <div class="stat-trend"><span class="trend-up">▼ 12s</span>&nbsp;<span class="trend-neutral">improvement</span></div>
+        </div>
+        <div class="stat-card glass">
+          <div class="stat-label">Agent Coverage</div>
+          <div class="stat-number" style="color:var(--green)">99.4%</div>
+          <div class="stat-trend"><span class="trend-neutral">12 agents online</span></div>
+        </div>
+      </div>
+
+      <!-- SPLIT ROW: Chart + Alert Feed -->
+      <div class="split-row">
+
+        <!-- Main chart panel -->
+        <div class="panel glass">
+          <div class="panel-title">Threat Events — Last 24 Hours</div>
+          <div class="chart-area">
+            <div class="chart-grid-line" style="top:25%"></div>
+            <div class="chart-grid-line" style="top:50%"></div>
+            <div class="chart-grid-line" style="top:75%"></div>
+
+            <!-- SVG area chart simulation -->
+            <svg width="100%" height="140" viewBox="0 0 600 140" preserveAspectRatio="none" style="position:absolute;inset:0;">
+              <defs>
+                <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#00C8E8" stop-opacity="0.35"/>
+                  <stop offset="100%" stop-color="#7C3AED" stop-opacity="0.0"/>
+                </linearGradient>
+              </defs>
+              <!-- Area fill -->
+              <path d="M0,120 C30,100 60,115 100,90 S160,50 200,70 S260,30 300,45 S360,80 400,55 S460,20 500,35 S560,60 600,40 L600,140 L0,140 Z"
+                fill="url(#areaGrad)" />
+              <!-- Line -->
+              <path d="M0,120 C30,100 60,115 100,90 S160,50 200,70 S260,30 300,45 S360,80 400,55 S460,20 500,35 S560,60 600,40"
+                fill="none" stroke="#00C8E8" stroke-width="2" />
+              <!-- Dots at peaks -->
+              <circle cx="300" cy="45" r="3" fill="#00C8E8" />
+              <circle cx="500" cy="35" r="3" fill="#00C8E8" />
+            </svg>
+          </div>
+          <div style="display:flex; gap:16px; margin-top:10px;">
+            <span class="mono-label">Peak: <span style="color:var(--accent-primary)">2,847</span></span>
+            <span class="mono-label">Avg: <span style="color:var(--text-secondary)">1,210</span></span>
+            <span class="mono-label" style="margin-left:auto">Past 24h</span>
+          </div>
+        </div>
+
+        <!-- Alert Feed -->
+        <div class="panel glass">
+          <div class="panel-title">Live Alert Tape</div>
+          <div class="alert-feed">
+            <div class="alert-item">
+              <span class="alert-dot critical"></span>
+              <span class="alert-text">SQL injection attempt — endpoint /api/v2/users</span>
+              <span class="alert-time">0:02</span>
+            </div>
+            <div class="alert-item">
+              <span class="alert-dot warning"></span>
+              <span class="alert-text">Rate limit exceeded — agent nexus-04</span>
+              <span class="alert-time">0:08</span>
+            </div>
+            <div class="alert-item">
+              <span class="alert-dot critical"></span>
+              <span class="alert-text">Brute force detected — IP 185.220.101.x</span>
+              <span class="alert-time">0:14</span>
+            </div>
+            <div class="alert-item">
+              <span class="alert-dot info"></span>
+              <span class="alert-text">Anomaly resolved — cluster k8s-prod-02</span>
+              <span class="alert-time">0:21</span>
+            </div>
+            <div class="alert-item">
+              <span class="alert-dot warning"></span>
+              <span class="alert-text">High memory usage — pod inference-worker-7</span>
+              <span class="alert-time">0:33</span>
+            </div>
+            <div class="alert-item">
+              <span class="alert-dot info"></span>
+              <span class="alert-text">Agent nexus-09 online — region eu-west</span>
+              <span class="alert-time">0:47</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- TABLE SECTION -->
+      <div class="section-header">
+        <svg class="section-icon" viewBox="0 0 16 16" fill="none">
+          <rect x="1" y="3" width="14" height="2" rx="1" fill="currentColor" fill-opacity="0.8"/>
+          <rect x="1" y="7" width="14" height="2" rx="1" fill="currentColor" fill-opacity="0.5"/>
+          <rect x="1" y="11" width="14" height="2" rx="1" fill="currentColor" fill-opacity="0.5"/>
+        </svg>
+        <span class="mono-label">Incident Queue</span>
+        <span style="margin-left:auto; display:flex; gap:8px;">
+          <button class="btn-ghost">Filter</button>
+          <button class="btn-gradient">+ Open Incident</button>
+        </span>
+      </div>
+
+      <div class="panel glass" style="padding: 0; overflow:hidden;">
+        <table class="glass-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Severity</th>
+              <th>Source</th>
+              <th>Description</th>
+              <th>Detected</th>
+              <th>Status</th>
+              <th>Assignee</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="mono" style="color:var(--accent-primary); font-size:10.5px">INC-2841</td>
+              <td><span class="status-badge critical">Critical</span></td>
+              <td style="color:var(--text-secondary)">API Gateway</td>
+              <td>SQL injection attempt blocked on /users endpoint</td>
+              <td class="mono" style="font-size:10px; color:var(--text-muted)">00:02:14</td>
+              <td><span class="status-badge warning">Investigating</span></td>
+              <td style="color:var(--text-secondary)">A. Chen</td>
+            </tr>
+            <tr>
+              <td class="mono" style="color:var(--accent-primary); font-size:10.5px">INC-2840</td>
+              <td><span class="status-badge warning">High</span></td>
+              <td style="color:var(--text-secondary)">Auth Service</td>
+              <td>Brute force login — 1,200 attempts in 60s</td>
+              <td class="mono" style="font-size:10px; color:var(--text-muted)">00:08:42</td>
+              <td><span class="status-badge warning">Mitigating</span></td>
+              <td style="color:var(--text-secondary)">K. Patel</td>
+            </tr>
+            <tr>
+              <td class="mono" style="color:var(--accent-primary); font-size:10.5px">INC-2839</td>
+              <td><span class="status-badge active">Low</span></td>
+              <td style="color:var(--text-secondary)">Infra Monitor</td>
+              <td>Memory pressure on inference worker pod</td>
+              <td class="mono" style="font-size:10px; color:var(--text-muted)">00:33:11</td>
+              <td><span class="status-badge active">Resolved</span></td>
+              <td style="color:var(--text-secondary)">Auto</td>
+            </tr>
+            <tr>
+              <td class="mono" style="color:var(--accent-primary); font-size:10.5px">INC-2838</td>
+              <td><span class="status-badge warning">Medium</span></td>
+              <td style="color:var(--text-secondary)">Rate Limiter</td>
+              <td>Agent nexus-04 exceeded call quota</td>
+              <td class="mono" style="font-size:10px; color:var(--text-muted)">00:47:08</td>
+              <td><span class="status-badge active">Resolved</span></td>
+              <td style="color:var(--text-secondary)">M. Torres</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div><!-- /content -->
+  </div><!-- /body-row -->
+</div><!-- /shell -->
+
+</body>
+</html>
