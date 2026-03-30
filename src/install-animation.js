@@ -109,6 +109,26 @@ function renderInstallSummary({ result, installProfile, stdout = process.stdout 
     opencode: 'OpenCode'
   };
 
+  const DESIGN_NAMES = {
+    'none':                      'None',
+    'clean-saas-ui':             'Clean SaaS UI',
+    'aurora-command-ui':         'Aurora Command UI',
+    'cognitive-core-ui':         'Cognitive Core UI',
+    'bold-editorial-ui':         'Bold Editorial UI',
+    'warm-craft-ui':             'Warm Craft UI',
+    'glassmorphism-ui':          'Glassmorphism UI',
+    'neo-brutalist-ui':          'Neo-Brutalist UI',
+    'premium-command-center-ui': 'Premium Command Center UI',
+    'interface-design':          'Interface Design'
+  };
+
+  const LOCALE_NAMES = {
+    'en':    'English',
+    'pt-BR': 'Português (Brasil)',
+    'es':    'Español',
+    'fr':    'Français'
+  };
+
   const toolNames = installProfile
     ? installProfile.tools.map(t => TOOL_NAMES[t] || t).join(', ')
     : 'All';
@@ -118,6 +138,14 @@ function renderInstallSummary({ result, installProfile, stdout = process.stdout 
     : installProfile.uses.includes('squads')
       ? 'Development + Squads'
       : 'Development';
+
+  const designLabel = installProfile
+    ? (DESIGN_NAMES[installProfile.design || 'none'] || installProfile.design || 'None')
+    : null;
+
+  const localeLabel = installProfile
+    ? (LOCALE_NAMES[installProfile.locale || 'en'] || installProfile.locale || 'English')
+    : null;
 
   const copiedCount = result.copied.length;
   const profileSkipped = result.skipped.filter(s => s.reason === 'not-in-profile').length;
@@ -129,9 +157,11 @@ function renderInstallSummary({ result, installProfile, stdout = process.stdout 
     if (existingSkipped) stdout.write(`, ${existingSkipped} already exist`);
     if (profileSkipped) stdout.write(`, ${profileSkipped} not in profile`);
     stdout.write('\n');
-    const toolsStr = installProfile ? installProfile.tools.join(',') : 'all';
-    const modeStr = installProfile ? installProfile.uses.join(',') : 'all';
-    stdout.write(`aioson: tools=${toolsStr} mode=${modeStr}\n`);
+    const toolsStr   = installProfile ? installProfile.tools.join(',') : 'all';
+    const modeStr    = installProfile ? installProfile.uses.join(',') : 'all';
+    const designStr  = installProfile ? (installProfile.design || 'none') : 'all';
+    const localeStr  = installProfile ? (installProfile.locale || 'en') : 'all';
+    stdout.write(`aioson: tools=${toolsStr} mode=${modeStr} design=${designStr} locale=${localeStr}\n`);
     stdout.write('aioson: run /setup to continue\n');
     return;
   }
@@ -161,14 +191,20 @@ function renderInstallSummary({ result, installProfile, stdout = process.stdout 
     skipLines.push(row(`${dim}─  ${otherSkipped} files skipped (protected)${reset}`));
   }
 
+  const profileLines = [
+    row(`${cyan}Tools${reset}   →  ${cyan}${toolNames}${reset}`),
+    row(`${cyan}Mode${reset}    →  ${cyan}${modeLabel}${reset}`)
+  ];
+  if (designLabel) profileLines.push(row(`${cyan}Design${reset}  →  ${cyan}${designLabel}${reset}`));
+  if (localeLabel) profileLines.push(row(`${cyan}Locale${reset}  →  ${cyan}${localeLabel}${reset}`));
+
   const lines = [
     `  ╭${'─'.repeat(W + 2)}╮`,
     `  │${' '.repeat(W + 2)}│`,
     row(`${green}✓${reset}  ${copiedCount} files installed`),
     ...skipLines,
     `  │${' '.repeat(W + 2)}│`,
-    row(`${cyan}Tools${reset}  →  ${cyan}${toolNames}${reset}`),
-    row(`${cyan}Mode${reset}   →  ${cyan}${modeLabel}${reset}`),
+    ...profileLines,
     `  │${' '.repeat(W + 2)}│`,
     row(`${yellow}Next: run /setup in your AI tool${reset}`),
     `  │${' '.repeat(W + 2)}│`,

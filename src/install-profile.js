@@ -18,15 +18,33 @@ const TOOL_FILES = {
   ]
 };
 
-// Prefixos/arquivos que pertencem ao use-case "squads"
+// Squad agent/task/skill paths (non-locale)
 const SQUAD_PATHS = [
   /^\.aioson\/agents\/(squad|orache|genome|profiler-researcher|profiler-enricher|profiler-forge|design-hybrid-forge)\.md$/,
-  /^\.aioson\/locales\/[^/]+\/agents\/(squad|orache|genome|profiler-researcher|profiler-enricher|profiler-forge|design-hybrid-forge)\.md$/,
   /^\.aioson\/tasks\/squad-/,
   /^\.aioson\/skills\/squad\//,
   /^\.aioson\/templates\/squads\//,
   /^\.aioson\/squads\//
 ];
+
+// Squad agents inside locale dirs — filtered by BOTH locale AND squad
+const SQUAD_LOCALE_AGENT_RE = /^\.aioson\/locales\/([^/]+)\/agents\/(squad|orache|genome|profiler-researcher|profiler-enricher|profiler-forge|design-hybrid-forge)\.md$/;
+
+// Design skill IDs disponíveis
+const DESIGN_IDS = [
+  'aurora-command-ui',
+  'bold-editorial-ui',
+  'clean-saas-ui',
+  'cognitive-core-ui',
+  'glassmorphism-ui',
+  'interface-design',
+  'neo-brutalist-ui',
+  'premium-command-center-ui',
+  'warm-craft-ui'
+];
+
+// Caminhos de locale por código
+const LOCALE_IDS = ['en', 'es', 'fr', 'pt-BR'];
 
 // Arquivos sempre instalados (core invariante)
 const ALWAYS_INSTALL = [
@@ -39,7 +57,12 @@ const ALWAYS_INSTALL = [
   /^aioson-models\.json$/
 ];
 
-const DEFAULT_PROFILE = { tools: ['claude'], uses: ['development'] };
+const DEFAULT_PROFILE = {
+  tools: ['claude'],
+  uses: ['development'],
+  design: 'none',
+  locale: 'en'
+};
 
 function matchesAny(rel, patterns) {
   for (const p of patterns) {
@@ -74,12 +97,33 @@ function shouldIncludeForProfile(rel, profile) {
     return (profile.tools || []).some(tool => matchesAny(rel, TOOL_FILES[tool] || []));
   }
 
-  // Squad-specific files
+  // Squad-specific files (non-locale)
   if (matchesAny(rel, SQUAD_PATHS)) {
     return (profile.uses || []).includes('squads');
   }
 
-  // Everything else (core agents, locales, dev skills) → always install
+  // Design skills: .aioson/skills/design/<id>/
+  const designMatch = rel.match(/^\.aioson\/skills\/design\/([^/]+)\//);
+  if (designMatch) {
+    const skillId = designMatch[1];
+    const chosen = profile.design || 'none';
+    return chosen !== 'none' && skillId === chosen;
+  }
+
+  // Locale files: .aioson/locales/<locale>/...
+  const localeMatch = rel.match(/^\.aioson\/locales\/([^/]+)\//);
+  if (localeMatch) {
+    const fileLocale = localeMatch[1];
+    const chosen = profile.locale || 'en';
+    if (fileLocale !== chosen) return false;
+    // Squad locale agents also require squads to be enabled
+    if (SQUAD_LOCALE_AGENT_RE.test(rel)) {
+      return (profile.uses || []).includes('squads');
+    }
+    return true;
+  }
+
+  // Everything else (core agents, dev skills, process, etc.) → always install
   return true;
 }
 
@@ -87,6 +131,8 @@ module.exports = {
   shouldIncludeForProfile,
   TOOL_FILES,
   SQUAD_PATHS,
+  DESIGN_IDS,
+  LOCALE_IDS,
   ALWAYS_INSTALL,
   DEFAULT_PROFILE
 };

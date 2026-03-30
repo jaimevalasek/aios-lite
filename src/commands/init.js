@@ -55,9 +55,10 @@ async function runInit({ args, options, logger, t }) {
     onProgress: isTTY && !dryRun ? renderProgress : null
   });
 
+  const effectiveLocale = requestedLanguage || (installProfile && installProfile.locale) || null;
   let localeApply = null;
-  if (requestedLanguage) {
-    localeApply = await applyAgentLocale(targetDir, requestedLanguage, { dryRun });
+  if (effectiveLocale) {
+    localeApply = await applyAgentLocale(targetDir, effectiveLocale, { dryRun });
     if (dryRun) {
       logger.log(t('locale_apply.dry_run_applied', { locale: localeApply.locale }));
     } else {
