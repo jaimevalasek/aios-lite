@@ -157,6 +157,8 @@ module.exports = {
       'aioson skill:list [caminho] [--json] [--locale=pt-BR]',
     help_skill_remove:
       'aioson skill:remove [caminho] --slug=<nome> [--json] [--locale=pt-BR]',
+    help_design_hybrid_options:
+      'aioson design-hybrid:options [caminho] [--advanced] [--json] [--locale=pt-BR]',
     help_cloud_import_squad:
       'aioson cloud:import:squad [path] --url=<snapshot-url> [--force] [--snapshots-only] [--dry-run] [--json] [--locale=pt-BR]',
     help_cloud_import_genome:

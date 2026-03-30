@@ -94,6 +94,19 @@ Before committing to a pair, answer:
 
 ---
 
+## Optional modifier lane
+
+After the core pair is chosen, you may optionally add up to 2 modifier skills. A 3rd modifier is allowed only when the user explicitly enables advanced mode or the active variation preset carries `modifier_policy: "up_to_3_modifiers"`.
+
+Modifier rules:
+- Modifiers are optional. The hybrid must still stand on the 2 primary parents alone.
+- Modifiers cannot own substrate, layout system, navigation model, or density baseline.
+- Modifiers may influence only accent refinement, motion, website narrative patterns, or one small component family.
+- If a modifier makes the identity harder to describe in one sentence, remove it.
+- `interface-design` is allowed as a modifier, but is too neutral to be a primary parent.
+
+---
+
 ## Anti-pairs
 
 Avoid these regardless of aesthetic appeal:

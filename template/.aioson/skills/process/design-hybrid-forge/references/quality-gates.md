@@ -140,15 +140,49 @@ Fail: Return to Phase 5 and complete the missing elements.
 
 ---
 
-## Final ship checklist
+## Gate I — Metadata integrity
 
-Before marking the hybrid as done:
+**Question:** Does `.skill-meta.json` accurately describe the hybrid?
+
+Checklist:
+- [ ] `source` is `generated`
+- [ ] `generation_mode` is `project-local`
+- [ ] `parents.primary` contains exactly 2 skills
+- [ ] `parents.modifiers` contains at most 2 skills by default, or at most 3 only when advanced mode was explicitly enabled
+- [ ] `author.name` is filled when the user provided it
+- [ ] `generator.skill` is `design-hybrid-forge`
+- [ ] `generator.model` is recorded when the runtime exposed it
+- [ ] `variation_profile.modifier_policy` matches the generation mode when a preset was used
+
+Pass: The metadata is present and matches the generated skill.
+Fail: Return to Phase 4 and fix the metadata before distribution.
+
+---
+
+## Final ship checklist — project-local mode
+
+Before marking the project-local hybrid as done:
 
 - [ ] All 8 skill files written (SKILL.md + 7 references)
-- [ ] Both HTML previews written
-- [ ] Gallery index.html updated (skill count, new card with `✦ Hybrid` badge)
-- [ ] `naming-registry.md` updated with new hybrid entry
-- [ ] `pair-compatibility.md` updated (add pair to completed list)
-- [ ] All 8 quality gates passed
+- [ ] `.skill-meta.json` written
+- [ ] Both HTML previews written inside `previews/`
+- [ ] Variation overlay reflected in previews and metadata when one was selected
+- [ ] Active preset removed or archived from `.aioson/context/design-variation-preset.md` after successful generation
+- [ ] History snapshot preserved in `.aioson/context/history/design-variation-presets/`
+- [ ] `AGENTS.md` updated when it exists
+- [ ] Tool-native mirrors updated if the directories exist
+- [ ] All quality gates A through I passed
 
-When all are checked: the hybrid is shipped.
+When all are checked: the project-local hybrid is shipped.
+
+## Final ship checklist — core-promotion mode
+
+Only for explicit promotion back to AIOSON core:
+
+- [ ] Project-local checklist already passed
+- [ ] `.aioson/skills/design/{slug}/` prepared in the core repo
+- [ ] `docs/design-previews/index.html` updated with `✦ Hybrid` badge
+- [ ] `naming-registry.md` updated with the new hybrid entry
+- [ ] `pair-compatibility.md` updated (add pair to completed list)
+
+When all are checked: the hybrid is ready for PR / marketplace curation.

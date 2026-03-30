@@ -143,6 +143,7 @@
 | `skill:install` | Instala skill de terceiros via npm, cloud ou path local | Quando quer adicionar capacidade ao projeto. Veja [Skills](./skills.md) |
 | `skill:list` | Lista skills instaladas em `.aioson/installed-skills/` | Quando quer saber quais skills estão ativas |
 | `skill:remove` | Remove skill instalada e limpa diretórios de ferramentas | Quando uma skill não é mais necessária |
+| `design-hybrid:options` | Abre um seletor visual com setas + espaço para montar um preset temporário de variações de design | Quando quer alimentar a `design-hybrid-forge` com direções mais extravagantes, clássicas, animadas ou com CSS avançado. Usa o locale do projeto automaticamente e aceita `--locale` como override; com `--advanced` libera um 3º modificador. Veja [design-hybrid-forge](./design-hybrid-forge.md) |
 
 ### Cloud
 

@@ -18,9 +18,10 @@ Write in this order — each file informs the next:
 6. `references/dashboards.md` — dashboard presets (uses patterns + tokens)
 7. `references/websites.md` — landing patterns (uses components + art direction)
 8. `references/motion.md` — animations (uses tokens + components)
-9. `docs/design-previews/{name}.html` — dashboard preview (uses all above)
-10. `docs/design-previews/{name}-website.html` — landing preview (uses all above)
-11. `docs/design-previews/index.html` — add gallery card
+9. `.skill-meta.json` — author, parentage, generator, install/distribution metadata
+10. `previews/{name}.html` — dashboard preview (uses all above)
+11. `previews/{name}-website.html` — landing preview (uses all above)
+12. `AGENTS.md` — register the installed skill section when that file exists
 
 ---
 
@@ -37,6 +38,8 @@ Required sections (must all be present):
 - `## Loading guide` (table: task → which references to load)
 - `## Visual signature — three pillars` (the three from phase 2)
 - `## Hybrid DNA` (from A / from B / new in hybrid — explicit)
+- `## Modifier DNA` (only if modifiers were used)
+- `## Variation Overlay` (only if a variation preset / overlay was selected)
 - `## Theme system` (default theme + optional, HTML data-theme snippet)
 - `## Visual DNA` (complete CSS color specs for dark + light, including hex values)
 - `## Layout structure` (ASCII diagram of the main app shell)
@@ -47,6 +50,8 @@ Required sections (must all be present):
 - `## Non-negotiable quality gates` (8–12 gates)
 - `## Positioning vs parent skills` (comparison table vs both parents)
 - `## Delivery modes` (greenfield + brownfield)
+
+The file must state clearly that the hybrid is selected as one design skill and must not be blended live with other active design skills.
 
 ### references/design-tokens.md
 
@@ -63,6 +68,9 @@ Required content:
 - Token scope guardrails (rule 1–4 with safe/unsafe examples)
 - Admin compact density scale (if structure parent = cognitive-core or clean-saas)
 
+If modifiers were used, token changes must stay inside their allowed lane. Example: a motion modifier must not redefine layout width tokens.
+If a variation overlay exists, reflect it in tokens only where it changes expression without violating the parent-owned structure/substrate rules.
+
 Minimum: dark theme has at least 8 bg/surface tokens, 6 accent tokens, 6 semantic tokens, 4 shadow tokens.
 
 ### references/art-direction.md
@@ -74,6 +82,9 @@ Required content:
 - Signature library (table with ≥10 reusable details)
 - Anti-generic tests (≥4 tests, at least one unique to this hybrid)
 - What makes each mode distinct (table contrasting the 5 modes)
+
+If modifiers exist, call out exactly where they are allowed to appear and where they are forbidden.
+If a variation overlay exists, describe how it changes the expression modes without turning them into unrelated themes.
 
 ### references/components.md
 
@@ -127,11 +138,73 @@ Required:
 - Reduced motion block (`@media (prefers-reduced-motion: reduce)`)
 - Performance rules (≥4)
 
+### .skill-meta.json
+
+Required content:
+- `source: "generated"`
+- `generation_mode: "project-local"`
+- `installedAt`
+- `author.name` when the user provided one
+- `generator.skill: "design-hybrid-forge"`
+- `generator.model` when the runtime/tool exposes it
+- `generator.tool` when known (`claude`, `codex`, etc.)
+- `parents.primary` with exactly 2 entries
+- `parents.modifiers` with 0–2 entries by default, or 0–3 only when advanced mode was enabled
+- `promotion.status` (`local`, `candidate`, `promoted`)
+- `variation_profile` when a preset/overlay was selected
+- `variation_profile.modifier_policy` when the active preset declared it
+
+Recommended shape:
+
+```json
+{
+  "source": "generated",
+  "generation_mode": "project-local",
+  "installedAt": "2026-03-30T00:00:00.000Z",
+  "author": {
+    "name": "ACME Design Team"
+  },
+  "generator": {
+    "skill": "design-hybrid-forge",
+    "tool": "codex",
+    "model": "gpt-5.x"
+  },
+  "parents": {
+    "primary": ["cognitive-core-ui", "glassmorphism-ui"],
+    "modifiers": ["bold-editorial-ui"]
+  },
+  "variation_profile": {
+    "modifier_policy": "up_to_2_modifiers",
+    "style_modes": ["cinematic-immersive"],
+    "motion_system": ["scroll-driven-scenes"],
+    "advanced_css": ["scroll-driven-animations", "view-transition-api"]
+  },
+  "promotion": {
+    "status": "local"
+  }
+}
+```
+
+### AGENTS.md registration
+
+When `AGENTS.md` exists in the project, update the "Installed skills" section so Codex can invoke the new hybrid via `@{slug}`.
+
+If `.aioson/context/design-variation-preset.md` was consumed for the generation:
+- preserve the history snapshot under `.aioson/context/history/design-variation-presets/`
+- remove or archive the active preset from `.aioson/context/` after the hybrid files are finished
+- do not treat that preset as the permanent visual configuration of the project
+
+Required row format:
+
+```markdown
+| @{slug} | `.aioson/installed-skills/{slug}/SKILL.md` | {short description} |
+```
+
 ---
 
 ## Preview requirements
 
-### Dashboard preview (`{name}.html`)
+### Dashboard preview (`previews/{name}.html`)
 
 Must show:
 - The aurora/substrate background visible through glass panels
@@ -147,7 +220,7 @@ Must show:
 - AIOSON badge (fixed, top-right)
 - Must render correctly with no external dependencies beyond Google Fonts
 
-### Landing page preview (`{name}-website.html`)
+### Landing page preview (`previews/{name}-website.html`)
 
 Must show:
 - Full-page substrate background (fixed, aurora gradient or equivalent)
@@ -173,9 +246,16 @@ Must show:
 
 ---
 
-## Gallery card requirements
+## Optional promotion requirements
 
-When adding to `index.html`:
+Only for explicit core-promotion mode:
+- prepare a gallery card for `docs/design-previews/index.html`
+- prepare the hybrid for `.aioson/skills/design/{name}/`
+- update naming/registry files only in the AIOSON core repo
+
+### Gallery card requirements
+
+When adding to `index.html` in core-promotion mode:
 
 ```html
 <!-- Hybrid card structure -->

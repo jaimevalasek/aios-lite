@@ -16,7 +16,7 @@ Type `@agent-name` in the prompt. Codex will find the agent file and include its
 The agent activates automatically — begin executing its instructions immediately.
 Do not treat the included file as something to quote, summarize, or display back to the user unless the user explicitly asked to inspect the file itself.
 
-Examples: `@setup`, `@deyvin`, `@dev`, `@squad`, `@genome`, `@profiler-researcher`
+Examples: `@setup`, `@deyvin`, `@dev`, `@squad`, `@genome`, `@profiler-researcher`, `@design-hybrid-forge`
 
 **Option 2 — Natural language:**
 Describe your intent. The agent system will match and execute.
@@ -40,6 +40,7 @@ Describe your intent. The agent system will match and execute.
 | @profiler-researcher | "start the profiler research", "profile this person", "pesquisar DNA mental" |
 | @profiler-enricher | "enrich this profile", "analyze this person's cognition", "consolidar perfil cognitivo" |
 | @profiler-forge | "generate the advisor", "forge the genome 3.0", "gerar advisor da persona" |
+| @design-hybrid-forge | "create hybrid design skill", "combine two design skills", "use the design-hybrid-forge agent" |
 
 When an agent file is included via @ or described via natural language, read the corresponding file and execute its instructions immediately from the first step.
 Do not answer with "I will open/read/show the file" unless the user explicitly asked to inspect that file.
@@ -90,6 +91,7 @@ When running Codex directly (without `aioson workflow:next`), these rules apply:
 - @profiler-researcher → `.aioson/agents/profiler-researcher.md`
 - @profiler-enricher → `.aioson/agents/profiler-enricher.md`
 - @profiler-forge → `.aioson/agents/profiler-forge.md`
+- @design-hybrid-forge → `.aioson/agents/design-hybrid-forge.md`
 
 ## Process skill: aioson-spec-driven
 
@@ -99,6 +101,16 @@ This is a first-party process skill. It teaches agents how phases connect, when 
 
 Agents that load it: @product, @analyst, @architect, @sheldon, @dev, @deyvin
 When to load: at the start of any spec work (PRD, requirements, architecture, implementation)
+What to load: `SKILL.md` first, then only the `references/` file relevant to the current phase
+
+## Process skill: design-hybrid-forge
+
+Located at: `.aioson/skills/process/design-hybrid-forge/SKILL.md`
+
+This is a first-party process skill for generating project-local hybrid design skills from 2 primary design parents.
+
+Activated by: @design-hybrid-forge
+Default output: `.aioson/installed-skills/{hybrid-name}/`
 What to load: `SKILL.md` first, then only the `references/` file relevant to the current phase
 
 ## Session protocol

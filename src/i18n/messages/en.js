@@ -159,6 +159,8 @@ module.exports = {
       'aioson skill:list [path] [--json] [--locale=en]',
     help_skill_remove:
       'aioson skill:remove [path] --slug=<name> [--json] [--locale=en]',
+    help_design_hybrid_options:
+      'aioson design-hybrid:options [path] [--advanced] [--json] [--locale=en]',
     help_cloud_import_squad:
       'aioson cloud:import:squad [path] --url=<snapshot-url> [--force] [--snapshots-only] [--dry-run] [--json] [--locale=en]',
     help_cloud_import_genome:

@@ -99,6 +99,24 @@ Structure:
 
 If you can't write three distinct, non-overlapping pillars, the hybrid doesn't have a clear enough identity. Revise the crossover spec before generating.
 
+### 2.7 Optional modifier ownership
+
+If the user selected modifier skills, assign each one a narrow lane.
+
+Allowed modifier lanes:
+- accent refinement
+- motion language
+- landing-page / website composition
+- one small component family
+
+Forbidden modifier lanes:
+- substrate / background model
+- layout structure
+- density default
+- navigation architecture
+
+If you cannot describe the modifier contribution in one short sentence, drop the modifier.
+
 ---
 
 ## Phase 3 — Crossover Spec
@@ -147,6 +165,7 @@ When both parents claim the same dimension, use this priority order:
 1. **Substrate parent wins background** — no exceptions
 2. **Structure parent wins layout and density** — no exceptions
 3. **For everything else**: whichever parent has the more distinctive/unusual approach wins. The blend wins only if it creates a new element that didn't exist before.
+4. **Modifiers never override the 2 rules above.** If a modifier conflicts with a primary parent on substrate or structure, the modifier loses automatically.
 
 ### 3.4 Anti-blend rules
 
@@ -155,6 +174,17 @@ Never do these:
 - Use both parent layout systems simultaneously → the interface looks confused
 - Apply parent A's texture at 50% and parent B's texture at 50% → neither reads clearly
 - Keep both parent backgrounds in different sections → the substrate must be unified
+- Let a modifier become a stealth third parent → the identity collapses
+
+### 3.5 Modifier map (optional)
+
+If modifiers exist, add this small table after the dimension map:
+
+| Modifier | Allowed lane | Concrete contribution |
+|---|---|---|
+| `modifier-skill` | motion | "springier reveal timings for marketing sections only" |
+
+Keep this table short. Zero to 2 rows maximum in the default flow, or zero to 3 rows only in advanced mode.
 
 ---
 
@@ -165,6 +195,7 @@ After completing phases 2 and 3, produce this summary before writing any file:
 ```
 HYBRID: {name}
 PARENTS: {skill_a} × {skill_b}
+MODIFIERS: {optional list or "none"}
 TENSION: {one sentence}
 
 SUBSTRATE: {parent} — {substrate value}
@@ -177,6 +208,8 @@ PILLARS:
 3. {pillar title}: {3–5 sentences}
 
 DIMENSION MAP: (filled table)
+
+MODIFIER MAP: (only if modifiers exist)
 
 NEW ELEMENTS:
 - {element 1}

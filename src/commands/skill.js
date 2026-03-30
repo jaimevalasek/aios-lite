@@ -16,6 +16,47 @@ function resolveTargetDir(args) {
   return path.resolve(process.cwd(), args[0] || '.');
 }
 
+async function copyRecursive(src, dest) {
+  const stat = await fs.stat(src);
+  if (stat.isDirectory()) {
+    await ensureDir(dest);
+    const entries = await fs.readdir(src);
+    for (const entry of entries) {
+      await copyRecursive(path.join(src, entry), path.join(dest, entry));
+    }
+    return;
+  }
+
+  await ensureDir(path.dirname(dest));
+  await fs.copyFile(src, dest);
+}
+
+async function replaceDirectory(srcDir, destDir) {
+  await fs.rm(destDir, { recursive: true, force: true });
+  await copyRecursive(srcDir, destDir);
+}
+
+async function readJsonIfExists(filePath) {
+  if (!(await exists(filePath))) return null;
+  try {
+    return JSON.parse(await fs.readFile(filePath, 'utf8'));
+  } catch {
+    return null;
+  }
+}
+
+async function writeSkillMeta(destDir, patch) {
+  const metaPath = path.join(destDir, '.skill-meta.json');
+  const existing = await readJsonIfExists(metaPath) || {};
+  const merged = {
+    ...existing,
+    ...patch
+  };
+
+  await fs.writeFile(metaPath, JSON.stringify(merged, null, 2), 'utf8');
+  return merged;
+}
+
 /**
  * Parse YAML frontmatter from a SKILL.md file.
  */
@@ -44,17 +85,7 @@ async function distributeToTool(targetDir, slug, skillDir) {
   for (const toolPath of TOOL_TARGETS) {
     const toolSkillDir = path.join(targetDir, toolPath, slug);
     try {
-      await ensureDir(toolSkillDir);
-      // Copy all files from the installed skill dir
-      const entries = await fs.readdir(skillDir);
-      for (const entry of entries) {
-        const src = path.join(skillDir, entry);
-        const dest = path.join(toolSkillDir, entry);
-        const stat = await fs.stat(src);
-        if (stat.isFile()) {
-          await fs.copyFile(src, dest);
-        }
-      }
+      await replaceDirectory(skillDir, toolSkillDir);
       results.push({ tool: toolPath, ok: true });
     } catch (err) {
       results.push({ tool: toolPath, ok: false, error: err.message });
@@ -187,12 +218,13 @@ async function installFromNpm(targetDir, slug, options, logger) {
 
       // Copy to .aioson/installed-skills/{slug}/
       const destDir = path.join(targetDir, INSTALLED_SKILLS_DIR, slug);
-      await ensureDir(destDir);
-
-      const entries = await fs.readdir(sourceDir);
-      for (const entry of entries) {
-        await fs.copyFile(path.join(sourceDir, entry), path.join(destDir, entry));
-      }
+      await replaceDirectory(sourceDir, destDir);
+      await writeSkillMeta(destDir, {
+        source: 'npm',
+        sourcePackage: '@tech-leads-club/agent-skills',
+        sourcePath: path.relative(targetDir, sourceDir),
+        installedAt: new Date().toISOString()
+      });
 
       resolve({ ok: true, sourceDir, destDir });
     });
@@ -248,15 +280,16 @@ async function installFromCloud(targetDir, slug, options, logger) {
   ].join('\n');
 
   const destDir = path.join(targetDir, INSTALLED_SKILLS_DIR, slug);
+  await fs.rm(destDir, { recursive: true, force: true });
   await ensureDir(destDir);
   await fs.writeFile(path.join(destDir, 'SKILL.md'), fm, 'utf8');
 
   // Write meta
-  await fs.writeFile(path.join(destDir, '.skill-meta.json'), JSON.stringify({
+  await writeSkillMeta(destDir, {
     source: 'cloud',
     cloudSlug: snapshot.skill.slug,
     installedAt: new Date().toISOString()
-  }, null, 2), 'utf8');
+  });
 
   return { ok: true, destDir };
 }
@@ -271,30 +304,32 @@ async function installFromLocal(targetDir, slug, filePath, logger) {
   }
 
   const destDir = path.join(targetDir, INSTALLED_SKILLS_DIR, slug);
-  await ensureDir(destDir);
-
   const stat = await fs.stat(absPath);
+  const samePath = path.resolve(absPath) === path.resolve(destDir);
+
+  if (!samePath) {
+    await fs.rm(destDir, { recursive: true, force: true });
+    await ensureDir(destDir);
+  } else if (!stat.isDirectory()) {
+    return { ok: false, error: 'Local self-install only supports skill directories' };
+  }
+
   if (stat.isDirectory()) {
-    // Copy entire directory
-    const entries = await fs.readdir(absPath);
-    for (const entry of entries) {
-      const src = path.join(absPath, entry);
-      const srcStat = await fs.stat(src);
-      if (srcStat.isFile()) {
-        await fs.copyFile(src, path.join(destDir, entry));
-      }
+    if (!samePath) {
+      await replaceDirectory(absPath, destDir);
     }
   } else {
     // Single file — copy as SKILL.md
+    await ensureDir(destDir);
     await fs.copyFile(absPath, path.join(destDir, 'SKILL.md'));
   }
 
   // Write meta
-  await fs.writeFile(path.join(destDir, '.skill-meta.json'), JSON.stringify({
+  await writeSkillMeta(destDir, {
     source: 'local',
     sourcePath: filePath,
     installedAt: new Date().toISOString()
-  }, null, 2), 'utf8');
+  });
 
   return { ok: true, destDir };
 }
@@ -429,17 +464,27 @@ async function runSkillList({ args, options = {}, logger, t }) {
       const fm = parseSkillFrontmatter(raw);
 
       let source = 'unknown';
+      let meta = null;
       try {
         const metaRaw = await fs.readFile(path.join(skillsDir, slug, '.skill-meta.json'), 'utf8');
-        const meta = JSON.parse(metaRaw);
+        meta = JSON.parse(metaRaw);
         source = meta.source || 'unknown';
       } catch { /* no meta */ }
+
+      const author = meta?.author?.name || meta?.author_name || null;
+      const model =
+        meta?.generator?.model ||
+        meta?.generation?.model ||
+        meta?.generated_by_model ||
+        null;
 
       installed.push({
         slug,
         name: fm.name || slug,
         description: fm.description || '',
         source,
+        author,
+        model,
         path: path.relative(targetDir, path.join(skillsDir, slug))
       });
     }
@@ -472,6 +517,8 @@ async function runSkillList({ args, options = {}, logger, t }) {
       if (s.description) {
         logger.log(`    ${s.description.slice(0, 100)}`);
       }
+      if (s.author) logger.log(`    author: ${s.author}`);
+      if (s.model) logger.log(`    model: ${s.model}`);
       logger.log(`    ${s.path}/SKILL.md`);
       logger.log('');
     }

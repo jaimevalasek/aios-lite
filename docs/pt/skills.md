@@ -50,9 +50,13 @@ Estrutura:
 
 ### Skills instaladas (`.aioson/installed-skills/`)
 
-Skills de terceiros instaladas pelo usuário. São **versionadas com o projeto** (não gitignored), permitindo que toda a equipe use as mesmas skills.
+Skills versionadas com o projeto. Entram aqui em dois casos:
+
+- skills de terceiros instaladas pelo usuário via CLI
+- skills locais geradas dentro do próprio projeto por agentes/process skills
 
 Cada skill instalada contém um `SKILL.md` com frontmatter YAML descrevendo quando usá-la.
+Quando existir, o arquivo `.skill-meta.json` registra origem, autor e metadados do gerador/modelo.
 
 ## Instalando skills
 
@@ -65,7 +69,7 @@ aioson skill:install @tech-leads-club/agent-skills --skill coupling-analysis
 Isso:
 1. Baixa o pacote npm temporariamente
 2. Copia a skill para `.aioson/installed-skills/{nome}/`
-3. Distribui para ferramentas nativas (`.claude/skills/`, `.cursor/skills/`, `.windsurf/skills/`)
+3. Distribui recursivamente para ferramentas nativas (`.claude/skills/`, `.cursor/skills/`, `.windsurf/skills/`)
 4. Registra a skill na seção "Installed skills" do `AGENTS.md`
 
 ### Via aioson.com (registry cloud)
@@ -93,6 +97,7 @@ aioson skill:list
 ```
 
 Mostra todas as skills em `.aioson/installed-skills/` com nome, descrição e fonte.
+Quando a metadata existir, também pode mostrar autor e modelo gerador.
 
 ### Remover uma skill
 
@@ -186,6 +191,56 @@ A skill central de metodologia do AIOSON. Cobre:
 ```
 
 **Carregamento:** Os agentes `@product`, `@analyst`, `@architect`, `@sheldon`, `@dev` e `@deyvin` verificam automaticamente se esta skill está disponível e carregam `SKILL.md` + apenas o arquivo de `references/` relevante para a fase atual. Nunca carregam a pasta inteira de uma vez.
+
+### `design-hybrid-forge`
+
+Localização: `.aioson/skills/process/design-hybrid-forge/`
+
+Skill first-party para criar uma nova skill de design híbrida a partir de **2 skills primárias obrigatórias** e, opcionalmente, até 2 modificadores de escopo limitado. Em modo avançado, pode liberar um 3º modificador, ainda preso a lanes secundárias.
+
+Se você quer o fluxo completo em um só lugar, leia a página dedicada: [design-hybrid-forge](./design-hybrid-forge.md).
+
+Fluxo padrão:
+
+1. O usuário ativa `@design-hybrid-forge` no Codex ou `/design-hybrid-forge` no Claude
+2. Se quiser um overlay visual mais ousado, o usuário pode rodar `aioson design-hybrid:options` para gerar `.aioson/context/design-variation-preset.md`
+3. O comando usa `conversation_language` do projeto quando existir; `--locale` funciona como override manual
+4. O agente pede as 2 skills primárias, até 2 modificadores opcionais e lê o preset visual quando ele existir
+5. Se o usuário tiver criado o preset com `--advanced`, o agente pode aceitar um 3º modificador de escopo estreito
+6. O híbrido é gerado em `.aioson/installed-skills/{slug}/`
+7. O `AGENTS.md` é atualizado para que o Codex possa usar `@{slug}`
+8. O pacote também pode ser espelhado para `.claude/skills/`, `.cursor/skills/` e `.windsurf/skills/`
+
+Saída padrão:
+
+```
+.aioson/installed-skills/{slug}/
+  SKILL.md
+  .skill-meta.json
+  references/
+  previews/
+```
+
+Esse fluxo cria uma **skill local do projeto**. Se depois você quiser promover a skill para o core do AIOSON ou para um marketplace, trate isso como uma segunda etapa de curadoria, separada da geração local.
+
+O preset criado em `.aioson/context/design-variation-preset.md` é **temporário**:
+- ele serve como input para a próxima geração híbrida
+- depois da geração, deve ser removido ou movido do contexto ativo
+- uma cópia histórica fica em `.aioson/context/history/design-variation-presets/`
+- ele não redefine o layout padrão do projeto; quem continua mandando no projeto é a `design_skill` ativa
+
+O preset gerado por `design-hybrid:options` cobre direções como:
+- clássico / editorial
+- extravagante / maximalista
+- cinematográfico / imersivo
+- retrofuturista
+- motion-driven
+- CSS avançado (scroll-driven animations, View Transition API, masks, SVG filters, 3D)
+
+Recomendação de uso:
+- fluxo normal: até 2 modificadores
+- fluxo avançado: `aioson design-hybrid:options --advanced` para permitir até 3 modificadores
+- mesmo no modo avançado, modificadores não podem dominar substrato nem estrutura
 
 ## Skills de squad
 

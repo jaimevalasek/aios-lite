@@ -77,10 +77,12 @@ The following names are available for future hybrids. They are not reserved — 
 
 ## How to register a new hybrid
 
-After shipping, add a row to the "Registered hybrids" table with:
+Only after explicit core promotion, add a row to the "Registered hybrids" table with:
 - The exact skill name used in the directory
 - Both parent skill names (alphabetical order)
 - The date shipped (`YYYY-MM-DD`)
 - 3–4 word domain description
 
 Also remove the name from the ideas bank if it was claimed from there.
+
+Project-local hybrids do not update this registry automatically. They should keep their chosen name in `.skill-meta.json` until a curator promotes them to core.

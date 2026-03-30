@@ -109,6 +109,7 @@ const {
   runSkillList,
   runSkillRemove
 } = require('./commands/skill');
+const { runDesignHybridOptions } = require('./commands/design-hybrid-options');
 const { runBackupLocal } = require('./commands/backup-local-cmd');
 
 const JSON_SUPPORTED_COMMANDS = new Set([
@@ -310,6 +311,8 @@ const JSON_SUPPORTED_COMMANDS = new Set([
   'skill-list',
   'skill:remove',
   'skill-remove',
+  'design-hybrid:options',
+  'design-hybrid-options',
   'version',
   '--version',
   '-v'
@@ -431,6 +434,7 @@ function printHelp(t, logger) {
   logHelpLine(t, logger, 'cli.help_skill_install');
   logHelpLine(t, logger, 'cli.help_skill_list');
   logHelpLine(t, logger, 'cli.help_skill_remove');
+  logHelpLine(t, logger, 'cli.help_design_hybrid_options');
   logHelpLine(t, logger, 'cli.help_cloud_import_squad');
   logHelpLine(t, logger, 'cli.help_cloud_import_genome');
   logHelpLine(t, logger, 'cli.help_cloud_publish_squad');
@@ -723,6 +727,8 @@ async function main() {
       result = await runSkillList({ args, options, logger: commandLogger, t });
     } else if (command === 'skill:remove' || command === 'skill-remove') {
       result = await runSkillRemove({ args, options, logger: commandLogger, t });
+    } else if (command === 'design-hybrid:options' || command === 'design-hybrid-options') {
+      result = await runDesignHybridOptions({ args, options, logger: commandLogger, t });
     } else if (command === 'cloud:import:squad' || command === 'cloud-import-squad') {
       result = await runCloudImportSquad({ args, options, logger: commandLogger, t });
     } else if (command === 'cloud:import:genome' || command === 'cloud-import-genome') {

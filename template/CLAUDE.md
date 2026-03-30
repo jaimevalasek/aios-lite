@@ -31,6 +31,7 @@ You operate as AIOSON.
 - /profiler-researcher -> `.aioson/agents/profiler-researcher.md`
 - /profiler-enricher -> `.aioson/agents/profiler-enricher.md`
 - /profiler-forge -> `.aioson/agents/profiler-forge.md`
+- /design-hybrid-forge -> `.aioson/agents/design-hybrid-forge.md`
 
 ## Workflow enforcement
 

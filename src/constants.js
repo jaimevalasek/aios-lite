@@ -33,6 +33,7 @@ const MANAGED_FILES = [
   '.aioson/agents/squad.md',
   '.aioson/agents/orache.md',
   '.aioson/agents/genome.md',
+  '.aioson/agents/design-hybrid-forge.md',
   '.aioson/agents/profiler-researcher.md',
   '.aioson/agents/profiler-enricher.md',
   '.aioson/agents/profiler-forge.md',
@@ -348,6 +349,14 @@ const AGENT_DEFINITIONS = [
     path: '.aioson/agents/genome.md',
     dependsOn: [],
     output: '.aioson/genomes/[slug].md + .aioson/genomes/[slug].meta.json + optional binding in .aioson/squads/{slug}/squad.md or .aioson/squads/{slug}/squad.manifest.json'
+  },
+  {
+    id: 'design-hybrid-forge',
+    displayName: 'Design Hybrid Forge',
+    command: '@design-hybrid-forge',
+    path: '.aioson/agents/design-hybrid-forge.md',
+    dependsOn: ['.aioson/context/project.context.md'],
+    output: '.aioson/installed-skills/{hybrid-slug}/SKILL.md + .aioson/installed-skills/{hybrid-slug}/references/ + .aioson/installed-skills/{hybrid-slug}/previews/ + .aioson/installed-skills/{hybrid-slug}/.skill-meta.json'
   },
   {
     id: 'profiler-researcher',
