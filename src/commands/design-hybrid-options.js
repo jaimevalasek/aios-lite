@@ -311,6 +311,7 @@ async function runDesignHybridOptions({ args, options = {}, logger, io = {} }) {
   }
 
   if (!stdin.isTTY || !stdout.isTTY) {
+    logger.log(ui.ttyError);
     return {
       ok: false,
       error: 'TTY required',
@@ -376,6 +377,9 @@ module.exports = {
   runDesignHybridOptions,
   __test__: {
     getUiText,
-    promptMultiSelectGroup
+    promptMultiSelectGroup,
+    buildPresetMarkdown,
+    buildPromptBlock,
+    buildSummary
   }
 };
