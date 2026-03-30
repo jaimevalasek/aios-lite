@@ -111,6 +111,12 @@ const {
 } = require('./commands/skill');
 const { runDesignHybridOptions } = require('./commands/design-hybrid-options');
 const { runBackupLocal } = require('./commands/backup-local-cmd');
+const { runRecoveryGenerate, runRecoveryShow } = require('./commands/recovery');
+const { runContextMonitor } = require('./commands/context-monitor');
+const { runContextSearch, runContextSearchIndex } = require('./commands/context-search');
+const { runContextCacheList, runContextCacheSave, runContextCacheRestore, runContextCacheCleanup } = require('./commands/context-cache');
+const { runSandboxExec } = require('./commands/sandbox');
+const { runAgentLoad, runAgentShardIndex } = require('./commands/agent-loader');
 
 const JSON_SUPPORTED_COMMANDS = new Set([
   'init',
@@ -313,6 +319,30 @@ const JSON_SUPPORTED_COMMANDS = new Set([
   'skill-remove',
   'design-hybrid:options',
   'design-hybrid-options',
+  'recovery:generate',
+  'recovery-generate',
+  'recovery:show',
+  'recovery-show',
+  'context:monitor',
+  'context-monitor',
+  'context:search',
+  'context-search',
+  'context:search:index',
+  'context-search-index',
+  'context:cache',
+  'context-cache',
+  'context:cache:save',
+  'context-cache-save',
+  'context:cache:restore',
+  'context-cache-restore',
+  'context:cache:cleanup',
+  'context-cache-cleanup',
+  'sandbox:exec',
+  'sandbox-exec',
+  'agent:load',
+  'agent-load',
+  'agent:shard:index',
+  'agent-shard-index',
   'version',
   '--version',
   '-v'
@@ -737,6 +767,30 @@ async function main() {
       result = await runCloudPublishSquad({ args, options, logger: commandLogger, t });
     } else if (command === 'cloud:publish:genome' || command === 'cloud-publish-genome') {
       result = await runCloudPublishGenome({ args, options, logger: commandLogger, t });
+    } else if (command === 'recovery:generate' || command === 'recovery-generate') {
+      result = await runRecoveryGenerate({ args, options, logger: commandLogger, t });
+    } else if (command === 'recovery:show' || command === 'recovery-show') {
+      result = await runRecoveryShow({ args, options, logger: commandLogger, t });
+    } else if (command === 'context:monitor' || command === 'context-monitor') {
+      result = await runContextMonitor({ args, options, logger: commandLogger, t });
+    } else if (command === 'context:search' || command === 'context-search') {
+      result = await runContextSearch({ args, options, logger: commandLogger, t });
+    } else if (command === 'context:search:index' || command === 'context-search-index') {
+      result = await runContextSearchIndex({ args, options, logger: commandLogger, t });
+    } else if (command === 'context:cache' || command === 'context-cache') {
+      result = await runContextCacheList({ args, options, logger: commandLogger, t });
+    } else if (command === 'context:cache:save' || command === 'context-cache-save') {
+      result = await runContextCacheSave({ args, options, logger: commandLogger, t });
+    } else if (command === 'context:cache:restore' || command === 'context-cache-restore') {
+      result = await runContextCacheRestore({ args, options, logger: commandLogger, t });
+    } else if (command === 'context:cache:cleanup' || command === 'context-cache-cleanup') {
+      result = await runContextCacheCleanup({ args, options, logger: commandLogger, t });
+    } else if (command === 'sandbox:exec' || command === 'sandbox-exec') {
+      result = await runSandboxExec({ args, options, logger: commandLogger, t });
+    } else if (command === 'agent:load' || command === 'agent-load') {
+      result = await runAgentLoad({ args, options, logger: commandLogger, t });
+    } else if (command === 'agent:shard:index' || command === 'agent-shard-index') {
+      result = await runAgentShardIndex({ args, options, logger: commandLogger, t });
     } else {
       const message = t('cli.unknown_command', { command });
       if (jsonMode) {

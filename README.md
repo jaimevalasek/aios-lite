@@ -230,6 +230,12 @@ See the [Web3 guide](docs/en/web3.md) for the full reference.
 - [AI clients guide (PT-BR)](docs/pt/clientes-ai.md) — tracked usage with Codex, Claude, Gemini, and OpenCode
 - [Runtime observability (PT-BR)](docs/pt/runtime-observability.md) — `live:start`, `runtime:emit`, `live:handoff`, `live:status`, `live:close`, and dashboard projections
 - [Squad Dashboard](docs/en/squad-dashboard.md) — `squad:dashboard`, real-time monitoring of agents, context, tokens, logs and metrics
+- [Session recovery (PT-BR)](docs/pt/recuperacao-de-sessao.md) — `recovery:generate`, `recovery:show`, restore context after compaction
+- [Context monitor (PT-BR)](docs/pt/monitor-de-contexto.md) — `context:monitor`, usage bars and warning levels per agent
+- [Context search (PT-BR)](docs/pt/busca-de-contexto.md) — `context:search`, `context:search:index`, FTS5 full-text search
+- [Context cache (PT-BR)](docs/pt/cache-de-contexto.md) — `context:cache`, save and restore session snapshots
+- [Sandbox executor (PT-BR)](docs/pt/sandbox.md) — `sandbox:exec`, safe execution with secret redaction and timeout
+- [Agent sharding (PT-BR)](docs/pt/agent-sharding.md) — `agent:load`, `agent:shard:index`, load only relevant agent instruction sections
 
 **Release (internal)**
 - [Release guide](docs/en/release.md)

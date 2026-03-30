@@ -154,6 +154,33 @@
 | `cloud:publish:squad` | Publica snapshot de uma squad local | Quando quer distribuir uma squad para outro projeto ou catálogo |
 | `cloud:publish:genome` | Publica snapshot de um genome local | Quando quer versionar e compartilhar um genome |
 
+### Contexto e recuperação de sessão
+
+| Comando | O que faz | Quando usar |
+|---|---|---|
+| `recovery:generate` | Gera `.aioson/context/recovery-context.md` com objetivo, agente, arquivos modificados e commits recentes | Antes de encerrar uma sessão longa ou ao detectar compactação iminente. Veja [Recuperação de Sessão](./recuperacao-de-sessao.md) |
+| `recovery:show` | Exibe o conteúdo do arquivo de recovery da sessão atual | Quando quer re-injetar o contexto no início de uma nova sessão |
+| `context:monitor` | Exibe barras ASCII com percentual de uso de contexto por agente de uma squad | Quando quer acompanhar em tempo real quão cheio está o contexto de cada agente. Veja [Monitor de Contexto](./monitor-de-contexto.md) |
+| `context:search:index` | Indexa arquivos `.md`, `.txt` e `.json` do projeto em banco FTS5 | Antes de usar `context:search` — normalmente uma vez, depois incrementalmente. Veja [Busca de Contexto](./busca-de-contexto.md) |
+| `context:search` | Busca documentos relevantes no índice por query em linguagem natural | Quando quer encontrar quais arquivos do projeto contêm contexto relevante para uma tarefa |
+| `context:cache` | Lista sessões de contexto em cache (mais recentes primeiro) | Quando quer saber quais snapshots de sessão estão disponíveis para restaurar. Veja [Cache de Contexto](./cache-de-contexto.md) |
+| `context:cache:save` | Salva um snapshot de conteúdo em `~/.aioson/temp/` | Quando quer preservar o estado de uma sessão antes de trocar de branch ou agente |
+| `context:cache:restore` | Restaura o conteúdo de uma sessão salva, com filtro opcional por query | Quando quer recuperar contexto de uma sessão anterior |
+| `context:cache:cleanup` | Remove sessões expiradas do cache (padrão: mais de 24h) | Quando quer liberar espaço ou forçar limpeza antes do prazo |
+
+### Execução segura
+
+| Comando | O que faz | Quando usar |
+|---|---|---|
+| `sandbox:exec` | Executa um comando shell com timeout, redação automática de secrets e summarização de output longo | Quando quer rodar scripts dentro de uma sessão de agente sem expor variáveis sensíveis do ambiente. Veja [Sandbox de Execução](./sandbox.md) |
+
+### Sharding de agente
+
+| Comando | O que faz | Quando usar |
+|---|---|---|
+| `agent:shard:index` | Divide arquivos de instrução de agente em shards por heading e indexa via FTS5 | Após adicionar ou atualizar arquivos de agente. Veja [Agent Sharding](./agent-sharding.md) |
+| `agent:load` | Carrega os shards mais relevantes de um agente para um objetivo dado, dentro de orçamento de tokens | Quando quer enviar ao LLM apenas as seções do agente necessárias para a tarefa atual |
+
 ---
 
 ## Exemplos e usos práticos

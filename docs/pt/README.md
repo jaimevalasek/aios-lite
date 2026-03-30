@@ -19,6 +19,12 @@ Bem-vindo à documentação em português do AIOSON — um framework leve de age
 | [Automação de Squads](./automacao-squads.md) | Transformar processos de squad em scripts executáveis (Python/Node.js) que rodam sem LLM |
 | [Output Strategy e Delivery](./output-strategy-delivery.md) | Configurar webhooks, automatizar entrega de conteúdo, monitorar delivery e troubleshoot |
 | [Suporte Web3](./web3.md) | Guia para projetos dApp (Ethereum, Solana, Cardano) |
+| [Recuperação de Sessão](./recuperacao-de-sessao.md) | Gerar e restaurar contexto entre sessões do Claude Code após compactação |
+| [Monitor de Contexto](./monitor-de-contexto.md) | Visualizar uso de janela de contexto por agente com alertas de warning e critical |
+| [Busca de Contexto](./busca-de-contexto.md) | Indexar e buscar documentos do projeto via FTS5 com ranking por relevância e recência |
+| [Cache de Contexto](./cache-de-contexto.md) | Salvar snapshots de contexto e restaurar entre sessões |
+| [Sandbox de Execução](./sandbox.md) | Executar comandos com timeout, redação de secrets e summarização de output |
+| [Agent Sharding](./agent-sharding.md) | Carregar apenas as seções relevantes de instruções de agente para uma tarefa específica |
 
 ## Documentação em inglês
 
