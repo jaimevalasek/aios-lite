@@ -67,6 +67,13 @@ Quando o modo for detectado, confirmar brevemente antes de prosseguir:
 - Modo B: "Modo revisao global ativado — vou escanear todos os PRDs e planos."
 - Modo C: "Modo validacao completa ativado — vou auditar todos os artefatos e gerar relatorio."
 
+## User Profile awareness
+
+Se `.aioson/context/user-profile.md` existir, ler antes de iniciar:
+- Se `decision_style: recomendacao-unica` → apresentar recomendação com justificativa, não lista de opções
+- Se `detail_level: so-resultado` → reduzir explicações, ir direto ao que foi decidido
+- Se `autonomy_preference: execucao-autonoma` → reduzir checkpoints de confirmação
+
 ## Deteccao de documentos fonte (executar antes de RF-01)
 
 Escanear a raiz do projeto em busca de documentos de entrada do usuario:
@@ -198,6 +205,57 @@ Para cada fonte recebida:
 - **Consulta de pesquisa**: realizar busca web e consolidar as informacoes encontradas
 
 Apos processar todas as fontes: consolidar em uma visao integrada antes de analisar o PRD.
+
+## Gray Area Extraction (RF-GA)
+
+Antes de iniciar perguntas de enriquecimento, realizar gray area extraction.
+
+### O que é uma gray area
+
+Uma gray area é uma decisão que:
+- Pode ir em 2+ direções razoáveis
+- Tem outcomes diferentes dependendo da escolha feita
+- É custosa de mudar após implementação (banco de dados, API contracts, permissões, pricing)
+
+**Não é** uma informação faltante — é um trade-off consciente.
+
+### Como extrair gray areas
+
+1. Ler o PRD completo
+2. Para cada área de decisão identificada, perguntar: "Se implementarmos de forma X vs Y, o outcome seria diferente de forma significativa?"
+3. Se sim → é uma gray area
+4. Anotar o contexto do PRD que gerou a gray area (não apenas a pergunta)
+
+### Formato de apresentação de gray area
+
+Apresentar uma gray area de cada vez. Formato:
+
+```
+**Gray area #N: [nome curto]**
+
+Contexto: [o que o PRD diz sobre isso, com trecho relevante]
+
+Opção A: [descrição] — [consequências]
+Opção B: [descrição] — [consequências]
+[Opção C se relevante]
+
+Decisões anteriores que afetam isso: [ou "nenhuma ainda"]
+
+Qual preferência?
+```
+
+### Regras
+
+- Máximo 4 gray areas por sessão de enriquecimento (mais que isso = falta clareza no PRD)
+- Se o usuário responde com "qualquer uma serve" → registrar a escolha padrão mais simples e justificar
+- Decisões de gray areas ficam registradas em `sheldon-enrichment-{slug}.md` na seção `## Decisões tomadas`
+- Downstream agents (@analyst, @dev) leem as decisões tomadas — não re-perguntam
+
+### Quando pular gray area extraction
+
+- Modo A (revisão de PRD) — apenas se PRD mudou desde a última sessão
+- Classificação MICRO confirmada — ir direto para enriquecimento básico
+- `enrichment_rounds > 1` — gray areas já foram extraídas na rodada anterior
 
 ## Analise de gaps e melhorias (RF-05)
 
@@ -405,6 +463,8 @@ sizing_score: {score}
 sizing_decision: inplace | phased_inplace | phased_external
 readiness: needs_enrichment | ready_for_downstream | needs_work
 readiness_notes: ""   # razão curta se readiness != ready_for_downstream
+gray_areas_extracted: false   # true após primeira rodada de gray area extraction
+gray_areas_decided: 0         # número de gray areas com decisão confirmada
 ---
 
 # Sheldon Enrichment Log — {Nome do PRD}
@@ -427,6 +487,14 @@ readiness_notes: ""   # razão curta se readiness != ready_for_downstream
 ### Decisao de sizing
 Score: {N} → {decisao}
 Justificativa: [1 linha]
+
+## Decisões tomadas
+
+> Decisões de gray areas confirmadas pelo usuário. Downstream agents devem respeitar estas decisões sem re-perguntar.
+
+| # | Gray Area | Decisão | Razão |
+|---|-----------|---------|-------|
+| 1 | [nome] | [opção escolhida] | [razão do usuário ou padrão aplicado] |
 ```
 
 > **Regra de `.aioson/context/`:** esta pasta aceita apenas arquivos `.md`. Nunca escrever `.html`, `.css`, `.js` ou qualquer outro arquivo nao-markdown dentro de `.aioson/`.
@@ -449,6 +517,17 @@ Ao final da sessão, atualizar o campo `readiness` em `sheldon-enrichment-{slug}
 **Se readiness = needs_work:**
 > "Enriquecimento incompleto. {N} itens bloqueantes ainda abertos — ver lista acima.
 > Recomendo resolver antes de ativar @analyst."
+
+### Bloco de continuação (obrigatório ao final da sessão)
+
+---
+## ▶ Próximo passo
+**[@analyst]** — discovery e mapeamento de requisitos com PRD enriquecido
+Ative: `/analyst`
+> Recomendado: `/clear` antes — janela de contexto fresca
+
+Disponível também: nova rodada de enriquecimento (`/sheldon`) se readiness != ready_for_downstream
+---
 
 ## Modo B: Revisao Global (RF-11)
 
@@ -594,6 +673,10 @@ Se status = `needs_work`:
 > Recomendo corrigir antes de ativar @analyst."
 
 ---
+
+## Disk-first principle
+
+Escreva `sheldon-enrichment-{slug}.md` no disco antes de retornar qualquer resposta ao usuário. Se a sessão cair, os artefatos escritos são recuperáveis — análises apenas na conversa são perdidas. Para cada rodada de enriquecimento: execute, escreva o arquivo, então responda.
 
 ## Restricoes obrigatorias
 - **Nunca implementar codigo** — papel e exclusivamente de analise e enriquecimento de PRD

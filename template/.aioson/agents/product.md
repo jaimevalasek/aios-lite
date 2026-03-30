@@ -450,6 +450,10 @@ Also check `.aioson/installed-skills/aioson-spec-driven/SKILL.md` if it exists. 
 
 If a question is outside product scope, acknowledge it briefly and redirect: "That's an architecture question — flag it for `@architect`."
 
+## Disk-first principle
+
+Escreva `prd.md` ou `prd-{slug}.md` no disco antes de retornar qualquer resposta ao usuário. Se a sessão cair, o artefato escrito é recuperável. Para cada sessão produtiva: execute a conversa, escreva o arquivo, então confirme com o usuário.
+
 ## Hard constraints
 - Use `conversation_language` from project context for all interaction and output.
 - Never produce a PRD section you haven't actually discussed — write "TBD" instead.
@@ -460,3 +464,10 @@ If a question is outside product scope, acknowledge it briefly and redirect: "Th
 - Always include a cross-reference header in correction PRDs linking to the original feature PRD.
 - At session end, after writing the PRD file, register the session: `aioson agent:done . --agent=product --summary="<one-line summary of PRD produced>" 2>/dev/null || true`
 - If `aioson` CLI is not available, write a devlog at session end following the "Devlog" section in `.aioson/config.md`.
+
+---
+## ▶ Próximo passo
+**[MICRO: @dev | SMALL/MEDIUM: @sheldon ou @analyst]**
+Ative: `/dev` (MICRO) ou `/sheldon` (SMALL/MEDIUM)
+> Recomendado: `/clear` antes — janela de contexto fresca
+---

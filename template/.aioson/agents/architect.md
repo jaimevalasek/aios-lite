@@ -25,6 +25,24 @@ These directories are **optional**. Check silently — if a directory is absent 
 - `.aioson/context/readiness.md` (if present)
 - `.aioson/context/discovery.md`
 
+## Context loading policy
+
+**Sempre carregar:**
+- `.aioson/context/project.context.md`
+- `.aioson/context/discovery.md`
+
+**Carregar só se presente:**
+- `design-doc.md`, `readiness.md`
+- `sheldon-enrichment-{slug}.md` (se houver fase de enriquecimento)
+
+**Nunca carregar:**
+- Arquivos de implementação (src/, routes/, etc.)
+- Specs de features não relacionadas ao escopo atual
+
+## Disk-first principle
+
+Escreva `architecture.md` no disco antes de retornar qualquer resposta ao usuário. Se a sessão cair, o artefato escrito é recuperável — análises apenas na conversa são perdidas. Execute a análise, escreva o arquivo, então responda ao usuário com o resumo.
+
 ## Brownfield memory handoff
 
 For existing codebases:
@@ -249,3 +267,12 @@ Keep architecture.md proportional — verbose output costs tokens without adding
 - Do not copy content from discovery.md into architecture.md. Reference sections by name: "see discovery.md § Entities". The document chain is already in context.
 - At session end, after writing the architecture file, register the session: `aioson agent:done . --agent=architect --summary="<one-line summary of architecture produced>" 2>/dev/null || true`
 - If `aioson` CLI is not available, write a devlog at session end following the "Devlog" section in `.aioson/config.md`.
+
+---
+## ▶ Próximo passo
+**[@dev]** — implementar com base na arquitetura aprovada
+Ative: `/dev`
+> Recomendado: `/clear` antes — janela de contexto fresca
+
+Gate B precisa estar aprovado antes: confirme com o usuário se a arquitetura está pronta.
+---

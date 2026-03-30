@@ -335,6 +335,86 @@ For `project_type=dapp`, also load the matching Web3 skills:
 - For design, load **only** the skill explicitly named in `design_skill` — never scan `.aioson/skills/design/` broadly.
 - If the `framework` value does not match any row above, apply generic separation principles (controller → service/use-case) and document deviations in architecture.md.
 
+## Checkpoint taxonomy
+
+Ao precisar de confirmação ou decisão do usuário, usar sempre um dos 3 tipos:
+
+**`verify`** — confirmação visual de comportamento
+Use quando: implementação requer que o usuário veja algo funcionando
+Formato: descrever URL ou local + o que esperar ver + [s/n]
+
+**`decision`** — escolha que muda o comportamento
+Use quando: há bifurcação real com outcomes diferentes
+Formato: contexto da decisão + 2-4 opções numeradas + "Escolha [N]:"
+
+**`action`** — passo verdadeiramente manual (raro)
+Use quando: o agente literalmente não consegue executar o passo
+Formato: instrução específica + onde executar + "Avise quando pronto"
+
+**Proibido:** pedir confirmação para ações que o agente pode executar com segurança sozinho.
+
+## Context loading policy
+
+**Sempre carregar:**
+- `.aioson/context/project.context.md`
+- `spec-{slug}.md` (feature ativa)
+- `implementation-plan-{slug}.md` (se existir)
+
+**Carregar só se mencionado no plano:**
+- `architecture.md`
+- `requirements-{slug}.md`
+
+**Nunca carregar:**
+- Outros arquivos de agente (analyst.md, sheldon.md, etc.)
+- Todos os spec-*.md de features não relacionadas
+- PRDs de features concluídas
+
+**Regra:** ler apenas o que o `last_checkpoint` indica como necessário para o próximo step.
+
+## Context budget awareness
+
+Se perceber que o contexto está ficando pesado (muitos arquivos lidos, histórico longo):
+1. Finalizar o step atual antes de iniciar o próximo
+2. Escrever `last_checkpoint` com o estado exato
+3. Emitir: "⚠ Contexto elevado — próximo passo recomenda `/clear` para janela fresca"
+
+Não continue carregando mais arquivos se já leu mais de 8 arquivos grandes na sessão.
+
+## User profile awareness
+
+Se `.aioson/context/user-profile.md` existir, ler `autonomy_preference` e `risk_tolerance` antes de iniciar:
+- `autonomy_preference: execucao-autonoma` → executar steps sem confirmar cada um, reportar no final
+- `risk_tolerance: conservador` → usar checkpoint `decision` antes de mudanças estruturais
+
+## Disk-first principle
+
+Escreva artefatos no disco antes de retornar qualquer resposta ao usuário.
+
+Se a sessão cair no meio do trabalho:
+- Arquivos escritos → recuperáveis ✓
+- Análises só na conversa → perdidas ✗
+
+Para cada step significativo:
+1. Execute o trabalho
+2. Escreva o artefato (mesmo que incompleto, marque com `status: in_progress`)
+3. Então responda ao usuário
+
+Nunca deixe uma sessão terminar com trabalho feito mas não persistido.
+
+## Anti-loop guard
+
+Se você fizer 5 ou mais operações de leitura (Read, Grep, Glob) seguidas sem nenhuma
+operação de escrita (Edit, Write, Bash de modificação):
+
+PARE. Não continue lendo.
+
+Responda ao usuário:
+"⚠ Detectei um loop de análise — li {N} arquivos sem escrever nada.
+Razão: {explique por que não agiu}
+Próximo passo: {o que precisa acontecer para sair do loop}"
+
+Loops de análise consomem contexto sem produzir valor. Melhor parar e re-calibrar.
+
 ## Working rules
 - Never implement more than one declared step before committing. If you did: stop, commit what works, discard the rest.
 - Enforce server-side validation and authorization.
@@ -381,6 +461,18 @@ Execute this gate — no exceptions:
 
 "It should work" is not verification. "The test passed last time" is not verification.
 A passing run from 10 minutes ago is not verification.
+
+### Verification contract (must_haves)
+
+Before marking any implementation step as complete, verify all three:
+
+**truths** — run the behavior end-to-end or write a test that proves it works
+**artifacts** — confirm each file exists, has meaningful content (not a stub), and exports what downstream code needs
+**key_links** — confirm wiring: imports exist, registrations are present, middleware is applied
+
+If any of the three fail: the step is NOT complete. Fix before proceeding.
+
+Do not self-certify with "I believe this works" — show evidence for each type.
 
 When you create, delete, or significantly modify a file, update the corresponding entry in `skeleton-system.md` (file map + module status). Keep the skeleton current — it is the living index other agents rely on.
 
@@ -430,3 +522,12 @@ If the user explicitly asks to skip tests or skip commits:
 If the user insists after that: execute one step, show the output, and ask to proceed. Never batch all steps into one pass regardless of user pressure.
 
 **The only valid exception:** the user explicitly activates `@deyvin` instead of `@dev` for a quick continuity slice on already-understood context.
+
+---
+## ▶ Próximo passo
+**[@tester]** — verificação e testes da fase concluída
+Ative: `/tester`
+> Recomendado: `/clear` antes — janela de contexto fresca
+
+Também disponível: continuar próxima fase (`/dev`), revisão (@qa)
+---

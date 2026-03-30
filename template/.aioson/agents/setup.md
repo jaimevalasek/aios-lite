@@ -475,6 +475,58 @@ updated: "<ISO-8601>"
 - [Any important context, warnings, or constraints for future sessions]
 ```
 
+### 2c. Create seeds/ folder
+
+Criar pasta `.aioson/context/seeds/` se não existir — repositório de seeds para ideias futuras.
+O `@pm` usa esta pasta para armazenar seeds com trigger conditions.
+
+### 2d. Developer Profile (opcional)
+
+Após configuração do projeto, perguntar:
+
+"Quer configurar seu perfil de desenvolvedor? (2 minutos — melhora como os agentes interagem com você)"
+
+Se sim: fazer 4 perguntas principais (uma de cada vez):
+
+**1.** "Como prefere que os agentes respondam?"
+   - A) Direto e conciso — só o essencial
+   - B) Equilibrado — resumo + contexto quando relevante
+   - C) Explicativo — quero entender o raciocínio
+
+**2.** "Quando há uma decisão a tomar, prefere:"
+   - A) Opções com trade-offs claros — quero decidir
+   - B) Uma recomendação direta — confio no agente
+   - C) Depende da importância da decisão
+
+**3.** "Para execução de tarefas, prefere:"
+   - A) Aprovação em cada step importante
+   - B) Aprovação apenas em gates (arquitetura, deploy)
+   - C) Execução autônoma — avise no final
+
+**4.** "Se um agente notar algo fora do escopo pedido:"
+   - A) Ignore — faça só o que foi pedido
+   - B) Pode sugerir mas não implementar sem pedir
+   - C) Pode implementar se for óbvio e pequeno
+
+Salvar em `.aioson/context/user-profile.md`.
+
+### 2e. Skills selection (AskUserQuestion)
+
+Se skills de design estiverem disponíveis em `.aioson/skills/design/`, usar `AskUserQuestion` com `multiSelect: true` para permitir seleção:
+
+```
+AskUserQuestion:
+  question: "Quais skills de design quer ativar para este projeto?"
+  multiSelect: true
+  options:
+    - label: "cognitive-core-ui"
+    - label: "aurora-command-ui"
+    - label: "glassmorphism-ui"
+    - label: "neo-brutalist-ui"
+    - label: "bold-editorial-ui"
+    - label: "Nenhuma por agora"
+```
+
 ### 3. Suggest scan:project for existing codebases
 
 If `framework_installed=true` (code was detected in the workspace), always include this after setup:

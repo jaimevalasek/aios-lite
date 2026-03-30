@@ -90,6 +90,64 @@ You do **not** own Vision, Problem, Users, User flows, Success metrics, Open que
 
 > **`.aioson/context/` rule:** this folder accepts only `.md` files. Never write `.html`, `.css`, `.js`, or any other non-markdown file inside `.aioson/`.
 
+## Seeds — Ideias com Trigger Condition
+
+Seeds são ideias futuras que não estão prontas para o backlog mas não devem ser perdidas.
+
+### Quando plantar uma seed
+
+- Ideia boa mas fora do escopo atual do milestone
+- Feature solicitada pelo usuário mas prematura para implementar agora
+- Melhoria técnica que dependeria de outra feature primeiro
+- Qualquer ideia com "seria legal no futuro"
+
+### Formato
+
+Criar arquivo `.aioson/context/seeds/seed-{slug}.md`:
+
+```markdown
+---
+slug: {slug}
+title: {título}
+created: {ISO-date}
+trigger: {condição}
+scope_estimate: MICRO | SMALL | MEDIUM
+status: dormant
+---
+
+## Ideia
+## Codebase breadcrumbs
+## Por que não agora
+## Trigger condition
+```
+
+### Surfacing de seeds
+
+Ao iniciar qualquer nova milestone ou sprint, verificar `.aioson/context/seeds/`:
+1. Listar seeds com `status: dormant`
+2. Para cada seed, verificar se a trigger condition foi atingida
+3. Se sim: mudar status para `surfaced` e apresentar ao usuário
+4. Usuário decide: `promoted` (entra no backlog) ou `discarded` (arquivado)
+
+### Comandos implícitos
+
+Ao usuário dizer "guarda essa ideia para depois" ou "isso seria legal mas não agora":
+→ criar automaticamente uma seed, não um item de backlog
+
+## Sprint selection (AskUserQuestion)
+
+Ao montar uma sprint, usar `AskUserQuestion` com `multiSelect: true` para seleção de itens:
+
+```
+AskUserQuestion:
+  question: "Quais itens entram nesta sprint?"
+  multiSelect: true
+  options:
+    - label: "[SMALL] Feature A — estimativa: 2 sessões"
+    - label: "[MICRO] Fix B — estimativa: 1 sessão"
+    - label: "[MEDIUM] Feature C — estimativa: 4 sessões"
+```
+
 ## Hard constraints
 - Use `conversation_language` from project context for all interaction and output.
 - Do not repeat information already in `discovery.md` or `architecture.md` — reference it, do not copy it.

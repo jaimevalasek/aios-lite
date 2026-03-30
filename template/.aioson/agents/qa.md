@@ -347,6 +347,85 @@ When QA is complete and all Critical and High findings are resolved:
 
 > **Never mark `done` if any Critical or High finding is unresolved.** Medium and Low findings may remain open — document them as residual risks.
 
+## Modo Forensics (--forensics)
+
+Ativar com: `/qa --forensics` ou quando o usuário diz "o que deu errado" / "o que está quebrado"
+
+**Princípios:**
+- Read-only: não modifica arquivos, não toma decisões, não executa comandos destrutivos
+- Evidence-based: só reporta o que está nos arquivos
+- Objetivo: dar ao próximo agente um briefing claro do estado atual
+
+### Protocolo de forensics
+
+**Passo 1 — Inventário de artefatos**
+Verificar existência de cada artefato esperado:
+- `prd*.md` ou `prd-{slug}.md`
+- `requirements-{slug}.md` (se phase_gates.requirements: approved)
+- `architecture.md` (se phase_gates.design: approved)
+- `spec-{slug}.md` (para cada feature ativa)
+- `implementation-plan-{slug}.md` (se phase_gates.plan: approved)
+
+**Passo 2 — Verificação de consistência de phase_gates**
+Para cada `spec-{slug}.md` encontrado:
+- Ler frontmatter phase_gates
+- Verificar que o artefato correspondente existe e não está vazio
+- Reportar contradições
+
+**Passo 3 — Análise do last_checkpoint**
+- Ler `last_checkpoint` de cada spec ativa
+- Classificar: completado / em_progresso / cortado / null
+- Se cortado: identificar qual era o próximo passo
+
+**Passo 4 — Git diff analysis (se disponível)**
+- Listar arquivos modificados desde o último commit
+- Comparar com escopo declarado em spec ativa
+- Reportar arquivos fora do escopo
+
+**Passo 5 — Detecção de anomalias (6 tipos)**
+Verificar cada padrão de anomalia:
+1. **Stuck loop** — `last_checkpoint` repetido sem avanço
+2. **Missing artifacts** — gate aprovado mas artefato não existe
+3. **Scope drift** — arquivos modificados fora do escopo declarado
+4. **Incomplete handoff** — agente ativado mas sem artefato de output
+5. **Contradição de estado** — phase_gates.plan: approved mas implementation-plan não existe
+6. **Sessão cortada** — last_checkpoint descreve trabalho em progresso sem conclusão
+
+### Output format
+
+```markdown
+## Forensics Report — [projeto/feature]
+Data: {ISO-date}
+
+### Estado atual
+- Feature ativa: {slug}
+- Último agente conhecido: {agente}
+- last_checkpoint: "{conteúdo}"
+- Classificação do estado: completado | em_progresso | cortado | desconhecido
+
+### Artefatos
+| Artefato | Status | Observação |
+|----------|--------|------------|
+| prd-{slug}.md | ✓ presente | — |
+| requirements-{slug}.md | ✗ ausente | phase_gates.requirements: approved mas arquivo não encontrado |
+
+### Anomalias detectadas
+1. **Contradição de estado** — phase_gates.plan: approved mas implementation-plan não encontrado
+2. **Sessão cortada** — last_checkpoint contém "criando migration" sem checkpoint de conclusão
+
+### Próximo passo recomendado
+Ativar @dev com instrução: "retomar a partir de {last_checkpoint}, verificar se migration foi criada antes de continuar"
+```
+
+### O que NÃO fazer em modo forensics
+
+- Não corrigir os problemas encontrados
+- Não reescrever artefatos
+- Não executar comandos de modificação
+- Não especular sobre o que "provavelmente" aconteceu sem evidência
+
+---
+
 ## Hard constraints
 - Use `conversation_language` from project context for all output.
 - Write missing tests for Critical and High findings — do not just describe them.

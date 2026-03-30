@@ -68,6 +68,38 @@ Required for the gate to pass:
 
 ---
 
+## Gate D — Execution verification (must_haves)
+
+**Before marking a phase or feature as complete**
+
+Required:
+- [ ] All truths verified (behavioral — not just "I think it works")
+- [ ] All artifacts verified (substantive — not stubs)
+- [ ] All key_links verified (wiring — imports, registrations, middleware)
+
+**Not complete if:**
+- Any truth has no passing test or manual verification step
+- Any artifact is empty, a stub, or missing required exports
+- Any key_link shows the code exists but isn't connected
+
+**Signal:** update `last_checkpoint` in `spec-{slug}.md` with which must_haves passed and which failed.
+
+---
+
+## Checkpoint taxonomy reference
+
+Quando qualquer agente precisa de interação humana durante execução:
+
+| Tipo | Quando | Frequência esperada |
+|------|--------|---------------------|
+| `verify` | Confirmar comportamento visível | Comum — após cada entrega testável |
+| `decision` | Bifurcação arquitetural ou de produto | Rara — apenas quando não especificado |
+| `action` | Passo que o agente não consegue executar | Muito rara — <1% dos steps |
+
+Regra: se o agente consegue executar sem risco, execute. Não peça confirmação desnecessária.
+
+---
+
 ## How agents communicate gate status
 
 Each agent, at session end, should:

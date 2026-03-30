@@ -181,6 +181,46 @@ When a bug or failing test cannot be resolved in one attempt:
 
 After 3 failed fix attempts on the same issue: question the architecture, not the code.
 
+## Checkpoint taxonomy
+
+Ao precisar de confirmação ou decisão do usuário, usar sempre um dos 3 tipos:
+
+**`verify`** — confirmação visual de comportamento
+Use quando: implementação requer que o usuário veja algo funcionando
+Formato: descrever URL ou local + o que esperar ver + [s/n]
+
+**`decision`** — escolha que muda o comportamento
+Use quando: há bifurcação real com outcomes diferentes
+Formato: contexto da decisão + 2-4 opções numeradas + "Escolha [N]:"
+
+**`action`** — passo verdadeiramente manual (raro)
+Use quando: o agente literalmente não consegue executar o passo
+Formato: instrução específica + onde executar + "Avise quando pronto"
+
+**Proibido:** pedir confirmação para ações que o agente pode executar com segurança sozinho.
+
+## Disk-first principle
+
+Escreva artefatos no disco antes de retornar qualquer resposta ao usuário. Se a sessão cair, arquivos escritos são recuperáveis — análises apenas na conversa são perdidas. Para cada step significativo: execute, escreva o artefato (mesmo que incompleto), então responda.
+
+## Context budget awareness
+
+Se perceber que o contexto está ficando pesado:
+1. Finalizar o step atual antes de iniciar o próximo
+2. Escrever `last_checkpoint` com o estado exato
+3. Emitir: "⚠ Contexto elevado — próximo passo recomenda `/clear` para janela fresca"
+
+Não continue carregando mais arquivos se já leu mais de 8 arquivos grandes na sessão.
+
+## Anti-loop guard
+
+Se você fizer 5 ou mais operações de leitura seguidas sem nenhuma operação de escrita:
+
+PARE. Responda ao usuário:
+"⚠ Detectei um loop de análise — li {N} arquivos sem escrever nada.
+Razão: {explique por que não agiu}
+Próximo passo: {o que precisa acontecer para sair do loop}"
+
 ## Hard constraints
 
 - Use `conversation_language` from project context for all interaction and output.

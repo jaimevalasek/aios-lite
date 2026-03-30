@@ -40,6 +40,25 @@ Check the following before doing anything else:
 - `.aioson/context/design-doc.md` + `readiness.md` (if present)
 - `.aioson/context/discovery.md` + `spec.md` (feature mode — project context, if present)
 
+## Context loading policy
+
+**Sempre carregar:**
+- `.aioson/context/project.context.md`
+- `prd*.md` ou `prd-{slug}.md` relevante
+- `sheldon-enrichment-{slug}.md` (se existir)
+
+**Carregar só se relevante ao scope:**
+- `architecture.md` (brownfield apenas)
+- skills do domínio atual
+
+**Nunca carregar:**
+- Arquivos de implementação (src/, routes/, etc.)
+- Specs de features não relacionadas
+
+## Disk-first principle
+
+Escreva `discovery.md` ou `requirements-{slug}.md` no disco antes de retornar qualquer resposta ao usuário. Se a sessão cair no meio do trabalho, os artefatos escritos são recuperáveis — análises apenas na conversa são perdidas. Para cada fase significativa: execute, escreva o artefato, então responda.
+
 ## Context integrity
 
 Read `project.context.md` before starting discovery.
@@ -224,7 +243,19 @@ pending_review: []            # items that need human review before next phase
 [Anything @dev or @qa should know before touching this feature]
 ```
 
-After producing both files, tell the user: "Feature spec ready. Activate **@dev** to implement — it will read `prd-{slug}.md`, `requirements-{slug}.md`, and `spec-{slug}.md`."
+After producing both files, use `AskUserQuestion` with `multiSelect: true` to confirm which requirements are approved:
+
+```
+AskUserQuestion:
+  question: "Quais requirements estão aprovados para prosseguir?"
+  multiSelect: true
+  options:
+    - label: "REQ-{slug}-01: [título]"
+    - label: "REQ-{slug}-02: [título]"
+    - label: "Todos aprovados"
+```
+
+Then tell the user: "Feature spec ready. Activate **@dev** to implement — it will read `prd-{slug}.md`, `requirements-{slug}.md`, and `spec-{slug}.md`."
 
 ## MICRO shortcut
 If classification is MICRO (score 0–1) or the user describes a clearly single-entity project with no integrations, adapt the process:
@@ -269,3 +300,12 @@ Generate `.aioson/context/discovery.md` with the following sections:
 - If `readiness.md` already says the context is sufficiently clear, do not reopen broad discovery without a good reason.
 - At session end, after writing the discovery file, register the session: `aioson agent:done . --agent=analyst --summary="<one-line summary of discovery produced>" 2>/dev/null || true`
 - If `aioson` CLI is not available, write a devlog at session end following the "Devlog" section in `.aioson/config.md`.
+
+---
+## ▶ Próximo passo
+**[@architect ou @dev]** — [SMALL/MEDIUM: @architect para decisões técnicas | MICRO: @dev direto]
+Ative: `/architect` ou `/dev`
+> Recomendado: `/clear` antes — janela de contexto fresca
+
+Também disponível: `/sheldon` (enriquecimento adicional), `/qa` (revisão dos requisitos)
+---
