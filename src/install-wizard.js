@@ -324,16 +324,29 @@ async function runInstallWizard(options = {}, io = {}) {
   if (!stdin.isTTY || !stdout.isTTY) return null;
   if (options.noInteractive) return null;
 
+  // Ensure terminal and stdin are fully restored after the wizard,
+  // even if individual prompt cleanups ran. readline.emitKeypressEvents
+  // adds persistent internal listeners that can keep the process alive
+  // and leave the terminal in raw mode.
+  function finalCleanup() {
+    if (stdin === process.stdin) {
+      if (typeof stdin.setRawMode === 'function') stdin.setRawMode(false);
+      stdin.pause();
+      if (typeof stdin.unref === 'function') stdin.unref();
+    }
+  }
+
   const tools = await promptScreen1(io);
-  if (!tools) return null;
+  if (!tools) { finalCleanup(); return null; }
 
   const uses = await promptScreen2(io);
-  if (!uses) return null;
+  if (!uses) { finalCleanup(); return null; }
 
   const confirmed = await promptConfirm(tools, uses, io);
-  if (!confirmed) return null;
+  if (!confirmed) { finalCleanup(); return null; }
 
   stdout.write('\x1Bc');
+  finalCleanup();
   return { tools, uses };
 }
 
