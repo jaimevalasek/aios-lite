@@ -122,16 +122,19 @@ async function listFilesRecursive(dir) {
   return out;
 }
 
+/**
+ * Returns a skip-reason string if the file should be skipped, or false if it should be installed.
+ */
 function shouldSkipTemplatePath(rel, profile = null) {
-  if (rel.startsWith('.aioson/context/')) return true;
   if (rel === '.aioson/context/.gitkeep') return false;
+  if (rel.startsWith('.aioson/context/')) return 'context-protected';
   // Never overwrite user-installed skills (only the .gitkeep is created)
-  if (rel.startsWith('.aioson/installed-skills/') && rel !== '.aioson/installed-skills/.gitkeep') return true;
+  if (rel.startsWith('.aioson/installed-skills/') && rel !== '.aioson/installed-skills/.gitkeep') return 'context-protected';
   // Never overwrite custom agents (only the .gitkeep is created)
-  if (rel.startsWith('.aioson/my-agents/') && rel !== '.aioson/my-agents/.gitkeep') return true;
+  if (rel.startsWith('.aioson/my-agents/') && rel !== '.aioson/my-agents/.gitkeep') return 'context-protected';
 
   // Profile-based filtering
-  if (profile && !shouldIncludeForProfile(rel, profile)) return true;
+  if (profile && !shouldIncludeForProfile(rel, profile)) return 'not-in-profile';
 
   return false;
 }
@@ -202,8 +205,9 @@ async function installTemplate(targetDir, options = {}) {
 
   for (const absPath of templateFiles) {
     const rel = toRelativeSafe(TEMPLATE_DIR, absPath);
-    if (shouldSkipTemplatePath(rel, installProfile)) {
-      skipped.push({ path: rel, reason: installProfile && rel !== '.aioson/context/.gitkeep' ? 'not-in-profile' : 'context-protected' });
+    const skipReason = shouldSkipTemplatePath(rel, installProfile);
+    if (skipReason) {
+      skipped.push({ path: rel, reason: skipReason });
       continue;
     }
 

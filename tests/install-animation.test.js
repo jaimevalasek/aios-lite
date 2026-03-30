@@ -77,10 +77,10 @@ test('renderProgress truncates long file names', () => {
 // renderInstallSummary — non-TTY
 test('renderInstallSummary outputs plain text on non-TTY', () => {
   const stdout = createMockStdout({ isTTY: false });
-  const result = { copied: ['a.md', 'b.md'], skipped: ['c.md'] };
+  const result = { copied: ['a.md', 'b.md'], skipped: [{ path: 'c.md', reason: 'already-exists' }] };
   renderInstallSummary({ result, installProfile: null, stdout });
   assert.ok(stdout.output.includes('installed 2 files'));
-  assert.ok(stdout.output.includes('skipped 1'));
+  assert.ok(stdout.output.includes('1 already exist'));
   assert.ok(stdout.output.includes('run /setup'));
 });
 
@@ -95,7 +95,10 @@ test('renderInstallSummary with null profile shows "All" for tools', () => {
 // renderInstallSummary — with profile shows tool names
 test('renderInstallSummary with profile shows formatted tool names on TTY', () => {
   const stdout = createMockStdout({ isTTY: true });
-  const result = { copied: new Array(62).fill('x'), skipped: new Array(18).fill('y') };
+  const result = {
+    copied: new Array(62).fill('x'),
+    skipped: Array.from({ length: 18 }, () => ({ path: 'x', reason: 'not-in-profile' }))
+  };
   const profile = { tools: ['claude', 'codex'], uses: ['development', 'squads'] };
   renderInstallSummary({ result, installProfile: profile, stdout });
   assert.ok(stdout.output.includes('Claude Code'));
@@ -103,21 +106,36 @@ test('renderInstallSummary with profile shows formatted tool names on TTY', () =
   assert.ok(stdout.output.includes('Development + Squads'));
 });
 
-// renderInstallSummary — skip reason includes "(not in profile)" when profile present
-test('renderInstallSummary shows "(not in profile)" skip reason when profile is set (non-TTY)', () => {
-  const stdout = createMockStdout({ isTTY: false });
-  const result = { copied: [], skipped: ['AGENTS.md'] };
+// renderInstallSummary — shows "(not in profile)" for profile-skipped files
+test('renderInstallSummary shows "(not in profile)" for profile-skipped files', () => {
+  const stdout = createMockStdout({ isTTY: true });
+  const result = { copied: [], skipped: [{ path: 'AGENTS.md', reason: 'not-in-profile' }] };
   const profile = { tools: ['claude'], uses: ['development'] };
   renderInstallSummary({ result, installProfile: profile, stdout });
-  // non-TTY output
-  assert.ok(stdout.output.length > 0);
+  assert.ok(stdout.output.includes('not in profile'));
 });
 
-test('renderInstallSummary shows "(not in profile)" on TTY when profile present', () => {
+// renderInstallSummary — shows "already up to date" for existing files
+test('renderInstallSummary shows "already up to date" for already-exists files', () => {
   const stdout = createMockStdout({ isTTY: true });
-  const result = { copied: [], skipped: ['AGENTS.md'] };
+  const result = { copied: [], skipped: [{ path: 'CLAUDE.md', reason: 'already-exists' }] };
+  renderInstallSummary({ result, installProfile: null, stdout });
+  assert.ok(stdout.output.includes('already up to date'));
+});
+
+// renderInstallSummary — mixed skip reasons show both
+test('renderInstallSummary shows both skip reasons when mixed', () => {
+  const stdout = createMockStdout({ isTTY: true });
+  const result = {
+    copied: ['a.md'],
+    skipped: [
+      { path: 'CLAUDE.md', reason: 'already-exists' },
+      { path: 'AGENTS.md', reason: 'not-in-profile' }
+    ]
+  };
   const profile = { tools: ['claude'], uses: ['development'] };
   renderInstallSummary({ result, installProfile: profile, stdout });
+  assert.ok(stdout.output.includes('already up to date'));
   assert.ok(stdout.output.includes('not in profile'));
 });
 

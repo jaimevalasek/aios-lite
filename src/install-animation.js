@@ -119,12 +119,16 @@ function renderInstallSummary({ result, installProfile, stdout = process.stdout 
       ? 'Development + Squads'
       : 'Development';
 
-  const skipReason = installProfile ? ' (not in profile)' : '';
   const copiedCount = result.copied.length;
-  const skippedCount = result.skipped.length;
+  const profileSkipped = result.skipped.filter(s => s.reason === 'not-in-profile').length;
+  const existingSkipped = result.skipped.filter(s => s.reason === 'already-exists').length;
+  const otherSkipped = result.skipped.length - profileSkipped - existingSkipped;
 
   if (!isTTY) {
-    stdout.write(`aioson: installed ${copiedCount} files, skipped ${skippedCount}\n`);
+    stdout.write(`aioson: installed ${copiedCount} files`);
+    if (existingSkipped) stdout.write(`, ${existingSkipped} already exist`);
+    if (profileSkipped) stdout.write(`, ${profileSkipped} not in profile`);
+    stdout.write('\n');
     const toolsStr = installProfile ? installProfile.tools.join(',') : 'all';
     const modeStr = installProfile ? installProfile.uses.join(',') : 'all';
     stdout.write(`aioson: tools=${toolsStr} mode=${modeStr}\n`);
@@ -145,11 +149,23 @@ function renderInstallSummary({ result, installProfile, stdout = process.stdout 
     return `  │ ${content}${padding} │`;
   }
 
+  // Build skip detail lines
+  const skipLines = [];
+  if (existingSkipped > 0) {
+    skipLines.push(row(`${dim}─  ${existingSkipped} files already up to date${reset}`));
+  }
+  if (profileSkipped > 0) {
+    skipLines.push(row(`${dim}─  ${profileSkipped} files skipped (not in profile)${reset}`));
+  }
+  if (otherSkipped > 0) {
+    skipLines.push(row(`${dim}─  ${otherSkipped} files skipped (protected)${reset}`));
+  }
+
   const lines = [
     `  ╭${'─'.repeat(W + 2)}╮`,
     `  │${' '.repeat(W + 2)}│`,
     row(`${green}✓${reset}  ${copiedCount} files installed`),
-    row(`${dim}─  ${skippedCount} files skipped${skipReason}${reset}`),
+    ...skipLines,
     `  │${' '.repeat(W + 2)}│`,
     row(`${cyan}Tools${reset}  →  ${cyan}${toolNames}${reset}`),
     row(`${cyan}Mode${reset}   →  ${cyan}${modeLabel}${reset}`),

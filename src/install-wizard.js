@@ -25,12 +25,21 @@ const USES = [
   }
 ];
 
+const BANNER_ART = [
+  '█████╗ ██╗ ██████╗ ███████╗ ██████╗ ███╗   ██╗',
+  '██╔══██╗██║██╔═══██╗██╔════╝██╔═══██╗████╗  ██║',
+  '███████║██║██║   ██║███████╗██║   ██║██╔██╗ ██║',
+  '██╔══██║██║██║   ██║╚════██║██║   ██║██║╚██╗██║',
+  '██║  ██║██║╚██████╔╝███████║╚██████╔╝██║ ╚████║',
+  '╚═╝  ╚═╝╚═╝ ╚═════╝ ╚══════╝ ╚═════╝ ╚═╝  ╚═══╝'
+];
+
 function getBanner(version, stdout) {
   const cols = (stdout && stdout.columns) || 80;
   const noColor = process.env.NO_COLOR !== undefined;
   const dumb = process.env.TERM === 'dumb';
 
-  if (dumb || cols < 50) {
+  if (dumb || cols < 60) {
     return `AIOSON v${version}\n\n`;
   }
 
@@ -39,19 +48,33 @@ function getBanner(version, stdout) {
   const dim = noColor ? '' : '\x1b[90m';
   const reset = noColor ? '' : '\x1b[0m';
 
+  const artWidth = Math.max(...BANNER_ART.map(r => r.length)); // 47
+  const sidePad = 3;
+  const inner = artWidth + sidePad * 2; // 53
+  const dashes = '─'.repeat(inner);
+
+  // Center a string (without ANSI) within inner width
+  function centered(content, visibleLen) {
+    const left = Math.floor((inner - visibleLen) / 2);
+    const right = inner - left - visibleLen;
+    return `  ${border}│${reset}${' '.repeat(left)}${content}${' '.repeat(right)}${border}│${reset}`;
+  }
+
+  const emptyRow = `  ${border}│${reset}${' '.repeat(inner)}${border}│${reset}`;
+  const tagline = `AI Operating Framework  v${version}`;
+
   return [
-    `  ${border}╭───────────────────────────────────────────╮${reset}`,
-    `  ${border}│${reset}                                           ${border}│${reset}`,
-    `  ${border}│${reset}  ${cyan}█████╗ ██╗ ██████╗ ███████╗ ██████╗ ███╗   ██╗${reset}  ${border}│${reset}`,
-    `  ${border}│${reset}  ${cyan}██╔══██╗██║██╔═══██╗██╔════╝██╔═══██╗████╗  ██║${reset}  ${border}│${reset}`,
-    `  ${border}│${reset}  ${cyan}███████║██║██║   ██║███████╗██║   ██║██╔██╗ ██║${reset}  ${border}│${reset}`,
-    `  ${border}│${reset}  ${cyan}██╔══██║██║██║   ██║╚════██║██║   ██║██║╚██╗██║${reset}  ${border}│${reset}`,
-    `  ${border}│${reset}  ${cyan}██║  ██║██║╚██████╔╝███████║╚██████╔╝██║ ╚████║${reset}  ${border}│${reset}`,
-    `  ${border}│${reset}  ${cyan}╚═╝  ╚═╝╚═╝ ╚═════╝ ╚══════╝ ╚═════╝ ╚═╝  ╚═══╝${reset}  ${border}│${reset}`,
-    `  ${border}│${reset}                                           ${border}│${reset}`,
-    `  ${border}│${reset}     ${dim}AI Operating Framework  v${version}${reset}        ${border}│${reset}`,
-    `  ${border}│${reset}                                           ${border}│${reset}`,
-    `  ${border}╰───────────────────────────────────────────╯${reset}`,
+    `  ${border}╭${dashes}╮${reset}`,
+    emptyRow,
+    ...BANNER_ART.map(row => {
+      const left = Math.floor((inner - row.length) / 2);
+      const right = inner - left - row.length;
+      return `  ${border}│${reset}${' '.repeat(left)}${cyan}${row}${reset}${' '.repeat(right)}${border}│${reset}`;
+    }),
+    emptyRow,
+    centered(`${dim}${tagline}${reset}`, tagline.length),
+    emptyRow,
+    `  ${border}╰${dashes}╯${reset}`,
     ''
   ].join('\n') + '\n';
 }
@@ -120,17 +143,22 @@ function makeRawSession(io) {
   if (typeof stdin.setRawMode === 'function') stdin.setRawMode(true);
   if (typeof stdin.resume === 'function') stdin.resume();
 
-  function restore() {
+  function cleanupListeners(onKeypress) {
+    stdin.removeListener('keypress', onKeypress);
+    // Flush readline's internal _keypressDecoder when no keypress listeners remain
+    if (stdin.listenerCount('keypress') === 0 && stdin.listenerCount('data') > 0) {
+      stdin.emit('data', Buffer.alloc(0));
+    }
     if (typeof stdin.setRawMode === 'function') stdin.setRawMode(wasRaw);
     if (wasPaused && typeof stdin.pause === 'function') stdin.pause();
   }
 
-  return { stdin, restore };
+  return { stdin, cleanupListeners };
 }
 
 async function promptScreen1(io = {}) {
   const stdout = io.stdout || process.stdout;
-  const { stdin, restore } = makeRawSession(io);
+  const { stdin, cleanupListeners } = makeRawSession(io);
 
   let cursor = 0;
   const selected = new Set(['claude']);
@@ -144,8 +172,7 @@ async function promptScreen1(io = {}) {
     function cleanup() {
       if (cleanedUp) return;
       cleanedUp = true;
-      stdin.removeListener('keypress', onKeypress);
-      restore();
+      cleanupListeners(onKeypress);
     }
 
     function onKeypress(_str, key) {
@@ -195,7 +222,7 @@ async function promptScreen1(io = {}) {
 
 async function promptScreen2(io = {}) {
   const stdout = io.stdout || process.stdout;
-  const { stdin, restore } = makeRawSession(io);
+  const { stdin, cleanupListeners } = makeRawSession(io);
 
   let cursor = 0;
   const selected = new Set(['development']);
@@ -208,8 +235,7 @@ async function promptScreen2(io = {}) {
     function cleanup() {
       if (cleanedUp) return;
       cleanedUp = true;
-      stdin.removeListener('keypress', onKeypress);
-      restore();
+      cleanupListeners(onKeypress);
     }
 
     function onKeypress(_str, key) {
@@ -255,7 +281,7 @@ async function promptScreen2(io = {}) {
 
 async function promptConfirm(tools, uses, io = {}) {
   const stdout = io.stdout || process.stdout;
-  const { stdin, restore } = makeRawSession(io);
+  const { stdin, cleanupListeners } = makeRawSession(io);
 
   renderConfirm(tools, uses, stdout);
 
@@ -265,8 +291,7 @@ async function promptConfirm(tools, uses, io = {}) {
     function cleanup() {
       if (cleanedUp) return;
       cleanedUp = true;
-      stdin.removeListener('keypress', onKeypress);
-      restore();
+      cleanupListeners(onKeypress);
     }
 
     function onKeypress(_str, key) {
