@@ -160,7 +160,7 @@ function renderScreen4(cursor, stdout) {
   stdout.write('\n');
 }
 
-function renderConfirm(tools, uses, design, locale, stdout) {
+function renderConfirm(tools, uses, design, locale, existingProfile, stdout) {
   const TOOL_NAMES = { claude: 'Claude Code', codex: 'Codex', gemini: 'Gemini CLI', opencode: 'OpenCode' };
   const toolNames  = tools.map(id => TOOL_NAMES[id] || id).join(', ');
   const modeLabel  = uses.includes('squads') ? 'Development + Squads' : 'Development';
@@ -177,6 +177,23 @@ function renderConfirm(tools, uses, design, locale, stdout) {
   stdout.write(`    Mode    →  ${modeLabel}\n`);
   stdout.write(`    Design  →  ${designLabel}\n`);
   stdout.write(`    Locale  →  ${localeName}\n\n`);
+
+  // Warn if reconfigure has deselected items (we don't auto-remove files)
+  if (existingProfile) {
+    const prevTools = new Set(Array.isArray(existingProfile.tools) ? existingProfile.tools : [existingProfile.tools]);
+    const prevDesign = new Set(Array.isArray(existingProfile.design) ? existingProfile.design : [existingProfile.design]);
+    const currTools = new Set(tools);
+    const currDesign = new Set(Array.isArray(design) ? design : [design]);
+
+    const removedTools = [...prevTools].filter(t => !currTools.has(t) && t !== 'none');
+    const removedDesign = [...prevDesign].filter(d => !currDesign.has(d) && d !== 'none' && d !== 'all');
+
+    if (removedTools.length > 0 || removedDesign.length > 0) {
+      stdout.write('  ⚠  Deselected items will NOT be removed automatically.\n');
+      stdout.write('     Remove them manually if needed.\n\n');
+    }
+  }
+
   stdout.write('  Press enter to install or q to cancel.\n\n');
 }
 
@@ -317,11 +334,11 @@ async function promptDesignCheckbox({ items, noneId, defaultSelected, render, io
   });
 }
 
-async function promptConfirmScreen(tools, uses, design, locale, io = {}) {
+async function promptConfirmScreen(tools, uses, design, locale, existingProfile, io = {}) {
   const stdout = io.stdout || process.stdout;
   const { stdin, cleanupListeners } = makeRawSession(io);
 
-  renderConfirm(tools, uses, design, locale, stdout);
+  renderConfirm(tools, uses, design, locale, existingProfile, stdout);
 
   return new Promise((resolve) => {
     let cleanedUp = false;
@@ -419,7 +436,7 @@ async function runInstallWizard(options = {}, io = {}) {
   if (locale === null) { finalCleanup(); return null; }
 
   // Confirm screen
-  const confirmed = await promptConfirmScreen(tools, uses, design, locale, io);
+  const confirmed = await promptConfirmScreen(tools, uses, design, locale, existingProfile, io);
   if (!confirmed) { finalCleanup(); return null; }
 
   stdout.write('\x1Bc');
