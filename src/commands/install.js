@@ -47,8 +47,11 @@ async function runInstall({ args, options, logger, t }) {
     }
   }
 
+  // When reconfigure, we need overwrite=true so changed profile is reflected
+  const overwrite = force || reconfigure;
+
   const result = await installTemplate(targetDir, {
-    overwrite: force,
+    overwrite,
     dryRun,
     mode: 'install',
     frameworkDetection: detection.framework,
