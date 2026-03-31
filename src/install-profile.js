@@ -111,6 +111,7 @@ function shouldIncludeForProfile(rel, profile) {
     const skillId = designMatch[1];
     const chosen = profile.design || 'none';
     if (chosen === DESIGN_ALL) return true;
+    if (Array.isArray(chosen)) return chosen.includes(skillId);
     return chosen !== 'none' && skillId === chosen;
   }
 

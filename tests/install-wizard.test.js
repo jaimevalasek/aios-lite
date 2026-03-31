@@ -136,7 +136,7 @@ test('renderScreen2 shows development as always on and step (2/4)', () => {
 
 test('renderScreen3 shows design options and step (3/4)', () => {
   const stdout = createMockStdout();
-  __test__.renderScreen3(0, stdout);
+  __test__.renderScreen3(0, new Set(['none']), false, stdout);
   assert.ok(stdout.output.includes('3/4'));
   assert.ok(stdout.output.includes('None'));
   assert.ok(stdout.output.includes('Clean SaaS UI'));

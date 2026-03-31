@@ -140,9 +140,17 @@ function renderInstallSummary({ result, installProfile, stdout = process.stdout 
       ? 'Development + Squads'
       : 'Development';
 
-  const designLabel = installProfile
-    ? (DESIGN_NAMES[installProfile.design || 'none'] || installProfile.design || 'None')
-    : null;
+  const designValue = installProfile ? (installProfile.design || 'none') : null;
+  let designLabel = null;
+  if (designValue) {
+    if (designValue === 'all') {
+      designLabel = DESIGN_NAMES['all'];
+    } else if (Array.isArray(designValue)) {
+      designLabel = designValue.map(id => DESIGN_NAMES[id] || id).join(', ');
+    } else {
+      designLabel = DESIGN_NAMES[designValue] || designValue;
+    }
+  }
 
   const localeLabel = installProfile
     ? (LOCALE_NAMES[installProfile.locale || 'en'] || installProfile.locale || 'English')
@@ -160,7 +168,8 @@ function renderInstallSummary({ result, installProfile, stdout = process.stdout 
     stdout.write('\n');
     const toolsStr   = installProfile ? installProfile.tools.join(',') : 'all';
     const modeStr    = installProfile ? installProfile.uses.join(',') : 'all';
-    const designStr  = installProfile ? (installProfile.design || 'none') : 'all';
+    const designVal  = installProfile ? (installProfile.design || 'none') : 'all';
+    const designStr  = Array.isArray(designVal) ? designVal.join(',') : designVal;
     const localeStr  = installProfile ? (installProfile.locale || 'en') : 'all';
     stdout.write(`aioson: tools=${toolsStr} mode=${modeStr} design=${designStr} locale=${localeStr}\n`);
     stdout.write('aioson: run /setup to continue\n');

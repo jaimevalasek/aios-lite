@@ -133,16 +133,17 @@ function renderScreen2(cursor, selected, stdout) {
   stdout.write('\n');
 }
 
-function renderScreen3(cursor, stdout) {
+function renderScreen3(cursor, selected, warn, stdout) {
   header(3, 4, stdout);
-  stdout.write('  Which design system? (optional)\n');
-  stdout.write('  (↑/↓ to move, enter to select)\n\n');
+  stdout.write('  Which design system? (optional — select multiple)\n');
+  stdout.write('  (↑/↓ to move, space to toggle, enter to continue)\n\n');
   for (let i = 0; i < DESIGNS.length; i++) {
     const d       = DESIGNS[i];
     const pointer = i === cursor ? '►' : ' ';
-    const bullet  = i === cursor ? '◉' : '○';
-    stdout.write(`  ${pointer} ${bullet}  ${d.label.padEnd(28)} ${d.desc}\n`);
+    const check   = selected.has(d.id) ? '✓' : ' ';
+    stdout.write(`  ${pointer} [${check}] ${d.label.padEnd(28)} ${d.desc}\n`);
   }
+  if (warn) stdout.write('\n  ⚠  Select "None" or at least one design skill.\n');
   stdout.write('\n');
 }
 
@@ -163,14 +164,18 @@ function renderConfirm(tools, uses, design, locale, stdout) {
   const TOOL_NAMES = { claude: 'Claude Code', codex: 'Codex', gemini: 'Gemini CLI', opencode: 'OpenCode' };
   const toolNames  = tools.map(id => TOOL_NAMES[id] || id).join(', ');
   const modeLabel  = uses.includes('squads') ? 'Development + Squads' : 'Development';
-  const designName = DESIGNS.find(d => d.id === design)?.label || 'None';
+  // design can be string (single/id/all) or string[] (multiple)
+  const designList = Array.isArray(design)
+    ? design.map(id => DESIGNS.find(d => d.id === id)?.label || id)
+    : [DESIGNS.find(d => d.id === design)?.label || design];
+  const designLabel = designList.join(', ');
   const localeName = LOCALES.find(l => l.id === locale)?.label || locale;
 
   stdout.write('\x1Bc');
   stdout.write('  Ready to install:\n\n');
   stdout.write(`    Tools   →  ${toolNames}\n`);
   stdout.write(`    Mode    →  ${modeLabel}\n`);
-  stdout.write(`    Design  →  ${designName}\n`);
+  stdout.write(`    Design  →  ${designLabel}\n`);
   stdout.write(`    Locale  →  ${localeName}\n\n`);
   stdout.write('  Press enter to install or q to cancel.\n\n');
 }
@@ -263,6 +268,55 @@ async function promptRadio({ items, defaultIndex, render, io = {} }) {
   });
 }
 
+// Multi-select with exclusive option: when 'noneId' is selected it clears all others;
+// when any other is selected it clears 'noneId'.
+async function promptDesignCheckbox({ items, noneId, defaultSelected, render, io = {} }) {
+  const stdout   = io.stdout || process.stdout;
+  const { stdin, cleanupListeners } = makeRawSession(io);
+  let cursor     = 0;
+  const selected = new Set(defaultSelected);
+  let warn       = false;
+
+  render(cursor, selected, warn, stdout);
+
+  return new Promise((resolve) => {
+    let cleanedUp = false;
+    function cleanup() {
+      if (cleanedUp) return;
+      cleanedUp = true;
+      cleanupListeners(onKeypress);
+    }
+    function onKeypress(_str, key) {
+      if (!key) return;
+      if ((key.ctrl && key.name === 'c') || key.name === 'q') { cleanup(); resolve(null); return; }
+      if (key.name === 'up')   { cursor = cursor === 0 ? items.length - 1 : cursor - 1; render(cursor, selected, warn, stdout); return; }
+      if (key.name === 'down') { cursor = cursor === items.length - 1 ? 0 : cursor + 1; render(cursor, selected, warn, stdout); return; }
+      if (key.name === 'space') {
+        const item = items[cursor];
+        if (item.id === noneId) {
+          // Exclusive: selecting 'none' clears everything else
+          selected.clear();
+          selected.add(noneId);
+        } else {
+          // Selecting any other clears 'none'
+          selected.delete(noneId);
+          if (selected.has(item.id)) selected.delete(item.id);
+          else selected.add(item.id);
+        }
+        warn = false;
+        render(cursor, selected, warn, stdout);
+        return;
+      }
+      if (key.name === 'return') {
+        if (selected.size === 0) { warn = true; render(cursor, selected, warn, stdout); return; }
+        cleanup();
+        resolve([...selected]);
+      }
+    }
+    stdin.on('keypress', onKeypress);
+  });
+}
+
 async function promptConfirmScreen(tools, uses, design, locale, io = {}) {
   const stdout = io.stdout || process.stdout;
   const { stdin, cleanupListeners } = makeRawSession(io);
@@ -324,11 +378,12 @@ async function runInstallWizard(options = {}, io = {}) {
   });
   if (!uses) { finalCleanup(); return null; }
 
-  // Screen 3 — Design (single-select / radio)
-  const design = await promptRadio({
+  // Screen 3 — Design (multi-select with exclusive 'none')
+  const design = await promptDesignCheckbox({
     items: DESIGNS,
-    defaultIndex: 0,
-    render: (cursor, out) => renderScreen3(cursor, out),
+    noneId: 'none',
+    defaultSelected: ['none'],
+    render: (cursor, selected, warn, out) => renderScreen3(cursor, selected, warn, out),
     io
   });
   if (design === null) { finalCleanup(); return null; }
@@ -365,6 +420,7 @@ module.exports = {
     DESIGNS,
     LOCALES,
     promptCheckbox,
-    promptRadio
+    promptRadio,
+    promptDesignCheckbox
   }
 };
