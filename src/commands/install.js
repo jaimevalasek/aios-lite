@@ -35,7 +35,10 @@ async function runInstall({ args, options, logger, t }) {
   if (!noInteractive && isTTY && !dryRun) {
     const existingProfile = await readInstallProfile(targetDir);
     if (!existingProfile || reconfigure) {
-      installProfile = await runInstallWizard({ noInteractive });
+      installProfile = await runInstallWizard({
+        noInteractive,
+        existingProfile: reconfigure ? existingProfile : null
+      });
       // null = user cancelled → fall back to full install
     } else {
       installProfile = existingProfile;

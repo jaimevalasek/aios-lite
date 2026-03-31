@@ -342,10 +342,13 @@ async function promptConfirmScreen(tools, uses, design, locale, io = {}) {
 /**
  * Runs the interactive install wizard.
  * Returns { tools, uses, design, locale } or null (cancelled / non-TTY / --no-interactive).
+ * @param {object} options
+ * @param {object} [options.existingProfile] - Pre-existing profile to pre-select in wizard
  */
 async function runInstallWizard(options = {}, io = {}) {
   const stdin  = io.stdin || process.stdin;
   const stdout = io.stdout || process.stdout;
+  const existingProfile = options.existingProfile || null;
 
   if (!stdin.isTTY || !stdout.isTTY) return null;
   if (options.noInteractive) return null;
@@ -358,10 +361,28 @@ async function runInstallWizard(options = {}, io = {}) {
     }
   }
 
+  // Derive defaults from existing profile (supports both string and array design)
+  const defaultTools = existingProfile
+    ? (Array.isArray(existingProfile.tools) ? existingProfile.tools : [existingProfile.tools])
+    : ['claude'];
+  const defaultUses = existingProfile
+    ? (Array.isArray(existingProfile.uses) ? existingProfile.uses : [existingProfile.uses])
+    : ['development'];
+  const defaultDesign = existingProfile
+    ? (Array.isArray(existingProfile.design)
+        ? existingProfile.design
+        : (existingProfile.design === 'none' || existingProfile.design === 'all'
+            ? [existingProfile.design]
+            : [existingProfile.design]))  // single design skill
+    : ['none'];
+  const defaultLocale = existingProfile
+    ? (LOCALES.findIndex(l => l.id === existingProfile.locale) || 0)
+    : 0;
+
   // Screen 1 — Tools (multi-select)
   const tools = await promptCheckbox({
     items: TOOLS,
-    defaultSelected: ['claude'],
+    defaultSelected: defaultTools,
     lockFirst: false,
     render: (cursor, selected, warn, out) => renderScreen1(cursor, selected, warn, out),
     io
@@ -371,7 +392,7 @@ async function runInstallWizard(options = {}, io = {}) {
   // Screen 2 — Uses (multi-select, development locked)
   const uses = await promptCheckbox({
     items: USES,
-    defaultSelected: ['development'],
+    defaultSelected: defaultUses,
     lockFirst: true,
     render: (cursor, selected, _warn, out) => renderScreen2(cursor, selected, out),
     io
@@ -382,7 +403,7 @@ async function runInstallWizard(options = {}, io = {}) {
   const design = await promptDesignCheckbox({
     items: DESIGNS,
     noneId: 'none',
-    defaultSelected: ['none'],
+    defaultSelected: defaultDesign,
     render: (cursor, selected, warn, out) => renderScreen3(cursor, selected, warn, out),
     io
   });
@@ -391,7 +412,7 @@ async function runInstallWizard(options = {}, io = {}) {
   // Screen 4 — Locale (single-select / radio)
   const locale = await promptRadio({
     items: LOCALES,
-    defaultIndex: 0,
+    defaultIndex: defaultLocale,
     render: (cursor, out) => renderScreen4(cursor, out),
     io
   });
@@ -403,7 +424,15 @@ async function runInstallWizard(options = {}, io = {}) {
 
   stdout.write('\x1Bc');
   finalCleanup();
-  return { tools, uses, design, locale };
+
+  // Normalize design: empty array → 'none', single 'none' → 'none'
+  const normalizedDesign = (design.length === 0 || (design.length === 1 && design[0] === 'none'))
+    ? 'none'
+    : (design.length === 1 && design[0] === 'all')
+      ? 'all'
+      : design;
+
+  return { tools, uses, design: normalizedDesign, locale };
 }
 
 module.exports = {
