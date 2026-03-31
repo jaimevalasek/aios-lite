@@ -38,6 +38,10 @@ async function runUpdate({ args, options, logger, t }) {
   logger.log(t('update.done_at', { targetDir }));
   logger.log(t('update.files_updated', { count: result.copied.length }));
   logger.log(t('update.backups_created', { count: result.backedUp.length }));
+  if (!dryRun) {
+    logger.log('');
+    logger.log(t('update.reconfigure_hint'));
+  }
   if (localeSync) {
     if (dryRun) {
       logger.log(t('locale_apply.dry_run_applied', { locale: localeSync.locale }));

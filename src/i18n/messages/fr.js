@@ -146,7 +146,8 @@ module.exports = {
     not_installed: 'Aucune installation AIOSON trouvee dans {targetDir}.',
     done_at: 'Mise a jour terminee dans : {targetDir}',
     files_updated: 'Fichiers mis a jour : {count}',
-    backups_created: 'Sauvegardes creees : {count}'
+    backups_created: 'Sauvegardes creees : {count}',
+    reconfigure_hint: 'De nouvelles options peuvent etre disponibles. Lancez : aioson install --reconfigure'
   },
   info: {
     cli_version: 'AIOSON CLI : v{version}',
