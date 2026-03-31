@@ -160,7 +160,7 @@ function renderScreen4(cursor, stdout) {
   stdout.write('\n');
 }
 
-function renderConfirm(tools, uses, design, locale, existingProfile, stdout) {
+function renderConfirm(tools, uses, design, locale, existingProfile, t, stdout) {
   const TOOL_NAMES = { claude: 'Claude Code', codex: 'Codex', gemini: 'Gemini CLI', opencode: 'OpenCode' };
   const toolNames  = tools.map(id => TOOL_NAMES[id] || id).join(', ');
   const modeLabel  = uses.includes('squads') ? 'Development + Squads' : 'Development';
@@ -172,7 +172,7 @@ function renderConfirm(tools, uses, design, locale, existingProfile, stdout) {
   const localeName = LOCALES.find(l => l.id === locale)?.label || locale;
 
   stdout.write('\x1Bc');
-  stdout.write('  Ready to install:\n\n');
+  stdout.write(`  ${t('install_wizard.ready_to_install')}\n\n`);
   stdout.write(`    Tools   →  ${toolNames}\n`);
   stdout.write(`    Mode    →  ${modeLabel}\n`);
   stdout.write(`    Design  →  ${designLabel}\n`);
@@ -189,12 +189,12 @@ function renderConfirm(tools, uses, design, locale, existingProfile, stdout) {
     const removedDesign = [...prevDesign].filter(d => !currDesign.has(d) && d !== 'none' && d !== 'all');
 
     if (removedTools.length > 0 || removedDesign.length > 0) {
-      stdout.write('  ⚠  Deselected items will NOT be removed automatically.\n');
-      stdout.write('     Remove them manually if needed.\n\n');
+      stdout.write(`  ${t('install_wizard.deselected_warning')}\n`);
+      stdout.write(`${t('install_wizard.deselected_hint')}\n\n`);
     }
   }
 
-  stdout.write('  Press enter to install or q to cancel.\n\n');
+  stdout.write(`  ${t('install_wizard.press_enter_to_install')}\n\n`);
 }
 
 function makeRawSession(io) {
@@ -334,11 +334,11 @@ async function promptDesignCheckbox({ items, noneId, defaultSelected, render, io
   });
 }
 
-async function promptConfirmScreen(tools, uses, design, locale, existingProfile, io = {}) {
+async function promptConfirmScreen(tools, uses, design, locale, existingProfile, t, io = {}) {
   const stdout = io.stdout || process.stdout;
   const { stdin, cleanupListeners } = makeRawSession(io);
 
-  renderConfirm(tools, uses, design, locale, existingProfile, stdout);
+  renderConfirm(tools, uses, design, locale, existingProfile, t, stdout);
 
   return new Promise((resolve) => {
     let cleanedUp = false;
@@ -361,11 +361,13 @@ async function promptConfirmScreen(tools, uses, design, locale, existingProfile,
  * Returns { tools, uses, design, locale } or null (cancelled / non-TTY / --no-interactive).
  * @param {object} options
  * @param {object} [options.existingProfile] - Pre-existing profile to pre-select in wizard
+ * @param {function} [options.t] - Translator function for i18n strings
  */
 async function runInstallWizard(options = {}, io = {}) {
   const stdin  = io.stdin || process.stdin;
   const stdout = io.stdout || process.stdout;
   const existingProfile = options.existingProfile || null;
+  const t = options.t || ((key) => key);
 
   if (!stdin.isTTY || !stdout.isTTY) return null;
   if (options.noInteractive) return null;
@@ -436,7 +438,7 @@ async function runInstallWizard(options = {}, io = {}) {
   if (locale === null) { finalCleanup(); return null; }
 
   // Confirm screen
-  const confirmed = await promptConfirmScreen(tools, uses, design, locale, existingProfile, io);
+  const confirmed = await promptConfirmScreen(tools, uses, design, locale, existingProfile, t, io);
   if (!confirmed) { finalCleanup(); return null; }
 
   stdout.write('\x1Bc');

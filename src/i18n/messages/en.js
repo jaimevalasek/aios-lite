@@ -218,6 +218,12 @@ module.exports = {
     existing_project_scan_hint:
       '  aioson scan:project . --folder=src --with-llm --provider=<provider>   (generates discovery.md + skeleton-system.md; omit --with-llm for local maps only)'
   },
+  install_wizard: {
+    ready_to_install: 'Ready to install:',
+    press_enter_to_install: 'Press enter to install or q to cancel.',
+    deselected_warning: '⚠  Deselected items will NOT be removed automatically.',
+    deselected_hint: '     Remove them manually if needed.'
+  },
   update: {
     not_installed: 'No AIOSON installation found in {targetDir}.',
     done_at: 'Update completed at: {targetDir}',

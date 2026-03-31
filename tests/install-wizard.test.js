@@ -155,7 +155,8 @@ test('renderScreen4 shows locale options and step (4/4)', () => {
 
 test('renderConfirm shows all 4 profile fields', () => {
   const stdout = createMockStdout();
-  __test__.renderConfirm(['claude', 'codex'], ['development', 'squads'], 'clean-saas-ui', 'pt-BR', null, stdout);
+  const mockT = (key) => key;
+  __test__.renderConfirm(['claude', 'codex'], ['development', 'squads'], 'clean-saas-ui', 'pt-BR', null, mockT, stdout);
   assert.ok(stdout.output.includes('Claude Code'));
   assert.ok(stdout.output.includes('Codex'));
   assert.ok(stdout.output.includes('Development + Squads'));
@@ -165,7 +166,8 @@ test('renderConfirm shows all 4 profile fields', () => {
 
 test('renderConfirm shows None and English for defaults', () => {
   const stdout = createMockStdout();
-  __test__.renderConfirm(['claude'], ['development'], 'none', 'en', null, stdout);
+  const mockT = (key) => key;
+  __test__.renderConfirm(['claude'], ['development'], 'none', 'en', null, mockT, stdout);
   assert.ok(stdout.output.includes('None'));
   assert.ok(stdout.output.includes('English'));
 });

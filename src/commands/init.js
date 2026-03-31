@@ -58,7 +58,7 @@ async function runInit({ args, options, logger, t }) {
       logger.log(t('init_all.installing_full', { projectName }));
     }
   } else if (!noInteractive && !dryRun && isTTY) {
-    installProfile = await runInstallWizard({ noInteractive });
+    installProfile = await runInstallWizard({ noInteractive, t });
     // null = user cancelled → fall back to full install
   }
 

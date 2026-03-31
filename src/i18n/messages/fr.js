@@ -136,6 +136,12 @@ module.exports = {
     existing_project_scan_hint:
       '  aioson scan:project . --folder=src --with-llm --provider=<provider>   (genere discovery.md + skeleton-system.md ; sans --with-llm, seulement les cartes locales)'
   },
+  install_wizard: {
+    ready_to_install: 'Pret a installer :',
+    press_enter_to_install: 'Appuyez sur entree pour installer ou q pour annuler.',
+    deselected_warning: '⚠  Les elements deselectionnes ne seront PAS supprimes automatiquement.',
+    deselected_hint: '     Supprimez-les manuellement si necessaire.'
+  },
   update: {
     not_installed: 'Aucune installation AIOSON trouvee dans {targetDir}.',
     done_at: 'Mise a jour terminee dans : {targetDir}',

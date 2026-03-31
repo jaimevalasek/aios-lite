@@ -37,7 +37,8 @@ async function runInstall({ args, options, logger, t }) {
     if (!existingProfile || reconfigure) {
       installProfile = await runInstallWizard({
         noInteractive,
-        existingProfile: reconfigure ? existingProfile : null
+        existingProfile: reconfigure ? existingProfile : null,
+        t
       });
       // null = user cancelled → fall back to full install
     } else {
