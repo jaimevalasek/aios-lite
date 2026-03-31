@@ -31,6 +31,53 @@ Instead of one massive prompt doing everything, each agent owns a well-defined s
 
 ---
 
+## Installation
+
+```bash
+# New project
+npx @jaimevalasek/aioson init my-project
+
+# Existing project
+cd my-project
+npx @jaimevalasek/aioson install
+```
+
+Running `init` or `install` launches an **interactive wizard** to configure:
+
+1. Which AI tools to enable (Claude Code, Codex CLI, Gemini CLI, OpenCode)
+2. Mode — Development or Development + Squads
+3. Design system (optional) — Clean SaaS UI, Aurora Command UI, Cognitive Core UI, etc.
+4. Agent language — English, Português, Español, Français
+
+Only the relevant files are copied. No extra dependencies are installed.
+
+**Skip the wizard** — install everything at once with `--all`:
+
+```bash
+npx @jaimevalasek/aioson init my-project --all
+npx @jaimevalasek/aioson install --all
+```
+
+**Reconfigure** — add tools or activate Squads after the initial install:
+
+```bash
+npx @jaimevalasek/aioson install --reconfigure
+```
+
+**CI / automation** — install without prompts:
+
+```bash
+npx @jaimevalasek/aioson install --no-interactive
+```
+
+**Update** to a new version (respects your saved profile):
+
+```bash
+npx @jaimevalasek/aioson update
+```
+
+---
+
 ## How it works
 
 ```
