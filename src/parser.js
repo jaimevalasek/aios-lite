@@ -16,8 +16,14 @@ function parseArgv(argv) {
         continue;
       }
 
+      // Boolean-only flags that never consume the next token
+      const boolOnly = new Set([
+        'all', 'force', 'dry-run', 'no-interactive', 'fix', 'json',
+        'help', 'version', 'no-launch', 'attach'
+      ]);
+
       const next = tokens[i + 1];
-      if (next && !next.startsWith('-')) {
+      if (next && !next.startsWith('-') && !boolOnly.has(k)) {
         options[k] = next;
         i += 1;
       } else {

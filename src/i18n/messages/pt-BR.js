@@ -188,7 +188,7 @@ module.exports = {
   },
   init: {
     usage_error:
-      'Uso: aioson init <project-name> [--force] [--dry-run] [--lang=en|pt-BR|es|fr] [--tool=codex|claude|gemini|opencode] [--locale=pt-BR]',
+      'Uso: aioson init <project-name> [--force] [--dry-run] [--all] [--lang=en|pt-BR|es|fr] [--tool=codex|claude|gemini|opencode] [--locale=pt-BR]',
     non_empty_dir: 'Diretorio nao esta vazio: {targetDir}. Use --force para continuar.',
     created_at: 'Projeto criado em: {targetDir}',
     files_copied: 'Arquivos copiados: {count}',
@@ -199,6 +199,9 @@ module.exports = {
     step_agents: '3. Se nao aparecer seletor visual, execute: aioson agents',
     step_agent_prompt:
       '4. Gere o prompt de setup para sua ferramenta: aioson agent:prompt setup --tool={tool}'
+  },
+  init_all: {
+    installing_full: 'Instalacao completa (todas as ferramentas + squads) — wizard ignorado via --all'
   },
   install: {
     framework_detected: 'Framework detectado: {framework} ({evidence})',

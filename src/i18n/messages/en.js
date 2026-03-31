@@ -7,7 +7,7 @@ module.exports = {
     usage: 'Usage:',
     help_item_line: '  {text}',
     help_init:
-      'aioson init <project-name> [--force] [--dry-run] [--lang=en|pt-BR|es|fr] [--tool=codex|claude|gemini|opencode] [--locale=en]',
+      'aioson init <project-name> [--force] [--dry-run] [--all] [--lang=en|pt-BR|es|fr] [--tool=codex|claude|gemini|opencode] [--locale=en]',
     help_install:
       'aioson install [path] [--force] [--dry-run] [--lang=en|pt-BR|es|fr] [--tool=codex|claude|gemini|opencode] [--locale=en]',
     help_setup:
@@ -200,6 +200,9 @@ module.exports = {
     step_setup: '2. Open in your AI CLI and run @setup',
     step_agents: '3. If no visual picker appears, run: aioson agents',
     step_agent_prompt: '4. Generate setup prompt for your tool: aioson agent:prompt setup --tool={tool}'
+  },
+  init_all: {
+    installing_full: 'Installing complete (all tools + squads) — wizard skipped via --all'
   },
   install: {
     framework_detected: 'Framework detected: {framework} ({evidence})',

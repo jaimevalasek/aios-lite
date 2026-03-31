@@ -16,6 +16,8 @@ Ao rodar o `init` ou `install`, um **wizard interativo** aparece para você esco
 
 1. **Quais ferramentas AI** usar (Claude Code, Codex, Gemini, OpenCode)
 2. **Qual modo** (Development ou Development + Squads)
+3. **Design system** (opcional) — Clean SaaS UI, Aurora Command UI, Cognitive Core UI, etc.
+4. **Idioma dos agentes** — English, Português, Español, Français
 
 Só os arquivos relevantes são copiados. Nenhuma dependência extra é instalada.
 
@@ -33,13 +35,33 @@ cd meu-projeto
 npx @jaimevalasek/aioson install
 ```
 
-### Re-configurar depois
+### Instalar tudo de uma vez (`--all`)
+
+Use `--all` para pular o wizard e instalar imediatamente com todas as ferramentas e squads ativados:
+
+```bash
+# Cria projeto e instala tudo (sem wizard)
+npx @jaimevalasek/aioson init meu-projeto --all
+
+# Instala em projeto existente (todas as ferramentas + squads)
+npx @jaimevalasek/aioson install --all
+```
+
+**O que o `--all` instala:**
+- Ferramentas: Claude Code, Codex, Gemini, OpenCode
+- Modo: Development + Squads
+- Design: nenhum
+- Idioma: English
+
+### Re-configurar depois (adicionar ferramentas/modos)
 
 Se precisar adicionar uma ferramenta ou ativar Squads depois:
 
 ```bash
 npx @jaimevalasek/aioson install --reconfigure
 ```
+
+Isso roda o wizard novamente — só os arquivos relevantes ao novo perfil são atualizados.
 
 ### CI / automação (sem wizard)
 

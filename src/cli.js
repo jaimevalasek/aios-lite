@@ -117,6 +117,9 @@ const { runContextSearch, runContextSearchIndex } = require('./commands/context-
 const { runContextCacheList, runContextCacheSave, runContextCacheRestore, runContextCacheCleanup } = require('./commands/context-cache');
 const { runSandboxExec } = require('./commands/sandbox');
 const { runAgentLoad, runAgentShardIndex } = require('./commands/agent-loader');
+const { runLearningEvolve, runLearningApply } = require('./commands/learning-evolve');
+const { runToolRegistry } = require('./commands/tool-registry-cmd');
+const { runHealth } = require('./commands/health');
 
 const JSON_SUPPORTED_COMMANDS = new Set([
   'init',
@@ -250,6 +253,21 @@ const JSON_SUPPORTED_COMMANDS = new Set([
   'learning:list',
   'learning:stats',
   'learning:promote',
+  'learning:evolve',
+  'learning-evolve',
+  'learning:apply',
+  'learning-apply',
+  'tool:register',
+  'tool-register',
+  'tool:list',
+  'tool-list',
+  'tool:call',
+  'tool-call',
+  'tool:unregister',
+  'tool-unregister',
+  'tool:show',
+  'tool-show',
+  'health',
   'runtime:init',
   'runtime-init',
   'runtime:ingest',
@@ -526,6 +544,8 @@ async function main() {
 
     if (command === 'init') {
       result = await runInit({ args, options, logger: commandLogger, t });
+    } else if (command === 'install') {
+      result = await runInstall({ args, options, logger: commandLogger, t });
     } else if (command === 'setup') {
       result = await runSetup({ args, options, logger: commandLogger, t });
     } else if (command === 'install') {
@@ -683,6 +703,10 @@ async function main() {
     } else if (command === 'squad:learning' || command === 'squad-learning') {
       const sub = args[1] || 'list';
       result = await runSquadLearning({ args, options: { ...options, sub }, logger: commandLogger, t });
+    } else if (command === 'learning:evolve' || command === 'learning-evolve') {
+      result = await runLearningEvolve({ args, options, logger: commandLogger, t });
+    } else if (command === 'learning:apply' || command === 'learning-apply') {
+      result = await runLearningApply({ args, options, logger: commandLogger, t });
     } else if (command.startsWith('learning:') || command === 'learning') {
       const sub = command === 'learning' ? (args[1] || 'list') : command.split(':')[1];
       result = await runLearning({ args, options: { ...options, sub }, logger: commandLogger, t });
@@ -791,6 +815,11 @@ async function main() {
       result = await runAgentLoad({ args, options, logger: commandLogger, t });
     } else if (command === 'agent:shard:index' || command === 'agent-shard-index') {
       result = await runAgentShardIndex({ args, options, logger: commandLogger, t });
+    } else if (command.startsWith('tool:') || command.startsWith('tool-')) {
+      const sub = command.replace(/^tool[:-]/, '');
+      result = await runToolRegistry({ args, options: { ...options, sub }, logger: commandLogger, t });
+    } else if (command === 'health') {
+      result = await runHealth({ args, options, logger: commandLogger, t });
     } else {
       const message = t('cli.unknown_command', { command });
       if (jsonMode) {

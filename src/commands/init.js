@@ -9,6 +9,14 @@ const { runInstallWizard } = require('../install-wizard');
 const { renderRevealAnimation, renderInstallSummary, renderProgress } = require('../install-animation');
 const { getCliVersion } = require('../version');
 
+// Complete profile used when --all is passed (skip wizard, install everything)
+const ALL_PROFILE = {
+  tools: ['claude', 'codex', 'gemini', 'opencode'],
+  uses: ['development', 'squads'],
+  design: 'all',
+  locale: 'en'
+};
+
 async function directoryIsEmpty(dirPath) {
   try {
     const entries = await fs.readdir(dirPath);
@@ -29,6 +37,7 @@ async function runInit({ args, options, logger, t }) {
   const force = Boolean(options.force);
   const dryRun = Boolean(options['dry-run']);
   const noInteractive = Boolean(options['no-interactive']);
+  const installAll = Boolean(options.all);
   const requestedLanguage = options.lang || options.language;
   const promptTool = resolvePromptTool(options.tool);
 
@@ -38,11 +47,17 @@ async function runInit({ args, options, logger, t }) {
     throw new Error(t('init.non_empty_dir', { targetDir }));
   }
 
-  // Run wizard for new projects (TTY only)
+  // Run wizard for new projects (TTY only) — unless --all skips it
   const isTTY = process.stdin.isTTY && process.stdout.isTTY;
   let installProfile = null;
 
-  if (!noInteractive && !dryRun && isTTY) {
+  if (installAll) {
+    // --all: skip wizard, install complete
+    installProfile = ALL_PROFILE;
+    if (isTTY && !dryRun) {
+      logger.log(t('init_all.installing_full', { projectName }));
+    }
+  } else if (!noInteractive && !dryRun && isTTY) {
     installProfile = await runInstallWizard({ noInteractive });
     // null = user cancelled → fall back to full install
   }

@@ -1062,6 +1062,23 @@ async function runLiveStart({ args, options = {}, logger, t }) {
       logger.log(t('live.session_started', { agent: agentName, tool, session: sessionKey, dbPath }));
     }
 
+    // Ambient Intelligence: exibe digest de saúde ao iniciar sessão
+    if (!options.json && !options['no-health']) {
+      try {
+        const { getHealthDigest } = require('./health');
+        const items = await getHealthDigest(targetDir);
+        if (items && items.length > 0) {
+          logger.log('');
+          logger.log('AIOSON Health — itens pendentes:');
+          for (const item of items) {
+            logger.log(`  ● ${item}`);
+          }
+          logger.log('  → aioson health . para detalhes');
+          logger.log('');
+        }
+      } catch { /* não bloqueia o start */ }
+    }
+
     if (child) {
       childResult = await waitForChild(child);
     }
@@ -1506,6 +1523,23 @@ async function runLiveClose({ args, options = {}, logger, t }) {
 
     if (!options.json) {
       logger.log(t('live.session_closed', { agent: context.agentName, session: context.sessionKey, dbPath }));
+    }
+
+    // Ambient Intelligence: sugere evolução se há learnings acumulados
+    if (!options.json && !options['no-health']) {
+      try {
+        const { getHealthDigest } = require('./health');
+        const items = await getHealthDigest(targetDir);
+        if (items && items.length > 0) {
+          logger.log('');
+          logger.log('AIOSON Health — itens após sessão:');
+          for (const item of items) {
+            logger.log(`  ● ${item}`);
+          }
+          logger.log('  → aioson health . para detalhes e ações');
+          logger.log('');
+        }
+      } catch { /* não bloqueia o close */ }
     }
 
     return {

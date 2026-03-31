@@ -111,6 +111,7 @@ function renderInstallSummary({ result, installProfile, stdout = process.stdout 
 
   const DESIGN_NAMES = {
     'none':                      'None',
+    'all':                        'All design skills',
     'clean-saas-ui':             'Clean SaaS UI',
     'aurora-command-ui':         'Aurora Command UI',
     'cognitive-core-ui':         'Cognitive Core UI',
@@ -171,6 +172,31 @@ function renderInstallSummary({ result, installProfile, stdout = process.stdout 
     return s.replace(/\x1b\[[0-9;]*m/g, '').length;
   }
 
+  function truncate(s, maxLen) {
+    if (!s) return s;
+    const v = visLen(s);
+    if (v <= maxLen) return s;
+    // Strip the trailing reset code, truncate, then re-add reset
+    const ANSI_RESET = '\x1b[0m';
+    const hasReset = s.endsWith(ANSI_RESET);
+    const plain = hasReset ? s.slice(0, -ANSI_RESET.length) : s;
+    const visiblePlain = visLen(plain);
+    if (visiblePlain <= maxLen) return plain + (hasReset ? ANSI_RESET : '');
+    // Count visible chars while slicing
+    let kept = 0;
+    let cutPoint = 0;
+    for (; cutPoint < plain.length && kept < maxLen; cutPoint++) {
+      if (plain[cutPoint] === '\x1b') {
+        // Skip ANSI sequence
+        const end = plain.indexOf('m', cutPoint);
+        cutPoint = end >= 0 ? end : plain.length - 1;
+      } else {
+        kept++;
+      }
+    }
+    return plain.slice(0, cutPoint) + '…' + (hasReset ? ANSI_RESET : '');
+  }
+
   // Internal width (between │ borders), including 1 space padding each side
   const W = 41;
 
@@ -192,11 +218,11 @@ function renderInstallSummary({ result, installProfile, stdout = process.stdout 
   }
 
   const profileLines = [
-    row(`${cyan}Tools${reset}   →  ${cyan}${toolNames}${reset}`),
-    row(`${cyan}Mode${reset}    →  ${cyan}${modeLabel}${reset}`)
+    row(`${cyan}Tools${reset}   →  ${cyan}${truncate(toolNames, W - 16)}${reset}`),
+    row(`${cyan}Mode${reset}    →  ${cyan}${truncate(modeLabel, W - 16)}${reset}`)
   ];
-  if (designLabel) profileLines.push(row(`${cyan}Design${reset}  →  ${cyan}${designLabel}${reset}`));
-  if (localeLabel) profileLines.push(row(`${cyan}Locale${reset}  →  ${cyan}${localeLabel}${reset}`));
+  if (designLabel) profileLines.push(row(`${cyan}Design${reset}  →  ${cyan}${truncate(designLabel, W - 16)}${reset}`));
+  if (localeLabel) profileLines.push(row(`${cyan}Locale${reset}  →  ${cyan}${truncate(localeLabel, W - 16)}${reset}`));
 
   const lines = [
     `  ╭${'─'.repeat(W + 2)}╮`,

@@ -693,6 +693,34 @@ function ensureLegacyColumns(db) {
   }
 
   try { db.exec('ALTER TABLE worker_runs ADD COLUMN conversation_id TEXT'); } catch { /* já existe */ }
+
+  // Dynamic Tools (Feature: Tool Registry)
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS dynamic_tools (
+      name TEXT PRIMARY KEY,
+      description TEXT NOT NULL,
+      input_schema TEXT NOT NULL DEFAULT '{}',
+      handler_type TEXT NOT NULL DEFAULT 'shell',
+      handler_code TEXT,
+      handler_path TEXT,
+      squad_slug TEXT,
+      registered_at TEXT NOT NULL DEFAULT (datetime('now')),
+      registered_by TEXT
+    );
+    CREATE INDEX IF NOT EXISTS idx_dynamic_tools_squad ON dynamic_tools(squad_slug);
+  `);
+
+  // Evolution Log (Feature: Learning Evolution Pipeline)
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS evolution_log (
+      id TEXT PRIMARY KEY,
+      applied_at TEXT NOT NULL,
+      deltas_count INTEGER NOT NULL DEFAULT 0,
+      squad_slug TEXT,
+      files_json TEXT,
+      source_learning_ids_json TEXT
+    );
+  `);
 }
 
 function insertEvent(db, record) {
@@ -2425,6 +2453,66 @@ function deleteROIConfig(db, squadSlug) {
   return db.prepare('DELETE FROM squad_roi_config WHERE squad_slug = ?').run(squadSlug);
 }
 
+// ─── Dynamic Tools CRUD ───────────────────────────────────────────────────────
+
+function registerDynamicTool(db, opts) {
+  const now = nowIso();
+  db.prepare(`
+    INSERT OR REPLACE INTO dynamic_tools
+      (name, description, input_schema, handler_type, handler_code, handler_path, squad_slug, registered_at, registered_by)
+    VALUES
+      (@name, @description, @inputSchema, @handlerType, @handlerCode, @handlerPath, @squadSlug, @registeredAt, @registeredBy)
+  `).run({
+    name: String(opts.name),
+    description: String(opts.description),
+    inputSchema: opts.inputSchema ? JSON.stringify(opts.inputSchema) : '{}',
+    handlerType: String(opts.handlerType || 'shell'),
+    handlerCode: opts.handlerCode || null,
+    handlerPath: opts.handlerPath || null,
+    squadSlug: opts.squadSlug || null,
+    registeredAt: now,
+    registeredBy: opts.registeredBy || null
+  });
+  return opts.name;
+}
+
+function unregisterDynamicTool(db, name) {
+  return db.prepare('DELETE FROM dynamic_tools WHERE name = ?').run(name);
+}
+
+function getDynamicTool(db, name) {
+  return db.prepare('SELECT * FROM dynamic_tools WHERE name = ?').get(name) || null;
+}
+
+function listDynamicTools(db, squadSlug = null) {
+  if (squadSlug) {
+    return db.prepare('SELECT * FROM dynamic_tools WHERE squad_slug = ? ORDER BY registered_at DESC').all(squadSlug);
+  }
+  return db.prepare('SELECT * FROM dynamic_tools ORDER BY registered_at DESC').all();
+}
+
+// ─── Evolution Log CRUD ───────────────────────────────────────────────────────
+
+function insertEvolutionLog(db, opts) {
+  const id = `evo-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+  db.prepare(`
+    INSERT INTO evolution_log (id, applied_at, deltas_count, squad_slug, files_json, source_learning_ids_json)
+    VALUES (@id, @appliedAt, @deltasCount, @squadSlug, @filesJson, @sourceIdsJson)
+  `).run({
+    id,
+    appliedAt: nowIso(),
+    deltasCount: Number(opts.deltasCount || 0),
+    squadSlug: opts.squadSlug || null,
+    filesJson: JSON.stringify(opts.files || []),
+    sourceIdsJson: JSON.stringify(opts.sourceLearningIds || [])
+  });
+  return id;
+}
+
+function listEvolutionLog(db, limit = 20) {
+  return db.prepare('SELECT * FROM evolution_log ORDER BY applied_at DESC LIMIT ?').all(limit);
+}
+
 module.exports = {
   resolveRuntimePaths,
   runtimeStoreExists,
@@ -2518,5 +2606,13 @@ module.exports = {
   // ROI Config CRUD
   upsertROIConfig,
   getROIConfig,
-  deleteROIConfig
+  deleteROIConfig,
+  // Dynamic Tools CRUD
+  registerDynamicTool,
+  unregisterDynamicTool,
+  getDynamicTool,
+  listDynamicTools,
+  // Evolution Log CRUD
+  insertEvolutionLog,
+  listEvolutionLog
 };

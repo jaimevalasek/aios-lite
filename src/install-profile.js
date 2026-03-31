@@ -43,6 +43,9 @@ const DESIGN_IDS = [
   'warm-craft-ui'
 ];
 
+// Special value meaning "install all design skills"
+const DESIGN_ALL = 'all';
+
 // Caminhos de locale por código
 const LOCALE_IDS = ['en', 'es', 'fr', 'pt-BR'];
 
@@ -107,6 +110,7 @@ function shouldIncludeForProfile(rel, profile) {
   if (designMatch) {
     const skillId = designMatch[1];
     const chosen = profile.design || 'none';
+    if (chosen === DESIGN_ALL) return true;
     return chosen !== 'none' && skillId === chosen;
   }
 
