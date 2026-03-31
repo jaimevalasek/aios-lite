@@ -26,7 +26,8 @@ async function updateInstallation(targetDir, options = {}) {
 
   return {
     ok: true,
-    ...result
+    ...result,
+    savedProfile
   };
 }
 

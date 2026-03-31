@@ -28,6 +28,9 @@ async function runUpdate({ args, options, logger, t }) {
       requestedLanguage ||
       (context.parsed && context.data && context.data.conversation_language
         ? context.data.conversation_language
+        : null) ||
+      (result.savedProfile && result.savedProfile.locale
+        ? result.savedProfile.locale
         : 'en');
     localeSync = await applyAgentLocale(targetDir, language, { dryRun });
   }
