@@ -234,6 +234,21 @@ Must show:
 - Hybrid accent gradient on hero heading or CTA
 - AIOSON badge
 
+### Three.js modifier preview requirements
+
+When `threejs-spatial` is a modifier, both preview HTMLs must include a Three.js scene as the background layer. The preview must demonstrate:
+
+- Three.js canvas is `position: fixed; inset: 0; z-index: 0` — behind all HTML content
+- Canvas is `alpha: true` — CSS aurora gradient shows through
+- Particle count: ≤ 6,000 on desktop, ≤ 1,500 on mobile (use `navigator.userAgent` check)
+- WebGL support check with CSS fallback: `if (!canvas.getContext('webgl')) { canvas.style.display = "none"; document.body.style.background = "linear-gradient(...)"; }`
+- `prefers-reduced-motion` check: disables canvas, shows static aurora CSS background
+- Accent colors from the hybrid's accent gradient flow into Three.js point light colors and particle palette
+- `requestAnimationFrame` render loop with `IntersectionObserver` to pause when off-screen
+- Three.js CDN loaded via importmap: `<script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js"}}</script>`
+
+---
+
 ### Technical requirements (both previews)
 
 - Single `.html` file (no external CSS or JS files)

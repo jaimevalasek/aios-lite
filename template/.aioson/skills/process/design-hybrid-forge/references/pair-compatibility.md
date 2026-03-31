@@ -78,6 +78,38 @@ Each base skill has a primary role:
 |---|---|
 | `bold-editorial-ui` × `cognitive-core-ui` | Dark editorial command — large display type + mono rails, red-orange × teal tension |
 | `neo-brutalist-ui` × `warm-craft-ui` | Crafted brutalism — raw structure + handmade warmth, artisan dev aesthetic |
+
+---
+
+## Three.js Spatial — Modifier (not a primary parent)
+
+`threejs-spatial` is a **special modifier category** — it is not a standalone design skill
+and can never be a primary parent. It layers WebGL/Three.js spatial effects on top of any
+design skill, adding a 3D scene or particle system as the visual substrate.
+
+**How it works as a modifier:**
+- Applied as a modifier (up to 3 modifiers allowed in advanced mode)
+- Governs: background scene layer, particle systems, 3D object showcase, holographic effects
+- Does NOT govern: tokens, typography, component structure, layout rhythm
+- Accent colors from the primary parents MUST flow through the Three.js parameters
+- The Three.js scene is always alpha: true — CSS gradient background shows through
+
+**Three.js × Design Skill combinations:**
+
+| Primary parent | Three.js layer | Result | Best for |
+|---|---|---|---|
+| `glassmorphism-ui` | Particle aurora backdrop | Frosted 3D glass — glass panels float over real particle scenes | AI tools, crypto, modern SaaS landing |
+| `aurora-command-ui` | Holographic glass object | Holographic command center — glass panels reveal 3D object inside | SOC dashboards, security platforms |
+| `neo-brutalist-ui` | Raw geometry + particles | Particle brutalism — hard geometric forms with particle swarms | Dev tools, indie platforms |
+| `bold-editorial-ui` | Scroll-driven 3D parallax | Editorial 3D depth — typography and images move through a 3D scene | Premium marketing, product launches |
+| `cognitive-core-ui` | Floating data cards (3D boxes) | Command 3D — dense data cards as 3D objects floating in space | Monitoring dashboards, metrics platforms |
+| `warm-craft-ui` | Organic particle drift | Warm particle field — particles drift like embers or dust motes | Wellness, creative tools, B2C |
+
+**Anti-blend rules for Three.js modifier:**
+- Three.js never replaces the CSS/HTML layout — it enhances the background/scene layer only
+- No particle count above 8,000 on desktop, 2,000 on mobile
+- WebGL support check + CSS fallback is mandatory
+- Three.js is never the primary story — the product message comes first
 | `clean-saas-ui` × `bold-editorial-ui` | Enterprise editorial — clean precision + cinematic moments, professional drama |
 
 ---

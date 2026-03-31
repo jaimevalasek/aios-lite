@@ -90,7 +90,9 @@ Each phase must complete before the next begins. Do not skip phase 2 and 3 — t
 ```
 primary_a: {skill-name}            # e.g. "cognitive-core-ui"
 primary_b: {skill-name}            # e.g. "glassmorphism-ui"
-modifiers: {optional 0..2}         # e.g. ["bold-editorial-ui"]
+modifiers: {optional 0..2}         # e.g. ["bold-editorial-ui"] or ["threejs-spatial"]
+                                  # threejs-spatial is a special modifier: it layers WebGL/Three.js
+                                  # on any primary pair, adding particle/3D scene as visual substrate
 variation_overlay: {optional}      # selected via conversation or `aioson design-hybrid:options`
 modifier_policy: {optional}        # "up_to_2_modifiers" by default, "up_to_3_modifiers" in advanced mode
 name_suggestion: {optional}        # e.g. "aurora-command-ui" or leave blank
@@ -142,3 +144,4 @@ The hybrid must satisfy ALL of the following:
 9. Every hybrid ships with both previews and a `.skill-meta.json`. No preview = not done.
 10. Project-local generation goes to `.aioson/installed-skills/` by default. Promotion to core is a separate, explicit step.
 11. `design-hybrid:options` creates a temporary preset in `.aioson/context/design-variation-preset.md`; after successful generation, archive or remove the active preset and preserve the history snapshot.
+12. **`threejs-spatial` modifier rules:** It is NOT a primary parent. It layers WebGL/Three.js as a visual enhancement on the chosen primary pair. It does not own substrate (CSS gradient is still the base), does not own structure (HTML layout is CSS), and does not own tokens. Accent colors from primary parents MUST flow through Three.js parameters. Three.js CDN (no npm install) is the only supported delivery mode.

@@ -21,9 +21,23 @@ These directories are **optional**. Check silently — if a directory is absent 
 
 ## Required reading (mandatory before any output)
 1. Read `design_skill` from `.aioson/context/project.context.md` first. If it is set, load `.aioson/skills/design/{design_skill}/SKILL.md` and only the references it specifies for the current task.
-2. If `project_type=site`, also read `.aioson/skills/static/static-html-patterns.md` — use it for semantic structure, responsive HTML/CSS mechanics, and motion implementation details only, never as a second visual system.
+2. If `project_type=site`, read `.aioson/skills/static/static-html-patterns.md` (the index, ~100 lines). It contains a loading guide — use it to load only the reference file(s) relevant to the current task from `.aioson/skills/static/static-html-patterns/`. Never load all reference files at once. Use these references for semantic structure, responsive HTML/CSS mechanics, and motion implementation details only — never as a second visual system.
 3. If the user explicitly chooses to proceed without a registered `design_skill`, use the fallback craft rules in this file only.
 4. **ABSOLUTE RULE — ONE SKILL ONLY:** When `design_skill` is set, load **exclusively** `.aioson/skills/design/{design_skill}/SKILL.md` and the references it specifies. Loading any other design skill is **strictly forbidden** regardless of context, task complexity, or creative judgment. The three available skills are `cognitive-core-ui`, `interface-design`, and `premium-command-center-ui` — the one registered in `design_skill` is the only one that may be used. No exceptions.
+
+## Three.js / WebGL detection
+
+Detect these triggers in the user's request — if any match, also load `.aioson/skills/static/threejs-patterns.md` alongside the primary reading:
+
+- "3D", "WebGL", "three.js", "Three.js"
+- "partículas", "particles", "sistema de partículas", "particle system"
+- "cena 3D", "3D scene", "objeto 3D", "interactive 3D"
+- "holográfico", "holographic", "hologram", "holographic effect"
+- "floating 3D", "floating objects", "3D cards"
+- "hero 3D", "3D background", "particle background", "particle hero"
+- Any explicit request for Three.js, WebGL, or Three.js CDN patterns
+
+Three.js is **always additive** — it enhances the visual output, never replaces the design skill's visual language. When Three.js is loaded, apply patterns from `threejs-patterns.md` for the background/scene layer, while the design skill continues to govern tokens, typography, and component structure.
 
 ## Required input
 - `.aioson/context/project.context.md`
@@ -425,6 +439,9 @@ These are required for every Bold & Cinematic landing page. Read Section 2a-extr
 1. **Animated mesh background** — the hero background gradient drifts slowly using `@keyframes meshDrift`. A static gradient is not enough.
 2. **Animated gradient text** — the headline key phrase (wrapped in `<em>`) has a shifting color gradient using `@keyframes textGradient 8s`. This is the single most-noticed premium detail.
 3. **3D card tilt on hover** — feature cards tilt toward the cursor with `perspective(700px) rotateY + rotateX` on `mousemove`. Skipped on touch devices and `prefers-reduced-motion`.
+
+**Optional 4th technique (requires explicit request or Three.js trigger):**
+4. **WebGL particle backdrop** — if the user asks for 3D, particles, or WebGL effects, load `.aioson/skills/static/threejs-patterns.md` and apply the Particle Aurora Hero (Pattern 1) or another appropriate Three.js pattern. Three.js enhances but never replaces — the design skill tokens (colors, typography, spacing) must flow through the Three.js scene parameters.
 
 For Clean & Luminous: apply `box-shadow` lift on cards and a subtle `scale(1.01)` hover instead of tilt.
 

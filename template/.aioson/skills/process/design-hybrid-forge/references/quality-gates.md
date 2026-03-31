@@ -159,6 +159,26 @@ Fail: Return to Phase 4 and fix the metadata before distribution.
 
 ---
 
+## Gate J — Three.js modifier validation (only when `threejs-spatial` is a modifier)
+
+**Question:** Does the Three.js layer enhance without dominating?
+
+Checklist:
+- [ ] WebGL support check present — graceful CSS fallback when WebGL unavailable
+- [ ] `prefers-reduced-motion: reduce` disables the canvas entirely
+- [ ] Mobile particle count ≤ 30% of desktop count
+- [ ] Canvas is `alpha: true` — CSS gradient background visible through it
+- [ ] Accent colors from primary parents flow through Three.js scene parameters (point lights, particle colors, glow)
+- [ ] Three.js scene is background/scene layer only — HTML layout and CSS components are unaffected
+- [ ] No external texture/model URLs — all assets are procedural (geometry, gradients, shaders)
+- [ ] `IntersectionObserver` or equivalent stops render loop when canvas is off-screen — uses `cancelAnimationFrame` + null guard, not `renderer.setAnimationLoop(null)` (which only controls the renderer's internal loop, not `requestAnimationFrame`)
+- [ ] `beforeunload` disposes renderer, geometries, and materials — no memory leaks on page unload
+
+Pass: Three.js enhances without violating the design skill's visual language.
+Fail: Fix the specific violation. Three.js is a modifier — it serves the hybrid, not the other way around.
+
+---
+
 ## Final ship checklist — project-local mode
 
 Before marking the project-local hybrid as done:

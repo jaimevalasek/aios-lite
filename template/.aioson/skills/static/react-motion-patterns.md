@@ -575,3 +575,25 @@ Add to `app/layout.tsx`:
 - Tilt and 3D effects must be disabled on touch devices (`hover: none` media query)
 - Do not install Framer Motion just for one CSS animation — use plain CSS keyframes instead
 - Keep decorative elements (`orbs`, `mesh`, `marquee`) `aria-hidden="true"` and `pointer-events: none`
+
+## When CSS is not enough — Three.js (on-demand)
+
+The patterns above cover 95% of animation needs. When the user explicitly requests
+particle systems, WebGL scenes, holographic effects, or interactive 3D objects:
+
+Load `.aioson/skills/static/threejs-patterns.md` instead.
+
+**CSS 3D Transforms vs Three.js/WebGL:**
+
+| Technique | CSS 3D Transforms (above) | Three.js (threejs-patterns.md) |
+|---|---|---|
+| Card tilt | `perspective(700px) rotateY/X` | Not needed — CSS handles it |
+| Mesh background | `@keyframes meshDrift` on gradient | Particle aurora backdrop (3D points) |
+| Floating orbs | CSS with `border-radius: 50%` blur | Not needed — CSS is cleaner |
+| 3D object showcase | Not possible | TorusKnot/Icosahedron with OrbitControls |
+| Holographic effect | Not possible | MeshPhysicalMaterial with iridescence + bloom |
+| Scroll-driven 3D | Not possible | Camera moves through 3D scene on scroll |
+| Particle physics | Not possible | 3,000–8,000 points with drift behavior |
+
+Three.js is CDN-only (no npm install required) for all patterns in threejs-patterns.md.
+It is always additive — the design skill tokens (colors, typography, spacing) continue to govern the HTML/CSS layer.

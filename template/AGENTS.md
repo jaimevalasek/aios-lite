@@ -16,7 +16,7 @@ Type `@agent-name` in the prompt. Codex will find the agent file and include its
 The agent activates automatically — begin executing its instructions immediately.
 Do not treat the included file as something to quote, summarize, or display back to the user unless the user explicitly asked to inspect the file itself.
 
-Examples: `@setup`, `@deyvin`, `@dev`, `@squad`, `@genome`, `@profiler-researcher`, `@design-hybrid-forge`
+Examples: `@setup`, `@deyvin`, `@dev`, `@squad`, `@genome`, `@profiler-researcher`, `@design-hybrid-forge`, `@hybrid-clone`
 
 **Option 2 — Natural language:**
 Describe your intent. The agent system will match and execute.
@@ -41,6 +41,7 @@ Describe your intent. The agent system will match and execute.
 | @profiler-enricher | "enrich this profile", "analyze this person's cognition", "consolidar perfil cognitivo" |
 | @profiler-forge | "generate the advisor", "forge the genome 3.0", "gerar advisor da persona" |
 | @design-hybrid-forge | "create hybrid design skill", "combine two design skills", "use the design-hybrid-forge agent" |
+| @hybrid-clone | "clone this site with [skill]", "rebuild [url] using [skill]", "[url] in the style of [skill]", "use the hybrid-clone agent" |
 
 When an agent file is included via @ or described via natural language, read the corresponding file and execute its instructions immediately from the first step.
 Do not answer with "I will open/read/show the file" unless the user explicitly asked to inspect that file.
@@ -92,6 +93,7 @@ When running Codex directly (without `aioson workflow:next`), these rules apply:
 - @profiler-enricher → `.aioson/agents/profiler-enricher.md`
 - @profiler-forge → `.aioson/agents/profiler-forge.md`
 - @design-hybrid-forge → `.aioson/agents/design-hybrid-forge.md`
+- @hybrid-clone → `.aioson/agents/hybrid-clone.md`
 
 ## Process skill: aioson-spec-driven
 
