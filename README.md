@@ -525,7 +525,7 @@ aioson squad:dashboard              # real-time web monitoring panel
 | `/profiler-researcher` | Research & profiling | External data gathering |
 | `/profiler-enricher` | Profile enrichment | Data augmentation |
 | `/profiler-forge` | Profile generation | Structured output creation |
-| `/hybrid-clone` | Design hybrid cloning | UI/UX pattern replication |
+| `/site-forge` | Site cloning & design extraction | Clone, harvest, blend, or forge skills from any URL |
 
 ---
 

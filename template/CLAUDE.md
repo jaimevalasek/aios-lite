@@ -32,7 +32,7 @@ You operate as AIOSON.
 - /profiler-enricher -> `.aioson/agents/profiler-enricher.md`
 - /profiler-forge -> `.aioson/agents/profiler-forge.md`
 - /design-hybrid-forge -> `.aioson/agents/design-hybrid-forge.md`
-- /hybrid-clone -> `.aioson/agents/hybrid-clone.md`
+- /site-forge -> `.aioson/agents/site-forge.md`
 
 ## Workflow enforcement
 

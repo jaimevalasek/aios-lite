@@ -1,0 +1,31 @@
+{
+  "id": "pt.squarespace.com",
+  "name": "Squarespace Design System",
+  "source": "https://pt.squarespace.com/",
+  "extractedAt": "2026-03-31",
+  "theme": "light-dark",
+  "baseUnit": "4px",
+  "referenceSkill": null,
+  "type": "extracted",
+  "designPillars": [
+    "Sharp minimalism — zero border-radius",
+    "Bold typographic hierarchy — Clarkson font family",
+    "High contrast — black/white with teal accents"
+  ],
+  "colors": {
+    "primary": "#000000",
+    "accent": "#1E4C41",
+    "background": "#FFFFFF",
+    "surface": "#F5F5F4"
+  },
+  "fonts": {
+    "display": "Clarkson, Helvetica, sans-serif",
+    "body": "Helvetica Neue, Helvetica, Arial, sans-serif",
+    "serif": "Clarkson Serif, Georgia, serif"
+  },
+  "breakpoints": {
+    "desktop": 1440,
+    "tablet": 768,
+    "mobile": 390
+  }
+}

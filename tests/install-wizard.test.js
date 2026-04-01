@@ -128,10 +128,16 @@ test('renderScreen1 shows warning when warn=true', () => {
 
 test('renderScreen2 shows development as always on and step (2/4)', () => {
   const stdout = createMockStdout();
-  __test__.renderScreen2(0, new Set(['development']), stdout);
+  __test__.renderScreen2(0, new Set(['development']), false, stdout);
   assert.ok(stdout.output.includes('2/4'));
   assert.ok(stdout.output.includes('always on'));
   assert.ok(stdout.output.includes('Squads'));
+});
+
+test('renderScreen2 shows warning when warn is true', () => {
+  const stdout = createMockStdout();
+  __test__.renderScreen2(0, new Set(), true, stdout);
+  assert.ok(stdout.output.includes('Select at least one use'));
 });
 
 test('renderScreen3 shows design options and step (3/4)', () => {

@@ -20,7 +20,7 @@ const TOOL_FILES = {
 
 // Squad agent/task/skill paths (non-locale)
 const SQUAD_PATHS = [
-  /^\.aioson\/agents\/(squad|orache|genome|profiler-researcher|profiler-enricher|profiler-forge|design-hybrid-forge|hybrid-clone)\.md$/,
+  /^\.aioson\/agents\/(squad|orache|genome|profiler-researcher|profiler-enricher|profiler-forge)\.md$/,
   /^\.aioson\/tasks\/squad-/,
   /^\.aioson\/skills\/squad\//,
   /^\.aioson\/templates\/squads\//,
@@ -28,7 +28,7 @@ const SQUAD_PATHS = [
 ];
 
 // Squad agents inside locale dirs — filtered by BOTH locale AND squad
-const SQUAD_LOCALE_AGENT_RE = /^\.aioson\/locales\/([^/]+)\/agents\/(squad|orache|genome|profiler-researcher|profiler-enricher|profiler-forge|design-hybrid-forge|hybrid-clone)\.md$/;
+const SQUAD_LOCALE_AGENT_RE = /^\.aioson\/locales\/([^/]+)\/agents\/(squad|orache|genome|profiler-researcher|profiler-enricher|profiler-forge)\.md$/;
 
 // Design skill IDs disponíveis
 const DESIGN_IDS = [

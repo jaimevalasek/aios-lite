@@ -34,7 +34,7 @@ const MANAGED_FILES = [
   '.aioson/agents/orache.md',
   '.aioson/agents/genome.md',
   '.aioson/agents/design-hybrid-forge.md',
-  '.aioson/agents/hybrid-clone.md',
+  '.aioson/agents/site-forge.md',
   '.aioson/agents/profiler-researcher.md',
   '.aioson/agents/profiler-enricher.md',
   '.aioson/agents/profiler-forge.md',
@@ -360,10 +360,10 @@ const AGENT_DEFINITIONS = [
     output: '.aioson/installed-skills/{hybrid-slug}/SKILL.md + .aioson/installed-skills/{hybrid-slug}/references/ + .aioson/installed-skills/{hybrid-slug}/previews/ + .aioson/installed-skills/{hybrid-slug}/.skill-meta.json'
   },
   {
-    id: 'hybrid-clone',
-    displayName: 'Hybrid Clone',
-    command: '@hybrid-clone',
-    path: '.aioson/agents/hybrid-clone.md',
+    id: 'site-forge',
+    displayName: 'Site Forge',
+    command: '@site-forge',
+    path: '.aioson/agents/site-forge.md',
     dependsOn: ['.aioson/context/project.context.md'],
     output: 'src/components/*.tsx + src/app/page.tsx + docs/research/{hostname}/ + public/images/{hostname}/'
   },

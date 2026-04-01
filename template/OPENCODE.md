@@ -12,6 +12,7 @@
 - architect -> `.aioson/agents/architect.md`
 - ux-ui (UI/UX) -> `.aioson/agents/ux-ui.md`
 - product -> `.aioson/agents/product.md`
+- sheldon -> `.aioson/agents/sheldon.md`
 - deyvin -> `.aioson/agents/deyvin.md`
 - pair -> `.aioson/agents/deyvin.md` (compatibility alias)
 - pm -> `.aioson/agents/pm.md`
@@ -25,6 +26,9 @@
 - profiler-researcher -> `.aioson/agents/profiler-researcher.md`
 - profiler-enricher -> `.aioson/agents/profiler-enricher.md`
 - profiler-forge -> `.aioson/agents/profiler-forge.md`
+- orache -> `.aioson/agents/orache.md`
+- design-hybrid-forge -> `.aioson/agents/design-hybrid-forge.md`
+- site-forge -> `.aioson/agents/site-forge.md`
 
 ## Rule
 Do not duplicate rules outside `.aioson/`.

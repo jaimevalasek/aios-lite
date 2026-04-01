@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Design Preview — pt.squarespace.com skill</title>
+  <style>
+    /* ============================================================
+       DESIGN TOKENS — pt.squarespace.com skill
+       source: template/.aioson/skills/design/pt.squarespace.com/
+       images: media-www.sqspcdn.com (reference only — replace before publish)
+    ============================================================ */
+    :root {
+      --bg-base: rgb(255, 255, 255);
+      --bg-surface: rgb(245, 245, 244);
+      --bg-elevated: rgb(223, 221, 216);
+      --bg-inverse: rgb(0, 0, 0);
+      --bg-charcoal: rgb(26, 26, 26);
+      --bg-teal: rgb(30, 76, 65);
+
+      --text-primary: rgb(0, 0, 0);
+      --text-muted: rgb(137, 137, 137);
+      --text-inverse: rgb(255, 255, 255);
+      --text-light-gray: rgb(221, 221, 221);
+
+      --accent: rgb(30, 76, 65);
+      --accent-hover: rgb(50, 50, 50);
+      --border: rgb(221, 221, 221);
+      --border-dark: rgb(50, 50, 50);
+
+      --font-display: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      --font-body: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+
+      --text-xs: 12px;
+      --text-sm: 14px;
+      --text-base: 16px;
+      --text-lg: 20px;
+      --text-xl: 26px;
+      --text-2xl: 34px;
+      --text-3xl: 42px;
+
+      --font-light: 300;
+      --font-normal: 400;
+      --font-medium: 500;
+      --font-semibold: 600;
+      --font-bold: 700;
+
+      --leading-tight: 1.2;
+      --leading-normal: 1.5;
+      --leading-relaxed: 1.75;
+
+      --tracking-tight: -0.02em;
+      --tracking-wide: 0.05em;
+
+      --space-1: 4px;
+      --space-2: 8px;
+      --space-3: 12px;
+      --space-4: 16px;
+      --space-5: 24px;
+      --space-6: 32px;
+      --space-8: 48px;
+      --space-10: 64px;
+      --space-12: 96px;
+      --space-16: 128px;
+      --section-padding-y: 80px;
+      --section-padding-x: 24px;
+      --hero-padding-y: 120px;
+
+      --radius-none: 0px;
+      --radius-full: 9999px;
+
+      --shadow-sm: none;
+
+      --ease-default: cubic-bezier(0.455, 0.03, 0.515, 0.955);
+      --ease-out: ease-out;
+      --transition-fast: 100ms;
+      --transition-base: 200ms;
+      --transition-medium: 300ms;
+      --transition-slow: 400ms;
+      --transition-all: all var(--transition-medium) var(--ease-default);
+      --transition-colors: color var(--transition-base) var(--ease-default),
+                           background-color var(--transition-base) var(--ease-default);
+
+      --container-max: 1200px;
+      --container-narrow: 800px;
+      --grid-gap: 32px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font-body);
+      font-size: var(--text-base);
+      color: var(--text-primary);
+      background: var(--bg-base);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a { text-decoration: none; color: inherit; }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+
+    /* ============================================================ LAYOUT */
+    .container {
+      max-width: var(--container-max);
+      margin: 0 auto;
+      padding: 0 var(--section-padding-x);
+    }
+    .container--narrow {
+      max-width: var(--container-narrow);
+      margin: 0 auto;
+      padding: 0 var(--section-padding-x);
+    }
+
+    /* ============================================================ NAV */
+    .nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 200;
+      background: transparent;
+      transition: background-color var(--transition-base) var(--ease-default);
+    }
+    .nav.scrolled {
+      background: var(--bg-base);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav__inner {
+      max-width: var(--container-max);
+      margin: 0 auto;
+      padding: var(--space-4) var(--section-padding-x);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .nav__logo {
+      font-family: var(--font-display);
+      font-size: var(--text-base);
+      font-weight: var(--font-semibold);
+      color: var(--text-inverse);
+      letter-spacing: var(--tracking-wide);
+      transition: var(--transition-colors);
+    }
+    .nav.scrolled .nav__logo { color: var(--text-primary); }
+
+    .nav__links {
+      display: flex;
+      align-items: center;
+      gap: var(--space-6);
+      list-style: none;
+    }
+    .nav__links a {
+      font-size: var(--text-sm);
+      color: var(--text-inverse);
+      transition: var(--transition-colors);
+    }
+    .nav.scrolled .nav__links a { color: var(--text-primary); }
+    .nav__links a:hover { color: var(--text-muted); }
+
+    .nav__actions { display: flex; align-items: center; gap: var(--space-4); }
+
+    .btn {
+      font-family: var(--font-display);
+      font-size: var(--text-sm);
+      font-weight: var(--font-medium);
+      padding: var(--space-3) var(--space-5);
+      border-radius: var(--radius-none);
+      border: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      transition: var(--transition-all);
+    }
+    .btn--ghost-light { background: transparent; color: var(--text-inverse); }
+    .btn--ghost-light:hover { color: var(--text-light-gray); }
+    .nav.scrolled .btn--ghost-light { color: var(--text-primary); }
+    .nav.scrolled .btn--ghost-light:hover { color: var(--text-muted); }
+    .btn--primary-light { background: var(--bg-base); color: var(--text-primary); }
+    .btn--primary-light:hover { background: var(--bg-elevated); }
+    .btn--primary-dark { background: var(--bg-inverse); color: var(--text-inverse); }
+    .btn--primary-dark:hover { background: var(--bg-charcoal); }
+    .btn--primary-teal { background: var(--bg-teal); color: var(--text-inverse); }
+    .btn--primary-teal:hover { background: var(--accent-hover); }
+
+    /* ============================================================ HERO */
+    .hero {
+      position: relative;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: var(--hero-padding-y) var(--section-padding-x);
+      overflow: hidden;
+    }
+    .hero__bg {
+      position: absolute;
+      inset: 0;
+      background-image: url('https://media-www.sqspcdn.com/images/pages/homepage-2025/hero/slides/plants/20260206-01/template-500w.jpg');
+      background-size: cover;
+      background-position: center;
+      filter: brightness(0.45);
+      z-index: 0;
+    }
+    .hero__content {
+      position: relative;
+      z-index: 1;
+      max-width: 700px;
+      opacity: 0;
+      transform: translateY(20px);
+      animation: fadeInUp var(--transition-slow) var(--ease-out) 0.2s forwards;
+    }
+    .hero__headline {
+      font-family: var(--font-display);
+      font-size: var(--text-3xl);
+      font-weight: var(--font-light);
+      color: var(--text-inverse);
+      line-height: var(--leading-tight);
+      letter-spacing: var(--tracking-tight);
+      margin-bottom: var(--space-5);
+    }
+    .hero__sub {
+      font-family: var(--font-display);
+      font-size: var(--text-xl);
+      font-weight: var(--font-normal);
+      color: var(--text-inverse);
+      line-height: var(--leading-normal);
+      margin-bottom: var(--space-8);
+      opacity: 0.85;
+    }
+    .hero__cta-group { display: flex; align-items: center; justify-content: center; gap: var(--space-4); }
+    .hero__note { margin-top: var(--space-4); font-size: var(--text-xs); color: var(--text-muted); }
+
+    /* Hero slideshow thumbnails */
+    .hero__slides {
+      position: absolute;
+      bottom: var(--space-8);
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 2;
+      display: flex;
+      gap: var(--space-2);
+    }
+    .hero__slide-thumb {
+      width: 64px;
+      height: 48px;
+      object-fit: cover;
+      cursor: pointer;
+      opacity: 0.6;
+      border: 2px solid transparent;
+      transition: opacity var(--transition-base) var(--ease-default), border-color var(--transition-base) var(--ease-default);
+    }
+    .hero__slide-thumb:hover,
+    .hero__slide-thumb.active {
+      opacity: 1;
+      border-color: var(--text-inverse);
+    }
+
+    /* ============================================================ SECTIONS */
+    .section {
+      padding: var(--section-padding-y) var(--section-padding-x);
+    }
+    .section--surface { background: var(--bg-surface); }
+    .section--dark { background: var(--bg-inverse); }
+    .section--teal { background: var(--bg-teal); }
+    .section--elevated { background: var(--bg-elevated); }
+    .section--charcoal { background: var(--bg-charcoal); }
+
+    .section__heading {
+      font-family: var(--font-display);
+      font-size: var(--text-xl);
+      font-weight: var(--font-normal);
+      color: var(--text-primary);
+      line-height: var(--leading-normal);
+      margin-bottom: var(--space-3);
+    }
+    .section__heading--inverse { color: var(--text-inverse); }
+    .section__sub { font-size: var(--text-base); color: var(--text-muted); line-height: var(--leading-relaxed); margin-bottom: var(--space-8); }
+    .section__sub--inverse { color: var(--text-light-gray); }
+
+    /* ============================================================ FEATURE GRID */
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--grid-gap);
+    }
+    .feature-card__img {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+      display: block;
+      margin-bottom: var(--space-4);
+    }
+    .feature-card__title {
+      font-family: var(--font-display);
+      font-size: var(--text-base);
+      font-weight: var(--font-semibold);
+      color: var(--text-primary);
+      margin-bottom: var(--space-2);
+    }
+    .feature-card__desc {
+      font-size: var(--text-sm);
+      color: var(--text-muted);
+      line-height: var(--leading-relaxed);
+    }
+
+    /* ============================================================ SPLIT */
+    .split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-12);
+      align-items: center;
+    }
+    .split__label {
+      font-size: var(--text-xs);
+      font-weight: var(--font-medium);
+      color: var(--text-muted);
+      letter-spacing: var(--tracking-wide);
+      text-transform: uppercase;
+      margin-bottom: var(--space-4);
+    }
+    .split__heading {
+      font-family: var(--font-display);
+      font-size: var(--text-xl);
+      font-weight: var(--font-normal);
+      color: var(--text-primary);
+      line-height: var(--leading-normal);
+      margin-bottom: var(--space-5);
+    }
+    .split__body {
+      font-size: var(--text-base);
+      color: var(--text-muted);
+      line-height: var(--leading-relaxed);
+      margin-bottom: var(--space-6);
+    }
+
+    /* Card carousel grid */
+    .card-carousel {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-2);
+    }
+    .card-carousel__item {
+      position: relative;
+      overflow: hidden;
+      height: 160px;
+    }
+    .card-carousel__item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .card-carousel__label {
+      position: absolute;
+      bottom: var(--space-2);
+      left: var(--space-2);
+      font-size: var(--text-xs);
+      font-weight: var(--font-medium);
+      color: var(--text-inverse);
+      background: rgba(0,0,0,0.55);
+      padding: 2px var(--space-2);
+    }
+
+    /* ============================================================ STATS */
+    .stats {
+      text-align: center;
+    }
+    .stats__headshots {
+      display: flex;
+      justify-content: center;
+      margin-bottom: var(--space-8);
+    }
+    .stats__headshot {
+      width: 56px;
+      height: 56px;
+      border-radius: var(--radius-full);
+      object-fit: cover;
+      border: 2px solid var(--bg-inverse);
+    }
+    .stats__headshot + .stats__headshot { margin-left: -12px; }
+
+    .stats__grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--grid-gap);
+    }
+    .stat__number {
+      font-family: var(--font-display);
+      font-size: var(--text-2xl);
+      font-weight: var(--font-bold);
+      color: var(--text-inverse);
+      line-height: var(--leading-tight);
+    }
+    .stat__label { font-size: var(--text-sm); color: var(--text-light-gray); margin-top: var(--space-2); }
+
+    /* ============================================================ SHOWCASE */
+    .showcase-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--grid-gap);
+    }
+    .showcase-item {
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+    }
+    .showcase-item img {
+      width: 100%;
+      height: 260px;
+      object-fit: cover;
+      display: block;
+      transition: transform var(--transition-medium) var(--ease-default);
+    }
+    .showcase-item:hover img { transform: scale(1.03); }
+    .showcase-item__overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0);
+      transition: background var(--transition-medium) var(--ease-default);
+    }
+    .showcase-item:hover .showcase-item__overlay { background: rgba(0,0,0,0.25); }
+    .showcase-item__label {
+      position: absolute;
+      bottom: var(--space-4);
+      left: var(--space-4);
+      font-size: var(--text-sm);
+      font-weight: var(--font-medium);
+      color: var(--text-inverse);
+      background: rgba(0,0,0,0.5);
+      padding: 2px var(--space-2);
+    }
+
+    /* ============================================================ DOMAIN SEARCH */
+    .domain-search { text-align: center; }
+    .domain-search__heading {
+      font-family: var(--font-display);
+      font-size: var(--text-xl);
+      font-weight: var(--font-normal);
+      color: var(--text-primary);
+      margin-bottom: var(--space-5);
+    }
+    .domain-search__form {
+      display: flex;
+      max-width: 500px;
+      margin: 0 auto;
+    }
+    .input {
+      font-family: var(--font-body);
+      font-size: var(--text-base);
+      color: var(--text-primary);
+      background: var(--bg-base);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-none);
+      padding: var(--space-3) var(--space-4);
+      flex: 1;
+      outline: none;
+      transition: border-color var(--transition-base) var(--ease-default);
+    }
+    .input:focus { border-color: var(--text-primary); }
+    .input::placeholder { color: var(--text-muted); }
+
+    /* ============================================================ CTA SECTION */
+    .cta-section {
+      text-align: center;
+      padding: var(--section-padding-y) var(--section-padding-x);
+      position: relative;
+      overflow: hidden;
+    }
+    .cta-section__bg {
+      position: absolute;
+      inset: 0;
+      background-image: url('https://media-www.sqspcdn.com/images/pages/homepage-2025/get-started/entrypoint-bg-500w.png');
+      background-size: cover;
+      background-position: center;
+      filter: brightness(0.3);
+      z-index: 0;
+    }
+    .cta-section__content { position: relative; z-index: 1; }
+    .cta-section__heading {
+      font-family: var(--font-display);
+      font-size: var(--text-xl);
+      font-weight: var(--font-normal);
+      color: var(--text-inverse);
+      margin-bottom: var(--space-4);
+    }
+    .cta-section__sub { font-size: var(--text-base); color: var(--text-light-gray); margin-bottom: var(--space-8); }
+
+    /* Templates row */
+    .cta-section__templates {
+      display: flex;
+      justify-content: center;
+      gap: var(--space-3);
+      margin-bottom: var(--space-8);
+    }
+    .cta-section__template-thumb {
+      width: 160px;
+      height: 110px;
+      object-fit: cover;
+      opacity: 0.8;
+      border: 1px solid rgba(255,255,255,0.2);
+      transition: opacity var(--transition-base) var(--ease-default);
+    }
+    .cta-section__template-thumb:hover { opacity: 1; }
+
+    /* ============================================================ FOOTER */
+    .footer { background: var(--bg-inverse); padding: var(--space-16) var(--section-padding-x) var(--space-10); }
+    .footer__grid {
+      max-width: var(--container-max);
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: var(--grid-gap);
+      padding-bottom: var(--space-10);
+      border-bottom: 1px solid var(--border-dark);
+    }
+    .footer__col-title {
+      font-family: var(--font-display);
+      font-size: var(--text-sm);
+      font-weight: var(--font-medium);
+      color: var(--text-inverse);
+      margin-bottom: var(--space-5);
+    }
+    .footer__links { list-style: none; display: flex; flex-direction: column; gap: var(--space-3); }
+    .footer__links a {
+      font-size: var(--text-sm);
+      color: var(--text-light-gray);
+      transition: color var(--transition-base) var(--ease-default);
+    }
+    .footer__links a:hover { color: var(--text-muted); }
+    .footer__legal {
+      max-width: var(--container-max);
+      margin: var(--space-6) auto 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: var(--space-4);
+    }
+    .footer__copyright { font-size: var(--text-xs); color: var(--text-muted); }
+    .footer__legal-links { display: flex; gap: var(--space-5); list-style: none; }
+    .footer__legal-links a { font-size: var(--text-xs); color: var(--text-muted); transition: color var(--transition-base) var(--ease-default); }
+    .footer__legal-links a:hover { color: var(--text-light-gray); }
+
+    /* ============================================================ ANIMATIONS */
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .fade-in {
+      opacity: 0;
+      transform: translateY(16px);
+      transition: opacity var(--transition-slow) var(--ease-out),
+                  transform var(--transition-slow) var(--ease-out);
+    }
+    .fade-in.visible { opacity: 1; transform: translateY(0); }
+
+    /* ============================================================ RESPONSIVE */
+    @media (max-width: 768px) {
+      .nav__links { display: none; }
+      .hero__headline { font-size: 32px; }
+      .hero__sub { font-size: var(--text-lg); }
+      .feature-grid { grid-template-columns: 1fr 1fr; }
+      .split { grid-template-columns: 1fr; }
+      .stats__grid { grid-template-columns: 1fr 1fr 1fr; }
+      .showcase-grid { grid-template-columns: 1fr 1fr; }
+      .footer__grid { grid-template-columns: 1fr 1fr; }
+      .cta-section__templates { flex-wrap: wrap; }
+    }
+    @media (max-width: 390px) {
+      .hero__headline { font-size: 28px; }
+      .hero__cta-group { flex-direction: column; }
+      .hero__slides { display: none; }
+      .feature-grid { grid-template-columns: 1fr; }
+      .card-carousel { grid-template-columns: 1fr; }
+      .stats__grid { grid-template-columns: 1fr; }
+      .showcase-grid { grid-template-columns: 1fr; }
+      .footer__grid { grid-template-columns: 1fr; }
+      .domain-search__form { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav class="nav" id="nav">
+    <div class="nav__inner">
+      <a href="#" class="nav__logo">Squarespace</a>
+      <ul class="nav__links">
+        <li><a href="#">Produtos</a></li>
+        <li><a href="#">Soluções</a></li>
+        <li><a href="#">Recursos</a></li>
+        <li><a href="#">Preços</a></li>
+      </ul>
+      <div class="nav__actions">
+        <button class="btn btn--ghost-light">Entrar</button>
+        <button class="btn btn--primary-light">Começar</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- HERO — hero-plants background from assets-list.json -->
+  <section class="hero">
+    <div class="hero__bg"></div>
+    <div class="hero__content">
+      <h1 class="hero__headline">Um site faz acontecer</h1>
+      <p class="hero__sub">Comece de graça. Não precisa de cartão de crédito.</p>
+      <div class="hero__cta-group">
+        <button class="btn btn--primary-light">Comece já</button>
+      </div>
+      <p class="hero__note">Experimente grátis por 14 dias</p>
+    </div>
+    <!-- Hero slide thumbnails — showcase design vocabulary -->
+    <div class="hero__slides">
+      <img class="hero__slide-thumb active"
+           src="https://media-www.sqspcdn.com/images/pages/homepage-2025/hero/slides/plants/20260206-01/template-500w.jpg"
+           alt="Plants template" onclick="switchHero(this, 'plants')">
+      <img class="hero__slide-thumb"
+           src="https://media-www.sqspcdn.com/images/pages/homepage-2025/hero/slides/piano/20260206-01/template-500w.jpg"
+           alt="Piano template" onclick="switchHero(this, 'piano')">
+      <img class="hero__slide-thumb"
+           src="https://media-www.sqspcdn.com/images/pages/homepage-2025/hero/slides/barber/20260206-01/template-500w.jpg"
+           alt="Barber template" onclick="switchHero(this, 'barber')">
+      <img class="hero__slide-thumb"
+           src="https://media-www.sqspcdn.com/images/pages/homepage-2025/hero/slides/ceramics/20260206-01/template-500w.jpg"
+           alt="Ceramics template" onclick="switchHero(this, 'ceramics')">
+    </div>
+  </section>
+
+  <!-- FEATURES — grow-your-business section (6 items) -->
+  <section class="section section--surface fade-in">
+    <div class="container">
+      <div style="text-align:center; margin-bottom: var(--space-10)">
+        <h2 class="section__heading">Expanda sua empresa</h2>
+        <p class="section__sub">Tudo o que você precisa para criar, gerenciar e fazer crescer o seu site em uma única plataforma.</p>
+      </div>
+      <div class="feature-grid">
+        <div>
+          <img class="feature-card__img" src="https://media-www.sqspcdn.com/images/pages/homepage-2025/grow-your-business/services-mobile-500w.jpg" alt="Ferramentas profissionais">
+          <h3 class="feature-card__title">Ferramentas profissionais</h3>
+          <p class="feature-card__desc">Tudo o que você precisa para gerenciar seu negócio online.</p>
+        </div>
+        <div>
+          <img class="feature-card__img" src="https://media-www.sqspcdn.com/images/pages/homepage-2025/grow-your-business/online-store-mobile-500w.jpg" alt="E-commerce completo">
+          <h3 class="feature-card__title">E-commerce completo</h3>
+          <p class="feature-card__desc">Venda produtos e aceite pagamentos de forma integrada.</p>
+        </div>
+        <div>
+          <img class="feature-card__img" src="https://media-www.sqspcdn.com/images/pages/homepage-2025/grow-your-business/invoicing-mobile-500w.jpg" alt="Faturamento simples">
+          <h3 class="feature-card__title">Faturamento simples</h3>
+          <p class="feature-card__desc">Crie faturas profissionais e acompanhe pagamentos.</p>
+        </div>
+        <div>
+          <img class="feature-card__img" src="https://media-www.sqspcdn.com/images/pages/homepage-2025/grow-your-business/scheduling-mobile-500w.jpg" alt="Agendamento online">
+          <h3 class="feature-card__title">Agendamento online</h3>
+          <p class="feature-card__desc">Permita que clientes agendem diretamente no seu site.</p>
+        </div>
+        <div>
+          <img class="feature-card__img" src="https://media-www.sqspcdn.com/images/pages/homepage-2025/grow-your-business/blog-mobile-500w.jpg" alt="Blog integrado">
+          <h3 class="feature-card__title">Blog integrado</h3>
+          <p class="feature-card__desc">Publique conteúdo e atraia visitantes com SEO otimizado.</p>
+        </div>
+        <div>
+          <img class="feature-card__img" src="https://media-www.sqspcdn.com/images/pages/homepage-2025/grow-your-business/portfolio-mobile-500w.jpg" alt="Portfolio visual">
+          <h3 class="feature-card__title">Portfolio visual</h3>
+          <p class="feature-card__desc">Mostre seu trabalho com galerias elegantes e responsivas.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PLATFORM — card carousel (one-platform) -->
+  <section class="section section--elevated fade-in">
+    <div class="container">
+      <div class="split">
+        <div class="split__content">
+          <p class="split__label">Uma plataforma</p>
+          <h2 class="split__heading">Tudo que você precisa, em um só lugar</h2>
+          <p class="split__body">Do design à venda, do domínio ao marketing — gerencie tudo sem precisar de múltiplas ferramentas ou plugins.</p>
+          <button class="btn btn--primary-dark">Ver planos</button>
+        </div>
+        <div class="card-carousel">
+          <div class="card-carousel__item">
+            <img src="https://media-www.sqspcdn.com/images/components/card-carousel/website-editing-500w.jpg" alt="Editor de sites">
+            <span class="card-carousel__label">Editor de sites</span>
+          </div>
+          <div class="card-carousel__item">
+            <img src="https://media-www.sqspcdn.com/images/components/card-carousel/email-campaigns-500w.jpg" alt="Email marketing">
+            <span class="card-carousel__label">Email marketing</span>
+          </div>
+          <div class="card-carousel__item">
+            <img src="https://media-www.sqspcdn.com/images/components/card-carousel/analytics-500w.jpg" alt="Analytics">
+            <span class="card-carousel__label">Analytics</span>
+          </div>
+          <div class="card-carousel__item">
+            <img src="https://media-www.sqspcdn.com/images/components/card-carousel/payment-500w.jpg" alt="Pagamentos">
+            <span class="card-carousel__label">Pagamentos</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA — get-started section with template thumbnails -->
+  <section class="cta-section section fade-in">
+    <div class="cta-section__bg"></div>
+    <div class="cta-section__content container--narrow">
+      <h2 class="cta-section__heading">Comece com um template</h2>
+      <p class="cta-section__sub">Escolha entre centenas de templates criados por designers profissionais.</p>
+      <div class="cta-section__templates">
+        <img class="cta-section__template-thumb" src="https://media-www.sqspcdn.com/images/mpp-starting-points/en/rotate-500w.jpg" alt="Template Rotate">
+        <img class="cta-section__template-thumb" src="https://media-www.sqspcdn.com/images/mpp-starting-points/en/reseda-500w.jpg" alt="Template Reseda">
+        <img class="cta-section__template-thumb" src="https://media-www.sqspcdn.com/images/mpp-starting-points/en/altaloma-500w.jpg" alt="Template Altaloma">
+      </div>
+      <button class="btn btn--primary-light">Ver todos os templates</button>
+    </div>
+  </section>
+
+  <!-- DOMAIN SEARCH -->
+  <section class="section section--elevated fade-in">
+    <div class="container">
+      <div class="domain-search">
+        <h2 class="domain-search__heading">Encontre seu domínio perfeito</h2>
+        <div class="domain-search__form">
+          <input type="text" class="input" placeholder="Digite seu domínio (ex: minhaloja.com)">
+          <button class="btn btn--primary-dark">Buscar</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STATS — customers-served with headshots -->
+  <section class="section section--dark fade-in">
+    <div class="container">
+      <div class="stats">
+        <div class="stats__headshots">
+          <img class="stats__headshot" src="https://media-www.sqspcdn.com/images/pages/homepage-2025/customers-served/headshot-1-500w.jpg" alt="Cliente 1">
+          <img class="stats__headshot" src="https://media-www.sqspcdn.com/images/pages/homepage-2025/customers-served/headshot-2-500w.jpg" alt="Cliente 2">
+          <img class="stats__headshot" src="https://media-www.sqspcdn.com/images/pages/homepage-2025/customers-served/headshot-3-500w.jpg" alt="Cliente 3">
+          <img class="stats__headshot" src="https://media-www.sqspcdn.com/images/pages/homepage-2025/customers-served/headshot-4-500w.jpg" alt="Cliente 4">
+          <img class="stats__headshot" src="https://media-www.sqspcdn.com/images/pages/homepage-2025/customers-served/headshot-5-500w.jpg" alt="Cliente 5">
+        </div>
+        <div class="stats__grid">
+          <div>
+            <p class="stat__number">50M+</p>
+            <p class="stat__label">websites criados</p>
+          </div>
+          <div>
+            <p class="stat__number">1M+</p>
+            <p class="stat__label">utilizadores ativos</p>
+          </div>
+          <div>
+            <p class="stat__number">180+</p>
+            <p class="stat__label">países</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SHOWCASE — made-with-sqsp -->
+  <section class="section section--charcoal fade-in">
+    <div class="container">
+      <div style="text-align:center; margin-bottom: var(--space-10)">
+        <h2 class="section__heading section__heading--inverse">Feito com Squarespace</h2>
+        <p class="section__sub section__sub--inverse">Veja alguns dos incríveis sites criados com o Squarespace.</p>
+      </div>
+      <div class="showcase-grid">
+        <div class="showcase-item">
+          <img src="https://media-www.sqspcdn.com/images/pages/showcase-2025/stretchsquared-500w.jpg" alt="Stretch Squared">
+          <div class="showcase-item__overlay"></div>
+          <span class="showcase-item__label">Stretch Squared</span>
+        </div>
+        <div class="showcase-item">
+          <img src="https://media-www.sqspcdn.com/images/pages/showcase-2025/franklygoodcoffee-500w.jpg" alt="Frankly Good Coffee">
+          <div class="showcase-item__overlay"></div>
+          <span class="showcase-item__label">Frankly Good Coffee</span>
+        </div>
+        <div class="showcase-item">
+          <img src="https://media-www.sqspcdn.com/images/pages/showcase-2025/fieldtheory-500w.jpg" alt="Field Theory">
+          <div class="showcase-item__overlay"></div>
+          <span class="showcase-item__label">Field Theory</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FINAL CTA — teal + conversion bg -->
+  <section class="section section--teal cta-section fade-in">
+    <div class="container--narrow">
+      <div class="cta-section__content">
+        <h2 class="cta-section__heading">Pronto para criar seu site?</h2>
+        <p class="cta-section__sub">Junte-se a milhões que já constroem presença online com o Squarespace.</p>
+        <button class="btn btn--primary-light">Criar meu site</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="footer__grid">
+      <div>
+        <p class="footer__col-title">Produtos</p>
+        <ul class="footer__links">
+          <li><a href="#">Site</a></li>
+          <li><a href="#">E-commerce</a></li>
+          <li><a href="#">Blog</a></li>
+          <li><a href="#">Portfolio</a></li>
+          <li><a href="#">Domínios</a></li>
+        </ul>
+      </div>
+      <div>
+        <p class="footer__col-title">Soluções</p>
+        <ul class="footer__links">
+          <li><a href="#">Pequenas empresas</a></li>
+          <li><a href="#">Freelancers</a></li>
+          <li><a href="#">Restaurantes</a></li>
+          <li><a href="#">Músicos</a></li>
+          <li><a href="#">Fotógrafos</a></li>
+        </ul>
+      </div>
+      <div>
+        <p class="footer__col-title">Recursos</p>
+        <ul class="footer__links">
+          <li><a href="#">Templates</a></li>
+          <li><a href="#">Central de ajuda</a></li>
+          <li><a href="#">Blog</a></li>
+          <li><a href="#">Comunidade</a></li>
+          <li><a href="#">Webinars</a></li>
+        </ul>
+      </div>
+      <div>
+        <p class="footer__col-title">Empresa</p>
+        <ul class="footer__links">
+          <li><a href="#">Sobre nós</a></li>
+          <li><a href="#">Carreiras</a></li>
+          <li><a href="#">Imprensa</a></li>
+          <li><a href="#">Parceiros</a></li>
+          <li><a href="#">Contato</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer__legal">
+      <p class="footer__copyright">© 2026 Squarespace, Inc. Todos os direitos reservados.</p>
+      <ul class="footer__legal-links">
+        <li><a href="#">Privacidade</a></li>
+        <li><a href="#">Termos de uso</a></li>
+        <li><a href="#">Acessibilidade</a></li>
+        <li><a href="#">Cookies</a></li>
+      </ul>
+    </div>
+  </footer>
+
+  <script>
+    // Nav scroll: transparent → solid at 50px
+    const nav = document.getElementById('nav');
+    window.addEventListener('scroll', () => {
+      nav.classList.toggle('scrolled', window.scrollY > 50);
+    });
+
+    // Scroll-triggered reveals
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) entry.target.classList.add('visible');
+      });
+    }, { threshold: 0.1 });
+    document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+
+    // Hero slide switcher
+    const heroBg = document.querySelector('.hero__bg');
+    const slideMap = {
+      plants: 'https://media-www.sqspcdn.com/images/pages/homepage-2025/hero/slides/plants/20260206-01/template-500w.jpg',
+      piano:  'https://media-www.sqspcdn.com/images/pages/homepage-2025/hero/slides/piano/20260206-01/template-500w.jpg',
+      barber: 'https://media-www.sqspcdn.com/images/pages/homepage-2025/hero/slides/barber/20260206-01/template-500w.jpg',
+      ceramics: 'https://media-www.sqspcdn.com/images/pages/homepage-2025/hero/slides/ceramics/20260206-01/template-500w.jpg',
+    };
+    function switchHero(thumb, key) {
+      document.querySelectorAll('.hero__slide-thumb').forEach(t => t.classList.remove('active'));
+      thumb.classList.add('active');
+      heroBg.style.backgroundImage = `url('${slideMap[key]}')`;
+    }
+  </script>
+
+</body>
+</html>

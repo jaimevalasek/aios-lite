@@ -118,7 +118,7 @@ function renderScreen1(cursor, selected, warn, stdout) {
   stdout.write('\n');
 }
 
-function renderScreen2(cursor, selected, stdout) {
+function renderScreen2(cursor, selected, warn, stdout) {
   header(2, 4, stdout);
   stdout.write('  What will you do with AIOSON?\n');
   stdout.write('  (space to select, enter to continue)\n\n');
@@ -130,6 +130,7 @@ function renderScreen2(cursor, selected, stdout) {
     stdout.write(`  ${pointer} [${check}] ${use.label}${lock}\n`);
     stdout.write(`         ${use.desc}\n`);
   }
+  if (warn) stdout.write('\n  ⚠  Select at least one use to continue.\n');
   stdout.write('\n');
 }
 
@@ -413,7 +414,7 @@ async function runInstallWizard(options = {}, io = {}) {
     items: USES,
     defaultSelected: defaultUses,
     lockFirst: true,
-    render: (cursor, selected, _warn, out) => renderScreen2(cursor, selected, out),
+    render: (cursor, selected, warn, out) => renderScreen2(cursor, selected, warn, out),
     io
   });
   if (!uses) { finalCleanup(); return null; }

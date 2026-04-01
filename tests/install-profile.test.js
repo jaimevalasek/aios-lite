@@ -59,6 +59,12 @@ test('development without squads → squad agent excluded', () => {
   assert.equal(shouldIncludeForProfile('.aioson/skills/squad/runner.md', p), false);
 });
 
+test('development without squads → site-forge and design-hybrid-forge always included', () => {
+  const p = { tools: ['claude'], uses: ['development'], design: 'none', locale: 'en' };
+  assert.equal(shouldIncludeForProfile('.aioson/agents/site-forge.md', p), true);
+  assert.equal(shouldIncludeForProfile('.aioson/agents/design-hybrid-forge.md', p), true);
+});
+
 test('development + squads → squad files included', () => {
   const p = { tools: ['claude'], uses: ['development', 'squads'], design: 'none', locale: 'en' };
   assert.equal(shouldIncludeForProfile('.aioson/agents/squad.md', p), true);

@@ -16,7 +16,7 @@ Type `@agent-name` in the prompt. Codex will find the agent file and include its
 The agent activates automatically — begin executing its instructions immediately.
 Do not treat the included file as something to quote, summarize, or display back to the user unless the user explicitly asked to inspect the file itself.
 
-Examples: `@setup`, `@deyvin`, `@dev`, `@squad`, `@genome`, `@profiler-researcher`, `@design-hybrid-forge`, `@hybrid-clone`
+Examples: `@setup`, `@deyvin`, `@dev`, `@squad`, `@genome`, `@profiler-researcher`, `@design-hybrid-forge`, `@site-forge`
 
 **Option 2 — Natural language:**
 Describe your intent. The agent system will match and execute.
@@ -29,6 +29,7 @@ Describe your intent. The agent system will match and execute.
 | @architect | "design the architecture", "use the architect agent" |
 | @ux-ui | "design the UI", "use the UI/UX agent" |
 | @product | "define the product vision", "use the product agent", "start the product wizard" |
+| @sheldon | "deep technical review", "analyze the architecture", "use the sheldon agent" |
 | @deyvin | "continue what we were doing", "use the deyvin agent", "let's fix this together" |
 | @pm | "create the user stories", "use the pm agent" |
 | @dev | "implement the feature", "use the dev agent" |
@@ -40,8 +41,9 @@ Describe your intent. The agent system will match and execute.
 | @profiler-researcher | "start the profiler research", "profile this person", "pesquisar DNA mental" |
 | @profiler-enricher | "enrich this profile", "analyze this person's cognition", "consolidar perfil cognitivo" |
 | @profiler-forge | "generate the advisor", "forge the genome 3.0", "gerar advisor da persona" |
+| @orache | "investigate this domain", "research market and competitors", "use the orache agent" |
 | @design-hybrid-forge | "create hybrid design skill", "combine two design skills", "use the design-hybrid-forge agent" |
-| @hybrid-clone | "clone this site with [skill]", "rebuild [url] using [skill]", "[url] in the style of [skill]", "use the hybrid-clone agent" |
+| @site-forge | "clone this site with [skill]", "rebuild [url] using [skill]", "[url] in the style of [skill]", "extract the design from [url] as a skill", "use the site-forge agent" |
 
 When an agent file is included via @ or described via natural language, read the corresponding file and execute its instructions immediately from the first step.
 Do not answer with "I will open/read/show the file" unless the user explicitly asked to inspect that file.
@@ -80,6 +82,7 @@ When running Codex directly (without `aioson workflow:next`), these rules apply:
 - @architect → `.aioson/agents/architect.md`
 - @ux-ui → `.aioson/agents/ux-ui.md`
 - @product → `.aioson/agents/product.md`
+- @sheldon → `.aioson/agents/sheldon.md`
 - @deyvin → `.aioson/agents/deyvin.md` (`@pair` remains as a compatibility alias)
 - @pm → `.aioson/agents/pm.md`
 - @dev → `.aioson/agents/dev.md`
@@ -92,8 +95,9 @@ When running Codex directly (without `aioson workflow:next`), these rules apply:
 - @profiler-researcher → `.aioson/agents/profiler-researcher.md`
 - @profiler-enricher → `.aioson/agents/profiler-enricher.md`
 - @profiler-forge → `.aioson/agents/profiler-forge.md`
+- @orache → `.aioson/agents/orache.md`
 - @design-hybrid-forge → `.aioson/agents/design-hybrid-forge.md`
-- @hybrid-clone → `.aioson/agents/hybrid-clone.md`
+- @site-forge → `.aioson/agents/site-forge.md`
 
 ## Process skill: aioson-spec-driven
 
