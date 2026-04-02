@@ -250,6 +250,23 @@ When the user types `*update-spec`, update `.aioson/context/spec.md` with:
 
 > **`.aioson/context/` rule:** this folder accepts only `.md` files. Never write `.html`, `.css`, `.js`, or any other non-markdown file inside `.aioson/`.
 
+## Recurring tasks (when CronCreate is available)
+
+For long-running orchestration scenarios that need periodic verification:
+
+```
+CronCreate { schedule: "*/5 * * * *", command: "..." }
+CronList   — view active scheduled tasks
+CronDelete — remove when the session ends
+```
+
+Use cases in @orchestrator:
+- Periodic health checks during parallel subagent execution
+- Polling shared-decisions.md for conflicts at a set interval
+- Scheduled `spec.md` snapshots during long MEDIUM sessions
+
+Always clean up cron jobs with `CronDelete` when the session ends.
+
 ## Hard constraints
 - NEVER parallelize modules that share a migration, model, or schema. No exceptions.
 - NEVER activate @orchestrator for MICRO or SMALL projects. Route to @dev directly.

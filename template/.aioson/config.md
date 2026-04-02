@@ -353,6 +353,26 @@ When an agent file exceeds its target:
 2. Split optional sections into `.aioson/docs/` files (loaded on demand)
 3. Use the "On-demand context layers" pattern from this config
 
+## Config tiers
+
+AIOSON supports three config tiers (precedence: local > project > user):
+
+| Tier | Location | Versioned | Purpose |
+|------|----------|-----------|---------|
+| User | `~/.aioson/config.md` | No | Personal defaults (model, locale, thresholds) |
+| Project | `.aioson/config.md` | Yes | Team standards — source of truth |
+| Local | `.aioson/config.local.md` | No | Machine overrides (local paths, env specifics) |
+
+When the same setting exists in multiple tiers, the lower tier wins (local > project > user).
+
+**Current support:**
+- Project tier: fully supported (this file)
+- Local tier: `config.local.md` is the convention — agents can read it if present
+- User tier (`~/.aioson/config.md`): **backlog** — requires CLI support; not yet read automatically
+
+Until the user tier is implemented in the CLI, use `CLAUDE.local.md` for personal
+preferences that should not affect other team members.
+
 ## Agent locale packs
 - Localized agent prompts are stored in `.aioson/locales/<locale>/agents/`.
 - Active runtime prompts are in `.aioson/agents/`.

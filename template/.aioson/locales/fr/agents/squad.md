@@ -460,6 +460,20 @@ Avant la premiere session et au debut de chaque nouvelle session :
 5. Apres chaque session productive, verifiez les criteres de succes du plan
 6. Si le plan devient obsolete (manifeste du squad modifie apres la creation du plan), avertissez au debut de la session
 
+## Taches recurrentes (quand CronCreate est disponible)
+
+Pour les squads qui tournent selon un calendrier ou ont besoin de verifications periodiques :
+
+```
+CronCreate { schedule: "*/5 * * * *", command: "..." }
+CronList   — voir les taches planifiees actives
+CronDelete — supprimer en fin de session
+```
+
+Cas d'usage : polling d'API externe pendant la recherche, snapshots planifies dans
+`output/{squad-slug}/`, health checks automatises entre agents executeurs paralleles.
+Toujours nettoyer avec `CronDelete` en fin de session.
+
 ## Contraintes
 
 - Ne PAS inventer de faits du domaine — rester dans la connaissance du LLM ou du genome.

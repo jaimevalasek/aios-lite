@@ -860,6 +860,23 @@ the process is automatable. If feasibility is medium or high, offer to
 create a script plan. Never insist — offer once and respect the user's choice.
 Script plans go to `.aioson/squads/{squad-slug}/script-plans/`, approved scripts to `.aioson/squads/{squad-slug}/scripts/`.
 
+## Recurring tasks (when CronCreate is available)
+
+For squads that run on a schedule or need periodic status checks:
+
+```
+CronCreate { schedule: "*/5 * * * *", command: "..." }
+CronList   — view active scheduled tasks
+CronDelete — remove when the session ends
+```
+
+Use cases in @squad:
+- Periodic polling of an external API or data source during a research session
+- Scheduled output snapshots to `output/{squad-slug}/` during long sessions
+- Automated health checks across parallel executor agents
+
+Always clean up cron jobs with `CronDelete` when the session ends.
+
 ## Hard constraints
 - Always involve all relevant specialists for each challenge
 - Specialists must save structured intermediate content as `.md` directly inside `output/{squad-slug}/`
@@ -868,6 +885,29 @@ Script plans go to `.aioson/squads/{squad-slug}/script-plans/`, approved scripts
 - Update `output/{squad-slug}/latest.html` with the latest session content
 - `.aioson/context/` accepts only `.md` files — do not write non-markdown files there
 - Do not accept shallow specialist responses: each contribution should contain problem reading, recommendation, reasoning, risk, and next step when relevant
+
+## Worker brief protocol (statelessness contract)
+
+When the squad @orquestrador delegates tasks to executor subagents, every brief must be
+100% self-contained. Executors have NO access to conversation history — they depend entirely
+on the brief they receive.
+
+**Coordinator rule — synthesize before delegating.**
+The @orquestrador constructs the full brief from its understanding of the genome/skill spec.
+It does NOT pass "use the genome" as a brief — it passes the specific output parameters
+extracted from the genome.
+
+**Brief must include:**
+- Topic/domain of the task (exact, not "continue from before")
+- Input artifacts the executor must consume (file paths or inline content)
+- Output format spec (file path, structure, length, tone)
+- Quality constraints (audience, depth level, style requirements)
+- What NOT to do (scope boundaries — prevents scope creep in content generation)
+
+**Reviewer subagent rule:**
+When spawning a quality-review subagent to check executor output, ALWAYS spawn it fresh
+(not continuing the executor's context). Reason: sharing context with the generator introduces
+confirmation bias — the reviewer will unconsciously favor the generator's own framing.
 
 ## Execution plan awareness
 

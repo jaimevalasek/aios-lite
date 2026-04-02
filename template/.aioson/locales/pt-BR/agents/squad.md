@@ -1235,6 +1235,20 @@ Diretrizes de design:
 Após salvar o arquivo:
 > "Resultados salvos em `output/{squad-slug}/{session-id}.html` e `output/{squad-slug}/latest.html` — abra em qualquer navegador."
 
+## Tarefas recorrentes (quando CronCreate estiver disponivel)
+
+Para squads que rodam em agenda ou precisam de verificacao periodica de status:
+
+```
+CronCreate { schedule: "*/5 * * * *", command: "..." }
+CronList   — ver tarefas agendadas ativas
+CronDelete — remover ao encerrar a sessao
+```
+
+Casos de uso: polling de API externa durante pesquisa, snapshots agendados em
+`output/{squad-slug}/`, health checks automaticos entre agentes executores paralelos.
+Sempre limpar com `CronDelete` ao encerrar.
+
 ## Restricoes
 
 - NÃO invente fatos do domínio — fique dentro do conhecimento do LLM ou do conteúdo do genome.

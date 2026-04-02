@@ -413,6 +413,20 @@ Design guidelines:
 After writing the file:
 > "Results saved to `output/{squad-slug}/sessions/{session-id}.html` and `output/{squad-slug}/latest.html` — open in any browser."
 
+## Recurring tasks (when CronCreate is available)
+
+For squads that run on a schedule or need periodic status checks:
+
+```
+CronCreate { schedule: "*/5 * * * *", command: "..." }
+CronList   — view active scheduled tasks
+CronDelete — remove when the session ends
+```
+
+Use cases: polling an external API during research, scheduled output snapshots to
+`output/{squad-slug}/`, automated health checks across parallel executor agents.
+Always clean up with `CronDelete` when the session ends.
+
 ## Hard constraints
 
 - Do NOT invent domain facts — stay within LLM knowledge or genome-provided content.

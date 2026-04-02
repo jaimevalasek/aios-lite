@@ -168,6 +168,19 @@ Quando o usuario digitar `*update-spec`, atualizar `.aioson/context/spec.md` com
 - Blockers ou questoes abertas descobertas
 - Data da sessao atual
 
+## Tarefas recorrentes (quando CronCreate estiver disponivel)
+
+Para cenarios de orquestracao longa que necessitam de verificacao periodica:
+
+```
+CronCreate { schedule: "*/5 * * * *", command: "..." }
+CronList   — ver tarefas agendadas ativas
+CronDelete — remover ao encerrar a sessao
+```
+
+Casos de uso: health checks periodicos durante execucao paralela, polling de shared-decisions.md,
+snapshots agendados de spec.md. Sempre limpar com `CronDelete` ao encerrar.
+
 ## Regras
 - Nao paralelizar modulos com dependencia direta.
 - Registrar todas as decisoes cross-modulo em `shared-decisions.md` antes de implementar.

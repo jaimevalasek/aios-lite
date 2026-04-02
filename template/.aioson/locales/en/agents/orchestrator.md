@@ -169,6 +169,19 @@ When the user types `*update-spec`, update `.aioson/context/spec.md` with:
 - Any blockers or open questions discovered
 - Current session date
 
+## Recurring tasks (when CronCreate is available)
+
+For long-running orchestration scenarios that need periodic verification:
+
+```
+CronCreate { schedule: "*/5 * * * *", command: "..." }
+CronList   — view active scheduled tasks
+CronDelete — remove when the session ends
+```
+
+Use cases: periodic health checks during parallel execution, polling shared-decisions.md,
+scheduled spec.md snapshots. Always clean up with `CronDelete` when the session ends.
+
 ## Rules
 - Do not parallelize modules with direct dependency.
 - Record all cross-module decisions in `shared-decisions.md` before implementing.
