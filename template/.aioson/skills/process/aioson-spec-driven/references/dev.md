@@ -1,0 +1,30 @@
+# Spec-Driven Reference — @dev
+
+> Router file. Do not duplicate logic from the generic references — load those directly.
+
+## Which references to load for implementation
+
+### Always load when this skill is active
+
+- `maintenance-and-state.md` — use to write and update `spec-{slug}.md` correctly: `phase_gates`, `last_checkpoint`, `pending_review`, and `Key decisions` format
+- `approval-gates.md` — Gate C (plan approval) must be checked before executing a significant batch; Gate D (execution verification) defines done criteria for each phase
+
+### Load when starting a new feature with classification context
+
+- `classification-map.md` — use to confirm whether an implementation plan is optional (MICRO), recommended (SMALL), or required (MEDIUM) before starting
+
+### Load when resuming or checking artifact chain
+
+- `artifact-map.md` — use to verify which upstream artifacts exist and which @dev should read before implementing
+
+### Do not load for @dev
+
+- `hardening-lane.md` — @dev activates after hardening; if the spec is still in vibe mode, stop and route back
+- `ui-language.md` — load only when producing a checkpoint or gate status presentation for the user
+
+## Behavioral notes
+
+- `spec-{slug}.md` must be updated at the end of every implementation session — see `maintenance-and-state.md` for format
+- Gate C from `approval-gates.md` means the implementation plan is locked — do not re-discuss pre-taken decisions
+- Gate D verification must happen before marking a phase complete — not just "I think it works"
+- If `phase_gates.plan` is `pending` and classification is SMALL/MEDIUM, suggest generating an implementation plan before proceeding

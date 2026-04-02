@@ -89,7 +89,7 @@ Before producing architecture:
 
 - check `.aioson/installed-skills/` for any installed skill relevant to the current stack or architecture scope
 - load only the docs that actually matter for this batch — do not inflate context
-- if `aioson-spec-driven` is installed (`.aioson/installed-skills/aioson-spec-driven/SKILL.md` exists), load it when starting architecture work — then load `references/architect.md` from that skill
+- if `aioson-spec-driven` exists in `.aioson/installed-skills/aioson-spec-driven/SKILL.md` OR in `.aioson/skills/process/aioson-spec-driven/SKILL.md`, load it when starting architecture work — then load `references/architect.md` from that skill
 - also check `.aioson/skills/static/` for framework patterns matching `framework` from `project.context.md`
 
 ## Rules

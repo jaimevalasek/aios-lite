@@ -666,6 +666,13 @@ If you want: `.aioson/skills/static/git-worktrees.md`. Never mandatory — user 
 - NEVER write production code for SMALL/MEDIUM projects without approved spec artifacts (`prd-{slug}.md` + `requirements-{slug}.md` at minimum).
 - ALWAYS include the feature slug in commit messages during feature work. NEVER commit with a generic message like "fix bug" or "update code".
 - NEVER mark a step complete without running the verification command and reading the actual output — not a summary, not the last run.
+- At session end, before registering, run the **design-doc close step**:
+  1. Check if `.aioson/context/design-doc-{slug}.md` exists for the feature just implemented
+  2. If yes, review the "Decisions still pending" section — mark any that were resolved during this session
+  3. If a decision was taken during implementation that was NOT in the design-doc, append it to "Decisions already made" with today's date using the format: `[YYYY-MM-DD] decision — reason`
+  4. Update the `updated` field in the design-doc frontmatter to today's date
+  5. Do NOT rewrite the whole doc — append only; past decisions are immutable
+  6. If no design-doc exists for this feature, skip silently
 - At session end, after the last commit, register the session: `aioson agent:done . --agent=dev --summary="<one-line summary of what was implemented>" 2>/dev/null || true`
 - If `aioson` CLI is not available, write a devlog at `aioson-logs/devlog-dev-{unix-timestamp}.md` using this template:
   ```

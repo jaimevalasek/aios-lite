@@ -140,6 +140,7 @@ const { runDevlogExportBrains } = require('./commands/devlog-export-brains');
 const { runSpecSync } = require('./commands/spec-sync');
 const { runSpecStatus } = require('./commands/spec-status');
 const { runSpecCheckpoint } = require('./commands/spec-checkpoint');
+const { runSpecTasks } = require('./commands/spec-tasks');
 const { runLearningExport } = require('./commands/learning-export');
 
 const JSON_SUPPORTED_COMMANDS = new Set([
@@ -304,6 +305,8 @@ const JSON_SUPPORTED_COMMANDS = new Set([
   'spec-status',
   'spec:checkpoint',
   'spec-checkpoint',
+  'spec:tasks',
+  'spec-tasks',
   'tool:register',
   'tool-register',
   'tool:list',
@@ -799,6 +802,8 @@ async function main() {
       result = await runSpecStatus({ args, options, logger: commandLogger });
     } else if (command === 'spec:checkpoint' || command === 'spec-checkpoint') {
       result = await runSpecCheckpoint({ args, options, logger: commandLogger });
+    } else if (command === 'spec:tasks' || command === 'spec-tasks') {
+      result = await runSpecTasks({ args, options, logger: commandLogger });
     } else if (command.startsWith('learning:') || command === 'learning') {
       const sub = command === 'learning' ? (args[1] || 'list') : command.split(':')[1];
       result = await runLearning({ args, options: { ...options, sub }, logger: commandLogger, t });

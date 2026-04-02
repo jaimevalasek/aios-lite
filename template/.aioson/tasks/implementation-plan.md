@@ -19,6 +19,20 @@
 - Detecta `prd-{slug}.md` existente sem `implementation-plan-{slug}.md`
 - Gera plan scoped à feature
 
+## Constitution Gate
+
+Before generating or approving the implementation plan, verify:
+
+- [ ] Article I — Work starts from an existing spec artifact (PRD or equivalent), not direct coding
+- [ ] Article II — Classification (MICRO/SMALL/MEDIUM) is declared and process depth matches it
+- [ ] Article IV — Acceptance criteria in requirements are independently verifiable, not vague
+- [ ] Article V — Inputs are complete enough for the next agent to start without re-reading the full discovery chain
+- [ ] Article VI — The plan does not introduce unnecessary phases, artifacts, or abstraction layers
+
+If one or more items fail, stop and describe what is missing before continuing.
+
+---
+
 ## Processo
 
 ### Passo 1 — Inventory check
@@ -38,7 +52,7 @@ Artefatos a verificar (em ordem de prioridade):
 | `ui-spec.md` | Se tem UI | Info — fases de UI terão menos detalhe |
 | `readiness.md` | Se existe | Info — plan assume readiness = READY |
 | `spec.md` | Se existe | Info — sem histórico de decisões anteriores |
-| `design-doc.md` | Se existe | Info — decisões arquiteturais menos firmes |
+| `design-doc.md` / `design-doc-{slug}.md` | Se existe | Warn se `updated` > 60 dias ou ausente — verificar antes de usar como constraint |
 | `requirements-{slug}.md` | Feature mode | Warn — regras de negócio podem faltar |
 
 ### Passo 2 — Cross-analysis
@@ -57,6 +71,12 @@ Para cada issue encontrado, classificar:
 - **BLOCK** — não pode prosseguir sem resolver (ex: entidade central faltando)
 - **WARN** — pode prosseguir com assumption explícita (ex: campo inferido)
 - **INFO** — anotar para o dev ter consciência (ex: possível refatoração futura)
+
+**Design-doc freshness check:**
+- Se `design-doc.md` ou `design-doc-{slug}.md` existe e tem campo `updated` com data anterior a 60 dias: classificar como **WARN** — "design-doc pode estar desatualizado; verificar se decisões ainda refletem o estado atual antes de usar como constraint"
+- Se o design-doc existe mas não tem campo `updated`: tratar como potencialmente desatualizado — mesmo WARN
+- Se a seção "Decisions still pending" do design-doc tem itens não resolvidos: listar cada um como **INFO** — "decisão pendente no design-doc: {item}"
+- Não bloquear o plano por staleness — apenas garantir que o dev está ciente antes de herdar uma constraint desatualizada
 
 ### Passo 3 — Sequence planning
 

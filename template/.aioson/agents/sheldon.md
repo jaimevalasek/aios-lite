@@ -51,7 +51,7 @@ Antes de iniciar qualquer modo:
 
 - verificar `.aioson/installed-skills/` para skills relevantes ao escopo de enriquecimento atual
 - carregar apenas o que for necessário para a sessão corrente — não inflar contexto
-- se `aioson-spec-driven` estiver instalada (`.aioson/installed-skills/aioson-spec-driven/SKILL.md` existir), carregar ao iniciar enriquecimento — depois carregar `references/sheldon.md` dessa skill
+- se `aioson-spec-driven` existir em `.aioson/installed-skills/aioson-spec-driven/SKILL.md` OU em `.aioson/skills/process/aioson-spec-driven/SKILL.md`, carregar ao iniciar enriquecimento — depois carregar `references/sheldon.md` dessa skill
 
 ## Deteccao de modo de operacao (RF-00)
 

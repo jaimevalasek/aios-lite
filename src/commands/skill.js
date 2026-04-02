@@ -398,6 +398,58 @@ async function runSkillInstall({ args, options = {}, logger, t }) {
 }
 
 /**
+ * Parse a minimal extension.yml manifest if present in a skill directory.
+ * Reads only top-level scalar fields and one level of nesting.
+ * Returns null if the file is absent or unreadable.
+ */
+async function parseExtensionManifest(skillDir) {
+  const manifestPath = path.join(skillDir, 'extension.yml');
+  let raw;
+  try {
+    raw = await fs.readFile(manifestPath, 'utf8');
+  } catch {
+    return null; // file not present — this is the normal case for old skills
+  }
+
+  const manifest = {};
+  let currentSection = null;
+
+  for (const line of raw.split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) continue;
+
+    // Detect top-level section (no leading spaces, ends with colon, no value)
+    if (/^\w[\w-]*:$/.test(trimmed)) {
+      currentSection = trimmed.slice(0, -1);
+      manifest[currentSection] = {};
+      continue;
+    }
+
+    // Nested key: value (indented with spaces or tab)
+    if (currentSection && /^\s+/.test(line)) {
+      const idx = trimmed.indexOf(':');
+      if (idx === -1) continue;
+      const key = trimmed.slice(0, idx).trim();
+      const val = trimmed.slice(idx + 1).trim().replace(/^["']|["']$/g, '');
+      if (key) manifest[currentSection][key] = val;
+      continue;
+    }
+
+    // Top-level scalar key: value
+    const idx = trimmed.indexOf(':');
+    if (idx === -1) continue;
+    const key = trimmed.slice(0, idx).trim();
+    const val = trimmed.slice(idx + 1).trim().replace(/^["']|["']$/g, '');
+    if (key) {
+      currentSection = null;
+      manifest[key] = val;
+    }
+  }
+
+  return manifest;
+}
+
+/**
  * Scan a directory for .md files with SKILL.md or frontmatter descriptions.
  * Returns array of { slug, name, description, type, path }.
  */
@@ -478,6 +530,9 @@ async function runSkillList({ args, options = {}, logger, t }) {
         meta?.generated_by_model ||
         null;
 
+      // Read optional extension.yml manifest — additive, does not affect existing behavior
+      const extManifest = showAll ? await parseExtensionManifest(path.join(skillsDir, slug)) : null;
+
       installed.push({
         slug,
         name: fm.name || slug,
@@ -485,6 +540,7 @@ async function runSkillList({ args, options = {}, logger, t }) {
         source,
         author,
         model,
+        manifest: extManifest,
         path: path.relative(targetDir, path.join(skillsDir, slug))
       });
     }
@@ -519,6 +575,15 @@ async function runSkillList({ args, options = {}, logger, t }) {
       }
       if (s.author) logger.log(`    author: ${s.author}`);
       if (s.model) logger.log(`    model: ${s.model}`);
+      if (showAll && s.manifest) {
+        const ext = s.manifest.extension || {};
+        if (ext.version) logger.log(`    version: ${ext.version}`);
+        const hooks = s.manifest.hooks;
+        if (hooks && typeof hooks === 'object') {
+          const hookNames = Object.keys(hooks).filter(h => hooks[h]?.enabled !== 'false' && hooks[h]?.enabled !== false);
+          if (hookNames.length > 0) logger.log(`    hooks declared: ${hookNames.join(', ')}`);
+        }
+      }
       logger.log(`    ${s.path}/SKILL.md`);
       logger.log('');
     }

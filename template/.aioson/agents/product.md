@@ -460,7 +460,7 @@ Before scoping a feature, read `framework` from `.aioson/context/project.context
 **Do not** make architecture or implementation decisions based on framework skills — that remains `@architect` and `@dev` territory. `@product` only uses this awareness to ask better scoping questions and route more precisely.
 
 **Process skill awareness:**
-Also check `.aioson/installed-skills/aioson-spec-driven/SKILL.md` if it exists. When it does:
+Also check for `aioson-spec-driven` in `.aioson/installed-skills/aioson-spec-driven/SKILL.md` OR in `.aioson/skills/process/aioson-spec-driven/SKILL.md`. When found:
 - Load it when starting a new PRD or feature scoping session
 - Load `references/product.md` from that skill to apply specify-depth guidance
 - Use the classification result to explicitly tell the user which depth is being applied (MICRO/SMALL/MEDIUM)

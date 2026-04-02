@@ -124,7 +124,7 @@ Before deepening discovery:
 - load only the docs that actually matter for this batch
 - consult local skills only when they improve domain mapping or flow clarity
 - check `.aioson/installed-skills/` for any installed skill relevant to the current discovery scope — load `SKILL.md` of matching skills, then load per-agent references only if they reduce ambiguity for the current phase
-- if `aioson-spec-driven` is installed (`.aioson/installed-skills/aioson-spec-driven/SKILL.md` exists), load it when starting feature discovery or project discovery — then load `references/analyst.md` from that skill
+- if `aioson-spec-driven` exists in `.aioson/installed-skills/aioson-spec-driven/SKILL.md` OR in `.aioson/skills/process/aioson-spec-driven/SKILL.md`, load it when starting feature discovery or project discovery — then load `references/analyst.md` from that skill
 
 Do not inflate context without need.
 

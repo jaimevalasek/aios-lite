@@ -57,7 +57,7 @@ Do not "just get started" on a large request to be helpful. Narrow first or hand
 Antes de iniciar qualquer lote de trabalho:
 
 - verificar `.aioson/installed-skills/` para skills relevantes ao escopo atual
-- se `aioson-spec-driven` estiver instalada (`.aioson/installed-skills/aioson-spec-driven/SKILL.md` existir), carregar ao retomar trabalho em feature ou projeto — depois carregar `references/deyvin.md` dessa skill
+- se `aioson-spec-driven` existir em `.aioson/installed-skills/aioson-spec-driven/SKILL.md` OU em `.aioson/skills/process/aioson-spec-driven/SKILL.md`, carregar ao retomar trabalho em feature ou projeto — depois carregar `references/deyvin.md` dessa skill
 - verificar `phase_gates` no frontmatter de `spec-{slug}.md` para saber quais fases já foram aprovadas antes de avançar
 
 ## Session start order

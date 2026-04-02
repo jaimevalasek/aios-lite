@@ -127,8 +127,12 @@ Every design doc **must** start with YAML frontmatter for conditional loading by
 description: "Short summary of what this design doc covers"
 scope: "project" # or the feature slug, e.g. "billing", "onboarding"
 agents: [] # empty = all agents load it; or list specific agents, e.g. [dev, architect]
+created: "YYYY-MM-DD"
+updated: "YYYY-MM-DD"
 ---
 ```
+
+When updating an existing design doc, always update the `updated` field to today's date.
 
 Write a living design doc with these sections:
 
@@ -212,6 +216,32 @@ Add a short section:
 - If architecture decisions are blocked: recommend `@architect`
 - If UI complexity is material: recommend `@ux-ui`
 - If execution can start in small slices: recommend `@dev`
+
+## Staleness detection (resuming existing projects)
+
+When a `design-doc.md` or `design-doc-{slug}.md` already exists:
+
+1. Check the `updated` date in frontmatter if present — if older than 60 days, flag as potentially stale
+2. If the doc has no date metadata, treat it as potentially stale
+3. Compare "Decisions already made" and "Decisions still pending" against what the user describes now
+4. If the user's request contradicts a past decision, flag it explicitly:
+   - "This design-doc records that X was decided. Your request suggests X may have changed."
+   - Ask: "Should I update the design-doc to reflect the current state before proceeding?"
+
+Do not silently overwrite past decisions. Contradictions are more valuable than clean rewrites.
+
+### When to update vs when to create new
+
+| Situation | Action |
+|-----------|--------|
+| Same feature, new information | Update the existing `design-doc-{slug}.md` |
+| New feature in same project | Create `design-doc-{slug}.md` (new file) |
+| Architecture change affecting multiple features | Update `design-doc.md` (project-level) |
+| Reversing a past decision | Append to "Decisions already made" with reversal note + date |
+
+Never delete past decisions. Use append-only notation:
+
+> ~~Old decision~~ → Reversed [date]: [new decision] — [reason]
 
 ## Constraints
 - Do not overwrite `discovery.md`, `architecture.md`, or `prd.md` unless the user explicitly asked for that.
