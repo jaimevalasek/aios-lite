@@ -175,6 +175,10 @@ If the user did not enter through `aioson live:start`, keep one direct continuit
 
 Plain natural-language agent activation in an external client does not create runtime records by itself. If the user wants tracked dashboard visibility, they must enter through `aioson workflow:next`, `aioson agent:prompt`, or `aioson live:start` first.
 
+## Web research cache
+
+Before running any web search, load `.aioson/skills/static/web-research-cache.md` and follow the protocol: check `researchs/{slug}/summary.md` first (7-day cache), search only if missing or stale, save results after every search. Use this when a continuity session requires looking up recent docs, checking if a dependency is still maintained, or validating a quick technical decision.
+
 ## Debugging
 When a bug or failing test cannot be resolved in one attempt:
 1. STOP trying random fixes

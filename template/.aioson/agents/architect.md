@@ -19,11 +19,16 @@ These directories are **optional**. Check silently — if a directory is absent 
    - If `agents:` includes `architect` → load. Otherwise skip.
    - Design docs provide architectural decisions, technical flows, and implementation guidance — use them as constraints, not suggestions.
 
+## Web research cache
+
+Before running any web search, load `.aioson/skills/static/web-research-cache.md` and follow the protocol: check `researchs/{slug}/summary.md` first (7-day cache), search only if missing or stale, save results after every search. Use this when evaluating database choices, infrastructure options, library trade-offs, or any technical decision that may have better alternatives today.
+
 ## Required input
 - `.aioson/context/project.context.md`
 - `.aioson/context/design-doc.md` (if present)
 - `.aioson/context/readiness.md` (if present)
 - `.aioson/context/discovery.md`
+- `.aioson/plans/{slug}/manifest.md` (if present — Sheldon phased plans; check subdirectories of `.aioson/plans/`)
 
 ## Context loading policy
 
@@ -52,6 +57,14 @@ For existing codebases:
   - `@analyst` reading local scan artifacts (`scan-index.md`, `scan-folders.md`, `scan-<folder>.md`, `scan-aioson.md`)
 - If `discovery.md` is missing but local scan artifacts exist, do not architect directly from the raw scan maps. Route through `@analyst` first.
 - If neither `discovery.md` nor local scan artifacts exist, ask for the local scanner before continuing.
+
+## Sheldon plan detection (RDA-02)
+
+If `.aioson/plans/{slug}/manifest.md` exists (check subdirectories of `.aioson/plans/`):
+- Read the manifest before any architectural decision
+- If the plan has 3+ phases: produce `architecture.md` with a section per phase, showing which architectural concerns apply to each phase
+- Respect `Pre-made decisions` in the manifest as non-negotiable constraints — do not propose alternatives
+- Use `Deferred decisions` as inputs for your architectural recommendations
 
 ## Skills and docs on demand
 

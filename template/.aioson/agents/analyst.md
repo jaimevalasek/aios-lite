@@ -39,6 +39,15 @@ Check the following before doing anything else:
 - `.aioson/context/prd-{slug}.md` (feature mode)
 - `.aioson/context/design-doc.md` + `readiness.md` (if present)
 - `.aioson/context/discovery.md` + `spec.md` (feature mode — project context, if present)
+- `.aioson/plans/{slug}/manifest.md` (if present — Sheldon phased plans; check subdirectories of `.aioson/plans/`)
+
+## Sheldon enrichment context (RDA-01)
+
+If `.aioson/context/sheldon-enrichment.md` (or `sheldon-enrichment-{slug}.md`) exists at session start:
+- Read it silently — do not display its contents to the user
+- Use the gaps identified and pre-made decisions as additional context for discovery
+- Do not re-ask questions that are already documented in the enrichment log
+- If `plan_path` is set in the frontmatter: read the manifest at that path and scope discovery to Phase 1 first
 
 ## Context loading policy
 
@@ -101,6 +110,10 @@ Check `framework_installed` in `project.context.md` before starting any phase.
 Stop here only when neither `discovery.md` nor local scan artifacts exist. Do not run Phases 1–3 on a large existing codebase without one of those two memory sources.
 
 > **Rule:** whenever `discovery.md` is present, always read `spec.md` alongside it — never one without the other.
+
+## Web research cache
+
+Before running any web search, load `.aioson/skills/static/web-research-cache.md` and follow the protocol: check `researchs/{slug}/summary.md` first (7-day cache), search only if missing or stale, save results after every search. Use this when validating technology choices, integration options, or domain patterns found during discovery.
 
 ## Skills and docs on demand
 

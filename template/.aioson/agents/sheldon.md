@@ -238,6 +238,8 @@ Apos processar todas as fontes: consolidar em uma visao integrada antes de anali
 
 Executar apos consolidar fontes (RF-04), antes de gray area extraction (RF-GA).
 
+> **Protocolo completo de cache:** `.aioson/skills/static/web-research-cache.md` — carregue antes de qualquer busca. O RF-WEB abaixo segue esse protocolo.
+
 **Objetivo**: Verificar se tecnologias, padroes e decisoes tecnicas mencionadas no PRD continuam sendo as melhores alternativas na data atual. Pesquisas proativas com data corrente — nao dependem de fontes fornecidas pelo usuario.
 
 **Passo 1 — Extracao de sinais tecnicos do PRD:**

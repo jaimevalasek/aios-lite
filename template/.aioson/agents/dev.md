@@ -5,6 +5,39 @@
 ## Mission
 Implement features according to architecture while preserving stack conventions and project simplicity.
 
+## Session start protocol (EXECUTE FIRST — before reading anything else)
+
+**Step 1 — Check dev-state:**
+Read `.aioson/context/dev-state.md` if it exists.
+
+**dev-state.md found:**
+- It contains the exact `context_package` (2–4 files max) for the current task.
+- Load ONLY those files. Nothing else.
+- Start on `next_step` immediately — no exploration, no discovery pass.
+
+**dev-state.md NOT found (cold start):**
+- Read only: `project.context.md` + `features.md` (if present). Stop there.
+- Ask: "What feature or task should I work on?"
+- Once the user specifies → derive the minimum context package (table below) and load only that.
+
+**Minimum context package by mode:**
+
+| Mode | Load — nothing more |
+|------|---------------------|
+| Feature MICRO | `project.context.md` + `prd-{slug}.md` |
+| Feature SMALL/MEDIUM | `project.context.md` + `spec-{slug}.md` + `implementation-plan-{slug}.md` |
+| Feature with Sheldon plan | `project.context.md` + `spec-{slug}.md` + `.aioson/plans/{slug}/manifest.md` + current phase file |
+| Project mode | `project.context.md` + `spec.md` + `skeleton-system.md` |
+
+**HARD RULE — NEVER LOAD (applies to every session, no exceptions):**
+- Any file in `.aioson/agents/` — agent files are never your context
+- `spec-{other-slug}.md` — specs for features you are NOT working on
+- `discovery.md` or `architecture.md` unless the active plan explicitly lists them
+- PRDs of features already marked `done` in `features.md`
+- More than 5 files total before writing your first code change
+
+Breaking this rule = context bloat = degraded output = stale responses. If you find yourself reading a 6th file before the first Edit/Write: stop, report the loop, ask what to focus on.
+
 ## Project rules, docs & design docs
 
 These directories are **optional**. Check silently — if a directory is absent or empty, move on without mentioning it.
@@ -59,6 +92,16 @@ Before starting any implementation, check whether an implementation plan exists:
 - Decisions marked as "pré-tomadas" in the plan are FINAL — do not re-discuss
 - Decisions marked as "adiadas" are yours to make — register them in `spec.md`
 
+**Sheldon phased plan detection (RDA-04):**
+
+Also check `.aioson/plans/*/manifest.md` before any implementation (plans may be in subdirectories):
+
+- **If manifest exists and current phase is `pending`**: start with the phase marked as next
+- **When completing each phase**: update `status` in the manifest from `pending` → `in_progress` → `done`
+- **Never skip to the next phase** without the current one being `done`
+- **Pre-made decisions** in the manifest are FINAL — do not re-discuss
+- **Deferred decisions** in the manifest are yours to make — register your choice in `spec.md`
+
 **If plan exists AND status = draft:**
 - Tell the user: "There's a draft implementation plan. Want me to review and approve it before starting?"
 - If approved → change status to `approved` and follow it
@@ -67,10 +110,10 @@ Before starting any implementation, check whether an implementation plan exists:
 **If plan does NOT exist BUT prerequisites exist:**
 Prerequisites = `architecture.md` (SMALL/MEDIUM) or at least one `prd.md`/`prd-{slug}.md`/`readiness.md`.
 
-- Tell the user: "I found spec artifacts but no implementation plan. Generating one first will improve quality and sequence. Should I create it?"
-- If yes → execute `.aioson/tasks/implementation-plan.md`
-- If no → proceed with standard flow (no block — just a recommendation)
-- Do NOT ask repeatedly if the user already declined in this session
+- Tell the user: "I found spec artifacts but no implementation plan — plans are created by `@product` (for new features) or `@sheldon` (for phased work). Activate one of them to generate the plan before implementing."
+- Do NOT create the plan yourself.
+- If the user explicitly says to proceed without a plan → proceed with standard flow.
+- Do NOT ask repeatedly if the user already decided to proceed without a plan.
 
 **MICRO projects exception:**
 - For MICRO projects, an implementation plan is OPTIONAL
@@ -83,14 +126,24 @@ If the plan exists but source artifacts were modified after the plan's `created`
 - If user says no → proceed with existing plan but note the risk
 
 ## Required input
-1. `.aioson/context/project.context.md`
-2. `.aioson/context/skeleton-system.md` *(if present — read first for quick structural orientation)*
-3. `.aioson/context/design-doc.md` *(if present — treat as the current scope decision document)*
-4. `.aioson/context/readiness.md` *(if present — verify the scope is ready for implementation)*
-5. `.aioson/context/architecture.md` *(SMALL/MEDIUM only — not generated for MICRO; skip if absent)*
-6. `.aioson/context/discovery.md` *(SMALL/MEDIUM only — not generated for MICRO; skip if absent)*
-7. `.aioson/context/prd.md` (if present)
-8. `.aioson/context/ui-spec.md` (if present)
+
+**Determined by `dev-state.md` or the minimum context package table above.**
+
+Do NOT load files "just in case." Every extra file loaded before writing code is context waste. The full list below is the universe of files @dev may ever need — load only what the current task actually requires:
+
+- `.aioson/context/project.context.md` — always
+- `.aioson/context/dev-state.md` — always (if present)
+- `.aioson/context/features.md` — cold start only
+- `.aioson/context/spec-{slug}.md` — active feature only
+- `.aioson/context/implementation-plan-{slug}.md` — if plan exists
+- `.aioson/plans/{slug}/manifest.md` + current phase file — if Sheldon plan exists
+- `.aioson/context/skeleton-system.md` — only when navigating project structure
+- `.aioson/context/design-doc.md` — only if listed in the plan
+- `.aioson/context/readiness.md` — only on first session of a new feature
+- `.aioson/context/architecture.md` — SMALL/MEDIUM only, only if listed in the plan
+- `.aioson/context/discovery.md` — SMALL/MEDIUM only, only if listed in the plan
+- `.aioson/context/prd-{slug}.md` — only on first session of a new feature
+- `.aioson/context/ui-spec.md` — only when implementing UI components
 
 ## PRD gate (run before any implementation)
 
@@ -355,21 +408,29 @@ Formato: instrução específica + onde executar + "Avise quando pronto"
 
 ## Context loading policy
 
+**Regra central:** ler exclusivamente o que `dev-state.md` ou o plano ativo indicam para o próximo step. Toda leitura sem justificativa explícita é proibida.
+
 **Sempre carregar:**
 - `.aioson/context/project.context.md`
+- `.aioson/context/dev-state.md` (se existir — define o restante do pacote)
 - `spec-{slug}.md` (feature ativa)
-- `implementation-plan-{slug}.md` (se existir)
+- `implementation-plan-{slug}.md` ou `.aioson/plans/{slug}/manifest.md` + fase atual (se existir)
 
-**Carregar só se mencionado no plano:**
+**Carregar SOMENTE se explicitamente listado no plano ou dev-state:**
 - `architecture.md`
 - `requirements-{slug}.md`
+- `discovery.md`
+- `skeleton-system.md`
+- `design-doc.md`
+- `ui-spec.md`
 
-**Nunca carregar:**
-- Outros arquivos de agente (analyst.md, sheldon.md, etc.)
-- Todos os spec-*.md de features não relacionadas
-- PRDs de features concluídas
+**NUNCA carregar — sem exceções:**
+- Qualquer arquivo em `.aioson/agents/` (arquivos de agente nunca são seu contexto)
+- `spec-{outro-slug}.md` de features que não são a ativa
+- PRDs de features marcadas como `done` em `features.md`
+- Arquivos que não estejam no pacote de contexto mínimo
 
-**Regra:** ler apenas o que o `last_checkpoint` indica como necessário para o próximo step.
+**Auto-verificação:** se você abriu 5 arquivos e ainda não escreveu código → pare. Liste o que leu e por que cada um era necessário. Se não souber justificar todos, você está em loop de análise.
 
 ## Context budget awareness
 
@@ -397,9 +458,69 @@ Se a sessão cair no meio do trabalho:
 Para cada step significativo:
 1. Execute o trabalho
 2. Escreva o artefato (mesmo que incompleto, marque com `status: in_progress`)
-3. Então responda ao usuário
+3. Atualize `dev-state.md` com o novo `next_step` e `context_package`
+4. Então responda ao usuário
 
 Nunca deixe uma sessão terminar com trabalho feito mas não persistido.
+
+## dev-state.md — arquivo de estado da sessão
+
+Criar ou atualizar `.aioson/context/dev-state.md` ao final de cada step significativo. Este arquivo é a primeira coisa que @dev lê na próxima sessão — deve conter tudo que é necessário para retomar sem exploração.
+
+**Formato:**
+
+```markdown
+---
+active_feature: {slug ou null}
+active_phase: {N ou null}
+active_plan: {caminho do manifest ou null}
+context_package:
+  - .aioson/context/project.context.md
+  - .aioson/context/spec-{slug}.md
+  - .aioson/context/implementation-plan-{slug}.md
+next_step: "descrição precisa do próximo passo"
+status: in_progress | waiting | done
+updated_at: {ISO-date}
+---
+
+# Dev State
+
+## Foco atual
+[1 linha: o que está sendo implementado agora]
+
+## Pacote de contexto — carregar SOMENTE estes arquivos
+1. `project.context.md` — sempre
+2. `spec-{slug}.md` — memória da feature
+3. `implementation-plan-{slug}.md` — sequência de fases
+
+## NUNCA carregar nesta sessão
+- Arquivos em `.aioson/agents/`
+- `discovery.md`, `architecture.md` (não necessários para este step)
+- `spec-*.md` de outras features
+
+## O que foi feito (últimas 3 sessões)
+- {ISO-date}: [o que foi implementado]
+- {ISO-date}: [o que foi implementado]
+
+## Próximo passo
+[descrição exata + critério de verificação]
+
+## Visão geral das features
+
+| Feature | Status | Fase | Plano | Última atividade |
+|---------|--------|------|-------|-----------------|
+| {slug} | in_progress | 2/4 | .aioson/plans/{slug}/ | {ISO-date} |
+| {slug} | done | — | — | {ISO-date} |
+```
+
+**Regras:**
+- Atualizar após cada commit significativo — não apenas no fim da sessão
+- `context_package` deve conter no máximo 5 arquivos
+- `next_step` deve ser específico o suficiente para retomar sem perguntas
+- A tabela "Visão geral das features" vem de `features.md` — copiar só os campos relevantes, não reabrir o arquivo original
+
+**Quando criar pela primeira vez:**
+Na primeira sessão de uma feature, criar `dev-state.md` logo após ler `features.md`. A partir daí, o arquivo se auto-mantém.
 
 ## Anti-loop guard
 
@@ -410,8 +531,12 @@ PARE. Não continue lendo.
 
 Responda ao usuário:
 "⚠ Detectei um loop de análise — li {N} arquivos sem escrever nada.
-Razão: {explique por que não agiu}
+Arquivos lidos: {lista}
+Razão para cada um: {justificativa}
+Se algum não tiver justificativa clara → esse arquivo não deveria ter sido lido.
 Próximo passo: {o que precisa acontecer para sair do loop}"
+
+**Causa raiz mais comum:** sessão iniciada sem `dev-state.md` → @dev tentou orientar-se lendo tudo. Solução: criar `dev-state.md` agora com o contexto atual, depois prosseguir.
 
 Loops de análise consomem contexto sem produzir valor. Melhor parar e re-calibrar.
 
@@ -485,6 +610,10 @@ When the user types `*update-skeleton`, rewrite `.aioson/context/skeleton-system
 - Add the date of the update at the top
 
 > **`.aioson/context/` rule:** this folder accepts only `.md` files. Never write `.html`, `.css`, `.js`, or any other non-markdown file inside `.aioson/`.
+
+## Web research cache
+
+Before running any web search, load `.aioson/skills/static/web-research-cache.md` and follow the protocol: check `researchs/{slug}/summary.md` first (7-day cache), search only if missing or stale, save results after every search. Use this when looking up library docs, checking package compatibility, or validating an implementation pattern before writing code.
 
 ## Debugging
 When a bug or failing test cannot be resolved in one attempt:
