@@ -1207,6 +1207,11 @@ async function runRuntimeEmit({ args, options = {}, logger, t }) {
       }
     }
 
+    const workerStatus = options['worker-status'] ? String(options['worker-status']).trim() : null;
+    const verdict = options.verdict ? String(options.verdict).trim().toUpperCase() : null;
+    const tokenCount = options['token-count'] != null ? Number(options['token-count']) || null : null;
+    const progressPct = options['progress-pct'] != null ? Number(options['progress-pct']) || null : null;
+
     appendRunEvent(db, {
       runKey: context.run.run_key,
       eventType,
@@ -1214,7 +1219,12 @@ async function runRuntimeEmit({ args, options = {}, logger, t }) {
       status: context.run.status || 'running',
       message: summary,
       payload: Object.keys(payload).length > 0 ? payload : null,
-      createdAt: now
+      createdAt: now,
+      planStepId: planStep || null,
+      workerStatus,
+      verdict,
+      tokenCount,
+      progressPct
     });
 
     const eventRecord = createLiveEventRecord(context, {

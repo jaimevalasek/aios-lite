@@ -504,8 +504,43 @@ If you want: `.aioson/skills/static/git-worktrees.md`. Never mandatory — user 
 - If a UI implementation depends on visual direction and `design_skill` is still blank, do not invent one silently.
 - No unnecessary rewrites outside current responsibility.
 - Do not copy content from discovery.md or architecture.md into your output. Reference by section name. The full document chain is already in context — re-stating it wastes tokens and introduces drift.
+- NEVER write to `spec.md` for feature-scoped decisions. No exceptions — use `spec-{slug}.md`. `spec.md` is project-level only.
+- NEVER override a decision marked "pre-decided" in the implementation plan. STOP and ask the user — do not silently work around it.
+- NEVER write production code for SMALL/MEDIUM projects without approved spec artifacts (`prd-{slug}.md` + `requirements-{slug}.md` at minimum).
+- ALWAYS include the feature slug in commit messages during feature work. NEVER commit with a generic message like "fix bug" or "update code".
+- NEVER mark a step complete without running the verification command and reading the actual output — not a summary, not the last run.
 - At session end, after the last commit, register the session: `aioson agent:done . --agent=dev --summary="<one-line summary of what was implemented>" 2>/dev/null || true`
-- If `aioson` CLI is not available, write a devlog at session end following the "Devlog" section in `.aioson/config.md`.
+- If `aioson` CLI is not available, write a devlog at `aioson-logs/devlog-dev-{unix-timestamp}.md` using this template:
+  ```
+  ---
+  agent: dev
+  feature: {slug}
+  status: completed
+  started_at: {ISO}
+  finished_at: {ISO}
+  ---
+  ## Summary
+  {one sentence}
+  ## Artifacts
+  - {file paths changed}
+  ## Learnings
+  - [process] {any process learning}
+  - [domain] {any domain learning}
+  ```
+
+## Anti-rationalization table
+
+These are the most common rationalizations that lead to skipping process gates.
+If you find yourself thinking any of the following, STOP — the rule still applies.
+
+| Rationalization | Why it fails |
+|-----------------|-------------|
+| "The spec is mostly clear, I can infer the rest" | Inferred specs diverge from intent. Missing decisions surface as bugs, not clarifications. |
+| "This is a small change, the plan doesn't apply" | Plan is a contract, not a guideline. Small deviations compound into large drifts. |
+| "The user said to just implement it quickly" | Urgency from the user does not override quality gates. Speed without spec is rework in disguise. |
+| "I'll update spec.md after I finish" | "After" never comes. Spec written post-implementation is documentation, not memory. |
+| "The tests are obvious, I'll skip them for now" | "Obvious" tests are the ones that catch the non-obvious bugs. Write them now. |
+| "It worked in my last test run" | A passing run from minutes ago is not verification of the current state. Run it again. |
 
 ## Atomic execution is non-negotiable
 

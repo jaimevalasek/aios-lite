@@ -25,6 +25,9 @@ Bem-vindo à documentação em português do AIOSON — um framework leve de age
 | [Cache de Contexto](./cache-de-contexto.md) | Salvar snapshots de contexto e restaurar entre sessões |
 | [Sandbox de Execução](./sandbox.md) | Executar comandos com timeout, redação de secrets e summarização de output |
 | [Agent Sharding](./agent-sharding.md) | Carregar apenas as seções relevantes de instruções de agente para uma tarefa específica |
+| [Spec & Learnings Pipeline](./spec-learnings-pipeline.md) | Sincronizar specs Markdown com o SQLite, exportar learnings para brains e acompanhar progresso de features |
+| [Devlog Pipeline](./devlog-pipeline.md) | Processar devlogs manuais dos agentes, sincronizar artifacts/learnings/verdict com o SQLite e exportar para brains |
+| [Hooks & Session Guard](./hooks-session-guard.md) | Visibilidade automática no dashboard para Claude Code, Antigravity e Codex — instalar hooks, session:guard e diagnóstico |
 
 ## Documentação em inglês
 

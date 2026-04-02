@@ -128,12 +128,13 @@
 | `runtime:session:finish` | Encerra a sessao direta ativa | Quando terminou a sessao ou vai fazer handoff |
 | `runtime:session:status` | Mostra o estado da sessao direta e os ultimos eventos | Quando quer saber se a sessao ainda esta aberta ou acompanhar com `--watch` |
 | `live:start` | Abre uma sessao viva rastreada para Codex, Claude, Gemini ou OpenCode | Quando quer iniciar o cliente externo a partir do AIOSON e manter status, agente ativo e logs no dashboard |
-| `runtime:emit` | Registra eventos compactos da sessao viva atual | Quando quer marcar tarefa concluida, milestone, block ou step de plano sem abrir uma sessao paralela |
+| `runtime:emit` | Registra eventos compactos da sessão viva atual; aceita `--worker-status`, `--verdict`, `--token-count`, `--progress-pct` | Quando quer marcar tarefa concluída, milestone, block ou step de plano sem abrir uma sessão paralela |
 | `live:status` | Mostra o estado da sessao viva e do processo filho | Quando quer acompanhar `active_agent`, progresso do plano e se o cliente ainda esta vivo |
 | `live:handoff` | Transfere a mesma sessao viva para outro agente AIOSON | Quando o agente atual precisa passar a continuidade para `@product`, `@architect`, `@dev` ou outro agente |
 | `live:close` | Fecha a sessao viva e gera `summary.md` | Quando terminou a sessao externa e quer consolidar o historico compacto + verbose |
 | `runtime:backup` | Faz backup incremental do SQLite para S3 ou HTTP do cliente | Quando quer persistir dados de runtime na nuvem do cliente |
 | `runtime:restore` | Restaura dados de runtime a partir de um backup remoto | Quando quer recuperar dados em outra máquina ou após perda |
+| `agent:done` | Registra conclusão de sessão de agente; aceita `--verdict`, `--artifacts` (CSV de paths) e `--plan-step` | Ao final de cada sessão de agente — é o comando que fecha a run e popula artifacts + verdict no SQLite |
 | `runtime:prune` | Remove registros antigos do SQLite de runtime | Quando o banco está grande e quer liberar espaço |
 
 ### Skills
@@ -160,13 +161,32 @@
 |---|---|---|
 | `recovery:generate` | Gera `.aioson/context/recovery-context.md` com objetivo, agente, arquivos modificados e commits recentes | Antes de encerrar uma sessão longa ou ao detectar compactação iminente. Veja [Recuperação de Sessão](./recuperacao-de-sessao.md) |
 | `recovery:show` | Exibe o conteúdo do arquivo de recovery da sessão atual | Quando quer re-injetar o contexto no início de uma nova sessão |
-| `context:monitor` | Exibe barras ASCII com percentual de uso de contexto por agente de uma squad | Quando quer acompanhar em tempo real quão cheio está o contexto de cada agente. Veja [Monitor de Contexto](./monitor-de-contexto.md) |
+| `context:health` | Analisa `.aioson/context/`, estima tokens por arquivo, sinaliza arquivos pesados e specs de features já concluídas | Antes de iniciar qualquer sessão longa — dá visibilidade do custo de contexto |
+| `context:trim` | Detecta specs stale (feature `done`) e seções muito longas, arquiva com `--force` | Quando o contexto está crescendo ou há specs de features já entregues |
+| `context:monitor` | Exibe barras ASCII com uso de contexto por agente de uma squad; aceita `--budget` + `--tokens` para modo de budget de projeto | Quando quer acompanhar em tempo real o contexto de uma squad ou checar se está perto do limite. Veja [Monitor de Contexto](./monitor-de-contexto.md) |
 | `context:search:index` | Indexa arquivos `.md`, `.txt` e `.json` do projeto em banco FTS5 | Antes de usar `context:search` — normalmente uma vez, depois incrementalmente. Veja [Busca de Contexto](./busca-de-contexto.md) |
 | `context:search` | Busca documentos relevantes no índice por query em linguagem natural | Quando quer encontrar quais arquivos do projeto contêm contexto relevante para uma tarefa |
 | `context:cache` | Lista sessões de contexto em cache (mais recentes primeiro) | Quando quer saber quais snapshots de sessão estão disponíveis para restaurar. Veja [Cache de Contexto](./cache-de-contexto.md) |
 | `context:cache:save` | Salva um snapshot de conteúdo em `~/.aioson/temp/` | Quando quer preservar o estado de uma sessão antes de trocar de branch ou agente |
 | `context:cache:restore` | Restaura o conteúdo de uma sessão salva, com filtro opcional por query | Quando quer recuperar contexto de uma sessão anterior |
 | `context:cache:cleanup` | Remove sessões expiradas do cache (padrão: mais de 24h) | Quando quer liberar espaço ou forçar limpeza antes do prazo |
+
+### Spec e learnings
+
+| Comando | O que faz | Quando usar |
+|---|---|---|
+| `spec:sync` | Lê todos os `spec*.md` de `.aioson/context/` e sincroniza learnings + phase gates para o SQLite | Após cada sessão de `@dev` — garante que learnings e progresso de fase aparecem no dashboard |
+| `spec:status` | Exibe tabela de features com fase atual, último agente e último checkpoint | Quando quer saber exatamente onde cada feature está sem abrir os arquivos manualmente |
+| `spec:checkpoint` | Lê `last_checkpoint` do spec e registra no SQLite como ponto de recuperação explícito | Quando uma sessão caiu sem `agent:done` e o dashboard não reflete o estado real |
+| `learning:export` | Exporta `project_learnings` do SQLite para `.aioson/brains/` como nodes Zettelkasten | Quando quer promover learnings acumulados para memória procedural do projeto |
+
+### Devlog pipeline
+
+| Comando | O que faz | Quando usar |
+|---|---|---|
+| `devlog:process` | Processa devlogs de `aioson-logs/devlog-*.md` e sincroniza artifacts, decisions, learnings e verdict com o SQLite | Quando o CLI não estava disponível durante a sessão e o agente escreveu devlog manual |
+| `devlog:watch` | Daemon que observa `aioson-logs/` e processa novos devlogs automaticamente (WSL2: polling de 5s) | Quando quer processamento zero-touch durante sessões longas |
+| `devlog:export-brains` | Exporta learnings de alta frequência dos devlogs para `.aioson/brains/` (min-frequency=2 por padrão) | Após `devlog:process` — etapa final do pipeline devlog → brains |
 
 ### Execução segura
 
@@ -733,6 +753,212 @@ Use quando você quer:
 - **Reenviar** conteúdo que falhou na entrega automática
 
 Veja [Output Strategy e Delivery](../output-strategy-delivery.md) para guia completo sobre webhooks, payloads, env vars e troubleshooting.
+
+### 28. Verificar saúde do contexto antes de uma sessão
+
+```bash
+aioson context:health .
+```
+
+Saída esperada:
+
+```
+Context Health Report — meu-projeto
+────────────────────────────────────────────────────────
+Files                        Size      Tokens (est.)
+────────────────────────────────────────────────────────
+discovery.md                 28.3KB    ~7,075  ⚠ HEAVY
+architecture.md              18.1KB    ~4,525
+spec-checkout.md             12.0KB    ~3,000
+spec-auth.md                  8.2KB    ~2,050
+project.context.md            3.9KB    ~975
+────────────────────────────────────────────────────────
+Total context load:                    ~17,625 tokens
+
+⚠  discovery.md is heavy (28.3KB). Consider:
+   → Run: aioson context:pack . --scope=checkout
+
+⚠  1 stale spec file(s) (features: done):
+   → spec-auth.md (feature: auth is done)
+   Run: aioson context:trim . to archive them
+```
+
+Use **antes de começar uma sessão longa** — se `Total context load` estiver acima de 15.000 tokens, considere arquivar specs stale ou criar um contexto escopado.
+
+### 29. Arquivar specs de features já entregues
+
+```bash
+# Ver o que seria arquivado (sem mover nada)
+aioson context:trim . --dry-run
+
+# Arquivar de verdade
+aioson context:trim . --force
+```
+
+Os arquivos são movidos para `.aioson/context/archive/` — nunca deletados. Para restaurar:
+
+```bash
+mv .aioson/context/archive/spec-auth.md .aioson/context/spec-auth.md
+```
+
+### 30. Monitorar budget de tokens durante uma sessão
+
+```bash
+# Verificar se está no safe zone (< 60%), warning (60–80%) ou critical (≥ 80%)
+aioson context:monitor . --budget=80000 --tokens=52000
+# ⚠ Context: 52,000 tokens (65%) — WARNING
+# Suggestion: /clear before next agent activation
+
+# Verificar com output JSON para integrar em scripts
+aioson context:monitor . --budget=80000 --tokens=67000 --json
+```
+
+O comando emite automaticamente um evento no SQLite quando entra em warning ou critical — visível no dashboard como `context_budget_warning`.
+
+### 31. Sincronizar spec com o banco após sessão do @dev
+
+```bash
+# Sincroniza learnings e phase_gates de todos os specs
+aioson spec:sync .
+
+# Ver o estado atual de todas as features
+aioson spec:status .
+```
+
+Saída do `spec:status`:
+
+```
+Project Status — meu-projeto
+────────────────────────────────────────────────────────────────────────────────
+Feature             Phase     Status          Last Agent      Checkpoint
+────────────────────────────────────────────────────────────────────────────────
+checkout            2/5       in_progress     dev             Criando migration...
+auth                5/5       done            qa              QA sign-off 2026-03-28
+────────────────────────────────────────────────────────────────────────────────
+Active learnings: 8  |  Promotable (freq≥3): 3
+```
+
+Execute `spec:sync` logo após cada sessão do `@dev` para manter o dashboard atualizado sem precisar do `live:start`.
+
+### 32. Registrar checkpoint manual quando a sessão caiu
+
+```bash
+# O @dev estava trabalhando em checkout mas o Claude travou sem chamar agent:done
+aioson spec:checkpoint . --feature=checkout
+
+# Para um agente diferente de dev
+aioson spec:checkpoint . --feature=checkout --agent=architect
+```
+
+Saída:
+
+```
+Reading spec-checkout.md...
+last_checkpoint: "Criando migration cart_items — step 3 of 5"
+phase_gates: {"plan":"approved","requirements":"approved","design":"pending"}
+
+Checkpoint registered:
+  run_key: dev-1711234567890
+  summary: "Criando migration cart_items — step 3 of 5"
+  status: in_progress (checkpoint only — use agent:done to close)
+
+Next: continue with /dev — start from last_checkpoint
+```
+
+### 33. Processar devlogs acumulados após sessões sem CLI
+
+```bash
+# Processar todos os devlogs de aioson-logs/ que ainda não foram processados
+aioson devlog:process .
+```
+
+Saída:
+
+```
+Devlog Processing — meu-projeto
+──────────────────────────────────────────────────
+Found 3 devlog(s):
+
+devlog-dev-1711234567.md
+  run: dev-1711234567890
+  Artifacts: 3 registered ✓
+  Decisions: 1 logged ✓
+  Learnings: 2 upserted ✓
+
+devlog-qa-1711237890.md
+  run: qa-1711237890123
+  Artifacts: 1 registered ✓
+  Learnings: 1 upserted ✓
+  Verdict: PASS ✓
+
+devlog-dev-1711241234.md — ⚠ missing frontmatter or agent field. Fix and re-run.
+──────────────────────────────────────────────────
+Processed: 2/3 devlogs
+New learnings: 3 (queued for brains export)
+Artifacts registered: 4
+```
+
+O devlog processado recebe `processed_at` no frontmatter — rodar de novo não cria duplicatas.
+
+### 34. Pipeline completo: devlog → learnings → brains
+
+```bash
+# 1. Processar devlogs acumulados
+aioson devlog:process .
+
+# 2. Exportar learnings com frequência ≥ 3 para .aioson/brains/
+aioson devlog:export-brains . --min-frequency=3
+
+# 3. Promover nodes com frequência ≥ 5 para genome (memória de longo prazo)
+aioson learning:evolve .
+```
+
+Ou, para processamento automático durante uma sessão longa:
+
+```bash
+# Rodar em background — processa novos devlogs assim que são criados
+aioson devlog:watch . &
+
+# No WSL2, usa polling de 5s automaticamente
+# Para forçar polling em qualquer ambiente:
+aioson devlog:watch . --poll &
+```
+
+### 35. Fechar sessão com verdict e artifacts
+
+```bash
+# @dev — sessão concluída com artefatos
+aioson agent:done . --agent=dev \
+  --summary="Cart implementado com migration + testes" \
+  --artifacts="src/database/migrations/003_cart_items.ts,src/actions/cart/AddToCart.ts" \
+  --plan-step=FASE-2
+
+# @qa — sessão com verdict
+aioson agent:done . --agent=qa \
+  --summary="QA checkout — PASS" \
+  --verdict=PASS \
+  --artifacts="output/qa/checkout-report.md"
+```
+
+Os artifacts aparecem na tabela `artifacts` do SQLite e ficam visíveis no dashboard. O verdict é indexado em `execution_events.verdict` para busca e filtragem rápida.
+
+### 36. Emitir evento enriquecido durante sessão live
+
+```bash
+# Checkpoint de plano com consumo de tokens e progresso
+aioson runtime:emit . --agent=dev \
+  --type=plan_checkpoint \
+  --plan-step=FASE-1 \
+  --summary="Migration de cart_items criada e testada" \
+  --token-count=3800 \
+  --progress-pct=40
+
+# Blocker com worker status
+aioson runtime:emit . --agent=dev \
+  --type=task_blocked \
+  --worker-status=blocked \
+  --summary="Aguardando schema de pagamentos do @architect"
+```
 
 ---
 

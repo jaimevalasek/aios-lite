@@ -1179,6 +1179,11 @@ async function runAgentDone({ args, options = {}, logger, t }) {
   const summary = String(options.summary || options.message || `${normalizedAgent} session completed`).trim();
   const title = options.title ? String(options.title).trim() : null;
   const status = options.status || 'completed';
+  const verdict = options.verdict ? String(options.verdict).trim().toUpperCase() : null;
+  const planStepId = options['plan-step'] ? String(options['plan-step']).trim() : null;
+  const artifactPaths = options.artifacts
+    ? String(options.artifacts).split(',').map((p) => p.trim()).filter(Boolean)
+    : [];
 
   const { db, dbPath, runtimeDir } = await openRuntimeDb(targetDir);
 
@@ -1194,8 +1199,23 @@ async function runAgentDone({ args, options = {}, logger, t }) {
         eventType: 'agent_done',
         phase: 'live',
         status: 'running',
-        message: summary
+        message: summary,
+        verdict,
+        planStepId
       });
+
+      if (artifactPaths.length > 0) {
+        for (const filePath of artifactPaths) {
+          try {
+            attachArtifact(db, {
+              runKey: session.runKey,
+              agentName: normalizedAgent,
+              kind: 'output',
+              filePath
+            });
+          } catch { /* non-fatal */ }
+        }
+      }
 
       if (!options.json) {
         logger.log(`agent:done — ${normalizedAgent} | live session active, event logged | run: ${session.runKey} (${dbPath})`);
@@ -1218,6 +1238,32 @@ async function runAgentDone({ args, options = {}, logger, t }) {
       status,
       summary
     });
+
+    if (verdict || planStepId) {
+      appendRunEvent(db, {
+        runKey,
+        eventType: 'agent_done',
+        phase: 'direct',
+        status: 'completed',
+        message: summary,
+        verdict,
+        planStepId
+      });
+    }
+
+    if (artifactPaths.length > 0) {
+      for (const filePath of artifactPaths) {
+        try {
+          attachArtifact(db, {
+            runKey,
+            taskKey,
+            agentName: normalizedAgent,
+            kind: 'output',
+            filePath
+          });
+        } catch { /* non-fatal */ }
+      }
+    }
 
     if (!options.json) {
       logger.log(`agent:done — ${normalizedAgent} | task: ${taskKey} | run: ${runKey} (${dbPath})`);

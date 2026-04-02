@@ -694,6 +694,31 @@ function ensureLegacyColumns(db) {
 
   try { db.exec('ALTER TABLE worker_runs ADD COLUMN conversation_id TEXT'); } catch { /* já existe */ }
 
+  // Event Enrichment (Plan 61) — new columns in execution_events
+  const execEventColumns = db.prepare('PRAGMA table_info(execution_events)').all();
+  const execEventColumnNames = new Set(execEventColumns.map((col) => col.name));
+
+  if (!execEventColumnNames.has('plan_step_id')) {
+    db.exec('ALTER TABLE execution_events ADD COLUMN plan_step_id TEXT');
+  }
+  if (!execEventColumnNames.has('worker_status')) {
+    db.exec('ALTER TABLE execution_events ADD COLUMN worker_status TEXT');
+  }
+  if (!execEventColumnNames.has('verdict')) {
+    db.exec('ALTER TABLE execution_events ADD COLUMN verdict TEXT');
+  }
+  if (!execEventColumnNames.has('token_count')) {
+    db.exec('ALTER TABLE execution_events ADD COLUMN token_count INTEGER');
+  }
+  if (!execEventColumnNames.has('progress_pct')) {
+    db.exec('ALTER TABLE execution_events ADD COLUMN progress_pct REAL');
+  }
+
+  db.exec('CREATE INDEX IF NOT EXISTS idx_execution_events_agent_type ON execution_events(agent_name, event_type, created_at DESC)');
+  db.exec('CREATE INDEX IF NOT EXISTS idx_execution_events_verdict ON execution_events(verdict, created_at DESC)');
+  db.exec('CREATE INDEX IF NOT EXISTS idx_plan_phases_status ON plan_phases(plan_id, status)');
+  db.exec('CREATE INDEX IF NOT EXISTS idx_artifacts_run ON artifacts(run_key, created_at DESC)');
+
   // Dynamic Tools (Feature: Tool Registry)
   db.exec(`
     CREATE TABLE IF NOT EXISTS dynamic_tools (
@@ -767,12 +792,14 @@ function insertExecutionEvent(db, record) {
       task_key, run_key, agent_name, agent_kind, squad_slug, session_key,
       source, workflow_id, workflow_stage, parent_run_key,
       event_type, phase, status, tool_name, message, payload_json,
-      sequence_no, parent_event_id, created_at
+      sequence_no, parent_event_id, created_at,
+      plan_step_id, worker_status, verdict, token_count, progress_pct
     ) VALUES (
       @task_key, @run_key, @agent_name, @agent_kind, @squad_slug, @session_key,
       @source, @workflow_id, @workflow_stage, @parent_run_key,
       @event_type, @phase, @status, @tool_name, @message, @payload_json,
-      @sequence_no, @parent_event_id, @created_at
+      @sequence_no, @parent_event_id, @created_at,
+      @plan_step_id, @worker_status, @verdict, @token_count, @progress_pct
     )
   `).run(record);
 }
@@ -814,7 +841,12 @@ function appendRunEvent(db, options) {
       payload_json: payloadJson,
       sequence_no: nextExecutionSequence(db, run.run_key),
       parent_event_id: options.parentEventId || null,
-      created_at: now
+      created_at: now,
+      plan_step_id: options.planStepId ? String(options.planStepId).trim() : null,
+      worker_status: options.workerStatus ? String(options.workerStatus).trim() : null,
+      verdict: options.verdict ? String(options.verdict).trim().toUpperCase() : null,
+      token_count: options.tokenCount != null ? Number(options.tokenCount) || null : null,
+      progress_pct: options.progressPct != null ? Number(options.progressPct) || null : null
     });
   });
 

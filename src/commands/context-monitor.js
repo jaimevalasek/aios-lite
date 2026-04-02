@@ -6,6 +6,13 @@ const {
   computeWarningLevel,
   THRESHOLDS
 } = require('../squad-dashboard/context-monitor');
+const { openRuntimeDb, appendRunEvent } = require('../runtime-store');
+
+const PROJECT_BUDGET_ZONES = {
+  safe: 0.60,
+  warning: 0.80,
+  critical: 1.00
+};
 
 const BAR_WIDTH = 20;
 const LEVEL_ICONS = { normal: ' ', warning: '⚠', critical: '!', overflow: 'X', unknown: '?' };
@@ -36,15 +43,79 @@ function renderAgent(slug, agent) {
   return line;
 }
 
+async function emitBudgetEvent(cwd, { tokens, budget, pct, zone, agentName }) {
+  const { db } = await openRuntimeDb(cwd, { mustExist: true }).catch(() => ({ db: null }));
+  if (!db) return;
+  try {
+    const run = db.prepare(
+      "SELECT run_key FROM agent_runs WHERE status = 'running' ORDER BY updated_at DESC LIMIT 1"
+    ).get();
+    if (run) {
+      appendRunEvent(db, {
+        runKey: run.run_key,
+        eventType: zone === 'critical' ? 'context_budget_critical' : 'context_budget_warning',
+        phase: 'live',
+        status: 'running',
+        message: `Context at ${pct}% of budget (${tokens.toLocaleString()} tokens)`,
+        payload: { tokens, budget, pct, zone, agentName: agentName || null },
+        createdAt: new Date().toISOString()
+      });
+    }
+  } finally {
+    db.close();
+  }
+}
+
 async function runContextMonitor({ args, options, logger }) {
   const cwd = path.resolve(process.cwd(), args[0] || '.');
   const squadSlug = options.squad || null;
   const agentSlug = options.agent || null;
+  const budget = options.budget ? Number(options.budget) : null;
+
+  // Project-level budget monitoring (--budget=<tokens>)
+  if (budget && !squadSlug) {
+    const tokens = options.tokens ? Number(options.tokens) : null;
+    if (tokens !== null) {
+      const pct = Math.round((tokens / budget) * 100);
+      const zone = pct >= 100 ? 'overflow'
+        : pct >= PROJECT_BUDGET_ZONES.warning * 100 ? 'critical'
+        : pct >= PROJECT_BUDGET_ZONES.safe * 100 ? 'warning'
+        : 'safe';
+
+      const icon = zone === 'overflow' ? 'X' : zone === 'critical' ? '!' : zone === 'warning' ? '⚠' : '✓';
+
+      if (!options.json) {
+        logger.log(`  ${icon} Context: ${tokens.toLocaleString()} tokens (${pct}%) — ${zone.toUpperCase()}`);
+        if (zone === 'warning') {
+          logger.log(`  Suggestion: /clear before next agent activation`);
+        } else if (zone === 'critical' || zone === 'overflow') {
+          logger.log(`  Run: aioson context:health . for reduction options`);
+        }
+      }
+
+      if (zone === 'warning' || zone === 'critical' || zone === 'overflow') {
+        await emitBudgetEvent(cwd, { tokens, budget, pct, zone, agentName: agentSlug });
+      }
+
+      if (options.json) {
+        return { ok: true, tokens, budget, pct, zone };
+      }
+      return { ok: true, tokens, budget, pct, zone };
+    }
+
+    if (!options.json) {
+      logger.log(`  Budget: ${budget.toLocaleString()} tokens`);
+      logger.log(`  Zones: safe=<${PROJECT_BUDGET_ZONES.safe * 100}%  warning=${PROJECT_BUDGET_ZONES.safe * 100}-${PROJECT_BUDGET_ZONES.warning * 100}%  critical=>=${PROJECT_BUDGET_ZONES.warning * 100}%`);
+      logger.log(`  Use --tokens=<n> to check against budget`);
+    }
+    return { ok: true, budget, zones: PROJECT_BUDGET_ZONES };
+  }
 
   if (!squadSlug) {
     logger.log('\n  Context Monitor\n');
     logger.log('  No squad specified. Use --squad=<slug> to monitor a squad.');
     logger.log('  Example: aioson context:monitor . --squad=my-squad');
+    logger.log('  Or use --budget=<tokens> --tokens=<current> for project-level monitoring.');
     logger.log('');
     return { ok: true, squads: [] };
   }

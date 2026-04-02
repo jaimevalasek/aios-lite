@@ -1,14 +1,16 @@
 # Monitor de Contexto
 
-> Visualiza em tempo real o uso de janela de contexto por agente, com alertas automáticos de warning e critical.
+> Visualiza em tempo real o uso de janela de contexto por agente, com alertas automáticos de warning e critical. Também funciona no modo de budget de projeto para sessões diretas.
 
-O `context:monitor` lê o arquivo `context-monitor.json` de uma squad e exibe barras de progresso ASCII com o percentual de contexto utilizado por cada agente. Útil para acompanhar sessões longas e antecipar quando um agente está próximo de compactar.
+O `context:monitor` tem dois modos de operação:
+- **Modo squad** — lê `context-monitor.json` da squad e exibe barras de progresso por agente
+- **Modo budget** — recebe `--budget` + `--tokens` e calcula a zona de alerta da sessão atual
 
 ---
 
-## Comando
+## Modo squad
 
-### `context:monitor`
+### `context:monitor --squad`
 
 ```bash
 aioson context:monitor [path] [opções]
@@ -18,7 +20,7 @@ aioson context:monitor [path] [opções]
 
 | Opção | Descrição |
 |---|---|
-| `--squad=<slug>` | Squad a monitorar (obrigatório) |
+| `--squad=<slug>` | Squad a monitorar (obrigatório neste modo) |
 | `--agent=<id>` | Filtrar por agente específico (opcional) |
 | `--json` | Retorna dados estruturados em JSON |
 
@@ -34,6 +36,58 @@ aioson context:monitor . --squad=meu-squad --agent=dev
 # Output JSON para dashboards ou scripts
 aioson context:monitor . --squad=meu-squad --json
 ```
+
+---
+
+## Modo budget de projeto
+
+Útil em sessões diretas (sem squad) para checar se você está próximo do limite da janela de contexto.
+
+### `context:monitor --budget`
+
+```bash
+aioson context:monitor [path] --budget=<tokens-totais> --tokens=<tokens-atuais>
+```
+
+**Opções:**
+
+| Opção | Descrição |
+|---|---|
+| `--budget=<n>` | Limite total em tokens (ex: `80000` para Claude Sonnet) |
+| `--tokens=<n>` | Tokens consumidos atualmente na sessão |
+| `--json` | Retorna JSON com zona, percentual e budget |
+
+**Zonas:**
+
+| Zona | Faixa | Ícone | Ação sugerida |
+|---|---|---|---|
+| safe | < 60% | ✓ | Continuar normalmente |
+| warning | 60–80% | ⚠ | Planejar `/clear` antes do próximo agente |
+| critical | ≥ 80% | ! | Rodar `context:health` e reduzir carga |
+
+**Exemplos:**
+
+```bash
+# Sessão em safe zone
+aioson context:monitor . --budget=80000 --tokens=28000
+#   ✓ Context: 28,000 tokens (35%) — SAFE
+
+# Sessão em warning zone
+aioson context:monitor . --budget=80000 --tokens=52000
+#   ⚠ Context: 52,000 tokens (65%) — WARNING
+#   Suggestion: /clear before next agent activation
+
+# Sessão em critical zone
+aioson context:monitor . --budget=80000 --tokens=67000
+#   ! Context: 67,000 tokens (84%) — CRITICAL
+#   Run: aioson context:health . for reduction options
+
+# JSON para automação
+aioson context:monitor . --budget=80000 --tokens=52000 --json
+# { "ok": true, "tokens": 52000, "budget": 80000, "pct": 65, "zone": "warning" }
+```
+
+Quando a zona é `warning` ou `critical`, um evento `context_budget_warning` ou `context_budget_critical` é automaticamente registrado no SQLite (na run ativa mais recente), ficando visível no dashboard.
 
 ---
 

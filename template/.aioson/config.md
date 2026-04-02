@@ -104,34 +104,62 @@ In direct mode (LLM without CLI), agents call them manually following the rules 
 When the `aioson` CLI is **not available**, agents must write a devlog file at the end of the session (or when the user asks to save progress). This is the only way to preserve session history for the dashboard when the CLI is missing.
 
 **Directory:** `aioson-logs/` (create if absent)
-**Filename:** `devlog-{YYYY-MM-DD}T{HH-MM}.md`
-**If a devlog from today already exists:** append to it instead of creating a new file.
+**Filename:** `devlog-{agent}-{unix-timestamp}.md`
 
 **Template:**
 ```markdown
 ---
-agent: "{agent-id}"
-session_start: "{ISO 8601}"
-session_end: "{ISO 8601}"
-status: completed # or partial
-summary: "One-line summary of what was accomplished"
+agent: dev
+feature: {feature-slug or "project"}
+session_key: direct-session:{unix-timestamp}:{agent}
+started_at: {ISO 8601}
+finished_at: {ISO 8601}
+status: completed
+verdict: null
+plan_step: null
 ---
+
+# Devlog: @{agent} — {feature} — {YYYY-MM-DD}
+
+## Summary
+{One sentence of what was accomplished.}
+
+## Artifacts
+- {path/to/file.ext}
 
 ## Decisions
 - {decision} → {why}
 
-## Changes
-- {file}: {what changed}
+## Learnings
+- [process] {any process learning from this session}
+- [domain] {any domain learning}
 
-## Next
-- {what should happen next session}
+## Blockers
+- {blocker or "None"}
+```
+
+**Minimum viable devlog (if session was cut short):**
+```markdown
+---
+agent: {agent}
+feature: {slug}
+status: partial
+started_at: {ISO 8601}
+finished_at: {ISO 8601}
+---
+# Devlog: @{agent} — {feature} — {date}
+## Summary
+{one sentence of what was done}
+## Learnings
+- [process] {any process learning}
 ```
 
 **Rules:**
-- Max 30 lines. This is a decision log, not a transcript.
+- Frontmatter fields `agent`, `started_at`, `finished_at` are required. All others are optional.
+- `[process]` / `[domain]` / `[quality]` / `[preference]` prefixes in Learnings enable automatic promotion to project memory.
 - Record **why** decisions were made — the "what" is in the git diff.
 - Skip the devlog for trivial sessions (quick questions, no code changes).
-- When the CLI becomes available, `aioson devlog:sync` will import file-based devlogs into SQLite for the dashboard.
+- When the CLI becomes available: `aioson devlog:process .` imports devlogs into SQLite (learnings, artifacts, decisions, verdict).
 
 ## On-demand context layers
 

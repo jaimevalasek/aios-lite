@@ -120,6 +120,18 @@ const { runAgentLoad, runAgentShardIndex } = require('./commands/agent-loader');
 const { runLearningEvolve, runLearningApply } = require('./commands/learning-evolve');
 const { runToolRegistry } = require('./commands/tool-registry-cmd');
 const { runHealth } = require('./commands/health');
+const { runContextHealth } = require('./commands/context-health');
+const { runContextTrim } = require('./commands/context-trim');
+const { runHooksEmit } = require('./commands/hooks-emit');
+const { runHooksInstall, runHooksUninstall } = require('./commands/hooks-install');
+const { runSessionGuard } = require('./commands/session-guard');
+const { runDevlogProcess } = require('./commands/devlog-process');
+const { runDevlogWatch } = require('./commands/devlog-watch');
+const { runDevlogExportBrains } = require('./commands/devlog-export-brains');
+const { runSpecSync } = require('./commands/spec-sync');
+const { runSpecStatus } = require('./commands/spec-status');
+const { runSpecCheckpoint } = require('./commands/spec-checkpoint');
+const { runLearningExport } = require('./commands/learning-export');
 
 const JSON_SUPPORTED_COMMANDS = new Set([
   'init',
@@ -257,6 +269,14 @@ const JSON_SUPPORTED_COMMANDS = new Set([
   'learning-evolve',
   'learning:apply',
   'learning-apply',
+  'learning:export',
+  'learning-export',
+  'spec:sync',
+  'spec-sync',
+  'spec:status',
+  'spec-status',
+  'spec:checkpoint',
+  'spec-checkpoint',
   'tool:register',
   'tool-register',
   'tool:list',
@@ -325,6 +345,20 @@ const JSON_SUPPORTED_COMMANDS = new Set([
   'cloud-publish-squad',
   'cloud:publish:genome',
   'cloud-publish-genome',
+  'hooks:emit',
+  'hooks-emit',
+  'hooks:install',
+  'hooks-install',
+  'hooks:uninstall',
+  'hooks-uninstall',
+  'session:guard',
+  'session-guard',
+  'devlog:process',
+  'devlog-process',
+  'devlog:watch',
+  'devlog-watch',
+  'devlog:export-brains',
+  'devlog-export-brains',
   'runtime:backup',
   'runtime-backup',
   'runtime:restore',
@@ -343,6 +377,10 @@ const JSON_SUPPORTED_COMMANDS = new Set([
   'recovery-show',
   'context:monitor',
   'context-monitor',
+  'context:health',
+  'context-health',
+  'context:trim',
+  'context-trim',
   'context:search',
   'context-search',
   'context:search:index',
@@ -707,6 +745,14 @@ async function main() {
       result = await runLearningEvolve({ args, options, logger: commandLogger, t });
     } else if (command === 'learning:apply' || command === 'learning-apply') {
       result = await runLearningApply({ args, options, logger: commandLogger, t });
+    } else if (command === 'learning:export' || command === 'learning-export') {
+      result = await runLearningExport({ args, options, logger: commandLogger });
+    } else if (command === 'spec:sync' || command === 'spec-sync') {
+      result = await runSpecSync({ args, options, logger: commandLogger });
+    } else if (command === 'spec:status' || command === 'spec-status') {
+      result = await runSpecStatus({ args, options, logger: commandLogger });
+    } else if (command === 'spec:checkpoint' || command === 'spec-checkpoint') {
+      result = await runSpecCheckpoint({ args, options, logger: commandLogger });
     } else if (command.startsWith('learning:') || command === 'learning') {
       const sub = command === 'learning' ? (args[1] || 'list') : command.split(':')[1];
       result = await runLearning({ args, options: { ...options, sub }, logger: commandLogger, t });
@@ -767,6 +813,20 @@ async function main() {
       result = await runOutputStrategyImport({ args, options, logger: commandLogger, t });
     } else if (command === 'devlog:sync' || command === 'devlog-sync') {
       result = await runDevlogSync({ args, options, logger: commandLogger, t });
+    } else if (command === 'hooks:emit' || command === 'hooks-emit') {
+      result = await runHooksEmit({ args, options, logger: commandLogger });
+    } else if (command === 'hooks:install' || command === 'hooks-install') {
+      result = await runHooksInstall({ args, options, logger: commandLogger });
+    } else if (command === 'hooks:uninstall' || command === 'hooks-uninstall') {
+      result = await runHooksUninstall({ args, options, logger: commandLogger });
+    } else if (command === 'session:guard' || command === 'session-guard') {
+      result = await runSessionGuard({ args, options, logger: commandLogger });
+    } else if (command === 'devlog:process' || command === 'devlog-process') {
+      result = await runDevlogProcess({ args, options, logger: commandLogger });
+    } else if (command === 'devlog:watch' || command === 'devlog-watch') {
+      result = await runDevlogWatch({ args, options, logger: commandLogger });
+    } else if (command === 'devlog:export-brains' || command === 'devlog-export-brains') {
+      result = await runDevlogExportBrains({ args, options, logger: commandLogger });
     } else if (command === 'runtime:prune' || command === 'runtime-prune') {
       result = await runRuntimePrune({ args, options, logger: commandLogger, t });
     } else if (command === 'runtime:backup' || command === 'runtime-backup') {
@@ -797,6 +857,10 @@ async function main() {
       result = await runRecoveryShow({ args, options, logger: commandLogger, t });
     } else if (command === 'context:monitor' || command === 'context-monitor') {
       result = await runContextMonitor({ args, options, logger: commandLogger, t });
+    } else if (command === 'context:health' || command === 'context-health') {
+      result = await runContextHealth({ args, options, logger: commandLogger });
+    } else if (command === 'context:trim' || command === 'context-trim') {
+      result = await runContextTrim({ args, options, logger: commandLogger });
     } else if (command === 'context:search' || command === 'context-search') {
       result = await runContextSearch({ args, options, logger: commandLogger, t });
     } else if (command === 'context:search:index' || command === 'context-search-index') {
