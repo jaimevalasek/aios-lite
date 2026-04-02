@@ -56,20 +56,49 @@ If the template is already installed but `project.context.md` is missing, procee
 5. Run profile onboarding (description-first — see below).
 6. Write context file and verify values are explicit (never implicit).
 
+## Source document awareness (run before routing)
+
+Before deciding the next agent, scan the project root for pre-production research files:
+- `plans/*.md` — research notes, ideas, planning sketches written by the user
+- `prds/*.md` — draft visions, requirement sketches written by the user
+
+> **Critical:** these files are **pre-production research sources**, NOT real PRDs or implementation plans. They are raw material the user wrote before starting the agent cycle. They do NOT satisfy the "PRD exists" condition for routing. Only `.aioson/context/prd.md` or `.aioson/context/prd-{slug}.md` count as real PRDs.
+
+If `plans/` or `prds/` files are found but no `.aioson/context/prd.md` exists:
+- Do NOT route to `@dev`
+- Route to `@product` and mention: "I found pre-production research files (`plans/`, `prds/`) — `@product` will use them as source material to build the real PRD."
+
+## Workflow state detection (run before routing)
+
+After setup, scan `.aioson/context/` for existing workflow artifacts to understand where the project actually is. Check in this order:
+
+| Artifact found | Meaning | Route to |
+|---|---|---|
+| `dev-state.md` with `status: in_progress` | @dev has an active session | `@deyvin` (continuity) or `@dev` (new batch) |
+| `spec-{slug}.md` with implementation started | Feature under development | `@deyvin` or `@dev` |
+| `requirements-{slug}.md` + `spec-{slug}.md` | Analysis done, ready to implement | `@dev` (MICRO/SMALL) or `@architect` (MEDIUM) |
+| `sheldon-enrichment-{slug}.md` with `readiness: ready_for_downstream` | PRD enriched and validated | `@analyst` |
+| `sheldon-enrichment-{slug}.md` with `readiness: needs_work` | Enrichment incomplete | `@sheldon` |
+| `prd-{slug}.md` (no enrichment file) | Feature PRD created, not yet enriched | `@sheldon` (recommended) or `@analyst` |
+| `prd.md` only | Project PRD created | `@sheldon` (recommended) or `@analyst` |
+| No PRD in `.aioson/context/` | Product definition missing | `@product` |
+
+Present the detected state to the user before recommending the next step.
+
 ## Recommended routing after setup
 
 `@setup` must not make `@discovery-design-doc` mandatory.
 
 After setup, recommend the next step contextually using the routing table in section 4:
 
-- **Go straight to `@dev`** only when a complete PRD already exists AND there is no detailed visual spec
-- **Recommend `@product`** when no PRD exists yet — even for MICRO web_app projects
+- **Go straight to `@dev`** only when a complete PRD already exists in `.aioson/context/` AND analysis artifacts exist AND there is no detailed visual spec
+- **Recommend `@product`** when no `.aioson/context/prd.md` exists yet — even for MICRO web_app projects. `plans/` or `prds/` files in the root do NOT replace this step.
 - **Recommend `@ux-ui`** when a PRD exists and it has a detailed visual spec (colors, typography, animations, custom theme)
 - **Recommend `@discovery-design-doc`** when the scope is ambiguous, the feature is large, or rework risk is high
 - **Recommend `@analyst`** when the main problem is domain modeling, entities, and business rules
 - **Recommend `@architect`** when discovery is already mature and the main need is technical direction
 
-Never route a `web_app` directly to `@dev` when the project has no PRD yet — even MICRO projects need at least a clear product definition before coding.
+Never route a `web_app` directly to `@dev` when no `.aioson/context/prd.md` exists — even MICRO projects need at least a clear product definition before coding.
 
 If the user asks for operational visualization or the local AIOSON dashboard:
 
@@ -537,21 +566,26 @@ If `framework_installed=true` (code was detected in the workspace), always inclu
 
 After setup is complete, always close with the recommended next step. Use the exact `@agent` name so the AI client (Codex, Claude Code, Gemini) can trigger it:
 
-| project_type | classification | PRD / visual spec? | Next agent |
+| project_type | classification | Workflow state | Next agent |
 |---|---|---|---|
 | `site` | any | — | **@ux-ui** |
-| `web_app` | MICRO | No PRD yet — requirements not defined | **@product** |
-| `web_app` | MICRO | PRD exists, no detailed visual spec | **@dev** |
-| `web_app` | MICRO | PRD exists, detailed visual spec (colors, typography, animations, custom theme) | **@ux-ui** → then @dev |
-| `web_app` / `api` | SMALL | — | **@product** → then @analyst |
-| `web_app` / `api` | MEDIUM | — | **@product** → then @analyst → @architect |
+| `web_app` | MICRO | No `.aioson/context/prd.md` (including when only `plans/` or `prds/` exist in root) | **@product** |
+| `web_app` | MICRO | `.aioson/context/prd.md` exists, no detailed visual spec | **@sheldon** → then @dev |
+| `web_app` | MICRO | `.aioson/context/prd.md` exists, detailed visual spec | **@ux-ui** → then @dev |
+| `web_app` / `api` | SMALL | No `.aioson/context/prd.md` | **@product** → then @sheldon → @analyst |
+| `web_app` / `api` | SMALL | PRD + sheldon ready | **@analyst** → then @dev |
+| `web_app` / `api` | MEDIUM | No `.aioson/context/prd.md` | **@product** → then @sheldon → @analyst → @architect |
+| `web_app` / `api` | MEDIUM | Analysis done (`requirements-{slug}.md` exists) | **@architect** → then @dev |
 | `api` / `script` | MICRO | — | **@dev** |
 | `dapp` | any | — | **@product** → then @analyst |
+| any | any | `dev-state.md` exists with `status: in_progress` | **@deyvin** (continuity) |
 
 **Routing rules:**
+- "PRD exists" always means `.aioson/context/prd.md` or `.aioson/context/prd-{slug}.md`. Files in `plans/` or `prds/` at the project root are pre-production research sources — they feed `@product`, they do not replace it.
 - `@product` is NOT optional for `web_app` MICRO when there is no PRD yet. Skip it only when a clear, complete PRD already exists in `.aioson/context/`.
 - A "detailed visual spec" means the PRD or user description includes 2+ of: specific color palette, typography choices, animation/motion requirements, depth effects (glassmorphism, shadows), or an overall aesthetic direction (futuristic, branded, etc.). "Clean and responsive" does NOT qualify.
 - When in doubt between `@product` and `@dev`, prefer `@product` — an unclear PRD produces poor implementation.
+- Always run "Workflow state detection" before routing — the artifacts already present determine the real next step.
 
 Say it clearly at the end of setup, for example:
 > "Setup complete. Next step: activate **@product** to define what you're building."
