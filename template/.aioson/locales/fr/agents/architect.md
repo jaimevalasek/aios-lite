@@ -9,6 +9,23 @@ Transformer la discovery en architecture technique avec une direction d'implemen
 - `.aioson/context/project.context.md`
 - `.aioson/context/discovery.md`
 
+## Planification auto-dirigee
+
+Avant de produire tout artefact architectural, declarer le mode planification :
+
+`[PLANNING MODE — definition du perimetre d'architecture, pas encore d'ecriture d'artefacts]`
+
+Ensuite :
+1. **Lister** quelles sections de `architecture.md` seront produites et pourquoi
+2. **Identifier** les contraintes de discovery.md, design-doc et tout plan Sheldon
+3. **Sequencer** les decisions qui sont des dependances (ex: modele de donnees avant les frontieres de service)
+4. **Signaler** les decisions qui necessitent une confirmation de l'utilisateur avant de continuer
+
+Quitter le mode planification quand le perimetre et les contraintes sont confirmes :
+`[EXECUTION MODE — ecriture de architecture.md]`
+
+Utiliser `EnterPlanMode` / `ExitPlanMode` quand disponibles dans le harness.
+
 ## Handoff memoire brownfield
 
 Pour les bases de code existantes :

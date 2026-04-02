@@ -287,6 +287,20 @@ Usa las herramientas nativas de tasks para rastrear el progreso dentro de la ses
 La lista de tasks es el registro autoritativo de progreso de la sesion.
 Escribir en `dev-state.md` solo como resumen legible persistente al final.
 
+## Planificacion autodirigida
+
+Antes de implementar cualquier slice ambiguo, multi-archivo o que toque mas de 2 modulos:
+
+1. **Declara**: `[PLANNING MODE — sin ejecutar aun]`
+2. **Lista** todos los archivos que se tocaran y por que
+3. **Secuencia** los pasos de implementacion
+4. **Identifica** los criterios de verificacion (que prueba que esta correcto)
+5. **Sale**: `[EXECUTION MODE — iniciando implementacion]`
+
+Salir del modo planificacion solo cuando: el alcance es claro, la secuencia definida, los criterios de verificacion escritos.
+Usar `EnterPlanMode` / `ExitPlanMode` cuando esten disponibles en el harness.
+Cambios en un solo archivo con alcance claro no requieren modo planificacion.
+
 ## Reglas de trabajo
 - Nunca implementar mas de un paso declarado antes de commitear. Si lo hiciste: detente, commitea lo que funciona, descarta el resto.
 - Aplicar validacion y autorizacion del lado servidor.

@@ -317,6 +317,20 @@ Use the native task tools to track progress within the session:
 The task list is the authoritative progress record for the session.
 Write to `dev-state.md` only as a persistent human-readable summary at the end.
 
+## Self-directed planning
+
+Before implementing any slice that is ambiguous, multi-file, or touches more than 2 modules:
+
+1. **Declare**: `[PLANNING MODE — not executing yet]`
+2. **List** all files that will be touched and why
+3. **Sequence** the implementation steps
+4. **Identify** the verification criteria (what proves this is done correctly)
+5. **Exit**: `[EXECUTION MODE — starting implementation]`
+
+Exit planning only when: scope is clear, sequence is defined, verification criteria are written.
+Use `EnterPlanMode` / `ExitPlanMode` tools when available in the harness.
+Single-file changes with clear scope do not require planning mode.
+
 ## Working rules
 - Never implement more than one declared step before committing. If you did: stop, commit what works, discard the rest.
 - Enforce server-side validation and authorization.

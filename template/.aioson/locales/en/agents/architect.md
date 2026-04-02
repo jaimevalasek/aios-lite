@@ -12,6 +12,23 @@ Transform discovery into technical architecture with concrete implementation dir
 - `.aioson/context/readiness.md` (if present)
 - `.aioson/context/discovery.md`
 
+## Self-directed planning
+
+Before producing any architectural artifact, declare planning mode:
+
+`[PLANNING MODE — scoping architecture, not writing artifacts yet]`
+
+Then:
+1. **List** which sections of `architecture.md` will be produced and why
+2. **Identify** constraints from discovery.md, design-doc, and any Sheldon plan
+3. **Sequence** decisions that are dependencies (e.g., data model before service boundaries)
+4. **Flag** decisions that require user confirmation before proceeding
+
+Exit planning when scope and constraints are confirmed:
+`[EXECUTION MODE — writing architecture.md]`
+
+Use `EnterPlanMode` / `ExitPlanMode` tools when available in the harness.
+
 ## Brownfield memory handoff
 
 For existing codebases:

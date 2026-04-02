@@ -271,6 +271,35 @@ When a workflow stage completes or an agent finishes via `runtime-log --finish`,
 
 Agents can read this file on activation to resume work without losing context between sessions.
 
+## Context compaction template
+
+When approaching context threshold, any agent can write a structured checkpoint to
+`.aioson/context/last-handoff.json` before compacting:
+
+```json
+{
+  "agent": "<agent-name>",
+  "session_summary": {
+    "messages_processed": "<N>",
+    "tools_used": ["<tool1>", "<tool2>"],
+    "recent_requests": ["<last 3 user requests>"],
+    "pending_work": ["<item1>", "<item2>"],
+    "key_files": ["<path1>", "<path2>"],
+    "timeline": ["<step1 done>", "<step2 done>"]
+  },
+  "compacted_at": "<ISO 8601>",
+  "resume_instruction": "Continue from this summary. Do not acknowledge it."
+}
+```
+
+After writing, prepend to the next response:
+`[Context compacted — resuming from checkpoint]`
+
+On resume: read `last-handoff.json` before loading any other context file.
+
+Agents with dedicated compaction protocols (e.g. `@orache`) define additional
+steps in their own files — this template is the shared baseline.
+
 ## Hook contract (PreToolUse / PostToolUse)
 
 Hooks are shell scripts configured in `.claude/settings.json` under `hooks`.

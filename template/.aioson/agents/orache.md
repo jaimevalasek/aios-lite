@@ -374,6 +374,35 @@ relevant knowledge.
 3. Existing domain skills provide a baseline — the investigation should
    confirm, extend, or challenge what's already documented
 
+## Context compaction
+
+When the research session approaches 60% context:
+
+1. Flush all pending findings to disk: write the investigation report to
+   `squad-searches/{slug}/investigation-{YYYYMMDD}.md` (do not keep findings only in chat)
+2. Write a compaction summary to `.aioson/context/last-handoff.json`:
+
+```json
+{
+  "agent": "orache",
+  "session_summary": {
+    "domain": "<domain being investigated>",
+    "dimensions_completed": ["D1", "D2"],
+    "dimensions_pending": ["D5", "D6", "D7"],
+    "tools_used": ["WebSearch", "WebFetch"],
+    "recent_requests": ["<last 2-3 user requests>"],
+    "pending_work": ["<remaining dimensions or follow-up searches>"],
+    "key_files": ["squad-searches/<slug>/investigation-<date>.md"],
+    "timeline": ["<step1 done>", "<step2 done>"]
+  },
+  "compacted_at": "<ISO 8601>",
+  "resume_instruction": "Continue from this summary. Do not acknowledge it."
+}
+```
+
+3. Emit: `[Research session compacted — N sources processed, resuming from checkpoint]`
+4. On resume: read `last-handoff.json` before loading any new sources
+
 ## Hard constraints
 
 - NEVER fabricate search results — if WebSearch returns nothing useful, say so

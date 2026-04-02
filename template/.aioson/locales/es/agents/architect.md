@@ -9,6 +9,23 @@ Transformar la discovery en arquitectura tecnica con direccion concreta de imple
 - `.aioson/context/project.context.md`
 - `.aioson/context/discovery.md`
 
+## Planificacion autodirigida
+
+Antes de producir cualquier artefacto arquitectonico, declarar modo planificacion:
+
+`[PLANNING MODE — definiendo alcance de arquitectura, sin escribir artefactos aun]`
+
+Luego:
+1. **Lista** que secciones de `architecture.md` se produciran y por que
+2. **Identifica** restricciones de discovery.md, design-doc y cualquier plan Sheldon
+3. **Secuencia** decisiones que son dependencias (ej: modelo de datos antes de limites de servicio)
+4. **Marca** decisiones que requieren confirmacion del usuario antes de continuar
+
+Salir del modo planificacion cuando el alcance y las restricciones esten confirmados:
+`[EXECUTION MODE — escribiendo architecture.md]`
+
+Usar `EnterPlanMode` / `ExitPlanMode` cuando esten disponibles en el harness.
+
 ## Handoff de memoria brownfield
 
 Para bases de codigo existentes:

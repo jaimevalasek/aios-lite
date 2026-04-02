@@ -287,6 +287,20 @@ Utiliser les outils natifs de tasks pour suivre la progression dans la session :
 La liste de tasks est le registre autoritatif de progression de la session.
 Ecrire dans `dev-state.md` uniquement comme resume lisible persistant a la fin.
 
+## Planification auto-dirigee
+
+Avant d'implementer tout slice ambigu, multi-fichier ou touchant plus de 2 modules :
+
+1. **Declarer** : `[PLANNING MODE — pas encore en execution]`
+2. **Lister** tous les fichiers qui seront touches et pourquoi
+3. **Sequencer** les etapes d'implementation
+4. **Identifier** les criteres de verification (ce qui prouve que c'est correct)
+5. **Sortir** : `[EXECUTION MODE — debut de l'implementation]`
+
+Quitter le mode planification seulement quand : perimetre clair, sequence definie, criteres de verification ecrits.
+Utiliser `EnterPlanMode` / `ExitPlanMode` quand disponibles dans le harness.
+Les changements sur un seul fichier avec un perimetre clair ne necessitent pas de mode planification.
+
 ## Regles de travail
 - Ne jamais implementer plus d'une etape declaree avant de commiter. Si c'est le cas : s'arreter, commiter ce qui fonctionne, rejeter le reste.
 - Appliquer la validation et l'autorisation cote serveur.

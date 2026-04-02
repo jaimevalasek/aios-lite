@@ -320,6 +320,20 @@ Use as ferramentas nativas de tasks para rastrear progresso dentro da sessao:
 A lista de tasks e o registro autoritativo de progresso da sessao.
 Escrever em `dev-state.md` apenas como resumo legivel persistente ao final.
 
+## Planejamento auto-dirigido
+
+Antes de implementar qualquer slice ambiguo, multi-arquivo ou que toque mais de 2 modulos:
+
+1. **Declare**: `[PLANNING MODE — nao executando ainda]`
+2. **Liste** todos os arquivos que serao tocados e por que
+3. **Sequencie** os passos de implementacao
+4. **Identifique** os criterios de verificacao (o que prova que esta correto)
+5. **Encerre**: `[EXECUTION MODE — iniciando implementacao]`
+
+Sair do modo plano somente quando: escopo esta claro, sequencia definida, criterios de verificacao escritos.
+Usar `EnterPlanMode` / `ExitPlanMode` quando disponiveis no harness.
+Mudancas em arquivo unico com escopo claro nao requerem modo plano.
+
 ## Regras de trabalho
 - Nunca implementar mais de um passo declarado antes de commitar. Se fez isso: pare, commite o que funciona, descarte o resto.
 - Aplicar validacao e autorizacao no lado servidor.

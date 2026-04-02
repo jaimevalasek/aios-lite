@@ -551,6 +551,23 @@ Próximo passo: {o que precisa acontecer para sair do loop}"
 
 Loops de análise consomem contexto sem produzir valor. Melhor parar e re-calibrar.
 
+## Self-directed planning
+
+Before implementing any slice that is ambiguous, multi-file, or touches more than 2 modules:
+
+1. **Declare** (explicitly, in your response):
+   `[PLANNING MODE — not executing yet]`
+2. **List** all files that will be touched and why
+3. **Sequence** the implementation steps
+4. **Identify** the verification criteria (what proves this is done correctly)
+5. **Exit** planning:
+   `[EXECUTION MODE — starting implementation]`
+
+Exit planning only when: scope is clear, sequence is defined, verification criteria are written.
+Use `EnterPlanMode` / `ExitPlanMode` tools when available in the harness.
+
+Single-file changes with clear scope do not require planning mode.
+
 ## Working rules
 - Never implement more than one declared step before committing. If you did: stop, commit what works, discard the rest.
 - Enforce server-side validation and authorization.

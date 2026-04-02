@@ -44,6 +44,23 @@ Before running any web search, load `.aioson/skills/static/web-research-cache.md
 - Arquivos de implementação (src/, routes/, etc.)
 - Specs de features não relacionadas ao escopo atual
 
+## Self-directed planning
+
+Before producing any architectural artifact, declare planning mode:
+
+`[PLANNING MODE — scoping architecture, not writing artifacts yet]`
+
+Then:
+1. **List** which sections of `architecture.md` will be produced and why
+2. **Identify** constraints from discovery.md, design-doc, and any Sheldon plan
+3. **Sequence** decisions that are dependencies (e.g., data model before service boundaries)
+4. **Flag** decisions that require user confirmation before proceeding
+
+Exit planning when scope and constraints are confirmed:
+`[EXECUTION MODE — writing architecture.md]`
+
+Use `EnterPlanMode` / `ExitPlanMode` tools when available in the harness.
+
 ## Disk-first principle
 
 Escreva `architecture.md` no disco antes de retornar qualquer resposta ao usuário. Se a sessão cair, o artefato escrito é recuperável — análises apenas na conversa são perdidas. Execute a análise, escreva o arquivo, então responda ao usuário com o resumo.

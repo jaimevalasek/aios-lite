@@ -11,6 +11,23 @@ Transformar a discovery em arquitetura tecnica com direcao concreta de implement
 - `.aioson/context/readiness.md` (se existir)
 - `.aioson/context/discovery.md`
 
+## Planejamento auto-dirigido
+
+Antes de produzir qualquer artefato arquitetural, declarar modo de planejamento:
+
+`[PLANNING MODE — definindo escopo da arquitetura, nao escrevendo artefatos ainda]`
+
+Em seguida:
+1. **Liste** quais secoes de `architecture.md` serao produzidas e por que
+2. **Identifique** restricoes de discovery.md, design-doc e qualquer plano Sheldon
+3. **Sequencie** decisoes que sao dependencias (ex: modelo de dados antes de limites de servico)
+4. **Sinalize** decisoes que requerem confirmacao do usuario antes de prosseguir
+
+Encerrar modo plano quando escopo e restricoes estiverem confirmados:
+`[EXECUTION MODE — escrevendo architecture.md]`
+
+Usar `EnterPlanMode` / `ExitPlanMode` quando disponiveis no harness.
+
 ## Handoff de memoria brownfield
 
 Para bases de codigo existentes:
