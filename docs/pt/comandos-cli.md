@@ -104,6 +104,8 @@
 | `squad:roi` | Define modelo de precificação e registra métricas de resultado | Quando quer calcular e reportar ROI da squad |
 | `squad:processes` | Lista e encerra processos ativos de uma squad | Quando quer inspecionar ou parar agentes sem usar o dashboard |
 | `squad:recovery` | Gera contexto de recovery para reinjecting após compact | Quando um agente perdeu contexto após compactação |
+| `squad:bus` | Posta, lê, monitora e resume mensagens do intra-bus de uma sessão de squad | Quando quer inspecionar a comunicação entre executores ou postar um finding/block manualmente. Veja [Squad Bus](#37-intra-bus-de-squad) |
+| `squad:autorun` | Decompõe um objetivo em tarefas, executa em grupos paralelos com reflection e registra no bus | Quando quer que uma squad execute autonomamente a partir de um goal de alto nível. Veja [Squad Autorun](#38-execuçao-autonoma-de-squad-squadautorun) |
 | `output-strategy:export` | Exporta a estratégia de output (webhooks, delivery) de uma squad | Quando quer copiar configuração para outra squad ou documentar |
 | `output-strategy:import` | Importa estratégia de output de um arquivo ou outra squad | Quando quer replicar webhooks/delivery entre squads |
 | `deliver` | Dispara delivery manual de conteúdo para webhooks configurados | Quando quer reenviar conteúdo ou testar webhooks |
@@ -200,6 +202,16 @@
 |---|---|---|
 | `agent:shard:index` | Divide arquivos de instrução de agente em shards por heading e indexa via FTS5 | Após adicionar ou atualizar arquivos de agente. Veja [Agent Sharding](./agent-sharding.md) |
 | `agent:load` | Carrega os shards mais relevantes de um agente para um objetivo dado, dentro de orçamento de tokens | Quando quer enviar ao LLM apenas as seções do agente necessárias para a tarefa atual |
+
+### Auditoria, briefs e verificação
+
+Três comandos de inteligência de sistema para otimizar tokens, gerar contexto autocontido e verificar entregas sem viés de conversa.
+
+| Comando | O que faz | Quando usar |
+|---|---|---|
+| `agent:audit` | Audita tamanho e tokens de todos os arquivos de agente; detecta seções candidatas a on-demand loading e calcula economia potencial por sessão | Quando quer entender o custo de contexto dos agentes e identificar o que pode ser movido para `.aioson/docs/` (carregamento sob demanda). Veja [Auditoria de Agentes](#39-auditar-agentes-agentaudit) |
+| `brief:gen` | Lê uma fase do plano de implementação + `architecture.md` + `spec.md` e gera um brief 100% autocontido para um worker | Antes de entregar uma fase a um executor de squad — garante que o worker tem tudo que precisa sem buscar contexto adicional. Veja [Geração de Brief](#40-gerar-brief-de-worker-briefgen) |
+| `verify:gate` | Verificação de olhos frescos: compara spec vs artefato entregue sem histórico de conversa; emite `PASS`, `PASS_WITH_NOTES`, `FAIL_WITH_ISSUES` ou `BLOCKED` | Após cada entrega de fase — detecta bugs que o agente gerador não consegue ver por viés de contexto. Veja [Verify Gate](#41-verificar-entrega-verifygate) |
 
 ---
 
@@ -958,6 +970,486 @@ aioson runtime:emit . --agent=dev \
   --type=task_blocked \
   --worker-status=blocked \
   --summary="Aguardando schema de pagamentos do @architect"
+```
+
+### 37. Intra-bus de squad
+
+O `squad:bus` é o canal de comunicação em tempo real entre executores de uma mesma sessão de squad. Cada sessão tem um arquivo JSONL em `.aioson/squads/{slug}/sessions/{id}/bus.jsonl` com todos os eventos de status, findings, bloqueios e resultados.
+
+```bash
+# Postar uma mensagem no bus (executor → coordenador)
+aioson squad:bus . post \
+  --squad=content-team \
+  --session=abc123 \
+  --from=roteirista \
+  --to=coordenador \
+  --type=finding \
+  --content="Briefing do episódio 3 está incompleto — falta o CTA final"
+
+# Ler todas as mensagens da sessão
+aioson squad:bus . read --squad=content-team --session=abc123
+
+# Ler apenas os últimos 10 mensagens, compacto
+aioson squad:bus . read --squad=content-team --session=abc123 --last=10 --compact
+
+# Filtrar só bloqueios
+aioson squad:bus . read --squad=content-team --session=abc123 --type=block
+
+# Monitorar em tempo real (aguarda novas mensagens)
+aioson squad:bus . watch --squad=content-team --session=abc123
+
+# Resumo da sessão (totais por tipo, lista de bloqueios)
+aioson squad:bus . summary --squad=content-team --session=abc123
+
+# Listar todas as sessões da squad
+aioson squad:bus . list --squad=content-team
+
+# Limpar o bus de uma sessão encerrada
+aioson squad:bus . clear --squad=content-team --session=abc123
+```
+
+**Tipos de mensagem suportados:**
+
+| Tipo | Quando usar |
+|------|-------------|
+| `status` | Início, progresso ou conclusão de tarefa |
+| `finding` | Descoberta relevante que outros executores precisam saber |
+| `feedback` | Resultado da reflection após executar uma tarefa |
+| `question` | Dúvida que bloqueia o executor e precisa de resposta |
+| `result` | Output final de uma tarefa |
+| `block` | Bloqueio que impede continuar sem intervenção |
+
+**Exemplo: coordenador respondendo a um bloqueio**
+
+```bash
+# 1. Ver o que está bloqueado
+aioson squad:bus . read --squad=content-team --session=abc123 --type=block
+
+# Saída:
+# [10:14:32] roteirista → coordenador [block]
+#   Aguardando aprovação do outline do ep.3 antes de escrever roteiro
+
+# 2. Coordenador desbloqueia postando no bus
+aioson squad:bus . post \
+  --squad=content-team \
+  --session=abc123 \
+  --from=coordenador \
+  --to=roteirista \
+  --type=feedback \
+  --content="Outline aprovado. Pode prosseguir com o roteiro completo."
+```
+
+---
+
+### 38. Execução autônoma de squad — `squad:autorun`
+
+O `squad:autorun` recebe um objetivo de alto nível, decompõe em tarefas, organiza em grupos paralelos e executa tudo automaticamente. Pode usar reflection após cada tarefa e registrar tudo no intra-bus.
+
+#### Fluxo básico
+
+```bash
+# Executar com goal direto (decomposição heurística)
+aioson squad:autorun . \
+  --squad=content-team \
+  --goal="Criar 3 episódios de podcast para o mês de abril"
+```
+
+O comando:
+1. Detecta os executores da squad em `squad.json`
+2. Decompõe o goal em tarefas usando verbos de ação (criar, revisar, publicar, etc.)
+3. Organiza tarefas em grupos paralelos por dependência
+4. Executa cada grupo (tarefas independentes em paralelo)
+5. Grava o plano em `.aioson/squads/content-team/sessions/{id}/plan.json`
+
+#### Com reflection e bus
+
+```bash
+aioson squad:autorun . \
+  --squad=content-team \
+  --goal="Criar 3 episódios de podcast para o mês de abril" \
+  --reflect \
+  --bus
+```
+
+Com `--reflect`, após cada tarefa o sistema roda uma checklist de qualidade. Se falhar em critérios críticos, marca como `NEEDS_ITERATION` e tenta de novo (até `max_iterations` configurado em `squad.json`). Se esgotar as iterações, marca como `ESCALATE` — o coordenador precisa intervir.
+
+#### Ver o plano sem executar (dry-run)
+
+```bash
+aioson squad:autorun . \
+  --squad=content-team \
+  --goal="Criar campanha de lançamento do produto X" \
+  --dry-run
+```
+
+Saída de exemplo:
+
+```
+Plan ready: 6 tasks across 3 parallel group(s)
+
+Group 1 (2 tasks) — running in parallel
+  ○ task-1: Criar briefing da campanha [executor: estrategista]
+  ○ task-2: Mapear canais de distribuição [executor: analista]
+
+Group 2 (3 tasks) — running in parallel
+  ○ task-3: Escrever copy das redes sociais [executor: copywriter]
+  ○ task-4: Criar roteiro do vídeo de lançamento [executor: roteirista]
+  ○ task-5: Definir calendário de publicação [executor: estrategista]
+
+Group 3 (1 task)
+  ○ task-6: Revisar pacote completo da campanha [executor: coordenador]
+
+[dry-run] Plan shown above. No tasks executed.
+```
+
+#### Modo estruturado (LLM decompõe o plano)
+
+```bash
+aioson squad:autorun . \
+  --squad=content-team \
+  --goal="Criar campanha de lançamento" \
+  --mode=structured
+```
+
+No modo `structured`, o comando salva um prompt de decomposição para o agente preencher o plano manualmente e depois retoma:
+
+```bash
+# Depois que o agente preencheu o plano:
+aioson squad:autorun . --squad=content-team --plan=SESSION_ID
+```
+
+#### Retomar uma sessão existente
+
+```bash
+# Ver sessões disponíveis
+aioson squad:bus . list --squad=content-team
+
+# Retomar do ponto onde parou
+aioson squad:autorun . --squad=content-team --plan=abc-123-def-456
+```
+
+#### Flags disponíveis
+
+| Flag | Padrão | O que faz |
+|------|--------|-----------|
+| `--goal` | — | Objetivo de alto nível (obrigatório se não usar `--plan`) |
+| `--plan` | — | ID de sessão para retomar plano existente |
+| `--reflect` | false | Roda reflection após cada tarefa |
+| `--bus` | true | Ativa o intra-bus de comunicação |
+| `--mode` | heuristic | `heuristic` (regex + executores) ou `structured` (LLM) |
+| `--dry-run` | false | Mostra o plano sem executar |
+| `--sequential` | false | Força execução sequencial mesmo para tarefas paralelas |
+| `--timeout` | 120 | Timeout por tarefa em segundos |
+
+---
+
+### 39. Auditar agentes — `agent:audit`
+
+Escaneia todos os arquivos de agente, estima tokens, classifica por tipo e aponta seções que podem ser movidas para `.aioson/docs/` (on-demand loading) — economizando tokens toda vez que um agente é lido.
+
+**Por que isso importa:** cada sessão longa com um agente de 38KB custa ~9.800 tokens só de instrução. Se metade dessas seções raramente são usadas (convenções de stack, exemplos, templates), movê-las para docs reduz o custo de contexto sem perder capacidade.
+
+#### Auditoria básica
+
+```bash
+aioson agent:audit .
+```
+
+Saída de exemplo:
+
+```
+Agent Audit
+──────────────────────────────────────────────────────────────────────
+Files scanned  : 25
+Total tokens   : ~119,557 per session
+Over hard limit: 6   Over target: 11
+Potential save : ~12,565 tokens/session (on-demand split)
+
+File                                         Type          Size     Tokens      Status
+──────────────────────────────────────────────────────────────────────
+template/.aioson/agents/squad.md             orchestrator  65.0KB   ~16,641 tok ✗ hard
+template/.aioson/agents/dev.md               generalist    38.4KB   ~9,832 tok  ⚠ target
+template/.aioson/agents/ux-ui.md             generalist    33.6KB   ~8,614 tok  ⚠ target
+template/.aioson/agents/deyvin.md            generalist    14.2KB   ~3,633 tok  ✓ ok
+
+On-demand candidates (move to .aioson/docs/ to save tokens):
+  template/.aioson/agents/dev.md              save ~2,100 tok  (4 sections)
+  template/.aioson/agents/ux-ui.md            save ~1,400 tok  (3 sections)
+```
+
+#### Breakdown por seção (verbose)
+
+```bash
+aioson agent:audit . --verbose
+```
+
+Mostra as 5 maiores seções de cada arquivo e marca quais são candidatas a on-demand:
+
+```
+template/.aioson/agents/dev.md    generalist    38.4KB   ~9,832 tok  ⚠ target
+  § Stack e Convenções de Código          4.2KB [on-demand candidate]
+  § Exemplos de implementação             3.1KB [on-demand candidate]
+  § Debugging e troubleshooting           2.8KB [on-demand candidate]
+  § Regras de trabalho                    2.1KB
+  § Working memory (task list)            1.4KB
+```
+
+#### Incluir variantes de locale
+
+```bash
+aioson agent:audit . --locales
+```
+
+Inclui os arquivos de `template/.aioson/locales/*/agents/` na análise — útil para detectar qual locale está mais fora do orçamento.
+
+#### Salvar relatório completo
+
+```bash
+aioson agent:audit . --fix
+```
+
+Escreve `.aioson/docs/agent-audit.md` com tabela completa, lista de candidatos on-demand e recomendações de split. Use para revisão em equipe ou para planejar refatorações de agentes.
+
+**Limites de orçamento por tipo de agente:**
+
+| Tipo | Alvo | Limite |
+|------|------|--------|
+| Auto-loaded (`CLAUDE.md`, `AGENTS.md`) | 3.500 chars | 4.000 chars |
+| Orquestrador (`orchestrator`, `squad`) | 12.000 chars | 20.000 chars |
+| Generalista (`dev`, `architect`, `sheldon`, etc.) | 15.000 chars | 40.000 chars |
+| Focado (todos os demais) | 8.000 chars | 16.000 chars |
+
+**Seções automaticamente detectadas como candidatas a on-demand:** convenções, folder structure, stack, laravel, next.js, debugging, worktree, animação, output contract, exemplos, templates e outras seções raramente necessárias no início da sessão.
+
+---
+
+### 40. Gerar brief de worker — `brief:gen`
+
+Um brief autocontido é o que garante que um executor de squad não vai falhar por falta de contexto. O `brief:gen` lê o plano de implementação, puxa excerpts relevantes de `architecture.md` e `spec.md` e monta um documento que o worker pode executar sem olhar mais nada.
+
+**Regra de ouro dos briefs:**
+
+> O worker não tem acesso ao histórico de conversa. Tudo que ele precisa saber deve estar no brief.
+
+#### Gerar brief para a primeira fase não executada
+
+```bash
+aioson brief:gen .
+```
+
+O comando descobre automaticamente `implementation-plan.md` em `.aioson/context/` e usa a fase 1 por padrão.
+
+#### Especificar uma fase
+
+```bash
+aioson brief:gen . --phase=2
+```
+
+#### Especificar o arquivo de plano
+
+```bash
+aioson brief:gen . --plan=plans/sprint-2.md --phase=1
+```
+
+#### Gerar brief para executor de squad
+
+```bash
+aioson brief:gen . --squad=content-team --executor=roteirista --phase=3
+```
+
+O brief é salvo em `.aioson/squads/content-team/briefs/phase-3-roteirista.md`.
+
+#### Sobrescrever o caminho de saída
+
+```bash
+aioson brief:gen . --phase=2 --out=briefs/fase-2-dev.md
+```
+
+#### Estrutura gerada
+
+O brief gerado contém:
+
+```markdown
+---
+generated_at : 2026-04-02T10:00:00.000Z
+plan_file    : .aioson/context/implementation-plan.md
+phase        : 2
+---
+
+# Worker Brief — ## Phase 2 — API de autenticação
+
+> Este brief é 100% autocontido. Não busque contexto adicional.
+> Leia apenas os arquivos listados. Escreva apenas os arquivos listados.
+
+## Phase goal and tasks
+
+[conteúdo da fase 2 do plano]
+
+## Architecture reference (excerpts)
+
+[seções relevantes de architecture.md — tech stack, folder structure, conventions]
+
+## Spec reference (excerpts)
+
+[spec.md truncado em 4.000 chars]
+
+## Project context
+
+[resumo de project.context.md]
+
+## Done criteria
+
+> Preencha critérios verificáveis antes de entregar ao worker.
+> Exemplo:
+> - [ ] `src/auth/login.ts` existe e exporta `loginHandler`
+> - [ ] Todos os testes passam (`npm test`)
+
+## Hard constraints
+
+> O que o worker NÃO pode tocar ou modificar.
+
+## Out of scope
+
+> O que explicitamente fica fora desta fase.
+```
+
+**Importante:** as seções "Done criteria", "Hard constraints" e "Out of scope" são deixadas como placeholder propositalmente — o orquestrador ou coordenador deve preenchê-las antes de entregar o brief ao worker. Um brief entregue sem done criteria claros é uma das causas mais comuns de falha em squads.
+
+---
+
+### 41. Verificar entrega — `verify:gate`
+
+O `verify:gate` é uma passagem de "olhos frescos" — ele verifica se o artefato entregue atende ao spec sem carregar nenhum histórico de conversa. Isso elimina o viés de contexto que o agente gerador acumula ao longo da sessão.
+
+**Por que isso funciona:** o agente que implementou uma feature, ao revisar o próprio código, tende a "ver" o que pretendia escrever, não o que está escrito. O verify:gate parte do zero: só spec e artefato.
+
+#### Verificação básica
+
+```bash
+aioson verify:gate . \
+  --spec=.aioson/context/briefs/phase-2.md \
+  --artifact=src/auth/
+```
+
+Saída de exemplo:
+
+```
+Verify Gate
+────────────────────────────────────────────────────────────
+Spec     : .aioson/context/briefs/phase-2.md
+Artifact : src/auth/
+Files    : 7
+
+Verdict  : ✗ FAIL_WITH_ISSUES
+
+Issues:
+  ✗ Missing required file: `src/auth/login.ts`
+  ✗ Unchecked criterion: `src/auth/middleware.ts` existe e exporta `authMiddleware`
+
+Notes:
+  ⚠ Empty file: `src/auth/refresh-token.ts`
+
+Passed: 3 checks
+
+Report   : .aioson/context/verify-gate-phase-2.md
+```
+
+#### Verificar com spec completa do projeto
+
+```bash
+aioson verify:gate . \
+  --spec=.aioson/context/spec.md \
+  --artifact=src/
+```
+
+#### Modo strict (notas viram issues)
+
+```bash
+aioson verify:gate . \
+  --spec=.aioson/context/briefs/phase-2.md \
+  --artifact=src/auth/ \
+  --strict
+```
+
+No modo strict, arquivos vazios e critérios sem checkbox marcado também viram `FAIL_WITH_ISSUES`.
+
+#### Salvar relatório em path customizado
+
+```bash
+aioson verify:gate . \
+  --spec=.aioson/context/briefs/phase-2.md \
+  --artifact=src/auth/ \
+  --out=output/qa/verify-fase-2.md
+```
+
+#### Usar no CI (JSON + exit code)
+
+```bash
+aioson verify:gate . \
+  --spec=.aioson/context/briefs/phase-2.md \
+  --artifact=src/ \
+  --json
+```
+
+Saída JSON:
+
+```json
+{
+  "ok": false,
+  "verdict": "FAIL_WITH_ISSUES",
+  "spec": ".aioson/context/briefs/phase-2.md",
+  "artifact": "src/auth/",
+  "report_path": ".aioson/context/verify-gate-phase-2.md",
+  "files_scanned": 7,
+  "issues": [
+    "Missing required file: `src/auth/login.ts`",
+    "Unchecked criterion: `src/auth/middleware.ts` existe e exporta `authMiddleware`"
+  ],
+  "notes": ["Empty file: `src/auth/refresh-token.ts`"],
+  "passes": ["Required file exists: `src/auth/index.ts`"],
+  "requirements": {
+    "required_files": 3,
+    "acceptance_criteria": 5,
+    "required_patterns": 1,
+    "forbidden_patterns": 0
+  }
+}
+```
+
+#### O que o verify:gate checa
+
+| Checagem | Como funciona |
+|----------|---------------|
+| **Arquivos obrigatórios** | Extrai paths de seções "Files to write", "Output files" e "Done criteria" do spec |
+| **Critérios de aceite** | Lê checkboxes `- [ ]` e `- [x]` da seção "Done criteria" — reporta os não marcados |
+| **Padrões obrigatórios** | Busca strings de "Must contain" e "Required patterns" nos arquivos do artefato |
+| **Padrões proibidos** | Busca strings de "Hard constraints" — falha se encontrar |
+| **Arquivos vazios** | Reporta qualquer arquivo de 0 bytes como nota (issue no modo `--strict`) |
+
+**Dica para máxima cobertura:** use `brief:gen` para gerar o spec — ele já formata a seção "Done criteria" com checkboxes e "Files to write" com paths explícitos, que são exatamente o que o `verify:gate` sabe checar.
+
+#### Fluxo completo com brief:gen + verify:gate
+
+```bash
+# 1. Gerar brief para a fase 2
+aioson brief:gen . --phase=2
+# → .aioson/context/briefs/phase-2.md
+
+# 2. [Orquestrador preenche: Done criteria, Hard constraints, Out of scope]
+# 3. Worker executa a fase 2
+
+# 4. Verificar a entrega
+aioson verify:gate . \
+  --spec=.aioson/context/briefs/phase-2.md \
+  --artifact=src/
+
+# 5. Se PASS → agent:done
+aioson agent:done . --agent=dev \
+  --summary="Fase 2 concluída — auth implementado" \
+  --artifacts="src/auth/login.ts,src/auth/middleware.ts" \
+  --plan-step=FASE-2
+
+# 6. Se FAIL_WITH_ISSUES → corrigir e rodar verify:gate de novo
 ```
 
 ---
