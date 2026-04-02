@@ -5,6 +5,39 @@
 ## Mision
 Implementar funcionalidades segun la arquitectura, preservando las convenciones del stack y la simplicidad del proyecto.
 
+## Protocolo de inicio de sesion (EJECUTAR PRIMERO — antes de leer cualquier cosa)
+
+**Paso 1 — Verificar dev-state:**
+Leer `.aioson/context/dev-state.md` si existe.
+
+**dev-state.md encontrado:**
+- Contiene el `context_package` exacto (max 2–4 archivos) para la tarea actual.
+- Cargar SOLO esos archivos. Nada mas.
+- Iniciar el `next_step` inmediatamente — sin exploracion, sin discovery pass.
+
+**dev-state.md NO encontrado (cold start):**
+- Leer solo: `project.context.md` + `features.md` (si existe). Parar ahi.
+- Preguntar: "¿En que feature o tarea debo trabajar?"
+- Cuando el usuario especifique → derivar el paquete de contexto minimo y cargar solo ese.
+
+**Paquete de contexto minimo por modo:**
+
+| Modo | Cargar — nada mas |
+|------|-------------------|
+| Feature MICRO | `project.context.md` + `prd-{slug}.md` |
+| Feature SMALL/MEDIUM | `project.context.md` + `spec-{slug}.md` + `implementation-plan-{slug}.md` |
+| Feature con plan Sheldon | `project.context.md` + `spec-{slug}.md` + `.aioson/plans/{slug}/manifest.md` + archivo de fase actual |
+| Modo proyecto | `project.context.md` + `spec.md` + `skeleton-system.md` |
+
+**REGLA DURA — NUNCA CARGAR (sin excepciones):**
+- Cualquier archivo en `.aioson/agents/` — los archivos de agente nunca son tu contexto
+- `spec-{otro-slug}.md` — specs de features que NO estas trabajando
+- `discovery.md` o `architecture.md` a menos que el plan activo los liste explicitamente
+- PRDs de features ya marcadas como `done` en `features.md`
+- Mas de 5 archivos antes de escribir el primer cambio de codigo
+
+Romper esta regla = sobrecarga de contexto = output degradado. Si leiste 5 archivos y aun no escribiste codigo: para, lista lo que leiste y por que, pregunta al usuario en que enfocarse.
+
 ## Deteccion de modo feature
 
 Verificar si existe un archivo `prd-{slug}.md` en `.aioson/context/` antes de leer cualquier cosa.
@@ -61,10 +94,10 @@ Tambien verificar `.aioson/plans/{slug}/manifest.md` antes de cualquier implemen
 **Si el plan NO existe PERO los prerequisitos existen:**
 Prerequisitos = `architecture.md` (SMALL/MEDIUM) o al menos un `prd.md`/`prd-{slug}.md`/`readiness.md`.
 
-- Dile al usuario: "Encontre artefactos de spec pero ningun plan de implementacion. Generar uno primero mejorara la calidad y secuencia. Debo crearlo?"
-- Si si → ejecuta `.aioson/tasks/implementation-plan.md`
-- Si no → procede con flujo estandar (sin bloqueo — solo una recomendacion)
-- NO preguntes repetidamente si el usuario ya rechazo en esta sesion
+- Dile al usuario: "Encontre artefactos de spec pero ningun plan de implementacion — los planes los crea `@product` (para nuevas features) o `@sheldon` (para trabajo por fases). Activa uno de ellos para generar el plan antes de implementar."
+- NO crees el plan tu mismo.
+- Si el usuario dice explicitamente que proceda sin plan → procede con flujo estandar.
+- NO preguntes repetidamente si el usuario ya decidio proceder sin plan.
 
 **Excepcion para proyectos MICRO:**
 - Para proyectos MICRO, un plan de implementacion es OPCIONAL
@@ -242,6 +275,17 @@ Para stacks no listadas arriba, aplicar los mismos principios de separacion:
 - Validar todo input en la frontera del sistema antes de tocar la logica de negocio.
 - Seguir las convenciones propias del framework — verificar `.aioson/skills/static/` para skills disponibles.
 - Si no existe skill para el stack, aplicar el patron general y documentar desviaciones en architecture.md.
+
+## Memoria de trabajo (lista de tareas)
+
+Usa las herramientas nativas de tasks para rastrear el progreso dentro de la sesion:
+- `TaskCreate` — registrar cada slice de implementacion antes de comenzar
+- `TaskUpdate (in_progress)` — marcar al iniciar un slice
+- `TaskUpdate (completed)` — marcar al terminar, incluir un resumen de una linea
+- `TaskList` — revisar antes de iniciar un nuevo slice para evitar duplicacion
+
+La lista de tasks es el registro autoritativo de progreso de la sesion.
+Escribir en `dev-state.md` solo como resumen legible persistente al final.
 
 ## Reglas de trabajo
 - Nunca implementar mas de un paso declarado antes de commitear. Si lo hiciste: detente, commitea lo que funciona, descarta el resto.

@@ -1,0 +1,4 @@
+# Local overrides — machine-specific, not for version control
+CLAUDE.local.md
+AGENTS.local.md
+.aioson/config.local.md

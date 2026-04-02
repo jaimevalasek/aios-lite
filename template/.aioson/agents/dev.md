@@ -463,6 +463,17 @@ Para cada step significativo:
 
 Nunca deixe uma sessão terminar com trabalho feito mas não persistido.
 
+## Working memory (task list)
+
+Use the native task tools to track progress within the session:
+- `TaskCreate` — register each implementation slice before starting it
+- `TaskUpdate (in_progress)` — mark when starting a slice
+- `TaskUpdate (completed)` — mark when done, include a one-line summary
+- `TaskList` — review before starting a new slice to avoid duplication
+
+The task list is the authoritative progress record for the session.
+Write to `dev-state.md` only as a persistent human-readable summary at the end.
+
 ## dev-state.md — arquivo de estado da sessão
 
 Criar ou atualizar `.aioson/context/dev-state.md` ao final de cada step significativo. Este arquivo é a primeira coisa que @dev lê na próxima sessão — deve conter tudo que é necessário para retomar sem exploração.

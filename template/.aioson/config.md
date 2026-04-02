@@ -271,6 +271,59 @@ When a workflow stage completes or an agent finishes via `runtime-log --finish`,
 
 Agents can read this file on activation to resume work without losing context between sessions.
 
+## Hook contract (PreToolUse / PostToolUse)
+
+Hooks are shell scripts configured in `.claude/settings.json` under `hooks`.
+The harness passes context via stdin (JSON) and environment variables.
+
+### Exit codes
+| Code | Meaning |
+|------|---------|
+| 0 | Allow — continue tool execution |
+| 2 | Deny — block tool, return message to agent |
+| other non-zero | Warn — log warning, continue execution |
+
+### Environment variables
+| Variable | Description |
+|----------|-------------|
+| `HOOK_EVENT` | `PreToolUse` or `PostToolUse` |
+| `HOOK_TOOL_NAME` | Tool being executed (e.g. `Bash`, `Write`) |
+| `HOOK_TOOL_INPUT` | JSON params of the tool call |
+| `HOOK_TOOL_IS_ERROR` | `true`/`false` (PostToolUse only) |
+| `HOOK_TOOL_OUTPUT` | Tool output (PostToolUse only) |
+
+### Example: block rm -rf in Bash
+```bash
+#!/bin/bash
+INPUT=$(cat)
+if echo "$INPUT" | grep -q "rm -rf"; then
+  echo "Blocked: rm -rf not allowed in this project"
+  exit 2
+fi
+exit 0
+```
+
+## Agent file size guidelines
+
+The Claude Code harness enforces a hard limit of ~4,000 chars per auto-loaded
+instruction file (`CLAUDE.md` hierarchy). Files are truncated silently.
+Agent files in `.aioson/agents/` are read manually (not auto-loaded) so they
+are not subject to this truncation, but large files consume context budget.
+
+Recommended targets:
+
+| File type | Target | Notes |
+|-----------|--------|-------|
+| `CLAUDE.md` / `AGENTS.md` | ≤ 3,500 chars | Auto-loaded — hard truncation applies |
+| Focused agents (analyst, qa, tester) | ≤ 8,000 chars | Keep lean |
+| Generalist agents (dev, architect) | ≤ 15,000 chars | Move optional sections to `.aioson/docs/` |
+| Orchestrator agents (orchestrator, squad) | ≤ 12,000 chars | Move boilerplate to `.aioson/rules/` |
+
+When an agent file exceeds its target:
+1. Move repeated boilerplate to a shared `.aioson/rules/` file
+2. Split optional sections into `.aioson/docs/` files (loaded on demand)
+3. Use the "On-demand context layers" pattern from this config
+
 ## Agent locale packs
 - Localized agent prompts are stored in `.aioson/locales/<locale>/agents/`.
 - Active runtime prompts are in `.aioson/agents/`.

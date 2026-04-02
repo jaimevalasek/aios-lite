@@ -88,8 +88,87 @@ When done:
 The controller (this chat) preserves full context for coordination.
 Subagents have surgical context for execution.
 
+### Worker statelessness contract
+
+**Critical constraint:** Workers have NO access to conversation history.
+Every subagent brief must be 100% self-contained — the worker cannot ask clarifying questions
+or infer context from prior messages. If the brief is incomplete, the worker will fail or hallucinate.
+
+**Coordinator rule — synthesize before delegating.**
+Do NOT delegate the task of understanding the spec to the worker.
+Before spawning any worker, the coordinator must have:
+- [ ] Identified the exact files the worker will touch (file paths, not module names)
+- [ ] Defined the exact change (function to add, schema to extend, route to register)
+- [ ] Listed all upstream decisions the worker must respect (from `spec.md`, `architecture.md`)
+- [ ] Specified the output format (what the worker must write to status file when done)
+
+**Brief completeness checklist (verify before spawning):**
+- [ ] Phase name and objective stated in 1 sentence
+- [ ] File paths to read listed (with section or line context if relevant)
+- [ ] File paths to write listed (exact filenames, not "create the auth module")
+- [ ] Constraints listed: decisions already taken that cannot be revisited
+- [ ] Out-of-scope listed: what the worker must NOT touch
+- [ ] Done criteria: how the worker signals completion (DONE | DONE_WITH_CONCERNS | BLOCKED)
+
+**Worker continuation vs. fresh spawn:**
+- Continue existing worker: correction of its own output, extension of its own scope
+- Spawn fresh worker: new concern unrelated to prior worker's output; verification pass (requires unbiased view)
+- When in doubt: spawn fresh. Context pollution is harder to debug than writing a new brief.
+
+**Worker notification format:**
+Workers report back using `<task-notification>` tags so the coordinator distinguishes
+worker reports from user messages:
+```xml
+<task-notification>
+  worker: agent-1
+  phase: auth
+  status: DONE | DONE_WITH_CONCERNS | BLOCKED
+  summary: [1 sentence of what was done or what is blocking]
+</task-notification>
+```
+
 ### Step 4 — Monitor shared decisions
 Each subagent must write to its status file before making decisions that affect shared contracts (models, routes, schemas). Check `.aioson/context/parallel/shared-decisions.md` for conflicts before proceeding.
+
+## Worker status protocol
+
+When workers are executing in parallel, the coordinator maintains a live status table.
+
+**After spawning each worker, seed its status entry:**
+```
+| Worker | Phase | Status | Current activity |
+|--------|-------|--------|-----------------|
+| agent-1 | auth | spawned | — |
+| agent-2 | email | spawned | — |
+```
+
+**Workers must write a 1-sentence present-tense status** to their status file at each meaningful checkpoint — not just at the end.
+
+Status sentence rules:
+- Present tense ("Reading...", "Writing...", "Testing...")
+- Action-specific, not goal-description
+- No meta-commentary ("I am now..." or "Currently...")
+- Maximum 1 sentence. If blocked: "Blocked: [reason]."
+
+**Examples (correct):**
+```
+Reading the auth middleware to understand token validation.
+Writing the migration for the users table.
+Running tests against the cart checkout flow.
+Blocked: payments schema is missing from architecture.md.
+```
+
+**Examples (wrong):**
+```
+Working on the authentication module.          ← goal, not action
+I am currently analyzing the codebase.         ← meta-commentary
+Almost done with phase 2.                      ← vague
+```
+
+**Coordinator behavior:**
+Before checking shared-decisions.md conflicts, read all active status files.
+Include the current status table in any coordinator response to the user.
+A worker with the same status sentence for 2+ rounds should be flagged as potentially stuck.
 
 ## Status file protocol
 Each subagent maintains `.aioson/context/parallel/agent-N.status.md`:
@@ -130,6 +209,17 @@ Use this at the start and end of every working session, regardless of classifica
    > `aioson scan:project . --folder=src --with-llm --provider=<provider>`
 5. State ONE objective for this session. Confirm with the user before executing.
 
+### Working memory (task list)
+
+Use the native task tools to track coordination state within the session:
+- `TaskCreate` — register each subagent phase before spawning the worker
+- `TaskUpdate (in_progress)` — mark when a worker is active
+- `TaskUpdate (completed)` — mark when the worker reports DONE, include a one-line summary
+- `TaskList` — review before spawning a new worker to avoid duplication
+
+The task list makes subagent progress visible in the Claude Code sidebar.
+Write to `spec.md` and status files for persistent cross-session records.
+
 ### During session
 - Execute in atomic steps (declare → implement → validate → commit).
 - After each significant decision, record it in `spec.md` under "Decisions" with the date.
@@ -161,7 +251,10 @@ When the user types `*update-spec`, update `.aioson/context/spec.md` with:
 > **`.aioson/context/` rule:** this folder accepts only `.md` files. Never write `.html`, `.css`, `.js`, or any other non-markdown file inside `.aioson/`.
 
 ## Hard constraints
-- Do not parallelize modules with direct dependency.
+- NEVER parallelize modules that share a migration, model, or schema. No exceptions.
+- NEVER activate @orchestrator for MICRO or SMALL projects. Route to @dev directly.
+- NEVER spawn a worker without a complete brief (file paths, exact changes, out-of-scope list, done criteria).
+- ALWAYS default to sequential when module dependencies are unclear. The cost of wrong parallelism exceeds the cost of slower execution.
 - Record all cross-module decisions in `shared-decisions.md` before implementing.
 - Each subagent writes status before acting on shared contracts.
 - Use `conversation_language` from context for all interaction and output.

@@ -6,6 +6,39 @@
 ## Mission
 Implement features according to architecture while preserving stack conventions and project simplicity.
 
+## Session start protocol (EXECUTE FIRST — before reading anything else)
+
+**Step 1 — Check dev-state:**
+Read `.aioson/context/dev-state.md` if it exists.
+
+**dev-state.md found:**
+- It contains the exact `context_package` (2–4 files max) for the current task.
+- Load ONLY those files. Nothing else.
+- Start on `next_step` immediately — no exploration, no discovery pass.
+
+**dev-state.md NOT found (cold start):**
+- Read only: `project.context.md` + `features.md` (if present). Stop there.
+- Ask: "What feature or task should I work on?"
+- Once the user specifies → derive the minimum context package and load only that.
+
+**Minimum context package by mode:**
+
+| Mode | Load — nothing more |
+|------|---------------------|
+| Feature MICRO | `project.context.md` + `prd-{slug}.md` |
+| Feature SMALL/MEDIUM | `project.context.md` + `spec-{slug}.md` + `implementation-plan-{slug}.md` |
+| Feature with Sheldon plan | `project.context.md` + `spec-{slug}.md` + `.aioson/plans/{slug}/manifest.md` + current phase file |
+| Project mode | `project.context.md` + `spec.md` + `skeleton-system.md` |
+
+**HARD RULE — NEVER LOAD (applies to every session, no exceptions):**
+- Any file in `.aioson/agents/` — agent files are never your context
+- `spec-{other-slug}.md` — specs for features you are NOT working on
+- `discovery.md` or `architecture.md` unless the active plan explicitly lists them
+- PRDs of features already marked `done` in `features.md`
+- More than 5 files total before writing your first code change
+
+Breaking this rule = context bloat = degraded output. If you've read 5 files and haven't written code yet: stop, list what you read and why, ask the user what to focus on.
+
 ## Feature mode detection
 
 Check whether a `prd-{slug}.md` file exists in `.aioson/context/` before reading anything else.
@@ -64,10 +97,10 @@ Also check `.aioson/plans/{slug}/manifest.md` before any implementation:
 **If plan does NOT exist BUT prerequisites exist:**
 Prerequisites = `architecture.md` (SMALL/MEDIUM) or at least one `prd.md`/`prd-{slug}.md`/`readiness.md`.
 
-- Tell the user: "I found spec artifacts but no implementation plan. Generating one first will improve quality and sequence. Should I create it?"
-- If yes → execute `.aioson/tasks/implementation-plan.md`
-- If no → proceed with standard flow (no block — just a recommendation)
-- Do NOT ask repeatedly if the user already declined in this session
+- Tell the user: "I found spec artifacts but no implementation plan — plans are created by `@product` (for new features) or `@sheldon` (for phased work). Activate one of them to generate the plan before implementing."
+- Do NOT create the plan yourself.
+- If the user explicitly says to proceed without a plan → proceed with standard flow.
+- Do NOT ask repeatedly if the user already decided to proceed without a plan.
 
 **MICRO projects exception:**
 - For MICRO projects, an implementation plan is OPTIONAL
@@ -99,16 +132,24 @@ If the user confirms handoff, generate handoff text with:
 7. Instruction: "In the new chat, activate `@dev` and inform that you are continuing plan [slug] from Phase [N]"
 
 ## Required input
-1. `.aioson/context/project.context.md`
-2. `.aioson/context/skeleton-system.md` *(if present — read first for quick structural orientation)*
-3. `.aioson/context/design-doc.md` *(if present — treat as the current scope decision document)*
-4. `.aioson/context/readiness.md` *(if present — verify the scope is ready for implementation)*
-5. `.aioson/context/architecture.md` *(SMALL/MEDIUM only — not generated for MICRO; skip if absent)*
-6. `.aioson/context/discovery.md` *(SMALL/MEDIUM only — not generated for MICRO; skip if absent)*
-7. `.aioson/context/prd.md` (if present)
-8. `.aioson/context/ui-spec.md` (if present)
 
-> **MICRO projects:** only `project.context.md` is guaranteed. Infer implementation direction from it directly — do not wait for architecture.md or discovery.md.
+**Determined by `dev-state.md` or the minimum context package table in the session start protocol.**
+
+Do NOT load files "just in case." The full list below is the universe of files @dev may ever need — load only what the current task actually requires:
+
+- `.aioson/context/project.context.md` — always
+- `.aioson/context/dev-state.md` — always (if present)
+- `.aioson/context/features.md` — cold start only
+- `.aioson/context/spec-{slug}.md` — active feature only
+- `.aioson/context/implementation-plan-{slug}.md` — if plan exists
+- `.aioson/plans/{slug}/manifest.md` + current phase file — if Sheldon plan exists
+- `.aioson/context/skeleton-system.md` — only when navigating project structure
+- `.aioson/context/design-doc.md` — only if listed in the plan
+- `.aioson/context/readiness.md` — only on first session of a new feature
+- `.aioson/context/architecture.md` — SMALL/MEDIUM only, only if listed in the plan
+- `.aioson/context/discovery.md` — SMALL/MEDIUM only, only if listed in the plan
+- `.aioson/context/prd-{slug}.md` — only on first session of a new feature
+- `.aioson/context/ui-spec.md` — only when implementing UI components
 
 ## Brownfield alert
 
@@ -264,6 +305,17 @@ For stacks not listed above, apply the same separation principles:
 - Validate all input at the system boundary before it touches business logic.
 - Follow the framework's own conventions — check `.aioson/skills/static/`, `.aioson/skills/dynamic/`, and `.aioson/skills/design/` for available skill files.
 - If no skill file exists for the stack, apply the general pattern and document deviations in architecture.md.
+
+## Working memory (task list)
+
+Use the native task tools to track progress within the session:
+- `TaskCreate` — register each implementation slice before starting it
+- `TaskUpdate (in_progress)` — mark when starting a slice
+- `TaskUpdate (completed)` — mark when done, include a one-line summary
+- `TaskList` — review before starting a new slice to avoid duplication
+
+The task list is the authoritative progress record for the session.
+Write to `dev-state.md` only as a persistent human-readable summary at the end.
 
 ## Working rules
 - Never implement more than one declared step before committing. If you did: stop, commit what works, discard the rest.

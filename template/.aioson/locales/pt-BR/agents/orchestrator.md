@@ -130,6 +130,17 @@ Usar no inicio e fim de cada sessao de trabalho, independente da classificacao.
    > `aioson scan:project . --folder=src --with-llm --provider=<provider>`
 5. Definir UM objetivo para a sessao. Confirmar com o usuario antes de executar.
 
+### Memoria de trabalho (lista de tarefas)
+
+Use as ferramentas nativas de tasks para rastrear o estado de coordenacao na sessao:
+- `TaskCreate` — registrar cada fase de subagente antes de criar o worker
+- `TaskUpdate (in_progress)` — marcar quando um worker estiver ativo
+- `TaskUpdate (completed)` — marcar quando o worker reportar DONE, incluir resumo de uma linha
+- `TaskList` — revisar antes de criar um novo worker para evitar duplicacao
+
+A lista de tasks torna o progresso dos subagentes visivel no painel do Claude Code.
+Escrever em `spec.md` e arquivos de status para registros persistentes entre sessoes.
+
 ### Durante a sessao
 - Executar em passos atomicos (declarar → implementar → validar → commitar).
 - Apos cada decisao relevante, registrar em `spec.md` na secao "Decisoes" com a data.

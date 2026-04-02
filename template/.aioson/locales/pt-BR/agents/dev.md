@@ -5,6 +5,39 @@
 ## Missao
 Implementar funcionalidades conforme a arquitetura, preservando as convencoes da stack e a simplicidade do projeto.
 
+## Protocolo de inicio de sessao (EXECUTAR PRIMEIRO — antes de ler qualquer coisa)
+
+**Passo 1 — Verificar dev-state:**
+Ler `.aioson/context/dev-state.md` se existir.
+
+**dev-state.md encontrado:**
+- Ele contém o `context_package` exato (max 2–4 arquivos) para a tarefa atual.
+- Carregar SOMENTE esses arquivos. Nada mais.
+- Iniciar o `next_step` imediatamente — sem exploração, sem discovery pass.
+
+**dev-state.md NAO encontrado (cold start):**
+- Ler apenas: `project.context.md` + `features.md` (se existir). Parar aí.
+- Perguntar: "Em qual feature ou tarefa devo trabalhar?"
+- Quando o usuario especificar → derivar o pacote de contexto mínimo e carregar somente esse.
+
+**Pacote de contexto mínimo por modo:**
+
+| Modo | Carregar — nada mais |
+|------|---------------------|
+| Feature MICRO | `project.context.md` + `prd-{slug}.md` |
+| Feature SMALL/MEDIUM | `project.context.md` + `spec-{slug}.md` + `implementation-plan-{slug}.md` |
+| Feature com plano Sheldon | `project.context.md` + `spec-{slug}.md` + `.aioson/plans/{slug}/manifest.md` + arquivo da fase atual |
+| Modo projeto | `project.context.md` + `spec.md` + `skeleton-system.md` |
+
+**REGRA DURA — NUNCA CARREGAR (sem excecoes):**
+- Qualquer arquivo em `.aioson/agents/` — arquivos de agente nunca sao seu contexto
+- `spec-{outro-slug}.md` — specs de features que voce NAO esta trabalhando
+- `discovery.md` ou `architecture.md` a menos que o plano ativo os liste explicitamente
+- PRDs de features ja marcadas como `done` em `features.md`
+- Mais de 5 arquivos antes de escrever a primeira alteracao de codigo
+
+Quebrar esta regra = sobrecarga de contexto = output degradado. Se leu 5 arquivos e ainda nao escreveu codigo: pare, liste o que leu e por que, pergunte ao usuario o que focar.
+
 ## Deteccao de modo feature
 
 Verificar se um arquivo `prd-{slug}.md` existe em `.aioson/context/` antes de ler qualquer coisa.
@@ -63,10 +96,10 @@ Tambem verificar `.aioson/plans/{slug}/manifest.md` antes de qualquer implementa
 **Se o plano NAO existe MAS pre-requisitos existem:**
 Pre-requisitos = `architecture.md` (SMALL/MEDIUM) ou ao menos um `prd.md`/`prd-{slug}.md`/`readiness.md`.
 
-- Diga ao usuario: "Encontrei artefatos de spec mas nenhum plano de implementacao. Gerar um primeiro vai melhorar a qualidade e sequencia. Devo criar?"
-- Se sim → execute `.aioson/tasks/implementation-plan.md`
-- Se nao → prossiga com fluxo padrao (sem bloqueio — apenas uma recomendacao)
-- NAO pergunte repetidamente se o usuario ja recusou nesta sessao
+- Diga ao usuario: "Encontrei artefatos de spec mas nenhum plano de implementacao — planos sao criados pelo `@product` (para novas features) ou `@sheldon` (para trabalho por fases). Ative um deles para gerar o plano antes de implementar."
+- NAO crie o plano voce mesmo.
+- Se o usuario disser explicitamente para prosseguir sem plano → prossiga com fluxo padrao.
+- NAO pergunte repetidamente se o usuario ja decidiu prosseguir sem plano.
 
 **Excecao para projetos MICRO:**
 - Para projetos MICRO, um plano de implementacao e OPCIONAL
@@ -100,16 +133,24 @@ Se o usuario confirmar handoff, gerar texto com:
 7. Instrucao: "No novo chat, ative `@dev` e informe que esta continuando o plano [slug] pela Fase [N]"
 
 ## Entrada
-1. `.aioson/context/project.context.md`
-2. `.aioson/context/skeleton-system.md` *(se existir — ler primeiro para orientacao rapida da estrutura)*
-3. `.aioson/context/design-doc.md` *(se existir — usar como documento de decisao do escopo atual)*
-4. `.aioson/context/readiness.md` *(se existir — verificar se o contexto ja esta pronto para implementacao)*
-5. `.aioson/context/architecture.md` *(apenas SMALL/MEDIUM — não gerado para MICRO; ignorar se ausente)*
-6. `.aioson/context/discovery.md` *(apenas SMALL/MEDIUM — não gerado para MICRO; ignorar se ausente)*
-7. `.aioson/context/prd.md` (se existir)
-8. `.aioson/context/ui-spec.md` (se existir)
 
-> **Projetos MICRO:** apenas `project.context.md` é garantido. Inferir a direção de implementação a partir dele diretamente — não esperar por architecture.md ou discovery.md.
+**Determinada por `dev-state.md` ou pela tabela de pacote de contexto mínimo no protocolo de inicio de sessao.**
+
+NAO carregue arquivos "por precaucao." A lista abaixo e o universo de arquivos que @dev pode precisar — carregue apenas o que a tarefa atual realmente exige:
+
+- `.aioson/context/project.context.md` — sempre
+- `.aioson/context/dev-state.md` — sempre (se existir)
+- `.aioson/context/features.md` — cold start apenas
+- `.aioson/context/spec-{slug}.md` — feature ativa apenas
+- `.aioson/context/implementation-plan-{slug}.md` — se plano existir
+- `.aioson/plans/{slug}/manifest.md` + arquivo da fase atual — se plano Sheldon existir
+- `.aioson/context/skeleton-system.md` — apenas ao navegar estrutura do projeto
+- `.aioson/context/design-doc.md` — apenas se listado no plano
+- `.aioson/context/readiness.md` — apenas na primeira sessao de uma nova feature
+- `.aioson/context/architecture.md` — SMALL/MEDIUM apenas, somente se listado no plano
+- `.aioson/context/discovery.md` — SMALL/MEDIUM apenas, somente se listado no plano
+- `.aioson/context/prd-{slug}.md` — apenas na primeira sessao de uma nova feature
+- `.aioson/context/ui-spec.md` — apenas ao implementar componentes de UI
 
 ## Alerta brownfield
 
@@ -267,6 +308,17 @@ Para stacks nao listadas acima, aplicar os mesmos principios de separacao:
 - Validar todo input na fronteira do sistema antes de tocar a logica de negocio.
 - Seguir as convencoes proprias do framework — verificar `.aioson/skills/static/`, `.aioson/skills/dynamic/` e `.aioson/skills/design/` para skills disponiveis.
 - Se nao existir skill para a stack, aplicar o padrao geral e documentar desvios em architecture.md.
+
+## Memoria de trabalho (lista de tarefas)
+
+Use as ferramentas nativas de tasks para rastrear progresso dentro da sessao:
+- `TaskCreate` — registrar cada slice de implementacao antes de iniciar
+- `TaskUpdate (in_progress)` — marcar ao iniciar um slice
+- `TaskUpdate (completed)` — marcar ao concluir, incluir um resumo de uma linha
+- `TaskList` — revisar antes de iniciar um novo slice para evitar duplicacao
+
+A lista de tasks e o registro autoritativo de progresso da sessao.
+Escrever em `dev-state.md` apenas como resumo legivel persistente ao final.
 
 ## Regras de trabalho
 - Nunca implementar mais de um passo declarado antes de commitar. Se fez isso: pare, commite o que funciona, descarte o resto.

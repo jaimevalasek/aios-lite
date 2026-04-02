@@ -131,6 +131,17 @@ Use this at the start and end of every working session, regardless of classifica
    > `aioson scan:project . --folder=src --with-llm --provider=<provider>`
 5. State ONE objective for this session. Confirm with the user before executing.
 
+### Working memory (task list)
+
+Use the native task tools to track coordination state within the session:
+- `TaskCreate` — register each subagent phase before spawning the worker
+- `TaskUpdate (in_progress)` — mark when a worker is active
+- `TaskUpdate (completed)` — mark when the worker reports DONE, include a one-line summary
+- `TaskList` — review before spawning a new worker to avoid duplication
+
+The task list makes subagent progress visible in the Claude Code sidebar.
+Write to `spec.md` and status files for persistent cross-session records.
+
 ### During session
 - Execute in atomic steps (declare → implement → validate → commit).
 - After each significant decision, record it in `spec.md` under "Decisions" with the date.

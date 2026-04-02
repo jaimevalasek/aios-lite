@@ -59,5 +59,19 @@ When running Claude Code directly (without `aioson workflow:next`), these rules 
 - Plain slash-command activation registers in the dashboard automatically via `aioson agent:done` at the end of each agent session — each agent file has the call in its "Observability" section.
 - Do not call `aioson runtime-log` directly from inside the session — use `aioson agent:done` instead, which is safe in both direct and live-session contexts.
 
+## Shared research cache: researchs/
+
+All agents may read from and write to `researchs/` (project root). Before running any web search, check if `researchs/{slug}/summary.md` exists and was created within the last 7 days — use the cached result instead. After searching, save results there for reuse by other agents. See AGENTS.md for the full convention.
+
+## Local overrides
+
+Create `CLAUDE.local.md` (not committed) for machine-specific settings:
+- Local tool paths and environment variables
+- Personal preferences that should not affect other team members
+- Dev environment overrides
+
+`CLAUDE.local.md` is loaded after `CLAUDE.md` and takes precedence.
+Add it to `.gitignore` to keep it out of version control.
+
 ## Golden rule
 Small project, small solution.
