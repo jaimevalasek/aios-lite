@@ -23,6 +23,56 @@ Nouvelle feature (MICRO — sans nouvelles entites) :
 @product → @dev → @qa
 ```
 
+## Detection des documents sources (executer avant la detection du mode)
+
+Scanner la racine du projet pour trouver des documents d'entree de l'utilisateur :
+- `plans/*.md` — sources de recherche, notes et idees pre-production ecrites par l'utilisateur
+- `prds/*.md` — visions produit, brouillons d'exigences ecrits par l'utilisateur
+
+> **Nature de ces sources :** ces fichiers sont des **sources de recherche pre-production** — PAS des plans d'implementation ni des PRDs reels de developpement. Ce sont des matieres premieres ecrites par l'utilisateur avant de demarrer le cycle des agents. Ils servent a creer les vrais artefacts dans `.aioson/context/`. Ils restent dans le dossier jusqu'a la conclusion complete du projet — seul l'utilisateur decide quand les supprimer. Les agents downstream (`@dev`, `@analyst`, `@architect`, `@ux-ui`) ne traitent pas ces sources comme des plans ou PRDs valides.
+
+Ce sont des **sources d'entree**, pas des artefacts. Ils appartiennent a l'utilisateur et ne sont jamais modifies ni supprimes par les agents.
+
+**Si des fichiers sont trouves :**
+Lister et demander une fois :
+> "J'ai trouve des sources de recherche pre-production a la racine du projet :
+> - plans/X.md
+> - prds/Y.md
+>
+> Voulez-vous que je les utilise comme materiau source pour le PRD ? Je les synthetiserai et genererai l'artefact approprie dans `.aioson/context/`. Les fichiers originaux restent intacts — ils demeurent ici jusqu'a la conclusion du projet."
+
+- Si oui → lire tous les fichiers listes, extraire les objectifs, besoins utilisateur, contraintes et descriptions de features. Utiliser pour pre-remplir la conversation PRD ou generer le PRD directement si le contenu est suffisamment detaille. Lors de la consommation d'une source, enregistrer dans `plans/source-manifest.md` (creer si absent).
+- Si non → ignorer et poursuivre la conversation de zero.
+
+**Signal greenfield :** si des documents sources existent ET `prd.md` n'existe pas dans `.aioson/context/` → il s'agit probablement du kickoff initial du projet.
+
+**Signal feature :** si des documents sources existent ET `prd.md` existe deja dans `.aioson/context/` → il s'agit probablement d'une nouvelle feature ou d'un raffinement.
+
+**Si aucun document source n'est trouve :** proceder directement a la detection du mode.
+
+**Suivi d'utilisation — `plans/source-manifest.md` :**
+
+Creer ou mettre a jour chaque fois qu'une source est consommee. Format :
+
+```markdown
+---
+updated_at: {ISO-date}
+---
+
+# Source Manifest — Sources de Recherche Pre-Production
+
+> Fichiers ecrits par l'utilisateur avant le cycle des agents.
+> PAS des plans d'implementation — ils servent a creer de vrais artefacts dans `.aioson/context/`.
+> Restent ici jusqu'a la conclusion complete du projet.
+
+## Sources consommees
+
+| Fichier | Consomme par | Date | Artefact produit |
+|---------|-------------|------|-----------------|
+| plans/X.md | @product | {ISO-date} | prd.md |
+| prds/Y.md | @sheldon | {ISO-date} | prd-{slug}.md |
+```
+
 ## Detection du mode
 
 Verifier les conditions suivantes dans l'ordre :

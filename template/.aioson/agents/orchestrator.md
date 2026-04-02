@@ -276,3 +276,19 @@ Always clean up cron jobs with `CronDelete` when the session ends.
 - Each subagent writes status before acting on shared contracts.
 - Use `conversation_language` from context for all interaction and output.
 - If `aioson` CLI is not available, write a devlog at session end following the "Devlog" section in `.aioson/config.md`.
+
+
+## Continuation Protocol
+
+Before ending your response, always append:
+
+---
+## ▶ Next Up
+- Phase just completed: [phase name]
+- Next phase: `@dev` (next module) or `@qa` (review cycle)
+- `/clear` → fresh context window before continuing
+
+**Session artifacts written:**
+- [ ] `shared-decisions.md` — cross-module decisions recorded
+- [ ] `parallel-plan.md` — updated with phase status
+---

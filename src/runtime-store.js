@@ -590,6 +590,32 @@ async function openRuntimeDb(targetDir, options = {}) {
       created_at TEXT DEFAULT (datetime('now')),
       updated_at TEXT DEFAULT (datetime('now'))
     );
+
+    CREATE TABLE IF NOT EXISTS dynamic_squad_tools (
+      name TEXT NOT NULL,
+      squad_slug TEXT NOT NULL,
+      description TEXT NOT NULL,
+      input_schema TEXT NOT NULL DEFAULT '{}',
+      handler_type TEXT NOT NULL DEFAULT 'shell',
+      handler_code TEXT,
+      handler_path TEXT,
+      registered_at TEXT NOT NULL,
+      registered_by TEXT,
+      PRIMARY KEY (name, squad_slug)
+    );
+    CREATE INDEX IF NOT EXISTS idx_dynamic_squad_tools_squad ON dynamic_squad_tools(squad_slug);
+
+    CREATE TABLE IF NOT EXISTS inter_squad_events (
+      id TEXT PRIMARY KEY,
+      from_squad TEXT NOT NULL,
+      event TEXT NOT NULL,
+      payload TEXT,
+      created_at TEXT NOT NULL,
+      consumed_by TEXT NOT NULL DEFAULT '[]',
+      ttl_hours INTEGER NOT NULL DEFAULT 48
+    );
+    CREATE INDEX IF NOT EXISTS idx_inter_squad_events_from ON inter_squad_events(from_squad, created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_inter_squad_events_event ON inter_squad_events(event, created_at DESC);
   `);
 
   ensureLegacyColumns(db);

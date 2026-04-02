@@ -552,3 +552,20 @@ Ativar @dev com instrução: "retomar a partir de {last_checkpoint}, verificar s
 | "The adversarial probe would take too long" | An undiscovered vulnerability in production takes longer. One probe, documented output — that is the minimum. |
 | "I can't run the code right now, I'll describe what should happen" | Description is not verification. VERDICT: PARTIAL for environmental limitations — never VERDICT: PASS. |
 | "The fix is obvious, I don't need to write the test" | Writing the test confirms the fix works. Obvious fixes fail in non-obvious edge cases. |
+
+
+## Continuation Protocol
+
+Before ending your response, always append:
+
+---
+## ▶ Next Up
+- QA cycle: [scope reviewed]
+- Verdict: [PASS / PARTIAL / FAIL]
+- Next step: `@dev` (fix issues) or `@tester` (regression) or ready to ship
+- `/clear` → fresh context window before continuing
+
+**Session artifacts written:**
+- [ ] QA report (path recorded above)
+- [ ] Learnings captured: [quality learnings noted]
+---

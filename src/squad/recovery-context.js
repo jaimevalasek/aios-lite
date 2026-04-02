@@ -4,18 +4,20 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 
 const SQUADS_DIR = path.join('.aioson', 'squads');
+const MAX_HISTORY_ENTRIES = 5;
+const MAX_TOKENS = 2000;
+const HISTORY_TOKEN_BUDGET = 600; // tokens reserved for history section
 
 // Events that trigger an automatic refresh of the recovery context
 const REFRESH_EVENTS = new Set(['task_completed', 'decision_made', 'handoff']);
 
-// Approximate token count (chars / 4)
+// Approximate token count (chars / 4) + 1
 function estimateTokens(str) {
-  return Math.ceil(str.length / 4);
+  return Math.ceil(str.length / 4) + 1;
 }
 
-/**
- * Read squad manifest (best-effort, returns {} on failure).
- */
+// ─── Data loaders ─────────────────────────────────────────────────────────────
+
 async function readManifest(projectDir, squadSlug) {
   const p = path.join(projectDir, SQUADS_DIR, squadSlug, 'squad.manifest.json');
   try {
@@ -25,9 +27,6 @@ async function readManifest(projectDir, squadSlug) {
   }
 }
 
-/**
- * Read recent events from session-log.json (last N entries).
- */
 async function readRecentEvents(projectDir, squadSlug, limit = 10) {
   const p = path.join(projectDir, SQUADS_DIR, squadSlug, 'session-log.json');
   try {
@@ -39,9 +38,6 @@ async function readRecentEvents(projectDir, squadSlug, limit = 10) {
   }
 }
 
-/**
- * Read recent tasks from tasks.json (last 5, enriched).
- */
 async function readRecentTasks(projectDir, squadSlug, limit = 5) {
   const p = path.join(projectDir, SQUADS_DIR, squadSlug, 'tasks.json');
   try {
@@ -53,9 +49,6 @@ async function readRecentTasks(projectDir, squadSlug, limit = 5) {
   }
 }
 
-/**
- * Read context-monitor.json snapshot for an agent.
- */
 async function readContextSnapshot(projectDir, squadSlug, agentSlug) {
   const p = path.join(projectDir, SQUADS_DIR, squadSlug, 'context-monitor.json');
   try {
@@ -69,117 +62,211 @@ async function readContextSnapshot(projectDir, squadSlug, agentSlug) {
   }
 }
 
-/**
- * Build the markdown content for recovery-context.md.
- * Target < 2000 tokens.
- */
-function buildRecoveryMarkdown(squadSlug, agentSlug, manifest, tasks, events, ctxSnapshot) {
-  const lines = [];
+// ─── Incremental compaction history ──────────────────────────────────────────
 
-  lines.push(`# Recovery Context — ${squadSlug} / ${agentSlug}`);
-  lines.push(`> Generated: ${new Date().toISOString()}`);
-  lines.push('');
+/**
+ * Extract the "## Compaction History" section from an existing recovery-context.md.
+ * Returns an array of raw entry strings (trimmed), oldest first.
+ */
+function extractCompactionHistory(existingContent) {
+  if (!existingContent) return [];
+
+  const match = existingContent.match(/## Compaction History\n([\s\S]*?)(?=\n---|\n## [^C]|$)/);
+  if (!match) return [];
+
+  // Split on "### Snapshot" entries
+  const raw = match[1].trim();
+  if (!raw) return [];
+
+  const entries = raw.split(/(?=### Snapshot)/).map((e) => e.trim()).filter(Boolean);
+  return entries;
+}
+
+/**
+ * Extract the "## Current State" section from an existing recovery-context.md.
+ * This becomes a history entry when a new snapshot is generated.
+ */
+function extractCurrentState(existingContent) {
+  if (!existingContent) return null;
+
+  const match = existingContent.match(/## Current State\n([\s\S]*?)(?=\n## |$)/);
+  if (!match) return null;
+
+  const body = match[1].trim();
+  if (!body) return null;
+
+  // Wrap as a Snapshot history entry
+  const ts = existingContent.match(/> Last Updated: (.+)/)?.[1] || new Date().toISOString();
+  return `### Snapshot — ${ts}\n${body}`;
+}
+
+// ─── Snapshot builder ─────────────────────────────────────────────────────────
+
+/**
+ * Build the "Current State" section content from live data.
+ * This is the fresh snapshot injected on every recovery update.
+ */
+function buildCurrentState(squadSlug, agentSlug, manifest, tasks, events, ctxSnapshot) {
+  const lines = [];
 
   // Squad goal
   if (manifest.goal) {
-    lines.push('## Squad Goal');
-    lines.push(manifest.goal);
+    lines.push(`**Squad goal:** ${manifest.goal}`);
     lines.push('');
   }
 
-  // Agent role (from executors array)
-  const executor = (manifest.executors || []).find(e => e.slug === agentSlug);
+  // Agent role
+  const executor = (manifest.executors || []).find((e) => e.slug === agentSlug);
   if (executor) {
-    lines.push('## Your Role');
-    lines.push(`**${executor.title || agentSlug}**: ${executor.role || ''}`);
+    lines.push(`**Your role:** ${executor.title || agentSlug} — ${executor.role || ''}`);
     lines.push('');
   }
 
-  // Recent tasks
+  // Recent tasks (most recent first, capped)
   if (tasks.length > 0) {
-    lines.push('## Recent Tasks');
+    lines.push('**Recent tasks:**');
     for (const t of tasks) {
       const status = t.status || 'unknown';
       const title = t.title || t.slug || t.id || '(untitled)';
       lines.push(`- [${status}] ${title}`);
       if (t.output && typeof t.output === 'string') {
-        // Truncate long outputs
-        const out = t.output.length > 200 ? t.output.slice(0, 200) + '…' : t.output;
-        lines.push(`  Output: ${out}`);
+        const out = t.output.length > 150 ? t.output.slice(0, 150) + '…' : t.output;
+        lines.push(`  → ${out}`);
       }
     }
     lines.push('');
   }
 
-  // Recent events
+  // Recent events (brief)
   if (events.length > 0) {
-    lines.push('## Recent Events');
-    for (const ev of events) {
-      const ts = ev.created_at || ev.timestamp || '';
+    lines.push('**Recent events:**');
+    for (const ev of events.slice(-5)) {
       const type = ev.event_type || ev.type || 'event';
       const msg = ev.message || ev.summary || '';
-      lines.push(`- [${ts}] ${type}: ${msg}`);
+      lines.push(`- ${type}: ${msg}`);
     }
     lines.push('');
   }
 
-  // Context snapshot
+  // Context window snapshot
   if (ctxSnapshot) {
-    lines.push('## Context Window at Last Compact');
     const used = ctxSnapshot.totalUsed || 0;
     const win = ctxSnapshot.windowSize || 0;
     const pct = win > 0 ? Math.round((used / win) * 100) : 0;
-    lines.push(`Used: ${used.toLocaleString()} / ${win.toLocaleString()} tokens (${pct}%)`);
-    lines.push('');
+    lines.push(`**Context at last compact:** ${used.toLocaleString()}/${win.toLocaleString()} tokens (${pct}%)`);
   }
 
-  lines.push('---');
-  lines.push('*Inject this file at the top of your next session to restore context after a compact.*');
+  return lines.join('\n');
+}
 
-  const content = lines.join('\n');
+// ─── Full incremental markdown builder ───────────────────────────────────────
 
-  // Enforce token limit: if over budget, trim events section
-  if (estimateTokens(content) > 2000) {
-    // Rebuild with fewer events
-    return buildRecoveryMarkdown(squadSlug, agentSlug, manifest, tasks, events.slice(-3), ctxSnapshot);
+/**
+ * Build the incremental recovery-context.md content.
+ *
+ * Strategy:
+ *   1. Extract current "Current State" from existing file → becomes history entry
+ *   2. Build fresh "Current State" from live data
+ *   3. Assemble: header + current state + history (oldest → newest, capped)
+ *   4. Enforce MAX_TOKENS budget by trimming history first
+ */
+function buildIncrementalRecovery(
+  squadSlug, agentSlug,
+  manifest, tasks, events, ctxSnapshot,
+  existingContent
+) {
+  const now = new Date().toISOString();
+
+  // Build fresh current state
+  const currentState = buildCurrentState(squadSlug, agentSlug, manifest, tasks, events, ctxSnapshot);
+
+  // Gather history: existing history entries + previous current state (if any)
+  const prevState = extractCurrentState(existingContent);
+  const existingHistory = extractCompactionHistory(existingContent);
+
+  let historyEntries = [...existingHistory];
+  if (prevState) historyEntries.push(prevState);
+  // Keep only the most recent MAX_HISTORY_ENTRIES - 1 entries (we add current above)
+  historyEntries = historyEntries.slice(-(MAX_HISTORY_ENTRIES - 1));
+
+  // Assemble full content
+  const headerLines = [
+    `# Recovery Context — ${squadSlug} / ${agentSlug}`,
+    `> Last Updated: ${now}`,
+    '',
+    '## Current State',
+    currentState,
+    ''
+  ];
+
+  const historyLines = historyEntries.length > 0
+    ? ['## Compaction History', '*Previous snapshots — oldest → newest:*', '', ...historyEntries.map((e) => e + '\n'), '']
+    : [];
+
+  const footerLines = [
+    '---',
+    '*Inject at top of session to restore context after compact.*'
+  ];
+
+  const allLines = [...headerLines, ...historyLines, ...footerLines];
+  let content = allLines.join('\n');
+
+  // Enforce token budget: trim history entries if needed
+  while (estimateTokens(content) > MAX_TOKENS && historyEntries.length > 0) {
+    historyEntries.shift(); // remove oldest entry
+    const trimmedHistoryLines = historyEntries.length > 0
+      ? ['## Compaction History', '*Previous snapshots — oldest → newest:*', '', ...historyEntries.map((e) => e + '\n'), '']
+      : [];
+    content = [...headerLines, ...trimmedHistoryLines, ...footerLines].join('\n');
   }
 
   return content;
 }
 
+// ─── Public API ───────────────────────────────────────────────────────────────
+
 /**
- * Generate and write recovery-context.md for an agent.
+ * Generate and write recovery-context.md for a squad agent.
+ * Uses incremental merging: preserves compaction history across cycles.
+ *
  * @param {string} projectDir
  * @param {string} squadSlug
  * @param {string} agentSlug
- * @returns {{ ok: boolean, path: string, tokens: number }}
+ * @returns {{ ok: boolean, path: string, tokens: number, incremental: boolean }}
  */
 async function generateRecovery(projectDir, squadSlug, agentSlug) {
-  const [manifest, tasks, events, ctxSnapshot] = await Promise.all([
+  const outDir = path.join(projectDir, SQUADS_DIR, squadSlug);
+  const outPath = path.join(outDir, 'recovery-context.md');
+
+  const [manifest, tasks, events, ctxSnapshot, existingContent] = await Promise.all([
     readManifest(projectDir, squadSlug),
     readRecentTasks(projectDir, squadSlug),
     readRecentEvents(projectDir, squadSlug),
-    readContextSnapshot(projectDir, squadSlug, agentSlug)
+    readContextSnapshot(projectDir, squadSlug, agentSlug),
+    fs.readFile(outPath, 'utf8').catch(() => null)
   ]);
 
-  const content = buildRecoveryMarkdown(squadSlug, agentSlug, manifest, tasks, events, ctxSnapshot);
-  const tokens = estimateTokens(content);
+  const content = buildIncrementalRecovery(
+    squadSlug, agentSlug,
+    manifest, tasks, events, ctxSnapshot,
+    existingContent
+  );
 
-  const outDir = path.join(projectDir, SQUADS_DIR, squadSlug);
-  const outPath = path.join(outDir, `recovery-context.md`);
+  const tokens = estimateTokens(content);
+  const incremental = Boolean(existingContent);
 
   try {
     await fs.mkdir(outDir, { recursive: true });
     await fs.writeFile(outPath, content, 'utf8');
   } catch (err) {
-    return { ok: false, error: err.message, path: outPath, tokens };
+    return { ok: false, error: err.message, path: outPath, tokens, incremental };
   }
 
-  return { ok: true, path: outPath, tokens, squadSlug, agentSlug };
+  return { ok: true, path: outPath, tokens, squadSlug, agentSlug, incremental };
 }
 
 /**
- * Read the current recovery-context.md for an agent (returns null if missing).
+ * Read the current recovery-context.md for a squad (returns null if missing).
  */
 async function readRecovery(projectDir, squadSlug) {
   const p = path.join(projectDir, SQUADS_DIR, squadSlug, 'recovery-context.md');
@@ -192,10 +279,15 @@ async function readRecovery(projectDir, squadSlug) {
 
 /**
  * Check if a runtime event should trigger a recovery refresh.
- * @param {string} eventType
  */
 function shouldRefreshOnEvent(eventType) {
   return REFRESH_EVENTS.has(eventType);
 }
 
-module.exports = { generateRecovery, readRecovery, shouldRefreshOnEvent, REFRESH_EVENTS };
+module.exports = {
+  generateRecovery,
+  readRecovery,
+  shouldRefreshOnEvent,
+  REFRESH_EVENTS,
+  estimateTokens
+};

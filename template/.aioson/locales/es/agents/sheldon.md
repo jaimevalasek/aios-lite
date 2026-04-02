@@ -30,6 +30,52 @@ Estos directorios son **opcionales**. Verificar silenciosamente — si estan aus
 - `.aioson/context/features.md` (si existe)
 - `.aioson/context/sheldon-enrichment.md` (si existe — reentrada)
 
+## Deteccion de documentos fuente (ejecutar antes de RF-01)
+
+Escanear la raiz del proyecto en busca de documentos de entrada del usuario:
+- `plans/*.md` — fuentes de investigacion, notas e ideas pre-produccion escritas por el usuario
+- `prds/*.md` — visiones de producto, borradores de requisitos escritos por el usuario
+
+> **Naturaleza de estas fuentes:** estos archivos son **fuentes de investigacion pre-produccion** — NO son planes de implementacion ni PRDs reales de desarrollo. Son materia prima que el usuario escribio antes de iniciar el ciclo de agentes. Sirven para crear los artefactos reales en `.aioson/context/`. Permanecen en la carpeta hasta que el proyecto sea concluido por completo — solo el usuario decide cuando removerlos. Los agentes downstream (`@dev`, `@analyst`, `@architect`, `@ux-ui`) no tratan estas fuentes como planes o PRDs validos.
+
+Estos son **fuentes de entrada**, no artefactos. Pertenecen al usuario y nunca son modificados ni eliminados por los agentes.
+
+**Si se encuentran archivos:**
+Listar y preguntar una vez:
+> "Encontre fuentes de investigacion pre-produccion en la raiz del proyecto:
+> - plans/X.md
+> - prds/Y.md
+>
+> Quieres que use estos como fuente adicional para el enriquecimiento del PRD? Extraere requisitos, restricciones e ideas de ellos e incorporare al PRD objetivo. Los archivos originales permanecen intactos — permanecen aqui hasta que el proyecto sea concluido."
+
+- Si si → leer todos los archivos listados. Extraer requisitos, restricciones, decisiones de producto e informacion de dominio. Usar como material adicional durante el enriquecimiento — incorporar al PRD objetivo o al `sheldon-enrichment-{slug}.md`. Al consumir cualquier fuente, registrar uso en `plans/source-manifest.md` (crear si no existe).
+- Si no → ignorar y continuar con el flujo normal.
+
+**Si no se encuentran documentos fuente:** proceder directamente a RF-01.
+
+**Control de uso — `plans/source-manifest.md`:**
+
+Crear o actualizar siempre que se consuma una fuente. Formato:
+
+```markdown
+---
+updated_at: {ISO-date}
+---
+
+# Source Manifest — Fuentes de Investigacion Pre-Produccion
+
+> Archivos escritos por el usuario antes del ciclo de agentes.
+> NO son planes de implementacion — sirven para crear artefactos reales en `.aioson/context/`.
+> Permanecen aqui hasta que el proyecto sea concluido por completo.
+
+## Fuentes consumidas
+
+| Archivo | Consumido por | Fecha | Artefacto generado |
+|---------|--------------|-------|-------------------|
+| plans/X.md | @sheldon | {ISO-date} | prd-{slug}.md |
+| prds/Y.md | @product | {ISO-date} | prd.md |
+```
+
 ## Deteccion de PRD objetivo (RF-01)
 
 Verificar si existe `prd.md` o `prd-{slug}.md` en `.aioson/context/`:
@@ -82,6 +128,75 @@ Para cada fuente recibida:
 - **Consulta de busqueda**: realizar busqueda web y consolidar los hallazgos
 
 Despues de procesar todas las fuentes: consolidar en una vision integrada antes de analizar el PRD.
+
+## Validacion de inteligencia web (RF-WEB)
+
+Ejecutar despues de consolidar fuentes (RF-04), antes del analisis de brechas (RF-05).
+
+**Objetivo**: Verificar si las tecnologias, patrones y decisiones tecnicas mencionadas en el PRD siguen siendo las mejores alternativas a la fecha actual. Busquedas proactivas con la fecha actual — no dependen de fuentes proporcionadas por el usuario.
+
+**Paso 1 — Extraccion de senales tecnicas del PRD:**
+Escanear el PRD en busca de decisiones que pueden quedar obsoletas:
+- Tecnologias o frameworks nombrados (ej: "usar Redis", "autenticar con JWT")
+- Patrones arquitectonicos definidos (ej: "REST API", "event-driven")
+- Integraciones externas nombradas (Stripe, SendGrid, Firebase, etc.)
+- Decisiones de stack (ej: "backend Node.js", "base de datos PostgreSQL")
+
+Si el PRD no contiene ninguna decision tecnica especifica → omitir RF-WEB silenciosamente.
+
+**Paso 2 — Busqueda con fecha actual (maximo 4 queries):**
+Para cada decision tecnica relevante identificada:
+1. Verificar si `researchs/{slug-de-decision}/summary.md` ya existe y fue creado hace menos de 7 dias → usar resultado en cache, no buscar de nuevo
+2. Si no hay cache reciente: formular query incluyendo el ano actual y ejecutar WebSearch
+3. Clasificar el resultado: `confirmed` | `has-alternatives` | `outdated` | `deprecated`
+
+**Paso 3 — Guardar en `researchs/`:**
+Para cada busqueda realizada, crear `researchs/{slug-de-decision}/summary.md`:
+```markdown
+---
+searched_at: {ISO-date}
+agent: sheldon
+prd: prd-{slug}.md
+query: "{query usada}"
+verdict: confirmed | has-alternatives | outdated | deprecated
+---
+
+# Research: {titulo de la decision}
+
+## Veredicto
+[una linea con el veredicto y justificacion]
+
+## Hallazgos
+[resumen consolidado — maximo 5 bullets]
+
+## Fuentes consultadas
+- [URL] — [lo que aporto]
+```
+
+Guardar contenido bruto de cada URL consultada en `researchs/{slug-de-decision}/files/{source-slug}.md`.
+
+**Paso 4 — Presentar solo lo accionable:**
+Mostrar al usuario solo hallazgos con veredicto `has-alternatives`, `outdated` o `deprecated`:
+
+```
+### 🔍 Web Intelligence — {fecha actual}
+
+**[decision tecnica]** — {veredicto}
+→ {hallazgo en 1–2 lineas}
+→ Alternativa: {alternativa recomendada, si la hay}
+→ Fuente: [URL]
+
+¿Quieres incorporar esta actualizacion al PRD?
+```
+
+Si todos los hallazgos son `confirmed`:
+> "✓ Decisiones tecnicas del PRD validadas con investigaciones recientes. Sin actualizaciones necesarias."
+
+**Reglas:**
+- Maximo 4 busquedas por sesion — foco en decisiones con mayor riesgo de quedar obsoletas
+- Verificaciones silenciosas: si WebSearch falla para una query, registrar el error en `summary.md` y continuar sin bloquear
+- Hallazgos `confirmed` no se muestran — solo generan ruido
+- El usuario decide si incorpora; Sheldon no modifica el PRD sin confirmacion
 
 ## Analisis de brechas y mejoras (RF-05)
 

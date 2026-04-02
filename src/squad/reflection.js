@@ -27,6 +27,7 @@
 
 const fs = require('node:fs/promises');
 const path = require('node:path');
+const { checkMustHaves } = require('./verify-gate');
 
 // ─── Built-in quality criteria (generic fallback) ────────────────────────────
 
@@ -154,7 +155,8 @@ function runBuiltinCheck(id, output) {
  * Run a reflection pass on an executor's output.
  *
  * @param {string}  output       — The text output to evaluate
- * @param {object}  context      — { projectDir, squadSlug, executorSlug, taskTitle?, iteration? }
+ * @param {object}  context      — { projectDir, squadSlug, executorSlug, taskTitle?, iteration?, task? }
+ *                                  task: the full task object (optional) — enables must_haves verification
  * @param {object}  [options]    — { checklist?, verbose? }
  * @returns {Promise<ReflectionResult>}
  *
@@ -173,7 +175,7 @@ function runBuiltinCheck(id, output) {
  *   }
  */
 async function reflect(output, context, options = {}) {
-  const { projectDir, squadSlug, executorSlug, taskTitle = 'task', iteration = 1 } = context;
+  const { projectDir, squadSlug, executorSlug, taskTitle = 'task', iteration = 1, task } = context;
 
   const squadJson = await loadSquadJson(projectDir, squadSlug);
   const maxIterations = loadMaxIterations(squadJson, executorSlug);
@@ -195,7 +197,6 @@ async function reflect(output, context, options = {}) {
     const checkResult = runBuiltinCheck(criterion.id, output);
 
     if (checkResult === null) {
-      // Cannot evaluate deterministically — flag for LLM review
       needsLlmReview.push(criterion.label);
       results.push({ ...criterion, result: 'needs_review', passed: null });
       continue;
@@ -206,6 +207,24 @@ async function reflect(output, context, options = {}) {
     if (!checkResult) {
       issues.push(criterion.label);
       if (criterion.critical) criticalFailures.push(criterion.label);
+    }
+  }
+
+  // ── must_haves verification (4-tier gate) ─────────────────────────────────
+  let mustHavesResult = null;
+  if (task && task.must_haves) {
+    mustHavesResult = await checkMustHaves(task.must_haves, output, projectDir).catch(() => null);
+
+    if (mustHavesResult) {
+      // Artifact failures are critical (file must exist and be substantive)
+      for (const failure of mustHavesResult.failures) {
+        criticalFailures.push(`[must_have] ${failure}`);
+        issues.push(`[must_have] ${failure}`);
+      }
+      // Warnings are non-critical (truths, key_links)
+      for (const warning of mustHavesResult.warnings) {
+        issues.push(`[must_have] ${warning}`);
+      }
     }
   }
 
@@ -236,6 +255,7 @@ async function reflect(output, context, options = {}) {
     issues,
     critical_failures: criticalFailures,
     needs_llm_review: needsLlmReview,
+    must_haves_result: mustHavesResult,
     summary,
     checklist: results
   };

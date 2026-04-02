@@ -4,6 +4,7 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const { SquadDaemon } = require('../squad-daemon');
 const { openRuntimeDb } = require('../runtime-store');
+const { consume: consumeInterSquadEvents } = require('../squad/inter-squad-events');
 
 async function handleStart(projectDir, squadSlug, options, { logger, t }) {
   if (!squadSlug) {
@@ -186,10 +187,143 @@ async function handleLogs(projectDir, squadSlug, { logger, t }) {
   }
 }
 
+// ─── Persistent Execution Loop (4.3) ─────────────────────────────────────────
+
+/**
+ * Parse a loop-delay string like '30s', '2m', '1h' into milliseconds.
+ */
+function parseLoopDelay(str, defaultMs = 30_000) {
+  const s = String(str || '').trim().toLowerCase();
+  const match = s.match(/^(\d+)(s|m|h)?$/);
+  if (!match) return defaultMs;
+  const val = parseInt(match[1], 10);
+  const unit = match[2] || 's';
+  if (unit === 'h') return val * 3_600_000;
+  if (unit === 'm') return val * 60_000;
+  return val * 1_000;
+}
+
+/**
+ * Persistent daemon loop for a squad.
+ *
+ * Each iteration:
+ *   1. Check inter_squad_events for this squad (via manifest subscriptions)
+ *   2. If pending events: trigger squad:autorun to process them
+ *   3. Write daemon-alive.json heartbeat
+ *   4. Sleep loop-delay
+ *
+ * Exits gracefully on SIGTERM (waits for current iteration to finish).
+ */
+async function handlePersistent(projectDir, squadSlug, options, { logger }) {
+  if (!squadSlug) {
+    logger.error('Error: --squad is required for --persistent');
+    return { ok: false, error: 'missing_squad' };
+  }
+
+  const loopDelayMs = parseLoopDelay(options['loop-delay'] || options.loopDelay, 30_000);
+
+  // Load manifest for subscriptions
+  let manifest = {};
+  try {
+    const manifestPath = path.join(projectDir, '.aioson', 'squads', squadSlug, 'squad.manifest.json');
+    manifest = JSON.parse(await fs.readFile(manifestPath, 'utf8'));
+  } catch { /* manifest optional */ }
+
+  const subscriptions = [
+    ...(manifest.subscriptions || []),
+    ...(manifest.depends_on || []).map((d) => d.event).filter(Boolean)
+  ];
+
+  const aliveJsonPath = path.join(projectDir, '.aioson', 'squads', squadSlug, 'daemon-alive.json');
+
+  logger.log(`Persistent daemon — squad: ${squadSlug}`);
+  logger.log(`Loop delay: ${loopDelayMs / 1000}s`);
+  logger.log(`Subscriptions: ${subscriptions.length > 0 ? subscriptions.join(', ') : '(none)'}`);
+  logger.log('Press Ctrl+C to stop');
+  logger.log('');
+
+  let running = true;
+  process.on('SIGTERM', () => { running = false; });
+  process.on('SIGINT', () => { running = false; });
+
+  let iteration = 0;
+
+  while (running) {
+    iteration++;
+    const now = new Date().toISOString();
+
+    // Write heartbeat
+    await fs.mkdir(path.dirname(aliveJsonPath), { recursive: true });
+    await fs.writeFile(aliveJsonPath, JSON.stringify({
+      squad: squadSlug,
+      iteration,
+      last_check: now,
+      subscriptions,
+      pid: process.pid
+    }, null, 2), 'utf8').catch(() => {});
+
+    // Check inter-squad events
+    if (subscriptions.length > 0) {
+      const events = await consumeInterSquadEvents(projectDir, {
+        toSquad: squadSlug,
+        subscriptions
+      }).catch(() => []);
+
+      if (events.length > 0) {
+        logger.log(`[${now.slice(11, 19)}] ${events.length} inter-squad event(s) received:`);
+        for (const ev of events) {
+          logger.log(`  ← [${ev.fromSquad}] ${ev.event}`);
+        }
+        logger.log(`  → Triggering squad:autorun for "${squadSlug}"...`);
+
+        // Trigger autorun via CLI subprocess
+        const { spawnSync } = require('node:child_process');
+        const goal = events.map((e) => `Process event: ${e.event} from ${e.fromSquad}`).join('; ');
+        const autorunResult = spawnSync('aioson', [
+          'squad:autorun', projectDir,
+          `--squad=${squadSlug}`,
+          `--goal=${goal}`,
+          '--reflect'
+        ], {
+          encoding: 'utf8',
+          timeout: 300_000, // 5 min per autorun
+          stdio: 'pipe'
+        });
+
+        if (autorunResult.status === 0) {
+          logger.log('  ✓ Autorun completed');
+        } else {
+          logger.log(`  ✗ Autorun exited ${autorunResult.status}: ${(autorunResult.stderr || '').trim().slice(0, 100)}`);
+        }
+      } else {
+        logger.log(`[${now.slice(11, 19)}] No pending events for "${squadSlug}" — sleeping ${loopDelayMs / 1000}s`);
+      }
+    } else {
+      logger.log(`[${now.slice(11, 19)}] Iteration ${iteration} — no subscriptions configured, heartbeat only`);
+    }
+
+    // Sleep loop-delay (interruptible)
+    if (running) {
+      await new Promise((resolve) => setTimeout(resolve, loopDelayMs));
+    }
+  }
+
+  logger.log('');
+  logger.log(`Persistent daemon stopped (${iteration} iteration(s) completed)`);
+  await fs.unlink(aliveJsonPath).catch(() => {});
+
+  return { ok: true, iterations: iteration };
+}
+
 async function runSquadDaemon({ args, options, logger, t }) {
   const targetDir = path.resolve(process.cwd(), args[0] || '.');
   const sub = options.sub || 'status';
   const squadSlug = options.squad;
+
+  // --persistent flag triggers persistent loop mode regardless of sub
+  if (options.persistent) {
+    return handlePersistent(targetDir, squadSlug, options, { logger });
+  }
 
   switch (sub) {
     case 'start':

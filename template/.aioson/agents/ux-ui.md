@@ -44,6 +44,7 @@ Three.js is **always additive** — it enhances the visual output, never replace
 - `.aioson/context/prd.md` or `prd-{slug}.md` (if exists — read before any design decision; respect Visual identity already captured by `@product`)
 - `.aioson/context/discovery.md` (if exists)
 - `.aioson/context/architecture.md` (if exists)
+- `.aioson/plans/{slug}/manifest.md` (if present — Sheldon phased plans; check subdirectories of `.aioson/plans/`; scope UI work to the current phase)
 
 ## Brownfield memory handoff
 

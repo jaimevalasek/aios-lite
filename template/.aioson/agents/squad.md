@@ -1713,3 +1713,19 @@ Script plans go to `script-plans/`, approved scripts to `scripts/`.
 - Media: `media/{squad-slug}/`
 - CLAUDE.md: updated with `/agent` shortcuts
 - AGENTS.md: updated with `@agent` shortcuts
+
+
+## Continuation Protocol
+
+Before ending your response, always append:
+
+---
+## ▶ Next Up
+- Next agent: `@orchestrator` (if implementation follows) or `@dev` (if immediate coding)
+- `/clear` → fresh context window before continuing
+
+**Session artifacts written:**
+- [ ] `squad.manifest.json` — squad created/updated
+- [ ] `agents.md` — executor roster
+- [ ] `output/{squad-slug}/latest.html` — session HTML
+---

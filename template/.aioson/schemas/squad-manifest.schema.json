@@ -98,9 +98,9 @@
           "title": { "type": "string" },
           "type": {
             "type": "string",
-            "enum": ["worker", "agent", "clone", "assistant", "human-gate"],
+            "enum": ["worker", "agent", "clone", "assistant", "human-gate", "research", "reviewer"],
             "default": "agent",
-            "description": "Executor type: worker (deterministic script, no LLM), agent (LLM with defined role), clone (cognitive replica of real person), assistant (domain specialist with behavioral profile), human-gate (human approval checkpoint)"
+            "description": "Executor type: worker (deterministic script, no LLM), agent (LLM with defined role), clone (cognitive replica of real person), assistant (domain specialist with behavioral profile), human-gate (human approval checkpoint), research (web research with cache, no LLM), reviewer (cross-AI review synthesis)"
           },
           "role": { "type": "string" },
           "file": { "type": "string" },
@@ -202,6 +202,37 @@
               }
             },
             "description": "Granular tasks within this executor, executed in order"
+          },
+          "research": {
+            "type": "object",
+            "description": "Configuration for research executor type (type: 'research')",
+            "properties": {
+              "topic": { "type": "string", "description": "Cache key / topic slug (e.g. 'youtube-shorts-2026')" },
+              "urls": {
+                "type": "array",
+                "items": { "type": "string" },
+                "description": "URLs to scrape for this research topic"
+              },
+              "cache_hours": { "type": "integer", "default": 168, "description": "Cache TTL in hours (default 168 = 7 days)" },
+              "cache_dir": { "type": "string", "default": "researchs/", "description": "Base directory for research cache" },
+              "max_sources": { "type": "integer", "default": 5, "description": "Maximum number of URLs to scrape" }
+            }
+          },
+          "cross_ai": {
+            "type": "boolean",
+            "description": "If true (for reviewer type), send to multiple AI CLIs and synthesize responses"
+          },
+          "review": {
+            "type": "object",
+            "description": "Configuration for reviewer executor type",
+            "properties": {
+              "detect_clis": {
+                "type": "array",
+                "items": { "type": "string", "enum": ["claude", "gemini", "codex"] }
+              },
+              "exclude_current": { "type": "boolean", "default": true },
+              "synthesize_to": { "type": "string", "description": "Output path for REVIEWS.md" }
+            }
           },
           "formats": {
             "type": "array",
@@ -704,6 +735,45 @@
         }
       }
     }
+  },
+  "depends_on": {
+    "type": "array",
+    "description": "Inter-squad dependencies: this squad will consume published events from these squads before starting a run",
+    "items": {
+      "type": "object",
+      "required": ["squad", "event"],
+      "properties": {
+        "squad": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$",
+          "description": "Slug of the squad whose events this squad depends on"
+        },
+        "event": {
+          "type": "string",
+          "description": "Event pattern to subscribe to (e.g. 'episode.created', 'review.*', '*')"
+        },
+        "input_mapping": {
+          "type": "object",
+          "description": "Maps event payload fields to task context fields",
+          "additionalProperties": { "type": "string" }
+        }
+      }
+    }
+  },
+  "hooks": {
+    "type": "object",
+    "description": "Hook scripts that gate squad execution (exit 0=allow, exit 2=deny)",
+    "properties": {
+      "pre_run": {
+        "type": "string",
+        "description": "Shell command to run before squad:autorun starts. Exit code 2 aborts the run."
+      }
+    }
+  },
+  "subscriptions": {
+    "type": "array",
+    "description": "Event patterns this squad subscribes to (consumed at the start of each autorun). Short form of depends_on[*].event.",
+    "items": { "type": "string" }
   },
   "additionalProperties": true
 }

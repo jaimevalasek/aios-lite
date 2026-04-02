@@ -64,6 +64,9 @@ const { runSquadDeploy } = require('./commands/squad-deploy');
 const { runSquadWebhook } = require('./commands/squad-webhook');
 const { runSquadBus } = require('./commands/squad-bus');
 const { runSquadAutorun } = require('./commands/squad-autorun');
+const { runSquadDependencyGraph } = require('./commands/squad-dependency-graph');
+const { runSquadToolRegister } = require('./commands/squad-tool-register');
+const { runSquadReview } = require('./commands/squad-review');
 const { runAgentAudit } = require('./commands/agent-audit');
 const { runBriefGen } = require('./commands/brief-gen');
 const { runVerifyGate } = require('./commands/verify-gate');
@@ -123,6 +126,7 @@ const { runContextCacheList, runContextCacheSave, runContextCacheRestore, runCon
 const { runSandboxExec } = require('./commands/sandbox');
 const { runAgentLoad, runAgentShardIndex } = require('./commands/agent-loader');
 const { runLearningEvolve, runLearningApply } = require('./commands/learning-evolve');
+const { runLearningRollback } = require('./commands/learning-rollback');
 const { runToolRegistry } = require('./commands/tool-registry-cmd');
 const { runHealth } = require('./commands/health');
 const { runContextHealth } = require('./commands/context-health');
@@ -268,6 +272,12 @@ const JSON_SUPPORTED_COMMANDS = new Set([
   'squad-bus',
   'squad:autorun',
   'squad-autorun',
+  'squad:dependency-graph',
+  'squad-dependency-graph',
+  'squad:tool:register',
+  'squad-tool-register',
+  'squad:review',
+  'squad-review',
   'agent:audit',
   'agent-audit',
   'brief:gen',
@@ -284,6 +294,8 @@ const JSON_SUPPORTED_COMMANDS = new Set([
   'learning-evolve',
   'learning:apply',
   'learning-apply',
+  'learning:rollback',
+  'learning-rollback',
   'learning:export',
   'learning-export',
   'spec:sync',
@@ -758,6 +770,12 @@ async function main() {
       result = await runSquadBus({ args, options: { ...options, sub }, logger: commandLogger });
     } else if (command === 'squad:autorun' || command === 'squad-autorun') {
       result = await runSquadAutorun({ args, options, logger: commandLogger });
+    } else if (command === 'squad:dependency-graph' || command === 'squad-dependency-graph') {
+      result = await runSquadDependencyGraph({ args, options, logger: commandLogger });
+    } else if (command === 'squad:tool:register' || command === 'squad-tool-register') {
+      result = await runSquadToolRegister({ args, options, logger: commandLogger });
+    } else if (command === 'squad:review' || command === 'squad-review') {
+      result = await runSquadReview({ args, options, logger: commandLogger });
     } else if (command === 'agent:audit' || command === 'agent-audit') {
       result = await runAgentAudit({ args, options, logger: commandLogger });
     } else if (command === 'brief:gen' || command === 'brief-gen') {
@@ -769,6 +787,8 @@ async function main() {
       result = await runSquadLearning({ args, options: { ...options, sub }, logger: commandLogger, t });
     } else if (command === 'learning:evolve' || command === 'learning-evolve') {
       result = await runLearningEvolve({ args, options, logger: commandLogger, t });
+    } else if (command === 'learning:rollback' || command === 'learning-rollback') {
+      result = await runLearningRollback({ args, options, logger: commandLogger });
     } else if (command === 'learning:apply' || command === 'learning-apply') {
       result = await runLearningApply({ args, options, logger: commandLogger, t });
     } else if (command === 'learning:export' || command === 'learning-export') {

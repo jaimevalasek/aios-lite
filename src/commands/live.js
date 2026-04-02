@@ -860,6 +860,20 @@ async function runLiveStart({ args, options = {}, logger, t }) {
     throw new Error(t('live.json_requires_no_launch'));
   }
 
+  // ── 5.3 Ambient Intelligence health check alert ────────────────────────────
+  if (!options.json && !options['no-health-check']) {
+    try {
+      const { runHealthCheck, formatHealthAlert } = require('../lib/health-check');
+      const health = await runHealthCheck(targetDir);
+      const alert = formatHealthAlert(health.items);
+      if (alert) {
+        logger.log('');
+        logger.log(alert);
+        logger.log('');
+      }
+    } catch { /* health check is non-fatal */ }
+  }
+
   const toolBinary = String(options['tool-bin'] || tool).trim();
   const binaryPath = await resolveExecutablePath(toolBinary);
   if (!binaryPath) {

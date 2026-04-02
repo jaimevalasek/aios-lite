@@ -23,6 +23,56 @@ Nueva feature (MICRO — sin nuevas entidades):
 @product → @dev → @qa
 ```
 
+## Deteccion de documentos fuente (ejecutar antes de la deteccion de modo)
+
+Escanear la raiz del proyecto en busca de documentos de entrada del usuario:
+- `plans/*.md` — fuentes de investigacion, notas e ideas pre-produccion escritas por el usuario
+- `prds/*.md` — visiones de producto, borradores de requisitos escritos por el usuario
+
+> **Naturaleza de estas fuentes:** estos archivos son **fuentes de investigacion pre-produccion** — NO son planes de implementacion ni PRDs reales de desarrollo. Son materia prima que el usuario escribio antes de iniciar el ciclo de agentes. Sirven para crear los artefactos reales en `.aioson/context/`. Permanecen en la carpeta hasta que el proyecto sea concluido por completo — solo el usuario decide cuando removerlos. Los agentes downstream (`@dev`, `@analyst`, `@architect`, `@ux-ui`) no tratan estas fuentes como planes o PRDs validos.
+
+Estos son **fuentes de entrada**, no artefactos. Pertenecen al usuario y nunca son modificados ni eliminados por los agentes.
+
+**Si se encuentran archivos:**
+Listar y preguntar una vez:
+> "Encontre fuentes de investigacion pre-produccion en la raiz del proyecto:
+> - plans/X.md
+> - prds/Y.md
+>
+> Quieres que use estos como material de origen para el PRD? Los sintetizare y generare el artefacto adecuado en `.aioson/context/`. Los archivos originales permanecen intactos — permanecen aqui hasta que el proyecto sea concluido."
+
+- Si si → leer todos los archivos listados, extraer objetivos, necesidades del usuario, restricciones y descripciones de features. Usar para pre-rellenar la conversacion del PRD o generar el PRD directamente si el contenido es suficientemente detallado. Al consumir cualquier fuente, registrar en `plans/source-manifest.md` (crear si no existe).
+- Si no → ignorar y continuar la conversacion desde cero.
+
+**Senal greenfield:** si hay documentos fuente Y `prd.md` no existe en `.aioson/context/` → este es probablemente el kickoff inicial del proyecto.
+
+**Senal feature:** si hay documentos fuente Y `prd.md` ya existe en `.aioson/context/` → este es probablemente una nueva feature o refinamiento.
+
+**Si no se encuentran documentos fuente:** proceder directamente a la deteccion de modo.
+
+**Control de uso — `plans/source-manifest.md`:**
+
+Crear o actualizar siempre que se consuma una fuente. Formato:
+
+```markdown
+---
+updated_at: {ISO-date}
+---
+
+# Source Manifest — Fuentes de Investigacion Pre-Produccion
+
+> Archivos escritos por el usuario antes del ciclo de agentes.
+> NO son planes de implementacion — sirven para crear artefactos reales en `.aioson/context/`.
+> Permanecen aqui hasta que el proyecto sea concluido por completo.
+
+## Fuentes consumidas
+
+| Archivo | Consumido por | Fecha | Artefacto generado |
+|---------|--------------|-------|-------------------|
+| plans/X.md | @product | {ISO-date} | prd.md |
+| prds/Y.md | @sheldon | {ISO-date} | prd-{slug}.md |
+```
+
 ## Deteccion de modo
 
 Verificar las siguientes condiciones en orden:

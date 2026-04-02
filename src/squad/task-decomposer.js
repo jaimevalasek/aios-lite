@@ -191,6 +191,87 @@ function buildAcceptanceCriteria(taskTitle, verbType) {
   return [...base, ...(specific[verbType] || [])];
 }
 
+// ─── must_haves contract builder ──────────────────────────────────────────────
+
+/**
+ * Build a must_haves contract for a task based on its verb type.
+ * These are heuristic defaults — executors can override in squad.json.
+ */
+function buildMustHaves(taskTitle, verbType) {
+  const title = taskTitle.slice(0, 60);
+
+  const contracts = {
+    research: {
+      truths:    [`Research findings address: "${title}"`],
+      artifacts: [],
+      key_links: []
+    },
+    write: {
+      truths:    [`Written content covers the scope of: "${title}"`],
+      artifacts: [],  // populated if executor writes to a file
+      key_links: []
+    },
+    review: {
+      truths:    [`Review identifies concrete issues in: "${title}"`],
+      artifacts: [],
+      key_links: []
+    },
+    design: {
+      truths:    [`Design plan is actionable for: "${title}"`],
+      artifacts: [],
+      key_links: []
+    },
+    publish: {
+      truths:    [`Output is delivered for: "${title}"`],
+      artifacts: [],
+      key_links: []
+    },
+    summarize: {
+      truths:    [`Summary captures all key points of: "${title}"`],
+      artifacts: [],
+      key_links: []
+    },
+    translate: {
+      truths:    [`Translation preserves the meaning of: "${title}"`],
+      artifacts: [],
+      key_links: []
+    },
+    optimize: {
+      truths:    [`Optimization is applied to: "${title}"`],
+      artifacts: [],
+      key_links: []
+    }
+  };
+
+  return contracts[verbType] || {
+    truths:    [`Task output addresses: "${title}"`],
+    artifacts: [],
+    key_links: []
+  };
+}
+
+// ─── read_first hints builder ─────────────────────────────────────────────────
+
+/**
+ * Build read_first hints for a task.
+ * These are instructions (not literal paths) telling the executor what to read
+ * before starting — avoids loading everything inline and inflating context.
+ */
+function buildReadFirstHints(verbType) {
+  const hints = {
+    research:  ['Start with web search or existing researchs/ cache before reading code'],
+    write:     ['Read the brief/spec document first, then any referenced source material'],
+    review:    ['Read only the artifact being reviewed — not the full codebase'],
+    design:    ['Read existing architecture docs and constraints before designing'],
+    publish:   ['Read output spec and target format before writing to disk'],
+    summarize: ['Read source material first, then check for existing summaries to build on'],
+    translate: ['Read the original content in full before starting translation'],
+    optimize:  ['Read the current implementation first — understand before changing']
+  };
+
+  return hints[verbType] || ['Read only files directly relevant to this specific task'];
+}
+
 function detectDependencies(tasks) {
   // Simple heuristic: review/optimize/publish tasks depend on write/research tasks
   const DEPENDENT_TYPES = new Set(['review', 'optimize', 'publish', 'summarize']);
@@ -249,16 +330,21 @@ function heuristicDecompose(goal, executors) {
     const verbType = detectVerbType(sg);
     const executor = assignExecutor(executors, verbType);
     const criteria = buildAcceptanceCriteria(sg, verbType);
+    const mustHaves = buildMustHaves(sg, verbType);
+    const readFirstHints = buildReadFirstHints(verbType);
 
     return {
       id: `task-${String(i + 1).padStart(2, '0')}`,
       title: sg.slice(0, 100),
       description: sg,
       acceptance_criteria: criteria,
+      must_haves: mustHaves,
+      read_first_hints: readFirstHints,
       executor: executor ? executor.slug : null,
       dependencies: [],
       priority: i + 1,
       parallel_group: 1,
+      wave: 1,
       status: 'pending',
       _verbType: verbType
     };
@@ -270,18 +356,22 @@ function heuristicDecompose(goal, executors) {
   // Topological sort
   const executionOrder = topologicalSort(tasks);
 
-  // Build parallel group index
+  // Build parallel group index (kept as parallel_groups for backward compat)
+  // and waves (canonical new name)
   const parallelGroups = {};
+  const waves = {};
   for (const t of tasks) {
     const g = t.parallel_group;
     if (!parallelGroups[g]) parallelGroups[g] = [];
+    if (!waves[g]) waves[g] = [];
     parallelGroups[g].push(t.id);
+    waves[g].push(t.id);
   }
 
-  // Clean up internal field
-  const cleanTasks = tasks.map(({ _verbType, ...rest }) => rest);
+  // Clean up internal field; set wave = parallel_group for clarity
+  const cleanTasks = tasks.map(({ _verbType, ...rest }) => ({ ...rest, wave: rest.parallel_group }));
 
-  return { tasks: cleanTasks, executionOrder, parallelGroups };
+  return { tasks: cleanTasks, executionOrder, parallelGroups, waves };
 }
 
 function topologicalSort(tasks) {
@@ -447,6 +537,7 @@ async function decompose(projectDir, squadSlug, goal, options = {}) {
     tasks,
     execution_order: executionOrder,
     parallel_groups: parallelGroups,
+    waves,
     structured_prompt: structuredPrompt
   };
 
@@ -503,16 +594,28 @@ function formatPlan(plan) {
     }[task.status] || '?';
 
     lines.push(`\n**[${statusIcon}] ${task.id}: ${task.title}**`);
-    lines.push(`  Executor: ${task.executor || 'unassigned'}  |  Group: ${task.parallel_group}`);
+    lines.push(`  Executor: ${task.executor || 'unassigned'}  |  Wave: ${task.wave || task.parallel_group}`);
     if (task.dependencies.length > 0) lines.push(`  Depends on: ${task.dependencies.join(', ')}`);
+    if (task.read_first_hints && task.read_first_hints.length > 0) {
+      lines.push(`  Read first: ${task.read_first_hints[0]}`);
+    }
     lines.push('  Acceptance criteria:');
     for (const c of task.acceptance_criteria) lines.push(`    - ${c}`);
+    if (task.must_haves) {
+      if (task.must_haves.truths && task.must_haves.truths.length > 0) {
+        lines.push(`  Must-have truth: ${task.must_haves.truths[0]}`);
+      }
+      if (task.must_haves.artifacts && task.must_haves.artifacts.length > 0) {
+        lines.push(`  Must-have artifact: ${task.must_haves.artifacts[0]}`);
+      }
+    }
   }
 
-  if (Object.keys(plan.parallel_groups).length > 1) {
-    lines.push('', '### Parallel execution groups');
-    for (const [group, ids] of Object.entries(plan.parallel_groups)) {
-      lines.push(`  Group ${group}: ${ids.join(', ')}`);
+  const waveMap = plan.waves || plan.parallel_groups;
+  if (Object.keys(waveMap).length > 1) {
+    lines.push('', '### Execution waves');
+    for (const [wave, ids] of Object.entries(waveMap)) {
+      lines.push(`  Wave ${wave}: ${ids.join(', ')}${ids.length > 1 ? ' (parallel)' : ''}`);
     }
   }
 

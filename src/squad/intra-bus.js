@@ -28,7 +28,18 @@ const path = require('node:path');
 const { randomUUID } = require('node:crypto');
 
 const BUS_FILE = 'bus.jsonl';
-const VALID_TYPES = new Set(['finding', 'feedback', 'question', 'result', 'status', 'block']);
+const VALID_TYPES = new Set([
+  'finding',            // executor discovered something relevant to others
+  'feedback',           // critique or review of another executor's output
+  'question',           // executor needs input from a peer
+  'result',             // executor completed a task, sharing output summary
+  'status',             // executor announcing current activity
+  'block',              // executor is blocked, needs coordinator or peer help
+  'resolution',         // coordinator resolved a block message
+  'gap_closure_attempt', // coordinator retrying a failed task with context
+  'heartbeat',          // coordinator alive-check during long operations
+  'tool_request'        // executor requesting dynamic tool registration (4.2)
+]);
 const DEFAULT_POLL_MS = 1500;
 const MAX_WATCH_TIMEOUT_MS = 60 * 60 * 1000; // 1h hard cap
 
@@ -280,6 +291,44 @@ async function listSessions(projectDir, squadSlug) {
   return result.sort((a, b) => b.modified_at.localeCompare(a.modified_at));
 }
 
+/**
+ * Detect if an executor is in an analysis loop.
+ *
+ * Returns true if the executor has posted `threshold` or more consecutive
+ * `status` messages without a `result` in between.
+ *
+ * @param {object[]} messages  — All bus messages for the session
+ * @param {string}   executorSlug
+ * @param {number}   [threshold=8]
+ * @returns {boolean}
+ */
+function isAnalysisLoop(messages, executorSlug, threshold = 8) {
+  let count = 0;
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const m = messages[i];
+    if (m.from !== executorSlug) continue;
+    if (m.type === 'result') break;
+    if (m.type === 'status') count++;
+  }
+  return count >= threshold;
+}
+
+/**
+ * Count unresolved block messages for a session.
+ * A block is resolved when a `resolution` message exists with
+ * metadata.block_id matching the block's id.
+ *
+ * @returns {object[]} unresolved block messages
+ */
+function getUnresolvedBlocks(messages) {
+  const resolvedIds = new Set(
+    messages
+      .filter((m) => m.type === 'resolution' && m.metadata && m.metadata.block_id)
+      .map((m) => m.metadata.block_id)
+  );
+  return messages.filter((m) => m.type === 'block' && !resolvedIds.has(m.id));
+}
+
 module.exports = {
   post,
   read,
@@ -290,5 +339,7 @@ module.exports = {
   listSessions,
   busPath,
   busDir,
-  VALID_TYPES
+  VALID_TYPES,
+  isAnalysisLoop,
+  getUnresolvedBlocks
 };

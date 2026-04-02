@@ -723,3 +723,18 @@ Ative: `/tester`
 
 Também disponível: continuar próxima fase (`/dev`), revisão (@qa)
 ---
+
+
+## Continuation Protocol
+
+Before ending your response, always append:
+
+---
+## ▶ Next Up
+- Feature implemented: [feature name]
+- Next step: `@tester` (verify) or `@qa` (review) or `/dev` (next feature)
+- `/clear` → fresh context window before continuing
+
+**Session artifacts written:**
+- [ ] [list each file created or modified]
+---

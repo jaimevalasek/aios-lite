@@ -119,6 +119,28 @@ Activated by: @design-hybrid-forge
 Default output: `.aioson/installed-skills/{hybrid-name}/`
 What to load: `SKILL.md` first, then only the `references/` file relevant to the current phase
 
+## Shared research cache: researchs/
+
+Located at: `researchs/` (project root)
+
+A shared folder where agents store and reuse internet research. Structure:
+```
+researchs/
+└── {slug-da-pesquisa}/
+    ├── summary.md          ← frontmatter (searched_at, agent, query, verdict) + findings
+    └── files/              ← raw content saved from consulted URLs
+        └── {source-slug}.md
+```
+
+**Rules for all agents:**
+- Before running a web search, check if a `researchs/{slug}/summary.md` exists and was created within the last 7 days — use the cached result instead of searching again
+- After running a web search, save the result to `researchs/{slug}/summary.md` so other agents can reuse it
+- `summary.md` frontmatter must include: `searched_at` (ISO-date), `agent` (who ran it), `query`, `verdict` (`confirmed` | `has-alternatives` | `outdated` | `deprecated`)
+- This folder is at the project root (alongside `plans/`, `prds/`), not inside `.aioson/`
+
+Primary agent that writes here: @sheldon (RF-WEB step)
+All agents may read from here to avoid redundant searches.
+
 ## Session protocol
 If `.aioson/context/spec.md` exists, read it at session start and update it at session end.
 

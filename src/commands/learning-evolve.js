@@ -2,6 +2,7 @@
 
 const fs = require('node:fs/promises');
 const path = require('node:path');
+const { randomUUID } = require('node:crypto');
 const { openRuntimeDb, listSquadLearnings, listProjectLearnings, promoteSquadLearning, promoteProjectLearning } = require('../runtime-store');
 
 const AGENTS_DIR = path.join('.aioson', 'agents');
@@ -265,17 +266,25 @@ async function applyProposed(proposed, projectDir, db, logger, quiet, squadSlug)
       if (!quiet) logger.log(`  ✓ Aplicado: ${delta.file} (+${delta.count} learnings)`);
     }
 
-    // Registra no log de evolução
+    // Registra no evolution-log.jsonl (5.5: per-delta entries with UUIDs for rollback)
     const evolutionDir = path.resolve(projectDir, EVOLUTION_DIR);
     await fs.mkdir(evolutionDir, { recursive: true });
-    const logFile = path.join(evolutionDir, 'log.jsonl');
-    const logEntry = JSON.stringify({
-      appliedAt: new Date().toISOString(),
-      deltasCount: evolved,
-      squad: squadSlug || null,
-      files: proposed.map((d) => d.file)
-    });
-    await fs.appendFile(logFile, `${logEntry}\n`, 'utf8');
+    const perDeltaLogFile = path.join(evolutionDir, 'evolution-log.jsonl');
+    const ts = new Date().toISOString();
+    for (const delta of proposed.slice(0, evolved)) {
+      const logEntry = JSON.stringify({
+        id: randomUUID(),
+        ts,
+        type: 'append',
+        file: delta.file,
+        section: delta.section || null,
+        content: delta.content,
+        learning_ids: delta.sourceIds || [],
+        squad: squadSlug || null,
+        status: 'applied'
+      });
+      await fs.appendFile(perDeltaLogFile, `${logEntry}\n`, 'utf8');
+    }
 
     if (!quiet) logger.log(`\n${evolved} delta(s) aplicado(s) com sucesso.`);
   } finally {

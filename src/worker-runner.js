@@ -123,10 +123,94 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+// ─── Research Worker ──────────────────────────────────────────────────────────
+
+/**
+ * Handle a `type: 'research'` worker.
+ *
+ * Checks the researchs/ cache first (7-day default TTL), falls back to
+ * scraping declared URLs or the topic keyword via web.js fetchPage.
+ *
+ * Cache location: researchs/{topic}/summary.md
+ */
+async function runResearchWorker(projectDir, config, inputPayload) {
+  const { fetchPage } = require('./web');
+  const research = config.research || {};
+  const topic = String(research.topic || inputPayload?.topic || 'general').replace(/[^a-z0-9-]/gi, '-').toLowerCase();
+  const cacheHours = Number(research.cache_hours || 168); // 7 days default
+  const cacheDir = path.join(projectDir, research.cache_dir || 'researchs', topic);
+  const summaryPath = path.join(cacheDir, 'summary.md');
+
+  // ── Cache check ────────────────────────────────────────────────────────────
+  try {
+    const stat = await fs.stat(summaryPath);
+    const ageMs = Date.now() - stat.mtimeMs;
+    const ageHours = ageMs / (1000 * 60 * 60);
+    if (ageHours < cacheHours) {
+      const cached = await fs.readFile(summaryPath, 'utf8');
+      return {
+        ok: true,
+        output: { topic, summary: cached, cached: true, cache_age_hours: Math.round(ageHours) },
+        attempt: 1
+      };
+    }
+  } catch { /* no cache yet */ }
+
+  // ── Scrape sources ─────────────────────────────────────────────────────────
+  const urls = research.urls || inputPayload?.urls || [];
+  const maxSources = Number(research.max_sources || 5);
+  const pages = [];
+
+  for (const url of urls.slice(0, maxSources)) {
+    try {
+      const result = await fetchPage(url, { timeoutMs: 15000, extractLinks: false });
+      if (result.ok && result.text) {
+        pages.push({ url, content: result.text.slice(0, 3000) });
+      }
+    } catch { /* skip unreachable sources */ }
+  }
+
+  if (pages.length === 0) {
+    return {
+      ok: false,
+      error: `Research worker "${topic}": no URLs declared and no cached summary. Add "research.urls" to worker.json or provide ?topic= with cached data.`,
+      attempts: 1
+    };
+  }
+
+  // ── Build summary ──────────────────────────────────────────────────────────
+  const ts = new Date().toISOString();
+  const summary = [
+    `# Research: ${topic}`,
+    `_Generated: ${ts} · Sources: ${pages.length}_`,
+    '',
+    ...pages.map((p, i) => [
+      `## Source ${i + 1}: ${p.url}`,
+      '',
+      p.content.slice(0, 2000),
+      ''
+    ].join('\n'))
+  ].join('\n');
+
+  await fs.mkdir(cacheDir, { recursive: true });
+  await fs.writeFile(summaryPath, summary, 'utf8');
+
+  return {
+    ok: true,
+    output: { topic, summary, cached: false, sources: pages.length, generated_at: ts },
+    attempt: 1
+  };
+}
+
 async function runWorker(projectDir, squadSlug, workerSlug, inputPayload, options = {}) {
   const config = await loadWorkerConfig(projectDir, squadSlug, workerSlug);
   if (!config) {
     return { ok: false, error: `Worker config not found: ${workerSlug}`, attempts: 0 };
+  }
+
+  // Research worker — special handler (4.1)
+  if (config.type === 'research') {
+    return runResearchWorker(projectDir, config, inputPayload || {});
   }
 
   // Validate inputs

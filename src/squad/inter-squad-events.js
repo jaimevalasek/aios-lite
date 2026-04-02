@@ -1,0 +1,124 @@
+'use strict';
+
+/**
+ * Inter-Squad Event Streaming — publish/subscribe over SQLite
+ *
+ * Squads publish typed events (e.g. 'episode.created') and subscribe
+ * to patterns (e.g. 'episode.*'). Consumers receive events at the
+ * start of each squad:autorun run.
+ *
+ * Usage in squad manifests:
+ *   "subscriptions": ["episode.*", "review.completed"]
+ *   "publishes": ["episode.created"]
+ *
+ * Table: inter_squad_events (created in runtime-store.js)
+ */
+
+const { randomUUID } = require('node:crypto');
+const { openRuntimeDb } = require('../runtime-store');
+
+function nowIso() { return new Date().toISOString(); }
+
+/**
+ * Publish an event from a squad.
+ *
+ * @param {string} projectDir
+ * @param {{ fromSquad: string, event: string, payload?: object }} opts
+ * @returns {Promise<string|null>} event id, or null if db unavailable
+ */
+async function publish(projectDir, { fromSquad, event, payload = null }) {
+  const handle = await openRuntimeDb(projectDir);
+  if (!handle) return null;
+  const { db } = handle;
+  try {
+    const id = randomUUID();
+    db.prepare(`
+      INSERT INTO inter_squad_events (id, from_squad, event, payload, created_at, consumed_by, ttl_hours)
+      VALUES (?, ?, ?, ?, ?, '[]', 48)
+    `).run(id, fromSquad, event, payload ? JSON.stringify(payload) : null, nowIso());
+    return id;
+  } finally {
+    db.close();
+  }
+}
+
+/**
+ * Consume pending events for a squad.
+ * Marks consumed events so they are not returned again for this squad.
+ *
+ * Pattern matching:
+ *   'episode.*'  matches 'episode.created', 'episode.updated' (one segment after prefix)
+ *   '*'          matches any event
+ *   'exact.name' matches that exact event name only
+ *
+ * @param {string} projectDir
+ * @param {{ toSquad: string, subscriptions: string[] }} opts
+ * @returns {Promise<Array<{ id, fromSquad, event, payload, createdAt }>>}
+ */
+async function consume(projectDir, { toSquad, subscriptions = [] }) {
+  if (subscriptions.length === 0) return [];
+
+  const handle = await openRuntimeDb(projectDir, { mustExist: true });
+  if (!handle) return [];
+  const { db } = handle;
+
+  try {
+    // TTL cleanup: remove events older than their ttl_hours
+    db.prepare(`
+      DELETE FROM inter_squad_events
+      WHERE datetime(created_at, '+' || ttl_hours || ' hours') < datetime('now')
+    `).run();
+
+    const rows = db.prepare(`
+      SELECT * FROM inter_squad_events ORDER BY created_at ASC
+    `).all();
+
+    const matching = [];
+
+    for (const row of rows) {
+      const consumed = JSON.parse(row.consumed_by || '[]');
+      if (consumed.includes(toSquad)) continue;
+
+      const matched = subscriptions.some((pattern) => matchesPattern(row.event, pattern));
+      if (!matched) continue;
+
+      consumed.push(toSquad);
+      db.prepare(`UPDATE inter_squad_events SET consumed_by = ? WHERE id = ?`)
+        .run(JSON.stringify(consumed), row.id);
+
+      matching.push({
+        id: row.id,
+        fromSquad: row.from_squad,
+        event: row.event,
+        payload: row.payload ? JSON.parse(row.payload) : null,
+        createdAt: row.created_at
+      });
+    }
+
+    return matching;
+  } finally {
+    db.close();
+  }
+}
+
+/**
+ * Pattern matching for inter-squad event subscriptions.
+ *   '*'           → any event
+ *   'episode.*'   → 'episode.created', 'episode.updated' (exactly one segment after prefix, no deeper nesting)
+ *   'exact.name'  → only that exact event name
+ */
+function matchesPattern(event, pattern) {
+  if (pattern === '*') return true;
+  if (!pattern.includes('*')) return pattern === event;
+  // Trailing '.*': match exactly one additional dot-separated segment
+  if (pattern.endsWith('.*')) {
+    const prefix = pattern.slice(0, -2); // e.g. 'episode'
+    if (!event.startsWith(prefix + '.')) return false;
+    const remainder = event.slice(prefix.length + 1); // e.g. 'created'
+    return remainder.length > 0 && !remainder.includes('.');
+  }
+  // Other glob patterns not supported → exact match only
+  return pattern === event;
+}
+
+module.exports = { publish, consume, matchesPattern };
