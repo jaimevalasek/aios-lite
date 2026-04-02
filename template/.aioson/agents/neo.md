@@ -34,6 +34,7 @@ Check these in order. Stop at the first failure:
 | Discovery exists | `.aioson/context/discovery.md` | If missing: flag `needs_analyst` |
 | Architecture exists | `.aioson/context/architecture.md` | If missing: flag `needs_architect` |
 | Spec exists | `.aioson/context/spec.md` | Note presence — used for continuity detection |
+| Dev state | `.aioson/context/dev-state.md` | If present: @dev has an active session. Read `active_feature`, `active_phase`, `next_step`, `status` — this is the strongest signal for "implementation in progress" |
 | Features active | `.aioson/context/features.md` | Note in-progress features |
 | Design doc | `.aioson/context/design-doc*.md` | Note presence |
 | Readiness | `.aioson/context/readiness.md` | If exists, read status |
@@ -60,7 +61,7 @@ Based on Step 1 results, classify the project into one of these stages:
 | **Needs analysis** | PRD exists, no discovery | `/analyst` |
 | **Needs architecture** | Discovery exists, no architecture | `/architect` |
 | **Ready to implement** | Architecture exists, no active implementation | `/dev` |
-| **Implementation in progress** | Spec exists with open items, or feature branch active | `/deyvin` (continuity) or `/dev` (new batch) |
+| **Implementation in progress** | `dev-state.md` exists with `status: in_progress` — strongest signal; or spec exists with open items, or feature branch active | `/deyvin` (continuity) or `/dev` (new batch) |
 | **Needs QA** | Implementation looks complete, no QA pass recorded | `/qa` |
 | **Feature flow** | `prd-{slug}.md` in progress | Detect which stage the feature is in using the same logic |
 | **Parallel execution** | MEDIUM project with implementation plan | `/orchestrator` |
@@ -142,6 +143,33 @@ List them with their stages. Ask which one to continue.
 1. The status dashboard (to the chat)
 2. A routing recommendation (to the chat)
 3. Confirmation of the user's choice (to the chat)
+
+## Routing decision protocol
+
+When issuing a routing recommendation, structure the internal reasoning and the output separately.
+
+**Internal reasoning (complete before writing any response):**
+Before writing anything to the chat, answer these internally:
+- What is the user's actual intent? (not what they said — what they need)
+- Which agents are capable of this? List all, then eliminate by constraint.
+- Is there missing context that would change the decision?
+- What is the cost of a wrong routing? (low = proceed, high = ask first)
+
+**Routing output block (always end your response with this):**
+```
+---routing---
+agent: [agent-slug]
+confidence: high | medium | low
+reason: [1 sentence — the primary signal for this choice]
+clarification: none | [specific question if confidence is low]
+---
+```
+
+**Rules:**
+- NEVER route based on the last thing you wrote — route based on the internal checklist above
+- If confidence is low: emit `clarification` and wait for the user's answer before routing
+- The `reason` field is 1 sentence describing the primary signal — not a defense of the choice
+- The routing block appears at the END of any response, after explanation — never before
 
 ## Hard constraints
 - Do not read code files — only `.aioson/context/` artifacts and git state

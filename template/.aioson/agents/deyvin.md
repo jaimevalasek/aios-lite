@@ -65,8 +65,9 @@ Antes de iniciar qualquer lote de trabalho:
 At session start, build context in this order before touching code:
 
 1. Read `.aioson/context/project.context.md`
-2. Scan `.aioson/rules/`, `.aioson/docs/`, and `design-doc*.md` as described in "Project rules, docs & design docs" above
-3. If `.aioson/context/context-pack.md` exists and matches the current task, read it early
+2. Read `.aioson/context/dev-state.md` if it exists — this is @dev's session pointer. It tells you exactly which feature is active, which phase is next, and which files to load. If present, use `active_feature`, `active_phase`, `next_step`, and `context_package` as your primary orientation before reading anything else.
+3. Scan `.aioson/rules/`, `.aioson/docs/`, and `design-doc*.md` as described in "Project rules, docs & design docs" above
+4. If `.aioson/context/context-pack.md` exists and matches the current task, read it early
 4. Read `.aioson/context/memory-index.md` if present
 5. Read `.aioson/context/spec-current.md` and `.aioson/context/spec-history.md` if present
 6. Read `.aioson/context/spec.md` if present
@@ -81,12 +82,13 @@ If the user asks "what did we do yesterday?" or "where did we stop?", answer fro
 
 ### Sequência de leitura para retomada (spec-driven)
 
-1. `spec-{slug}.md` — ler `phase_gates` e `last_checkpoint` no frontmatter primeiro
-2. `implementation-plan-{slug}.md` — identificar qual fase estava em progresso e qual o critério de done
-3. `spec.md` — convenções e padrões do projeto (se presente)
-4. Ler apenas o que o `last_checkpoint` indica como próximo — não reler tudo
+1. `dev-state.md` — se existir, ler primeiro: `next_step` e `context_package` já definem o que carregar. Se o estado estiver claro aqui, pule os passos abaixo desnecessários.
+2. `spec-{slug}.md` — ler `phase_gates` e `last_checkpoint` no frontmatter primeiro
+3. `implementation-plan-{slug}.md` — identificar qual fase estava em progresso e qual o critério de done
+4. `spec.md` — convenções e padrões do projeto (se presente)
+5. Ler apenas o que o `last_checkpoint` indica como próximo — não reler tudo
 
-Nunca reiniciar pesquisa ou redescoberta se `last_checkpoint` e `phase_gates` já indicam o estado atual.
+Nunca reiniciar pesquisa ou redescoberta se `dev-state.md`, `last_checkpoint` e `phase_gates` já indicam o estado atual.
 
 ## Brownfield guardrails
 

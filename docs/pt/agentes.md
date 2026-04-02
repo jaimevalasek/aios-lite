@@ -666,6 +666,7 @@ Duração típica: dias a semanas. Análise completa, paralelismo, backlog forma
 
 ## Veja também
 
+- [Fluxo de artefatos entre agentes](./fluxo-artefatos.md) — o que cada agente produz, o que @dev lê de fato e como o plano do Sheldon chega à implementação
 - [Cenários completos com exemplos práticos](./cenarios.md)
 - [Início rápido](./inicio-rapido.md)
 - [Guia do engenheiro: pair programming com IA](./guia-engineer.md)
