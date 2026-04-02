@@ -64,6 +64,9 @@ const { runSquadDeploy } = require('./commands/squad-deploy');
 const { runSquadWebhook } = require('./commands/squad-webhook');
 const { runSquadBus } = require('./commands/squad-bus');
 const { runSquadAutorun } = require('./commands/squad-autorun');
+const { runAgentAudit } = require('./commands/agent-audit');
+const { runBriefGen } = require('./commands/brief-gen');
+const { runVerifyGate } = require('./commands/verify-gate');
 const {
   runRuntimeInit,
   runRuntimeIngest,
@@ -265,6 +268,12 @@ const JSON_SUPPORTED_COMMANDS = new Set([
   'squad-bus',
   'squad:autorun',
   'squad-autorun',
+  'agent:audit',
+  'agent-audit',
+  'brief:gen',
+  'brief-gen',
+  'verify:gate',
+  'verify-gate',
   'squad:learning',
   'squad-learning',
   'learning',
@@ -749,6 +758,12 @@ async function main() {
       result = await runSquadBus({ args, options: { ...options, sub }, logger: commandLogger });
     } else if (command === 'squad:autorun' || command === 'squad-autorun') {
       result = await runSquadAutorun({ args, options, logger: commandLogger });
+    } else if (command === 'agent:audit' || command === 'agent-audit') {
+      result = await runAgentAudit({ args, options, logger: commandLogger });
+    } else if (command === 'brief:gen' || command === 'brief-gen') {
+      result = await runBriefGen({ args, options, logger: commandLogger });
+    } else if (command === 'verify:gate' || command === 'verify-gate') {
+      result = await runVerifyGate({ args, options, logger: commandLogger });
     } else if (command === 'squad:learning' || command === 'squad-learning') {
       const sub = args[1] || 'list';
       result = await runSquadLearning({ args, options: { ...options, sub }, logger: commandLogger, t });
