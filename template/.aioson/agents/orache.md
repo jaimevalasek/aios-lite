@@ -205,16 +205,15 @@ Write the plan mentally. Prioritize:
 - Skip dimensions where the domain is too well-known to the LLM
 
 ### Step 3 — Execute searches
-Load `.aioson/skills/static/web-research-cache.md` before searching. For each query:
-1. Check `researchs/{slug}/summary.md` — if created within 7 days, use the cached result instead of searching again
-2. Run WebSearch if no cache hit; use WebFetch on promising results to read full content
-3. Save each individual search result to `researchs/{slug}/summary.md` + `files/` immediately after searching
+Before searching, check `researchs/{slug}/summary.md` for any topic that overlaps with a recent technical decision already cached by another agent (7-day window). If a hit exists, incorporate the cached finding directly — do not search again.
 
-Additional rules for domain investigation:
+For all other queries:
+- Run WebSearch; use WebFetch on promising results to read full content
 - Start with a broad query, then narrow based on initial results
 - Cross-reference findings across multiple sources
 - Prefer primary sources (practitioner blogs, conference talks, industry publications) over aggregator summaries
-- The full investigation report still goes to `squad-searches/` (Step 5) — the `researchs/` cache is for individual queries, not the synthesized report
+
+> **Do NOT write to `researchs/`** — @orache's output is domain intelligence (frameworks, anti-patterns, vocabulary), not technical decision validation. The `researchs/` verdict schema (`confirmed | has-alternatives | outdated | deprecated`) does not apply to domain investigation findings. All @orache search output goes into the investigation report at Step 5 (`squad-searches/`).
 
 ### Step 4 — Synthesize findings
 For each dimension, synthesize the raw search results into the structured

@@ -88,6 +88,20 @@ If all findings are `confirmed`:
 | `outdated` | Superseded by a newer approach |
 | `deprecated` | Officially discontinued or abandoned |
 
+## Who reads and who writes
+
+| Agent | Reads cache | Writes cache |
+|---|---|---|
+| @sheldon | ✅ | ✅ — primary writer for PRD technical decisions |
+| @analyst | ✅ | ✅ — technology and integration validation |
+| @architect | ✅ | ✅ — infrastructure and library trade-offs |
+| @dev | ✅ | ✅ — library docs and implementation patterns |
+| @product | ✅ | ✅ — market and domain context |
+| @deyvin | ✅ | ✅ — continuity session lookups |
+| @orache | ✅ (read only) | ❌ — domain intelligence goes to `squad-searches/`, not here |
+
+**Why @orache does not write here:** `researchs/` uses a verdict schema (`confirmed | has-alternatives | outdated | deprecated`) designed for technical decision validation. Domain investigation findings (frameworks, anti-patterns, vocabulary) do not fit this schema and would pollute the cache with non-actionable data for other agents.
+
 ## Rules
 
 - **Never search without saving** — unsaved results are lost after the session
