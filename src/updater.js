@@ -15,17 +15,16 @@ async function updateInstallation(targetDir, options = {}) {
 
   const savedProfile = await readInstallProfile(targetDir);
 
-  // During update, pass null profile so ALL framework files are installed
-  // (not just those matching the saved profile).
-  // This ensures new framework files from the new version are always installed.
-  // Profile-based filtering only applies to init/install.
+  // Default: only update files already present in the target (selective update).
+  // With --all: install every file from the template, including new ones not yet installed.
   const result = await installTemplate(targetDir, {
     overwrite: true,
     dryRun: Boolean(options.dryRun),
     mode: 'update',
     backupOnOverwrite: true,
     frameworkDetection: options.frameworkDetection || null,
-    installProfile: null
+    installProfile: null,
+    selectiveUpdate: !options.all
   });
 
   return {

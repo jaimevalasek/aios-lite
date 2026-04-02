@@ -186,6 +186,7 @@ async function installTemplate(targetDir, options = {}) {
     backupOnOverwrite = mode === 'update',
     frameworkDetection = null,
     installProfile = null,
+    selectiveUpdate = false,
     onProgress = null
   } = options;
 
@@ -216,6 +217,11 @@ async function installTemplate(targetDir, options = {}) {
 
     if (destExists && PROJECT_LOCAL_FILES.has(rel)) {
       skipped.push({ path: rel, reason: 'project-local' });
+      continue;
+    }
+
+    if (!destExists && selectiveUpdate) {
+      skipped.push({ path: rel, reason: 'not-installed' });
       continue;
     }
 
