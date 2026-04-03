@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AIOSON — Tutoriais</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #07070f;
+      --surface: #0f0f1a;
+      --card: #13131f;
+      --border: #1f1f32;
+      --primary: #6c47ff;
+      --primary-glow: rgba(108, 71, 255, 0.18);
+      --text: #e2e8f0;
+      --muted: #8892a4;
+      --accent: #a78bfa;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+
+    /* ── Header ─────────────────────────────────── */
+    header {
+      padding: 80px 24px 60px;
+      text-align: center;
+      background: radial-gradient(ellipse 70% 50% at 50% -10%, rgba(108,71,255,0.18) 0%, transparent 70%);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .logo-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 40px;
+      padding: 8px 20px;
+      font-size: 13px;
+      color: var(--accent);
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-bottom: 32px;
+    }
+
+    .logo-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--primary);
+      box-shadow: 0 0 8px var(--primary);
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    h1 {
+      font-size: clamp(2.4rem, 5vw, 3.8rem);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      background: linear-gradient(135deg, #d4d8f0 30%, var(--accent) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1.1;
+      margin-bottom: 18px;
+    }
+
+    .subtitle {
+      font-size: 1.2rem;
+      color: var(--muted);
+      max-width: 520px;
+      margin: 0 auto;
+    }
+
+    /* ── Grid ────────────────────────────────────── */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 24px;
+      max-width: 960px;
+      margin: 60px auto;
+      padding: 0 24px;
+    }
+
+    .tutorial-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px;
+      text-decoration: none;
+      color: inherit;
+      transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .tutorial-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse 80% 60% at 50% -20%, var(--primary-glow), transparent 70%);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .tutorial-card:hover {
+      border-color: var(--primary);
+      transform: translateY(-4px);
+      box-shadow: 0 16px 48px rgba(108,71,255,0.2);
+    }
+
+    .tutorial-card:hover::before { opacity: 1; }
+
+    .card-tag {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--primary);
+      background: var(--primary-glow);
+      border: 1px solid rgba(108,71,255,0.3);
+      border-radius: 20px;
+      padding: 3px 12px;
+      margin-bottom: 20px;
+    }
+
+    .card-icon {
+      font-size: 2.4rem;
+      margin-bottom: 16px;
+      display: block;
+    }
+
+    .tutorial-card h2 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #d4d8f0;
+      margin-bottom: 10px;
+    }
+
+    .tutorial-card p {
+      font-size: 0.95rem;
+      color: var(--muted);
+      line-height: 1.65;
+    }
+
+    .card-arrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 20px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--accent);
+    }
+
+    /* ── Coming soon ─────────────────────────────── */
+    .tutorial-card.soon {
+      opacity: 0.5;
+      pointer-events: none;
+    }
+
+    .soon-badge {
+      position: absolute;
+      top: 16px; right: 16px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 3px 10px;
+    }
+
+    /* ── Footer ──────────────────────────────────── */
+    footer {
+      text-align: center;
+      padding: 40px 24px;
+      border-top: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 0.875rem;
+    }
+
+    footer a { color: var(--accent); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="logo-badge">
+      <span class="logo-dot"></span>
+      AIOSON Tutorials
+    </div>
+    <h1>Tutoriais</h1>
+    <p class="subtitle">Aprenda a usar o AIOSON do zero — guias visuais, fluxogramas e exemplos práticos.</p>
+  </header>
+
+  <div class="grid">
+
+    <a class="tutorial-card" href="sdd/index.html">
+      <span class="card-tag">Fundamental</span>
+      <span class="card-icon">⚡</span>
+      <h2>Spec-Driven Development</h2>
+      <p>Entenda como o AIOSON transforma uma ideia vaga em código funcional — do prompt ao deploy, sem pular etapas.</p>
+      <span class="card-arrow">Ler tutorial →</span>
+    </a>
+
+    <div class="tutorial-card soon">
+      <span class="soon-badge">Em breve</span>
+      <span class="card-tag">Squads</span>
+      <span class="card-icon">🤖</span>
+      <h2>AIOSON Squads</h2>
+      <p>Crie times de agentes especializados para qualquer domínio — software, conteúdo, jurídico e mais.</p>
+      <span class="card-arrow">Em breve</span>
+    </div>
+
+    <div class="tutorial-card soon">
+      <span class="soon-badge">Em breve</span>
+      <span class="card-tag">Avançado</span>
+      <span class="card-icon">🧠</span>
+      <h2>Genomes & Profiler</h2>
+      <p>Como injetar conhecimento de domínio profundo nos seus agentes usando o sistema de genomas do AIOSON.</p>
+      <span class="card-arrow">Em breve</span>
+    </div>
+
+    <div class="tutorial-card soon">
+      <span class="soon-badge">Em breve</span>
+      <span class="card-tag">Integração</span>
+      <span class="card-icon">🔗</span>
+      <h2>Webhooks & Automação</h2>
+      <p>Conecte WhatsApp, Slack e ERPs ao seu squad via HTTP — dispare agentes de qualquer sistema externo.</p>
+      <span class="card-arrow">Em breve</span>
+    </div>
+
+  </div>
+
+  <footer>
+    <p>AIOSON · <a href="https://github.com/jaimevalasek/aioson" target="_blank">GitHub</a> · <a href="https://www.npmjs.com/package/@jaimevalasek/aioson" target="_blank">npm</a></p>
+  </footer>
+
+</body>
+</html>

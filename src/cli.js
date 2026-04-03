@@ -142,6 +142,10 @@ const { runSpecStatus } = require('./commands/spec-status');
 const { runSpecCheckpoint } = require('./commands/spec-checkpoint');
 const { runSpecTasks } = require('./commands/spec-tasks');
 const { runLearningExport } = require('./commands/learning-export');
+const { runRunnerRun } = require('./commands/runner-run');
+const { runRunnerQueue } = require('./commands/runner-queue');
+const { runRunnerPlan } = require('./commands/runner-plan');
+const { runRunnerDaemon } = require('./commands/runner-daemon');
 
 const JSON_SUPPORTED_COMMANDS = new Set([
   'init',
@@ -429,6 +433,14 @@ const JSON_SUPPORTED_COMMANDS = new Set([
   'agent-load',
   'agent:shard:index',
   'agent-shard-index',
+  'runner:run',
+  'runner-run',
+  'runner:queue',
+  'runner-queue',
+  'runner:plan',
+  'runner-plan',
+  'runner:daemon',
+  'runner-daemon',
   'version',
   '--version',
   '-v'
@@ -935,6 +947,16 @@ async function main() {
       result = await runToolRegistry({ args, options: { ...options, sub }, logger: commandLogger, t });
     } else if (command === 'health') {
       result = await runHealth({ args, options, logger: commandLogger, t });
+    } else if (command === 'runner:run' || command === 'runner-run') {
+      result = await runRunnerRun({ args, options, logger: commandLogger });
+    } else if (command === 'runner:queue' || command === 'runner-queue') {
+      const sub = args[1] || options.sub || 'list';
+      result = await runRunnerQueue({ args, options: { ...options, sub }, logger: commandLogger });
+    } else if (command === 'runner:plan' || command === 'runner-plan') {
+      result = await runRunnerPlan({ args, options, logger: commandLogger });
+    } else if (command === 'runner:daemon' || command === 'runner-daemon') {
+      const sub = args[1] || options.sub || 'status';
+      result = await runRunnerDaemon({ args, options: { ...options, sub }, logger: commandLogger });
     } else {
       const message = t('cli.unknown_command', { command });
       if (jsonMode) {
