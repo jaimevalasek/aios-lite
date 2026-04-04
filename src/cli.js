@@ -146,6 +146,18 @@ const { runRunnerRun } = require('./commands/runner-run');
 const { runRunnerQueue } = require('./commands/runner-queue');
 const { runRunnerPlan } = require('./commands/runner-plan');
 const { runRunnerDaemon } = require('./commands/runner-daemon');
+const { runPreflight } = require('./commands/preflight');
+const { runClassify } = require('./commands/classify');
+const { runSizing } = require('./commands/sizing');
+const { runDetectTestRunner } = require('./commands/detect-test-runner');
+const { runPulseUpdate } = require('./commands/pulse-update');
+const { runStateSave } = require('./commands/state-save');
+const { runFeatureClose } = require('./commands/feature-close');
+const { runGateCheck } = require('./commands/gate-check');
+const { runArtifactValidate } = require('./commands/artifact-validate');
+const { runWorkflowExecute } = require('./commands/workflow-execute');
+const { runRunnerQueueFromPlan } = require('./commands/runner-queue-from-plan');
+const { runLearningAutoPromote } = require('./commands/learning-auto-promote');
 
 const JSON_SUPPORTED_COMMANDS = new Set([
   'init',
@@ -443,7 +455,28 @@ const JSON_SUPPORTED_COMMANDS = new Set([
   'runner-daemon',
   'version',
   '--version',
-  '-v'
+  '-v',
+  'preflight',
+  'classify',
+  'sizing',
+  'detect:test-runner',
+  'detect-test-runner',
+  'pulse:update',
+  'pulse-update',
+  'state:save',
+  'state-save',
+  'feature:close',
+  'feature-close',
+  'gate:check',
+  'gate-check',
+  'artifact:validate',
+  'artifact-validate',
+  'workflow:execute',
+  'workflow-execute',
+  'runner:queue:from-plan',
+  'runner-queue-from-plan',
+  'learning:auto-promote',
+  'learning-auto-promote'
 ]);
 
 const LEGACY_DASHBOARD_COMMANDS = new Set([
@@ -957,6 +990,30 @@ async function main() {
     } else if (command === 'runner:daemon' || command === 'runner-daemon') {
       const sub = args[1] || options.sub || 'status';
       result = await runRunnerDaemon({ args, options: { ...options, sub }, logger: commandLogger });
+    } else if (command === 'preflight') {
+      result = await runPreflight({ args, options, logger: commandLogger });
+    } else if (command === 'classify') {
+      result = await runClassify({ args, options, logger: commandLogger });
+    } else if (command === 'sizing') {
+      result = await runSizing({ args, options, logger: commandLogger });
+    } else if (command === 'detect:test-runner' || command === 'detect-test-runner') {
+      result = await runDetectTestRunner({ args, options, logger: commandLogger });
+    } else if (command === 'pulse:update' || command === 'pulse-update') {
+      result = await runPulseUpdate({ args, options, logger: commandLogger });
+    } else if (command === 'state:save' || command === 'state-save') {
+      result = await runStateSave({ args, options, logger: commandLogger });
+    } else if (command === 'feature:close' || command === 'feature-close') {
+      result = await runFeatureClose({ args, options, logger: commandLogger });
+    } else if (command === 'gate:check' || command === 'gate-check') {
+      result = await runGateCheck({ args, options, logger: commandLogger });
+    } else if (command === 'artifact:validate' || command === 'artifact-validate') {
+      result = await runArtifactValidate({ args, options, logger: commandLogger });
+    } else if (command === 'workflow:execute' || command === 'workflow-execute') {
+      result = await runWorkflowExecute({ args, options, logger: commandLogger });
+    } else if (command === 'runner:queue:from-plan' || command === 'runner-queue-from-plan') {
+      result = await runRunnerQueueFromPlan({ args, options, logger: commandLogger });
+    } else if (command === 'learning:auto-promote' || command === 'learning-auto-promote') {
+      result = await runLearningAutoPromote({ args, options, logger: commandLogger });
     } else {
       const message = t('cli.unknown_command', { command });
       if (jsonMode) {
