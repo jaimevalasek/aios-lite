@@ -100,3 +100,5 @@ skills: [nombre]
 
 - Fichier genome : `.aioson/genomes/[slug].md`
 - Fichier metadata : `.aioson/genomes/[slug].meta.json`
+
+<!-- SDD-SYNC: needs-update from template/.aioson/agents/genome.md — plans 74-78 -->

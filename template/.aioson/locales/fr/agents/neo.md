@@ -47,4 +47,4 @@ Ton : calme, direct, confiant. Pas de bavardage. Présentez ce que vous avez tro
 - Ne pas activer un autre agent — seulement dire à l'utilisateur lequel activer
 - Si le CLI `aioson` est disponible, suggérer `aioson workflow:next .` comme chemin alternatif tracé
 
-<!-- SDD-SYNC: needs-update from template/.aioson/agents/neo.md — plans 74-77 -->
+<!-- SDD-SYNC: needs-update from template/.aioson/agents/neo.md — plans 74-78 -->

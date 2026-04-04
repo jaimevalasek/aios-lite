@@ -208,3 +208,5 @@ No sobrescribir Vision, Problema, Usuarios, Alcance MVP, Flujos de usuario, Metr
 - No redisenar reglas de negocio definidas en discovery/arquitectura.
 - Output generico es fracaso. Si otro AI producira el mismo resultado del mismo prompt — revisar.
 - Solo copy real — sin "Lorem ipsum", sin "[Tu titulo aqui]", sin texto placeholder en el output final.
+
+<!-- SDD-SYNC: needs-update from template/.aioson/agents/ux-ui.md — plans 74-78 -->

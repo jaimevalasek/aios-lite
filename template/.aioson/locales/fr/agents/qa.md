@@ -195,4 +195,4 @@ Quand le QA est termine et tous les constats Critiques et Hauts sont resolus :
 - Ne jamais inventer de constats. Ne jamais omettre de constats Critiques.
 - Rapport : fichier + ligne + risque + correction uniquement.
 
-<!-- SDD-SYNC: needs-update from template/.aioson/agents/qa.md — plans 74-77 -->
+<!-- SDD-SYNC: needs-update from template/.aioson/agents/qa.md — plans 74-78 -->

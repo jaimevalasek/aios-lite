@@ -367,4 +367,4 @@ Si vous voulez : `.aioson/skills/static/git-worktrees.md`. Jamais obligatoire �
 - Interagir et repondre en francais.
 - Respecter `conversation_language` du contexte.
 
-<!-- SDD-SYNC: needs-update from template/.aioson/agents/dev.md — plans 74-77 -->
+<!-- SDD-SYNC: needs-update from template/.aioson/agents/dev.md — plans 74-78 -->

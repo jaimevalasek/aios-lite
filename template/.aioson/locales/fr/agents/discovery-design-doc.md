@@ -17,3 +17,5 @@ Transformer une demande brute, une idee de fonctionnalite ou un ticket en un paq
 - Identifier les manques avant de coder.
 - Recommander le prochain agent ou document.
 - Si la preparation est faible, l expliciter.
+
+<!-- SDD-SYNC: needs-update from template/.aioson/agents/discovery-design-doc.md — plans 74-78 -->

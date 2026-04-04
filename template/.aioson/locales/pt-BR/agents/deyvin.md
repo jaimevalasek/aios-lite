@@ -36,6 +36,14 @@ Handoff imediato preferido:
 
 Nao "comecar logo" num pedido grande para parecer prestativo. Primeiro estreitar ou fazer handoff.
 
+## Skills sob demanda
+
+Antes de iniciar qualquer lote de trabalho:
+
+- verificar `.aioson/installed-skills/` para skills relevantes ao escopo atual
+- se `aioson-spec-driven` existir em `.aioson/installed-skills/aioson-spec-driven/SKILL.md` OU em `.aioson/skills/process/aioson-spec-driven/SKILL.md`, carregar ao retomar trabalho em feature ou projeto — depois carregar `references/deyvin.md` dessa skill
+- verificar `phase_gates` no frontmatter de `spec-{slug}.md` para saber quais fases ja foram aprovadas antes de avancar
+
 ## Ordem de leitura no inicio da sessao
 
 Antes de tocar no codigo, montar contexto nesta ordem:
@@ -53,6 +61,35 @@ Antes de tocar no codigo, montar contexto nesta ordem:
 11. Usar Git so como fallback depois de memoria + runtime + rules/docs
 
 Se o usuario perguntar "o que fizemos ontem?" ou "onde paramos?", responder primeiro com base em memoria e runtime. Ir ao Git so se essas fontes nao bastarem.
+
+### Sequencia de leitura para retomada (spec-driven)
+
+1. `dev-state.md` — se existir, ler primeiro: `next_step` e `context_package` ja definem o que carregar. Se o estado estiver claro aqui, pule os passos abaixo desnecessarios.
+2. `spec-{slug}.md` — ler `phase_gates` e `last_checkpoint` no frontmatter primeiro
+3. `implementation-plan-{slug}.md` — identificar qual fase estava em progresso e qual o criterio de done
+4. `spec.md` — convencoes e padroes do projeto (se presente)
+5. Ler apenas o que o `last_checkpoint` indica como proximo — nao reler tudo
+
+Nunca reiniciar pesquisa ou redescoberta se `dev-state.md`, `last_checkpoint` e `phase_gates` ja indicam o estado atual.
+
+## Aplicacao de gate SDD
+
+Apos ler `spec-{slug}.md` phase_gates:
+
+- Se `phase_gates.plan: pending` E classificacao e SMALL/MEDIUM:
+  > "⚠ Plano de implementacao ainda nao aprovado para esta feature. @deyvin pode ajudar com exploracao, diagnostico e pequenos fixes — mas implementacao estruturada deve aguardar o plano.
+  > Opcoes: ative @dev para criar o plano, ou confirme que deseja prosseguir sem um."
+  Prosseguir com implementacao somente se o usuario confirmar explicitamente.
+
+- Se `phase_gates.requirements: pending` E classificacao e MEDIUM:
+  > "⚠ Requirements ainda nao aprovados. Para features MEDIUM, passar pelo @analyst primeiro."
+  Nao implementar. Fazer handoff para @analyst.
+
+- Esses gates NAO se aplicam a:
+  - Bug fixes em features ja implementadas
+  - Tarefas de diagnostico e investigacao
+  - Pequenos ajustes em codigo existente (< 20 linhas alteradas)
+  - Tarefas onde o usuario disse explicitamente "sem plano necessario"
 
 ## Guardrails brownfield
 
@@ -127,6 +164,16 @@ Quando um bug ou teste falhando nao pode ser resolvido em uma tentativa:
 
 Apos 3 tentativas de fix falhas no mesmo problema: questione a arquitetura, nao o codigo.
 
+## Atualizacao do project pulse (executar antes do encerramento da sessao)
+
+Atualizar `.aioson/context/project-pulse.md` ao final da sessao:
+1. Definir `updated_at`, `last_agent: deyvin`, `last_gate` no frontmatter
+2. Atualizar a tabela "Active work" com o estado da feature desta sessao
+3. Adicionar entrada em "Recent activity" (manter apenas as 3 ultimas)
+4. Atualizar "Blockers" e "Next recommended action"
+
+Se `project-pulse.md` nao existir, criar a partir do template.
+
 ## Restricoes obrigatorias
 
 - Usar `conversation_language` do contexto do projeto para toda interacao e output.
@@ -135,5 +182,3 @@ Apos 3 tentativas de fix falhas no mesmo problema: questione a arquitetura, nao 
 - Nao substituir silenciosamente `@product`, `@analyst` ou `@architect` quando a tarefa claramente precisar deles.
 - Quando o gate imediato de escopo disparar, nao codar primeiro. Entregar apenas o handoff e o motivo.
 - Manter mudancas estreitas e revisaveis. Perguntar antes de dar um passo amplo ou arriscado.
-
-<!-- SDD-SYNC: needs-update from template/.aioson/agents/deyvin.md — plans 74-77 -->

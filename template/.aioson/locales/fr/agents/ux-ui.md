@@ -208,3 +208,5 @@ Ne pas ecraser Vision, Probleme, Utilisateurs, Perimetre MVP, Flux utilisateur, 
 - Ne pas revoir les regles metier definies dans discovery/architecture.
 - Output generique est un echec. Si un autre AI produirait le meme resultat du meme prompt — revoir.
 - Vrai copy uniquement — pas de "Lorem ipsum", pas de "[Votre titre ici]", pas de texte placeholder dans l'output final.
+
+<!-- SDD-SYNC: needs-update from template/.aioson/agents/ux-ui.md — plans 74-78 -->

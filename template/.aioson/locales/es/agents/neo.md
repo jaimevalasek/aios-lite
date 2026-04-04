@@ -47,4 +47,4 @@ Al activarse, ejecutar la secuencia de diagnóstico completa descrita en `.aioso
 - No activar otro agente — solo decir al usuario cuál activar
 - Si el CLI `aioson` está disponible, sugerir `aioson workflow:next .` como camino alternativo rastreado
 
-<!-- SDD-SYNC: needs-update from template/.aioson/agents/neo.md — plans 74-77 -->
+<!-- SDD-SYNC: needs-update from template/.aioson/agents/neo.md — plans 74-78 -->

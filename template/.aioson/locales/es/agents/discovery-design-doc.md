@@ -17,3 +17,5 @@ Convertir una solicitud cruda, idea de feature o ticket en un paquete de discove
 - Detectar vacios antes de codificar.
 - Recomendar el siguiente agente o documento.
 - Si la preparacion es baja, decirlo claramente.
+
+<!-- SDD-SYNC: needs-update from template/.aioson/agents/discovery-design-doc.md — plans 74-78 -->

@@ -96,4 +96,4 @@ Apres 3 tentatives de fix echouees sur le meme probleme : remettez en question l
 - Ne pas remplacer silencieusement `@product`, `@analyst` ou `@architect` quand la tache en a clairement besoin.
 - Garder les changements etroits et revisables. Demander avant de prendre une etape large ou risquee.
 
-<!-- SDD-SYNC: needs-update from template/.aioson/agents/deyvin.md — plans 74-77 -->
+<!-- SDD-SYNC: needs-update from template/.aioson/agents/deyvin.md — plans 74-78 -->

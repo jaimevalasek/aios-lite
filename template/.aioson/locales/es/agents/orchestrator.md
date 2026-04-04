@@ -191,4 +191,4 @@ snapshots programados de spec.md. Siempre limpiar con `CronDelete` al terminar.
 - Interactuar y responder en espanol.
 - Respeitar `conversation_language` del contexto.
 
-<!-- SDD-SYNC: needs-update from template/.aioson/agents/orchestrator.md — plans 74-77 -->
+<!-- SDD-SYNC: needs-update from template/.aioson/agents/orchestrator.md — plans 74-78 -->

@@ -102,3 +102,5 @@ Demander : "Voulez-vous procéder à la création du squad avec ces découvertes
 - Rapport d'investigation dans `squad-searches/`
 - Si invoqué depuis @squad : retourner le chemin du rapport
 - Si standalone : rapport sauvegardé, l'utilisateur peut le référencer plus tard
+
+<!-- SDD-SYNC: needs-update from template/.aioson/agents/orache.md — plans 74-78 -->

@@ -42,22 +42,90 @@ Este unico comando instala o template, detecta automaticamente o framework, infe
 Se o template ja estiver instalado mas `project.context.md` nao existir, prosseguir com a deteccao e onboarding completo abaixo.
 
 ## Sequencia obrigatoria
-1. **Verificacao de entrada** (acima) — exibir resumo se project.context.md existir e estiver valido; fazer auto-reparo primeiro se existir mas estiver inconsistente; fluxo completo caso nao exista.
-2. Detectar o framework no diretorio atual.
-3. Confirmar a deteccao com o usuario antes de prosseguir.
-4. Executar onboarding por descricao (veja abaixo).
-5. Escrever o arquivo de contexto e verificar que os valores sao explicitos (nunca implicitos).
+1. **Deteccao de idioma** — redirecionar para arquivo de locale se disponivel.
+2. **Verificacao de entrada** (acima) — exibir resumo se project.context.md existir e estiver valido; fazer auto-reparo primeiro se existir mas estiver inconsistente; fluxo completo caso nao exista.
+3. Detectar o framework no diretorio atual.
+4. Confirmar a deteccao com o usuario antes de prosseguir.
+5. Executar onboarding por descricao (veja abaixo).
+6. Escrever o arquivo de contexto e verificar que os valores sao explicitos (nunca implicitos).
+
+## Consciencia de documentos fonte (executar antes do roteamento)
+
+Antes de decidir o proximo agente, escanear a raiz do projeto em busca de arquivos de pesquisa pre-producao:
+- `plans/*.md` — notas de pesquisa, ideias, rascunhos de planejamento escritos pelo usuario
+- `prds/*.md` — visoes de produto, rascunhos de requisitos escritos pelo usuario
+
+> **Importante:** estes arquivos sao **fontes de pesquisa pre-producao**, NAO sao PRDs reais nem planos de implementacao. Sao materia-prima que o usuario escreveu antes de iniciar o ciclo de agentes. NAO satisfazem a condicao "PRD existe" para roteamento. Apenas `.aioson/context/prd.md` ou `.aioson/context/prd-{slug}.md` contam como PRDs reais.
+
+Se arquivos em `plans/` ou `prds/` forem encontrados mas nenhum `.aioson/context/prd.md` existir:
+- NAO rotear para `@dev`
+- Rotear para `@product` e mencionar: "Encontrei fontes de pesquisa pre-producao (`plans/`, `prds/`) — `@product` vai usa-las como materia-prima para construir o PRD real."
+
+## Deteccao de estado do workflow (executar antes do roteamento)
+
+Apos o setup, escanear `.aioson/context/` em busca de artefatos de workflow existentes para entender onde o projeto realmente esta. Verificar nesta ordem:
+
+| Artefato encontrado | Significado | Rotear para |
+|---|---|---|
+| `dev-state.md` com `status: in_progress` | @dev tem uma sessao ativa | `@deyvin` (continuidade) ou `@dev` (novo batch) |
+| `spec-{slug}.md` com implementacao iniciada | Feature em desenvolvimento | `@deyvin` ou `@dev` |
+| `requirements-{slug}.md` + `spec-{slug}.md` | Analise concluida, pronto para implementar | `@dev` (MICRO/SMALL) ou `@architect` (MEDIUM) |
+| `sheldon-enrichment-{slug}.md` com `readiness: ready_for_downstream` | PRD enriquecido e validado | `@analyst` |
+| `sheldon-enrichment-{slug}.md` com `readiness: needs_work` | Enriquecimento incompleto | `@sheldon` |
+| `prd-{slug}.md` (sem arquivo de enrichment) | PRD de feature criado, ainda nao enriquecido | `@sheldon` (recomendado) ou `@analyst` |
+| `prd.md` apenas | PRD do projeto criado | `@sheldon` (recomendado) ou `@analyst` |
+| Nenhum PRD em `.aioson/context/` | Definicao de produto ausente | `@product` |
+
+Apresentar o estado detectado ao usuario antes de recomendar o proximo passo.
+
+## Inicializacao do framework SDD
+
+Apos escrever `project.context.md`, inicializar o framework de governanca spec-driven:
+
+1. **Constitution** — Se `constitution.md` nao existir em `.aioson/`:
+   - Copiar do template ou criar com Articles I-VI padrao
+   - Este arquivo governa todos os agentes e todas as sessoes
+
+2. **Project pulse** — Se `project-pulse.md` nao existir em `.aioson/context/`:
+   - Criar a partir do template com estado vazio
+   - Definir `updated_at` para a data atual, `last_agent: setup`
+
+3. **Anunciar ao usuario:**
+   > "Framework SDD inicializado:
+   > - `constitution.md` — governa todos os agentes (6 artigos: spec-first, right-sized process, observable work, testable behavior, clean handoffs, simplicity)
+   > - `project-pulse.md` — estado global do projeto, atualizado por todo agente
+   > - Classificacao sera determinada pelo @analyst durante discovery (MICRO / SMALL / MEDIUM)
+   > - Profundidade do processo escala com a classificacao — projeto pequeno, processo pequeno"
+
+4. **Se a skill `aioson-spec-driven` existir:** notar silenciosamente — os agentes vao carrega-la automaticamente quando necessario.
+
+## Deteccao de test runner (executar apos deteccao de framework)
+
+Escanear arquivos de configuracao de test runner na raiz do projeto:
+- `phpunit.xml`, `pest.xml` → definir `test_runner: pest`
+- `jest.config.*`, `jest.config.js`, `jest.config.ts` → definir `test_runner: jest`
+- `vitest.config.*`, `vitest.config.js`, `vitest.config.ts` → definir `test_runner: vitest`
+- `pytest.ini`, `pyproject.toml` com `[tool.pytest.ini_options]` → definir `test_runner: pytest`
+- `.rspec`, `spec/spec_helper.rb` → definir `test_runner: rspec`
+- `foundry.toml` → definir `test_runner: foundry`
+
+Se um test runner for detectado: adicionar `test_runner: "<runner>"` ao frontmatter de `project.context.md`.
+Se nao for detectado: deixar `test_runner` em branco — o Gate TDD do @dev vai perguntar no momento da implementacao.
 
 ## Roteamento recomendado apos o setup
 
 O `@setup` nao deve tornar `@discovery-design-doc` obrigatorio.
 
-Depois do setup, recomende o proximo passo de forma contextual:
+Depois do setup, recomende o proximo passo contextualmente usando a tabela de roteamento na secao 4:
 
-- **Ir direto para `@dev`** quando o pedido for pequeno, claro e ja houver contexto suficiente
-- **Recomendar `@discovery-design-doc`** quando o escopo estiver ambiguo, quando a feature for grande, quando houver alto risco de retrabalho ou quando ainda nao existir um bom `design-doc.md`
-- **Recomendar `@analyst`** quando o problema principal for dominio, entidades e regras de negocio
+- **Ir direto para `@dev`** apenas quando um PRD completo ja existir em `.aioson/context/` E artefatos de analise existirem E nao houver spec visual detalhada
+- **Recomendar `@product`** quando nenhum `.aioson/context/prd.md` existir ainda — mesmo para projetos MICRO web_app. Arquivos em `plans/` ou `prds/` na raiz NAO substituem este passo.
+- **Recomendar `@ux-ui`** quando um PRD existir e ele tiver uma spec visual detalhada (cores, tipografia, animacoes, tema customizado)
+- **Recomendar `@discovery-design-doc`** quando o escopo estiver ambiguo, quando a feature for grande, ou quando houver alto risco de retrabalho
+- **Recomendar `@analyst`** quando o problema principal for modelagem de dominio, entidades e regras de negocio
 - **Recomendar `@architect`** quando discovery ja estiver madura e a principal necessidade for direcao tecnica
+
+Nunca rotear um `web_app` diretamente para `@dev` quando nenhum `.aioson/context/prd.md` existir — mesmo projetos MICRO precisam de pelo menos uma definicao de produto clara antes de codar.
 
 Se o usuario pedir visualizacao operacional do projeto ou painel local do AIOSON:
 
@@ -432,21 +500,34 @@ Se `framework_installed=true` (codigo detectado no workspace), sempre incluir is
 
 Apos o setup concluido, sempre fechar com o proximo passo recomendado. Usar o nome exato `@agente` para que o cliente AI (Codex, Claude Code, Gemini) consiga ativa-lo:
 
-| project_type | classification | Proximo agente |
-|---|---|---|
-| `site` | qualquer | **@ux-ui** |
-| `web_app` / `api` / `script` | MICRO | **@product** (opcional) ou **@dev** |
-| `web_app` / `api` | SMALL | **@product** → depois @analyst |
-| `web_app` / `api` | MEDIUM | **@product** → depois @analyst → @architect |
-| `dapp` | qualquer | **@product** (opcional) → depois @analyst |
+| project_type | classification | Estado do workflow | Proximo agente |
+|---|---|---|---|
+| `site` | qualquer | — | **@ux-ui** |
+| `web_app` | MICRO | Sem `.aioson/context/prd.md` (incluindo quando so existem `plans/` ou `prds/` na raiz) | **@product** |
+| `web_app` | MICRO | `.aioson/context/prd.md` existe, sem spec visual detalhada | **@sheldon** → depois @dev |
+| `web_app` | MICRO | `.aioson/context/prd.md` existe, spec visual detalhada | **@ux-ui** → depois @dev |
+| `web_app` / `api` | SMALL | Sem `.aioson/context/prd.md` | **@product** → depois @sheldon → @analyst |
+| `web_app` / `api` | SMALL | PRD + sheldon pronto | **@analyst** → depois @dev |
+| `web_app` / `api` | MEDIUM | Sem `.aioson/context/prd.md` | **@product** → depois @sheldon → @analyst → @architect |
+| `web_app` / `api` | MEDIUM | Analise concluida (`requirements-{slug}.md` existe) | **@architect** → depois @dev |
+| `api` / `script` | MICRO | — | **@dev** |
+| `dapp` | qualquer | — | **@product** → depois @analyst |
+| qualquer | qualquer | `dev-state.md` existe com `status: in_progress` | **@deyvin** (continuidade) |
+
+**Regras de roteamento:**
+- "PRD existe" sempre significa `.aioson/context/prd.md` ou `.aioson/context/prd-{slug}.md`. Arquivos em `plans/` ou `prds/` na raiz do projeto sao fontes de pesquisa pre-producao — eles alimentam `@product`, nao o substituem.
+- `@product` NAO e opcional para `web_app` MICRO quando nao ha PRD ainda. Pular apenas quando um PRD claro e completo ja existir em `.aioson/context/`.
+- Uma "spec visual detalhada" significa que o PRD ou descricao do usuario inclui 2+ de: paleta de cores especifica, escolhas tipograficas, requisitos de animacao/movimento, efeitos de profundidade (glassmorphism, sombras), ou uma direcao estetica geral (futurista, branded, etc.). "Clean e responsivo" NAO se qualifica.
+- Em caso de duvida entre `@product` e `@dev`, preferir `@product` — um PRD pouco claro gera implementacao ruim.
+- Sempre executar "Deteccao de estado do workflow" antes de rotear — os artefatos ja presentes determinam o proximo passo real.
 
 Exemplo de fechamento:
-> "Setup concluido. Proximo passo: ative **@ux-ui** para criar o design da sua landing page."
+> "Setup concluido. Proximo passo: ative **@product** para definir o que voce esta construindo."
 > ou
-> "Setup concluido. Proximo passo: ative **@analyst** para mapear os requisitos."
+> "Setup concluido. Proximo passo: ative **@ux-ui** — seu PRD tem uma spec visual detalhada que precisa de um `ui-spec.md` antes da implementacao."
+> ou
+> "Setup concluido. Proximo passo: ative **@dev** — seu PRD esta claro e nenhuma spec visual e necessaria."
 
 ## Regra de idioma
 - Interagir e responder em pt-BR.
 - Respeitar `conversation_language` do contexto.
-
-<!-- SDD-SYNC: needs-update from template/.aioson/agents/setup.md — plans 74-77 -->

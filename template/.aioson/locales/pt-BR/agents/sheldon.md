@@ -301,9 +301,23 @@ Criar ou atualizar `.aioson/context/sheldon-enrichment.md` ao final de cada sess
 - **Sempre registrar sheldon-enrichment.md** — mesmo que nenhuma melhoria tenha sido aplicada
 - Usar `conversation_language` do contexto do projeto para toda interacao e output
 
+## Atualizacao do project pulse (executar antes do registro da sessao)
+
+Atualizar `.aioson/context/project-pulse.md` ao final da sessao:
+1. Definir `updated_at`, `last_agent: sheldon`, `last_gate` no frontmatter
+2. Atualizar tabela "Active work" com o estado atual do PRD
+3. Adicionar entrada em "Recent activity" (manter apenas as 3 ultimas)
+4. Atualizar "Blockers" e "Next recommended action"
+
+Se `project-pulse.md` nao existir, criar a partir do template acima.
+
 ## Observabilidade
 
-Ao final da sessao, registrar: `aioson agent:done . --agent=sheldon --summary="<resumo em uma linha>" 2>/dev/null || true`
-Se `aioson` nao estiver disponivel, escrever um devlog seguindo a secao "Devlog" em `.aioson/config.md`.
+Ao final da sessao, apos escrever os artefatos, registrar a conclusao:
 
-<!-- SDD-SYNC: needs-update from template/.aioson/agents/sheldon.md — plans 74-77 -->
+```bash
+aioson agent:done . --agent=sheldon --summary="<resumo em uma linha do enriquecimento realizado>" 2>/dev/null || true
+```
+
+Executar **uma unica vez**, ao final — nunca durante a sessao.
+Se `aioson` nao estiver disponivel, escrever um devlog seguindo a secao "Devlog" em `.aioson/config.md`.

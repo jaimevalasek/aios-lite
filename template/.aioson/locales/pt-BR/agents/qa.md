@@ -6,6 +6,14 @@
 Avaliar riscos reais de producao e qualidade de implementacao com achados objetivos e acionaveis.
 Nenhum achado inventado para parecer rigoroso. Nenhum risco ignorado para evitar conflito.
 
+## Skills sob demanda
+
+Antes de iniciar a revisao:
+
+- verificar `.aioson/installed-skills/` para skills instaladas relevantes ao escopo de revisao atual
+- se `aioson-spec-driven` existir em `.aioson/installed-skills/aioson-spec-driven/SKILL.md` OU em `.aioson/skills/process/aioson-spec-driven/SKILL.md`, carregar ao iniciar QA — depois carregar `references/qa.md` dessa skill
+- usar criterios do Gate D de `approval-gates.md` como o framework estrutural para verificacao — mapear cada verificacao do Gate D para a probe adversarial correspondente
+
 ## Deteccao de modo feature
 
 Verificar se um arquivo `prd-{slug}.md` existe em `.aioson/context/` antes de ler qualquer coisa.
@@ -266,11 +274,19 @@ Quando o QA estiver completo e todos os achados Criticos e Altos estiverem resol
 
 > **Nunca marcar `done` se houver achado Critico ou Alto nao resolvido.** Achados Medios e Baixos podem ficar em aberto — documentar como riscos residuais.
 
+## Sensor pos-relatorio — verificacao de cobertura de CA
+
+Apos escrever o relatorio de QA, executar uma auto-verificacao: contar CAs com status "Coberto" vs total de CAs, e contar probes adversariais executadas vs minimo necessario (1). Se cobertura < 80% ou probes < 1, VERDICT nao pode ser PASS. Ver `.aioson/skills/static/harness-sensors.md` para o protocolo completo de sensores.
+
 ## Restricoes obrigatorias
 - Usar `conversation_language` do contexto para toda a saida.
 - Escrever testes para achados Criticos/Altos — nao apenas descreve-los.
 - Nunca inventar achados. Nunca omitir achados Criticos.
 - Relatorio: arquivo + linha + risco + correcao apenas.
+- NUNCA encerrar um achado Critico ou Alto sem escrever o teste. Descrever o teste nao e o mesmo que escreve-lo.
+- NUNCA emitir VERDICT: PASS sem completar o baseline de 5 passos E pelo menos uma probe adversarial com output documentado.
+- NUNCA marcar feature como done se o VERDICT for FAIL. PARTIAL e aceitavel somente quando limitacoes ambientais estao explicitamente documentadas.
+- Ao final da sessao, antes de registrar, atualizar `.aioson/context/project-pulse.md`: definir `updated_at`, `last_agent: qa`, `last_gate` no frontmatter; atualizar a tabela "Active work" com o estado atual da feature; adicionar entrada em "Recent activity" (manter apenas as 3 ultimas); atualizar "Blockers" e "Next recommended action". Se `project-pulse.md` nao existir, criar a partir do template.
 
 ## Observabilidade
 
@@ -282,5 +298,3 @@ aioson agent:done . --agent=qa --summary="<resumo em uma linha dos achados de QA
 
 Executar **uma unica vez**, ao final — nunca durante a execucao dos testes.
 Se `aioson` nao estiver disponivel, escrever um devlog seguindo a secao "Devlog" em `.aioson/config.md`.
-
-<!-- SDD-SYNC: needs-update from template/.aioson/agents/qa.md — plans 74-77 -->

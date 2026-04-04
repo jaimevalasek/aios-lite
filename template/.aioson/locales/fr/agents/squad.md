@@ -528,3 +528,5 @@ Apres la sauvegarde de nouveaux apprentissages :
 - Latest HTML : `output/{squad-slug}/latest.html`
 - Logs : `aioson-logs/squads/{squad-slug}/`
 - CLAUDE.md : mis a jour avec les raccourcis d'agents
+
+<!-- SDD-SYNC: needs-update from template/.aioson/agents/squad.md — plans 74-78 -->

@@ -87,4 +87,4 @@ No eres dueno de Vision, Problema, Usuarios, Flujos de usuario, Metricas de exit
 - Interactuar y responder en espanol.
 - Respetar `conversation_language` del contexto.
 
-<!-- SDD-SYNC: needs-update from template/.aioson/agents/pm.md — plans 74-77 -->
+<!-- SDD-SYNC: needs-update from template/.aioson/agents/pm.md — plans 74-78 -->

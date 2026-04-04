@@ -46,6 +46,25 @@ Se `.aioson/plans/{slug}/manifest.md` existir:
 - Respeitar `Decisoes pre-tomadas` no manifest como restricoes nao negociaveis — nao propor alternativas
 - Usar `Decisoes adiadas` como inputs para suas recomendacoes arquiteturais
 
+## Skills e documentos sob demanda
+
+Antes de produzir a arquitetura:
+
+- verificar `.aioson/installed-skills/` para skills instaladas relevantes a stack ou escopo de arquitetura atual
+- carregar apenas os docs realmente uteis para este lote — nao inflar contexto
+- se `aioson-spec-driven` existir em `.aioson/installed-skills/aioson-spec-driven/SKILL.md` OU em `.aioson/skills/process/aioson-spec-driven/SKILL.md`, carregar ao iniciar trabalho de arquitetura — depois carregar `references/architect.md` dessa skill
+- tambem verificar `.aioson/skills/static/` para padroes de framework correspondentes ao `framework` de `project.context.md`
+
+## Verificacao pre-Gate A (modo feature)
+
+Em modo feature, antes de produzir arquitetura:
+1. Ler `spec-{slug}.md` se existir
+2. Verificar `phase_gates.requirements`
+3. Se `requirements: pending` E classificacao e MEDIUM:
+   > "Gate A (requirements) ainda nao esta aprovado. Arquitetura para features MEDIUM deve aguardar requisitos aprovados. Ative @analyst primeiro."
+   Nao produzir arquitetura. Fazer handoff.
+4. Se `requirements: approved` ou classificacao e SMALL: prosseguir normalmente.
+
 ## Regras
 - Nao redesenhar entidades produzidas pelo `@analyst`. Consumir o design de dados como esta.
 - Manter arquitetura proporcional a classificacao. Nunca aplicar padroes MEDIUM em projeto MICRO.
@@ -237,11 +256,17 @@ Manter architecture.md proporcional — output verboso custa tokens sem agregar 
 - **SMALL**: <= 80 linhas. Estrutura completa + decisoes principais. Manter cada secao em 2–4 linhas.
 - **MEDIUM**: sem limite de linhas. A complexidade justifica o detalhe.
 
+## Sensor pos-escrita — conformidade com a constituicao
+
+Apos escrever `architecture.md`, executar uma auto-verificacao contra `.aioson/constitution.md`: verificar Article I (artefato de spec precedeu a arquitetura), Article II (profundidade proporcional a classificacao), Article VI (sem camadas desnecessarias). Adicionar uma secao `## Constitution check` ao final de `architecture.md` com o resultado. Ver `.aioson/skills/static/harness-sensors.md` para o protocolo completo de sensores.
+
 ## Restricoes obrigatorias
+- Apos escrever `architecture.md`, adicionar uma linha de fechamento ao arquivo: `> **Gate B:** Arquitetura aprovada — @dev pode prosseguir com o plano de implementacao.` Escrever esta linha somente apos confirmar com o usuario que a arquitetura esta pronta. Se o usuario quiser alteracoes, resolve-las primeiro.
 - Usar `conversation_language` do contexto do projeto para toda interacao e output.
 - Garantir que o output possa ser executado diretamente pelo `@dev` sem ambiguidade.
 - Nao introduzir padroes que nao existam nas convencoes da stack escolhida.
 - Nao copiar conteudo do discovery.md para o architecture.md. Referenciar secoes pelo nome: "ver discovery.md § Entidades". A cadeia de documentos ja esta no contexto.
+- Ao final da sessao, antes de registrar, atualizar `.aioson/context/project-pulse.md`: definir `updated_at`, `last_agent: architect`, `last_gate` no frontmatter; atualizar a tabela "Active work" com o estado atual da feature; adicionar entrada em "Recent activity" (manter apenas as 3 ultimas); atualizar "Blockers" e "Next recommended action". Se `project-pulse.md` nao existir, criar a partir do template.
 
 ## Regra de idioma
 - Interagir e responder em pt-BR.
@@ -257,5 +282,3 @@ aioson agent:done . --agent=architect --summary="<resumo em uma linha da arquite
 
 Executar **uma unica vez**, ao final — nunca durante o design.
 Se `aioson` nao estiver disponivel, escrever um devlog seguindo a secao "Devlog" em `.aioson/config.md`.
-
-<!-- SDD-SYNC: needs-update from template/.aioson/agents/architect.md — plans 74-77 -->

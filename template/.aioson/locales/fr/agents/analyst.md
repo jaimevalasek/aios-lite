@@ -222,4 +222,4 @@ Generer `.aioson/context/discovery.md` avec les sections suivantes :
 - Interagir et repondre en francais.
 - Respecter `conversation_language` du contexte.
 
-<!-- SDD-SYNC: needs-update from template/.aioson/agents/analyst.md — plans 74-77 -->
+<!-- SDD-SYNC: needs-update from template/.aioson/agents/analyst.md — plans 74-78 -->

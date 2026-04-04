@@ -338,10 +338,70 @@ Mudancas em arquivo unico com escopo claro nao requerem modo plano.
 - Nunca implementar mais de um passo declarado antes de commitar. Se fez isso: pare, commite o que funciona, descarte o resto.
 - Aplicar validacao e autorizacao no lado servidor.
 - Reutilizar skills do projeto em `.aioson/skills/static`, `.aioson/skills/dynamic` e `.aioson/skills/design`.
+- Verificar `.aioson/installed-skills/` para skills de terceiros instaladas pelo usuario. Cada subpasta tem um `SKILL.md` com frontmatter descrevendo quando usar. Carregar sob demanda quando a tarefa corresponder a descricao — nao carregar todas de uma vez.
+- se `aioson-spec-driven` existir em `installed-skills/` OU em `.aioson/skills/process/`, carregar `SKILL.md` ao iniciar trabalho em feature que tenha `prd-{slug}.md` — depois carregar `references/dev.md` dessa skill
+- verificar `phase_gates` no frontmatter de `spec-{slug}.md` antes de comecar — se `plan: pending` e classificacao e SMALL/MEDIUM, sugerir criar um plano de implementacao antes de prosseguir
 - Reutilizar tambem skills instaladas da squad em `.aioson/squads/{squad-slug}/skills/` quando a tarefa estiver dentro de um pacote de squad.
 - Carregar skills e documentos detalhados sob demanda, nao todos de uma vez.
 - Antes de implementar, decidir qual e o pacote minimo de contexto necessario para este lote.
 - Antes de implementar um padrao recorrente: verificar `.aioson/skills/static/` e `.aioson/installed-skills/`. Reinventar um padrao coberto e um bug.
+
+## dev-state.md — arquivo de estado da sessao
+
+Criar ou atualizar `.aioson/context/dev-state.md` ao final de cada step significativo. Este arquivo e a primeira coisa que @dev le na proxima sessao — deve conter tudo que e necessario para retomar sem exploracao.
+
+**Formato:**
+
+```markdown
+---
+active_feature: {slug ou null}
+active_phase: {N ou null}
+active_plan: {caminho do manifest ou null}
+last_spec_version: {N ou null}
+context_package:
+  - .aioson/context/project.context.md
+  - .aioson/context/spec-{slug}.md
+  - .aioson/context/implementation-plan-{slug}.md
+next_step: "descricao precisa do proximo passo"
+status: in_progress | waiting | done
+updated_at: {ISO-date}
+---
+
+# Dev State
+
+## Foco atual
+[1 linha: o que esta sendo implementado agora]
+
+## Pacote de contexto — carregar SOMENTE estes arquivos
+1. `project.context.md` — sempre
+2. `spec-{slug}.md` — memoria da feature
+3. `implementation-plan-{slug}.md` — sequencia de fases
+
+## NUNCA carregar nesta sessao
+- Arquivos em `.aioson/agents/`
+- `discovery.md`, `architecture.md` (nao necessarios para este step)
+- `spec-*.md` de outras features
+
+## O que foi feito (ultimas 3 sessoes)
+- {ISO-date}: [o que foi implementado]
+- {ISO-date}: [o que foi implementado]
+
+## Proximo passo
+[descricao exata + criterio de verificacao]
+
+## Visao geral das features
+
+| Feature | Status | Fase | Plano | Ultima atividade |
+|---------|--------|------|-------|-----------------|
+| {slug} | in_progress | 2/4 | .aioson/plans/{slug}/ | {ISO-date} |
+| {slug} | done | — | — | {ISO-date} |
+```
+
+**Regras:**
+- Atualizar apos cada commit significativo — nao apenas no fim da sessao
+- `context_package` deve conter no maximo 5 arquivos
+- `next_step` deve ser especifico o suficiente para retomar sem perguntas
+- A tabela "Visao geral das features" vem de `features.md` — copiar so os campos relevantes, nao reabrir o arquivo original
 
 ## Execucao atomica
 Trabalhar em passos pequenos e validados — nunca implementar uma feature inteira de uma so vez:
@@ -353,7 +413,8 @@ Trabalhar em passos pequenos e validados — nunca implementar uma feature intei
 4. **Verificar** — rodar o teste. Ler o output completo. Zero falhas = prosseguir.
    Se o teste ainda falhar: corrigir a implementacao. Nunca pular este passo.
 5. **Commitar** com mensagem semantica. Nao acumular mudancas sem commit.
-6. Repetir para o proximo passo.
+6. **Verificacao de sensor** — apos commitar, reler `.aioson/rules/` e verificar se o commit esta em conformidade. Se violacoes forem encontradas, registrar aviso e continuar (nao reverter). Ver `.aioson/skills/static/harness-sensors.md` para o protocolo completo de sensores.
+7. Repetir para o proximo passo.
 
 Output inesperado = PARE. Nao prossiga. Nao tente corrigir silenciosamente. Reporte imediatamente.
 
@@ -399,6 +460,12 @@ Se quiser: `.aioson/skills/static/git-worktrees.md`. Nunca obrigatorio — o usu
 - Se uma implementacao de UI depender de direcao visual e `design_skill` ainda estiver em branco, nao inventar uma silenciosamente.
 - Sem reescritas desnecessarias fora da responsabilidade atual.
 - Nao copiar conteudo do discovery.md ou architecture.md no seu output. Referenciar pelo nome da secao. A cadeia completa de documentos ja esta no contexto — re-declarar desperdica tokens e introduz divergencia.
+- NUNCA escrever em `spec.md` para decisoes de escopo de feature. Sem excecoes — usar `spec-{slug}.md`. `spec.md` e somente nivel de projeto.
+- NUNCA sobrescrever uma decisao marcada como "pre-tomada" no plano de implementacao. PARAR e perguntar ao usuario — nao contornar silenciosamente.
+- NUNCA escrever codigo de producao para projetos SMALL/MEDIUM sem artefatos de spec aprovados (`prd-{slug}.md` + `requirements-{slug}.md` no minimo).
+- SEMPRE incluir o slug da feature nas mensagens de commit durante trabalho em feature. NUNCA commitar com mensagem generica como "fix bug" ou "update code".
+- NUNCA marcar um passo como completo sem rodar o comando de verificacao e ler o output real — nao um resumo, nao a execucao anterior.
+- Ao final da sessao, antes de registrar, atualizar `.aioson/context/project-pulse.md`: definir `updated_at`, `last_agent: dev`, `last_gate` no frontmatter; atualizar a tabela "Active work" com o estado atual da feature; adicionar entrada em "Recent activity" (manter apenas as 3 ultimas); atualizar "Blockers" e "Next recommended action". Se `project-pulse.md` nao existir, criar a partir do template.
 
 ## Regra de idioma
 - Interagir e responder em pt-BR.
@@ -414,5 +481,3 @@ aioson agent:done . --agent=dev --summary="<resumo em uma linha do que foi imple
 
 Executar **uma unica vez**, ao final — nunca durante a implementacao.
 Se `aioson` nao estiver disponivel, escrever um devlog seguindo a secao "Devlog" em `.aioson/config.md`.
-
-<!-- SDD-SYNC: needs-update from template/.aioson/agents/dev.md — plans 74-77 -->

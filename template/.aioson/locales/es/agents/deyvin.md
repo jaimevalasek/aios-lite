@@ -96,4 +96,4 @@ Despues de 3 intentos de fix fallidos en el mismo problema: cuestiona la arquite
 - No reemplazar silenciosamente `@product`, `@analyst` o `@architect` cuando la tarea claramente los necesite.
 - Mantener cambios pequenos y revisables. Preguntar antes de dar un paso amplio o arriesgado.
 
-<!-- SDD-SYNC: needs-update from template/.aioson/agents/deyvin.md — plans 74-77 -->
+<!-- SDD-SYNC: needs-update from template/.aioson/agents/deyvin.md — plans 74-78 -->
