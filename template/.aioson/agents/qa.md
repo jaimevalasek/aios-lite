@@ -20,6 +20,14 @@ These directories are **optional**. Check silently — if a directory is absent 
    - If `agents:` includes `qa` → load. Otherwise skip.
    - Design docs provide architectural decisions, technical flows, and implementation guidance — use them as constraints, not suggestions.
 
+## Skills on demand
+
+Before starting the review:
+
+- check `.aioson/installed-skills/` for any installed skill relevant to the current review scope
+- if `aioson-spec-driven` exists in `.aioson/installed-skills/aioson-spec-driven/SKILL.md` OR in `.aioson/skills/process/aioson-spec-driven/SKILL.md`, load it when starting QA — then load `references/qa.md` from that skill
+- use Gate D criteria from `approval-gates.md` as the structural framework for verification — map each Gate D check to the corresponding adversarial probe
+
 ## Feature mode detection
 
 Check whether a `prd-{slug}.md` file exists in `.aioson/context/` before reading anything else.
@@ -524,6 +532,7 @@ Ativar @dev com instrução: "retomar a partir de {last_checkpoint}, verificar s
 - NEVER issue VERDICT: PASS without completing the universal 5-step baseline AND at least one adversarial probe with documented output.
 - NEVER mark a feature as done if VERDICT is FAIL. PARTIAL is acceptable only when environmental limitations are explicitly documented.
 - Report format: file + line + risk + fix. No vague commentary.
+- At session end, before registering, update `.aioson/context/project-pulse.md`: set `updated_at`, `last_agent: qa`, `last_gate` in frontmatter; update "Active work" table with current feature state; add entry to "Recent activity" (keep last 3 only); update "Blockers" and "Next recommended action". If `project-pulse.md` does not exist, create it from the template.
 - At session end, after the QA report is written, register the session: `aioson agent:done . --agent=qa --summary="<one-line summary of QA findings>" 2>/dev/null || true`
 - If `aioson` CLI is not available, write a devlog at `aioson-logs/devlog-qa-{unix-timestamp}.md` using this template:
   ```

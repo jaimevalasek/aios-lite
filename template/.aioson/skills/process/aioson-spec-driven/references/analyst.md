@@ -24,3 +24,7 @@
 - Declare classification (MICRO/SMALL/MEDIUM) early — it controls depth of requirements, AC verbosity, and whether Gate A is blocking
 - Gate A must be explicitly evaluated before handing off to @architect or @dev
 - `requirements-{slug}.md` is @analyst's primary output — see `artifact-map.md` for ownership chain
+
+### Conformance contract (MEDIUM only)
+
+For MEDIUM features, generate `.aioson/context/conformance-{slug}.yaml` alongside `requirements-{slug}.md`. This YAML file structures each AC into machine-readable preconditions, actions, expected outcomes, and negative cases. @qa and @dev consume this for precise verification and test writing.

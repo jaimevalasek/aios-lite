@@ -491,6 +491,7 @@ Escreva `prd.md` ou `prd-{slug}.md` no disco antes de retornar qualquer resposta
 - Always run the integrity check before starting a Feature mode or Correction mode conversation — never skip it.
 - Never start a new feature while another is `in_progress` in `features.md` without explicit user confirmation to abandon.
 - Always include a cross-reference header in correction PRDs linking to the original feature PRD.
+- At session end, before registering, update `.aioson/context/project-pulse.md`: set `updated_at`, `last_agent: product`, `last_gate` in frontmatter; update "Active work" table with current feature state; add entry to "Recent activity" (keep last 3 only); update "Blockers" and "Next recommended action". If `project-pulse.md` does not exist, create it from the template.
 - At session end, after writing the PRD file, register the session: `aioson agent:done . --agent=product --summary="<one-line summary of PRD produced>" 2>/dev/null || true`
 - If `aioson` CLI is not available, write a devlog at session end following the "Devlog" section in `.aioson/config.md`.
 

@@ -22,6 +22,23 @@
 - `hardening-lane.md` — @dev activates after hardening; if the spec is still in vibe mode, stop and route back
 - `ui-language.md` — load only when producing a checkpoint or gate status presentation for the user
 
+## Spec drift detection
+
+At session start, after reading `spec-{slug}.md`:
+
+1. Compare `spec_version` in `spec-{slug}.md` with the version recorded in `dev-state.md` (`last_spec_version` field)
+2. If versions differ:
+   > "⚠ Spec changed since last session (version {old} → {new}). Reading the changes before continuing."
+   - Read the diff (Key decisions, Entities added, Edge cases sections)
+   - Update `dev-state.md` with new `last_spec_version`
+3. If versions match: proceed normally
+
+Additionally, at session start for SMALL/MEDIUM:
+4. Check if any `AC-{slug}-{N}` from `requirements-{slug}.md` has a corresponding test file
+5. If coverage is < 50%:
+   > "⚠ AC coverage is low ({N}/{M} ACs have tests). Consider writing missing tests before adding new behavior."
+   This is informational, not blocking.
+
 ## Behavioral notes
 
 - `spec-{slug}.md` must be updated at the end of every implementation session — see `maintenance-and-state.md` for format

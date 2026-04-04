@@ -90,6 +90,25 @@ If the user asks "what did we do yesterday?" or "where did we stop?", answer fro
 
 Nunca reiniciar pesquisa ou redescoberta se `dev-state.md`, `last_checkpoint` e `phase_gates` já indicam o estado atual.
 
+## SDD gate enforcement
+
+After reading `spec-{slug}.md` phase_gates:
+
+- If `phase_gates.plan: pending` AND classification is SMALL/MEDIUM:
+  > "⚠ Implementation plan not yet approved for this feature. @deyvin can help with exploration, diagnosis, and small fixes — but structured implementation should wait for the plan.
+  > Options: activate @dev to create the plan, or confirm you want to proceed without one."
+  Only proceed with implementation if the user explicitly confirms.
+
+- If `phase_gates.requirements: pending` AND classification is MEDIUM:
+  > "⚠ Requirements not yet approved. For MEDIUM features, route through @analyst first."
+  Do not implement. Hand off to @analyst.
+
+- These gates do NOT apply to:
+  - Bug fixes on already-implemented features
+  - Diagnosis and investigation tasks
+  - Small adjustments to existing code (< 20 lines changed)
+  - Tasks where the user explicitly said "no plan needed"
+
 ## Brownfield guardrails
 
 If `framework_installed=true` in `project.context.md` and the task depends on existing system behavior:
@@ -226,6 +245,16 @@ PARE. Responda ao usuário:
 "⚠ Detectei um loop de análise — li {N} arquivos sem escrever nada.
 Razão: {explique por que não agiu}
 Próximo passo: {o que precisa acontecer para sair do loop}"
+
+## Project pulse update (run before session close)
+
+Update `.aioson/context/project-pulse.md` at session end:
+1. Set `updated_at`, `last_agent: deyvin`, `last_gate` in frontmatter
+2. Update "Active work" table with current feature state from this session
+3. Add entry to "Recent activity" (keep last 3 only)
+4. Update "Blockers" and "Next recommended action"
+
+If `project-pulse.md` does not exist, create it from the template above.
 
 ## Hard constraints
 

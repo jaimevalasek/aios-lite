@@ -57,6 +57,41 @@ Good example:
 
 The reason is what makes the decision useful in 6 months.
 
+## spec_version field
+
+- Seeded at `1` by @analyst when creating the skeleton
+- Incremented by any agent that modifies the spec body (entities, decisions, edge cases — NOT just `last_checkpoint` or `pending_review`)
+- @dev checks at session start: if version changed since last `dev-state.md` update, read the spec diff before continuing
+- @qa checks at review: if version doesn't match what @dev reported, flag as potential drift
+
+## Unified resumption fields
+
+Every agent that produces or updates a persistent artifact should include these fields in the artifact's frontmatter or closing section:
+
+### In frontmatter (machine-readable):
+- `last_agent: {agent-name}` — who was here last
+- `last_session: {ISO-date}` — when
+- `session_result: completed | interrupted | blocked` — what happened
+
+### In closing section (human-readable):
+```
+## Session close — {ISO-date}
+Agent: @{name}
+Result: {completed | interrupted | blocked}
+Next: {clear instruction for next agent or next session}
+```
+
+### Which artifact each agent updates:
+| Agent | Primary artifact |
+|-------|-----------------|
+| @product | `prd.md` or `prd-{slug}.md` |
+| @sheldon | `sheldon-enrichment-{slug}.md` |
+| @analyst | `discovery.md` or `requirements-{slug}.md` |
+| @architect | `architecture.md` |
+| @dev | `dev-state.md` (already does this) |
+| @deyvin | `dev-state.md` or `spec-{slug}.md` |
+| @qa | QA report file |
+
 ## How @deyvin should use this file
 
 1. Read `phase_gates` first — know which phases are locked

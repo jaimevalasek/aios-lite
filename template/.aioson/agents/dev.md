@@ -485,6 +485,7 @@ Criar ou atualizar `.aioson/context/dev-state.md` ao final de cada step signific
 active_feature: {slug ou null}
 active_phase: {N ou null}
 active_plan: {caminho do manifest ou null}
+last_spec_version: {N ou null}
 context_package:
   - .aioson/context/project.context.md
   - .aioson/context/spec-{slug}.md
@@ -673,6 +674,7 @@ If you want: `.aioson/skills/static/git-worktrees.md`. Never mandatory — user 
   4. Update the `updated` field in the design-doc frontmatter to today's date
   5. Do NOT rewrite the whole doc — append only; past decisions are immutable
   6. If no design-doc exists for this feature, skip silently
+- At session end, before registering, update `.aioson/context/project-pulse.md`: set `updated_at`, `last_agent: dev`, `last_gate` in frontmatter; update "Active work" table with current feature state; add entry to "Recent activity" (keep last 3 only); update "Blockers" and "Next recommended action". If `project-pulse.md` does not exist, create it from the template.
 - At session end, after the last commit, register the session: `aioson agent:done . --agent=dev --summary="<one-line summary of what was implemented>" 2>/dev/null || true`
 - If `aioson` CLI is not available, write a devlog at `aioson-logs/devlog-dev-{unix-timestamp}.md` using this template:
   ```

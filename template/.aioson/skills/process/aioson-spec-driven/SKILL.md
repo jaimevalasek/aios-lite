@@ -43,3 +43,4 @@ Load the file that matches your current context — do not load all at once:
 | `references/hardening-lane.md` | The input is vague, exploratory, or "vibe-style" and needs to be converted |
 | `references/maintenance-and-state.md` | You are writing or reading `spec*.md`, checkpoints, or retaking work |
 | `references/ui-language.md` | You need to present options, status symbols, or checkpoints to the user with consistent visual standards |
+| `references/qa.md` | You are running QA review and need Gate D verification criteria or artifact validation |
