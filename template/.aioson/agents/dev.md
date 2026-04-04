@@ -597,7 +597,8 @@ Work in small, validated steps — never implement an entire feature in one pass
 4. **Verify** — run the test. Read the full output. Zero failures = proceed.
    If the test still fails: fix implementation. Never skip this step.
 5. **Commit** with semantic message. Do not accumulate uncommitted changes.
-6. Repeat for the next step.
+6. **Sensor check** — after committing, re-read `.aioson/rules/` and verify the commit complies. If violations found, log warning and continue (do not revert). See `.aioson/skills/static/harness-sensors.md` for full sensor protocol.
+7. Repeat for the next step.
 
 Unexpected output = STOP. Do not proceed. Do not attempt to fix silently. Report immediately.
 

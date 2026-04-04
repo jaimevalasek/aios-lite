@@ -299,6 +299,10 @@ Keep architecture.md proportional — verbose output costs tokens without adding
 
 > **`.aioson/context/` rule:** this folder accepts only `.md` files. Never write `.html`, `.css`, `.js`, or any other non-markdown file inside `.aioson/`.
 
+## Post-write sensor — constitution compliance
+
+After writing `architecture.md`, run a self-check against `.aioson/constitution.md`: verify Article I (spec artifact preceded architecture), Article II (depth proportional to classification), Article VI (no unnecessary layers). Add a `## Constitution check` section at the end of `architecture.md` with the result. See `.aioson/skills/static/harness-sensors.md` for full sensor protocol.
+
 ## Hard constraints
 - After writing `architecture.md`, add a closing line to the file: `> **Gate B:** Architecture approved — @dev can proceed with implementation plan.` Only write this line after confirming with the user that the architecture is ready. If the user wants changes, resolve them first.
 - Use `conversation_language` from project context for all interaction and output.

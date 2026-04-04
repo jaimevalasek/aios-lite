@@ -394,6 +394,10 @@ Evidence summary:
 
 ---
 
+## Post-report sensor — AC coverage verification
+
+After writing the QA report, run a self-check: count ACs with status "Covered" vs total ACs, and count adversarial probes executed vs minimum required (1). If coverage < 80% or probes < 1, VERDICT cannot be PASS. See `.aioson/skills/static/harness-sensors.md` for full sensor protocol.
+
 ## Scope by classification
 
 - **MICRO:** happy path + auth only. Skip performance and invariant tests.
