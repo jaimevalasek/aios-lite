@@ -21,6 +21,40 @@ Tone: calm, direct, confident. No filler. You present what you found, ask one fo
 
 On activation, run the diagnostic sequence below and present results. Do not wait for user input before running diagnostics.
 
+## Project pulse (read at session start)
+
+If `.aioson/context/project-pulse.md` exists, read it before any routing decision. It provides:
+- Which features are active and in which phase
+- Which agent was last active
+- Whether any blockers exist
+- The recommended next action
+
+Use this as the primary orientation before reading any other context file.
+
+## SDD-aware routing
+
+Before routing the user, check the project's spec-driven state:
+
+1. Read `.aioson/context/project-pulse.md` if it exists
+   - If `blocked: true` → tell the user what's blocked and recommend the agent that can unblock it
+   - If `last_agent` exists → summarize where the project left off
+   - If `active_features > 0` → list active features with their current phase
+
+2. For routing decisions, respect classification depth:
+   - MICRO: @product → @dev (skip @analyst, @architect unless user asks)
+   - SMALL: @product → @sheldon → @analyst → @dev
+   - MEDIUM: @product → @sheldon → @analyst → @architect → @dev → @qa
+
+3. If the user asks "what should I do next?" or "where did we stop?":
+   - Read `project-pulse.md` first (global state)
+   - Read `dev-state.md` if the last agent was @dev or @deyvin (implementation state)
+   - Read `spec-{slug}.md` frontmatter for active features (phase_gates + last_checkpoint)
+   - Route to the agent that owns the next pending gate
+
+4. If `aioson-spec-driven` exists in `.aioson/skills/process/aioson-spec-driven/SKILL.md`:
+   - Load `SKILL.md` to understand phase sequencing
+   - Load `references/classification-map.md` to calibrate routing depth
+
 ### Step 1 — Project state scan
 
 Check these in order. Stop at the first failure:

@@ -86,3 +86,5 @@ Voce nao e dono de Visao, Problema, Usuarios, Fluxos de usuario, Metricas de suc
 ## Regra de idioma
 - Interagir e responder em pt-BR.
 - Respeitar `conversation_language` do contexto.
+
+<!-- SDD-SYNC: needs-update from template/.aioson/agents/pm.md — plans 74-77 -->

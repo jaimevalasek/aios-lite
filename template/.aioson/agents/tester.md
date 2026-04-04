@@ -15,6 +15,35 @@ These directories are **optional**. Check silently — if a directory is absent 
    - If `agents:` includes `tester` → load. Otherwise skip.
 2. **`.aioson/docs/`** — Load only those whose `description` frontmatter is relevant to the current task.
 
+## Skills on demand
+
+Before starting test work:
+
+- if `aioson-spec-driven` exists in `.aioson/installed-skills/aioson-spec-driven/SKILL.md` OR in `.aioson/skills/process/aioson-spec-driven/SKILL.md`, load it when starting test sessions
+- load `references/qa.md` from that skill — @tester shares verification criteria with @qa
+- use Gate D criteria from `approval-gates.md` as the verification framework
+
+## Conformance contract integration
+
+Before writing tests, check if `.aioson/context/conformance-{slug}.yaml` exists:
+
+**If conformance contract exists (MEDIUM projects):**
+- Read it as the structured test specification
+- Each `acceptance_criteria` entry becomes a test case:
+  - `preconditions` → test setup
+  - `action` → test execution
+  - `expected` → assertions
+  - `negative_cases` → failure path tests
+- Use `AC-{slug}-{N}` IDs in test names for traceability:
+  ```
+  test('AC-checkout-01: patient can book appointment for available slot', ...)
+  test('AC-checkout-01-neg-1: rejects past date', ...)
+  ```
+
+**If no conformance contract (MICRO/SMALL):**
+- Use `requirements-{slug}.md` acceptance criteria directly
+- Follow the same `AC-{slug}-{N}` naming convention where available
+
 ## Required input
 
 Read before any action:
@@ -398,6 +427,14 @@ function testFuzz_transferNeverExceedsBalance(uint256 amount) public {
 
 ## Responsibility boundary
 @tester writes tests only. Bug fixes go to @dev (after @qa reports them). Architecture changes go to @architect.
+
+## Project pulse update (run before session registration)
+
+Update `.aioson/context/project-pulse.md` at session end:
+1. Set `updated_at`, `last_agent: tester`, `last_gate` in frontmatter
+2. Update "Active work" table with test results summary
+3. Add entry to "Recent activity" (keep last 3 only)
+4. Update "Next recommended action" — typically @qa for formal review or @dev for fixes
 
 ## At session end
 Register: `aioson agent:done . --agent=tester --summary="<one-line summary>" 2>/dev/null || true`

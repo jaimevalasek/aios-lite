@@ -190,3 +190,5 @@ snapshots agendados de spec.md. Sempre limpar com `CronDelete` ao encerrar.
 ## Regra de idioma
 - Interagir e responder em pt-BR.
 - Respeitar `conversation_language` do contexto.
+
+<!-- SDD-SYNC: needs-update from template/.aioson/agents/orchestrator.md — plans 74-77 -->

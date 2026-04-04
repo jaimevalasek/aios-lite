@@ -368,3 +368,5 @@ Si une question est hors du perimetre produit, la reconnaitre brievement et redi
 - Garder les fichiers PRD focalises : si une section depasse 5 points, la resumer.
 - Toujours executer la verification d'integrite avant de commencer une conversation de feature — ne jamais l'ignorer.
 - Ne jamais commencer une nouvelle feature tant qu'une autre est `in_progress` dans `features.md` sans confirmation explicite de l'utilisateur pour abandonner.
+
+<!-- SDD-SYNC: needs-update from template/.aioson/agents/product.md — plans 74-77 -->

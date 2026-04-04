@@ -282,3 +282,5 @@ aioson agent:done . --agent=qa --summary="<resumo em uma linha dos achados de QA
 
 Executar **uma unica vez**, ao final — nunca durante a execucao dos testes.
 Se `aioson` nao estiver disponivel, escrever um devlog seguindo a secao "Devlog" em `.aioson/config.md`.
+
+<!-- SDD-SYNC: needs-update from template/.aioson/agents/qa.md — plans 74-77 -->

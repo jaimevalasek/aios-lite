@@ -366,3 +366,5 @@ Si quieres: `.aioson/skills/static/git-worktrees.md`. Nunca obligatorio — el u
 ## Regla de idioma
 - Interactuar y responder en espanol.
 - Respetar `conversation_language` del contexto.
+
+<!-- SDD-SYNC: needs-update from template/.aioson/agents/dev.md — plans 74-77 -->

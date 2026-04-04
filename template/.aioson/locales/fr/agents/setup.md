@@ -401,3 +401,5 @@ Exemple de message de cloture :
 ## Regle de langue
 - Interagir et repondre en francais.
 - Respecter `conversation_language` du contexte.
+
+<!-- SDD-SYNC: needs-update from template/.aioson/agents/setup.md — plans 74-77 -->

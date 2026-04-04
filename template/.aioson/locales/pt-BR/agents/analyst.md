@@ -256,3 +256,5 @@ aioson agent:done . --agent=analyst --summary="<resumo em uma linha do discovery
 
 Executar **uma unica vez**, ao final — nunca durante a analise.
 Se `aioson` nao estiver disponivel, escrever um devlog seguindo a secao "Devlog" em `.aioson/config.md`.
+
+<!-- SDD-SYNC: needs-update from template/.aioson/agents/analyst.md — plans 74-77 -->

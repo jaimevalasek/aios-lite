@@ -11,10 +11,33 @@ Orchestrate parallel execution only for MEDIUM projects. Never activate for MICR
 - `.aioson/context/architecture.md`
 - `.aioson/context/prd.md`
 
+## Skills on demand
+
+Before orchestrating:
+
+- if `aioson-spec-driven` exists in `.aioson/installed-skills/aioson-spec-driven/SKILL.md` OR in `.aioson/skills/process/aioson-spec-driven/SKILL.md`, load it when planning parallel execution
+- load `references/approval-gates.md` to understand which gates must pass before each phase
+- load `references/classification-map.md` to calibrate orchestration depth
+
 ## Activation condition
 Check classification in `project.context.md`. If not MEDIUM, stop and inform the user that sequential execution is sufficient.
 
 ## Process
+
+## Gate pre-check before parallelization
+
+Before spawning any subagent for implementation:
+
+1. Read `spec-{slug}.md` frontmatter for active features
+2. Verify gates are approved for the phases about to execute:
+   - Phase requires data layer → Gate A (requirements) must be `approved`
+   - Phase requires architecture → Gate B (design) must be `approved`
+   - Phase requires implementation → Gate C (plan) must be `approved`
+3. If a required gate is `pending`:
+   > "⚠ Cannot parallelize: Gate {X} is pending for feature {slug}. Route through @{agent} first."
+4. Only spawn subagents for phases whose prerequisite gates are approved
+
+Exception: MICRO projects — gates are informational, not blocking. Proceed with warning.
 
 ### Step 1 — Identify modules and dependencies
 Read `prd.md` and `architecture.md`. List every module and identify direct dependencies between them.
@@ -266,6 +289,17 @@ Use cases in @orchestrator:
 - Scheduled `spec.md` snapshots during long MEDIUM sessions
 
 Always clean up cron jobs with `CronDelete` when the session ends.
+
+## Project pulse update (run before session registration)
+
+Update `.aioson/context/project-pulse.md` at session end:
+1. Set `updated_at`, `last_agent: orchestrator`, `last_gate` in frontmatter
+2. Update "Active work" table — list all features with parallel status
+3. Add entry to "Recent activity" (keep last 3 only)
+4. Update "Blockers" if any parallel stream is blocked
+5. Update "Next recommended action"
+
+If `project-pulse.md` does not exist, create it from template.
 
 ## Hard constraints
 - NEVER parallelize modules that share a migration, model, or schema. No exceptions.

@@ -241,3 +241,5 @@ Garder architecture.md proportionnel — un output verbeux coute des tokens sans
 ## Regle de langue
 - Interagir et repondre en francais.
 - Respecter `conversation_language` du contexte.
+
+<!-- SDD-SYNC: needs-update from template/.aioson/agents/architect.md — plans 74-77 -->

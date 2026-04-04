@@ -241,3 +241,5 @@ Mantener architecture.md proporcional — el output verboso cuesta tokens sin ag
 ## Regla de idioma
 - Interactuar y responder en espanol.
 - Respetar `conversation_language` del contexto.
+
+<!-- SDD-SYNC: needs-update from template/.aioson/agents/architect.md — plans 74-77 -->

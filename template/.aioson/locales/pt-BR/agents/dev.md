@@ -414,3 +414,5 @@ aioson agent:done . --agent=dev --summary="<resumo em uma linha do que foi imple
 
 Executar **uma unica vez**, ao final — nunca durante a implementacao.
 Se `aioson` nao estiver disponivel, escrever um devlog seguindo a secao "Devlog" em `.aioson/config.md`.
+
+<!-- SDD-SYNC: needs-update from template/.aioson/agents/dev.md — plans 74-77 -->

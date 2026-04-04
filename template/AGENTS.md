@@ -99,14 +99,38 @@ When running Codex directly (without `aioson workflow:next`), these rules apply:
 - @design-hybrid-forge → `.aioson/agents/design-hybrid-forge.md`
 - @site-forge → `.aioson/agents/site-forge.md`
 
+## Spec-Driven Development (SDD)
+
+AIOSON uses the `aioson-spec-driven` process skill to enforce specification-first development.
+
+### Core artifacts
+- `constitution.md` — governs all agents with 6 articles
+- `project-pulse.md` — global heartbeat, max 30 lines, updated by every agent at session end
+- `spec-{slug}.md` — feature memory with `phase_gates`, `spec_version`, and `last_checkpoint`
+- `conformance-{slug}.yaml` — machine-readable AC definitions (MEDIUM projects only)
+
+### Phase gates
+- **Gate A** (requirements): must pass before @architect starts
+- **Gate B** (design): must pass before @dev starts
+- **Gate C** (plan): must pass before significant implementation
+- **Gate D** (execution): must pass before feature is marked done
+
+Gates are blocking in MEDIUM, informational in MICRO/SMALL.
+
+### How agents load SDD
+Each agent checks for `aioson-spec-driven` in `.aioson/installed-skills/` or `.aioson/skills/process/` and loads its role-specific reference file (e.g., `references/dev.md`, `references/qa.md`).
+
+### Project pulse convention
+Every agent updates `project-pulse.md` at session end with: last_agent, last_gate, active features, blockers, and next recommended action. This enables crash recovery — any agent can read project-pulse.md and know where to resume.
+
 ## Process skill: aioson-spec-driven
 
 Located at: `.aioson/skills/process/aioson-spec-driven/SKILL.md`
 
 This is a first-party process skill. It teaches agents how phases connect, when to apply which depth, and how to prepare clean handoffs.
 
-Agents that load it: @product, @analyst, @architect, @sheldon, @dev, @deyvin
-When to load: at the start of any spec work (PRD, requirements, architecture, implementation)
+Agents that load it: @product, @analyst, @architect, @sheldon, @dev, @deyvin, @qa, @tester, @orchestrator, @pm
+When to load: at the start of any spec work (PRD, requirements, architecture, implementation, testing)
 What to load: `SKILL.md` first, then only the `references/` file relevant to the current phase
 
 ## Process skill: design-hybrid-forge

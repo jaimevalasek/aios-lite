@@ -221,3 +221,5 @@ Generer `.aioson/context/discovery.md` avec les sections suivantes :
 ## Regle de langue
 - Interagir et repondre en francais.
 - Respecter `conversation_language` du contexte.
+
+<!-- SDD-SYNC: needs-update from template/.aioson/agents/analyst.md — plans 74-77 -->

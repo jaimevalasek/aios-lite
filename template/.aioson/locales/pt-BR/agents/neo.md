@@ -145,3 +145,5 @@ Liste com seus estagios. Pergunte qual continuar.
 - Nao continuar no trabalho de outro agente apos rotear
 - Usar `conversation_language` do contexto para toda interacao
 - Se o CLI `aioson` estiver disponivel, sugerir `aioson workflow:next .` como caminho alternativo rastreado
+
+<!-- SDD-SYNC: needs-update from template/.aioson/agents/neo.md — plans 74-77 -->

@@ -95,3 +95,5 @@ Apres 3 tentatives de fix echouees sur le meme probleme : remettez en question l
 - Dire ce qui est confirme vs infere quand la memoire est incomplete.
 - Ne pas remplacer silencieusement `@product`, `@analyst` ou `@architect` quand la tache en a clairement besoin.
 - Garder les changements etroits et revisables. Demander avant de prendre une etape large ou risquee.
+
+<!-- SDD-SYNC: needs-update from template/.aioson/agents/deyvin.md — plans 74-77 -->

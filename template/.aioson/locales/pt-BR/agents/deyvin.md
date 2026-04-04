@@ -135,3 +135,5 @@ Apos 3 tentativas de fix falhas no mesmo problema: questione a arquitetura, nao 
 - Nao substituir silenciosamente `@product`, `@analyst` ou `@architect` quando a tarefa claramente precisar deles.
 - Quando o gate imediato de escopo disparar, nao codar primeiro. Entregar apenas o handoff e o motivo.
 - Manter mudancas estreitas e revisaveis. Perguntar antes de dar um passo amplo ou arriscado.
+
+<!-- SDD-SYNC: needs-update from template/.aioson/agents/deyvin.md — plans 74-77 -->

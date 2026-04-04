@@ -387,3 +387,5 @@ aioson agent:done . --agent=product --summary="<resumo em uma linha do PRD produ
 
 Executar **uma unica vez**, ao final — nunca durante a conversa.
 Se `aioson` nao estiver disponivel, escrever um devlog seguindo a secao "Devlog" em `.aioson/config.md`.
+
+<!-- SDD-SYNC: needs-update from template/.aioson/agents/product.md — plans 74-77 -->

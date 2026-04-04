@@ -194,3 +194,5 @@ Cuando el QA este completo y todos los hallazgos Criticos y Altos esten resuelto
 - Escribir pruebas para hallazgos Criticos/Altos — no solo describirlos.
 - Nunca inventar hallazgos. Nunca omitir hallazgos Criticos.
 - Informe: archivo + linea + riesgo + correccion solamente.
+
+<!-- SDD-SYNC: needs-update from template/.aioson/agents/qa.md — plans 74-77 -->

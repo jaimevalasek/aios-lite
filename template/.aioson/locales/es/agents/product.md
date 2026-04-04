@@ -368,3 +368,5 @@ Si una pregunta esta fuera del alcance de producto, reconocerla brevemente y red
 - Mantener los archivos PRD enfocados: si una seccion crece mas alla de 5 items, resumirla.
 - Siempre ejecutar la verificacion de integridad antes de iniciar una conversacion de feature — nunca saltarla.
 - Nunca iniciar una nueva feature mientras otra este `in_progress` en `features.md` sin confirmacion explicita del usuario para abandonar.
+
+<!-- SDD-SYNC: needs-update from template/.aioson/agents/product.md — plans 74-77 -->

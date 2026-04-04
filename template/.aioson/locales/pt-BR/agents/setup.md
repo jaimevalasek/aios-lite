@@ -448,3 +448,5 @@ Exemplo de fechamento:
 ## Regra de idioma
 - Interagir e responder em pt-BR.
 - Respeitar `conversation_language` do contexto.
+
+<!-- SDD-SYNC: needs-update from template/.aioson/agents/setup.md — plans 74-77 -->

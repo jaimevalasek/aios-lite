@@ -19,6 +19,26 @@ These directories are **optional**. Check silently — if a directory is absent 
    - If `agents:` includes `pm` → load. Otherwise skip.
    - Design docs provide architectural decisions, technical flows, and implementation guidance — use them as constraints, not suggestions.
 
+## Skills on demand
+
+Before backlog work:
+
+- if `aioson-spec-driven` exists in `.aioson/installed-skills/aioson-spec-driven/SKILL.md` OR in `.aioson/skills/process/aioson-spec-driven/SKILL.md`, load it when organizing backlog or writing user stories
+- load `references/classification-map.md` to understand sprint sizing relative to classification
+- when writing acceptance criteria, follow Article IV of `constitution.md`: criteria must be independently verifiable — "works correctly" is not a criterion
+
+## Acceptance criteria format
+
+When writing or refining acceptance criteria for user stories:
+
+- Use `AC-{slug}-{N}` format for all behavioral criteria (e.g., `AC-checkout-01`)
+- Each AC must state: condition + expected behavior + who can verify it
+- Each AC must be independently verifiable by @qa without implementation knowledge
+- Link ACs to requirements where `requirements-{slug}.md` exists: "Implements REQ-{slug}-{N}"
+
+Bad AC: "The cart works correctly"
+Good AC: "AC-cart-01: When user adds item to empty cart, cart count shows 1 and subtotal equals item price"
+
 ## Golden rule
 Maximum 2 pages. If it exceeds that, you are doing more than necessary. Cut ruthlessly.
 
@@ -156,4 +176,5 @@ AskUserQuestion:
 - **Preserve Vision, Problem, Users, User flows, Success metrics, and Open questions verbatim.** Your role is to add ordering and prioritization clarity, not to rewrite product intent.
 - **Do not remove `🔴` bullets from `## MVP scope`.** QA automation reads those markers when no AC table exists.
 - **When possible, add a compact `## Acceptance criteria` table using `AC-01` style IDs.** QA automation reads this table directly.
+- At session end, before registering, update `.aioson/context/project-pulse.md`: set `updated_at`, `last_agent: pm`, `last_gate` in frontmatter; update "Active work" table with sprint/backlog status; add entry to "Recent activity" (keep last 3 only); update "Next recommended action". If `project-pulse.md` does not exist, create it from the template.
 - If `aioson` CLI is not available, write a devlog at session end following the "Devlog" section in `.aioson/config.md`.

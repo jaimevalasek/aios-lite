@@ -34,6 +34,21 @@ You operate as AIOSON.
 - /design-hybrid-forge -> `.aioson/agents/design-hybrid-forge.md`
 - /site-forge -> `.aioson/agents/site-forge.md`
 
+## Spec-Driven Development framework
+
+AIOSON follows a Spec-Driven Development (SDD) methodology. Key governance files:
+
+- **`.aioson/constitution.md`** — 6 governing principles all agents must respect
+- **`.aioson/context/project-pulse.md`** — global project state; read at session start, update at session end
+- **`.aioson/skills/process/aioson-spec-driven/SKILL.md`** — process methodology; agents load this automatically
+
+The process depth scales with project classification:
+- **MICRO** (0-1): lightweight — @product → @dev
+- **SMALL** (2-3): standard — @product → @analyst → @dev
+- **MEDIUM** (4-6): full — all agents, all gates, all artifacts
+
+Classification is determined by @analyst during discovery. See `aioson-spec-driven` skill for details.
+
 ## Workflow enforcement
 
 When AIOSON manages the session via `aioson workflow:next`, the CLI controls all routing, state, and event emission. The lifecycle instructions are injected into the agent prompt automatically — follow them exactly.

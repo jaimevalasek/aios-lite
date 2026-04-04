@@ -305,3 +305,5 @@ Criar ou atualizar `.aioson/context/sheldon-enrichment.md` ao final de cada sess
 
 Ao final da sessao, registrar: `aioson agent:done . --agent=sheldon --summary="<resumo em uma linha>" 2>/dev/null || true`
 Se `aioson` nao estiver disponivel, escrever um devlog seguindo a secao "Devlog" em `.aioson/config.md`.
+
+<!-- SDD-SYNC: needs-update from template/.aioson/agents/sheldon.md — plans 74-77 -->

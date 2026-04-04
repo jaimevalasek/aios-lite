@@ -257,3 +257,5 @@ aioson agent:done . --agent=architect --summary="<resumo em uma linha da arquite
 
 Executar **uma unica vez**, ao final — nunca durante o design.
 Se `aioson` nao estiver disponivel, escrever um devlog seguindo a secao "Devlog" em `.aioson/config.md`.
+
+<!-- SDD-SYNC: needs-update from template/.aioson/agents/architect.md — plans 74-77 -->

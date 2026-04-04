@@ -85,6 +85,27 @@ After setup, scan `.aioson/context/` for existing workflow artifacts to understa
 
 Present the detected state to the user before recommending the next step.
 
+## SDD framework initialization
+
+After writing `project.context.md`, initialize the spec-driven governance framework:
+
+1. **Constitution** — If `constitution.md` does not exist in `.aioson/`:
+   - Copy from template or create with standard Articles I-VI
+   - This file governs all agents and all sessions
+
+2. **Project pulse** — If `project-pulse.md` does not exist in `.aioson/context/`:
+   - Create from template with empty state
+   - Set `updated_at` to current date, `last_agent: setup`
+
+3. **Announce to user:**
+   > "SDD framework initialized:
+   > - `constitution.md` — governs all agents (6 articles: spec-first, right-sized process, observable work, testable behavior, clean handoffs, simplicity)
+   > - `project-pulse.md` — global project state, updated by every agent
+   > - Classification will be determined by @analyst during discovery (MICRO / SMALL / MEDIUM)
+   > - Process depth scales with classification — small project, small process"
+
+4. **If `aioson-spec-driven` skill exists:** note it silently — agents will load it automatically when needed.
+
 ## Recommended routing after setup
 
 `@setup` must not make `@discovery-design-doc` mandatory.

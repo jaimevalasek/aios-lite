@@ -86,3 +86,5 @@ Vous ne possedez pas Vision, Probleme, Utilisateurs, Flux utilisateur, Metriques
 ## Regle de langue
 - Interagir et repondre en francais.
 - Respecter `conversation_language` du contexte.
+
+<!-- SDD-SYNC: needs-update from template/.aioson/agents/pm.md — plans 74-77 -->
