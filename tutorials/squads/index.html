@@ -1,0 +1,1124 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AIOSON Squads — Tutorial Completo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #07070f;
+      --surface: #0f0f1a;
+      --card: #13131f;
+      --card2: #0d0d18;
+      --border: #1f1f32;
+      --border-light: #282840;
+      --primary: #6c47ff;
+      --primary-dim: rgba(108, 71, 255, 0.12);
+      --primary-glow: rgba(108, 71, 255, 0.22);
+      --text: #e2e8f0;
+      --muted: #8892a4;
+      --accent: #a78bfa;
+      --green: #34d399;
+      --yellow: #fbbf24;
+      --red: #f87171;
+      --blue: #60a5fa;
+      --cyan: #22d3ee;
+      --orange: #fb923c;
+      --radius: 14px;
+      --heading: #d4d8f0;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.7;
+      font-size: 16px;
+    }
+
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 3px; }
+
+    /* ── Nav ─────────────────────────────────────── */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(7,7,15,0.85);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 32px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .nav-back {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      text-decoration: none;
+      color: var(--muted);
+      font-size: 14px;
+      transition: color 0.2s;
+    }
+    .nav-back:hover { color: var(--text); }
+    .nav-sep { color: var(--border-light); }
+    .nav-title { font-size: 14px; font-weight: 600; color: var(--text); }
+    .nav-tag {
+      margin-left: auto;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--primary);
+      background: var(--primary-dim);
+      border: 1px solid rgba(108,71,255,0.3);
+      border-radius: 20px;
+      padding: 3px 12px;
+    }
+
+    /* ── Hero ────────────────────────────────────── */
+    .hero {
+      padding: 90px 24px 70px;
+      text-align: center;
+      background: radial-gradient(ellipse 60% 55% at 50% -5%, rgba(108,71,255,0.2) 0%, transparent 65%);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .hero-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 28px;
+    }
+    .hero-eyebrow::before, .hero-eyebrow::after {
+      content: '';
+      display: block;
+      width: 28px;
+      height: 1px;
+      background: var(--accent);
+      opacity: 0.5;
+    }
+
+    .hero h1 {
+      font-size: clamp(2.2rem, 6vw, 4rem);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+      background: linear-gradient(145deg, #d4d8f0 0%, var(--accent) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 22px;
+    }
+
+    .hero-sub {
+      font-size: 1.15rem;
+      color: var(--muted);
+      max-width: 600px;
+      margin: 0 auto 36px;
+    }
+
+    .hero-meta {
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+
+    .meta-pill {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .meta-dot { width: 7px; height: 7px; border-radius: 50%; }
+
+    /* ── Layout ──────────────────────────────────── */
+    .container { max-width: 900px; margin: 0 auto; padding: 0 24px; }
+
+    section {
+      padding: 72px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    section:last-child { border-bottom: none; }
+
+    .section-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--primary);
+      margin-bottom: 16px;
+    }
+    .section-label::before {
+      content: '';
+      display: block;
+      width: 18px;
+      height: 2px;
+      background: var(--primary);
+      border-radius: 2px;
+    }
+
+    h2 {
+      font-size: clamp(1.6rem, 3vw, 2.2rem);
+      font-weight: 800;
+      letter-spacing: -0.025em;
+      color: var(--heading);
+      margin-bottom: 16px;
+      line-height: 1.25;
+    }
+
+    h3 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--heading);
+      margin-bottom: 10px;
+    }
+
+    p { color: var(--muted); margin-bottom: 16px; }
+    p:last-child { margin-bottom: 0; }
+
+    /* ── Cards ───────────────────────────────────── */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px;
+    }
+
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 16px;
+      margin-top: 32px;
+    }
+
+    /* ── Callout ─────────────────────────────────── */
+    .callout {
+      background: var(--primary-dim);
+      border: 1px solid rgba(108,71,255,0.3);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      margin: 24px 0;
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+    }
+    .callout.green {
+      background: rgba(52,211,153,0.08);
+      border-color: rgba(52,211,153,0.3);
+    }
+    .callout.yellow {
+      background: rgba(251,191,36,0.08);
+      border-color: rgba(251,191,36,0.3);
+    }
+    .callout-icon { font-size: 1.3rem; flex-shrink: 0; margin-top: 1px; }
+    .callout p { margin: 0; color: var(--text); font-size: 0.95rem; }
+
+    /* ── Code ────────────────────────────────────── */
+    .code-block {
+      background: #0a0a14;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px 24px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13.5px;
+      line-height: 1.8;
+      color: #c9d1d9;
+      overflow-x: auto;
+      margin: 20px 0;
+    }
+    .code-block .c  { color: var(--muted); }
+    .code-block .kw { color: var(--accent); }
+    .code-block .cmd { color: var(--cyan); }
+    .code-block .str { color: var(--green); }
+    .code-block .num { color: var(--yellow); }
+    .code-block .flag { color: var(--orange); }
+    .code-block .prompt { color: var(--primary); opacity: 0.7; user-select: none; }
+
+    /* ── Steps ───────────────────────────────────── */
+    .steps { display: flex; flex-direction: column; gap: 0; margin-top: 32px; }
+
+    .step { display: flex; gap: 24px; position: relative; }
+
+    .step:not(:last-child)::after {
+      content: '';
+      position: absolute;
+      left: 19px;
+      top: 46px;
+      bottom: -4px;
+      width: 2px;
+      background: linear-gradient(to bottom, var(--border-light), transparent);
+    }
+
+    .step-num {
+      flex-shrink: 0;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--card);
+      border: 2px solid var(--primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--accent);
+      position: relative;
+      z-index: 1;
+    }
+
+    .step-body { flex: 1; padding-bottom: 36px; }
+    .step-body h3 { margin-bottom: 8px; }
+    .step-body p { font-size: 0.92rem; }
+
+    /* ── Flow ────────────────────────────────────── */
+    .flow {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      margin: 32px 0;
+      overflow-x: auto;
+      padding-bottom: 8px;
+    }
+
+    .flow-node {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 20px;
+      text-align: center;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .flow-node .fn-icon { font-size: 1.4rem; display: block; margin-bottom: 6px; }
+    .flow-node .fn-label { font-size: 12px; font-weight: 600; color: var(--heading); display: block; }
+    .flow-node .fn-sub { font-size: 11px; color: var(--muted); }
+
+    .flow-node.active {
+      border-color: var(--primary);
+      background: var(--primary-dim);
+    }
+    .flow-node.active .fn-label { color: var(--accent); }
+
+    .flow-arrow {
+      color: var(--border-light);
+      font-size: 18px;
+      padding: 0 8px;
+      flex-shrink: 0;
+    }
+
+    /* ── Arch diagram ─────────────────────────────── */
+    .arch {
+      background: var(--card2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 32px;
+      margin: 28px 0;
+    }
+
+    .arch-title {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 24px;
+      text-align: center;
+    }
+
+    .arch-layer {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+
+    .arch-box {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 18px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--heading);
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      white-space: nowrap;
+    }
+
+    .arch-box.primary {
+      border-color: var(--primary);
+      background: var(--primary-dim);
+      color: var(--accent);
+    }
+
+    .arch-box.green {
+      border-color: rgba(52,211,153,0.4);
+      background: rgba(52,211,153,0.07);
+      color: var(--green);
+    }
+
+    .arch-box.blue {
+      border-color: rgba(96,165,250,0.4);
+      background: rgba(96,165,250,0.07);
+      color: var(--blue);
+    }
+
+    .arch-connector {
+      text-align: center;
+      font-size: 18px;
+      color: var(--border-light);
+      margin-bottom: 12px;
+    }
+
+    /* ── Table ───────────────────────────────────── */
+    .tbl {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 24px 0;
+      font-size: 14px;
+    }
+
+    .tbl th {
+      text-align: left;
+      padding: 12px 16px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .tbl td {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      color: var(--muted);
+      vertical-align: top;
+    }
+
+    .tbl tr:last-child td { border-bottom: none; }
+
+    .tbl td:first-child {
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--cyan);
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    .tbl td:nth-child(2) { color: var(--text); }
+
+    /* ── Tag pills ───────────────────────────────── */
+    .tag {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 600;
+      border-radius: 20px;
+      padding: 2px 10px;
+    }
+    .tag-green { background: rgba(52,211,153,0.12); color: var(--green); border: 1px solid rgba(52,211,153,0.3); }
+    .tag-blue  { background: rgba(96,165,250,0.12); color: var(--blue);  border: 1px solid rgba(96,165,250,0.3); }
+    .tag-yellow{ background: rgba(251,191,36,0.12); color: var(--yellow);border: 1px solid rgba(251,191,36,0.3); }
+    .tag-red   { background: rgba(248,113,113,0.12);color: var(--red);   border: 1px solid rgba(248,113,113,0.3); }
+
+    /* ── TOC sidebar ─────────────────────────────── */
+    .layout {
+      display: grid;
+      grid-template-columns: 1fr 220px;
+      gap: 48px;
+      max-width: 1160px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    .toc {
+      position: sticky;
+      top: 80px;
+      align-self: start;
+      padding: 24px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+
+    .toc-title {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 16px;
+    }
+
+    .toc a {
+      display: block;
+      font-size: 13px;
+      color: var(--muted);
+      text-decoration: none;
+      padding: 5px 0;
+      transition: color 0.2s;
+      border-left: 2px solid transparent;
+      padding-left: 12px;
+      margin-left: -12px;
+    }
+    .toc a:hover { color: var(--accent); border-left-color: var(--primary); }
+
+    @media (max-width: 780px) {
+      .layout { grid-template-columns: 1fr; }
+      .toc { display: none; }
+      .flow { flex-direction: column; align-items: flex-start; }
+      .flow-arrow { transform: rotate(90deg); }
+    }
+
+    /* ── Footer ──────────────────────────────────── */
+    footer {
+      text-align: center;
+      padding: 40px 24px;
+      border-top: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 0.875rem;
+    }
+    footer a { color: var(--accent); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-back" href="../index.html">← Tutoriais</a>
+  <span class="nav-sep">/</span>
+  <span class="nav-title">AIOSON Squads</span>
+  <span class="nav-tag">Squads</span>
+</nav>
+
+<div class="hero">
+  <div class="hero-eyebrow">Tutorial Completo</div>
+  <h1>AIOSON Squads</h1>
+  <p class="hero-sub">Crie times de agentes especializados que trabalham juntos, se corrigem e evoluem — para software, conteúdo, pesquisa e qualquer domínio.</p>
+  <div class="hero-meta">
+    <span class="meta-pill"><span class="meta-dot" style="background:var(--green)"></span> Nível intermediário</span>
+    <span class="meta-pill"><span class="meta-dot" style="background:var(--blue)"></span> Leitura ~20 min</span>
+    <span class="meta-pill"><span class="meta-dot" style="background:var(--accent)"></span> AIOSON v2+</span>
+  </div>
+</div>
+
+<div class="layout">
+
+  <!-- ── TOC ── -->
+  <aside class="toc" style="grid-column: 2; grid-row: 1 / 20;">
+    <p class="toc-title">Neste tutorial</p>
+    <a href="#o-que-e">O que é um Squad</a>
+    <a href="#quando-usar">Quando usar</a>
+    <a href="#anatomia">Anatomia de um Squad</a>
+    <a href="#criar">Criando seu primeiro squad</a>
+    <a href="#executores">Tipos de executor</a>
+    <a href="#autorun">Execução autônoma</a>
+    <a href="#bus">Comunicação intra-squad</a>
+    <a href="#inter-squad">Conectando squads</a>
+    <a href="#memoria">Memória e aprendizado</a>
+    <a href="#cli">Referência de comandos</a>
+    <a href="#exemplos">Exemplos por domínio</a>
+  </aside>
+
+  <!-- ── Content ── -->
+  <main style="grid-column: 1; grid-row: 1 / 20; min-width: 0;">
+
+    <!-- ── O que é ── -->
+    <section id="o-que-e">
+      <div class="section-label">Conceito</div>
+      <h2>O que é um Squad?</h2>
+      <p>Um Squad é um time de agentes especializados que colabora para completar tarefas complexas de forma autônoma. Cada agente tem um papel, ferramentas, e um contrato de entrega claro.</p>
+
+      <div class="arch">
+        <p class="arch-title">Estrutura de um Squad</p>
+        <div class="arch-layer">
+          <div class="arch-box primary">🎯 Objetivo do Squad</div>
+        </div>
+        <div class="arch-connector">↓</div>
+        <div class="arch-layer">
+          <div class="arch-box primary">🧠 Orquestrador</div>
+        </div>
+        <div class="arch-connector">↙ &nbsp;&nbsp; ↓ &nbsp;&nbsp; ↘</div>
+        <div class="arch-layer">
+          <div class="arch-box green">⚙️ Worker A</div>
+          <div class="arch-box green">⚙️ Worker B</div>
+          <div class="arch-box green">⚙️ Worker C</div>
+        </div>
+        <div class="arch-connector">↓ bus de mensagens ↓</div>
+        <div class="arch-layer">
+          <div class="arch-box blue">📦 Output</div>
+          <div class="arch-box blue">📊 STATE.md</div>
+          <div class="arch-box blue">🧠 Learnings</div>
+        </div>
+      </div>
+
+      <p>O orquestrador decompõe o objetivo em tarefas, distribui para os workers em paralelo (por waves), monitora o progresso via bus de mensagens, e lida com falhas automaticamente — sem você precisar intervir.</p>
+
+      <div class="callout green">
+        <span class="callout-icon">✓</span>
+        <p><strong>Diferença-chave:</strong> um Squad não é um único agente fazendo tudo. São especialistas trabalhando em paralelo, com contexto isolado por worker, comunicando-se por mensagens.</p>
+      </div>
+    </section>
+
+    <!-- ── Quando usar ── -->
+    <section id="quando-usar">
+      <div class="section-label">Decisão</div>
+      <h2>Quando usar um Squad?</h2>
+
+      <div class="card-grid">
+        <div class="card">
+          <h3 style="color:var(--green)">✓ Use Squad quando...</h3>
+          <p style="font-size:0.9rem; margin-top:12px;">A tarefa tem partes independentes que podem rodar em paralelo</p>
+          <p style="font-size:0.9rem;">Especialistas diferentes precisam contribuir (pesquisador, escritor, revisor)</p>
+          <p style="font-size:0.9rem;">O trabalho se repete em sessões futuras</p>
+          <p style="font-size:0.9rem;">Você quer que o resultado melhore com o tempo via learnings</p>
+        </div>
+        <div class="card">
+          <h3 style="color:var(--red)">✗ Use agente único quando...</h3>
+          <p style="font-size:0.9rem; margin-top:12px;">A tarefa é linear e curta (&lt; 30 min)</p>
+          <p style="font-size:0.9rem;">Um único agente (/dev, /qa) resolve o problema</p>
+          <p style="font-size:0.9rem;">Não há paralelismo real possível</p>
+          <p style="font-size:0.9rem;">É exploração ou prototipagem rápida</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Anatomia ── -->
+    <section id="anatomia">
+      <div class="section-label">Estrutura</div>
+      <h2>Anatomia de um Squad</h2>
+      <p>Todo squad criado pelo AIOSON tem esta estrutura de arquivos:</p>
+
+      <div class="code-block"><span class="c"># Gerado automaticamente por aioson squad:scaffold</span>
+.aioson/squads/<span class="str">meu-squad</span>/
+├── agents/
+│   ├── agents.md          <span class="c"># roster de executores</span>
+│   ├── orquestrador.md    <span class="c"># agent do coordenador</span>
+│   ├── worker-a.md        <span class="c"># agent do worker A</span>
+│   └── worker-b.md        <span class="c"># agent do worker B</span>
+├── squad.manifest.json    <span class="c"># configuração principal</span>
+├── squad.md               <span class="c"># documentação do squad</span>
+├── STATE.md               <span class="c"># memória cross-session</span>
+├── docs/
+│   ├── design-doc.md      <span class="c"># decisões de arquitetura</span>
+│   └── readiness.md       <span class="c"># checklist de prontidão</span>
+├── checklists/
+│   └── quality.md         <span class="c"># critérios de qualidade</span>
+├── learnings/
+│   └── index.md           <span class="c"># aprendizados acumulados</span>
+└── bus/                   <span class="c"># mensagens inter-worker (JSONL)</span>
+
+output/<span class="str">meu-squad</span>/         <span class="c"># outputs gerados</span>
+aioson-logs/<span class="str">meu-squad</span>/    <span class="c"># logs de sessão</span></div>
+
+      <h3 style="margin-top: 32px;">O squad.manifest.json</h3>
+      <p>O coração de um squad. Define executores, budget, dependências e comportamento:</p>
+
+      <div class="code-block">{
+  <span class="str">"slug"</span>: <span class="str">"meu-squad"</span>,
+  <span class="str">"name"</span>: <span class="str">"Meu Squad de Conteúdo"</span>,
+  <span class="str">"mode"</span>: <span class="str">"content"</span>,          <span class="c">// content | code | hybrid</span>
+
+  <span class="str">"executors"</span>: [
+    {
+      <span class="str">"slug"</span>: <span class="str">"researcher"</span>,
+      <span class="str">"title"</span>: <span class="str">"Pesquisador"</span>,
+      <span class="str">"role"</span>: <span class="str">"Pesquisa tendências e fontes"</span>,
+      <span class="str">"type"</span>: <span class="str">"agent"</span>,
+      <span class="str">"modelTier"</span>: <span class="str">"balanced"</span>  <span class="c">// fast | balanced | powerful</span>
+    },
+    {
+      <span class="str">"slug"</span>: <span class="str">"writer"</span>,
+      <span class="str">"title"</span>: <span class="str">"Escritor"</span>,
+      <span class="str">"role"</span>: <span class="str">"Escreve o conteúdo final"</span>,
+      <span class="str">"type"</span>: <span class="str">"agent"</span>,
+      <span class="str">"modelTier"</span>: <span class="str">"powerful"</span>
+    }
+  ],
+
+  <span class="str">"budget"</span>: {
+    <span class="str">"max_tokens_per_session"</span>: <span class="num">200000</span>,
+    <span class="str">"max_tokens_per_task"</span>: <span class="num">20000</span>,
+    <span class="str">"action_on_exceed"</span>: <span class="str">"pause"</span>   <span class="c">// pause | abort | notify</span>
+  },
+
+  <span class="str">"depends_on"</span>: [],              <span class="c">// dependências de outros squads</span>
+  <span class="str">"subscriptions"</span>: []            <span class="c">// eventos de outros squads para ouvir</span>
+}</div>
+    </section>
+
+    <!-- ── Criar ── -->
+    <section id="criar">
+      <div class="section-label">Prática</div>
+      <h2>Criando seu primeiro Squad</h2>
+      <p>O agente <code style="color:var(--cyan); font-family:'JetBrains Mono',monospace; font-size:0.9em;">/squad</code> guia você por todo o processo. Siga estes passos:</p>
+
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-body">
+            <h3>Ative o agente @squad</h3>
+            <p>No Claude Code, digite <code style="color:var(--cyan); font-family:'JetBrains Mono',monospace;">/squad</code> e descreva o que você quer construir. Seja específico sobre o domínio e o objetivo.</p>
+            <div class="code-block"><span class="prompt">/squad</span>
+
+<span class="c"># Exemplos de boas descrições:</span>
+<span class="str">"Quero um squad para produzir roteiros de YouTube sobre tecnologia,
+pesquisando tendências, escrevendo o roteiro e revisando antes de publicar"</span>
+
+<span class="str">"Squad de desenvolvimento para criar features em Node.js —
+preciso de um arquiteto, developer e QA"</span>
+
+<span class="str">"Time de pesquisa jurídica para analisar contratos e identificar riscos"</span></div>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-body">
+            <h3>Revise o design (blueprint)</h3>
+            <p>O agente apresenta um <strong>blueprint</strong> do squad antes de criar qualquer arquivo. Você pode aceitar, ajustar papéis, ou pedir mais especialistas.</p>
+            <div class="callout yellow">
+              <span class="callout-icon">💡</span>
+              <p>Este passo é intencional — decisões sobre papéis e ferramentas impactam todas as sessões futuras. Vale 2 minutos de revisão.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-body">
+            <h3>Squad é criado automaticamente</h3>
+            <p>Com o blueprint aprovado, o agente executa o scaffolding e gera todos os arquivos:</p>
+            <div class="code-block"><span class="c"># Gerado internamente pelo @squad:</span>
+<span class="cmd">aioson</span> <span class="kw">squad:scaffold</span> . <span class="flag">--slug</span>=youtube-roteiros <span class="flag">--name</span>=<span class="str">"YouTube Roteiros"</span> <span class="flag">--mode</span>=content
+
+<span class="c"># Resultado:</span>
+✓ .aioson/squads/youtube-roteiros/        <span class="c">(15 arquivos criados)</span>
+✓ output/youtube-roteiros/
+✓ aioson-logs/youtube-roteiros/</div>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-num">4</div>
+          <div class="step-body">
+            <h3>Agentes especializados são gerados</h3>
+            <p>Cada executor recebe seu próprio arquivo <code style="color:var(--cyan); font-family:'JetBrains Mono',monospace; font-size:0.9em;">.md</code> com papel, ferramentas, contexto e critérios de qualidade específicos para o domínio.</p>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-num">5</div>
+          <div class="step-body">
+            <h3>Squad registrado no projeto</h3>
+            <p>Os atalhos são adicionados ao <code style="color:var(--cyan); font-family:'JetBrains Mono',monospace; font-size:0.9em;">CLAUDE.md</code> e <code style="color:var(--cyan); font-family:'JetBrains Mono',monospace; font-size:0.9em;">AGENTS.md</code>, e você já pode invocar os agentes individuais.</p>
+            <div class="code-block"><span class="c"># Adicionado ao CLAUDE.md automaticamente:</span>
+<span class="kw">## Squad: YouTube Roteiros</span>
+- /pesquisador  -> .aioson/squads/youtube-roteiros/agents/pesquisador.md
+- /escritor     -> .aioson/squads/youtube-roteiros/agents/escritor.md
+- /revisor      -> .aioson/squads/youtube-roteiros/agents/revisor.md
+- /orquestrador -> .aioson/squads/youtube-roteiros/agents/orquestrador.md</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Executores ── -->
+    <section id="executores">
+      <div class="section-label">Componentes</div>
+      <h2>Tipos de Executor</h2>
+      <p>Cada worker em um squad tem um tipo que define como ele executa suas tarefas:</p>
+
+      <table class="tbl">
+        <thead>
+          <tr>
+            <th>Tipo</th>
+            <th>Quando usar</th>
+            <th>Model tier padrão</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>agent</td>
+            <td>Worker principal — recebe briefing, usa ferramentas, entrega output</td>
+            <td><span class="tag tag-blue">balanced</span></td>
+          </tr>
+          <tr>
+            <td>worker</td>
+            <td>Executa scripts determinísticos (Node.js, Python) — sem LLM</td>
+            <td><span class="tag tag-green">none</span></td>
+          </tr>
+          <tr>
+            <td>reviewer</td>
+            <td>Avalia output de outros workers com critérios estruturados</td>
+            <td><span class="tag tag-blue">balanced</span></td>
+          </tr>
+          <tr>
+            <td>research</td>
+            <td>Pesquisa web com cache automático (7 dias)</td>
+            <td><span class="tag tag-yellow">powerful</span></td>
+          </tr>
+          <tr>
+            <td>human-gate</td>
+            <td>Ponto de aprovação humana — pausa execução até confirmação</td>
+            <td><span class="tag tag-red">human</span></td>
+          </tr>
+          <tr>
+            <td>clone</td>
+            <td>Múltiplas instâncias do mesmo agente rodando em paralelo (voting)</td>
+            <td><span class="tag tag-blue">balanced</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- ── Autorun ── -->
+    <section id="autorun">
+      <div class="section-label">Execução</div>
+      <h2>Execução Autônoma com squad:autorun</h2>
+      <p>Após criar o squad, você pode rodá-lo sem supervisão. O <code style="color:var(--cyan); font-family:'JetBrains Mono',monospace; font-size:0.9em;">squad:autorun</code> cuida de tudo:</p>
+
+      <div class="code-block"><span class="c"># Execução básica</span>
+<span class="cmd">aioson</span> <span class="kw">squad:autorun</span> . <span class="flag">--squad</span>=youtube-roteiros <span class="flag">--goal</span>=<span class="str">"Criar roteiro sobre IA generativa em 2026"</span>
+
+<span class="c"># Com validação de dependências de outros squads</span>
+<span class="cmd">aioson</span> <span class="kw">squad:autorun</span> . <span class="flag">--squad</span>=distribuicao <span class="flag">--goal</span>=<span class="str">"Publicar episódio"</span> <span class="flag">--wait-deps</span>
+
+<span class="c"># Com engine nativo do Claude Code (experimental)</span>
+<span class="cmd">aioson</span> <span class="kw">squad:autorun</span> . <span class="flag">--squad</span>=youtube-roteiros <span class="flag">--goal</span>=<span class="str">"..."</span> <span class="flag">--engine</span>=agent-teams
+
+<span class="c"># Em modo daemon (roda em background continuamente)</span>
+<span class="cmd">aioson</span> <span class="kw">squad:daemon</span> . <span class="flag">--squad</span>=youtube-roteiros <span class="flag">--persistent</span></div>
+
+      <h3 style="margin-top: 32px;">O que acontece durante uma run</h3>
+
+      <div class="flow">
+        <div class="flow-node">
+          <span class="fn-icon">🎯</span>
+          <span class="fn-label">Goal</span>
+          <span class="fn-sub">input do usuário</span>
+        </div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-node active">
+          <span class="fn-icon">🔀</span>
+          <span class="fn-label">Decomposição</span>
+          <span class="fn-sub">tasks + waves</span>
+        </div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-node">
+          <span class="fn-icon">⚡</span>
+          <span class="fn-label">Wave 1</span>
+          <span class="fn-sub">paralelo</span>
+        </div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-node">
+          <span class="fn-icon">⚡</span>
+          <span class="fn-label">Wave 2</span>
+          <span class="fn-sub">deps resolvidas</span>
+        </div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-node">
+          <span class="fn-icon">✅</span>
+          <span class="fn-label">Verificação</span>
+          <span class="fn-sub">4-tier gate</span>
+        </div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-node active">
+          <span class="fn-icon">🧠</span>
+          <span class="fn-label">Learnings</span>
+          <span class="fn-sub">extraídas</span>
+        </div>
+      </div>
+
+      <h3>Proteções automáticas</h3>
+      <div class="card-grid" style="margin-top: 16px;">
+        <div class="card">
+          <h3 style="font-size:1rem;">🔄 Gap Closure Loop</h3>
+          <p style="font-size:0.88rem; margin-top:8px;">Se uma tarefa falha, o sistema retenta até 3x com o contexto do erro anterior — não é retry burro, é retry informado.</p>
+        </div>
+        <div class="card">
+          <h3 style="font-size:1rem;">💓 Heartbeat</h3>
+          <p style="font-size:0.88rem; margin-top:8px;">Workers longos (>30s) enviam pulso a cada 30 segundos. Sem resposta em 3 pulsos = task considerada travada.</p>
+        </div>
+        <div class="card">
+          <h3 style="font-size:1rem;">🛑 Anti-Loop Guard</h3>
+          <p style="font-size:0.88rem; margin-top:8px;">Se um worker envia 8+ mensagens de status sem entregar resultado, o coordenador intervém e força uma decisão.</p>
+        </div>
+        <div class="card">
+          <h3 style="font-size:1rem;">💰 Budget Gate</h3>
+          <p style="font-size:0.88rem; margin-top:8px;">Antes de cada task, o sistema projeta o uso de tokens. Se a projeção excede o budget configurado, pausa e avisa.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Bus ── -->
+    <section id="bus">
+      <div class="section-label">Comunicação</div>
+      <h2>Bus de Mensagens Intra-Squad</h2>
+      <p>Workers se comunicam via um bus de mensagens JSONL — o coordenador observa todo o tráfego e age quando necessário.</p>
+
+      <table class="tbl">
+        <thead>
+          <tr>
+            <th>Tipo</th>
+            <th>Significado</th>
+            <th>Quem responde</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>result</td>
+            <td>Worker concluiu uma tarefa com sucesso</td>
+            <td>Coordenador avança o plano</td>
+          </tr>
+          <tr>
+            <td>block</td>
+            <td>Worker está travado e precisa de ajuda</td>
+            <td>Coordenador resolve ou escala</td>
+          </tr>
+          <tr>
+            <td>question</td>
+            <td>Worker tem dúvida sobre escopo ou decisão</td>
+            <td>Coordenador ou peer worker</td>
+          </tr>
+          <tr>
+            <td>finding</td>
+            <td>Worker descobriu algo relevante para os outros</td>
+            <td>Outros workers leem se pertinente</td>
+          </tr>
+          <tr>
+            <td>heartbeat</td>
+            <td>Worker ainda está ativo (tasks longas)</td>
+            <td>Coordenador monitora ausência</td>
+          </tr>
+          <tr>
+            <td>resolution</td>
+            <td>Um block foi resolvido</td>
+            <td>Worker bloqueado retoma</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="callout">
+        <span class="callout-icon">📋</span>
+        <p>O bus é persistido em <code style="font-family:'JetBrains Mono',monospace;">.aioson/squads/{slug}/bus/*.jsonl</code>. Você pode inspecioná-lo para depurar sessions e entender o que aconteceu.</p>
+      </div>
+    </section>
+
+    <!-- ── Inter-squad ── -->
+    <section id="inter-squad">
+      <div class="section-label">Orquestração</div>
+      <h2>Conectando Squads</h2>
+      <p>Squads diferentes no mesmo projeto podem se comunicar via eventos pub/sub. O squad A publica eventos quando conclui trabalho; o squad B os consome automaticamente no início da próxima run.</p>
+
+      <div class="code-block"><span class="c"># Declare dependências no squad.manifest.json do squad B:</span>
+{
+  <span class="str">"slug"</span>: <span class="str">"squad-distribuicao"</span>,
+  <span class="str">"depends_on"</span>: [
+    {
+      <span class="str">"squad"</span>: <span class="str">"squad-conteudo"</span>,
+      <span class="str">"event"</span>: <span class="str">"episodio.criado"</span>        <span class="c">// aguardar este evento</span>
+    }
+  ],
+  <span class="str">"subscriptions"</span>: [<span class="str">"episodio.*"</span>]     <span class="c">// padrão de eventos para ouvir</span>
+}
+
+<span class="c"># Executar squad B — aguarda evento automaticamente (até 60s)</span>
+<span class="cmd">aioson</span> <span class="kw">squad:autorun</span> . <span class="flag">--squad</span>=squad-distribuicao <span class="flag">--goal</span>=<span class="str">"Publicar"</span> <span class="flag">--wait-deps</span>
+
+<span class="c"># Visualizar o grafo de dependências entre todos os squads</span>
+<span class="cmd">aioson</span> <span class="kw">squad:dependency-graph</span> .</div>
+
+      <div class="callout yellow">
+        <span class="callout-icon">⚠️</span>
+        <p>Use <code style="font-family:'JetBrains Mono',monospace;">--ignore-deps</code> para executar sem validar dependências — útil em desenvolvimento, mas não em produção.</p>
+      </div>
+    </section>
+
+    <!-- ── Memória ── -->
+    <section id="memoria">
+      <div class="section-label">Evolução</div>
+      <h2>Memória e Aprendizado</h2>
+      <p>O squad melhora com o tempo. A cada sessão, learnings são extraídas automaticamente e persistidas para influenciar sessões futuras.</p>
+
+      <div class="steps">
+        <div class="step">
+          <div class="step-num" style="border-color: var(--green); color: var(--green);">1</div>
+          <div class="step-body">
+            <h3>STATE.md — memória cross-session</h3>
+            <p>Mantém decisões tomadas, blockers encontrados, pendências e velocidade do squad. Lido no início de cada run para dar contexto ao orquestrador.</p>
+            <div class="code-block"><span class="c"># .aioson/squads/{slug}/STATE.md</span>
+<span class="str">squad</span>: youtube-roteiros
+<span class="str">sessions_completed</span>: <span class="num">12</span>
+<span class="str">avg_tasks_per_session</span>: <span class="num">4.2</span>
+
+<span class="kw">## Decisions Made</span>
+- Usar formato JSON para output (integração webhook)
+- Roteiros entre 8-12 min performam melhor
+
+<span class="kw">## Active Blockers</span>
+- API do YouTube precisa de nova key (expirou)</div>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-num" style="border-color: var(--blue); color: var(--blue);">2</div>
+          <div class="step-body">
+            <h3>Agent Memory — memória por executor</h3>
+            <p>Cada executor acumula conhecimento específico do seu domínio. Um pesquisador aprende quais fontes são mais confiáveis; um escritor aprende quais formatos performam melhor.</p>
+            <div class="code-block"><span class="c"># .aioson/squads/{slug}/agent-memory/escritor.md</span>
+<span class="kw">## Patterns that work</span>
+- Hooks de curiosidade nos primeiros 15s aumentam retenção 35%
+- Roteiros &lt; 10 min têm 2x mais completion rate
+
+<span class="kw">## Patterns to avoid</span>
+- Intros genéricas &gt; 30s causam 60% de drop-off</div>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-num" style="border-color: var(--accent); color: var(--accent);">3</div>
+          <div class="step-body">
+            <h3>Learning Evolution — aprendizado aplicado</h3>
+            <p>Learnings com frequência ≥ 2 podem ser promovidas para regras do squad, modificando automaticamente o comportamento futuro.</p>
+            <div class="code-block"><span class="c"># Detectar candidatos a automação</span>
+<span class="cmd">aioson</span> <span class="kw">pattern:detect</span> . <span class="flag">--squad</span>=youtube-roteiros
+
+<span class="c"># Aplicar learnings como regras</span>
+<span class="cmd">aioson</span> <span class="kw">learning:evolve</span> . <span class="flag">--squad</span>=youtube-roteiros <span class="flag">--auto-apply</span>
+
+<span class="c"># Reverter uma evolução indesejada</span>
+<span class="cmd">aioson</span> <span class="kw">learning:rollback</span> . <span class="flag">--squad</span>=youtube-roteiros <span class="flag">--evolution</span>=<span class="str">uuid-aqui</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── CLI ── -->
+    <section id="cli">
+      <div class="section-label">Referência</div>
+      <h2>Referência de Comandos CLI</h2>
+
+      <h3 style="margin-bottom: 16px;">Criação e setup</h3>
+      <table class="tbl">
+        <thead><tr><th>Comando</th><th>O que faz</th></tr></thead>
+        <tbody>
+          <tr><td>squad:scaffold</td><td>Gera todos os diretórios e arquivos skeleton de um squad (sem LLM)</td></tr>
+          <tr><td>brief:validate</td><td>Valida completude de um brief antes de spawnar workers — detecta campos faltando e pode auto-corrigir</td></tr>
+          <tr><td>preflight:context</td><td>Estima budget de tokens antes de iniciar uma sessão — alerta sobre risco de truncação</td></tr>
+        </tbody>
+      </table>
+
+      <h3 style="margin-bottom: 16px; margin-top: 32px;">Execução</h3>
+      <table class="tbl">
+        <thead><tr><th>Comando</th><th>O que faz</th></tr></thead>
+        <tbody>
+          <tr><td>squad:autorun</td><td>Execução autônoma completa — decompõe goal, executa em waves, verifica resultados</td></tr>
+          <tr><td>squad:daemon</td><td>Modo persistente — fica em loop monitorando eventos e rodando sessões automaticamente</td></tr>
+          <tr><td>squad:status</td><td>Mostra estado atual do squad (STATE.md + eventos pendentes)</td></tr>
+        </tbody>
+      </table>
+
+      <h3 style="margin-bottom: 16px; margin-top: 32px;">Análise e evolução</h3>
+      <table class="tbl">
+        <thead><tr><th>Comando</th><th>O que faz</th></tr></thead>
+        <tbody>
+          <tr><td>pattern:detect</td><td>Detecta candidatos a automação analisando learnings e histórico de sessões</td></tr>
+          <tr><td>learning:evolve</td><td>Promove learnings frequentes para regras do squad</td></tr>
+          <tr><td>learning:rollback</td><td>Reverte uma evolução aplicada por UUID</td></tr>
+          <tr><td>context:compact</td><td>Compacta contexto de sessão longa em handoff estruturado</td></tr>
+          <tr><td>squad:dependency-graph</td><td>Visualiza dependências entre squads (ASCII ou Mermaid)</td></tr>
+        </tbody>
+      </table>
+
+      <h3 style="margin-bottom: 16px; margin-top: 32px;">Integração e exportação</h3>
+      <table class="tbl">
+        <thead><tr><th>Comando</th><th>O que faz</th></tr></thead>
+        <tbody>
+          <tr><td>squad:card</td><td>Gera Agent Card compatível com Google A2A v1.0 — permite que outros sistemas descubram o squad</td></tr>
+          <tr><td>agent:export-skill</td><td>Exporta um agente como Agent Skills Standard — portável para Cursor, Copilot, Gemini CLI e mais</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- ── Exemplos ── -->
+    <section id="exemplos">
+      <div class="section-label">Casos de uso</div>
+      <h2>Exemplos por Domínio</h2>
+
+      <div class="card-grid">
+        <div class="card">
+          <span style="font-size:2rem; display:block; margin-bottom:12px;">🎬</span>
+          <h3>Conteúdo Digital</h3>
+          <p style="font-size:0.88rem; margin-top:8px; margin-bottom:12px;">Pesquisador + Roteirista + Editor + Thumbnail Designer</p>
+          <div class="code-block" style="font-size:12px; padding:14px 16px; margin:0;"><span class="cmd">aioson</span> <span class="kw">squad:autorun</span> .
+  <span class="flag">--squad</span>=youtube
+  <span class="flag">--goal</span>=<span class="str">"Ep. sobre LLMs em 2026"</span></div>
+        </div>
+
+        <div class="card">
+          <span style="font-size:2rem; display:block; margin-bottom:12px;">⚙️</span>
+          <h3>Desenvolvimento</h3>
+          <p style="font-size:0.88rem; margin-top:8px; margin-bottom:12px;">Arquiteto + Developer + QA + Security Reviewer</p>
+          <div class="code-block" style="font-size:12px; padding:14px 16px; margin:0;"><span class="cmd">aioson</span> <span class="kw">squad:autorun</span> .
+  <span class="flag">--squad</span>=backend
+  <span class="flag">--goal</span>=<span class="str">"Implementar auth JWT"</span></div>
+        </div>
+
+        <div class="card">
+          <span style="font-size:2rem; display:block; margin-bottom:12px;">⚖️</span>
+          <h3>Pesquisa Jurídica</h3>
+          <p style="font-size:0.88rem; margin-top:8px; margin-bottom:12px;">Pesquisador + Analista + Redator + Revisor</p>
+          <div class="code-block" style="font-size:12px; padding:14px 16px; margin:0;"><span class="cmd">aioson</span> <span class="kw">squad:autorun</span> .
+  <span class="flag">--squad</span>=juridico
+  <span class="flag">--goal</span>=<span class="str">"Análise contrato NDA"</span></div>
+        </div>
+
+        <div class="card">
+          <span style="font-size:2rem; display:block; margin-bottom:12px;">📊</span>
+          <h3>Business Intelligence</h3>
+          <p style="font-size:0.88rem; margin-top:8px; margin-bottom:12px;">Data Collector + Analyst + Report Writer</p>
+          <div class="code-block" style="font-size:12px; padding:14px 16px; margin:0;"><span class="cmd">aioson</span> <span class="kw">squad:autorun</span> .
+  <span class="flag">--squad</span>=bi
+  <span class="flag">--goal</span>=<span class="str">"Relatório mensal Q1"</span></div>
+        </div>
+      </div>
+
+      <div class="callout green" style="margin-top: 32px;">
+        <span class="callout-icon">🚀</span>
+        <p><strong>Dica de velocidade:</strong> Na primeira sessão, use o agente <code style="font-family:'JetBrains Mono',monospace;">/squad</code> interativamente para refinar os executores. A partir da segunda sessão, <code style="font-family:'JetBrains Mono',monospace;">squad:autorun</code> já tem contexto suficiente para rodar sozinho.</p>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<footer>
+  <p>AIOSON · <a href="../../tutorials/index.html">← Tutoriais</a> · <a href="https://github.com/jaimevalasek/aioson" target="_blank">GitHub</a> · <a href="https://www.npmjs.com/package/@jaimevalasek/aioson" target="_blank">npm</a></p>
+</footer>
+
+</body>
+</html>
