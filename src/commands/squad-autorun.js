@@ -278,16 +278,126 @@ async function runTask(projectDir, squadSlug, task, sessionId, options, logger) 
   return { task, finalStatus, workerResult, reflectionResult };
 }
 
+// ─── Inter-squad dependency validation ───────────────────────────────────────
+
+/**
+ * Validate inter-squad dependencies declared in manifest.depends_on.
+ * Returns { satisfied: boolean, unmet: Array<{squad, event}> }
+ */
+async function validateInterSquadDependencies(projectDir, manifest) {
+  const deps = manifest.depends_on || [];
+  if (deps.length === 0) return { satisfied: true, unmet: [] };
+
+  const unmet = [];
+  for (const dep of deps) {
+    if (!dep.event) continue;
+    try {
+      const events = await interSquadEvents.consume(projectDir, {
+        toSquad: manifest.slug,
+        subscriptions: [dep.event]
+      });
+      if (events.length === 0) {
+        unmet.push({ squad: dep.squad || '(unknown)', event: dep.event });
+      }
+    } catch {
+      unmet.push({ squad: dep.squad || '(unknown)', event: dep.event });
+    }
+  }
+
+  return { satisfied: unmet.length === 0, unmet };
+}
+
 // ─── Bus coordinator intelligence ────────────────────────────────────────────
+
+// ── Block classification helpers ─────────────────────────────────────────────
+
+function extractKeyName(content) {
+  const m = content.match(/([A-Z_]{3,}_(?:KEY|TOKEN|SECRET|ID))/i);
+  return m ? m[1].toUpperCase() : 'API key';
+}
+
+function extractMissingPath(content) {
+  const m = content.match(/(?:file|path|found)[:\s]+([./\w-]+\.\w+)/i);
+  return m ? m[1] : 'unknown file';
+}
+
+function extractDependencyId(content) {
+  const m = content.match(/task[- _](\d{2})/i);
+  return m ? `task-${m[1]}` : null;
+}
+
+function classifyBlock(content) {
+  const c = String(content || '').toLowerCase();
+  if (/api\s*key|credential|secret|token\b|\.env/.test(c))     return 'api_key';
+  if (/file\s*not\s*found|no such file|enoent|missing file/.test(c)) return 'file_missing';
+  if (/permission\s*denied|access\s*denied|forbidden|403/.test(c))   return 'permission';
+  if (/timed?\s*out|etimedout|deadline|exceeded/.test(c))             return 'timeout';
+  if (/depends\s*on|waiting\s*for|requires\s*task|blocked\s*by/.test(c)) return 'dependency';
+  return 'generic';
+}
+
+/**
+ * Strategy map: each strategy returns an { action, message, metadata } object.
+ */
+const BLOCK_STRATEGIES = {
+  api_key: (block, _ctx) => ({
+    action: 'human-gate',
+    message: `API key/credential required: ${extractKeyName(block.content)}. Add to .env and restart the session.`,
+    metadata: { resolution: 'human_escalation', key_hint: extractKeyName(block.content) }
+  }),
+
+  file_missing: (block, ctx) => {
+    const missingFile = extractMissingPath(block.content);
+    const prevResults = (ctx.recentResults || []).filter((r) => r.includes('.') || r.includes('/'));
+    const hint = prevResults.length > 0
+      ? `Check if a previous task created it. Recent results: ${prevResults.slice(0, 2).join(' | ')}`
+      : `Verify the file path and that the producing task ran successfully.`;
+    return {
+      action: 'retry-with-context',
+      message: `File not found: ${missingFile}. ${hint}`,
+      metadata: { resolution: 'context_hint', missing_file: missingFile }
+    };
+  },
+
+  dependency: (block, _ctx) => {
+    const depId = extractDependencyId(block.content);
+    return {
+      action: 'wait-and-retry',
+      message: depId
+        ? `Waiting for ${depId} to complete before proceeding.`
+        : `Dependency not satisfied. Wait for upstream tasks to complete.`,
+      metadata: { resolution: 'dependency_wait', dep_id: depId }
+    };
+  },
+
+  permission: (_block, _ctx) => ({
+    action: 'human-gate',
+    message: 'Permission denied — this operation requires manual intervention or elevated access.',
+    metadata: { resolution: 'human_escalation' }
+  }),
+
+  timeout: (_block, _ctx) => ({
+    action: 'abort-and-escalate',
+    message: 'Task exceeded its timeout. It may need to be decomposed into smaller steps.',
+    metadata: { resolution: 'escalate_decompose' }
+  }),
+
+  generic: (block, ctx) => {
+    const recentCtx = (ctx.recentResults || []).join('\n');
+    return {
+      action: 'coordinator-hint',
+      message: `Coordinator attempting to resolve block. Try proceeding with available information.${recentCtx ? `\nContext from other executors:\n${recentCtx}` : ''}`,
+      metadata: { resolution: 'coordinator_hint' }
+    };
+  }
+};
 
 /**
  * After each wave, inspect the bus for unresolved block messages and
- * attempt automatic resolution or escalation.
+ * attempt automatic resolution using the strategy pattern.
  *
- * Resolution strategies (heuristic):
- *   - If block mentions "permission" or "api key" → escalate to human
- *   - If block is from an executor about another executor → re-assign hint
- *   - Otherwise → post coordinator guidance with context from the bus
+ * Block types: api_key, file_missing, dependency, permission, timeout, generic
+ * Actions: human-gate, retry-with-context, wait-and-retry, abort-and-escalate, coordinator-hint
  */
 async function handleBusBlocks(projectDir, squadSlug, sessionId, logger) {
   const allMessages = await bus.read(projectDir, squadSlug, sessionId).catch(() => []);
@@ -295,39 +405,26 @@ async function handleBusBlocks(projectDir, squadSlug, sessionId, logger) {
 
   if (unresolved.length === 0) return;
 
+  const recentResultMessages = allMessages
+    .filter((m) => m.type === 'result')
+    .slice(-3)
+    .map((m) => `${m.from}: ${String(m.content || '').slice(0, 100)}`);
+
   for (const block of unresolved) {
-    const content = String(block.content || '').toLowerCase();
-    const requiresHuman =
-      /api\s*key|permission|access\s*denied|credential|secret|token/i.test(content);
+    const blockType = classifyBlock(block.content);
+    const strategy = BLOCK_STRATEGIES[blockType] || BLOCK_STRATEGIES.generic;
+    const resolution = strategy(block, { recentResults: recentResultMessages });
 
-    if (requiresHuman) {
-      logger.log(`  ⚠ Block requires human attention: "${block.content.slice(0, 80)}"`);
-      await bus.post(projectDir, squadSlug, sessionId, {
-        from: 'coordinator',
-        to: block.from,
-        type: 'resolution',
-        content: `This block requires human intervention (permission/credentials). Escalating.`,
-        metadata: { block_id: block.id, resolution: 'human_escalation' }
-      }).catch(() => {});
-      continue;
+    if (resolution.action === 'human-gate' || resolution.action === 'abort-and-escalate') {
+      logger.log(`  ⚠ Block [${blockType}] requires human attention: "${String(block.content || '').slice(0, 80)}"`);
     }
-
-    // Generic resolution attempt: provide coordinator context
-    const recentResults = allMessages
-      .filter((m) => m.type === 'result' && m.from !== block.from)
-      .slice(-3)
-      .map((m) => `${m.from}: ${m.content.slice(0, 100)}`);
-
-    const contextHint = recentResults.length > 0
-      ? `\nContext from other executors:\n${recentResults.join('\n')}`
-      : '';
 
     await bus.post(projectDir, squadSlug, sessionId, {
       from: 'coordinator',
       to: block.from,
       type: 'resolution',
-      content: `Coordinator attempting to resolve your block. Try proceeding with available information. If you need a specific output from another executor, check the recent results on the bus.${contextHint}`,
-      metadata: { block_id: block.id, resolution: 'coordinator_hint' }
+      content: resolution.message,
+      metadata: { block_id: block.id, block_type: blockType, ...resolution.metadata }
     }).catch(() => {});
   }
 }
@@ -693,6 +790,9 @@ async function runSquadAutorun({ args, options = {}, logger }) {
   const enableGapClosure = options['no-gap-closure'] !== true && options['no-gap-closure'] !== 'true';
   const maxRetries = Math.min(Math.max(Number(options['max-retries'] || 3), 1), 5);
   const requestedEngine = String(options.engine || 'legacy').trim();
+  const ignoreDeps = Boolean(options['ignore-deps'] || options.ignoreDeps);
+  const waitDeps = Boolean(options['wait-deps'] || options.waitDeps);
+  const waitDepsTimeoutMs = (options['wait-deps-timeout'] ? Number(options['wait-deps-timeout']) : 60) * 1000;
 
   // ── Resolve execution engine (Plan 81 §1.1) ──────────────────────────────
   const engineResult = resolveEngine(requestedEngine);
@@ -778,6 +878,33 @@ async function runSquadAutorun({ args, options = {}, logger }) {
     const manifestPath = path.join(targetDir, '.aioson', 'squads', squadSlug, 'squad.manifest.json');
     squadManifest = JSON.parse(await fs.readFile(manifestPath, 'utf8'));
   } catch { /* manifest is optional */ }
+
+  // ── Inter-squad dependency validation ─────────────────────────────────────
+  if (!ignoreDeps && (squadManifest.depends_on || []).length > 0) {
+    const depResult = await validateInterSquadDependencies(targetDir, squadManifest);
+    if (!depResult.satisfied) {
+      const depList = depResult.unmet.map((d) => `${d.squad}/${d.event}`).join(', ');
+      if (waitDeps) {
+        logger.log(`⏳ Waiting for inter-squad events: ${depList}`);
+        const deadline = Date.now() + waitDepsTimeoutMs;
+        let resolved = false;
+        while (Date.now() < deadline) {
+          await sleep(3000);
+          const retry = await validateInterSquadDependencies(targetDir, squadManifest);
+          if (retry.satisfied) { resolved = true; break; }
+        }
+        if (!resolved) {
+          logger.error(`✗ Dependencies still unmet after ${waitDepsTimeoutMs / 1000}s: ${depList}`);
+          return { ok: false, error: 'unmet_dependencies', unmet: depResult.unmet };
+        }
+        logger.log('  ✓ Dependencies satisfied');
+      } else {
+        logger.warn(`⚠ Unmet inter-squad dependencies: ${depList}`);
+        logger.warn('  Use --ignore-deps to run anyway, or --wait-deps to poll until satisfied');
+        return { ok: false, error: 'unmet_dependencies', unmet: depResult.unmet };
+      }
+    }
+  }
 
   // ── 3.3 Hook Exit Code Protocol — pre_run hook ─────────────────────────────
   const preRunHook = squadManifest.hooks?.pre_run;

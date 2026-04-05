@@ -298,7 +298,11 @@ async function runWorker(projectDir, squadSlug, workerSlug, inputPayload, option
   // Load per-agent persistent memory (Plan 81 §Sprint 4)
   const agentMemory = await loadAgentMemory(projectDir, squadSlug, workerSlug);
   if (agentMemory && inputPayload) {
+    // Inject into _agent_memory field (readable by Node.js workers via process.argv[2])
     inputPayload._agent_memory = agentMemory;
+    // Prefix into context so LLM-based workers receive it as part of their task context
+    const existingContext = inputPayload.context || '';
+    inputPayload.context = `## Your accumulated knowledge:\n${agentMemory}\n\n---\n\n${existingContext}`.trimEnd();
   }
 
   // Validate inputs
@@ -320,6 +324,13 @@ async function runWorker(projectDir, squadSlug, workerSlug, inputPayload, option
 
   // Resolve env vars
   const env = resolveEnvVars(config.env);
+
+  // Expose agent memory path as env var so workers can read it directly
+  const memoryFilePath = path.join(projectDir, SQUADS_DIR, squadSlug, 'agent-memory', `${workerSlug}.md`);
+  try {
+    await fs.access(memoryFilePath);
+    env.AIOSON_AGENT_MEMORY_PATH = memoryFilePath;
+  } catch { /* no memory file yet — env var omitted */ }
 
   // Resolve MCP env vars if worker declares uses_mcp
   if (config.uses_mcp && config.uses_mcp.length > 0) {

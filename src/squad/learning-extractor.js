@@ -18,7 +18,7 @@
 const { randomUUID } = require('node:crypto');
 const fs = require('node:fs/promises');
 const path = require('node:path');
-const { openRuntimeDb, upsertSquadLearning } = require('../runtime-store');
+const { openRuntimeDb, insertSquadLearning } = require('../runtime-store');
 
 function nowIso() { return new Date().toISOString(); }
 
@@ -123,7 +123,7 @@ async function extractLearnings(projectDir, squadSlug, sessionId, data) {
 
   try {
     for (const learning of extracted) {
-      upsertSquadLearning(db, {
+      insertSquadLearning(db, {
         squadSlug,
         type: learning.type,
         title: learning.title,

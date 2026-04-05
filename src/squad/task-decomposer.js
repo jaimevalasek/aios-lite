@@ -38,41 +38,56 @@ const { randomUUID } = require('node:crypto');
 async function loadSquadManifest(projectDir, squadSlug) {
   const squadDir = path.join(projectDir, '.aioson', 'squads', squadSlug);
 
+  // Try squad.manifest.json first (canonical), fall back to squad.json (legacy)
   let squadJson = null;
-  try {
-    squadJson = JSON.parse(
-      await fs.readFile(path.join(squadDir, 'squad.json'), 'utf8')
-    );
-  } catch { /* optional */ }
+  let manifestSource = null;
+  for (const fileName of ['squad.manifest.json', 'squad.json']) {
+    try {
+      squadJson = JSON.parse(
+        await fs.readFile(path.join(squadDir, fileName), 'utf8')
+      );
+      manifestSource = fileName;
+      break;
+    } catch { /* try next */ }
+  }
 
-  // Discover executor agent files
-  const agentsDir = path.join(projectDir, 'agents', squadSlug);
+  // Discover executor agent files from correct path
+  const agentsDir = path.join(projectDir, '.aioson', 'squads', squadSlug, 'agents');
   let executorFiles = [];
   try {
     const entries = await fs.readdir(agentsDir, { withFileTypes: true });
     executorFiles = entries
-      .filter((e) => e.isFile() && e.name.endsWith('.md'))
+      .filter((e) => e.isFile() && e.name.endsWith('.md') && e.name !== 'agents.md')
       .map((e) => e.name.replace(/\.md$/, ''));
   } catch { /* agents dir optional */ }
 
-  // Build executor list from squad.json + discovered files
+  // Build executor list from manifest + discovered files
   const executors = buildExecutorList(squadJson, executorFiles);
 
-  return { squadJson, executors };
+  const discoverySource = manifestSource
+    ? `manifest (${manifestSource}, ${executors.length} executor(s))`
+    : `heuristic (${executorFiles.length} agent file(s) discovered)`;
+
+  return { squadJson, executors, discoverySource };
 }
 
 function buildExecutorList(squadJson, discoveredFiles) {
   const execMap = {};
 
-  // From squad.json
+  // From manifest: supports both array format (squad.manifest.json) and object format (legacy squad.json)
   if (squadJson && squadJson.executors) {
-    for (const [slug, config] of Object.entries(squadJson.executors)) {
+    const executorEntries = Array.isArray(squadJson.executors)
+      ? squadJson.executors.map((e) => [e.slug, e])
+      : Object.entries(squadJson.executors);
+
+    for (const [slug, config] of executorEntries) {
+      if (!slug) continue;
       execMap[slug] = {
         slug,
-        name: config.name || slug,
+        name: config.name || config.title || slug,
         role: config.role || slug,
         skills: config.skills || [],
-        keywords: extractKeywords(config.role || '', config.name || '', config.skills || [])
+        keywords: extractKeywords(config.role || '', config.name || config.title || '', config.skills || [])
       };
     }
   }
@@ -512,18 +527,18 @@ async function decompose(projectDir, squadSlug, goal, options = {}) {
     save = true
   } = options;
 
-  const { executors } = await loadSquadManifest(projectDir, squadSlug);
+  const { executors, discoverySource } = await loadSquadManifest(projectDir, squadSlug);
 
-  let tasks, executionOrder, parallelGroups;
+  let tasks, executionOrder, parallelGroups, waves;
   let structuredPrompt = null;
 
   if (mode === 'structured') {
     // Return a prompt template for the agent to fill in with LLM
     structuredPrompt = buildStructuredPrompt(goal, executors, squadSlug);
     // Use heuristic as fallback scaffold
-    ({ tasks, executionOrder, parallelGroups } = heuristicDecompose(goal, executors));
+    ({ tasks, executionOrder, parallelGroups, waves } = heuristicDecompose(goal, executors));
   } else {
-    ({ tasks, executionOrder, parallelGroups } = heuristicDecompose(goal, executors));
+    ({ tasks, executionOrder, parallelGroups, waves } = heuristicDecompose(goal, executors));
   }
 
   const plan = {
@@ -534,6 +549,7 @@ async function decompose(projectDir, squadSlug, goal, options = {}) {
     created_at: new Date().toISOString(),
     decomposition_mode: mode,
     executor_count: executors.length,
+    executor_discovery: discoverySource,
     tasks,
     execution_order: executionOrder,
     parallel_groups: parallelGroups,

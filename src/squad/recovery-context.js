@@ -2,6 +2,7 @@
 
 const fs = require('node:fs/promises');
 const path = require('node:path');
+const stateManager = require('./state-manager');
 
 const SQUADS_DIR = path.join('.aioson', 'squads');
 const MAX_HISTORY_ENTRIES = 5;
@@ -27,36 +28,77 @@ async function readManifest(projectDir, squadSlug) {
   }
 }
 
+/**
+ * Read recent bus events from the bus/ directory (JSONL files).
+ * Falls back gracefully if no sessions exist yet.
+ */
 async function readRecentEvents(projectDir, squadSlug, limit = 10) {
-  const p = path.join(projectDir, SQUADS_DIR, squadSlug, 'session-log.json');
+  const busDir = path.join(projectDir, SQUADS_DIR, squadSlug, 'bus');
   try {
-    const raw = JSON.parse(await fs.readFile(p, 'utf8'));
-    const entries = Array.isArray(raw) ? raw : (raw.entries || []);
-    return entries.slice(-limit);
+    const entries = await fs.readdir(busDir, { withFileTypes: true });
+    const jsonlFiles = entries
+      .filter((e) => e.isFile() && e.name.endsWith('.jsonl'))
+      .map((e) => path.join(busDir, e.name));
+
+    if (jsonlFiles.length === 0) return [];
+
+    // Read the most recent file (sorted by name — sessions use UUIDs/timestamps)
+    const sorted = jsonlFiles.sort();
+    const recentFile = sorted[sorted.length - 1];
+    const content = await fs.readFile(recentFile, 'utf8');
+
+    const events = content
+      .split('\n')
+      .filter((line) => line.trim())
+      .map((line) => { try { return JSON.parse(line); } catch { return null; } })
+      .filter(Boolean);
+
+    return events.slice(-limit);
   } catch {
     return [];
   }
 }
 
+/**
+ * Read recent tasks from the most recent session plan.json.
+ * Falls back gracefully if no sessions exist yet.
+ */
 async function readRecentTasks(projectDir, squadSlug, limit = 5) {
-  const p = path.join(projectDir, SQUADS_DIR, squadSlug, 'tasks.json');
+  const sessionsDir = path.join(projectDir, SQUADS_DIR, squadSlug, 'sessions');
   try {
-    const raw = JSON.parse(await fs.readFile(p, 'utf8'));
-    const tasks = Array.isArray(raw) ? raw : (raw.tasks || []);
+    const sessionEntries = await fs.readdir(sessionsDir, { withFileTypes: true });
+    const sessionDirs = sessionEntries
+      .filter((e) => e.isDirectory())
+      .map((e) => e.name)
+      .sort(); // lexicographic — UUID/timestamp sorts correctly
+
+    if (sessionDirs.length === 0) return [];
+
+    // Use most recent session
+    const latestSession = sessionDirs[sessionDirs.length - 1];
+    const planPath = path.join(sessionsDir, latestSession, 'plan.json');
+    const plan = JSON.parse(await fs.readFile(planPath, 'utf8'));
+    const tasks = Array.isArray(plan.tasks) ? plan.tasks : [];
     return tasks.slice(-limit);
   } catch {
     return [];
   }
 }
 
-async function readContextSnapshot(projectDir, squadSlug, agentSlug) {
-  const p = path.join(projectDir, SQUADS_DIR, squadSlug, 'context-monitor.json');
+/**
+ * Read context snapshot from STATE.md via state-manager.
+ * Returns a simplified snapshot compatible with buildCurrentState().
+ */
+async function readContextSnapshot(projectDir, squadSlug) {
   try {
-    const data = JSON.parse(await fs.readFile(p, 'utf8'));
-    if (agentSlug && data.agents && data.agents[agentSlug]) {
-      return data.agents[agentSlug];
-    }
-    return data;
+    const state = await stateManager.readState(projectDir, squadSlug);
+    if (!state) return null;
+    return {
+      currentPhase: state.meta.current_session || '',
+      recentDecisions: (state.decisions || []).slice(-5),
+      activeBlockers: state.blockers || [],
+      sessionsCompleted: state.meta.sessions_completed || 0
+    };
   } catch {
     return null;
   }
@@ -148,12 +190,27 @@ function buildCurrentState(squadSlug, agentSlug, manifest, tasks, events, ctxSna
     lines.push('');
   }
 
-  // Context window snapshot
+  // State snapshot (from STATE.md via state-manager)
   if (ctxSnapshot) {
-    const used = ctxSnapshot.totalUsed || 0;
-    const win = ctxSnapshot.windowSize || 0;
-    const pct = win > 0 ? Math.round((used / win) * 100) : 0;
-    lines.push(`**Context at last compact:** ${used.toLocaleString()}/${win.toLocaleString()} tokens (${pct}%)`);
+    if (ctxSnapshot.sessionsCompleted) {
+      lines.push(`**Sessions completed:** ${ctxSnapshot.sessionsCompleted}`);
+    }
+    if (ctxSnapshot.recentDecisions && ctxSnapshot.recentDecisions.length > 0) {
+      lines.push('**Recent decisions:**');
+      for (const d of ctxSnapshot.recentDecisions.slice(-3)) {
+        const text = typeof d === 'string' ? d : (d.text || JSON.stringify(d));
+        lines.push(`- ${text}`);
+      }
+      lines.push('');
+    }
+    if (ctxSnapshot.activeBlockers && ctxSnapshot.activeBlockers.length > 0) {
+      lines.push('**Active blockers:**');
+      for (const b of ctxSnapshot.activeBlockers) {
+        const text = typeof b === 'string' ? b : (b.text || JSON.stringify(b));
+        lines.push(`- ${text}`);
+      }
+      lines.push('');
+    }
   }
 
   return lines.join('\n');
@@ -242,7 +299,7 @@ async function generateRecovery(projectDir, squadSlug, agentSlug) {
     readManifest(projectDir, squadSlug),
     readRecentTasks(projectDir, squadSlug),
     readRecentEvents(projectDir, squadSlug),
-    readContextSnapshot(projectDir, squadSlug, agentSlug),
+    readContextSnapshot(projectDir, squadSlug),
     fs.readFile(outPath, 'utf8').catch(() => null)
   ]);
 
