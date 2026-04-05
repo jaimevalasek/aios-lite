@@ -576,6 +576,26 @@ Do not answer as if you first need to manually search the project tree for a das
 - Max 50 characters, no trailing hyphens
 - Example: "YouTube viral scripts about AI" → `youtube-viral-scripts-ai`
 
+### Step 0 — Scaffold directories (before writing any file)
+
+Before creating any content, run the scaffold command to generate the complete directory structure deterministically. This saves ~2,000 tokens by eliminating manual directory creation:
+
+```bash
+aioson squad:scaffold . --slug={squad-slug} --name="{squad-name}" --mode={content|code|hybrid}
+```
+
+This creates:
+- `.aioson/squads/{slug}/agents/agents.md` (skeleton)
+- `.aioson/squads/{slug}/squad.manifest.json` (skeleton with budget, anti_loop, depends_on fields)
+- `.aioson/squads/{slug}/squad.md`, `docs/`, `checklists/`, `learnings/`, `bus/`, `STATE.md`
+- `output/{slug}/`, `aioson-logs/{slug}/`, `media/{slug}/`
+
+Then proceed to fill in the content — all skeleton files already exist.
+
+> If `aioson` CLI is not available in this session, create directories manually via Write tool.
+
+---
+
 ### Step 1 — Generate the squad manifesto
 
 Before writing the final files, crystallize this mini squad design doc mentally:
@@ -1745,6 +1765,61 @@ Script plans go to `script-plans/`, approved scripts to `scripts/`.
 - CLAUDE.md: updated with `/agent` shortcuts
 - AGENTS.md: updated with `@agent` shortcuts
 
+---
+
+## CLI integration points
+
+The following AIOSON CLI commands are available to use at each phase. Prefer CLI over manual creation — it's faster, cheaper (fewer tokens), and consistent.
+
+| When | Command | Purpose |
+|------|---------|---------|
+| **Before Step 1** | `aioson squad:scaffold . --slug=X --name="Y" --mode=Z` | Generate all dirs and skeleton files |
+| **Before squad:autorun** | `aioson brief:validate . --brief=<path> [--auto-fix]` | Validate executor brief completeness |
+| **Before any session** | `aioson preflight:context . --agent=<name> [--squad=X]` | Estimate context budget, detect truncation risk |
+| **After N sessions** | `aioson pattern:detect . --squad=X` | Detect automation candidates from learnings |
+| **After squad is ready** | `aioson squad:card . --squad=X` | Generate A2A Agent Card for external discovery |
+| **To share agents** | `aioson agent:export-skill . --agent=<name>` | Export agent as portable Agent Skills Standard |
+| **For long sessions** | `aioson context:compact . --agent=<name>` | Compact session context with structured handoff |
+
+### Running a squad autonomously
+
+After creation, a squad can run without human intervention:
+
+```bash
+# Single run
+aioson squad:autorun . --squad={slug} --goal="your goal here"
+
+# With dependency validation (inter-squad)
+aioson squad:autorun . --squad={slug} --goal="..." --wait-deps
+
+# Using Claude Code Agent Teams (if available)
+aioson squad:autorun . --squad={slug} --goal="..." --engine=agent-teams
+
+# Persistent background daemon
+aioson squad:daemon . --squad={slug} --persistent
+```
+
+### Inter-squad connectivity
+
+Squads in the same project can communicate via events:
+
+```bash
+# View squad dependency graph
+aioson squad:dependency-graph .
+
+# Check pending inter-squad events
+aioson squad:status . --squad={slug}
+```
+
+Declare dependencies in `squad.manifest.json`:
+```json
+{
+  "depends_on": [{ "squad": "content-team", "event": "episode.created" }],
+  "subscriptions": ["episode.*"]
+}
+```
+
+---
 
 ## Continuation Protocol
 
