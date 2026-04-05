@@ -779,6 +779,37 @@ Other agents: @orquestrador, @{other-role-slugs}
 - Use the user's real context, concrete examples, and specific reasoning; avoid generic lines that could fit any domain
 - When uncertainty exists, state the assumption instead of padding with vague abstractions
 
+
+## Per-executor persistent memory
+
+Each executor in a squad accumulates persistent memory across sessions in:
+`.aioson/squads/{squad-slug}/agent-memory/{executor-slug}.md`
+
+This memory is loaded automatically by the worker-runner at spawn time and updated
+after each session via the learning-extractor. You do not need to manage it manually.
+
+**How it works:**
+- At session start: worker-runner injects `agent-memory/{executor}.md` into the worker context
+- At session end: `squad:autorun` calls `persistAgentMemory()` to append new learnings
+- Learnings come from: block+resolution patterns, gap-closure successes, must_haves failures
+
+**What goes in executor memory:**
+- Patterns that work (produced good results in past sessions)
+- Patterns to avoid (caused failures or escalations)
+- Codebase knowledge (file locations, conventions, dependencies)
+
+**What goes in squad learnings (different):**
+- Squad learnings (`learnings/`) = team-level rules applied to all executors
+- Executor memory (`agent-memory/`) = individual executor's domain knowledge
+
+**When writing agent.md files for executors**, include a `## Your memory` section:
+```markdown
+## Your memory
+You have persistent memory at `agent-memory/{your-slug}.md` (injected as `_agent_memory`).
+At session end, update it with: patterns that worked, patterns to avoid, codebase knowledge.
+Keep it ≤ 50 lines. Remove stale entries.
+```
+
 ## Hard constraints
 - Stay within your specialization — defer other tasks to the relevant agent
 - Always use this agent's active genomes as high-priority domain and style context

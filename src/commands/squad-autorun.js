@@ -54,7 +54,9 @@ const stateManager = require('../squad/state-manager');
 const { getUnresolvedBlocks } = require('../squad/intra-bus');
 const interSquadEvents = require('../squad/inter-squad-events');
 const { runHook, HOOK_DENY } = require('../lib/hook-protocol');
-const { extractLearnings } = require('../squad/learning-extractor');
+const { extractLearnings, persistAgentMemory } = require('../squad/learning-extractor');
+const { validateBrief, autoFixBrief } = require('../squad/brief-validator');
+const { resolveEngine, translateToTeamConfig, writeTeamConfig } = require('../squad/agent-teams-adapter');
 
 const STATUS_ICON = {
   pending: '○',
@@ -422,6 +424,254 @@ async function runTaskWithGapClosure(
   };
 }
 
+// ─── Sampling-and-Voting (Plan 81 §Sprint 4) ────────────────────────────────
+
+/**
+ * Synthesize votes from multiple worker instances.
+ * Returns { consensus, winningOutput, allVotes }.
+ *
+ * Consensus is the fraction of instances that agree on the same status.
+ * For completed tasks, compares output similarity via a simple hash.
+ */
+function synthesizeVotes(votes) {
+  const statusCounts = {};
+  for (const v of votes) {
+    const s = v.finalStatus || 'unknown';
+    statusCounts[s] = (statusCounts[s] || 0) + 1;
+  }
+
+  let bestStatus = 'unknown';
+  let bestCount = 0;
+  for (const [s, count] of Object.entries(statusCounts)) {
+    if (count > bestCount) { bestStatus = s; bestCount = count; }
+  }
+
+  const consensus = bestCount / votes.length;
+  const winningVotes = votes.filter((v) => v.finalStatus === bestStatus);
+
+  return {
+    consensus,
+    bestStatus,
+    winningOutput: winningVotes[0],
+    allVotes: votes.map((v) => ({
+      finalStatus: v.finalStatus,
+      outputSummary: String(v.workerResult?.output || '').slice(0, 200)
+    }))
+  };
+}
+
+/**
+ * Run a task with sampling-and-voting for critical decisions.
+ *
+ * Spawns N instances of the same task in parallel, then synthesizes votes.
+ * If consensus < threshold, escalates to human-gate.
+ *
+ * @param {object} task — task with voting config: { instances, threshold }
+ * @param {number} instances — number of parallel instances (default: 3)
+ * @param {number} threshold — minimum consensus fraction (default: 0.66)
+ */
+async function runTaskWithVoting(
+  projectDir, squadSlug, task, sessionId, options, logger,
+  instances = 3, threshold = 0.66
+) {
+  const { enableBus } = options;
+
+  if (enableBus) {
+    await bus.post(projectDir, squadSlug, sessionId, {
+      from: 'coordinator',
+      to: '*',
+      type: 'status',
+      content: `Sampling-and-Voting: running ${instances} instances of "${task.title}"`,
+      metadata: { task_id: task.id, voting: true, instances }
+    }).catch(() => {});
+  }
+
+  // Spawn N instances in parallel
+  const instancePromises = [];
+  for (let i = 1; i <= instances; i++) {
+    const instanceTask = { ...task, _attempt: 1, _voting_instance: i };
+    instancePromises.push(
+      runTaskWithHeartbeat(
+        projectDir, squadSlug, instanceTask, sessionId, options,
+        () => runTask(projectDir, squadSlug, instanceTask, sessionId, options, logger)
+      ).catch((err) => ({
+        task: instanceTask,
+        finalStatus: 'failed',
+        workerResult: { ok: false, error: err.message },
+        reflectionResult: null
+      }))
+    );
+  }
+
+  const votes = await Promise.all(instancePromises);
+  const result = synthesizeVotes(votes);
+
+  if (enableBus) {
+    await bus.post(projectDir, squadSlug, sessionId, {
+      from: 'coordinator',
+      to: '*',
+      type: 'feedback',
+      content: `Voting result for "${task.title}": consensus=${(result.consensus * 100).toFixed(0)}% status=${result.bestStatus} (${instances} instances)`,
+      metadata: { task_id: task.id, consensus: result.consensus, bestStatus: result.bestStatus }
+    }).catch(() => {});
+  }
+
+  // If consensus below threshold, escalate
+  if (result.consensus < threshold) {
+    logger.log(`    ⚠ Voting: consensus ${(result.consensus * 100).toFixed(0)}% < ${(threshold * 100).toFixed(0)}% threshold — escalating`);
+
+    await updateTaskStatus(projectDir, squadSlug, sessionId, task.id, 'escalated', {
+      voting: { consensus: result.consensus, threshold, allVotes: result.allVotes },
+      completed_at: nowIso()
+    });
+
+    if (enableBus) {
+      await bus.post(projectDir, squadSlug, sessionId, {
+        from: 'coordinator',
+        to: '*',
+        type: 'block',
+        content: `Task "${task.title}" — voting consensus too low (${(result.consensus * 100).toFixed(0)}%). Requires human review.`,
+        metadata: { task_id: task.id, voting_escalated: true }
+      }).catch(() => {});
+    }
+
+    return {
+      task,
+      finalStatus: 'escalated',
+      workerResult: { ok: false, error: 'voting_consensus_below_threshold', voting: result },
+      reflectionResult: null
+    };
+  }
+
+  // Use the winning vote as the result
+  return result.winningOutput;
+}
+
+// ─── Evaluator-Optimizer Loop (Plan 82 §ITEM 4) ──────────────────────────────
+
+/**
+ * Run a task through an evaluator-optimizer loop (dev→qa→dev...):
+ *   1. Generator phase: run the task as the implementer
+ *   2. Evaluator phase: run a review task against criteria (fresh context)
+ *   3. If PASS → done. If FAIL → inject structured feedback → repeat
+ *   4. Max iterations before escalating to human
+ *
+ * The key: the evaluator receives only the artifact, not the generator's reasoning.
+ * This prevents confirmation bias (same principle as verify-gate).
+ */
+async function runWithEvalOptimize(
+  projectDir, squadSlug, task, sessionId, options, logger,
+  maxIterations = 3
+) {
+  const { enableBus } = options;
+  let lastFeedback = null;
+  let lastResult = null;
+
+  if (enableBus) {
+    await bus.post(projectDir, squadSlug, sessionId, {
+      from: 'coordinator',
+      to: '*',
+      type: 'status',
+      content: `Evaluator-Optimizer: starting loop for "${task.title}" (max ${maxIterations} iterations)`,
+      metadata: { task_id: task.id, eval_optimize: true, max_iterations: maxIterations }
+    }).catch(() => {});
+  }
+
+  for (let iteration = 1; iteration <= maxIterations; iteration++) {
+    // ── Generator phase ──────────────────────────────────────────────────────
+    const generatorTask = {
+      ...task,
+      _attempt: iteration,
+      ...(lastFeedback ? { _eval_feedback: lastFeedback, _eval_iteration: iteration } : {})
+    };
+
+    lastResult = await runTaskWithHeartbeat(
+      projectDir, squadSlug, generatorTask, sessionId, options,
+      () => runTask(projectDir, squadSlug, generatorTask, sessionId, options, logger)
+    );
+
+    if (lastResult.finalStatus !== 'completed') {
+      logger.log(`    ↳ Eval-Optimize iteration ${iteration}: generator failed — escalating`);
+      return lastResult;
+    }
+
+    // ── Evaluator phase ──────────────────────────────────────────────────────
+    const reviewTask = {
+      id: `${task.id}-review-${iteration}`,
+      title: `Review: ${task.title} (iteration ${iteration})`,
+      description: [
+        `Evaluate the output of task "${task.title}".`,
+        ``,
+        `Criteria to check (ALL must pass):`,
+        ...(task.review_criteria || []).map((c) => `- ${c}`),
+        ``,
+        `Output PASS if all criteria are met.`,
+        `Output FAIL with structured feedback: specific file:line references, exact criterion violated, minimum change to pass.`,
+        ``,
+        `Do NOT consider how the implementer reasoned — evaluate only the artifact.`
+      ].join('\n'),
+      executor: task.reviewer || 'qa',
+      acceptance_criteria: ['Output either PASS or FAIL with structured feedback'],
+      _eval_artifact: lastResult.workerResult?.output || null
+    };
+
+    const evalResult = await runTaskWithHeartbeat(
+      projectDir, squadSlug, reviewTask, sessionId, options,
+      () => runTask(projectDir, squadSlug, reviewTask, sessionId, options, logger)
+    );
+
+    const evalOutput = String(evalResult.workerResult?.output || '');
+    const passed = /\bPASS\b/i.test(evalOutput) && !/\bFAIL\b/i.test(evalOutput);
+
+    if (enableBus) {
+      await bus.post(projectDir, squadSlug, sessionId, {
+        from: 'coordinator',
+        to: '*',
+        type: 'feedback',
+        content: `Eval-Optimize iteration ${iteration}/${maxIterations}: ${passed ? 'PASS' : 'FAIL'} — ${evalOutput.slice(0, 120)}`,
+        metadata: { task_id: task.id, iteration, verdict: passed ? 'PASS' : 'FAIL' }
+      }).catch(() => {});
+    }
+
+    if (passed) {
+      logger.log(`    ↳ Eval-Optimize PASS at iteration ${iteration}`);
+      await updateTaskStatus(projectDir, squadSlug, sessionId, task.id, 'completed', {
+        eval_optimize: { iterations: iteration, verdict: 'PASS' },
+        completed_at: nowIso()
+      });
+      return lastResult;
+    }
+
+    lastFeedback = evalOutput.slice(0, 1000);
+    logger.log(`    ↳ Eval-Optimize FAIL at iteration ${iteration} — applying feedback`);
+  }
+
+  // Max iterations reached — escalate
+  logger.log(`    ✗ Eval-Optimize: ${maxIterations} iterations exhausted — escalating`);
+
+  await updateTaskStatus(projectDir, squadSlug, sessionId, task.id, 'escalated', {
+    eval_optimize: { iterations: maxIterations, verdict: 'FAIL', last_feedback: lastFeedback },
+    completed_at: nowIso()
+  });
+
+  if (enableBus) {
+    await bus.post(projectDir, squadSlug, sessionId, {
+      from: 'coordinator',
+      to: '*',
+      type: 'block',
+      content: `Task "${task.title}" — eval-optimize loop exhausted (${maxIterations} iterations). Requires human review.`,
+      metadata: { task_id: task.id, eval_optimize_exhausted: true }
+    }).catch(() => {});
+  }
+
+  return {
+    task,
+    finalStatus: 'escalated',
+    workerResult: { ok: false, error: 'eval_optimize_exhausted', last_feedback: lastFeedback },
+    reflectionResult: null
+  };
+}
+
 // ─── Main command ─────────────────────────────────────────────────────────────
 
 async function runSquadAutorun({ args, options = {}, logger }) {
@@ -442,6 +692,13 @@ async function runSquadAutorun({ args, options = {}, logger }) {
   const existingPlanId = String(options.plan || '').trim();
   const enableGapClosure = options['no-gap-closure'] !== true && options['no-gap-closure'] !== 'true';
   const maxRetries = Math.min(Math.max(Number(options['max-retries'] || 3), 1), 5);
+  const requestedEngine = String(options.engine || 'legacy').trim();
+
+  // ── Resolve execution engine (Plan 81 §1.1) ──────────────────────────────
+  const engineResult = resolveEngine(requestedEngine);
+  if (engineResult.fallback) {
+    logger.log(`⚠ ${engineResult.reason} — falling back to legacy engine`);
+  }
 
   // ── Load token budget ──────────────────────────────────────────────────────
   const budget = await loadBudget(targetDir, squadSlug);
@@ -574,7 +831,34 @@ async function runSquadAutorun({ args, options = {}, logger }) {
   // ── Record session start in STATE.md ───────────────────────────────────────
   await stateManager.recordSessionStart(targetDir, squadSlug, sessionId, plan.goal).catch(() => {});
 
-  // ── Execute tasks ──────────────────────────────────────────────────────────
+  // ── Agent Teams engine path (Plan 81 §1.1) ────────────────────────────────
+  if (engineResult.engine === 'agent-teams') {
+    logger.log(`Engine: agent-teams (Claude Code ${engineResult.version})`);
+    const teamConfig = translateToTeamConfig(targetDir, squadManifest, plan, {
+      budget, enableBus
+    });
+    const configPath = await writeTeamConfig(targetDir, squadSlug, teamConfig);
+    logger.log(`Team config: ${path.relative(targetDir, configPath)}`);
+    logger.log(`Teammates: ${teamConfig.teammates.map((t) => t.name).join(', ')}`);
+    logger.log(`Tasks: ${teamConfig.tasks.length}`);
+    logger.log('');
+    logger.log('Agent Teams execution is configured. Use:');
+    logger.log(`  claude --team ${path.relative(targetDir, configPath)}`);
+    logger.log('');
+
+    await stateManager.recordSessionEnd(targetDir, squadSlug, sessionId, []).catch(() => {});
+
+    return {
+      ok: true,
+      engine: 'agent-teams',
+      session_id: sessionId,
+      squad: squadSlug,
+      configPath: path.relative(targetDir, configPath),
+      teamConfig
+    };
+  }
+
+  // ── Execute tasks (legacy engine) ─────────────────────────────────────────
   logger.log(`Starting execution — session [${sessionId}]`);
   if (enableBus) logger.log('Intra-squad bus: enabled');
   if (enableReflect) logger.log('Reflection: enabled');
@@ -632,8 +916,61 @@ async function runSquadAutorun({ args, options = {}, logger }) {
     }
 
     // ── Run tasks in this group ────────────────────────────────────────────
-    const runTask_ = (task) => {
+    const runTask_ = async (task) => {
+      // Brief validation guard (Plan 80 §1): validate brief before spawn
+      if (task.brief_path) {
+        const briefResult = await validateBrief(task.brief_path, targetDir);
+        if (!briefResult.ready) {
+          // Auto-fix simple fields (out_of_scope only)
+          if (briefResult.issues.length === 1 && briefResult.issues[0].field === 'out_of_scope') {
+            await autoFixBrief(task.brief_path, targetDir);
+            logger.log(`  ↩ Auto-fixed brief for ${task.id} (out_of_scope)`);
+          } else {
+            if (enableBus) {
+              await bus.post(targetDir, squadSlug, sessionId, {
+                from: 'coordinator', to: '*', type: 'block',
+                content: `Brief NOT READY for ${task.id}: ${briefResult.issues.map((i) => i.message).join(', ')}`,
+                metadata: { task_id: task.id, brief_validation: briefResult }
+              }).catch(() => {});
+            }
+            logger.log(`  ⚠ ${task.id}: brief NOT READY (${briefResult.issues.length} issues) — skipping`);
+            await updateTaskStatus(targetDir, squadSlug, sessionId, task.id, 'skipped', {
+              skip_reason: 'brief_not_ready', issues: briefResult.issues
+            });
+            return { task, finalStatus: 'skipped', workerResult: null, reflectionResult: null };
+          }
+        }
+      }
+
       logger.log(`  ${icon('in_progress')} ${task.id}: ${task.title}`);
+
+      // Sampling-and-Voting path (Plan 81 §Sprint 4)
+      if (task.voting) {
+        const votingInstances = task.voting.instances || 3;
+        const votingThreshold = task.voting.threshold || 0.66;
+        logger.log(`    ↳ Voting: ${votingInstances} instances, threshold ${(votingThreshold * 100).toFixed(0)}%`);
+        const runner = runTaskWithVoting(
+          targetDir, squadSlug, task, sessionId, runOptions, logger,
+          votingInstances, votingThreshold
+        );
+        return runner.then((r) => {
+          logger.log(`  ${icon(r.finalStatus)} ${task.id}: ${r.finalStatus.toUpperCase()}`);
+          return r;
+        });
+      }
+
+      // Evaluator-Optimizer path (Plan 82 §ITEM 4)
+      if (task.review_loop) {
+        const maxReviewIter = task.max_review_iterations || 3;
+        logger.log(`    ↳ Eval-Optimize: max ${maxReviewIter} iterations, reviewer=${task.reviewer || 'qa'}`);
+        return runWithEvalOptimize(
+          targetDir, squadSlug, task, sessionId, runOptions, logger, maxReviewIter
+        ).then((r) => {
+          logger.log(`  ${icon(r.finalStatus)} ${task.id}: ${r.finalStatus.toUpperCase()}`);
+          return r;
+        });
+      }
+
       const runner = enableGapClosure
         ? runTaskWithGapClosure(targetDir, squadSlug, task, sessionId, runOptions, logger, maxRetries)
         : runTaskWithHeartbeat(targetDir, squadSlug, task, sessionId, runOptions,
@@ -692,6 +1029,8 @@ async function runSquadAutorun({ args, options = {}, logger }) {
     }).catch(() => []);
 
     if (learnings.length > 0) {
+      // Persist learnings to per-agent memory files (Plan 81 §Sprint 4)
+      await persistAgentMemory(targetDir, squadSlug, learnings, results).catch(() => {});
       // Will be shown in the summary section below
       results._extractedLearnings = learnings.length;
     }

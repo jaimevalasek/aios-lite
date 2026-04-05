@@ -212,3 +212,18 @@ clarification: none | [specific question if confidence is low]
 - Do not continue into another agent's work after routing
 - Use `conversation_language` from context for all interaction
 - If `aioson` CLI is available, suggest `aioson workflow:next .` as an alternative tracked path
+
+## Continuation Protocol
+
+Before ending your response, always append:
+
+---
+## Next Up
+- Routed to: [agent name]
+- Activate: `/[agent]`
+- Do not continue into the next agent's work — routing only
+- `/clear` → fresh context window before continuing
+
+**Session artifacts written:**
+- [ ] [list each file created or modified]
+---

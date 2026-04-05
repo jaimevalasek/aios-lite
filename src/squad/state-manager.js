@@ -262,10 +262,49 @@ async function recordSessionEnd(projectDir, squadSlug, sessionId, results) {
   });
 }
 
+// ─── RuntimeState Serialization (Plan 81 §Sprint 4) ─────────────────────────
+
+/**
+ * Serialize complete runtime state for handoff between agents.
+ * Eliminates the need for the next agent to reread STATE.md + bus + budget.
+ *
+ * Inspired by CrewAI v1.13 RuntimeState serialization.
+ *
+ * @param {string} projectDir
+ * @param {string} squadSlug
+ * @param {object} sessionContext  — { sessionId, currentWave, completedTasks, budgetUsed, budgetLimit, busSummary }
+ * @returns {Promise<object>}  — serialized runtime state
+ */
+async function serializeRuntime(projectDir, squadSlug, sessionContext = {}) {
+  const state = await readState(projectDir, squadSlug);
+
+  return {
+    runtime_state: {
+      squad: squadSlug,
+      current_session: state.meta.current_session,
+      current_wave: sessionContext.currentWave || null,
+      completed_tasks: sessionContext.completedTasks || [],
+      active_decisions: state.decisions.slice(0, 10),
+      active_blockers: state.blockers,
+      pending: state.pending,
+      budget_remaining: sessionContext.budgetLimit
+        ? sessionContext.budgetLimit - (sessionContext.budgetUsed || 0)
+        : null,
+      budget_used: sessionContext.budgetUsed || 0,
+      budget_limit: sessionContext.budgetLimit || null,
+      bus_summary: sessionContext.busSummary || null,
+      sessions_completed: state.meta.sessions_completed,
+      avg_tasks_per_session: state.meta.avg_tasks_per_session,
+      serialized_at: nowIso()
+    }
+  };
+}
+
 module.exports = {
   readState,
   writeState,
   updateState,
   recordSessionStart,
-  recordSessionEnd
+  recordSessionEnd,
+  serializeRuntime
 };

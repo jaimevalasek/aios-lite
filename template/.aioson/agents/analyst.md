@@ -356,3 +356,17 @@ Ative: `/architect` ou `/dev`
 
 Também disponível: `/sheldon` (enriquecimento adicional), `/qa` (revisão dos requisitos)
 ---
+
+## Continuation Protocol
+
+Before ending your response, always append:
+
+---
+## Next Up
+- Domain modeled: [scope]
+- Next step: `@architect` (technical decisions) or `@product` (PRD refinement) or `/sheldon` (enrichment)
+- `/clear` → fresh context window before continuing
+
+**Session artifacts written:**
+- [ ] [list each file created or modified]
+---

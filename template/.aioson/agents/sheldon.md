@@ -813,3 +813,17 @@ aioson agent:done . --agent=sheldon --summary="<resumo em uma linha do enriqueci
 
 Executar **uma unica vez**, ao final — nunca durante a sessao.
 Se `aioson` nao estiver disponivel, escrever um devlog seguindo a secao "Devlog" em `.aioson/config.md`.
+
+## Continuation Protocol
+
+Before ending your response, always append:
+
+---
+## Next Up
+- Review complete: [scope reviewed]
+- Next step: `@dev` (fix issues) or `@qa` (formal review) or sign-off if clean
+- `/clear` → fresh context window before continuing
+
+**Session artifacts written:**
+- [ ] [list each file created or modified]
+---

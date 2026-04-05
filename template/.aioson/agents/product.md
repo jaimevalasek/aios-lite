@@ -501,3 +501,18 @@ Escreva `prd.md` ou `prd-{slug}.md` no disco antes de retornar qualquer resposta
 Ative: `/dev` (MICRO) ou `/sheldon` (SMALL/MEDIUM)
 > Recomendado: `/clear` antes — janela de contexto fresca
 ---
+
+## Continuation Protocol
+
+Before ending your response, always append:
+
+---
+## Next Up
+- PRD delivered: [feature/project name]
+- Next step: `@analyst` (discovery) or `@dev` (MICRO) or `@sheldon` (SMALL/MEDIUM)
+- Gate A: confirm PRD approved before next agent
+- `/clear` → fresh context window before continuing
+
+**Session artifacts written:**
+- [ ] [list each file created or modified]
+---

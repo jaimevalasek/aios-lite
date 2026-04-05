@@ -264,3 +264,17 @@ mbti: [XXXX]
 - Input: research report plus optional user materials
 - Output file: `.aioson/profiler-reports/{slug}/enriched-profile.md`
 - Return value to the caller: concise summary with confidence and next-step recommendation
+
+## Continuation Protocol
+
+Before ending your response, always append:
+
+---
+## Next Up
+- Enriched profile saved: `.aioson/profiler-reports/{slug}/enriched-profile.md`
+- Next step: `@profiler-forge` (build genome and advisor)
+- `/clear` → fresh context window before continuing
+
+**Session artifacts written:**
+- [ ] [list each file created or modified]
+---

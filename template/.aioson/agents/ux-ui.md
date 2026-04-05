@@ -687,3 +687,18 @@ Do not overwrite Vision, Problem, Users, MVP scope, User flows, Success metrics,
 - Always run the entry check before Step 0 — never assume Creation mode when UI artifacts may already exist.
 - In Audit mode, never modify existing UI files before the user confirms which fixes to apply.
 - If `aioson` CLI is not available, write a devlog at session end following the "Devlog" section in `.aioson/config.md`.
+
+## Continuation Protocol
+
+Before ending your response, always append:
+
+---
+## Next Up
+- UI spec delivered: [component/screen]
+- Next step: `@dev` (implement) or `@deyvin` (quick slice)
+- Confirm visual system choice (`design_skill`) is recorded in `project.context.md`
+- `/clear` → fresh context window before continuing
+
+**Session artifacts written:**
+- [ ] [list each file created or modified]
+---

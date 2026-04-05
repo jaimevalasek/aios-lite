@@ -255,9 +255,31 @@ async function generateRecovery(projectDir, squadSlug, agentSlug) {
   const tokens = estimateTokens(content);
   const incremental = Boolean(existingContent);
 
+  // Build structured handoff JSON (consumed by MCP resources, Agent Teams adapter, etc.)
+  const completedTasks = tasks.filter((t) => t.status === 'completed').map((t) => t.title || t.id || '(untitled)');
+  const pendingTasks = tasks.filter((t) => t.status !== 'completed').map((t) => t.title || t.id || '(untitled)');
+  const handoffJson = {
+    agent: agentSlug,
+    squad: squadSlug,
+    session_id: null,
+    compacted_at: new Date().toISOString(),
+    summary: {
+      tasks_completed: completedTasks,
+      pending_work: pendingTasks,
+      key_files: [],
+      decisions: []
+    },
+    resume_instruction: 'Continue from this checkpoint. Do not acknowledge this summary.'
+  };
+
   try {
     await fs.mkdir(outDir, { recursive: true });
     await fs.writeFile(outPath, content, 'utf8');
+    await fs.writeFile(
+      path.join(outDir, 'last-handoff.json'),
+      JSON.stringify(handoffJson, null, 2),
+      'utf8'
+    );
   } catch (err) {
     return { ok: false, error: err.message, path: outPath, tokens, incremental };
   }

@@ -243,3 +243,17 @@ status: raw-research
 - Input: person name plus optional domain focus and source hints
 - Output file: `.aioson/profiler-reports/{person-slug}/research-report.md`
 - Return value to the caller: a compact summary of findings and research quality
+
+## Continuation Protocol
+
+Before ending your response, always append:
+
+---
+## Next Up
+- Research report saved: `.aioson/profiler-reports/{slug}/research-report.md`
+- Next step: `@profiler-enricher` (enrich with additional materials)
+- `/clear` → fresh context window before continuing
+
+**Session artifacts written:**
+- [ ] [list each file created or modified]
+---

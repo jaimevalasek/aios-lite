@@ -16,6 +16,8 @@
  */
 
 const { randomUUID } = require('node:crypto');
+const fs = require('node:fs/promises');
+const path = require('node:path');
 const { openRuntimeDb, upsertSquadLearning } = require('../runtime-store');
 
 function nowIso() { return new Date().toISOString(); }
@@ -139,4 +141,73 @@ async function extractLearnings(projectDir, squadSlug, sessionId, data) {
   return extracted;
 }
 
-module.exports = { extractLearnings };
+// ─── Per-Agent Persistent Memory (Plan 81 §Sprint 4) ────────────────────────
+
+const AGENT_MEMORY_DIR = 'agent-memory';
+
+/**
+ * Persist learnings to per-agent memory files.
+ *
+ * After extracting learnings from a session, writes relevant learnings
+ * to `.aioson/squads/{slug}/agent-memory/{executor}.md` so they can be
+ * loaded by worker-runner at spawn time.
+ *
+ * @param {string} projectDir
+ * @param {string} squadSlug
+ * @param {object[]} learnings  — extracted learning objects
+ * @param {object[]} taskResults  — task results with executor info
+ */
+async function persistAgentMemory(projectDir, squadSlug, learnings, taskResults = []) {
+  if (learnings.length === 0) return;
+
+  const memoryDir = path.join(
+    projectDir, '.aioson', 'squads', squadSlug, AGENT_MEMORY_DIR
+  );
+  await fs.mkdir(memoryDir, { recursive: true });
+
+  // Group learnings by executor
+  const byExecutor = {};
+  for (const learning of learnings) {
+    // Match learning to executor via task results evidence
+    const executors = new Set();
+    for (const r of taskResults) {
+      if (!r.task?.executor) continue;
+      // Match by task id in the learning title or evidence
+      const taskId = r.task.id || '';
+      if (learning.title.includes(taskId) || learning.title.includes(r.task.executor)) {
+        executors.add(r.task.executor);
+      }
+    }
+    // If no specific executor matched, attribute to all executors in this session
+    if (executors.size === 0) {
+      for (const r of taskResults) {
+        if (r.task?.executor) executors.add(r.task.executor);
+      }
+    }
+    for (const exec of executors) {
+      if (!byExecutor[exec]) byExecutor[exec] = [];
+      byExecutor[exec].push(learning);
+    }
+  }
+
+  // Append to each executor's memory file
+  for (const [executor, execLearnings] of Object.entries(byExecutor)) {
+    const memPath = path.join(memoryDir, `${executor}.md`);
+    let existing = '';
+    try { existing = await fs.readFile(memPath, 'utf8'); } catch { /* new file */ }
+
+    const newEntries = execLearnings.map((l) =>
+      `- [${l.type}] ${l.title} (confidence: ${l.confidence})`
+    ).join('\n');
+
+    const header = existing ? '' : `# Agent Memory: ${executor}\n\n`;
+    const separator = existing ? `\n\n## Session ${nowIso().slice(0, 10)}\n\n` : '## Learnings\n\n';
+    const content = existing
+      ? existing.trimEnd() + separator + newEntries + '\n'
+      : header + separator + newEntries + '\n';
+
+    await fs.writeFile(memPath, content, 'utf8');
+  }
+}
+
+module.exports = { extractLearnings, persistAgentMemory };

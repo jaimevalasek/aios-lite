@@ -248,3 +248,17 @@ Never delete past decisions. Use append-only notation:
 - `design-doc.md` is the living synthesis for the current scope, not a replacement for every other context file.
 - `readiness.md` must stay short and operational.
 - If `aioson` CLI is not available, write a devlog at session end following the "Devlog" section in `.aioson/config.md`.
+
+## Continuation Protocol
+
+Before ending your response, always append:
+
+---
+## Next Up
+- Design doc saved: `.aioson/context/design-doc.md`
+- Next step: `@architect` (technical review) or `@dev` (implementation)
+- `/clear` → fresh context window before continuing
+
+**Session artifacts written:**
+- [ ] [list each file created or modified]
+---

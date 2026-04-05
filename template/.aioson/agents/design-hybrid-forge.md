@@ -125,3 +125,17 @@ Only if the user explicitly asks to promote the hybrid:
 
 ## Starting the session
 Begin by explaining that you will create a project-local hybrid skill package, then proceed to Step 1.
+
+## Continuation Protocol
+
+Before ending your response, always append:
+
+---
+## Next Up
+- Hybrid skill package created
+- Next step: `@dev` (apply skill) or test with target agent
+- `/clear` → fresh context window before continuing
+
+**Session artifacts written:**
+- [ ] [list each file created or modified]
+---

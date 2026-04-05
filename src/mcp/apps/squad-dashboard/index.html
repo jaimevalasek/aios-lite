@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Squad Dashboard — AIOSON</title>
+  <style>
+    :root {
+      --bg: #1a1a2e;
+      --surface: #16213e;
+      --border: #0f3460;
+      --text: #e0e0e0;
+      --muted: #888;
+      --green: #4ade80;
+      --yellow: #fbbf24;
+      --red: #f87171;
+      --blue: #60a5fa;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 13px;
+      padding: 12px;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 12px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      margin-bottom: 12px;
+    }
+    .header .squad-name { font-size: 15px; font-weight: 600; }
+    .header .session { color: var(--muted); font-size: 11px; }
+    .status-dot {
+      display: inline-block;
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      margin-right: 6px;
+    }
+    .status-dot.active { background: var(--green); }
+    .status-dot.warning { background: var(--yellow); }
+    .status-dot.error { background: var(--red); }
+    .waves-container {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+      overflow-x: auto;
+    }
+    .wave {
+      flex: 1;
+      min-width: 120px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 8px;
+    }
+    .wave-header {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+      padding-bottom: 4px;
+      border-bottom: 1px solid var(--border);
+    }
+    .wave-header.done { color: var(--green); }
+    .wave-header.running { color: var(--blue); }
+    .wave-header.blocked { color: var(--red); }
+    .wave-header.pending { color: var(--muted); }
+    .task {
+      font-size: 12px;
+      padding: 2px 0;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .task-icon { font-size: 10px; }
+    .task-icon.completed { color: var(--green); }
+    .task-icon.in_progress { color: var(--blue); }
+    .task-icon.failed { color: var(--red); }
+    .task-icon.pending { color: var(--muted); }
+    .stats-bar {
+      display: flex;
+      gap: 8px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 8px 12px;
+      margin-bottom: 12px;
+    }
+    .stat {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .stat-label { color: var(--muted); font-size: 11px; }
+    .stat-value { font-weight: 600; }
+    .stat-divider {
+      width: 1px;
+      background: var(--border);
+      align-self: stretch;
+    }
+    .bus-feed {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 8px;
+      max-height: 120px;
+      overflow-y: auto;
+    }
+    .bus-msg {
+      font-size: 11px;
+      padding: 2px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .bus-msg .from { color: var(--blue); }
+    .bus-msg .type { color: var(--muted); }
+    .bus-msg .type.block { color: var(--red); }
+    .bus-msg .type.result { color: var(--green); }
+    #loading { text-align: center; padding: 40px; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <div id="loading">Loading dashboard data...</div>
+  <div id="dashboard" style="display:none">
+    <div class="header">
+      <div>
+        <span class="status-dot active" id="status-dot"></span>
+        <span class="squad-name" id="squad-name">—</span>
+      </div>
+      <div class="session" id="session-info">—</div>
+    </div>
+
+    <div class="waves-container" id="waves"></div>
+
+    <div class="stats-bar">
+      <div class="stat">
+        <span class="stat-label">Bus:</span>
+        <span class="stat-value" id="bus-total">0</span>
+        <span class="stat-label">msgs</span>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat">
+        <span class="stat-label">Blocks:</span>
+        <span class="stat-value" id="bus-blocks">0</span>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat">
+        <span class="stat-label">Budget:</span>
+        <span class="stat-value" id="budget-info">—</span>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat">
+        <span class="stat-label">Sessions:</span>
+        <span class="stat-value" id="sessions-count">0</span>
+      </div>
+    </div>
+
+    <div class="bus-feed" id="bus-feed"></div>
+  </div>
+
+  <script>
+    const TASK_ICONS = {
+      completed: '\u2713',
+      in_progress: '\u25B6',
+      failed: '\u2717',
+      escalated: '\u26A0',
+      pending: '\u25CB',
+      skipped: '\u2013'
+    };
+
+    function renderWaves(wavesData) {
+      const container = document.getElementById('waves');
+      container.innerHTML = '';
+
+      for (const wave of (wavesData.waves || [])) {
+        const el = document.createElement('div');
+        el.className = 'wave';
+        const statusClass = wave.status.toLowerCase();
+
+        el.innerHTML = `
+          <div class="wave-header ${statusClass}">Wave ${wave.wave} [${wave.status}]</div>
+          ${wave.tasks.map(t => `
+            <div class="task">
+              <span class="task-icon ${t.status}">${TASK_ICONS[t.status] || '?'}</span>
+              <span>${t.executor || t.title || t.id}</span>
+            </div>
+          `).join('')}
+        `;
+        container.appendChild(el);
+      }
+    }
+
+    function renderBusFeed(busData) {
+      const feed = document.getElementById('bus-feed');
+      const messages = busData.lastMessages || [];
+      feed.innerHTML = messages.slice(-10).reverse().map(m => `
+        <div class="bus-msg">
+          <span class="from">${m.from}</span>
+          <span class="type ${m.type}">[${m.type}]</span>
+          ${m.content ? m.content.slice(0, 80) : ''}
+        </div>
+      `).join('');
+    }
+
+    function renderDashboard(data) {
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('dashboard').style.display = 'block';
+
+      document.getElementById('squad-name').textContent = `Squad: ${data.squad}`;
+      document.getElementById('session-info').textContent =
+        data.waves.sessionId ? `Session: ${data.waves.sessionId.slice(0, 8)}` : '';
+
+      if (data.state) {
+        document.getElementById('sessions-count').textContent =
+          data.state.sessions_completed || 0;
+      }
+
+      document.getElementById('bus-total').textContent = data.bus.total || 0;
+      document.getElementById('bus-blocks').textContent = data.bus.blocks || 0;
+
+      if (data.budget && data.budget.max_tokens_per_session) {
+        document.getElementById('budget-info').textContent =
+          `${(data.budget.max_tokens_per_session / 1000).toFixed(0)}k`;
+      }
+
+      const dot = document.getElementById('status-dot');
+      if (data.bus.blocks > 0) {
+        dot.className = 'status-dot warning';
+      } else {
+        dot.className = 'status-dot active';
+      }
+
+      renderWaves(data.waves);
+      renderBusFeed(data.bus);
+    }
+
+    // MCP App data injection point
+    if (window.__MCP_DATA__) {
+      renderDashboard(window.__MCP_DATA__);
+    }
+
+    // Polling fallback for standalone mode
+    if (window.__DASHBOARD_API__) {
+      async function poll() {
+        try {
+          const res = await fetch(window.__DASHBOARD_API__);
+          const data = await res.json();
+          renderDashboard(data);
+        } catch { /* retry */ }
+        setTimeout(poll, 3000);
+      }
+      poll();
+    }
+  </script>
+</body>
+</html>

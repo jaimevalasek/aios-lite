@@ -447,3 +447,17 @@ Register: `aioson agent:done . --agent=tester --summary="<one-line summary>" 2>/
 Ative: `/dev`
 > Recomendado: `/clear` antes — janela de contexto fresca
 ---
+
+## Continuation Protocol
+
+Before ending your response, always append:
+
+---
+## Next Up
+- Test suite delivered: [module tested]
+- Next step: `@qa` (review test quality) or `@dev` (fix failing tests)
+- `/clear` → fresh context window before continuing
+
+**Session artifacts written:**
+- [ ] [list each file created or modified]
+---

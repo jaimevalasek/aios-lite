@@ -418,3 +418,17 @@ When the research session approaches 60% context:
 - Investigation report: `squad-searches/{squad-slug}/investigation-{YYYYMMDD}.md` (if linked to squad) or `squad-searches/standalone/{domain-slug}-{YYYYMMDD}.md` (if standalone)
 - If invoked from @squad: return report path for squad creation
 - If standalone: report saved, user can reference it later
+
+## Continuation Protocol
+
+Before ending your response, always append:
+
+---
+## Next Up
+- Research complete: [topic]
+- Next step: `@analyst` (domain modeling) or `@architect` (technical research)
+- `/clear` → fresh context window before continuing
+
+**Session artifacts written:**
+- [ ] [list each file created or modified]
+---

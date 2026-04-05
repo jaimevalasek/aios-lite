@@ -202,15 +202,103 @@ async function runResearchWorker(projectDir, config, inputPayload) {
   };
 }
 
+// ─── Skill Worker (Plan 81 §2.2) ─────────────────────────────────────────────
+
+/**
+ * Handle a `type: 'skill'` worker.
+ * Resolves an external Agent Skills Standard skill and executes it.
+ *
+ * Skill sources:
+ *   - Local path: ./skills/my-skill/ or .claude/skills/my-skill/
+ *   - NPM package: npm:@org/skill-name (resolved from node_modules)
+ */
+async function runSkillWorker(projectDir, config, inputPayload) {
+  const skillRef = config.skill || config.source || '';
+  let skillDir;
+
+  if (skillRef.startsWith('npm:')) {
+    // Resolve from node_modules
+    const pkgName = skillRef.slice(4);
+    skillDir = path.join(projectDir, 'node_modules', pkgName);
+  } else {
+    // Local path
+    skillDir = path.resolve(projectDir, skillRef);
+  }
+
+  // Check SKILL.md exists
+  const skillMdPath = path.join(skillDir, 'SKILL.md');
+  if (!(await pathExists(skillMdPath))) {
+    return {
+      ok: false,
+      error: `Skill not found: ${skillRef} (expected SKILL.md at ${skillMdPath})`,
+      attempts: 0
+    };
+  }
+
+  // Check for executable scripts
+  const scriptsDir = path.join(skillDir, 'scripts');
+  const runScript = path.join(scriptsDir, 'run.js');
+  const runPyScript = path.join(scriptsDir, 'run.py');
+
+  if (await pathExists(runScript)) {
+    return spawnWorker(runScript, inputPayload || {}, {}, config.timeout_ms || DEFAULT_TIMEOUT);
+  }
+
+  if (await pathExists(runPyScript)) {
+    return spawnWorker(runPyScript, inputPayload || {}, {}, config.timeout_ms || DEFAULT_TIMEOUT);
+  }
+
+  // No executable script — return skill content for LLM-based execution
+  const skillContent = await fs.readFile(skillMdPath, 'utf8');
+  return {
+    ok: true,
+    output: {
+      type: 'skill-prompt',
+      skillPath: skillMdPath,
+      content: skillContent.slice(0, 4000),
+      message: `Skill "${skillRef}" loaded. No run script found — use skill content as agent instructions.`
+    },
+    attempt: 1
+  };
+}
+
+// ─── Agent Memory Loader (Plan 81 §Sprint 4) ────────────────────────────────
+
+/**
+ * Load per-agent persistent memory if it exists.
+ * Returns memory content or null.
+ */
+async function loadAgentMemory(projectDir, squadSlug, executorSlug) {
+  const memoryPath = path.join(
+    projectDir, SQUADS_DIR, squadSlug, 'agent-memory', `${executorSlug}.md`
+  );
+  try {
+    return await fs.readFile(memoryPath, 'utf8');
+  } catch {
+    return null;
+  }
+}
+
 async function runWorker(projectDir, squadSlug, workerSlug, inputPayload, options = {}) {
   const config = await loadWorkerConfig(projectDir, squadSlug, workerSlug);
   if (!config) {
     return { ok: false, error: `Worker config not found: ${workerSlug}`, attempts: 0 };
   }
 
+  // Skill worker — external skill execution (Plan 81 §2.2)
+  if (config.type === 'skill') {
+    return runSkillWorker(projectDir, config, inputPayload || {});
+  }
+
   // Research worker — special handler (4.1)
   if (config.type === 'research') {
     return runResearchWorker(projectDir, config, inputPayload || {});
+  }
+
+  // Load per-agent persistent memory (Plan 81 §Sprint 4)
+  const agentMemory = await loadAgentMemory(projectDir, squadSlug, workerSlug);
+  if (agentMemory && inputPayload) {
+    inputPayload._agent_memory = agentMemory;
   }
 
   // Validate inputs
@@ -419,5 +507,7 @@ module.exports = {
   generateRunJs,
   generateWorkerReadme,
   validateInputs,
-  resolveEnvVars
+  resolveEnvVars,
+  runSkillWorker,
+  loadAgentMemory
 };

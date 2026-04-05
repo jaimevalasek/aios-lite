@@ -121,4 +121,55 @@ function matchesPattern(event, pattern) {
   return pattern === event;
 }
 
-module.exports = { publish, consume, matchesPattern };
+// ─── A2A Remote Backend (Plan 81 §3.2) ───────────────────────────────────────
+
+/**
+ * Publish an event to remote A2A peers (if configured in manifest).
+ *
+ * @param {string} projectDir
+ * @param {{ fromSquad: string, event: string, payload?: object }} eventData
+ * @param {{ peers: Array<{ name: string, url: string }> }} a2aConfig
+ * @returns {Promise<object[]>}  — results per peer
+ */
+async function publishRemote(projectDir, eventData, a2aConfig) {
+  if (!a2aConfig || !a2aConfig.peers || a2aConfig.peers.length === 0) return [];
+
+  let publishEvent;
+  try {
+    ({ publishEvent } = require('../a2a/client'));
+  } catch {
+    return [];
+  }
+
+  const results = [];
+  for (const peer of a2aConfig.peers) {
+    const result = await publishEvent(peer.url, eventData).catch((err) => ({
+      ok: false, error: err.message
+    }));
+    results.push({ peer: peer.name, ...result });
+  }
+
+  return results;
+}
+
+/**
+ * Enhanced publish: local + optional remote A2A.
+ *
+ * @param {string} projectDir
+ * @param {{ fromSquad: string, event: string, payload?: object }} eventData
+ * @param {{ remote?: boolean, a2a?: object }} options
+ */
+async function publishWithA2A(projectDir, eventData, options = {}) {
+  // Always publish locally
+  const localId = await publish(projectDir, eventData);
+
+  // Optionally publish to A2A peers
+  let remoteResults = [];
+  if (options.remote && options.a2a) {
+    remoteResults = await publishRemote(projectDir, eventData, options.a2a);
+  }
+
+  return { localId, remoteResults };
+}
+
+module.exports = { publish, consume, matchesPattern, publishWithA2A, publishRemote };

@@ -178,3 +178,17 @@ AskUserQuestion:
 - **When possible, add a compact `## Acceptance criteria` table using `AC-01` style IDs.** QA automation reads this table directly.
 - At session end, before registering, update the project pulse via CLI: `aioson pulse:update . --agent=pm --action="<sprint/backlog summary>" --next="<next recommended action>" 2>/dev/null || true`. If `aioson` CLI is not available, update `.aioson/context/project-pulse.md` manually.
 - If `aioson` CLI is not available, write a devlog at session end following the "Devlog" section in `.aioson/config.md`.
+
+## Continuation Protocol
+
+Before ending your response, always append:
+
+---
+## Next Up
+- Sprint/backlog ready: [sprint name or backlog scope]
+- Next step: `@orchestrator` (parallel execution) or `@dev` (sequential implementation)
+- `/clear` → fresh context window before continuing
+
+**Session artifacts written:**
+- [ ] [list each file created or modified]
+---

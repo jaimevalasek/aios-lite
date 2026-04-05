@@ -158,6 +158,14 @@ const { runArtifactValidate } = require('./commands/artifact-validate');
 const { runWorkflowExecute } = require('./commands/workflow-execute');
 const { runRunnerQueueFromPlan } = require('./commands/runner-queue-from-plan');
 const { runLearningAutoPromote } = require('./commands/learning-auto-promote');
+const { runBriefValidate } = require('./commands/brief-validate');
+const { runPreflightContext } = require('./commands/preflight-context');
+const { runContextCompact } = require('./commands/context-compact');
+const { runSquadScaffold } = require('./commands/squad-scaffold');
+const { runPatternDetect } = require('./commands/pattern-detect');
+const { runSelfLoop } = require('./commands/self-implement-loop');
+const { runSquadCard } = require('./commands/squad-card');
+const { runAgentExportSkill } = require('./commands/agent-export-skill');
 
 const JSON_SUPPORTED_COMMANDS = new Set([
   'init',
@@ -301,6 +309,22 @@ const JSON_SUPPORTED_COMMANDS = new Set([
   'brief-gen',
   'verify:gate',
   'verify-gate',
+  'brief:validate',
+  'brief-validate',
+  'preflight:context',
+  'preflight-context',
+  'context:compact',
+  'context-compact',
+  'squad:scaffold',
+  'squad-scaffold',
+  'pattern:detect',
+  'pattern-detect',
+  'self:loop',
+  'self-loop',
+  'squad:card',
+  'squad-card',
+  'agent:export-skill',
+  'agent-export-skill',
   'squad:learning',
   'squad-learning',
   'learning',
@@ -830,6 +854,22 @@ async function main() {
       result = await runBriefGen({ args, options, logger: commandLogger });
     } else if (command === 'verify:gate' || command === 'verify-gate') {
       result = await runVerifyGate({ args, options, logger: commandLogger });
+    } else if (command === 'brief:validate' || command === 'brief-validate') {
+      result = await runBriefValidate({ args, options, logger: commandLogger });
+    } else if (command === 'preflight:context' || command === 'preflight-context') {
+      result = await runPreflightContext({ args, options, logger: commandLogger });
+    } else if (command === 'context:compact' || command === 'context-compact') {
+      result = await runContextCompact({ args, options, logger: commandLogger });
+    } else if (command === 'squad:scaffold' || command === 'squad-scaffold') {
+      result = await runSquadScaffold({ args, options, logger: commandLogger });
+    } else if (command === 'pattern:detect' || command === 'pattern-detect') {
+      result = await runPatternDetect({ args, options, logger: commandLogger });
+    } else if (command === 'self:loop' || command === 'self-loop') {
+      result = await runSelfLoop({ args, options, logger: commandLogger });
+    } else if (command === 'squad:card' || command === 'squad-card') {
+      result = await runSquadCard({ args, options, logger: commandLogger });
+    } else if (command === 'agent:export-skill' || command === 'agent-export-skill') {
+      result = await runAgentExportSkill({ args, options, logger: commandLogger });
     } else if (command === 'squad:learning' || command === 'squad-learning') {
       const sub = args[1] || 'list';
       result = await runSquadLearning({ args, options: { ...options, sub }, logger: commandLogger, t });

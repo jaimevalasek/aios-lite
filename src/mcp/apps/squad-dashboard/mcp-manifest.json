@@ -1,0 +1,23 @@
+{
+  "name": "aioson-squad-dashboard",
+  "version": "1.0.0",
+  "description": "Real-time squad execution dashboard for AIOSON",
+  "type": "mcp-app",
+  "display": {
+    "title": "Squad Dashboard",
+    "icon": "grid",
+    "width": 600,
+    "height": 400
+  },
+  "entry": "index.html",
+  "resources": [
+    "aioson://squad/{slug}/state",
+    "aioson://squad/{slug}/bus",
+    "aioson://squad/{slug}/budget",
+    "aioson://squad/{slug}/waves"
+  ],
+  "permissions": [
+    "read:squad-state",
+    "read:squad-bus"
+  ]
+}

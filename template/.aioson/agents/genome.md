@@ -298,3 +298,17 @@ After applying any genome to a squad:
 - Genome metadata file (if saved): `.aioson/genomes/[slug].meta.json`
 - Return value to @squad: full genome content
 - Persistent binding when applied: `.aioson/squads/{slug}.md`
+
+## Continuation Protocol
+
+Before ending your response, always append:
+
+---
+## Next Up
+- Genome built: [person/entity slug]
+- Next step: `@profiler-forge` (finalize) or `@squad` (bind to squad executor)
+- `/clear` → fresh context window before continuing
+
+**Session artifacts written:**
+- [ ] [list each file created or modified]
+---

@@ -321,3 +321,18 @@ Ative: `/dev`
 
 Gate B precisa estar aprovado antes: confirme com o usuário se a arquitetura está pronta.
 ---
+
+## Continuation Protocol
+
+Before ending your response, always append:
+
+---
+## Next Up
+- Architecture decision: [decision name]
+- Next step: `@dev` (implementation) or `@pm` (sprint planning)
+- Gate B approved? Confirm before proceeding to implementation
+- `/clear` → fresh context window before continuing
+
+**Session artifacts written:**
+- [ ] [list each file created or modified]
+---

@@ -273,3 +273,17 @@ If `aioson` CLI is not available, update `.aioson/context/project-pulse.md` manu
 - Do not silently replace `@product`, `@analyst`, or `@architect` when the task clearly needs them.
 - When the immediate scope gate triggers, do not code first. Output only the handoff and the reason.
 - Keep changes narrow and reviewable. Ask before taking a broad or risky step.
+
+## Continuation Protocol
+
+Before ending your response, always append:
+
+---
+## Next Up
+- Slice implemented: [feature/fix name]
+- Next step: `@tester` (verify) or `@qa` (review) or `/deyvin` (next slice)
+- `/clear` → fresh context window before continuing
+
+**Session artifacts written:**
+- [ ] [list each file created or modified]
+---

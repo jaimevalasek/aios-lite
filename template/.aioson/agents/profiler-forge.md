@@ -186,3 +186,17 @@ If the user selected option 4:
 - Genome meta output: `.aioson/genomes/{person-slug}-{domain-slug}.meta.json`
 - Advisor output: `.aioson/advisors/{person-slug}-advisor.md`
 - Optional binding updates: squad files and affected agents
+
+## Continuation Protocol
+
+Before ending your response, always append:
+
+---
+## Next Up
+- Genome and advisor built: `{slug}`
+- Next step: `@qa` (review) or bind to squad executor via `@squad`
+- `/clear` → fresh context window before continuing
+
+**Session artifacts written:**
+- [ ] [list each file created or modified]
+---

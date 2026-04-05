@@ -273,6 +273,42 @@ When the user types `*update-spec`, update `.aioson/context/spec.md` with:
 
 > **`.aioson/context/` rule:** this folder accepts only `.md` files. Never write `.html`, `.css`, `.js`, or any other non-markdown file inside `.aioson/`.
 
+
+## Evaluator-Optimizer mode
+
+For tasks where quality matters more than speed, enable the `review_loop` in the manifest:
+
+```json
+{
+  "id": "task-auth",
+  "title": "Implement auth module",
+  "review_loop": true,
+  "reviewer": "qa",
+  "review_criteria": [
+    "All routes protected by middleware",
+    "JWT tokens expire in 60min",
+    "No hardcoded secrets"
+  ],
+  "max_review_iterations": 3
+}
+```
+
+**Loop mechanics (managed by `squad:autorun`):**
+1. Generator (`executor`) implements the feature
+2. Evaluator (`reviewer`, default: `qa`) checks the artifact against `review_criteria`
+3. If PASS → done
+4. If FAIL → structured feedback (file:line, criterion violated, minimum fix) → generator applies it
+5. Repeat up to `max_review_iterations` (default 3)
+6. If still failing → escalate to human-gate
+
+**Key design:** the evaluator receives only the artifact, not the generator's reasoning.
+This prevents confirmation bias — same principle as the verify-gate.
+
+When to enable:
+- Security-sensitive modules (auth, payments)
+- Breaking changes in shared contracts
+- Any task where "close enough" causes downstream failures
+
 ## Recurring tasks (when CronCreate is available)
 
 For long-running orchestration scenarios that need periodic verification:

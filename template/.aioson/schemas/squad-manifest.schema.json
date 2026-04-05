@@ -98,9 +98,9 @@
           "title": { "type": "string" },
           "type": {
             "type": "string",
-            "enum": ["worker", "agent", "clone", "assistant", "human-gate", "research", "reviewer"],
+            "enum": ["worker", "agent", "clone", "assistant", "human-gate", "research", "reviewer", "skill"],
             "default": "agent",
-            "description": "Executor type: worker (deterministic script, no LLM), agent (LLM with defined role), clone (cognitive replica of real person), assistant (domain specialist with behavioral profile), human-gate (human approval checkpoint), research (web research with cache, no LLM), reviewer (cross-AI review synthesis)"
+            "description": "Executor type: worker (deterministic script, no LLM), agent (LLM with defined role), clone (cognitive replica of real person), assistant (domain specialist with behavioral profile), human-gate (human approval checkpoint), research (web research with cache, no LLM), reviewer (cross-AI review synthesis), skill (external Agent Skills Standard skill)"
           },
           "role": { "type": "string" },
           "file": { "type": "string" },
@@ -120,6 +120,14 @@
           "entrypoint": {
             "type": "string",
             "description": "Script path for worker executors"
+          },
+          "skill": {
+            "type": "string",
+            "description": "Agent Skills Standard skill identifier (for type: 'skill'). E.g. '@anthropic/code-review'"
+          },
+          "source": {
+            "type": "string",
+            "description": "Skill source path or package. E.g. 'npm:@org/skill', './skills/my-skill/'"
           },
           "domain": {
             "type": "string",
@@ -198,7 +206,50 @@
                 "order": { "type": "integer", "minimum": 1 },
                 "file": { "type": "string", "description": "Path to the task .md file" },
                 "input": { "type": "string", "description": "What this task receives" },
-                "output": { "type": "string", "description": "What this task produces" }
+                "output": { "type": "string", "description": "What this task produces" },
+                "review_loop": {
+                  "type": "boolean",
+                  "default": false,
+                  "description": "Enable evaluator-optimizer loop: dev implements, qa evaluates, repeat up to max_review_iterations"
+                },
+                "review_criteria": {
+                  "type": "array",
+                  "items": { "type": "string" },
+                  "description": "Criteria the evaluator uses to PASS/FAIL the output (used with review_loop: true)"
+                },
+                "max_review_iterations": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 5,
+                  "default": 3,
+                  "description": "Maximum dev→qa iterations before escalating to human (used with review_loop: true)"
+                },
+                "voting": {
+                  "type": "object",
+                  "description": "Sampling-and-Voting: run N parallel instances and reach consensus. Best for critical decisions.",
+                  "properties": {
+                    "instances": {
+                      "type": "integer",
+                      "minimum": 2,
+                      "maximum": 10,
+                      "default": 3,
+                      "description": "Number of parallel instances to spawn"
+                    },
+                    "threshold": {
+                      "type": "number",
+                      "minimum": 0.5,
+                      "maximum": 1,
+                      "default": 0.66,
+                      "description": "Minimum consensus fraction to accept result (0.66 = 66%)"
+                    },
+                    "on_no_consensus": {
+                      "type": "string",
+                      "enum": ["escalate", "use_majority", "fail"],
+                      "default": "escalate",
+                      "description": "What to do when consensus < threshold"
+                    }
+                  }
+                }
               }
             },
             "description": "Granular tasks within this executor, executed in order"

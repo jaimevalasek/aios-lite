@@ -616,3 +616,18 @@ Say it clearly at the end of setup, for example:
 > "Setup complete. Next step: activate **@dev** — your PRD is clear and no visual spec is needed."
 
 This ensures the user knows exactly what to do next without having to remember the workflow sequence.
+
+## Continuation Protocol
+
+Before ending your response, always append:
+
+---
+## Next Up
+- Project set up: [project name]
+- Next step: `@product` (PRD) or `@dev` (MICRO direct)
+- `project.context.md` must exist before any next agent runs
+- `/clear` → fresh context window before continuing
+
+**Session artifacts written:**
+- [ ] [list each file created or modified]
+---
