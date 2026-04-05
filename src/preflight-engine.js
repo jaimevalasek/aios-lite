@@ -110,19 +110,26 @@ async function detectTestRunner(targetDir) {
     return { name, command, configFile: file };
   }
 
-  // Check package.json scripts
+  // Check package.json scripts (test, test:unit, test:e2e, etc.)
   const pkgContent = await readFileSafe(path.join(targetDir, 'package.json'));
   if (pkgContent) {
     try {
       const pkg = JSON.parse(pkgContent);
-      if (pkg.scripts && pkg.scripts.test) {
-        const testScript = pkg.scripts.test;
-        if (testScript.includes('jest')) return { name: 'Jest', command: 'npm test', configFile: 'package.json' };
-        if (testScript.includes('vitest')) return { name: 'Vitest', command: 'npm test', configFile: 'package.json' };
-        if (testScript.includes('mocha')) return { name: 'Mocha', command: 'npm test', configFile: 'package.json' };
-        return { name: 'npm test', command: 'npm test', configFile: 'package.json' };
+      if (pkg.scripts) {
+        // Check all test-related script keys, prioritize "test" then "test:*"
+        const testKeys = Object.keys(pkg.scripts).filter((k) => k === 'test' || k.startsWith('test:'));
+        for (const key of testKeys) {
+          const script = pkg.scripts[key];
+          if (script.includes('jest')) return { name: 'Jest', command: `npm run ${key}`, configFile: 'package.json' };
+          if (script.includes('vitest')) return { name: 'Vitest', command: `npm run ${key}`, configFile: 'package.json' };
+          if (script.includes('mocha')) return { name: 'Mocha', command: `npm run ${key}`, configFile: 'package.json' };
+          if (script.includes('node --test') || script.includes('node:test')) return { name: 'node:test', command: `npm run ${key}`, configFile: 'package.json' };
+        }
+        if (pkg.scripts.test) {
+          return { name: 'npm test', command: 'npm test', configFile: 'package.json' };
+        }
       }
-    } catch { /* ignore */ }
+    } catch { /* ignore malformed package.json */ }
   }
 
   return null;
@@ -223,7 +230,9 @@ function parseGatesFromSpec(content) {
     try {
       const parsed = JSON.parse(fm.phase_gates.replace(/'/g, '"'));
       Object.assign(gates, parsed);
-    } catch { /* ignore */ }
+    } catch {
+      // phase_gates field exists but is not valid JSON — gate data from this field is lost
+    }
   }
 
   // Try scanning content for gate approval lines
@@ -361,6 +370,11 @@ function evaluateReadiness(artifacts, phaseGates, classification, agent) {
 
   if (agent === 'qa') {
     if (!artifacts.spec.exists) blockers.push('spec file missing');
+    if (classification && classification !== 'MICRO') {
+      if (phaseGates.plan && phaseGates.plan !== 'approved') {
+        blockers.push(`Gate C (plan) not approved: ${phaseGates.plan || 'pending'}`);
+      }
+    }
   }
 
   if (agent === 'analyst') {
@@ -388,10 +402,14 @@ function extractLastCheckpoint(artifact) {
   const fm = artifact.frontmatter;
   if (fm.last_checkpoint) return fm.last_checkpoint;
 
-  // Scan content for checkpoint patterns
+  // Scan content for checkpoint patterns — use last occurrence (most recent)
   if (artifact.content) {
-    const m = artifact.content.match(/last_checkpoint:\s*(.+)/);
-    if (m) return m[1].trim().replace(/^["']|["']$/g, '');
+    const matches = artifact.content.match(/last_checkpoint:\s*(.+)/g);
+    if (matches && matches.length > 0) {
+      const last = matches[matches.length - 1];
+      const val = last.replace(/^last_checkpoint:\s*/, '').trim().replace(/^["']|["']$/g, '');
+      return val;
+    }
   }
   return null;
 }

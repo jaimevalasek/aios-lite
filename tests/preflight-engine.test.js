@@ -437,3 +437,78 @@ test('GATE_ALIASES: maps gate names to letters', () => {
   assert.equal(GATE_ALIASES.requirements, 'A');
   assert.equal(GATE_ALIASES.plan, 'C');
 });
+
+// ── Phase 2 fixes: evaluateReadiness for qa ───────────────────────────────────
+
+test('evaluateReadiness: qa BLOCKED when Gate C not approved for SMALL', () => {
+  const artifacts = {
+    project_context: { exists: true },
+    spec: { exists: true },
+    prd: { exists: true },
+    requirements: { exists: true }
+  };
+  const gates = { plan: 'pending' };
+  const result = evaluateReadiness(artifacts, gates, 'SMALL', 'qa');
+  assert.equal(result.status, 'BLOCKED');
+  assert.ok(result.blockers.some((b) => b.includes('Gate C')));
+});
+
+test('evaluateReadiness: qa READY when Gate C approved for SMALL', () => {
+  const artifacts = {
+    project_context: { exists: true },
+    spec: { exists: true },
+    prd: { exists: true },
+    requirements: { exists: true }
+  };
+  const gates = { plan: 'approved' };
+  const result = evaluateReadiness(artifacts, gates, 'SMALL', 'qa');
+  assert.equal(result.status, 'READY');
+});
+
+test('evaluateReadiness: qa skips Gate C check for MICRO', () => {
+  const artifacts = {
+    project_context: { exists: true },
+    spec: { exists: true },
+    prd: { exists: true },
+    requirements: { exists: true }
+  };
+  const gates = { plan: 'pending' };
+  const result = evaluateReadiness(artifacts, gates, 'MICRO', 'qa');
+  assert.equal(result.status, 'READY');
+});
+
+// ── Phase 2 fixes: extractLastCheckpoint last occurrence ──────────────────────
+
+test('extractLastCheckpoint: returns last occurrence when multiple exist', () => {
+  const artifact = {
+    exists: true,
+    frontmatter: {},
+    content: 'last_checkpoint: "Outdated value"\n\n# Notes\nlast_checkpoint: "Latest value"'
+  };
+  const result = extractLastCheckpoint(artifact);
+  assert.ok(result && result.includes('Latest'));
+  assert.ok(!result.includes('Outdated'));
+});
+
+// ── Phase 2 fixes: detectTestRunner — node:test and test:unit ─────────────────
+
+test('detectTestRunner: detects node:test from package.json scripts', async () => {
+  const tmpDir = await makeTmpDir();
+  await writeFile(tmpDir, 'package.json', JSON.stringify({
+    scripts: { test: 'node --test tests/' }
+  }));
+  const result = await detectTestRunner(tmpDir);
+  assert.ok(result);
+  assert.equal(result.name, 'node:test');
+});
+
+test('detectTestRunner: detects jest from test:unit script', async () => {
+  const tmpDir = await makeTmpDir();
+  await writeFile(tmpDir, 'package.json', JSON.stringify({
+    scripts: { 'test:unit': 'jest --coverage', 'test:e2e': 'cypress run' }
+  }));
+  const result = await detectTestRunner(tmpDir);
+  assert.ok(result);
+  assert.equal(result.name, 'Jest');
+  assert.equal(result.command, 'npm run test:unit');
+});
