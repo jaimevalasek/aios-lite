@@ -1,0 +1,1183 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SDD Automation Scripts — AIOSON</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #07070f;
+      --surface: #0f0f1a;
+      --card: #13131f;
+      --card2: #0d0d18;
+      --border: #1f1f32;
+      --border-light: #282840;
+      --primary: #6c47ff;
+      --primary-dim: rgba(108, 71, 255, 0.12);
+      --primary-glow: rgba(108, 71, 255, 0.22);
+      --text: #e2e8f0;
+      --muted: #8892a4;
+      --accent: #a78bfa;
+      --green: #34d399;
+      --yellow: #fbbf24;
+      --red: #f87171;
+      --blue: #60a5fa;
+      --cyan: #22d3ee;
+      --radius: 14px;
+      --heading: #d4d8f0;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.7;
+      font-size: 16px;
+    }
+
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 3px; }
+
+    /* ── Nav ─────────────────────────────────────── */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(7,7,15,0.85);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 32px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .nav-back {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      text-decoration: none;
+      color: var(--muted);
+      font-size: 14px;
+      transition: color 0.2s;
+    }
+    .nav-back:hover { color: var(--text); }
+    .nav-sep { color: var(--border-light); }
+    .nav-title { font-size: 14px; font-weight: 600; color: var(--text); }
+
+    .nav-tag {
+      margin-left: auto;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--primary);
+      background: var(--primary-dim);
+      border: 1px solid rgba(108,71,255,0.3);
+      border-radius: 20px;
+      padding: 3px 12px;
+    }
+
+    /* ── Hero ────────────────────────────────────── */
+    .hero {
+      padding: 90px 24px 70px;
+      text-align: center;
+      background: radial-gradient(ellipse 60% 55% at 50% -5%, rgba(108,71,255,0.2) 0%, transparent 65%);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .hero-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 28px;
+    }
+
+    .hero-eyebrow::before, .hero-eyebrow::after {
+      content: '';
+      display: block;
+      width: 28px;
+      height: 1px;
+      background: var(--accent);
+      opacity: 0.5;
+    }
+
+    .hero h1 {
+      font-size: clamp(2rem, 5vw, 3.4rem);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+      background: linear-gradient(145deg, #d4d8f0 0%, var(--accent) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 22px;
+    }
+
+    .hero-sub {
+      font-size: 1.1rem;
+      color: var(--muted);
+      max-width: 580px;
+      margin: 0 auto 36px;
+    }
+
+    .hero-meta {
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+
+    .meta-pill {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .meta-dot { width: 7px; height: 7px; border-radius: 50%; }
+
+    /* ── Layout ──────────────────────────────────── */
+    .container { max-width: 900px; margin: 0 auto; padding: 0 24px; }
+
+    section {
+      padding: 72px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    section:last-child { border-bottom: none; }
+
+    .section-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--primary);
+      margin-bottom: 16px;
+    }
+
+    .section-label::before {
+      content: '';
+      display: block;
+      width: 18px;
+      height: 2px;
+      background: var(--primary);
+      border-radius: 2px;
+    }
+
+    h2 {
+      font-size: clamp(1.5rem, 3vw, 2rem);
+      font-weight: 800;
+      letter-spacing: -0.025em;
+      color: var(--heading);
+      margin-bottom: 16px;
+      line-height: 1.25;
+    }
+
+    h3 { font-size: 1.1rem; font-weight: 700; color: var(--heading); margin-bottom: 10px; }
+
+    p { color: var(--muted); margin-bottom: 16px; }
+    p:last-child { margin-bottom: 0; }
+
+    /* ── Cards ───────────────────────────────────── */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px;
+    }
+
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 16px;
+      margin-top: 32px;
+    }
+
+    /* ── Callout ─────────────────────────────────── */
+    .callout {
+      background: var(--primary-dim);
+      border: 1px solid rgba(108,71,255,0.3);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      margin: 24px 0;
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+    }
+
+    .callout.green {
+      background: rgba(52,211,153,0.07);
+      border-color: rgba(52,211,153,0.3);
+    }
+
+    .callout.yellow {
+      background: rgba(251,191,36,0.07);
+      border-color: rgba(251,191,36,0.3);
+    }
+
+    .callout-icon { font-size: 1.3rem; flex-shrink: 0; margin-top: 1px; }
+    .callout p { margin: 0; color: var(--text); font-size: 0.95rem; }
+
+    /* ── Code ────────────────────────────────────── */
+    .code-block {
+      background: #0a0a14;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px 24px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      line-height: 1.85;
+      color: #c9d1d9;
+      overflow-x: auto;
+      margin: 20px 0;
+    }
+
+    .code-block .c  { color: var(--muted); }
+    .code-block .kw { color: var(--accent); }
+    .code-block .cmd { color: var(--cyan); }
+    .code-block .str { color: var(--green); }
+    .code-block .num { color: var(--yellow); }
+    .code-block .flag { color: #f4a261; }
+
+    /* ── Steps ───────────────────────────────────── */
+    .steps { display: flex; flex-direction: column; gap: 0; margin-top: 32px; }
+
+    .step { display: flex; gap: 24px; position: relative; }
+
+    .step:not(:last-child)::after {
+      content: '';
+      position: absolute;
+      left: 19px;
+      top: 46px;
+      bottom: -4px;
+      width: 2px;
+      background: linear-gradient(to bottom, var(--border-light), transparent);
+    }
+
+    .step-num {
+      flex-shrink: 0;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--card);
+      border: 2px solid var(--primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--accent);
+      position: relative;
+      z-index: 1;
+    }
+
+    .step-body { flex: 1; padding-bottom: 36px; }
+    .step-body h3 { margin-bottom: 8px; }
+    .step-body p { font-size: 0.92rem; }
+
+    /* ── Command cards ───────────────────────────── */
+    .cmd-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 14px;
+      margin-top: 28px;
+    }
+
+    .cmd-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px 22px;
+      transition: border-color 0.2s;
+    }
+
+    .cmd-card:hover { border-color: var(--primary); }
+
+    .cmd-name {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.82rem;
+      font-weight: 500;
+      color: var(--cyan);
+      margin-bottom: 6px;
+    }
+
+    .cmd-title {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+
+    .cmd-desc {
+      font-size: 0.8rem;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .cmd-saving {
+      margin-top: 10px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--green);
+      background: rgba(52,211,153,0.08);
+      border: 1px solid rgba(52,211,153,0.2);
+      border-radius: 6px;
+      padding: 3px 8px;
+      display: inline-block;
+    }
+
+    /* ── Pipeline ────────────────────────────────── */
+    .pipeline-track { display: flex; flex-direction: column; gap: 0; }
+
+    .p-phase {
+      display: grid;
+      grid-template-columns: 150px 1fr;
+      gap: 24px;
+      align-items: start;
+      padding: 22px 0;
+      border-bottom: 1px dashed var(--border);
+    }
+
+    .p-phase:last-child { border-bottom: none; }
+
+    .p-phase-label { text-align: right; padding-top: 2px; }
+
+    .p-phase-name {
+      font-size: 0.73rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+
+    .p-phase-agent {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: var(--accent);
+    }
+
+    .p-artifact {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 18px;
+    }
+
+    .p-artifact-name {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      color: var(--cyan);
+      margin-bottom: 4px;
+    }
+
+    .p-artifact-desc { font-size: 0.82rem; color: var(--muted); }
+
+    .p-cmd-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      font-weight: 500;
+      border-radius: 20px;
+      padding: 2px 9px;
+      margin-top: 8px;
+      background: rgba(34,211,238,0.08);
+      color: var(--cyan);
+      border: 1px solid rgba(34,211,238,0.25);
+    }
+
+    /* ── Savings bar ─────────────────────────────── */
+    .savings-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 28px;
+    }
+
+    .savings-row {
+      display: grid;
+      grid-template-columns: 220px 1fr 100px;
+      gap: 16px;
+      align-items: center;
+    }
+
+    @media (max-width: 600px) {
+      .savings-row { grid-template-columns: 1fr; }
+    }
+
+    .savings-cmd {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.82rem;
+      color: var(--cyan);
+    }
+
+    .savings-bar-wrap {
+      height: 8px;
+      background: var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .savings-bar {
+      height: 100%;
+      background: linear-gradient(90deg, var(--primary), var(--accent));
+      border-radius: 4px;
+      transition: width 0.4s ease;
+    }
+
+    .savings-val {
+      font-size: 0.78rem;
+      color: var(--green);
+      font-weight: 600;
+      text-align: right;
+    }
+
+    /* ── Verdict badges ──────────────────────────── */
+    .verdict-pass {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--green);
+      background: rgba(52,211,153,0.1);
+      border: 1px solid rgba(52,211,153,0.3);
+      border-radius: 6px;
+      padding: 3px 9px;
+    }
+
+    .verdict-blocked {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--red);
+      background: rgba(248,113,113,0.1);
+      border: 1px solid rgba(248,113,113,0.3);
+      border-radius: 6px;
+      padding: 3px 9px;
+    }
+
+    /* ── Gate check visual ───────────────────────── */
+    .gate-flow {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 24px;
+    }
+
+    .gate-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 18px;
+    }
+
+    .gate-letter {
+      flex-shrink: 0;
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 13px;
+    }
+
+    .g-a { background: rgba(108,71,255,0.18); color: var(--accent); border: 1px solid rgba(108,71,255,0.4); }
+    .g-b { background: rgba(34,211,238,0.12); color: var(--cyan);   border: 1px solid rgba(34,211,238,0.35); }
+    .g-c { background: rgba(251,191,36,0.12);  color: var(--yellow); border: 1px solid rgba(251,191,36,0.35); }
+    .g-d { background: rgba(52,211,153,0.12);  color: var(--green);  border: 1px solid rgba(52,211,153,0.35); }
+
+    .gate-info { flex: 1; }
+    .gate-name { font-size: 0.9rem; font-weight: 700; color: var(--text); }
+    .gate-artifact { font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; color: var(--muted); }
+
+    .gate-status-pass { color: var(--green); font-size: 0.8rem; font-weight: 600; }
+    .gate-status-block { color: var(--red); font-size: 0.8rem; font-weight: 600; }
+
+    /* ── Tier table ──────────────────────────────── */
+    .tier-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+      margin-top: 28px;
+    }
+
+    .tier-table th {
+      text-align: left;
+      padding: 10px 14px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .tier-table td {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+      color: var(--muted);
+      vertical-align: top;
+    }
+
+    .tier-table tr:last-child td { border-bottom: none; }
+    .tier-table td:first-child { font-weight: 700; color: var(--text); }
+    .tier-table td:last-child { font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; color: var(--cyan); }
+
+    .tier-micro { color: var(--cyan) !important; }
+    .tier-small { color: var(--accent) !important; }
+    .tier-medium { color: var(--primary) !important; }
+
+    @media (max-width: 640px) {
+      .p-phase { grid-template-columns: 1fr; }
+      .p-phase-label { text-align: left; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a href="../index.html" class="nav-back">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    Tutoriais
+  </a>
+  <span class="nav-sep">/</span>
+  <span class="nav-title">SDD Automation Scripts</span>
+  <span class="nav-tag">Regra dos 80%</span>
+</nav>
+
+<!-- ═══════════════════════════════════════════════════════ HERO -->
+<div class="hero">
+  <div class="hero-eyebrow">Tutorial · Plan 79</div>
+  <h1>SDD Automation Scripts</h1>
+  <p class="hero-sub">
+    12 scripts determinísticos que eliminam 4.800–8.800 tokens por feature,
+    movendo verificações de estado, validação de artefatos e gate checks para fora do contexto LLM.
+  </p>
+  <div class="hero-meta">
+    <div class="meta-pill">
+      <div class="meta-dot" style="background:var(--green)"></div>
+      12 comandos novos
+    </div>
+    <div class="meta-pill">
+      <div class="meta-dot" style="background:var(--yellow)"></div>
+      Zero chamadas LLM
+    </div>
+    <div class="meta-pill">
+      <div class="meta-dot" style="background:var(--accent)"></div>
+      Regra dos 80%
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ POR QUÊ -->
+<section>
+  <div class="container">
+    <div class="section-label">Motivação</div>
+    <h2>Por que 80% do trabalho não precisa de LLM</h2>
+    <p>
+      Antes desses scripts, perguntas como "o gate A está aprovado?" ou "qual a classificação dessa feature?"
+      eram resolvidas dentro da janela de contexto do agente — consumindo tokens desnecessários
+      para trabalho determinístico puro.
+    </p>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:24px">
+      <div class="card" style="border-color:rgba(248,113,113,0.3)">
+        <p style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--red);margin-bottom:12px">Antes (sem scripts)</p>
+        <p style="font-size:0.85rem">O agente lê <code style="font-family:'JetBrains Mono';font-size:0.8rem;color:var(--cyan)">project.context.md</code>, <code style="font-family:'JetBrains Mono';font-size:0.8rem;color:var(--cyan)">spec-checkout.md</code>, <code style="font-family:'JetBrains Mono';font-size:0.8rem;color:var(--cyan)">implementation-plan.md</code> e mais 3 arquivos para descobrir o que já existe — usando 3.000+ tokens no processo.</p>
+      </div>
+      <div class="card" style="border-color:rgba(52,211,153,0.3)">
+        <p style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--green);margin-bottom:12px">Agora (com scripts)</p>
+        <p style="font-size:0.85rem">Uma chamada a <code style="font-family:'JetBrains Mono';font-size:0.8rem;color:var(--cyan)">aioson preflight .</code> retorna tudo em JSON estruturado em &lt; 200ms. O agente usa o resultado diretamente.</p>
+      </div>
+    </div>
+
+    <div class="callout" style="margin-top:28px">
+      <div class="callout-icon">💡</div>
+      <p><strong>Regra dos 80%:</strong> 80% do trabalho de verificação, estado e validação é determinístico — scripts fazem melhor, mais rápido e sem custo de tokens. Reserve o contexto do agente para os 20% que exigem raciocínio.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════ MAPA DOS SCRIPTS -->
+<section>
+  <div class="container">
+    <div class="section-label">Visão Geral</div>
+    <h2>Os 12 scripts e o que cada um faz</h2>
+    <p>Cada script elimina um tipo específico de trabalho que os agentes faziam manualmente.</p>
+
+    <div class="cmd-grid">
+      <div class="cmd-card">
+        <div class="cmd-name">aioson preflight</div>
+        <div class="cmd-title">Pré-voo completo</div>
+        <div class="cmd-desc">Coleta modo, classificação, framework, test runner, artefatos, gates e prontidão em uma chamada.</div>
+        <div class="cmd-saving">-1.800–3.200 tokens</div>
+      </div>
+      <div class="cmd-card">
+        <div class="cmd-name">aioson classify</div>
+        <div class="cmd-title">Classificação MICRO/SMALL/MEDIUM</div>
+        <div class="cmd-desc">Scoring automático via PRD + requirements. Modo interativo disponível.</div>
+        <div class="cmd-saving">-800–1.500 tokens</div>
+      </div>
+      <div class="cmd-card">
+        <div class="cmd-name">aioson sizing</div>
+        <div class="cmd-title">Modelo de sizing</div>
+        <div class="cmd-desc">Decide entre inplace, phased_inplace e phased_external contando entidades e integrações.</div>
+        <div class="cmd-saving">-400–800 tokens</div>
+      </div>
+      <div class="cmd-card">
+        <div class="cmd-name">aioson detect:test-runner</div>
+        <div class="cmd-title">Detecção de test runner</div>
+        <div class="cmd-desc">PHPUnit, Jest, Vitest, Pytest, RSpec, Forge, node:test — detecta por arquivos de config.</div>
+        <div class="cmd-saving">-300–600 tokens</div>
+      </div>
+      <div class="cmd-card">
+        <div class="cmd-name">aioson gate:check</div>
+        <div class="cmd-title">Verificação de phase gate</div>
+        <div class="cmd-desc">Valida pré-requisitos e artefatos dos gates A/B/C/D. Retorna PASS ou BLOCKED.</div>
+        <div class="cmd-saving">-600–1.200 tokens</div>
+      </div>
+      <div class="cmd-card">
+        <div class="cmd-name">aioson artifact:validate</div>
+        <div class="cmd-title">Cadeia de artefatos</div>
+        <div class="cmd-desc">Verifica PRD → spec → plano → conformance e indica o próximo item faltante.</div>
+        <div class="cmd-saving">-500–900 tokens</div>
+      </div>
+      <div class="cmd-card">
+        <div class="cmd-name">aioson pulse:update</div>
+        <div class="cmd-title">Atualização de pulse</div>
+        <div class="cmd-desc">Cria ou atualiza project-pulse.md com agente ativo, feature, gate e próximo passo.</div>
+        <div class="cmd-saving">-150–300 tokens</div>
+      </div>
+      <div class="cmd-card">
+        <div class="cmd-name">aioson state:save</div>
+        <div class="cmd-title">Ponto de continuação</div>
+        <div class="cmd-desc">Salva fase, status e spec-version em dev-state.md com histórico auditável.</div>
+        <div class="cmd-saving">-150–300 tokens</div>
+      </div>
+      <div class="cmd-card">
+        <div class="cmd-name">aioson feature:close</div>
+        <div class="cmd-title">Fechamento de feature</div>
+        <div class="cmd-desc">Atualiza spec (QA sign-off), features.md e project-pulse.md com um comando.</div>
+        <div class="cmd-saving">-800–1.400 tokens</div>
+      </div>
+      <div class="cmd-card">
+        <div class="cmd-name">aioson workflow:execute</div>
+        <div class="cmd-title">Orquestração de feature</div>
+        <div class="cmd-desc">Monta e executa o plano de agentes por tier. Suporta --dry-run e --start-from.</div>
+        <div class="cmd-saving">economiza coordenação manual</div>
+      </div>
+      <div class="cmd-card">
+        <div class="cmd-name">aioson runner:queue:from-plan</div>
+        <div class="cmd-title">Enfileirar fases do plano</div>
+        <div class="cmd-desc">Extrai fases ## Phase N: e enfileira no runner com prioridades correspondentes.</div>
+        <div class="cmd-saving">automação de runner</div>
+      </div>
+      <div class="cmd-card">
+        <div class="cmd-name">aioson learning:auto-promote</div>
+        <div class="cmd-title">Promoção de aprendizados</div>
+        <div class="cmd-desc">Promove aprendizados process/quality de alta frequência para .aioson/rules/.</div>
+        <div class="cmd-saving">memória procedural automática</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════ ECONOMIA DE TOKENS -->
+<section>
+  <div class="container">
+    <div class="section-label">Impacto</div>
+    <h2>Economia de tokens por feature</h2>
+    <p>Estimativa por chamada, com base na quantidade de arquivo I/O que cada script substitui.</p>
+
+    <div class="savings-grid">
+      <div class="savings-row">
+        <div class="savings-cmd">preflight</div>
+        <div class="savings-bar-wrap"><div class="savings-bar" style="width:85%"></div></div>
+        <div class="savings-val">1.800–3.200</div>
+      </div>
+      <div class="savings-row">
+        <div class="savings-cmd">feature:close</div>
+        <div class="savings-bar-wrap"><div class="savings-bar" style="width:72%"></div></div>
+        <div class="savings-val">800–1.400</div>
+      </div>
+      <div class="savings-row">
+        <div class="savings-cmd">classify</div>
+        <div class="savings-bar-wrap"><div class="savings-bar" style="width:60%"></div></div>
+        <div class="savings-val">800–1.500</div>
+      </div>
+      <div class="savings-row">
+        <div class="savings-cmd">gate:check</div>
+        <div class="savings-bar-wrap"><div class="savings-bar" style="width:52%"></div></div>
+        <div class="savings-val">600–1.200</div>
+      </div>
+      <div class="savings-row">
+        <div class="savings-cmd">artifact:validate</div>
+        <div class="savings-bar-wrap"><div class="savings-bar" style="width:44%"></div></div>
+        <div class="savings-val">500–900</div>
+      </div>
+      <div class="savings-row">
+        <div class="savings-cmd">sizing</div>
+        <div class="savings-bar-wrap"><div class="savings-bar" style="width:36%"></div></div>
+        <div class="savings-val">400–800</div>
+      </div>
+      <div class="savings-row">
+        <div class="savings-cmd">detect:test-runner</div>
+        <div class="savings-bar-wrap"><div class="savings-bar" style="width:28%"></div></div>
+        <div class="savings-val">300–600</div>
+      </div>
+      <div class="savings-row">
+        <div class="savings-cmd">pulse:update + state:save</div>
+        <div class="savings-bar-wrap"><div class="savings-bar" style="width:20%"></div></div>
+        <div class="savings-val">300–600</div>
+      </div>
+    </div>
+
+    <div class="callout green" style="margin-top:32px">
+      <div class="callout-icon">✅</div>
+      <p><strong>Total estimado por feature completa:</strong> 4.800–8.800 tokens economizados — equivalente a 2–4 sessões de agente a menos, sem perda de rastreabilidade.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════ WORKFLOW POR TIER -->
+<section>
+  <div class="container">
+    <div class="section-label">Workflow</div>
+    <h2>Qual script usar em cada tier</h2>
+
+    <table class="tier-table">
+      <thead>
+        <tr>
+          <th>Tier</th>
+          <th>Agentes</th>
+          <th>Scripts obrigatórios</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="tier-micro">MICRO</td>
+          <td>@dev</td>
+          <td>preflight · detect:test-runner · state:save · feature:close</td>
+        </tr>
+        <tr>
+          <td class="tier-small">SMALL</td>
+          <td>@product → @analyst → @dev → @qa</td>
+          <td>preflight · classify · gate:check · artifact:validate · pulse:update · state:save · feature:close</td>
+        </tr>
+        <tr>
+          <td class="tier-medium">MEDIUM</td>
+          <td>+ @architect + paralelismo</td>
+          <td>todos os anteriores + sizing · runner:queue:from-plan · learning:auto-promote</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════ TUTORIAL: PREFLIGHT -->
+<section>
+  <div class="container">
+    <div class="section-label">Tutorial 1 de 6</div>
+    <h2>Começar uma sessão com <code style="font-size:1.4rem;font-family:'JetBrains Mono';color:var(--cyan)">preflight</code></h2>
+    <p>
+      O comando <code style="font-family:'JetBrains Mono';color:var(--cyan)">preflight</code> substitui a leitura manual de 4–6 arquivos de contexto.
+      Use-o sempre que iniciar uma sessão de agente.
+    </p>
+
+    <div class="code-block">
+<span class="c"># Verificar prontidão antes de começar o @dev</span>
+<span class="cmd">aioson preflight</span> . <span class="flag">--agent</span>=dev <span class="flag">--feature</span>=checkout <span class="flag">--json</span>
+    </div>
+
+    <div class="callout yellow">
+      <div class="callout-icon">⚡</div>
+      <p>O campo <strong>readiness.status</strong> retorna <code style="font-family:'JetBrains Mono'">READY</code> ou <code style="font-family:'JetBrains Mono'">BLOCKED</code> com lista de <strong>blockers</strong>. Se BLOCKED, resolva os blockers antes de iniciar o agente.</p>
+    </div>
+
+    <div class="pipeline-track" style="margin-top:32px">
+      <div class="p-phase">
+        <div class="p-phase-label">
+          <div class="p-phase-name">Output</div>
+          <div class="p-phase-agent">JSON</div>
+        </div>
+        <div class="p-artifact">
+          <div class="p-artifact-name">mode, classification, framework</div>
+          <div class="p-artifact-desc">Como o projeto está configurado e qual tier de feature usar</div>
+        </div>
+      </div>
+      <div class="p-phase">
+        <div class="p-phase-label">
+          <div class="p-phase-name">Output</div>
+          <div class="p-phase-agent">JSON</div>
+        </div>
+        <div class="p-artifact">
+          <div class="p-artifact-name">artifacts, phase_gates</div>
+          <div class="p-artifact-desc">Quais arquivos já existem e quais gates foram aprovados</div>
+        </div>
+      </div>
+      <div class="p-phase">
+        <div class="p-phase-label">
+          <div class="p-phase-name">Output</div>
+          <div class="p-phase-agent">JSON</div>
+        </div>
+        <div class="p-artifact">
+          <div class="p-artifact-name">readiness: READY / BLOCKED</div>
+          <div class="p-artifact-desc">Veredito final com lista de blockers se houver</div>
+          <div class="p-cmd-tag">use antes de qualquer sessão</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════ TUTORIAL: GATE CHECK -->
+<section>
+  <div class="container">
+    <div class="section-label">Tutorial 2 de 6</div>
+    <h2>Verificar gates com <code style="font-size:1.4rem;font-family:'JetBrains Mono';color:var(--cyan)">gate:check</code></h2>
+    <p>
+      Use antes de avançar para o próximo agente. Cada gate tem pré-requisitos e artefatos obrigatórios.
+    </p>
+
+    <div class="gate-flow">
+      <div class="gate-row">
+        <div class="gate-letter g-a">A</div>
+        <div class="gate-info">
+          <div class="gate-name">Gate A — Requirements</div>
+          <div class="gate-artifact">requirements-{slug}.md ou prd-{slug}.md</div>
+        </div>
+        <div>
+          <div class="gate-status-pass">sem pré-requisitos</div>
+        </div>
+      </div>
+      <div class="gate-row">
+        <div class="gate-letter g-b">B</div>
+        <div class="gate-info">
+          <div class="gate-name">Gate B — Design</div>
+          <div class="gate-artifact">spec-{slug}.md</div>
+        </div>
+        <div>
+          <div class="gate-status-block">requer Gate A</div>
+        </div>
+      </div>
+      <div class="gate-row">
+        <div class="gate-letter g-c">C</div>
+        <div class="gate-info">
+          <div class="gate-name">Gate C — Plan</div>
+          <div class="gate-artifact">implementation-plan-{slug}.md</div>
+        </div>
+        <div>
+          <div class="gate-status-block">requer Gates A + B</div>
+        </div>
+      </div>
+      <div class="gate-row">
+        <div class="gate-letter g-d">D</div>
+        <div class="gate-info">
+          <div class="gate-name">Gate D — Execution</div>
+          <div class="gate-artifact">QA sign-off em spec + gate_execution</div>
+        </div>
+        <div>
+          <div class="gate-status-block">requer Gates A + B + C</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="code-block" style="margin-top:28px">
+<span class="c"># Antes de acionar @dev: verificar Gate C</span>
+<span class="cmd">aioson gate:check</span> . <span class="flag">--feature</span>=checkout <span class="flag">--gate</span>=C <span class="flag">--json</span>
+
+<span class="c"># Aceita também nomes completos</span>
+<span class="cmd">aioson gate:check</span> . <span class="flag">--feature</span>=checkout <span class="flag">--gate</span>=plan
+    </div>
+
+    <p style="margin-top:16px">
+      Se o resultado for <span class="verdict-pass">PASS</span> — avance para o próximo agente.<br>
+      Se for <span class="verdict-blocked">BLOCKED</span> — o campo <code style="font-family:'JetBrains Mono';color:var(--cyan)">blockers</code> indica exatamente o que falta.
+    </p>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════ TUTORIAL: STATE -->
+<section>
+  <div class="container">
+    <div class="section-label">Tutorial 3 de 6</div>
+    <h2>Salvar estado durante o dev</h2>
+    <p>
+      Use <code style="font-family:'JetBrains Mono';color:var(--cyan)">state:save</code> e <code style="font-family:'JetBrains Mono';color:var(--cyan)">pulse:update</code> ao fim de cada fase para garantir recuperação de sessão sem perda de contexto.
+    </p>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <h3>Salvar ponto de continuação</h3>
+          <p>Registra fase, status e spec-version em <code style="font-family:'JetBrains Mono';color:var(--cyan)">dev-state.md</code> com entrada histórica.</p>
+          <div class="code-block">
+<span class="cmd">aioson state:save</span> . \
+  <span class="flag">--feature</span>=checkout \
+  <span class="flag">--phase</span>=<span class="num">2</span> \
+  <span class="flag">--status</span>=in_progress \
+  <span class="flag">--next</span>=<span class="str">"Phase 3: webhook"</span> \
+  <span class="flag">--spec-version</span>=<span class="num">4</span>
+          </div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <h3>Atualizar o pulse</h3>
+          <p>Registra em <code style="font-family:'JetBrains Mono';color:var(--cyan)">project-pulse.md</code> o agente ativo, a feature e o próximo passo.</p>
+          <div class="code-block">
+<span class="cmd">aioson pulse:update</span> . \
+  <span class="flag">--agent</span>=dev \
+  <span class="flag">--feature</span>=checkout \
+  <span class="flag">--action</span>=<span class="str">"Phase 2 concluída"</span> \
+  <span class="flag">--next</span>=<span class="str">"Phase 3: webhook handler"</span>
+          </div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <h3>Na próxima sessão: ler estado</h3>
+          <p>O <code style="font-family:'JetBrains Mono';color:var(--cyan)">preflight</code> já inclui <code style="font-family:'JetBrains Mono';color:var(--cyan)">dev_state</code> e <code style="font-family:'JetBrains Mono';color:var(--cyan)">pulse</code> no JSON. Não é necessário ler os arquivos manualmente.</p>
+          <div class="code-block">
+<span class="cmd">aioson preflight</span> . <span class="flag">--agent</span>=dev <span class="flag">--feature</span>=checkout <span class="flag">--json</span>
+<span class="c"># → dev_state.phase = 2, dev_state.next = "Phase 3: webhook"</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════ TUTORIAL: FEATURE CLOSE -->
+<section>
+  <div class="container">
+    <div class="section-label">Tutorial 4 de 6</div>
+    <h2>Fechar feature após QA com <code style="font-size:1.4rem;font-family:'JetBrains Mono';color:var(--cyan)">feature:close</code></h2>
+    <p>
+      Um comando substitui a edição manual de três arquivos: <code style="font-family:'JetBrains Mono';color:var(--cyan)">spec-*.md</code>, <code style="font-family:'JetBrains Mono';color:var(--cyan)">features.md</code> e <code style="font-family:'JetBrains Mono';color:var(--cyan)">project-pulse.md</code>.
+    </p>
+
+    <div class="code-block">
+<span class="c"># PASS — feature aprovada pelo QA</span>
+<span class="cmd">aioson feature:close</span> . \
+  <span class="flag">--feature</span>=checkout \
+  <span class="flag">--verdict</span>=PASS
+
+<span class="c"># PASS com residual (item aceito mas não testado completamente)</span>
+<span class="cmd">aioson feature:close</span> . \
+  <span class="flag">--feature</span>=checkout \
+  <span class="flag">--verdict</span>=PASS \
+  <span class="flag">--residual</span>=<span class="str">"Email delivery não testado E2E"</span>
+
+<span class="c"># FAIL — feature rejeitada</span>
+<span class="cmd">aioson feature:close</span> . \
+  <span class="flag">--feature</span>=checkout \
+  <span class="flag">--verdict</span>=FAIL \
+  <span class="flag">--notes</span>=<span class="str">"Auth edge case ausente"</span>
+    </div>
+
+    <div class="pipeline-track" style="margin-top:24px">
+      <div class="p-phase">
+        <div class="p-phase-label">
+          <div class="p-phase-name">Atualiza</div>
+          <div class="p-phase-agent">spec file</div>
+        </div>
+        <div class="p-artifact">
+          <div class="p-artifact-name">spec-checkout.md</div>
+          <div class="p-artifact-desc">Adiciona bloco ## QA Sign-off + atualiza gate_execution no frontmatter</div>
+        </div>
+      </div>
+      <div class="p-phase">
+        <div class="p-phase-label">
+          <div class="p-phase-name">Atualiza</div>
+          <div class="p-phase-agent">features</div>
+        </div>
+        <div class="p-artifact">
+          <div class="p-artifact-name">features.md</div>
+          <div class="p-artifact-desc">Muda status para <code style="font-family:'JetBrains Mono';font-size:0.8rem;color:var(--green)">done</code> ou <code style="font-family:'JetBrains Mono';font-size:0.8rem;color:var(--red)">qa_failed</code> com data</div>
+        </div>
+      </div>
+      <div class="p-phase">
+        <div class="p-phase-label">
+          <div class="p-phase-name">Atualiza</div>
+          <div class="p-phase-agent">pulse</div>
+        </div>
+        <div class="p-artifact">
+          <div class="p-artifact-name">project-pulse.md</div>
+          <div class="p-artifact-desc">Limpa active_feature, registra last_gate: Gate D</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════ TUTORIAL: WORKFLOW -->
+<section>
+  <div class="container">
+    <div class="section-label">Tutorial 5 de 6</div>
+    <h2>Orquestrar sem dashboard com <code style="font-size:1.3rem;font-family:'JetBrains Mono';color:var(--cyan)">workflow:execute</code></h2>
+    <p>
+      Executa o fluxo completo de agentes de uma feature, passando o contexto correto para cada um e registrando estado ao longo do caminho.
+    </p>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <h3>Dry-run: ver o plano antes de executar</h3>
+          <div class="code-block">
+<span class="cmd">aioson workflow:execute</span> . \
+  <span class="flag">--feature</span>=checkout \
+  <span class="flag">--classification</span>=SMALL \
+  <span class="flag">--dry-run</span> \
+  <span class="flag">--json</span>
+<span class="c"># → steps: [{agent:"product"}, {agent:"analyst"}, {agent:"dev"}, {agent:"qa"}]</span>
+<span class="c"># Steps com skip:true já têm artefatos — serão pulados automaticamente</span>
+          </div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <h3>Executar o fluxo</h3>
+          <div class="code-block">
+<span class="cmd">aioson workflow:execute</span> . \
+  <span class="flag">--feature</span>=checkout \
+  <span class="flag">--tool</span>=claude
+          </div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <h3>Retomar de um ponto específico</h3>
+          <p>Se a feature já passou por product e analyst, use <code style="font-family:'JetBrains Mono';color:var(--flag)">--start-from</code> para pular:</p>
+          <div class="code-block">
+<span class="cmd">aioson workflow:execute</span> . \
+  <span class="flag">--feature</span>=checkout \
+  <span class="flag">--tool</span>=claude \
+  <span class="flag">--start-from</span>=dev
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════ TUTORIAL: FLUXO COMPLETO -->
+<section>
+  <div class="container">
+    <div class="section-label">Tutorial 6 de 6</div>
+    <h2>Fluxo completo de uma feature SMALL</h2>
+    <p>
+      Do início ao fechamento, usando apenas scripts SDD — sem leitura manual de arquivos de contexto.
+    </p>
+
+    <div class="code-block">
+<span class="c"># ── 1. Pré-voo ───────────────────────────────────────────────</span>
+<span class="cmd">aioson preflight</span> . <span class="flag">--agent</span>=product <span class="flag">--feature</span>=checkout
+
+<span class="c"># ── 2. Classificar ───────────────────────────────────────────</span>
+<span class="cmd">aioson classify</span> . <span class="flag">--feature</span>=checkout
+<span class="c"># → SMALL</span>
+
+<span class="c"># ── 3. Verificar artefatos antes de iniciar @analyst ─────────</span>
+<span class="cmd">aioson artifact:validate</span> . <span class="flag">--feature</span>=checkout
+<span class="cmd">aioson gate:check</span> . <span class="flag">--feature</span>=checkout <span class="flag">--gate</span>=A
+
+<span class="c"># ── 4. Executar workflow (product → analyst → dev → qa) ───────</span>
+<span class="cmd">aioson workflow:execute</span> . <span class="flag">--feature</span>=checkout <span class="flag">--tool</span>=claude <span class="flag">--dry-run</span>
+<span class="cmd">aioson workflow:execute</span> . <span class="flag">--feature</span>=checkout <span class="flag">--tool</span>=claude
+
+<span class="c"># ── 5. Durante @dev: salvar ao fim de cada fase ───────────────</span>
+<span class="cmd">aioson state:save</span> . <span class="flag">--feature</span>=checkout <span class="flag">--phase</span>=<span class="num">2</span> \
+  <span class="flag">--status</span>=in_progress <span class="flag">--next</span>=<span class="str">"Phase 3: webhook"</span>
+<span class="cmd">aioson pulse:update</span> . <span class="flag">--agent</span>=dev <span class="flag">--feature</span>=checkout \
+  <span class="flag">--action</span>=<span class="str">"Phase 2 done"</span> <span class="flag">--next</span>=<span class="str">"Phase 3"</span>
+
+<span class="c"># ── 6. Antes de @qa: checar Gate D ───────────────────────────</span>
+<span class="cmd">aioson gate:check</span> . <span class="flag">--feature</span>=checkout <span class="flag">--gate</span>=D
+
+<span class="c"># ── 7. QA sign-off ───────────────────────────────────────────</span>
+<span class="cmd">aioson feature:close</span> . <span class="flag">--feature</span>=checkout <span class="flag">--verdict</span>=PASS
+
+<span class="c"># ── 8. Promover aprendizados para regras ─────────────────────</span>
+<span class="cmd">aioson learning:auto-promote</span> . <span class="flag">--threshold</span>=<span class="num">3</span>
+    </div>
+
+    <div class="callout green" style="margin-top:24px">
+      <div class="callout-icon">🚀</div>
+      <p>Todos os oito passos substituem a leitura e edição manual de 10+ arquivos de contexto. Nenhuma chamada LLM é feita pelos scripts — apenas I/O de arquivo e SQLite.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════ REFERÊNCIA -->
+<section>
+  <div class="container">
+    <div class="section-label">Referência</div>
+    <h2>Documentação completa</h2>
+    <p>Para flags detalhadas, saídas JSON e exemplos avançados de cada comando:</p>
+    <div class="card-grid">
+      <div class="card">
+        <h3>Referência em português</h3>
+        <p style="font-size:0.88rem;margin-top:8px">Documentação completa de todos os 12 comandos com flags, saídas JSON e exemplos de uso.</p>
+        <div style="margin-top:16px">
+          <a href="../../docs/pt/sdd-automation-scripts.md" style="font-family:'JetBrains Mono';font-size:0.82rem;color:var(--cyan);text-decoration:none">docs/pt/sdd-automation-scripts.md →</a>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Referência CLI geral</h3>
+        <p style="font-size:0.88rem;margin-top:8px">Tabela de todos os comandos do AIOSON com exemplos numerados (42–53 são os scripts SDD).</p>
+        <div style="margin-top:16px">
+          <a href="../../docs/pt/comandos-cli.md" style="font-family:'JetBrains Mono';font-size:0.82rem;color:var(--cyan);text-decoration:none">docs/pt/comandos-cli.md →</a>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Tutorial SDD principal</h3>
+        <p style="font-size:0.88rem;margin-top:8px">Introdução ao Spec-Driven Development: gates, tiers, pipeline completo e agentes.</p>
+        <div style="margin-top:16px">
+          <a href="./index.html" style="font-family:'JetBrains Mono';font-size:0.82rem;color:var(--cyan);text-decoration:none">tutorials/sdd/index.html →</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</body>
+</html>

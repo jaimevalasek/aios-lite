@@ -426,23 +426,26 @@ Apply these rules when merging:
 
 When QA is complete and all Critical and High findings are resolved:
 
-**1. Update `spec-{slug}.md`:**
-- Add a `## QA sign-off` section at the bottom:
-  ```markdown
-  ## QA sign-off
-  - Date: {ISO-date}
-  - AC coverage: X/Y fully covered
-  - Residual risks: [list or "none"]
-  ```
+**Use the CLI to close the feature in one command:**
+```bash
+# PASS — all critical/high findings resolved
+aioson feature:close . --feature={slug} --verdict=PASS 2>/dev/null || true
 
-**2. Update `features.md`:**
-- Change status from `in_progress` to `done`.
-- Fill in the `completed` date.
-  ```
-  | {slug} | done | {started} | {ISO-date} |
-  ```
+# PASS with residual risks (Medium/Low findings documented)
+aioson feature:close . --feature={slug} --verdict=PASS --residual="<residual risks summary>" 2>/dev/null || true
 
-**3. Tell the user:**
+# FAIL — critical findings unresolved
+aioson feature:close . --feature={slug} --verdict=FAIL --notes="<reason for failure>" 2>/dev/null || true
+```
+
+This command updates `spec-{slug}.md` (adds QA sign-off + gate_execution), `features.md` (status → done/qa_failed), and `project-pulse.md` in one call.
+
+**If `aioson` CLI is not available**, do it manually:
+1. Add `## QA sign-off` section to `spec-{slug}.md` (Date, AC coverage, Residual risks)
+2. Change status in `features.md` from `in_progress` to `done` with completed date
+3. Update `project-pulse.md` with last_agent: qa
+
+**Tell the user:**
 > "Feature **{slug}** is QA-approved and marked as `done` in `features.md`.
 > Residual risks are documented in `spec-{slug}.md`.
 > To start the next feature, activate **@product**."
@@ -461,7 +464,7 @@ Ativar com: `/qa --forensics` ou quando o usuário diz "o que deu errado" / "o q
 ### Protocolo de forensics
 
 **Passo 1 — Inventário de artefatos**
-Verificar existência de cada artefato esperado:
+Run `aioson artifact:validate . --feature={slug} --json 2>/dev/null` to check the full artifact chain (PRD → requirements → spec → architecture → implementation-plan → conformance). If `aioson` CLI is not available, verify manually:
 - `prd*.md` ou `prd-{slug}.md`
 - `requirements-{slug}.md` (se phase_gates.requirements: approved)
 - `architecture.md` (se phase_gates.design: approved)
@@ -469,7 +472,7 @@ Verificar existência de cada artefato esperado:
 - `implementation-plan-{slug}.md` (se phase_gates.plan: approved)
 
 **Passo 2 — Verificação de consistência de phase_gates**
-Para cada `spec-{slug}.md` encontrado:
+Run `aioson gate:check . --feature={slug} --gate=D --json 2>/dev/null` to check all gate prerequisites at once. If `aioson` CLI is not available, for each `spec-{slug}.md`:
 - Ler frontmatter phase_gates
 - Verificar que o artefato correspondente existe e não está vazio
 - Reportar contradições
@@ -536,7 +539,7 @@ Ativar @dev com instrução: "retomar a partir de {last_checkpoint}, verificar s
 - NEVER issue VERDICT: PASS without completing the universal 5-step baseline AND at least one adversarial probe with documented output.
 - NEVER mark a feature as done if VERDICT is FAIL. PARTIAL is acceptable only when environmental limitations are explicitly documented.
 - Report format: file + line + risk + fix. No vague commentary.
-- At session end, before registering, update `.aioson/context/project-pulse.md`: set `updated_at`, `last_agent: qa`, `last_gate` in frontmatter; update "Active work" table with current feature state; add entry to "Recent activity" (keep last 3 only); update "Blockers" and "Next recommended action". If `project-pulse.md` does not exist, create it from the template.
+- At session end, before registering, update the project pulse via CLI: `aioson pulse:update . --agent=qa --feature={slug} --gate="Gate D: <verdict>" --action="<QA summary>" --next="<next recommended action>" 2>/dev/null || true`. If `aioson` CLI is not available, update `.aioson/context/project-pulse.md` manually.
 - At session end, after the QA report is written, register the session: `aioson agent:done . --agent=qa --summary="<one-line summary of QA findings>" 2>/dev/null || true`
 - If `aioson` CLI is not available, write a devlog at `aioson-logs/devlog-qa-{unix-timestamp}.md` using this template:
   ```

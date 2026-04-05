@@ -173,6 +173,25 @@
 | `context:cache:restore` | Restaura o conteúdo de uma sessão salva, com filtro opcional por query | Quando quer recuperar contexto de uma sessão anterior |
 | `context:cache:cleanup` | Remove sessões expiradas do cache (padrão: mais de 24h) | Quando quer liberar espaço ou forçar limpeza antes do prazo |
 
+### SDD Automation (Regra dos 80%)
+
+Scripts determinísticos que movem verificações de estado, validação de artefatos e gate checks para fora do contexto LLM, economizando entre 4.800–8.800 tokens por feature. Veja [SDD Automation Scripts](./sdd-automation-scripts.md).
+
+| Comando | O que faz | Quando usar |
+|---|---|---|
+| `preflight` | Coleta modo, classificação, framework, test runner, artefatos, gates e prontidão em uma chamada | No início de qualquer sessão de agente |
+| `classify` | Detecta classificação MICRO/SMALL/MEDIUM por scoring automático do PRD ou entrada interativa | Antes de decidir o fluxo de agentes |
+| `sizing` | Determina modelo de sizing: `inplace`, `phased_inplace` ou `phased_external` | Quando o `@architect` ou `@analyst` precisa decidir a estrutura de entrega |
+| `detect:test-runner` | Detecta PHPUnit, Jest, Vitest, Pytest, RSpec, Forge e node:test via arquivos de config | Quando `@dev` ou `@tester` precisa saber como rodar os testes |
+| `pulse:update` | Atualiza `project-pulse.md` com agente, feature, gate e próximo passo | Ao final de cada sessão de agente |
+| `state:save` | Salva ponto de continuação em `dev-state.md` (fase, status, spec-version, histórico) | Durante `@dev` ao fim de cada fase ou antes de encerrar |
+| `feature:close` | Fecha feature com verdict PASS/FAIL: atualiza spec, features.md e project-pulse.md | Após QA sign-off |
+| `gate:check` | Valida pré-requisitos e artefatos de um phase gate (A/B/C/D); retorna PASS ou BLOCKED | Antes de avançar para o próximo agente |
+| `artifact:validate` | Verifica a cadeia completa de artefatos de uma feature (PRD → spec → plano → conformance) | A qualquer momento para checar completude |
+| `workflow:execute` | Monta e executa o plano de agentes baseado na classificação; aceita `--dry-run` e `--start-from` | Para orquestrar features sem o dashboard |
+| `runner:queue:from-plan` | Extrai fases `## Phase N:` do plano e enfileira no runner com prioridades | Antes de iniciar execução por fase com o runner |
+| `learning:auto-promote` | Promove aprendizados de alta frequência para arquivos de regra em `.aioson/rules/` | Após várias sessões — quando quer solidificar padrões em regras |
+
 ### Spec e learnings
 
 | Comando | O que faz | Quando usar |
@@ -1451,6 +1470,155 @@ aioson agent:done . --agent=dev \
 
 # 6. Se FAIL_WITH_ISSUES → corrigir e rodar verify:gate de novo
 ```
+
+---
+
+### 42. Pré-voo antes de começar o dev
+
+```bash
+aioson preflight . --agent=dev --feature=checkout --json
+```
+
+Retorna modo, classificação, framework, test runner, gates e prontidão em uma chamada. Use antes de abrir qualquer sessão de agente.
+
+### 43. Classificar feature automaticamente
+
+```bash
+aioson classify . --feature=checkout
+# Com override manual via prompts:
+aioson classify . --feature=checkout --interactive
+```
+
+Detecta MICRO / SMALL / MEDIUM lendo PRD e requirements. Use para decidir o fluxo antes de acionar `workflow:execute`.
+
+### 44. Determinar modelo de sizing
+
+```bash
+aioson sizing . --feature=checkout
+```
+
+Decide entre `inplace`, `phased_inplace` e `phased_external` contando entidades, fases e integrações do PRD.
+
+### 45. Detectar test runner do projeto
+
+```bash
+aioson detect:test-runner . --json
+```
+
+Verifica phpunit.xml, jest.config.*, vitest.config.*, pytest.ini, .rspec e package.json. Use no início do `@dev` para saber o comando correto de testes.
+
+### 46. Verificar gate antes de avançar
+
+```bash
+# Checar se Gate C (plano) está aprovado
+aioson gate:check . --feature=checkout --gate=C
+
+# Usar nome aliases
+aioson gate:check . --feature=checkout --gate=plan --json
+```
+
+Valida pré-requisitos e artefatos. Retorna PASS ou BLOCKED com lista de evidências. Use antes de acionar `@dev` após `@analyst`.
+
+### 47. Validar cadeia de artefatos
+
+```bash
+aioson artifact:validate . --feature=checkout --json
+```
+
+Verifica toda a cadeia PRD → spec → plano → conformance e indica o próximo artefato faltante.
+
+### 48. Atualizar pulse ao final da sessão
+
+```bash
+aioson pulse:update . \
+  --agent=dev \
+  --feature=checkout \
+  --gate="Gate C: approved" \
+  --action="Phase 2 concluída" \
+  --next="Phase 3: webhook"
+```
+
+Atualiza `project-pulse.md` com estado atual. Use no `agent:done` ou antes de encerrar a sessão.
+
+### 49. Salvar ponto de continuação
+
+```bash
+aioson state:save . \
+  --feature=checkout \
+  --phase=2 \
+  --status=in_progress \
+  --next="Implement webhook idempotency" \
+  --spec-version=4
+```
+
+Cria entrada em `dev-state.md` para recuperação de sessão. Use ao fim de cada fase.
+
+### 50. Fechar feature após QA
+
+```bash
+# PASS com residual
+aioson feature:close . \
+  --feature=checkout \
+  --verdict=PASS \
+  --residual="Email delivery não testado E2E"
+
+# FAIL
+aioson feature:close . \
+  --feature=checkout \
+  --verdict=FAIL \
+  --notes="Auth edge case ausente"
+```
+
+Fecha a feature: atualiza spec (QA sign-off), features.md e project-pulse.md em uma chamada.
+
+### 51. Executar workflow completo
+
+```bash
+# Dry-run para ver o plano
+aioson workflow:execute . \
+  --feature=checkout \
+  --classification=SMALL \
+  --dry-run
+
+# Executar de verdade
+aioson workflow:execute . --feature=checkout --tool=claude
+
+# Retomar do dev (pular product e analyst)
+aioson workflow:execute . \
+  --feature=checkout \
+  --tool=claude \
+  --start-from=dev
+```
+
+### 52. Enfileirar fases do plano no runner
+
+```bash
+# Ver fases antes de enfileirar
+aioson runner:queue:from-plan . --feature=checkout --dry-run
+
+# Enfileirar para o agente dev
+aioson runner:queue:from-plan . --feature=checkout --agent=dev
+
+# Usar arquivo de plano arbitrário
+aioson runner:queue:from-plan . \
+  --plan=docs/implementation-plan.md \
+  --agent=dev
+```
+
+### 53. Promover aprendizados para regras
+
+```bash
+# Ver o que seria promovido (sem escrever)
+aioson learning:auto-promote . --threshold=3 --dry-run
+
+# Promover aprendizados frequentes
+aioson learning:auto-promote . --threshold=3
+
+# Threshold mais exigente
+aioson learning:auto-promote . --threshold=5
+```
+
+Cria arquivos em `.aioson/rules/` para aprendizados `process` e `quality` com frequência ≥ threshold. Aprendizados `domain` são anotados mas não viram regras.
 
 ---
 

@@ -575,7 +575,7 @@ Single-file changes with clear scope do not require planning mode.
 - Reuse project skills in `.aioson/skills/static` and `.aioson/skills/dynamic`. For `.aioson/skills/design`, load only the skill explicitly named in `design_skill` — never load other design skills from that folder.
 - Check `.aioson/installed-skills/` for user-installed third-party skills. Each subfolder has a `SKILL.md` with frontmatter describing when to use it. Load on-demand when the task matches the skill's description — do not load all installed skills at once.
 - if `aioson-spec-driven` exists in `installed-skills/` OR in `.aioson/skills/process/`, load `SKILL.md` when starting work on a feature that has `prd-{slug}.md` — then load `references/dev.md` from that skill
-- check `phase_gates` in `spec-{slug}.md` frontmatter before starting — if `plan: pending` and classification is SMALL/MEDIUM, suggest creating an implementation plan before proceeding
+- Before starting implementation, run `aioson gate:check . --feature={slug} --gate=C --json 2>/dev/null` to verify Gate C (plan). If the result is `BLOCKED` and classification is SMALL/MEDIUM, suggest creating an implementation plan before proceeding. If `aioson` CLI is not available, check `phase_gates` in `spec-{slug}.md` frontmatter manually.
 - Also reuse squad-installed skills in `.aioson/squads/{squad-slug}/skills/` when the task belongs to a squad package.
 - Load detailed skills and documents on demand, not all at once.
 - Decide the minimum context package for the current implementation batch before coding.
@@ -675,7 +675,8 @@ If you want: `.aioson/skills/static/git-worktrees.md`. Never mandatory — user 
   4. Update the `updated` field in the design-doc frontmatter to today's date
   5. Do NOT rewrite the whole doc — append only; past decisions are immutable
   6. If no design-doc exists for this feature, skip silently
-- At session end, before registering, update `.aioson/context/project-pulse.md`: set `updated_at`, `last_agent: dev`, `last_gate` in frontmatter; update "Active work" table with current feature state; add entry to "Recent activity" (keep last 3 only); update "Blockers" and "Next recommended action". If `project-pulse.md` does not exist, create it from the template.
+- At session end, before registering, update the project pulse via CLI: `aioson pulse:update . --agent=dev --feature={slug} --gate="<last gate passed>" --action="<what was done>" --next="<next step>" 2>/dev/null || true`. If `aioson` CLI is not available, update `.aioson/context/project-pulse.md` manually: set `updated_at`, `last_agent: dev`, `last_gate` in frontmatter; update "Active work" table; add entry to "Recent activity" (keep last 3 only).
+- After each significant phase or checkpoint, save dev state via CLI: `aioson state:save . --feature={slug} --phase={N} --status=in_progress --next="<precise next step>" --spec-version={N} 2>/dev/null || true`. If `aioson` CLI is not available, update `.aioson/context/dev-state.md` manually.
 - At session end, after the last commit, register the session: `aioson agent:done . --agent=dev --summary="<one-line summary of what was implemented>" 2>/dev/null || true`
 - If `aioson` CLI is not available, write a devlog at `aioson-logs/devlog-dev-{unix-timestamp}.md` using this template:
   ```

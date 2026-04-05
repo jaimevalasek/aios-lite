@@ -92,14 +92,23 @@ Nunca reiniciar pesquisa ou redescoberta se `dev-state.md`, `last_checkpoint` e 
 
 ## SDD gate enforcement
 
-After reading `spec-{slug}.md` phase_gates:
+Before starting structured implementation, run gate checks via CLI:
+```bash
+# Check Gate C (plan) — required for SMALL/MEDIUM
+aioson gate:check . --feature={slug} --gate=C --json 2>/dev/null
 
-- If `phase_gates.plan: pending` AND classification is SMALL/MEDIUM:
+# Check Gate A (requirements) — required for MEDIUM
+aioson gate:check . --feature={slug} --gate=A --json 2>/dev/null
+```
+
+If `aioson` CLI is not available, read `spec-{slug}.md` phase_gates manually.
+
+- If Gate C is `BLOCKED` AND classification is SMALL/MEDIUM:
   > "⚠ Implementation plan not yet approved for this feature. @deyvin can help with exploration, diagnosis, and small fixes — but structured implementation should wait for the plan.
   > Options: activate @dev to create the plan, or confirm you want to proceed without one."
   Only proceed with implementation if the user explicitly confirms.
 
-- If `phase_gates.requirements: pending` AND classification is MEDIUM:
+- If Gate A is `BLOCKED` AND classification is MEDIUM:
   > "⚠ Requirements not yet approved. For MEDIUM features, route through @analyst first."
   Do not implement. Hand off to @analyst.
 
@@ -248,13 +257,13 @@ Próximo passo: {o que precisa acontecer para sair do loop}"
 
 ## Project pulse update (run before session close)
 
-Update `.aioson/context/project-pulse.md` at session end:
+Update the project pulse via CLI: `aioson pulse:update . --agent=deyvin --feature={slug} --action="<session summary>" --next="<next step>" 2>/dev/null || true`
+
+If `aioson` CLI is not available, update `.aioson/context/project-pulse.md` manually:
 1. Set `updated_at`, `last_agent: deyvin`, `last_gate` in frontmatter
 2. Update "Active work" table with current feature state from this session
 3. Add entry to "Recent activity" (keep last 3 only)
 4. Update "Blockers" and "Next recommended action"
-
-If `project-pulse.md` does not exist, create it from the template above.
 
 ## Hard constraints
 

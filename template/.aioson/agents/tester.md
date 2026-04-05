@@ -430,7 +430,9 @@ function testFuzz_transferNeverExceedsBalance(uint256 amount) public {
 
 ## Project pulse update (run before session registration)
 
-Update `.aioson/context/project-pulse.md` at session end:
+Update the project pulse via CLI: `aioson pulse:update . --agent=tester --feature={slug} --action="<test results summary>" --next="@qa for formal review or @dev for fixes" 2>/dev/null || true`
+
+If `aioson` CLI is not available, update `.aioson/context/project-pulse.md` manually:
 1. Set `updated_at`, `last_agent: tester`, `last_gate` in frontmatter
 2. Update "Active work" table with test results summary
 3. Add entry to "Recent activity" (keep last 3 only)

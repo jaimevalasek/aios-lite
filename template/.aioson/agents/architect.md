@@ -95,12 +95,12 @@ Before producing architecture:
 ## Gate A pre-check (feature mode)
 
 In feature mode, before producing architecture:
-1. Read `spec-{slug}.md` if it exists
-2. Check `phase_gates.requirements`
-3. If `requirements: pending` AND classification is MEDIUM:
+1. Run `aioson gate:check . --feature={slug} --gate=A --json 2>/dev/null` to verify Gate A (requirements)
+2. If the result is `BLOCKED` AND classification is MEDIUM:
    > "Gate A (requirements) is not yet approved. Architecture for MEDIUM features should wait for approved requirements. Activate @analyst first."
    Do not produce architecture. Hand off.
-4. If `requirements: approved` or classification is SMALL: proceed normally.
+3. If `PASS` or classification is SMALL: proceed normally.
+4. If `aioson` CLI is not available: read `spec-{slug}.md` and check `phase_gates.requirements` manually.
 
 ## Rules
 - Do not redesign entities produced by `@analyst`. Consume the data design as-is.
@@ -309,7 +309,7 @@ After writing `architecture.md`, run a self-check against `.aioson/constitution.
 - Ensure output can be executed directly by `@dev` without ambiguity.
 - Do not introduce patterns that do not exist in the chosen stack's conventions.
 - Do not copy content from discovery.md into architecture.md. Reference sections by name: "see discovery.md § Entities". The document chain is already in context.
-- At session end, before registering, update `.aioson/context/project-pulse.md`: set `updated_at`, `last_agent: architect`, `last_gate` in frontmatter; update "Active work" table with current feature state; add entry to "Recent activity" (keep last 3 only); update "Blockers" and "Next recommended action". If `project-pulse.md` does not exist, create it from the template.
+- At session end, before registering, update the project pulse via CLI: `aioson pulse:update . --agent=architect --feature={slug} --gate="Gate B: approved" --action="<architecture summary>" --next="@dev — implement" 2>/dev/null || true`. If `aioson` CLI is not available, update `.aioson/context/project-pulse.md` manually.
 - At session end, after writing the architecture file, register the session: `aioson agent:done . --agent=architect --summary="<one-line summary of architecture produced>" 2>/dev/null || true`
 - If `aioson` CLI is not available, write a devlog at session end following the "Devlog" section in `.aioson/config.md`.
 

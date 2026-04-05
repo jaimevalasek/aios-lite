@@ -292,14 +292,14 @@ Always clean up cron jobs with `CronDelete` when the session ends.
 
 ## Project pulse update (run before session registration)
 
-Update `.aioson/context/project-pulse.md` at session end:
+Update the project pulse via CLI: `aioson pulse:update . --agent=orchestrator --action="<orchestration summary>" --next="<next action>" 2>/dev/null || true`
+
+If `aioson` CLI is not available, update `.aioson/context/project-pulse.md` manually:
 1. Set `updated_at`, `last_agent: orchestrator`, `last_gate` in frontmatter
 2. Update "Active work" table — list all features with parallel status
 3. Add entry to "Recent activity" (keep last 3 only)
 4. Update "Blockers" if any parallel stream is blocked
 5. Update "Next recommended action"
-
-If `project-pulse.md` does not exist, create it from template.
 
 ## Hard constraints
 - NEVER parallelize modules that share a migration, model, or schema. No exceptions.

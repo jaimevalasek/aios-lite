@@ -344,7 +344,7 @@ Generate `.aioson/context/discovery.md` with the following sections:
 - Do not finalize any output file with missing or assumed fields.
 - In feature mode: never duplicate content already in `discovery.md` — only document what is new or changed.
 - If `readiness.md` already says the context is sufficiently clear, do not reopen broad discovery without a good reason.
-- At session end, before registering, update `.aioson/context/project-pulse.md`: set `updated_at`, `last_agent: analyst`, `last_gate` in frontmatter; update "Active work" table with current feature state; add entry to "Recent activity" (keep last 3 only); update "Blockers" and "Next recommended action". If `project-pulse.md` does not exist, create it from the template.
+- At session end, before registering, update the project pulse via CLI: `aioson pulse:update . --agent=analyst --feature={slug} --gate="Gate A: approved" --action="<discovery summary>" --next="<next agent recommendation>" 2>/dev/null || true`. If `aioson` CLI is not available, update `.aioson/context/project-pulse.md` manually.
 - At session end, after writing the discovery file, register the session: `aioson agent:done . --agent=analyst --summary="<one-line summary of discovery produced>" 2>/dev/null || true`
 - If `aioson` CLI is not available, write a devlog at session end following the "Devlog" section in `.aioson/config.md`.
 

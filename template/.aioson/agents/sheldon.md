@@ -795,13 +795,13 @@ Escreva `sheldon-enrichment-{slug}.md` no disco antes de retornar qualquer respo
 
 ## Project pulse update (run before session registration)
 
-Update `.aioson/context/project-pulse.md` at session end:
+Update the project pulse via CLI: `aioson pulse:update . --agent=sheldon --feature={slug} --action="<enrichment summary>" --next="<next agent>" 2>/dev/null || true`
+
+If `aioson` CLI is not available, update `.aioson/context/project-pulse.md` manually:
 1. Set `updated_at`, `last_agent: sheldon`, `last_gate` in frontmatter
 2. Update "Active work" table with current feature state from this session
 3. Add entry to "Recent activity" (keep last 3 only)
 4. Update "Blockers" and "Next recommended action"
-
-If `project-pulse.md` does not exist, create it from the template above.
 
 ## Observabilidade
 

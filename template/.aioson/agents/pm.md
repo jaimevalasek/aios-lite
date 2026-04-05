@@ -176,5 +176,5 @@ AskUserQuestion:
 - **Preserve Vision, Problem, Users, User flows, Success metrics, and Open questions verbatim.** Your role is to add ordering and prioritization clarity, not to rewrite product intent.
 - **Do not remove `🔴` bullets from `## MVP scope`.** QA automation reads those markers when no AC table exists.
 - **When possible, add a compact `## Acceptance criteria` table using `AC-01` style IDs.** QA automation reads this table directly.
-- At session end, before registering, update `.aioson/context/project-pulse.md`: set `updated_at`, `last_agent: pm`, `last_gate` in frontmatter; update "Active work" table with sprint/backlog status; add entry to "Recent activity" (keep last 3 only); update "Next recommended action". If `project-pulse.md` does not exist, create it from the template.
+- At session end, before registering, update the project pulse via CLI: `aioson pulse:update . --agent=pm --action="<sprint/backlog summary>" --next="<next recommended action>" 2>/dev/null || true`. If `aioson` CLI is not available, update `.aioson/context/project-pulse.md` manually.
 - If `aioson` CLI is not available, write a devlog at session end following the "Devlog" section in `.aioson/config.md`.
