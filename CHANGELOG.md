@@ -4,6 +4,55 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.7.0] - 2026-04-06
+### Added
+- **Squad autonomous execution system**: full multi-agent squad stack — intra-squad message bus (`intra-bus.js`, `squad:bus` command), executor reflection module (`reflection.js`), task decomposer, `squad:autorun` for end-to-end autonomous execution, learning system, squad daemon, verify-gate, and cross-AI synthesis. Intelligence gaps addressed in plans 80–82; 6 critical operational fixes in plan 83.
+- **Runner system**: `runner:run`, `runner:queue`, `runner:plan`, and `runner:daemon` commands for persistent background job execution outside the main session loop.
+- **New CLI commands**: `agent:audit` (agent integrity inspection), `brief:gen` (context brief generation), and `verify:gate` (execution pre-flight gate). Documented in `docs/pt/`.
+- **SDD automation — The 80% Rule (plans 74–79)**: automation scripts that drive spec compliance across agents; harness sensors, context budget ceiling, and PGE pattern (plan 76); full SDD coverage across all agents (plan 77); locale SDD sync and pt-BR `tester.md` (plan 78); SDD automation scripts wired into agents and docs (plan 79); engine fixes for `evaluateReadiness`, `extractLastCheckpoint`, and `detectTestRunner`.
+- **Agent capability sprints**:
+  - Sprint 1 — task-list working memory, hook contract, file size guidelines, `CLAUDE.local.md` support.
+  - Sprint 2 — context compaction protocol and self-directed plan mode.
+  - Sprint 3 — CronTools protocol and config tiers documentation.
+- **Web-research-cache skill**: caches web research results in `researchs/`; awareness propagated to all agents that perform web discovery.
+- **`site-forge` agent**: replaces `hybrid-clone` with a dedicated site-forge agent backed by a Brains knowledge system for site cloning and forging workflows.
+- **Three.js skill**: `threejs-spatial` modifier and corresponding agent (`hybrid-clone`) for Three.js spatial interface projects.
+- **Operational pipeline**: event enrichment, spec-sync, token economy, devlog pipeline, and project hooks system.
+- **Squad CLI integration**: `squad.md` wired to CLI tools — Step 0 scaffold, CLI integration table.
+- **Tutorials site**: squads tutorial page added; Squads and Automation links activated on the tutorials index.
+
+### Changed
+- `update` now only updates already-installed files by default; use `--all` to sync every template file.
+- Setup routing no longer directs to `@dev` when only `plans/` or research files are present.
+- `@deyvin`, `@neo`, and `@sheldon` now load and maintain `dev-state.md` awareness.
+- README redesigned with visual impact, squads ecosystem section, and spec-driven workflow documentation.
+
+### Fixed
+- `@orache` research cache: agent now writes to `researchs/` (previously only read from it).
+- SDD engine reliability: `evaluateReadiness`, `extractLastCheckpoint`, `detectTestRunner` (plan 79 phase 2).
+- Squad autonomous operation: 6 critical fixes for stable real-world execution (plan 83).
+- Three.js patterns: race condition and invalid property reference resolved.
+
+## [1.6.0] - 2026-04-01
+### Added
+- **Interactive install wizard**: animated multi-screen onboarding (`init` and `install`) with Design (screen 3) and Locale (screen 4) dimensions, multi-select for design skills, and pre-populated choices on `--reconfigure`.
+- **`aioson setup` command**: unified setup entry point with auto-detected system language.
+- **Spec-driven process skill** (`aioson-spec-driven`): agent contract upgrades, GSD lessons integration (must_haves, 4-tier verification, gray areas, seeds, forensics), and context budget warning threshold configuration.
+- **Design skills**: `glassmorphism-ui` and `neo-brutalist-ui` added; HTML preview gallery for all 8 design skills with per-skill landing page previews.
+- **Aurora Command UI hybrid**: design hybrid variation workflow and aurora-command-ui skill.
+- **5-phase context optimization system**: implemented in `src/commands/context-optimizations.js`.
+- **Health digest, dynamic tools, and learning evolve pipeline**: `--all` flag for the main update flow; health digest output and adaptive learning pipeline wired to the operational surface.
+
+### Changed
+- `install --reconfigure`: warns when the new profile deselects previously installed items; confirm screen strings fully localized.
+- `update`: now preserves locale from the saved profile and installs all framework files when upgrading; added `--all` flag.
+
+### Fixed
+- `install`: `overwrite=true` enforced when reconfigure changes the active profile.
+- `design-hybrid` options: TTY error logged correctly; test coverage expanded.
+- `install-wizard`: broken banner box, wrong skip reason, and stdin hang after wizard completion resolved; terminal state now fully restored.
+- Landing page previews: hero content and section titles centered correctly across all 3 previews.
+
 ## [1.5.1] - 2026-03-28
 ### Added
 - **TDD Gate no `@dev`**: novo bloqueador explícito antes de qualquer implementação de lógica de negócio. Detecta test runner via `test_runner` em `project.context.md` ou varre a raiz em busca de `pest.xml`, `vitest.config.*`, `pytest.ini`, `.rspec`, `foundry.toml`. Mandato RED → GREEN → commit por classificação (MICRO/SMALL/MEDIUM) com exceções para migrations, configurações e conteúdo estático.
