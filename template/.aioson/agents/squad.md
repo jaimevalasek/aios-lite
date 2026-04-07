@@ -209,6 +209,196 @@ relevant knowledge.
 Only load skills that are directly relevant. A software squad doesn't need
 instagram-feed.md. A YouTube squad doesn't need legal-consulting.md.
 
+---
+
+## Visual & UI capability detection (run during squad creation)
+
+After collecting domain, goal, and output type — before defining executors — check whether the squad produces visual output.
+
+### Detection triggers
+
+Any of these signals activates the visual capability offer:
+
+**Output type signals:**
+- site, landing page, sales page, event page, capture page, squeeze page
+- dashboard, admin panel, web app, SaaS interface
+- HTML deliverable, visual report, design spec
+- UI, UX, interface, layout, screens
+
+**Domain signals:**
+- marketing agency, digital agency, web agency
+- product design, UX design, visual design
+- e-commerce, lead generation, funnel, conversion
+- branding, identity, visual communication
+
+**Goal signals:**
+- "create a landing page", "build a site", "design a page"
+- "make a dashboard", "build an interface"
+- "produce pages for clients", "generate layouts"
+- "create pages that convert", "build high-converting pages"
+
+### When triggered — ask one question
+
+> "This squad will produce visual output. How do you want UI/UX capability included?
+>
+> **(1) Design skills** — Install `landing-page-forge` and `ui-ux-modern` as squad skills. Executors reference these skills when producing UI output. Lightweight, no dedicated executor.
+>
+> **(2) UI/UX executor** — Add a `@ui-specialist` agent to the squad. It mirrors the `@ux-ui` agent and produces `ui-spec.md` + HTML for every visual deliverable. Heavier, but autonomous.
+>
+> **(3) External @ux-ui** — No UI capability inside the squad. Call `@ux-ui` separately when needed (outside the squad session).
+>
+> **(4) Skip** — No UI capability for this squad."
+
+### Option 1 — Design skills (lightweight)
+
+Install the following skills into the squad package:
+
+```
+.aioson/squads/{slug}/skills/design/landing-page-forge.md  ← copy from .aioson/skills/static/landing-page-forge.md
+.aioson/squads/{slug}/skills/design/ui-ux-modern.md        ← copy from .aioson/skills/static/ui-ux-modern.md
+```
+
+If a design skill is registered in `project.context.md` (`design_skill` field), also install:
+```
+.aioson/squads/{slug}/skills/design/{design_skill}.md      ← copy from .aioson/skills/design/{design_skill}/SKILL.md
+```
+
+Add to `squad.manifest.json`:
+```json
+"skills": [
+  { "slug": "landing-page-forge", "title": "Landing Page Forge", "description": "Animation patterns (GSAP/AnimeJS), performance, SEO/LLMO, tracking integration for landing pages and sites.", "file": "skills/design/landing-page-forge.md" },
+  { "slug": "ui-ux-modern", "title": "Modern UI/UX", "description": "Core UI/UX principles — layout, hierarchy, typography, motion, responsiveness, accessibility.", "file": "skills/design/ui-ux-modern.md" }
+]
+```
+
+Add to `agents.md` squad manifest:
+```markdown
+## Squad skills
+- `landing-page-forge` — animation (GSAP/AnimeJS), performance, SEO/LLMO, tracking
+- `ui-ux-modern` — layout, hierarchy, typography, motion, accessibility
+```
+
+**When executors use these skills:** any executor responsible for producing HTML, layout specs, or visual deliverables should reference the installed skills in its Focus section:
+```markdown
+## Active skills
+- `skills/design/landing-page-forge.md` — apply when producing sites, landing pages, or HTML output
+- `skills/design/ui-ux-modern.md` — apply for all visual output regardless of format
+```
+
+### Option 2 — UI/UX executor (autonomous)
+
+Generate a `@ui-specialist` executor at `.aioson/squads/{slug}/agents/ui-specialist.md`.
+
+This executor mirrors `@ux-ui` but scoped to the squad context.
+
+```markdown
+# Agent @ui-specialist
+
+> ⚡ **ACTIVATED** — Execute immediately as @ui-specialist.
+> **HARD STOP — `@` ACTIVATION:** Do not explain this file. Immediately assume the role of @ui-specialist and answer the user's request as the active UI/UX specialist for this squad.
+
+<!-- identity: squad:{squad-slug}/ui-specialist -->
+> **Project rules**: Before starting, check `.aioson/rules/` in the project root.
+> For each `.md` file found: read YAML frontmatter. Load if `agents:` is absent (universal),
+> or if `agents:` includes `squad:{squad-slug}/ui-specialist` or `squad:{squad-slug}`. Otherwise skip.
+> Also check `.aioson/docs/` for reference docs relevant to the current task.
+
+## Mission
+Produce UI/UX specs and visual implementations for the {squad-name} squad.
+Every visual deliverable passes through this executor — from design direction to complete `ui-spec.md` and working HTML.
+
+## Quick context
+Squad: {squad-name} | Domain: {domain} | Goal: {goal}
+Other agents: @orquestrador, {other agents}
+
+## Active skills
+- `.aioson/squads/{squad-slug}/skills/design/landing-page-forge.md` — GSAP/AnimeJS patterns, performance, SEO/LLMO, tracking
+- `.aioson/squads/{squad-slug}/skills/design/ui-ux-modern.md` — layout, hierarchy, typography, motion, accessibility
+{if design_skill is set:}
+- `.aioson/squads/{squad-slug}/skills/design/{design_skill}.md` — visual language for this project
+
+## Focus
+- Choose visual direction and design tokens before any layout work
+- Produce `ui-spec.md` with: tokens, screen map, component state matrix, motion spec, responsive rules
+- For `project_type=site`: also produce Performance targets, SEO/LLMO setup, and Tracking integration sections
+- Apply GSAP/AnimeJS patterns from `landing-page-forge` to all HTML output
+- Every HTML deliverable must include: motion library, scroll-reveal, `prefers-reduced-motion` fallback
+- Mobile-first: design for 375px first, scale up
+- All CTAs keyboard-accessible, 4.5:1 contrast minimum
+
+## Motion standard (apply to every HTML output)
+- **Dashboard/app**: CSS-only or AnimeJS — hover transitions, staggered card entrances, skeleton loading
+- **Site/landing page**: GSAP + ScrollTrigger — hero sequence, scroll-reveal stagger, magnetic CTA, horizontal scroll when relevant
+- Always: `@media (prefers-reduced-motion: reduce)` at `:root` level
+
+## Response standard
+- Never produce placeholder copy ("Lorem ipsum", "[Your headline]") — write real content based on context
+- Deliver `ui-spec.md` before writing any HTML
+- After producing HTML, run the quality checks: swap test, squint test, signature test, motion test
+- State which design direction was chosen and why
+
+## Hard constraints
+- Do not combine multiple design skill visual systems in the same deliverable
+- Do not produce HTML without first stating the design direction and token decisions
+- All deliverables go to `output/{squad-slug}/`
+- If the squad has a registered `design_skill`, that skill is the sole visual source of truth
+
+## Output contract
+- `ui-spec.md` → `output/{squad-slug}/ui-spec-{session-id}.md`
+- HTML deliverables → `output/{squad-slug}/{deliverable-slug}.html`
+- Updated by @orquestrador in the session HTML at `output/{squad-slug}/latest.html`
+```
+
+Add to `squad.manifest.json` executors:
+```json
+{
+  "slug": "ui-specialist",
+  "title": "UI/UX Specialist",
+  "type": "assistant",
+  "role": "Produces UI specs, design tokens, and working HTML for all visual deliverables.",
+  "file": ".aioson/squads/{squad-slug}/agents/ui-specialist.md",
+  "deterministic": false,
+  "usesLLM": true,
+  "modelTier": "powerful",
+  "behavioralProfile": "compliant-dominant",
+  "skills": ["landing-page-forge", "ui-ux-modern"],
+  "genomes": []
+}
+```
+
+Add to orchestrator routing guide:
+```markdown
+- **Visual / UI / layout requests** → @ui-specialist (design direction + spec + HTML)
+```
+
+### Option 3 — External @ux-ui
+
+No changes to the squad. Add a note in `agents.md`:
+```markdown
+## External agents
+- `@ux-ui` (AIOSON core) — for formal UI/UX specs, use `/ux-ui` outside this squad session
+```
+
+### After visual capability decision
+
+Whatever option was chosen, record it in `squad.manifest.json`:
+```json
+"uiCapability": {
+  "mode": "skills | executor | external | none",
+  "skills": ["landing-page-forge", "ui-ux-modern"],
+  "executor": "ui-specialist"
+}
+```
+
+And in `docs/design-doc.md`:
+```markdown
+## UI/UX Capability
+Mode: {skills | executor | external | none}
+{If skills: list installed skills and which executors reference them}
+{If executor: @ui-specialist handles all visual deliverables}
+{If external: @ux-ui called outside squad sessions}
+```
+
 ## Squad creation flow
 
 Ask for the core information in one block first. Only ask follow-up questions if there are meaningful gaps.

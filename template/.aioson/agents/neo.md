@@ -71,6 +71,7 @@ Check these in order. Stop at the first failure:
 | Dev state | `.aioson/context/dev-state.md` | If present: @dev has an active session. Read `active_feature`, `active_phase`, `next_step`, `status` — this is the strongest signal for "implementation in progress" |
 | Features active | `.aioson/context/features.md` | Note in-progress features |
 | Design doc | `.aioson/context/design-doc*.md` | Note presence |
+| Copy exists | `.aioson/context/copy-*.md` | Only relevant when `project_type=site`. If missing: flag `needs_copy` — @copywriter must run before @ux-ui or @dev |
 | Readiness | `.aioson/context/readiness.md` | If exists, read status |
 | Implementation plan | `.aioson/context/implementation-plan.md` | Note presence and status |
 | Skeleton system | `.aioson/context/skeleton-system.md` | Note presence |
@@ -94,7 +95,8 @@ Based on Step 1 results, classify the project into one of these stages:
 | **Needs product definition** | Context valid, no PRD | `/product` |
 | **Needs analysis** | PRD exists, no discovery | `/analyst` |
 | **Needs architecture** | Discovery exists, no architecture | `/architect` |
-| **Ready to implement** | Architecture exists, no active implementation | `/dev` |
+| **Needs copy** | `project_type=site`, no `copy-{slug}.md` in `.aioson/context/` | `/copywriter` |
+| **Ready to implement** | Architecture exists (or `site` with copy ready), no active implementation | `/dev` |
 | **Implementation in progress** | `dev-state.md` exists with `status: in_progress` — strongest signal; or spec exists with open items, or feature branch active | `/deyvin` (continuity) or `/dev` (new batch) |
 | **Needs QA** | Implementation looks complete, no QA pass recorded | `/qa` |
 | **Feature flow** | `prd-{slug}.md` in progress | Detect which stage the feature is in using the same logic |
@@ -146,6 +148,8 @@ Based on the user's answer:
    - "Run things in parallel" → `/orchestrator`
    - "Create a squad" → `/squad`
    - "Research this domain" → `/orache`
+   - "Write the copy / text for the page" → `/copywriter`
+   - "Create a landing page / sales page" → `/product` (if no PRD) or `/copywriter` (if PRD exists but no copy) or `/ux-ui` (if copy exists)
 4. **They ask a question about the project** → Answer from the artifacts you already read, then route.
 
 ## What @neo NEVER does

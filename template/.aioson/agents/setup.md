@@ -317,6 +317,21 @@ If no clear signal, use the neutral question format:
 
 For `api`, `script`, and non-UI-first scopes, keep `design_skill` empty unless the user explicitly asks to register one.
 
+### Step 5b — Genomes (project_type=site only)
+
+When `project_type=site`, check if `.aioson/genomes/copywriting.md` exists:
+- If it exists: note it in setup output — `@copywriter` will load it automatically.
+- If it doesn't exist: this is expected for fresh projects. The copywriting genome ships with the AIOSON template. `@copywriter` will use LLM baseline if no genome is available.
+
+Also check for domain-specific genomes in `.aioson/genomes/` that match the project's domain. Note them if found — they help `@copywriter` write more targeted copy.
+
+Record genomes in `project.context.md`:
+```yaml
+genomes: ["copywriting"]  # or ["copywriting", "domain-slug"] if domain genome exists
+```
+
+For non-site projects, omit the `genomes` field or leave it empty unless the user explicitly requests a genome.
+
 ---
 
 ### Tech reference — use when user needs to choose
@@ -589,7 +604,8 @@ After setup is complete, always close with the recommended next step. Use the ex
 
 | project_type | classification | Workflow state | Next agent |
 |---|---|---|---|
-| `site` | any | — | **@ux-ui** |
+| `site` | any | No copy file (`.aioson/context/copy-*.md`) | **@copywriter** → then @ux-ui → then @dev |
+| `site` | any | Copy exists | **@ux-ui** → then @dev |
 | `web_app` | MICRO | No `.aioson/context/prd.md` (including when only `plans/` or `prds/` exist in root) | **@product** |
 | `web_app` | MICRO | `.aioson/context/prd.md` exists, no detailed visual spec | **@sheldon** → then @dev |
 | `web_app` | MICRO | `.aioson/context/prd.md` exists, detailed visual spec | **@ux-ui** → then @dev |

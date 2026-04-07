@@ -1,0 +1,96 @@
+{
+  "slug": "digital-marketing-agency",
+  "name": "Digital Marketing Agency",
+  "description": "Full-stack digital marketing squad: strategy, copy, landing pages, traffic, content, performance — 8 specialized roles for end-to-end campaign execution.",
+  "mode": "mixed",
+  "uiCapability": {
+    "mode": "skills",
+    "skills": ["landing-page-forge", "ui-ux-modern"]
+  },
+  "suggestedExecutors": [
+    {
+      "slug": "estrategista",
+      "role": "Marketing strategist — defines campaign goals, funnel architecture, audience, and assigns tasks to specialists",
+      "type": "agent",
+      "modelTier": "powerful",
+      "behavioralProfile": "dominant-influential"
+    },
+    {
+      "slug": "copywriter",
+      "role": "Writes all copy — headlines, body text, CTAs, email sequences, ad copy. Copy exists before any design.",
+      "type": "assistant",
+      "modelTier": "powerful",
+      "behavioralProfile": "influential-expressive"
+    },
+    {
+      "slug": "page-builder",
+      "role": "Builds landing pages, sales pages, and event pages — full production stack including animations, SEO/LLMO, tracking, and performance.",
+      "type": "agent",
+      "modelTier": "powerful",
+      "behavioralProfile": "compliant-dominant",
+      "skills": ["landing-page-forge", "ui-ux-modern"]
+    },
+    {
+      "slug": "traffic-manager",
+      "role": "Manages paid traffic — Meta Ads, Google Ads. Configures Pixel, UTMs, audiences, campaign structure.",
+      "type": "assistant",
+      "modelTier": "powerful",
+      "behavioralProfile": "compliant-analytical"
+    },
+    {
+      "slug": "seo-llmo",
+      "role": "Handles organic discoverability — SEO strategy, on-page optimization, LLMO (LLM.txt, structured data, AI search optimization).",
+      "type": "assistant",
+      "modelTier": "balanced",
+      "behavioralProfile": "compliant-analytical"
+    },
+    {
+      "slug": "content-creator",
+      "role": "Creates organic content — social posts, newsletters, blog articles, video scripts aligned with campaign goals.",
+      "type": "assistant",
+      "modelTier": "powerful",
+      "behavioralProfile": "influential-steady"
+    },
+    {
+      "slug": "performance-analyst",
+      "role": "Analyzes metrics — conversion rates, LCP/CLS, PageSpeed, funnel drop-offs, A/B test results. Reports and recommends optimizations.",
+      "type": "assistant",
+      "modelTier": "balanced",
+      "behavioralProfile": "compliant-analytical"
+    },
+    {
+      "slug": "orquestrador",
+      "role": "Coordinates the agency squad — routes tasks, synthesizes outputs, ensures copy exists before design, tracking before launch.",
+      "type": "agent",
+      "modelTier": "powerful",
+      "behavioralProfile": "dominant-influential"
+    }
+  ],
+  "defaultContentBlueprint": {
+    "slug": "campaign-package",
+    "contentType": "marketing-campaign",
+    "layoutType": "tabs",
+    "sections": [
+      { "key": "strategy", "label": "Strategy", "blockTypes": ["rich-text"] },
+      { "key": "copy", "label": "Copy", "blockTypes": ["rich-text", "copy-block"] },
+      { "key": "page-spec", "label": "Page Spec", "blockTypes": ["rich-text"] },
+      { "key": "tracking", "label": "Tracking Setup", "blockTypes": ["rich-text", "copy-block"] },
+      { "key": "seo-llmo", "label": "SEO/LLMO", "blockTypes": ["bullet-list", "copy-block"] },
+      { "key": "performance", "label": "Performance Report", "blockTypes": ["rich-text", "bullet-list"] }
+    ]
+  },
+  "productionGates": [
+    {
+      "gate": "copy-before-design",
+      "rule": "Copy must be approved by @copywriter before @page-builder starts layout work"
+    },
+    {
+      "gate": "tracking-before-launch",
+      "rule": "Pixel, GTM, and UTM capture must be verified by @traffic-manager before any paid traffic is sent"
+    },
+    {
+      "gate": "performance-before-launch",
+      "rule": "PageSpeed mobile ≥ 90 and LCP < 2.5s must be verified before launch"
+    }
+  ]
+}

@@ -4,6 +4,26 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.7.1] - 2026-04-07
+### Added
+- **Marketing & copywriting system**: new `@copywriter` agent (5 operating modes including VSL scripts) backed by a generic `copywriting` genome (One Belief, 5 Acts, PMS framework, market sophistication levels, 10 heuristics).
+- **Marketing references library** (`.aioson/skills/marketing/references/`): 8 on-demand reference files with 70+ patterns and anti-patterns covering One Belief, 5-Act narrative structure, fascinations (12 formulas), offer structure, PMS research, copy patterns, anti-patterns checklist, and market intelligence tools. Loaded conditionally by `@copywriter` to keep context lean.
+- **VSL Craft skill** (`.aioson/skills/marketing/vsl-craft.md`): Video Sales Letter production playbook — 3 formats (horizontal/vertical/hybrid), 5-act script structure, 5 hook formulas, retention techniques, testing methodology, and production specs.
+- **Marketing integration across agents**: `@neo` routes to `@copywriter` when `project_type=site` and copy is missing; `@setup` registers the copywriting genome and adds copy gate to site routing; `@dev` enforces a copy guard for marketing pages and reads the 5-Act structure from `copy-{slug}.md`; `@ux-ui` maps the 5 Acts to visual sections; `@deyvin` routes marketing copy requests to `@copywriter` instead of writing inline.
+- **Landing page production skills**: `landing-page-forge.md` (animation libraries, performance, SEO/LLMO, tracking, 3-track parallel production checklist) and `landing-page-deploy.md` (Vercel and Hostinger VPS deploy paths).
+- **Digital marketing agency squad template** under `template/.aioson/templates/squads/digital-marketing-agency/`.
+
+### Changed
+- `@dev` site production section now includes a copy guard that blocks inline marketing copy on `project_type=site` pages — copy must come from `@copywriter` via `copy-{slug}.md`.
+- `@ux-ui` copy gate now reads the 5-Act narrative structure from copy files and maps acts to UI sections.
+- `@neo` workflow stage detection includes `Needs copy` for site projects without a copy file.
+- `@setup` routing table splits `site` into two paths: `@copywriter → @ux-ui → @dev` (no copy yet) vs `@ux-ui → @dev` (copy ready).
+- Misc updates to `@qa`, `@squad`, `squad-create`, `squad-design`, `cognitive-core-ui/motion`, `ui-ux-modern`, and `template/CLAUDE.md`.
+
+### Notes
+- Marketing references are loaded conditionally by `@copywriter` only — other agents never load them directly. This keeps the marketing system isolated and prevents contaminating non-site projects.
+- The copy guard triggers exclusively for `project_type=site` marketing/sales pages. SaaS UI, dashboards, app interfaces, and documentation sites use the standard implementation flow with no behavior change.
+
 ## [1.7.0] - 2026-04-06
 ### Added
 - **Squad autonomous execution system**: full multi-agent squad stack — intra-squad message bus (`intra-bus.js`, `squad:bus` command), executor reflection module (`reflection.js`), task decomposer, `squad:autorun` for end-to-end autonomous execution, learning system, squad daemon, verify-gate, and cross-AI synthesis. Intelligence gaps addressed in plans 80–82; 6 critical operational fixes in plan 83.

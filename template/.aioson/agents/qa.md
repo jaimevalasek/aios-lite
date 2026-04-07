@@ -404,6 +404,107 @@ After writing the QA report, run a self-check: count ACs with status "Covered" v
 - **SMALL:** full checklist + stack-specific tests for all critical flows.
 - **MEDIUM:** full checklist + invariant tests + load assumptions documented.
 
+## Web validation mode (project_type=site)
+
+Activate automatically when `project_type=site` is detected in `project.context.md`, or when the user asks to validate a landing page, sales page, event page, or any HTML/CSS site.
+
+This replaces the standard code review checklist with a web-specific validation suite.
+
+### Step W1 — Functional validation
+- [ ] All CTA buttons and anchor links navigate to the correct target or open the correct form
+- [ ] Form submits correctly: shows success state, shows error state, does not double-submit
+- [ ] No broken images (all `src` paths resolve)
+- [ ] No console errors in Chrome DevTools
+
+### Step W2 — Responsive validation (test each breakpoint)
+| Breakpoint | Width | Must pass |
+|---|---|---|
+| Mobile S | 375px | No horizontal overflow, CTA visible above fold, text readable |
+| Mobile L | 430px | Same |
+| Tablet | 768px | Layout shifts gracefully from 1-col to 2-col |
+| Desktop | 1280px | Full layout, no text line > 80 chars wide |
+
+- [ ] No element causes horizontal scroll on mobile
+- [ ] Primary CTA visible above fold on 375px without scrolling
+- [ ] Touch targets ≥ 48px height on mobile
+
+### Step W3 — Performance validation
+Run via PageSpeed Insights (`https://pagespeed.web.dev/`) or Lighthouse CLI:
+- [ ] Mobile score ≥ 90
+- [ ] LCP (Largest Contentful Paint) < 2.5 s
+- [ ] CLS (Cumulative Layout Shift) < 0.1
+- [ ] All images below fold have `loading="lazy"`
+- [ ] Hero image has `<link rel="preload" as="image">` in `<head>`
+- [ ] No render-blocking scripts without `defer` or `async`
+- [ ] `@media (prefers-reduced-motion: reduce)` present in CSS
+
+If running Lighthouse CLI: `lighthouse {url} --output=json --only-categories=performance`
+
+### Step W4 — SEO / LLMO validation
+- [ ] Single `<h1>` per page
+- [ ] `<meta name="description">` present and 150–160 chars
+- [ ] `<link rel="canonical">` present and correct
+- [ ] OG tags: `og:title`, `og:description`, `og:image` (1200×630), `og:url`
+- [ ] JSON-LD schema present before `</body>`
+- [ ] `/robots.txt` accessible and allows crawling
+- [ ] `/sitemap.xml` accessible and valid XML
+- [ ] `/llms.txt` present (LLMO discoverability)
+
+### Step W5 — Tracking validation
+Verify with Meta Pixel Helper browser extension or equivalent:
+- [ ] Meta Pixel `PageView` fires on page load (if Pixel ID configured)
+- [ ] `fbq('init', 'PIXEL_ID')` called before any `fbq('track', ...)` call
+- [ ] GTM fires on page load (if GTM container configured)
+- [ ] UTM parameters captured in `sessionStorage` when visiting with `?utm_source=test`
+- [ ] UTM values injected as hidden fields on form submit
+- [ ] `Lead` event fires on form submit (if Pixel configured)
+
+If Pixel ID or GTM container is `PENDING` in the spec, flag as `[W5-PENDING]` — not a blocking failure.
+
+### Step W6 — Cross-browser validation
+Test in:
+- [ ] Chrome (latest)
+- [ ] Safari (latest, or iOS Safari on mobile)
+- [ ] Firefox (latest)
+
+Known cross-browser issues to check:
+- CSS `backdrop-filter` not supported in older Firefox — check fallback
+- CSS `clamp()` works in all modern browsers — verify if targeting IE
+- GSAP and AnimeJS work in all modern browsers — verify CDN loads
+- `gap` in Flexbox not supported in Safari < 14 — use `margin` fallback
+
+### Step W7 — Conversion quality checks
+- [ ] Single primary action per section (no competing CTAs)
+- [ ] Primary CTA uses action verb (not "Learn More" or "Click Here")
+- [ ] Trust signals visible before the first CTA (social proof, logos, testimonials, or stats)
+- [ ] Form fields: only fields absolutely necessary (fewer fields = higher conversion)
+- [ ] H1 communicates the value proposition, not just the product name
+- [ ] No dead whitespace sections with no clear purpose
+
+### Web validation report format
+
+```
+## Web Validation Report — [Page/Project] — [Date]
+
+### W1 Functional: ✓ PASS | ✗ FAIL (list issues)
+### W2 Responsive: ✓ PASS | ✗ FAIL (list breakpoints with issues)
+### W3 Performance: Score [mobile] / [desktop] — LCP [ms] — CLS [score]
+### W4 SEO/LLMO: [N]/8 checks passed
+### W5 Tracking: [N]/6 checks passed — [PENDING items noted]
+### W6 Cross-browser: ✓ Chrome ✓ Safari ✓ Firefox | issues: [list]
+### W7 Conversion: [N]/6 checks passed
+
+### Critical (blocks launch)
+- [issue]: [location] → [fix]
+
+### Important (degrades conversion)
+- [issue]: [location] → [fix]
+
+### VERDICT: LAUNCH-READY | NEEDS-FIXES | BLOCKED
+- LAUNCH-READY: all Critical resolved, W3 score ≥ 90, W4 ≥ 6/8, W5 tracking configured or PENDING
+- NEEDS-FIXES: Critical issues present or performance < 90
+- BLOCKED: broken forms, broken CTAs, or tracking completely absent (not PENDING)
+```
 
 > **`.aioson/context/` rule:** this folder accepts only `.md` files. Never write `.html`, `.css`, `.js`, or any other non-markdown file inside `.aioson/`.
 

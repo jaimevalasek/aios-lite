@@ -300,6 +300,34 @@ When `framework=React` or `framework=Next.js` and the project has visual/marketi
 5. Never apply heavy motion to pure admin/CRUD interfaces — motion serves the user, not the data
 6. Treat `react-motion-patterns.md` as implementation mechanics only. It must not override the selected `design_skill` typography, spacing, depth, or page composition.
 
+## Site production skills (project_type=site)
+
+Apply to ALL `project_type=site` regardless of framework (HTML, React, Next.js, Astro, etc.):
+
+### Copy guard (site projects only)
+
+Before implementing any marketing/sales page, check for `.aioson/context/copy-*.md`:
+- **If copy file exists:** Read it. The copy document defines the page structure (5-Act narrative: Hero → Authority → Mechanism → Offer → Close). Implement the HTML sections following the act order and content from the copy file. Never rewrite, summarize, or replace the copy — implement it verbatim.
+- **If copy file does NOT exist:** Do not write marketing copy inline. Stop and tell the user:
+  > "This is a marketing/sales page but no copy file exists yet. Marketing copy must come from `@copywriter` — it uses audience research and conversion frameworks that produce better results than inline text. Activate `@copywriter` first, then return to `@dev`."
+- **Exception:** If `ui-spec.md` exists and contains the copy already embedded, use that as the source of truth.
+- **This guard does NOT apply to:** SaaS product pages, app interfaces, documentation sites, or any non-marketing page. Those use standard UI implementation. The guard triggers only for pages whose primary purpose is conversion (landing pages, sales pages, event pages, capture pages).
+
+### Production skills
+
+1. **Load `.aioson/skills/static/landing-page-forge.md`** before writing any site page — for the production checklist, SEO/LLMO setup, and tracking patterns
+2. Follow the performance budget rules: images WebP + lazy, fonts preload, defer non-critical JS
+3. **Run the 3-track parallel production checklist** at the end of every site session:
+   - **SEO/LLMO track**: H1 present and unique, meta description, canonical URL, JSON-LD schema, /robots.txt, /sitemap.xml, /llms.txt
+   - **Tracking track**: Meta Pixel PageView fires on load, GTM fires on load, UTM capture script installed, Lead/Purchase events wired to forms
+   - **Performance track**: PageSpeed mobile ≥ 90, LCP < 2.5s, no layout shift (CLS < 0.1), images have width/height attributes
+
+**Animation patterns from `landing-page-forge.md`** — apply ONLY for plain HTML/CSS/JS sites (no framework):
+- Use the animation tier decision (CSS-only / AnimeJS / GSAP) from the skill
+- For React/Next.js/Vue/Astro sites: use the framework's existing motion skill (e.g., `react-motion-patterns.md`) instead — landing-page-forge animation sections do not apply
+
+If `ui-spec.md` exists and contains `## Motion & Interaction`, follow the library and patterns specified there exactly — do not override with your own choice.
+
 ## Web3 conventions (when `project_type=dapp`)
 - Validate inputs on-chain and off-chain
 - Never trust client-provided values for sensitive contract calls
@@ -353,7 +381,7 @@ If a learning appears in 3+ sessions:
 ## Responsibility boundary
 `@dev` implements all code: structure, logic, migrations, interfaces, and tests.
 
-Interface copy, onboarding text, email content, and marketing text are not within `@dev` scope — those come from external content sources when needed.
+Interface copy, onboarding text, email content, and marketing text are not within `@dev` scope — those come from external content sources when needed. For `project_type=site`, marketing copy comes from `@copywriter` via `.aioson/context/copy-{slug}.md`. The marketing references in `.aioson/skills/marketing/references/` are for `@copywriter` only — `@dev` never loads them directly.
 
 ## Framework skill mapping
 

@@ -36,6 +36,28 @@ aioson-logs/<slug>/               # Diretório de logs
 media/<slug>/                   # Diretório de mídia
 ```
 
+### Passo 2.5 — Processar UI/UX capability do blueprint
+
+Leia o campo `uiCapability` do blueprint. Se ausente, trate como `mode: none`.
+
+**Se `mode = skills`:**
+1. Copie `.aioson/skills/static/landing-page-forge.md` → `.aioson/squads/{slug}/skills/design/landing-page-forge.md`
+2. Copie `.aioson/skills/static/ui-ux-modern.md` → `.aioson/squads/{slug}/skills/design/ui-ux-modern.md`
+3. Se `design_skill` está em `project.context.md`, copie também esse skill para `skills/design/`
+4. Registre as skills no `squad.manifest.json`
+
+**Se `mode = executor`:**
+1. Execute os mesmos passos de skills acima (executor depende das skills)
+2. Gere o arquivo `.aioson/squads/{slug}/agents/ui-specialist.md` usando o template do agente `@ui-specialist` definido em `squad.md` (seção "Visual & UI capability detection → Option 2")
+3. Registre o executor no `squad.manifest.json` com `modelTier: powerful` e `behavioralProfile: compliant-dominant`
+4. Adicione ao routing guide do orquestrador: "Visual / UI / layout requests → @ui-specialist"
+
+**Se `mode = external`:** Adicione nota em `docs/design-doc.md` indicando que `@ux-ui` é chamado externamente.
+
+**Se `mode = none`:** Nenhuma ação.
+
+Em todos os casos, salve `uiCapability` no `squad.manifest.json`.
+
 ### Passo 3 — Gerar squad.manifest.json
 Monte o manifesto a partir do blueprint. O JSON deve seguir o schema `squad-manifest.schema.json`. Copie executors, skills, mcps, genomes, contentBlueprints do blueprint. Adicione package paths e rules.
 

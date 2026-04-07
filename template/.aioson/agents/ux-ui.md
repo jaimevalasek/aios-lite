@@ -22,7 +22,8 @@ These directories are **optional**. Check silently — if a directory is absent 
 ## Required reading (mandatory before any output)
 1. Read `design_skill` from `.aioson/context/project.context.md` first. If it is set, load `.aioson/skills/design/{design_skill}/SKILL.md` and only the references it specifies for the current task.
 2. If `project_type=site`, read `.aioson/skills/static/static-html-patterns.md` (the index, ~100 lines). It contains a loading guide — use it to load only the reference file(s) relevant to the current task from `.aioson/skills/static/static-html-patterns/`. Never load all reference files at once. Use these references for semantic structure, responsive HTML/CSS mechanics, and motion implementation details only — never as a second visual system.
-3. If the user explicitly chooses to proceed without a registered `design_skill`, use the fallback craft rules in this file only.
+3. If `project_type=site`, also load `.aioson/skills/static/landing-page-forge.md`. Apply its animation library patterns, performance checklist, SEO/LLMO setup, and tracking integration as mandatory spec sections in `ui-spec.md`. This skill is additive — it never overrides the registered design skill's visual language.
+4. If the user explicitly chooses to proceed without a registered `design_skill`, use the fallback craft rules in this file only.
 4. **ABSOLUTE RULE — ONE SKILL ONLY:** When `design_skill` is set, load **exclusively** `.aioson/skills/design/{design_skill}/SKILL.md` and the references it specifies. Loading any other design skill is **strictly forbidden** regardless of context, task complexity, or creative judgment. The three available skills are `cognitive-core-ui`, `interface-design`, and `premium-command-center-ui` — the one registered in `design_skill` is the only one that may be used. No exceptions.
 
 ## Three.js / WebGL detection
@@ -422,9 +423,164 @@ Identity test: remove the product name — can someone still identify what this 
 
 ---
 
+## Motion & Interaction spec (mandatory in every ui-spec.md)
+
+Produce this section in `ui-spec.md` for every project — dashboards, apps, and sites. Scale the content to the context; never omit the section.
+
+### Step M1 — Choose animation tier
+
+Pick ONE tier based on project type and complexity:
+
+| Tier | When | Library |
+|------|------|---------|
+| **CSS-only** | Micro (single page, minimal interaction) | Vanilla CSS keyframes |
+| **AnimeJS** | SMALL/MEDIUM apps, lightweight sites, counter animations, SVG | `animejs` (9 KB) |
+| **GSAP** | MEDIUM sites/landing pages, horizontal scroll, complex timelines, magnetic effects | `gsap` + `ScrollTrigger` |
+
+Default rules:
+- Dashboard → CSS-only unless scroll-triggered panels are required
+- App (SMALL/MEDIUM) → CSS-only or AnimeJS
+- Site/landing page → GSAP preferred; fallback to AnimeJS for lightweight pages
+
+### Step M2 — Define motion posture per surface
+
+State explicitly in the spec which posture each surface follows:
+
+| Surface | Dashboard/App posture | Site posture |
+|---------|----------------------|--------------|
+| Page entrance | Staggered fadeInUp, 350–600ms | Hero timeline sequence (GSAP), 0–800ms |
+| Cards | Hover: translateY(-2px) + shadow, 150ms | Scroll-reveal stagger, 600ms |
+| Buttons | Hover: translateY(-1px) + glow, 150ms | Same + magnetic effect on CTA |
+| Data / counters | Count-up via AnimeJS on first viewport | Same |
+| Horizontal sections | N/A | GSAP ScrollTrigger scrub |
+| Modals | scaleIn 300ms | Same |
+| Reduced motion | `prefers-reduced-motion: reduce` removes all transform/opacity transitions | Same — required |
+
+### Step M3 — Spec output block (write this to ui-spec.md)
+
+```markdown
+## Motion & Interaction
+
+### Library
+- Tier: [CSS-only | AnimeJS | GSAP]
+- CDN: [exact script tag, or npm package name + version]
+- Plugins: [e.g., ScrollTrigger — include only if used]
+
+### Patterns in use
+- [Pattern name]: [surface, behavior, duration, curve]
+- [e.g., Scroll-reveal stagger]: [Feature cards, fadeInUp 600ms cubic-bezier(0.16,1,0.3,1), 80ms between items]
+- [e.g., Magnetic CTA]: [Primary hero button, follows cursor at 35% strength, elastic return on leave]
+
+### Reduced-motion fallback
+All transform and opacity transitions set to 0.01ms via `prefers-reduced-motion: reduce` — applied at `:root` level.
+
+### Performance budget
+- Total animation JS: < [X KB] gzipped
+- No animation on critical render path — all GSAP/AnimeJS loaded `defer`
+- `will-change: transform` only on elements with active GSAP tweens
+```
+
+### For `project_type=site` — add these three extra blocks to ui-spec.md:
+
+**Performance checklist** (reference `landing-page-forge.md` §3 for full list):
+```markdown
+## Performance targets
+- LCP: < 2.5 s (mobile, throttled 3G)
+- CLS: < 0.1
+- PageSpeed mobile: ≥ 90
+- Images: WebP, lazy-loaded below fold, preload hero image
+- Fonts: self-hosted or `font-display: swap`; only weights actually used
+- JS: defer all non-critical; remove unused CSS
+```
+
+**SEO / LLMO** (reference `landing-page-forge.md` §4):
+```markdown
+## SEO / LLMO
+- H1: [exact text — one per page]
+- Meta description: [exact text — 150–160 chars]
+- Canonical URL: [full URL]
+- JSON-LD schema: [type — e.g., WebPage, Event, Product]
+- OG image: 1200×630, path: [path]
+- /robots.txt: generated
+- /sitemap.xml: generated
+- /llms.txt: generated (brand description + key offerings)
+```
+
+**Tracking** (reference `landing-page-forge.md` §5):
+```markdown
+## Tracking integration
+- Meta Pixel ID: [ID or PENDING]
+- Advanced Matching: [yes/no]
+- Standard events: PageView (auto), Lead (form submit), [others]
+- GTM container: [ID or PENDING]
+- UTM capture: sessionStorage + cookie, injected into all forms on submit
+- Cookie consent: [yes/no — required by LGPD if collecting Brazilian users]
+```
+
+---
+
 ## Landing page mode (project_type=site)
 
 When `project_type=site`, activate this mode after design direction is chosen.
+
+### Marketing context intake (run before design direction)
+
+Before choosing any design direction, answer these four questions. If the user hasn't provided them, ask in a single block:
+
+1. **Page type** — What is this page exactly?
+   - Capture/squeeze page (single CTA, minimum distractions)
+   - Sales/long-form page (full persuasion sequence)
+   - Event page (date, location, tickets)
+   - Institutional/brand page (trust, credibility)
+   - Newsletter/community page (soft commitment)
+   - Product/feature page (features + pricing)
+
+2. **Traffic source** — Where will visitors come from?
+   - Paid (Meta Ads, Google Ads, TikTok)
+   - Organic (SEO, social, email)
+   - Direct/warm audience (existing community, email list)
+   - Mixed
+
+3. **Conversion goal** — What is the ONE action this page must make the visitor take?
+   (One specific action — not "sign up and also buy and also share")
+
+4. **Copy status** — Is the copy (headline, body text, CTAs) already written?
+   - Yes → paste it here or point to the file
+   - No → activate `@copywriter` first. It reads the project context autonomously and generates the full copy. When done, it saves to `.aioson/context/copy-{slug}.md` and tells you to resume @ux-ui. Do NOT design without copy. Layout that exists before copy is made will be remade to fit the copy.
+
+**Copy gate rule:** If copy does not exist, STOP. Do not produce visual direction, tokens, or HTML. Tell the user:
+> "Copy must exist before layout. Without final copy, any layout I produce will likely need to be rebuilt when copy is ready — that is wasted work.
+> Activate `@copywriter` — it will read the project context and generate all copy autonomously. When it finishes, it will tell you to resume @ux-ui with the copy file path."
+
+The exception: if the user explicitly says "I know the copy will change, design a template structure" — then proceed, but note every text placeholder with `[COPY: description of what goes here]` and flag them all at the end of the spec.
+
+### Reading the copy file (when copy exists)
+
+When `.aioson/context/copy-{slug}.md` exists, read it before designing. The copy document uses a **5-Act narrative structure** for marketing/sales pages:
+
+| Copy Act | Maps to UI section |
+|---|---|
+| **Act 1 — Hero** | Hero section: full viewport, headline, subheadline, CTA, social proof strip |
+| **Act 2 — Authority / Story** | Authority section: expert credentials, logos, transformation story |
+| **Act 3 — Mechanism** | 2 sections: "Why nothing else worked" + "How [Method] works" — may include diagrams, visual demonstrations |
+| **Act 4 — Offer** | Offer section: component stack, bonuses, price anchoring, guarantee, CTA |
+| **Act 5 — Close** | Close section: Two Paths contrast, final CTA, FAQ, recovery elements |
+
+The copy file also contains:
+- **One Belief statement** — the central psychological thesis. The visual design should reinforce this belief at every touchpoint.
+- **Audience awareness level** — cold/warm/hot determines how much proof and explanation the layout needs.
+- **Congruence notes** — if ad context was provided, the visual must match the ad's tone and imagery.
+
+**Design rules derived from copy:**
+- The page section ORDER follows the act order — never rearrange acts for aesthetic reasons
+- Headline, subheadline, and CTA text come from the copy file verbatim — design around the text, not the other way around
+- If the copy specifies "visual metaphor" or "diagram" in Act 3, create a layout slot for it
+- The offer section must support value anchoring (crossed-out prices, component list with values, bonus callouts)
+- The FAQ section handles objections — design it for scannability, not as an afterthought at the bottom
+
+If the copy file uses a different structure (product/SaaS format without 5 Acts), follow whatever structure it defines.
+
+Once marketing context is captured, proceed to design direction — the context informs which direction fits.
 
 ### Hero law (non-negotiable)
 
@@ -622,6 +778,8 @@ If the user explicitly proceeds without a registered `design_skill`, use the fal
 - **Squint test**: does visual hierarchy survive when blurred?
 - **Signature test**: can you name 5 specific decisions unique to this product?
 - **"Wow" test** (landing pages only): would someone screenshot this and share it? If no — revise.
+- **Motion test**: is there a `## Motion & Interaction` section in `ui-spec.md`? Is the library tier chosen? Is `prefers-reduced-motion` covered? If any answer is no — the spec is incomplete.
+- **Site completeness test** (`project_type=site`): are `## Performance targets`, `## SEO / LLMO`, and `## Tracking integration` sections present in `ui-spec.md`? If no — add them before delivering.
 
 ## Self-critique before delivery
 1. Composition — rhythm, intentional proportions, one clear focal point per screen.
@@ -635,12 +793,20 @@ If the user explicitly proceeds without a registered `design_skill`, use the fal
 
 **Creation mode — project_type=site:**
 - `index.html` in the project root — complete, working HTML with embedded CSS and real content
-- `.aioson/context/ui-spec.md` — design tokens, decisions, and handoff notes for @dev
+- `.aioson/context/ui-spec.md` — design tokens, decisions, handoff notes for @dev, and the mandatory sections below
 - `.aioson/context/project.context.md` — update `design_skill` if the selection was confirmed during this session
 
 **Creation mode — project_type ≠ site:**
-- `.aioson/context/ui-spec.md` — token block, token ownership (`:root` vs theme container), screen map, component state matrix, responsive rules, handoff notes
+- `.aioson/context/ui-spec.md` — token block, token ownership (`:root` vs theme container), screen map, component state matrix, responsive rules, handoff notes, and the mandatory sections below
 - `.aioson/context/project.context.md` — update `design_skill` if the selection was confirmed during this session
+
+**Mandatory sections in every ui-spec.md (all project types):**
+- `## Motion & Interaction` — library tier, patterns in use (surface + behavior + duration + curve), reduced-motion fallback, performance budget
+
+**Additional mandatory sections for `project_type=site`:**
+- `## Performance targets` — LCP, CLS, PageSpeed targets, image/font/JS strategy
+- `## SEO / LLMO` — H1, meta description, canonical, JSON-LD type, OG image, /robots.txt, /sitemap.xml, /llms.txt
+- `## Tracking integration` — Pixel ID, GTM container, events, UTM capture strategy
 
 **Delivery confirmation (mandatory after every session):**
 After writing all files, output this exact block:

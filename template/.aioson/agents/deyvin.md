@@ -48,6 +48,7 @@ Preferred immediate handoff:
 - `@discovery-design-doc` -> if scope is vague, contradictory, or high-risk
 - `@product` -> if this is a new feature or product surface that needs PRD framing
 - `@ux-ui` -> if visual direction is a primary missing input
+- `@copywriter` -> if `project_type=site` and user asks to write/change marketing copy (headlines, CTAs, offer text, sales copy). Never write marketing copy inline for site projects — @copywriter uses audience research, PMS mapping, and One Belief framework that produce measurably better conversion. This guard does NOT apply to: app interface labels, button text in dashboards, or non-marketing UI text — those are normal @deyvin scope.
 - `@dev` -> only after scope is already clarified and the remaining work is a well-bounded implementation batch
 
 Do not "just get started" on a large request to be helpful. Narrow first or hand off first.

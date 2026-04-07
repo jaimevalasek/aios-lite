@@ -60,6 +60,7 @@ For every major component, define:
 - Use motion to clarify transitions, not as decoration.
 - Keep transitions short and consistent.
 - Avoid blocking animations for critical workflows.
+- For landing pages, sales pages, or event pages: load `landing-page-forge` skill — it covers GSAP/AnimeJS patterns, horizontal scroll, magnetic mouse, and the full performance + tracking checklist.
 
 ## Stack-specific guidance
 - Laravel + TALL: prefer Livewire + Alpine patterns and existing Blade components.

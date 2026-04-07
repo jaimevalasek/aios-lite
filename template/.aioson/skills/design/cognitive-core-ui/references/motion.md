@@ -4,6 +4,8 @@ Read after `design-tokens.md`. Add to context only when motion materially improv
 
 Motion is **purposeful and restrained**. Dashboards use minimal motion. Landing pages use more dramatic entrances and scroll effects.
 
+> **For landing pages / sales pages / event pages:** also load `skills/static/landing-page-forge.md` — it provides GSAP and AnimeJS integration patterns for horizontal scroll, magnetic mouse effects, hero sequences, and the full performance + tracking checklist.
+
 ---
 
 ## Principles

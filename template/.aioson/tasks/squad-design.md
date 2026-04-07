@@ -57,6 +57,36 @@ Determine 3-5 roles especializados. Para cada executor, defina:
 
 Inclua sempre um `orquestrador`.
 
+### Passo 3.5 — Detectar e capturar UI/UX capability
+
+Após definir executores, verifique se o squad produz output visual.
+
+**Triggers que ativam esta detecção:**
+- Output type contém: site, landing page, sales page, event page, dashboard, web app, HTML, layout, screens, interface, UI, UX
+- Domain contém: marketing, agência, design, produto digital, e-commerce, funil, conversão, branding
+- Goal contém: "criar página", "build a site", "fazer dashboard", "design interface", "páginas para clientes"
+
+**Se detectado, pergunte:**
+> "Este squad vai produzir output visual. Como quer incluir UI/UX?
+>
+> (1) Skills — instala `landing-page-forge` + `ui-ux-modern` como skills do squad (leve, executores referenciam)
+> (2) Executor — adiciona `@ui-specialist` ao squad (autônomo, produz ui-spec + HTML)
+> (3) Externo — sem UI no squad, chama `@ux-ui` separadamente
+> (4) Pular"
+
+**Se não detectado:** prosseguir sem UI capability (equivalente à opção 4).
+
+**Capture a decisão no blueprint** como `uiCapability`:
+```json
+"uiCapability": {
+  "mode": "skills | executor | external | none",
+  "skills": ["landing-page-forge", "ui-ux-modern"],
+  "executor": "ui-specialist | null"
+}
+```
+
+Se `mode = executor`, adicione `ui-specialist` à lista de executores do blueprint antes de continuar.
+
 ### Passo 4 — Definir content blueprints
 Se o squad é content-oriented, defina pelo menos 1 content blueprint com:
 - slug, contentType, layoutType
