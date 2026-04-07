@@ -18,12 +18,23 @@ const AGENTS = [
   'pm',
   'dev',
   'qa',
+  'neo',
+  'sheldon',
+  'tester',
   'orchestrator',
   'squad',
+  'orache',
   'genome',
   'profiler-researcher',
   'profiler-enricher',
   'profiler-forge'
+];
+
+// Agents that ship only a base file (no locale variants)
+const BASE_ONLY_AGENTS = [
+  'copywriter',
+  'design-hybrid-forge',
+  'site-forge'
 ];
 
 async function read(filePath) {
@@ -43,6 +54,16 @@ test('template ships all base and localized agent files', async () => {
     await assert.doesNotReject(() => fs.access(ptPath));
     await assert.doesNotReject(() => fs.access(esPath));
     await assert.doesNotReject(() => fs.access(frPath));
+  }
+});
+
+test('template ships base file for base-only agents', async () => {
+  for (const agent of BASE_ONLY_AGENTS) {
+    const basePath = path.join(ROOT, 'template/.aioson/agents', `${agent}.md`);
+    await assert.doesNotReject(
+      () => fs.access(basePath),
+      `missing base agent file for: ${agent}`
+    );
   }
 });
 

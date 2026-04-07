@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.7.2] - 2026-04-07
+### Fixed
+- Removed 5 spurious Windows alternate data stream files (`SKILL.md:Zone.Identifier`) from `template/.aioson/skills/design-system/` that leaked from a local Windows copy operation and were never tracked by git.
+- `tests/agent-contracts.test.js`: added `neo`, `sheldon`, `tester`, and `orache` to the full locale coverage check; added a separate `BASE_ONLY_AGENTS` list (`copywriter`, `design-hybrid-forge`, `site-forge`) with a dedicated test that verifies their base files ship in the template. Previously these agents were not validated by the test suite.
+
 ## [1.7.1] - 2026-04-07
 ### Added
 - **Marketing & copywriting system**: new `@copywriter` agent (5 operating modes including VSL scripts) backed by a generic `copywriting` genome (One Belief, 5 Acts, PMS framework, market sophistication levels, 10 heuristics).
