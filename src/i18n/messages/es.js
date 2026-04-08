@@ -576,7 +576,6 @@ module.exports = {
       'Util para evaluar paquetes y verificar notas de lanzamiento.',
     reason_chain_rpc_disabled: 'Web3 esta deshabilitado para este proyecto.',
     reason_chain_rpc_enabled: 'Se detecto contexto dApp; se requiere acceso RPC de chain.',
-    reason_makopy: 'Integracion opcional de pipeline de contenido.',
     note_workspace_local: 'Este es un preset local de workspace generado por AIOSON.',
     note_replace_placeholders:
       'Reemplaza comandos placeholder por los servidores MCP que realmente usas.',
@@ -976,5 +975,79 @@ module.exports = {
     not_found: 'Learning no encontrado: {id}',
     promote_usage: 'Uso: aioson learning [path] --sub=promote --id=<learning-id> [--to=<ruta-regla>]',
     promoted: 'Learning {id} promovido a regla en {path}'
+  },
+
+  auth: {
+    login_no_token: 'No se proporcion\u00f3 token. Obt\u00e9n el tuyo en: {url}',
+    login_hint: 'Ejecuta: aioson auth:login --token=<tu-token>',
+    login_verifying: 'Verificando token...',
+    login_ok: 'Autenticado como {username}. Token guardado en {path}.',
+    login_saved: 'Token guardado en {path}. (No se pudo verificar \u2014 la API puede estar offline.)',
+    logout_ok: 'Sesi\u00f3n cerrada. Token eliminado.',
+    status_not_authenticated: 'No autenticado.',
+    status_checking: 'Verificando token...',
+    status_ok: 'Autenticado como {username}.',
+    status_token_offline: 'Token guardado (\u00faltimo usuario conocido: {username}). API offline o inaccesible.'
+  },
+
+  workspace: {
+    registering: 'Registrando workspace en aioson.com...',
+    init_ok: 'Workspace "{slug}" vinculado.\n  Local: {path}\n  Online: {url}',
+    already_linked: 'Workspace ya vinculado: {slug}\n  Online: {url}',
+    not_linked: 'Ning\u00fan workspace vinculado a este proyecto.',
+    init_hint: 'Ejecuta: aioson workspace:init',
+    status_slug: 'Workspace: {slug}',
+    status_id: 'ID: {id}',
+    status_url: 'URL: {url}',
+    status_created: 'Creado el: {date}',
+    open_url: 'Abrir en navegador: {url}'
+  },
+
+  store: {
+    error_not_authenticated: 'No autenticado. Ejecuta: aioson auth:login --token=<tu-token>',
+    error_missing_slug: 'Falta --slug.',
+    error_missing_code_or_slug: 'Proporciona un slug (--slug=X) o un c\u00f3digo de instalaci\u00f3n.',
+    error_invalid_response: 'Respuesta inv\u00e1lida de aioson.com.',
+    error_genome_not_found: 'Genome "{slug}" no encontrado en {path}.',
+    error_skill_not_found: 'Skill "{slug}" no encontrada en .aioson/skills/ ni .aioson/installed-skills/.',
+    error_skill_missing_skillmd: 'Skill "{slug}" no tiene SKILL.md.',
+    error_squad_not_found: 'Squad "{slug}" no encontrado en {path}.',
+
+    publish_dry_run: '[dry-run] Se publicar\u00eda {type} "{slug}" (visibilidad: {visibility}).',
+    publish_genome_validating: 'Validando genome...',
+    publish_genome_sending: 'Enviando a aioson.com...',
+    publish_genome_done: 'Publicado: aioson.com/store/genomes/{slug}\n  Instalar: aioson genome:install --slug={slug}',
+    publish_skill_collecting: 'Recolectando archivos de la skill...',
+    publish_skill_files: '  Archivos: {count}',
+    publish_skill_sending: 'Enviando {count} archivo(s) a aioson.com...',
+    publish_skill_done: 'Publicado: aioson.com/store/skills/{slug}\n  Instalar: aioson skill:install --slug={slug}',
+    publish_squad_analyzing_agents: 'Analizando agentes...',
+    publish_squad_agents_found: '  Agentes: {count}',
+    publish_squad_analyzing_deps: 'Analizando dependencias...',
+    publish_squad_bundling_skill: '  Empaquetando skill: {slug}',
+    publish_squad_skill_missing: '  Skill no encontrada (omitida): {slug}',
+    publish_squad_bundling_genome: '  Empaquetando genome: {slug}',
+    publish_squad_genome_missing: '  Genome no encontrado (omitido): {slug}',
+    publish_squad_sending: 'Enviando a aioson.com...',
+    publish_squad_done: 'Publicado: aioson.com/store/squads/{slug}\n  Instalar: aioson squad:install --slug={slug}',
+    publish_squad_summary: '  Agentes: {agents} | Skills empaquetadas: {skills} | Genomes empaquetados: {genomes}',
+
+    install_genome_fetching: 'Obteniendo genome "{ref}" de aioson.com...',
+    install_genome_done: 'Genome "{slug}" instalado en {path}.',
+    install_backing_up: '  Backup guardado: {path}',
+    install_squad_fetching: 'Obteniendo squad "{ref}" de aioson.com...',
+    install_squad_writing: 'Instalando archivos...',
+    install_squad_dep_skip: '  {type} "{slug}" ya instalado \u2014 omitiendo (usa --force para reemplazar).',
+    install_squad_done: 'Squad "{slug}" instalado en {path}.',
+
+    list_genome_empty: 'No hay genomes instalados en este proyecto.',
+    list_genome_header: '{count} genome(s) instalado(s):',
+    list_genome_item: '  {slug}{version}',
+    remove_genome_done: 'Genome "{slug}" eliminado.',
+
+    grant_error_missing_code: 'C\u00f3digo ausente. Uso: aioson squad:grant <c\u00f3digo> <email>',
+    grant_error_missing_email: 'Email ausente. Uso: aioson squad:grant <c\u00f3digo> <email>',
+    grant_sending: 'Concediendo acceso a {email} para el c\u00f3digo {code}...',
+    grant_ok: '{email} ahora puede instalar usando el c\u00f3digo {code}.'
   }
 };

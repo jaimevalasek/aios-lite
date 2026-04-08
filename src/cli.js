@@ -166,6 +166,11 @@ const { runPatternDetect } = require('./commands/pattern-detect');
 const { runSelfLoop } = require('./commands/self-implement-loop');
 const { runSquadCard } = require('./commands/squad-card');
 const { runAgentExportSkill } = require('./commands/agent-export-skill');
+const { runAuthLogin, runAuthLogout, runAuthStatus } = require('./commands/auth');
+const { runWorkspaceInit, runWorkspaceStatus, runWorkspaceOpen } = require('./commands/workspace');
+const { runGenomePublish, runGenomeInstallStore, runGenomeInstall, runGenomeList, runGenomeRemove } = require('./commands/store-genome');
+const { runSkillPublish, runSkillInstallStore, runSkillListRemote } = require('./commands/store-skill');
+const { runSquadPublish, runSquadInstall, runSquadGrant, runSquadList } = require('./commands/store-squad');
 
 const JSON_SUPPORTED_COMMANDS = new Set([
   'init',
@@ -500,7 +505,41 @@ const JSON_SUPPORTED_COMMANDS = new Set([
   'runner:queue:from-plan',
   'runner-queue-from-plan',
   'learning:auto-promote',
-  'learning-auto-promote'
+  'learning-auto-promote',
+  'auth:login',
+  'auth-login',
+  'auth:logout',
+  'auth-logout',
+  'auth:status',
+  'auth-status',
+  'workspace:init',
+  'workspace-init',
+  'workspace:status',
+  'workspace-status',
+  'workspace:open',
+  'workspace-open',
+  'genome:publish',
+  'genome-publish',
+  'genome:install',
+  'genome-install',
+  'genome:install:store',
+  'genome-install-store',
+  'genome:list',
+  'genome-list',
+  'genome:remove',
+  'genome-remove',
+  'skill:publish',
+  'skill-publish',
+  'skill:install:store',
+  'skill-install-store',
+  'squad:list',
+  'squad-list',
+  'squad:publish',
+  'squad-publish',
+  'squad:install',
+  'squad-install',
+  'squad:grant',
+  'squad-grant'
 ]);
 
 const LEGACY_DASHBOARD_COMMANDS = new Set([
@@ -624,6 +663,22 @@ function printHelp(t, logger) {
   logHelpLine(t, logger, 'cli.help_cloud_import_genome');
   logHelpLine(t, logger, 'cli.help_cloud_publish_squad');
   logHelpLine(t, logger, 'cli.help_cloud_publish_genome');
+  logHelpLine(t, logger, 'cli.help_auth_login');
+  logHelpLine(t, logger, 'cli.help_auth_logout');
+  logHelpLine(t, logger, 'cli.help_auth_status');
+  logHelpLine(t, logger, 'cli.help_workspace_init');
+  logHelpLine(t, logger, 'cli.help_workspace_status');
+  logHelpLine(t, logger, 'cli.help_workspace_open');
+  logHelpLine(t, logger, 'cli.help_genome_publish');
+  logHelpLine(t, logger, 'cli.help_genome_install');
+  logHelpLine(t, logger, 'cli.help_genome_list');
+  logHelpLine(t, logger, 'cli.help_genome_remove');
+  logHelpLine(t, logger, 'cli.help_genome_install_store');
+  logHelpLine(t, logger, 'cli.help_skill_publish');
+  logHelpLine(t, logger, 'cli.help_squad_list');
+  logHelpLine(t, logger, 'cli.help_squad_publish');
+  logHelpLine(t, logger, 'cli.help_squad_install');
+  logHelpLine(t, logger, 'cli.help_squad_grant');
 }
 
 function commandSupportsJson(command) {
@@ -972,9 +1027,19 @@ async function main() {
     } else if (command === 'backup:local' || command === 'backup-local') {
       result = await runBackupLocal({ args, options, logger: commandLogger, t });
     } else if (command === 'skill:install' || command === 'skill-install') {
-      result = await runSkillInstall({ args, options, logger: commandLogger, t });
+      if (options.from === 'store') {
+        result = await runSkillInstallStore({ args, options, logger: commandLogger, t });
+      } else {
+        result = await runSkillInstall({ args, options, logger: commandLogger, t });
+      }
+    } else if (command === 'skill:install:store' || command === 'skill-install-store') {
+      result = await runSkillInstallStore({ args, options, logger: commandLogger, t });
     } else if (command === 'skill:list' || command === 'skill-list') {
-      result = await runSkillList({ args, options, logger: commandLogger, t });
+      if (options.remote) {
+        result = await runSkillListRemote({ args, options, logger: commandLogger, t });
+      } else {
+        result = await runSkillList({ args, options, logger: commandLogger, t });
+      }
     } else if (command === 'skill:remove' || command === 'skill-remove') {
       result = await runSkillRemove({ args, options, logger: commandLogger, t });
     } else if (command === 'design-hybrid:options' || command === 'design-hybrid-options') {
@@ -1054,6 +1119,38 @@ async function main() {
       result = await runRunnerQueueFromPlan({ args, options, logger: commandLogger });
     } else if (command === 'learning:auto-promote' || command === 'learning-auto-promote') {
       result = await runLearningAutoPromote({ args, options, logger: commandLogger });
+    } else if (command === 'auth:login' || command === 'auth-login') {
+      result = await runAuthLogin({ args, options, logger: commandLogger, t });
+    } else if (command === 'auth:logout' || command === 'auth-logout') {
+      result = await runAuthLogout({ args, options, logger: commandLogger, t });
+    } else if (command === 'auth:status' || command === 'auth-status') {
+      result = await runAuthStatus({ args, options, logger: commandLogger, t });
+    } else if (command === 'workspace:init' || command === 'workspace-init') {
+      result = await runWorkspaceInit({ args, options, logger: commandLogger, t });
+    } else if (command === 'workspace:status' || command === 'workspace-status') {
+      result = await runWorkspaceStatus({ args, options, logger: commandLogger, t });
+    } else if (command === 'workspace:open' || command === 'workspace-open') {
+      result = await runWorkspaceOpen({ args, options, logger: commandLogger, t });
+    } else if (command === 'genome:publish' || command === 'genome-publish') {
+      result = await runGenomePublish({ args, options, logger: commandLogger, t });
+    } else if (command === 'genome:install' || command === 'genome-install') {
+      result = await runGenomeInstall({ args, options, logger: commandLogger, t });
+    } else if (command === 'genome:install:store' || command === 'genome-install-store') {
+      result = await runGenomeInstallStore({ args, options, logger: commandLogger, t });
+    } else if (command === 'genome:list' || command === 'genome-list') {
+      result = await runGenomeList({ args, options, logger: commandLogger, t });
+    } else if (command === 'genome:remove' || command === 'genome-remove') {
+      result = await runGenomeRemove({ args, options, logger: commandLogger, t });
+    } else if (command === 'skill:publish' || command === 'skill-publish') {
+      result = await runSkillPublish({ args, options, logger: commandLogger, t });
+    } else if (command === 'squad:list' || command === 'squad-list') {
+      result = await runSquadList({ args, options, logger: commandLogger, t });
+    } else if (command === 'squad:publish' || command === 'squad-publish') {
+      result = await runSquadPublish({ args, options, logger: commandLogger, t });
+    } else if (command === 'squad:install' || command === 'squad-install') {
+      result = await runSquadInstall({ args, options, logger: commandLogger, t });
+    } else if (command === 'squad:grant' || command === 'squad-grant') {
+      result = await runSquadGrant({ args, options, logger: commandLogger, t });
     } else {
       const message = t('cli.unknown_command', { command });
       if (jsonMode) {
