@@ -1248,6 +1248,28 @@ module.exports = {
     grant_error_missing_code: 'Missing install code. Usage: aioson squad:grant <code> <email>',
     grant_error_missing_email: 'Missing email. Usage: aioson squad:grant <code> <email>',
     grant_sending: 'Granting access to {email} for code {code}...',
-    grant_ok: '{email} can now install using code {code}.'
+    grant_ok: '{email} can now install using code {code}.',
+
+    // Security scan — publish side
+    publish_scanning: 'Running security scan...',
+    publish_scan_ok: 'Security scan passed. Package hash: {hash}...',
+    error_scan_failed: 'Publish blocked: security scan found errors. Fix them or contact support.',
+    error_scan_warnings: 'Publish blocked: {count} suspicious pattern(s) detected. Review the warnings above. Use --force to override if you are sure the package is safe.',
+
+    // Security scan — install side
+    install_scanning: 'Scanning package integrity...',
+    error_install_scan_failed: 'Install blocked: package "{slug}" failed security scan. It may have been tampered with.',
+    error_hash_mismatch: 'Install blocked: hash mismatch for "{slug}". The package may have been altered in transit.',
+
+    // Install preview
+    install_preview_header: 'Package: {slug}  v{version}  by {publisher}',
+    install_preview_trusted: '  Status: Trusted Publisher',
+    install_preview_unverified: '  Status: Unverified publisher — review files before use',
+    install_preview_downloads: '  Downloads: {count}',
+    install_preview_rating: '  Rating: {rating}',
+    install_preview_hash: '  Hash: {hash}...',
+    install_inspect_files: 'Files in this package ({count} total):',
+    install_inspect_hint: 'Run without --inspect to install.',
+    install_unverified_hint: '  Tip: Run with --inspect to review files before installing, or --force to suppress this warning.'
   }
 };

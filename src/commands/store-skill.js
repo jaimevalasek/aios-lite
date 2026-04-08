@@ -5,6 +5,7 @@ const path = require('node:path');
 const { exists } = require('../utils');
 const { readConfig } = require('./config');
 const { readWorkspace, findProjectRoot } = require('./workspace');
+const { scanPackage, formatScanReport } = require('../lib/store/security-scan');
 
 const DEFAULT_BASE_URL = 'https://aioson.com';
 const SKILLS_DIRS = ['.aioson/skills', '.aioson/installed-skills'];
@@ -116,6 +117,14 @@ async function runSkillPublish({ args, options, logger, t }) {
     throw new Error(t('store.error_skill_missing_skillmd', { slug }));
   }
 
+  // Security scan
+  const scan = scanPackage(files, 'skill');
+  formatScanReport(scan, logger);
+  if (!scan.ok) throw new Error(t('store.error_scan_failed'));
+  if (scan.warnings.length > 0 && !options.force) {
+    throw new Error(t('store.error_scan_warnings', { count: scan.warnings.length }));
+  }
+
   const ws = await readWorkspace(projectDir);
   const visibility = options.private ? 'private' : 'public';
   const paid = Boolean(options.paid);
@@ -123,9 +132,11 @@ async function runSkillPublish({ args, options, logger, t }) {
   if (options['dry-run']) {
     logger.log(t('store.publish_dry_run', { type: 'skill', slug, visibility }));
     logger.log(t('store.publish_skill_files', { count: fileCount }));
-    return { ok: true, dryRun: true, slug, visibility, paid, fileCount };
+    logger.log(t('store.publish_scan_ok', { hash: scan.hash.slice(0, 12) }));
+    return { ok: true, dryRun: true, slug, visibility, paid, fileCount, hash: scan.hash };
   }
 
+  logger.log(t('store.publish_scan_ok', { hash: scan.hash.slice(0, 12) }));
   logger.log(t('store.publish_skill_sending', { count: fileCount }));
   const baseUrl = resolveBaseUrl(config);
   const response = await storePost(`${baseUrl}/api/store/skills/publish`, {
@@ -134,6 +145,7 @@ async function runSkillPublish({ args, options, logger, t }) {
     files,
     visibility,
     paid,
+    hash: scan.hash,
     workspaceSlug: ws?.slug || null
   }, token);
 
@@ -160,11 +172,49 @@ async function runSkillInstallStore({ args, options, logger, t }) {
     throw new Error(t('store.error_invalid_response'));
   }
 
+  // Install-side preview and scan
+  const publisher = response.publisher || 'unknown';
+  const version = response.version || '?';
+  const serverHash = response.hash || null;
+  const trusted = Boolean(response.trusted);
+  const downloads = response.downloads != null ? response.downloads : null;
+  const rating = response.rating != null ? `${Number(response.rating).toFixed(1)}/5` : null;
+
+  logger.log(t('store.install_preview_header', { slug, publisher, version }));
+  if (trusted) logger.log(t('store.install_preview_trusted'));
+  else logger.log(t('store.install_preview_unverified'));
+  if (downloads != null) logger.log(t('store.install_preview_downloads', { count: downloads }));
+  if (rating) logger.log(t('store.install_preview_rating', { rating }));
+  if (serverHash) logger.log(t('store.install_preview_hash', { hash: serverHash.slice(0, 12) }));
+
+  // Scan files received from server before writing
+  const stringFiles = Object.fromEntries(
+    Object.entries(response.files).filter(([, v]) => typeof v === 'string')
+  );
+  const scan = scanPackage(stringFiles, 'skill');
+  formatScanReport(scan, logger);
+  if (!scan.ok) throw new Error(t('store.error_install_scan_failed', { slug }));
+
+  // Verify hash integrity if server sent one
+  if (serverHash && scan.hash !== serverHash) {
+    throw new Error(t('store.error_hash_mismatch', { slug }));
+  }
+
+  if (options.inspect) {
+    logger.log(t('store.install_inspect_files', { count: Object.keys(stringFiles).length }));
+    for (const f of Object.keys(stringFiles).sort()) logger.log(`  ${f}`);
+    logger.log(t('store.install_inspect_hint'));
+    return { ok: true, slug, inspect: true, files: Object.keys(stringFiles) };
+  }
+
+  if (!trusted && !options.force) {
+    logger.log(t('store.install_unverified_hint', { slug }));
+  }
+
   const destDir = path.join(projectDir, '.aioson', 'installed-skills', slug);
   await fs.mkdir(destDir, { recursive: true });
 
-  for (const [relPath, content] of Object.entries(response.files)) {
-    if (typeof content !== 'string') continue;
+  for (const [relPath, content] of Object.entries(stringFiles)) {
     const filePath = path.join(destDir, relPath);
     await fs.mkdir(path.dirname(filePath), { recursive: true });
     await fs.writeFile(filePath, content, 'utf8');

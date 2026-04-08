@@ -5,6 +5,7 @@ const path = require('node:path');
 const { exists, ensureDir } = require('../utils');
 const { readConfig } = require('./config');
 const { readWorkspace, findProjectRoot } = require('./workspace');
+const { scanPackage, formatScanReport } = require('../lib/store/security-scan');
 
 const DEFAULT_BASE_URL = 'https://aioson.com';
 const SQUADS_DIR = '.aioson/squads';
@@ -179,6 +180,17 @@ async function runSquadPublish({ args, options, logger, t }) {
   // Collect squad root files (squad.md, etc.)
   const squadRootFiles = await collectDirFiles(squadDir, 'squad');
 
+  const allFiles = { ...squadRootFiles, ...skillFiles, ...genomeFiles };
+
+  // Security scan — squads carry the highest risk (arbitrary dir contents)
+  logger.log(t('store.publish_scanning'));
+  const scan = scanPackage(allFiles, 'squad');
+  formatScanReport(scan, logger);
+  if (!scan.ok) throw new Error(t('store.error_scan_failed'));
+  if (scan.warnings.length > 0 && !options.force) {
+    throw new Error(t('store.error_scan_warnings', { count: scan.warnings.length }));
+  }
+
   const manifest = {
     slug,
     version: String(options.version || '1.0.0'),
@@ -199,18 +211,21 @@ async function runSquadPublish({ args, options, logger, t }) {
       skills: bundledSkillSlugs.length,
       genomes: bundledGenomeSlugs.length
     }));
-    return { ok: true, dryRun: true, slug, visibility, paid, agentCount, manifest };
+    logger.log(t('store.publish_scan_ok', { hash: scan.hash.slice(0, 12) }));
+    return { ok: true, dryRun: true, slug, visibility, paid, agentCount, manifest, hash: scan.hash };
   }
 
+  logger.log(t('store.publish_scan_ok', { hash: scan.hash.slice(0, 12) }));
   logger.log(t('store.publish_squad_sending'));
   const baseUrl = resolveBaseUrl(config);
   const response = await storePost(`${baseUrl}/api/store/squads/publish`, {
     kind: 'aioson.store.squad',
     slug,
-    files: { ...squadRootFiles, ...skillFiles, ...genomeFiles },
+    files: allFiles,
     manifest,
     visibility,
     paid,
+    hash: scan.hash,
     workspaceSlug: ws?.slug || null
   }, token);
 
@@ -220,7 +235,7 @@ async function runSquadPublish({ args, options, logger, t }) {
     skills: bundledSkillSlugs.length,
     genomes: bundledGenomeSlugs.length
   }));
-  return { ok: true, slug, visibility, paid, agentCount, manifest, response };
+  return { ok: true, slug, visibility, paid, agentCount, manifest, hash: scan.hash, response };
 }
 
 // ── squad:install ───────────────────────────────────────────────────────────
@@ -246,6 +261,45 @@ async function runSquadInstall({ args, options, logger, t }) {
 
   const slug = response.manifest?.slug || response.slug;
   if (!slug || !response.files) throw new Error(t('store.error_invalid_response'));
+
+  // Install-side preview and scan
+  const publisher = response.publisher || 'unknown';
+  const version = response.manifest?.version || response.version || '?';
+  const serverHash = response.hash || null;
+  const trusted = Boolean(response.trusted);
+  const downloads = response.downloads != null ? response.downloads : null;
+  const rating = response.rating != null ? `${Number(response.rating).toFixed(1)}/5` : null;
+
+  logger.log(t('store.install_preview_header', { slug, publisher, version }));
+  if (trusted) logger.log(t('store.install_preview_trusted'));
+  else logger.log(t('store.install_preview_unverified'));
+  if (downloads != null) logger.log(t('store.install_preview_downloads', { count: downloads }));
+  if (rating) logger.log(t('store.install_preview_rating', { rating }));
+  if (serverHash) logger.log(t('store.install_preview_hash', { hash: serverHash.slice(0, 12) }));
+
+  // Scan files received from server — squads are the highest-risk package type
+  logger.log(t('store.install_scanning'));
+  const stringFiles = Object.fromEntries(
+    Object.entries(response.files).filter(([, v]) => typeof v === 'string')
+  );
+  const scan = scanPackage(stringFiles, 'squad');
+  formatScanReport(scan, logger);
+  if (!scan.ok) throw new Error(t('store.error_install_scan_failed', { slug }));
+
+  if (serverHash && scan.hash !== serverHash) {
+    throw new Error(t('store.error_hash_mismatch', { slug }));
+  }
+
+  if (options.inspect) {
+    logger.log(t('store.install_inspect_files', { count: Object.keys(stringFiles).length }));
+    for (const f of Object.keys(stringFiles).sort()) logger.log(`  ${f}`);
+    logger.log(t('store.install_inspect_hint'));
+    return { ok: true, slug, inspect: true, files: Object.keys(stringFiles) };
+  }
+
+  if (!trusted && !options.force) {
+    logger.log(t('store.install_unverified_hint', { slug }));
+  }
 
   const squadDir = path.join(projectDir, SQUADS_DIR, slug);
 

@@ -1055,6 +1055,25 @@ module.exports = {
     grant_error_missing_code: 'Code manquant. Usage : aioson squad:grant <code> <email>',
     grant_error_missing_email: 'Email manquant. Usage : aioson squad:grant <code> <email>',
     grant_sending: 'Octroi d\'acc\u00e8s \u00e0 {email} pour le code {code}...',
-    grant_ok: '{email} peut maintenant installer avec le code {code}.'
+    grant_ok: '{email} peut maintenant installer avec le code {code}.',
+
+    publish_scanning: 'Analyse de s\u00e9curit\u00e9 en cours...',
+    publish_scan_ok: 'Analyse de s\u00e9curit\u00e9 r\u00e9ussie. Hash du paquet : {hash}...',
+    error_scan_failed: 'Publication bloqu\u00e9e : l\'analyse de s\u00e9curit\u00e9 a d\u00e9tect\u00e9 des erreurs.',
+    error_scan_warnings: 'Publication bloqu\u00e9e : {count} motif(s) suspect(s) d\u00e9tect\u00e9(s). V\u00e9rifiez les avertissements. Utilisez --force si vous \u00eates s\u00fbr que le paquet est s\u00fbr.',
+
+    install_scanning: 'V\u00e9rification de l\'int\u00e9grit\u00e9 du paquet...',
+    error_install_scan_failed: 'Installation bloqu\u00e9e : le paquet "{slug}" a \u00e9chou\u00e9 \u00e0 l\'analyse de s\u00e9curit\u00e9.',
+    error_hash_mismatch: 'Installation bloqu\u00e9e : d\u00e9salignement de hash pour "{slug}". Le paquet a peut-\u00eatre \u00e9t\u00e9 modifi\u00e9.',
+
+    install_preview_header: 'Paquet : {slug}  v{version}  par {publisher}',
+    install_preview_trusted: '  Statut : \u00c9diteur de confiance',
+    install_preview_unverified: '  Statut : \u00c9diteur non v\u00e9rifi\u00e9 \u2014 examinez les fichiers avant utilisation',
+    install_preview_downloads: '  T\u00e9l\u00e9chargements : {count}',
+    install_preview_rating: '  Note : {rating}',
+    install_preview_hash: '  Hash : {hash}...',
+    install_inspect_files: 'Fichiers dans ce paquet ({count} au total) :',
+    install_inspect_hint: 'Ex\u00e9cutez sans --inspect pour installer.',
+    install_unverified_hint: '  Astuce : Utilisez --inspect pour examiner les fichiers avant l\'installation, ou --force pour ignorer cet avertissement.'
   }
 };

@@ -1048,6 +1048,25 @@ module.exports = {
     grant_error_missing_code: 'C\u00f3digo ausente. Uso: aioson squad:grant <c\u00f3digo> <email>',
     grant_error_missing_email: 'Email ausente. Uso: aioson squad:grant <c\u00f3digo> <email>',
     grant_sending: 'Concediendo acceso a {email} para el c\u00f3digo {code}...',
-    grant_ok: '{email} ahora puede instalar usando el c\u00f3digo {code}.'
+    grant_ok: '{email} ahora puede instalar usando el c\u00f3digo {code}.',
+
+    publish_scanning: 'Ejecutando an\u00e1lisis de seguridad...',
+    publish_scan_ok: 'An\u00e1lisis de seguridad superado. Hash del paquete: {hash}...',
+    error_scan_failed: 'Publicaci\u00f3n bloqueada: el an\u00e1lisis de seguridad encontr\u00f3 errores.',
+    error_scan_warnings: 'Publicaci\u00f3n bloqueada: {count} patr\u00f3n(es) sospechoso(s) detectado(s). Revise las advertencias. Use --force si est\u00e1 seguro de que el paquete es seguro.',
+
+    install_scanning: 'Verificando integridad del paquete...',
+    error_install_scan_failed: 'Instalaci\u00f3n bloqueada: el paquete "{slug}" fall\u00f3 el an\u00e1lisis de seguridad.',
+    error_hash_mismatch: 'Instalaci\u00f3n bloqueada: el hash no coincide para "{slug}". El paquete puede haber sido alterado.',
+
+    install_preview_header: 'Paquete: {slug}  v{version}  por {publisher}',
+    install_preview_trusted: '  Estado: Editor de confianza',
+    install_preview_unverified: '  Estado: Editor no verificado \u2014 revise los archivos antes de usar',
+    install_preview_downloads: '  Descargas: {count}',
+    install_preview_rating: '  Calificaci\u00f3n: {rating}',
+    install_preview_hash: '  Hash: {hash}...',
+    install_inspect_files: 'Archivos en este paquete ({count} en total):',
+    install_inspect_hint: 'Ejecute sin --inspect para instalar.',
+    install_unverified_hint: '  Tip: Use --inspect para revisar los archivos antes de instalar, o --force para omitir esta advertencia.'
   }
 };

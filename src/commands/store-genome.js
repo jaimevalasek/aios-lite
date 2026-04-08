@@ -5,6 +5,7 @@ const path = require('node:path');
 const { exists } = require('../utils');
 const { readConfig } = require('./config');
 const { readWorkspace, findProjectRoot } = require('./workspace');
+const { scanPackage, formatScanReport } = require('../lib/store/security-scan');
 
 const DEFAULT_BASE_URL = 'https://aioson.com';
 const GENOMES_DIR = '.aioson/genomes';
@@ -99,15 +100,30 @@ async function runGenomePublish({ args, options, logger, t }) {
   }
 
   const refs = await collectRefs(refsDir);
+
+  // Security scan
+  const allFiles = { [`${slug}.md`]: content };
+  if (meta) allFiles[`${slug}.meta.json`] = JSON.stringify(meta);
+  for (const [k, v] of Object.entries(refs)) allFiles[`refs/${k}`] = v;
+
+  const scan = scanPackage(allFiles, 'genome');
+  formatScanReport(scan, logger);
+  if (!scan.ok) throw new Error(t('store.error_scan_failed'));
+  if (scan.warnings.length > 0 && !options.force) {
+    throw new Error(t('store.error_scan_warnings', { count: scan.warnings.length }));
+  }
+
   const ws = await readWorkspace(projectDir);
   const visibility = options.private ? 'private' : 'public';
   const paid = Boolean(options.paid);
 
   if (options['dry-run']) {
     logger.log(t('store.publish_dry_run', { type: 'genome', slug, visibility }));
-    return { ok: true, dryRun: true, slug, visibility, paid };
+    logger.log(t('store.publish_scan_ok', { hash: scan.hash.slice(0, 12) }));
+    return { ok: true, dryRun: true, slug, visibility, paid, hash: scan.hash };
   }
 
+  logger.log(t('store.publish_scan_ok', { hash: scan.hash.slice(0, 12) }));
   logger.log(t('store.publish_genome_sending'));
   const baseUrl = resolveBaseUrl(config);
   const response = await storePost(`${baseUrl}/api/store/genomes/publish`, {
@@ -118,6 +134,7 @@ async function runGenomePublish({ args, options, logger, t }) {
     refs,
     visibility,
     paid,
+    hash: scan.hash,
     workspaceSlug: ws?.slug || null
   }, token);
 

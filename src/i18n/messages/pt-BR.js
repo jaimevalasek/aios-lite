@@ -1243,6 +1243,25 @@ module.exports = {
     grant_error_missing_code: 'Codigo ausente. Uso: aioson squad:grant <codigo> <email>',
     grant_error_missing_email: 'Email ausente. Uso: aioson squad:grant <codigo> <email>',
     grant_sending: 'Concedendo acesso a {email} para o codigo {code}...',
-    grant_ok: '{email} agora pode instalar usando o codigo {code}.'
+    grant_ok: '{email} agora pode instalar usando o codigo {code}.',
+
+    publish_scanning: 'Executando varredura de seguranca...',
+    publish_scan_ok: 'Varredura de seguranca aprovada. Hash do pacote: {hash}...',
+    error_scan_failed: 'Publicacao bloqueada: a varredura de seguranca encontrou erros. Corrija-os ou entre em contato com o suporte.',
+    error_scan_warnings: 'Publicacao bloqueada: {count} padrao(oes) suspeito(s) detectado(s). Revise os avisos acima. Use --force se tiver certeza de que o pacote e seguro.',
+
+    install_scanning: 'Verificando integridade do pacote...',
+    error_install_scan_failed: 'Instalacao bloqueada: o pacote "{slug}" falhou na varredura de seguranca. Pode ter sido adulterado.',
+    error_hash_mismatch: 'Instalacao bloqueada: hash divergente para "{slug}". O pacote pode ter sido alterado em transito.',
+
+    install_preview_header: 'Pacote: {slug}  v{version}  por {publisher}',
+    install_preview_trusted: '  Status: Publisher verificado',
+    install_preview_unverified: '  Status: Publisher nao verificado \u2014 revise os arquivos antes de usar',
+    install_preview_downloads: '  Downloads: {count}',
+    install_preview_rating: '  Avaliacao: {rating}',
+    install_preview_hash: '  Hash: {hash}...',
+    install_inspect_files: 'Arquivos neste pacote ({count} no total):',
+    install_inspect_hint: 'Execute sem --inspect para instalar.',
+    install_unverified_hint: '  Dica: Use --inspect para revisar os arquivos antes de instalar, ou --force para ignorar este aviso.'
   }
 };
