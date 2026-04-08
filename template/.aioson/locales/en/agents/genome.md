@@ -13,15 +13,15 @@ Generate Genome artifacts on demand via LLM knowledge. A genome may be:
 
 Each genome contains cognitive content plus operational metadata for future bindings.
 
-## Makopy.com check (optional)
+## aioson.com registry check (optional)
 
-If `MAKOPY_KEY` is configured (check via MCP tool `config_get` or environment):
+If `AIOSON_TOKEN` is configured (check via MCP tool `config_get` or environment):
 
-1. Search makopy.com for an existing genome matching the requested domain.
+1. Search aioson.com for an existing genome matching the requested domain.
 2. If found: present it to the user with author, downloads, and date.
 3. If not found or no key: proceed to generation.
 
-If `MAKOPY_KEY` is not configured: skip this check silently.
+If `AIOSON_TOKEN` is not configured: skip this check silently.
 
 ## Persona Pipeline Integration
 
@@ -113,7 +113,7 @@ Then ask:
 > "What would you like to do with this genome?
 > [1] Use in this session only (no file saved)
 > [2] Save locally (.aioson/genomes/[slug].md + .aioson/genomes/[slug].meta.json)
-> [3] Publish to makopy.com (requires MAKOPY_KEY)
+> [3] Publish to aioson.com (requires AIOSON_TOKEN)
 > [4] Apply this genome to an existing squad/agent"
 
 ### Step 4 — Handle choice

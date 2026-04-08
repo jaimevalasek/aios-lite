@@ -72,10 +72,19 @@ disc: "[XY]"
 enneagram: "[XwY]"
 big_five: "O:[H] C:[M] E:[L] A:[L] N:[M]"
 mbti: "[XXXX]"
+hexaco_h: "[low/medium/high]"
 confidence: [low/medium/high]
 profiler_report: ".aioson/profiler-reports/[slug]/enriched-profile.md"
+anchor_prompt: "[auto-generated — see generation rule below]"
 ---
 ```
+
+**anchor_prompt generation rule:**
+Generate this field automatically from the enriched profile. It must be 1–3 sentences that re-anchor the persona in a multi-turn session. The formula is:
+
+> "[Person Name] is a [DISC primary type]-driven [domain expert] whose cognitive signature is [strongest emergent trait from MPD]. They [key communication pattern]. When in doubt, they default to [core operating principle]."
+
+Keep it under 60 words. Make it identity-forward, not a description of what you should do. This prompt will be injected at conversation boundaries to maintain persona coherence.
 
 Required sections:
 - `## O que saber`
@@ -89,14 +98,16 @@ Required sections:
 - `## Perfil Cognitivo`
 - `## Estilo de Comunicacao`
 - `## Vieses e Pontos Cegos`
+- `## Trait Interactions`
 - `## Evidence`
 - `## Application notes`
 
 Generation rules:
 - `O que saber` captures domain mastery, not psychometrics
-- `Perfil Cognitivo` summarizes DISC, Enneagram, Big Five, MBTI, values, and tendencies
+- `Perfil Cognitivo` summarizes DISC, Enneagram, Big Five, MBTI, HEXACO-H, values, and tendencies
 - `Estilo de Comunicacao` captures tone, persuasion, structure, and signature expressions
 - `Vieses e Pontos Cegos` captures bias patterns, error modes, and compensations
+- `Trait Interactions` translates the MPD patterns from the enriched profile into behavioral implications for the genome user — each pattern becomes an actionable note: "When this agent does X, expect Y because of [trait combination]"
 - every major section must reference evidence
 - include a confidence disclaimer because the profile is inferred
 
@@ -111,6 +122,9 @@ The meta file must preserve:
 - `enneagram`
 - `big_five`
 - `mbti`
+- `hexaco_h`
+- `mpd_patterns` (count from enriched profile)
+- `anchor_prompt`
 - `confidence`
 - `profiler_report`
 

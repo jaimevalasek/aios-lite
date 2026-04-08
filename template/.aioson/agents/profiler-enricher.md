@@ -122,6 +122,26 @@ Confidence: [low/medium/high]
 Key evidence: [...]
 ```
 
+#### HEXACO-H (Honesty-Humility)
+Use `HEXACO-H` tagged material from the research report. Rate each dimension:
+- **Sincerity** (vs manipulation): [low/medium/high] — does the person communicate intentions transparently or with strategic ambiguity?
+- **Fairness** (vs self-serving): [low/medium/high] — do they follow rules when inconvenient to themselves?
+- **Modesty** (vs grandiosity): [low/medium/high] — how do they frame their own achievements?
+- **Greed-avoidance** (vs materialism): [low/medium/high] — is motivation primarily financial/status-driven or mission-driven?
+
+Output:
+```text
+HEXACO-H:
+Sincerity: [low/medium/high] — Evidence: [...]
+Fairness: [low/medium/high] — Evidence: [...]
+Modesty: [low/medium/high] — Evidence: [...]
+Greed-avoidance: [low/medium/high] — Evidence: [...]
+Overall H-factor: [low/medium/high]
+Confidence: [low/medium/high]
+```
+
+If `HEXACO-H` tagged material is sparse, mark as low confidence and note the gap explicitly.
+
 ### Module 2 - Decision frameworks
 For each named or repeated framework, capture:
 - framework name
@@ -178,6 +198,32 @@ Estimate when evidence allows:
 - risk profile
 - leadership style
 
+### Module 8 - Multi-trait Pattern Detection (MPD)
+Analyze interactions between the psychometric dimensions to identify emergent patterns that cannot be seen by looking at each trait in isolation (IPE — Isolated Psychometric Evaluation).
+
+For each significant cross-framework combination:
+
+**Format:**
+```text
+Trait Interaction: [Framework A trait] × [Framework B trait]
+Pattern type: [amplification / tension / compensation / paradox]
+Emergent behavior: [what actually appears in observed behavior]
+Evidence: [specific source]
+Implication for the genome: [how this should be encoded in Genome 3.0]
+```
+
+Run MPD for all combinations that show score contrast ≥ 2 levels or where evidence conflicts with the individual trait prediction:
+- DISC D × Enneagram core type
+- DISC C × Big Five Conscientiousness
+- DISC I × MBTI Extraversion (amplified or contradicted?)
+- Big Five Agreeableness × DISC D (tension?)
+- Enneagram instinctual variant × MBTI dominant function
+- HEXACO-H Sincerity × DISC I (is persuasiveness authentic or strategic?)
+- HEXACO-H Modesty × Big Five Conscientiousness (do high-C people suppress or express grandiosity?)
+- Any combination where observed behavior contradicts the isolated trait prediction
+
+Capture at least 3 MPD patterns. If fewer than 3 are supported by evidence, mark the section partial.
+
 If evidence is insufficient for any module, mark the section as low confidence instead of guessing harder.
 
 ## Step 4 - Produce the enriched profile
@@ -201,6 +247,8 @@ confidence: [low/medium/high]
 disc: [XY]
 enneagram: [XwY]
 mbti: [XXXX]
+hexaco_h: [low/medium/high — overall H-factor]
+mpd_patterns: [count — number of documented trait interactions]
 ---
 
 # Enriched Profile: [Full Name]
@@ -221,6 +269,7 @@ mbti: [XXXX]
 ### Enneagram
 ### Big Five
 ### MBTI
+### HEXACO-H
 
 ## Decision Frameworks
 ### Framework: [Name]
@@ -242,6 +291,12 @@ mbti: [XXXX]
 - Schwartz Values
 - risk profile
 - leadership style
+
+## Trait Interactions (MPD)
+### Pattern: [DISC × Enneagram]
+### Pattern: [HEXACO-H × ...]
+### Pattern: [Big Five × MBTI]
+<!-- Add all documented patterns here -->
 
 ## Evidence Map
 - each major claim -> supporting sources

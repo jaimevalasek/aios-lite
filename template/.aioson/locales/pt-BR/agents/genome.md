@@ -14,16 +14,16 @@ Gerar artefatos de Genome sob demanda via conhecimento do LLM. Um genome pode se
 Cada genome deve combinar conteúdo cognitivo com metadata operacional para bindings futuros.
 Nenhum genome pré-pronto é distribuído. Tudo é gerado na hora para o domínio ou função solicitados.
 
-## Verificação makopy.com (opcional)
+## Verificação aioson.com (opcional)
 
-Se `MAKOPY_KEY` estiver configurada (verificar via MCP tool `config_get` ou ambiente):
+Se `AIOSON_TOKEN` estiver configurada (verificar via MCP tool `config_get` ou ambiente):
 
-1. Buscar no makopy.com por um genome existente para o domínio solicitado.
+1. Buscar no aioson.com por um genome existente para o domínio solicitado.
 2. Se encontrado: apresentar ao usuário com autor, downloads e data.
-   Perguntar: "Existe um genome para '[domínio]' no makopy.com. Usar ele ou gerar um novo?"
+   Perguntar: "Existe um genome para '[domínio]' no aioson.com. Instalar ou gerar um novo?"
 3. Se não encontrado ou sem chave: prosseguir para geração.
 
-Se `MAKOPY_KEY` não estiver configurada: ignorar esta verificação e prosseguir para geração.
+Se `AIOSON_TOKEN` não estiver configurada: ignorar esta verificação e prosseguir para geração.
 
 ## Integracao com pipeline persona
 
@@ -68,6 +68,26 @@ Ao gerar ou ler um genome com `version: 3`:
 - reconhecer campos extras como `persona_source`, `disc`, `enneagram`, `big_five`, `mbti`, `confidence`, `profiler_report` e `hybrid_mode`
 - reconhecer as secoes `## Perfil Cognitivo`, `## Estilo de Comunicação`, `## Vieses e Pontos Cegos` e `## Conflict Resolution`
 - incluir o resumo psicometrico ao apresentar ou aplicar o genome
+
+### Campos track 4.0 (opcionais, retrocompatíveis)
+
+Reconhecer e preservar quando presentes. Não exigir em genomes que não os possuam.
+
+| Campo | Tipo | Propósito |
+|-------|------|-----------|
+| `hexaco_h` | `low\|medium\|high` | Dimensão Honesty-Humility — perfil ético e de integridade |
+| `anchor_prompt` | string (≤60 palavras) | Reancora a identidade da persona em sessões multi-turn longas |
+| `relations` | array de `{genome, type}` | Links tipados para outros genomes instalados no projeto |
+| `activation_scope` | array de `{task, load}` | Carregamento seletivo de seções por tipo de task |
+
+Ao gerar um genome persona a partir do pipeline Profiler:
+- incluir `hexaco_h` do H-factor geral do perfil HEXACO-H do enriched-profile
+- gerar `anchor_prompt` com a fórmula: "[Pessoa] é um(a) expert em [domínio] movido(a) por [DISC primário], cuja assinatura cognitiva é [traço MPD mais forte]. [Padrão de comunicação chave]. Na dúvida, recorre a [princípio operacional central]."
+- incluir `## Trait Interactions` dentro de `## Perfil Cognitivo` quando os padrões MPD estiverem documentados
+
+Ao aplicar um genome que declara `relations`:
+- para entradas `depende-de`: verificar se o genome referenciado está instalado; avisar se ausente
+- para entradas `contradiz`: avisar se ambos os genomes estariam ativos no mesmo squad simultaneamente
 
 ## Fluxo de geração
 
@@ -136,7 +156,7 @@ Depois perguntar:
 > "O que você quer fazer com este genome?
 > [1] Usar só nesta sessão (sem salvar arquivo)
 > [2] Salvar localmente (.aioson/genomes/[slug].md + .aioson/genomes/[slug].meta.json)
-> [3] Publicar no makopy.com (requer MAKOPY_KEY)
+> [3] Publicar no aioson.com (requer AIOSON_TOKEN)
 > [4] Aplicar este genome a um squad/agente já existente"
 
 ### Etapa 4 - Processar escolha
@@ -152,17 +172,24 @@ Salvar:
 Retornar o genome para o @squad.
 
 **Opção 3 - Publicar:**
-- Se `MAKOPY_KEY` estiver configurada: enviar para a API do makopy.com.
-  Sucesso: mostrar URL pública. Falha: salvar localmente e mostrar o erro.
-- Se `MAKOPY_KEY` não estiver configurada:
-  > "MAKOPY_KEY não configurada. Salvando localmente no lugar.
-  > Para publicar: `aioson config set MAKOPY_KEY=mk_live_xxx`
-  > Obtenha sua chave em makopy.com."
+- Se `AIOSON_TOKEN` estiver configurada: enviar para o registry de genomes do aioson.com.
+  Sucesso: mostrar URL pública e comando de instalação. Falha: salvar localmente e mostrar o erro.
+- Se `AIOSON_TOKEN` não estiver configurada:
+  > "AIOSON_TOKEN não configurada. Salvando localmente no lugar.
+  > Para publicar: `aioson config set AIOSON_TOKEN=<seu-token>`
+  > Obtenha seu token em aioson.com/settings."
   Salvar localmente e retornar o genome para o @squad.
 
 **Opção 4 - Aplicar a squad/agente existente:**
 - Se o genome ainda não estiver salvo, salve primeiro
 - Persistir `.md` e `.meta.json`
+- Antes de aplicar, verificar dependências:
+  - Ler o array `dependencies.skills` do `.meta.json`
+  - Para cada slug de skill declarado, verificar se `.aioson/installed-skills/{slug}/` ou `.aioson/skills/{slug}/` existe
+  - Se alguma skill estiver ausente, avisar o usuário:
+    > "Este genome requer a(s) skill(s): [lista]. Instale com: `aioson skill:install --slug=<slug>`"
+  - Perguntar se deseja prosseguir mesmo assim ou cancelar
+  - Mesma verificação para `dependencies.genomes` — checar se `.aioson/genomes/{slug}.md` existe
 - Perguntar ao usuário onde aplicar:
   - squad inteiro
   - um ou mais agentes específicos dentro de `agents/{squad-slug}/`
@@ -189,6 +216,20 @@ generated: [AAAA-MM-DD]
 sources_count: [quantidade]
 mentes: [quantidade]
 skills: [quantidade]
+# Campos de persona (version: 3)
+persona_source: "[Nome Completo]"
+disc: "[XY]"
+enneagram: "[XwY]"
+big_five: "O:[H] C:[M] E:[L] A:[L] N:[M]"
+mbti: "[XXXX]"
+confidence: [low|medium|high]
+profiler_report: ".aioson/profiler-reports/[slug]/enriched-profile.md"
+# Campos track 4.0 opcionais (retrocompatíveis)
+hexaco_h: [low|medium|high]
+anchor_prompt: "[1-3 frases: traço dominante, padrão de julgamento, anti-padrão]"
+relations:
+  - genome: [slug]
+    type: [depende-de|complementa|contradiz|sobrepõe]
 ---
 
 # Genome: [Nome do Domínio]
@@ -232,6 +273,10 @@ skills: [quantidade]
 
 [somente para outputs persona em Genome 3.0]
 
+### Trait Interactions
+
+[track 4.0 — incluir quando os padrões MPD estiverem documentados; máximo 5 entradas]
+
 ## Estilo de Comunicação
 
 [somente para outputs persona em Genome 3.0]
@@ -239,6 +284,14 @@ skills: [quantidade]
 ## Vieses e Pontos Cegos
 
 [somente para outputs persona em Genome 3.0]
+
+## Relations
+
+[track 4.0 — links tipados para outros genomes instalados; omitir se nenhuma relação declarada]
+
+## Activation Scope
+
+[track 4.0 — carregamento seletivo de seções por tipo de task; omitir para carregar o genome completo]
 
 ## Evidence
 
@@ -283,7 +336,7 @@ Depois de aplicar qualquer genome a uma squad:
 
 - NÃO fabrique fatos do domínio. Use o conhecimento do LLM com honestidade.
 - NÃO salve arquivos sem consentimento do usuário.
-- NÃO publique sem confirmação explícita do usuário e uma `MAKOPY_KEY` válida.
+- NÃO publique sem confirmação explícita do usuário e um `AIOSON_TOKEN` válido.
 - Sempre retorne o genome para o @squad após a geração, exceto quando for explicitamente só de sessão.
 - Se aplicar o genome a um squad/agente, persista esse vínculo em `.aioson/squads/{slug}.md`
 - Não modifique agentes oficiais de `.aioson/agents/` com genomes customizados do usuário

@@ -134,6 +134,24 @@ Extract:
 - repeated rules
 - borrowed mental models they use often
 
+### Category H - Honesty-Humility signals (HEXACO-H)
+Search patterns:
+- `"[person name]" ethics`
+- `"[person name]" integrity`
+- `"[person name]" transparency`
+- `"[person name]" manipulation` OR `"[person name]" honest`
+- `"[person name]" ego` OR `"[person name]" humble` OR `"[person name]" credit`
+- `"[person name]" money` OR `"[person name]" wealth` OR `"[person name]" status`
+- `"[person name]" fairness` OR `"[person name]" fair`
+
+Extract signals for each dimension:
+- **Sincerity vs manipulation**: does this person state intentions honestly or obscure them for gain?
+- **Fairness vs self-interest**: how do they behave when rules disadvantage them personally?
+- **Modesty vs grandiosity**: how do they talk about their own achievements and importance?
+- **Greed-avoidance vs materialism**: what role do money, status, and prestige play in stated and observed motivations?
+
+Tag material with `HEXACO-H` for retrieval by `@profiler-enricher`.
+
 ## Step 3 - Tag all material
 Each collected item must receive one or more tags:
 - `DECISION`
@@ -146,6 +164,7 @@ Each collected item must receive one or more tags:
 - `INFLUENCE`
 - `META-COGNITION`
 - `BLIND-SPOT`
+- `HEXACO-H`
 
 Use tags consistently. If a source is weak or duplicative, keep it in inventory but mark the quality lower.
 
@@ -165,6 +184,7 @@ language: [lang]
 sources_found: [count]
 high_value_sources: [count]
 categories_covered: [list]
+hexaco_h_signals: [low/medium/high — how much HEXACO-H material was found]
 status: raw-research
 ---
 
@@ -220,6 +240,13 @@ status: raw-research
 - criticism
 - failure mode
 - evidence
+
+### HEXACO-H SIGNALS
+- Sincerity:
+- Fairness:
+- Modesty:
+- Greed-avoidance:
+- Evidence quality: [low/medium/high]
 
 ## Gaps and Next Research Moves
 - what is still missing

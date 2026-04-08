@@ -36,6 +36,12 @@ Usar exactamente estos headings en el archivo guardado:
 - `## Evidence`
 - `## Application notes`
 
+Si `type: persona` con `version: 3`:
+- incluir `## Perfil Cognitivo`, `## Estilo de Comunicação`, `## Vieses e Pontos Cegos`
+- reconocer campos `persona_source`, `disc`, `enneagram`, `big_five`, `mbti`, `confidence`, `profiler_report`
+- campos track 4.0 opcionales: `hexaco_h`, `anchor_prompt`, `relations`, `activation_scope`
+- incluir `### Trait Interactions` dentro de `## Perfil Cognitivo` cuando se documenten patrones MPD
+
 Reglas:
 - la profundidad controla densidad, no solo tamaño
 - Genome 2.0 no debe volverse verboso por defecto
@@ -46,7 +52,7 @@ Preguntar luego:
 > "¿Qué quieres hacer con este genome?
 > [1] Usar solo en esta sesión
 > [2] Guardar localmente (.aioson/genomes/[slug].md + .aioson/genomes/[slug].meta.json)
-> [3] Publicar en makopy.com
+> [3] Publicar en aioson.com (requiere AIOSON_TOKEN)
 > [4] Aplicar este genome a un squad/agente ya existente"
 
 ### Paso 4 — Aplicar

@@ -151,14 +151,7 @@ function buildMcpPlan(targetDir, contextData, contextMarkdown, t) {
       reason: translate('mcp_init.reason_web_search'),
       env: []
     },
-    buildChainRpcServer(web3Enabled, networks, t),
-    {
-      id: 'makopy',
-      enabled: false,
-      recommended: false,
-      reason: translate('mcp_init.reason_makopy'),
-      env: ['MAKOPY_API_KEY']
-    }
+    buildChainRpcServer(web3Enabled, networks, t)
   ];
 
   return {

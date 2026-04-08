@@ -7,7 +7,6 @@
 - context7: up-to-date framework docs
 - database: schema inspection
 - web-search: market and reference research
-- makopy: content generation pipelines
 
 ## Local generation with AIOSON CLI
 Use:
