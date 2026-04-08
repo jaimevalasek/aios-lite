@@ -22,6 +22,7 @@ const GENOME_V3_SECTION_KEYS = [
   'cognitiveProfile',
   'communicationStyle',
   'biases',
+  'traitInteractions',
   'conflictResolution'
 ];
 const GENOME_SECTION_KEYS = [...GENOME_CANONICAL_SECTION_KEYS, ...GENOME_V3_SECTION_KEYS];
@@ -99,6 +100,21 @@ function normalizeStringArray(value) {
 
   return source
     .map((entry) => normalizeText(entry))
+    .filter(Boolean);
+}
+
+const GENOME_RELATION_TYPES = ['complementa', 'contradiz', 'depende-de', 'sobrepos'];
+
+function normalizeRelations(value) {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((entry) => {
+      if (!entry || typeof entry !== 'object') return null;
+      const genome = normalizeText(entry.genome || entry.slug);
+      const type = normalizeText(entry.type);
+      if (!genome) return null;
+      return { genome, type };
+    })
     .filter(Boolean);
 }
 
@@ -193,6 +209,9 @@ function createEmptyGenome() {
     enneagram: '',
     bigFive: '',
     mbti: '',
+    hexacoH: '',
+    anchorPrompt: '',
+    relations: [],
     confidence: '',
     profilerReport: '',
     hybridMode: '',
@@ -210,6 +229,7 @@ function createEmptyGenome() {
       cognitiveProfile: [],
       communicationStyle: [],
       biases: [],
+      traitInteractions: [],
       conflictResolution: [],
       evidence: [],
       applicationNotes: []
@@ -289,6 +309,9 @@ function normalizeGenome(input = {}) {
     enneagram: normalizeText(merged.enneagram),
     bigFive: normalizeText(merged.bigFive || merged.big_five),
     mbti: normalizeText(merged.mbti),
+    hexacoH: normalizeOptionalEnum(merged.hexacoH || merged.hexaco_h, GENOME_CONFIDENCE_LEVELS),
+    anchorPrompt: normalizeText(merged.anchorPrompt || merged.anchor_prompt),
+    relations: normalizeRelations(merged.relations),
     confidence: normalizeOptionalEnum(merged.confidence, GENOME_CONFIDENCE_LEVELS),
     profilerReport: normalizeText(merged.profilerReport || merged.profiler_report),
     hybridMode: normalizeOptionalEnum(
@@ -315,6 +338,7 @@ function countGenomeSections(input = {}) {
     cognitiveProfile: genome.sections.cognitiveProfile.length,
     communicationStyle: genome.sections.communicationStyle.length,
     biases: genome.sections.biases.length,
+    traitInteractions: genome.sections.traitInteractions.length,
     conflictResolution: genome.sections.conflictResolution.length,
     evidence: genome.sections.evidence.length,
     applicationNotes: genome.sections.applicationNotes.length
@@ -334,6 +358,7 @@ function normalizeCounts(value = {}) {
     cognitiveProfile: normalizeInteger(value.cognitiveProfile, 0),
     communicationStyle: normalizeInteger(value.communicationStyle, 0),
     biases: normalizeInteger(value.biases, 0),
+    traitInteractions: normalizeInteger(value.traitInteractions, 0),
     conflictResolution: normalizeInteger(value.conflictResolution, 0),
     evidence: normalizeInteger(value.evidence, 0),
     applicationNotes: normalizeInteger(value.applicationNotes, 0)
@@ -390,6 +415,9 @@ function normalizeGenomeMeta(input = {}) {
     enneagram: normalizeText(input.enneagram || (genome && genome.enneagram)),
     bigFive: normalizeText(input.bigFive || input.big_five || (genome && genome.bigFive)),
     mbti: normalizeText(input.mbti || (genome && genome.mbti)),
+    hexacoH: normalizeOptionalEnum(input.hexacoH || input.hexaco_h || (genome && genome.hexacoH), GENOME_CONFIDENCE_LEVELS),
+    anchorPrompt: normalizeText(input.anchorPrompt || input.anchor_prompt || (genome && genome.anchorPrompt)),
+    relations: normalizeRelations(input.relations || (genome && genome.relations)),
     confidence: normalizeOptionalEnum(input.confidence || (genome && genome.confidence), GENOME_CONFIDENCE_LEVELS),
     profilerReport: normalizeText(input.profilerReport || input.profiler_report || (genome && genome.profilerReport)),
     hybridMode: normalizeOptionalEnum(
@@ -415,6 +443,10 @@ function normalizeGenomeMeta(input = {}) {
     bindings: {
       squads: normalizeStringArray(input.bindings && input.bindings.squads),
       agents: normalizeStringArray(input.bindings && input.bindings.agents)
+    },
+    dependencies: {
+      skills: normalizeStringArray(input.dependencies && input.dependencies.skills),
+      genomes: normalizeStringArray(input.dependencies && input.dependencies.genomes)
     },
     createdAt,
     updatedAt
@@ -455,6 +487,7 @@ module.exports = {
   GENOME_FORMATS,
   GENOME_CONFIDENCE_LEVELS,
   GENOME_HYBRID_MODES,
+  GENOME_RELATION_TYPES,
   GENOME_SECTION_KEYS,
   GENOME_CANONICAL_SECTION_KEYS,
   GENOME_V3_SECTION_KEYS,

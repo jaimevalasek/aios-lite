@@ -6,6 +6,7 @@ const {
   GENOME_FORMATS,
   GENOME_CONFIDENCE_LEVELS,
   GENOME_TYPES,
+  GENOME_RELATION_TYPES,
   countGenomeSections,
   normalizeGenome,
   normalizeGenomeMeta
@@ -77,6 +78,18 @@ function validatePersonaV3Requirements(normalized, sections, errors) {
   for (const key of ['cognitiveProfile', 'communicationStyle', 'biases']) {
     if (!Array.isArray(sections[key]) || sections[key].length === 0) {
       errors.push(`sections.${key} must contain at least one entry for genome-v3 persona profiles`);
+    }
+  }
+
+  // track 4.0 — optional, validate only if present
+  if (normalized.hexacoH && !GENOME_CONFIDENCE_LEVELS.includes(normalized.hexacoH)) {
+    errors.push(`hexaco_h must be one of: ${GENOME_CONFIDENCE_LEVELS.join(', ')}`);
+  }
+  if (Array.isArray(normalized.relations)) {
+    for (const rel of normalized.relations) {
+      if (rel.type && !GENOME_RELATION_TYPES.includes(rel.type)) {
+        errors.push(`relations[].type must be one of: ${GENOME_RELATION_TYPES.join(', ')}`);
+      }
     }
   }
 }
@@ -155,6 +168,7 @@ function validateGenomeMeta(input) {
         cognitiveProfile: Array(meta.counts.cognitiveProfile).fill('x'),
         communicationStyle: Array(meta.counts.communicationStyle).fill('x'),
         biases: Array(meta.counts.biases).fill('x'),
+        traitInteractions: Array(meta.counts.traitInteractions || 0).fill('x'),
         conflictResolution: Array(meta.counts.conflictResolution).fill('x'),
         evidence: Array(meta.counts.evidence).fill('x'),
         applicationNotes: Array(meta.counts.applicationNotes).fill('x')
@@ -168,6 +182,14 @@ function validateGenomeMeta(input) {
   }
   if (!meta.createdAt) errors.push('createdAt is required');
   if (!meta.updatedAt) errors.push('updatedAt is required');
+  if (hasOwn(input, 'dependencies') && input.dependencies !== null && typeof input.dependencies === 'object') {
+    if ('skills' in input.dependencies && !Array.isArray(input.dependencies.skills)) {
+      errors.push('dependencies.skills must be an array of strings');
+    }
+    if ('genomes' in input.dependencies && !Array.isArray(input.dependencies.genomes)) {
+      errors.push('dependencies.genomes must be an array of strings');
+    }
+  }
   validatePersonaV3Requirements(
     {
       version: meta.version,
@@ -183,7 +205,8 @@ function validateGenomeMeta(input) {
     {
       cognitiveProfile: Array(meta.counts.cognitiveProfile).fill('x'),
       communicationStyle: Array(meta.counts.communicationStyle).fill('x'),
-      biases: Array(meta.counts.biases).fill('x')
+      biases: Array(meta.counts.biases).fill('x'),
+      traitInteractions: Array(meta.counts.traitInteractions || 0).fill('x')
     },
     errors
   );

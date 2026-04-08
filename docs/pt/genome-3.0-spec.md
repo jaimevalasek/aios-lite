@@ -1,9 +1,10 @@
 # Genome 3.0 — Especificação de Formato
 
-> Versão: 3.0  
+> Versão: 3.1  
 > Status: Ativo  
-> Compatibilidade: retrocompatível com Genome 2.0  
-> Data: 2026-03-13
+> Compatibilidade: retrocompatível com Genome 2.0 e 3.0  
+> Data: 2026-04-07  
+> Changelog: adição de campos 4.0-track (anchor_prompt, relations, hexaco_h, trait_interactions)
 
 ---
 
@@ -57,6 +58,13 @@ generated: [YYYY-MM-DD]
 sources_count: [int]
 mentes: [int]
 skills: [int]
+# Campos opcionais do track 4.0 (retrocompatíveis — leitores 2.0/3.0 ignoram)
+relations:
+  - genome: [slug]
+    type: [complementa|contradiz|depende-de|sobrepõe]
+activation_scope:
+  - task: [strategic-decision|content-generation|review-critique|research]
+    load: [lista de seções canônicas a carregar]
 ---
 ```
 
@@ -71,9 +79,17 @@ disc: "[XY]"
 enneagram: "[XwY]"
 big_five: "O:[H] C:[M] E:[L] A:[L] N:[M]"
 mbti: "[XXXX]"
+# hexaco_h: dimensão Honesty-Humility do HEXACO (opcional, track 4.0)
+# Relevante para personas com dimensão ética, negociação ou comportamento moral
+# low = tendência estratégico-manipulativa | high = código de honra rígido, transparência auto-imposta
+hexaco_h: [low|medium|high]
 confidence: [low|medium|high]
 profiler_report: ".aioson/profiler-reports/[slug]/enriched-profile.md"
 hybrid_mode: [domain-function|single-persona|multi-persona]
+# anchor_prompt: resumo ultra-compacto para reforço em sessões longas (track 4.0)
+# Inserir a cada ~10 turnos para evitar deriva de persona (PersonaAgent NeurIPS 2025)
+anchor_prompt: |
+  [1-3 linhas: traço dominante, padrão de julgamento, anti-padrão central]
 ```
 
 ### Exemplo de frontmatter persona
@@ -129,6 +145,14 @@ profiler_report: ".aioson/profiler-reports/stefan-georgi/enriched-profile.md"
 | `## Estilo de Comunicação` | Sim | Voz, persuasão e padrões retóricos |
 | `## Vieses e Pontos Cegos` | Sim | Biases, erros recorrentes e compensações |
 | `## Conflict Resolution` | Só multi-persona | Hierarquia e desempate entre personas |
+
+### Opcionais — track 4.0 (retrocompatíveis)
+
+| Seção | Quando usar |
+|-------|-------------|
+| `## Trait Interactions` | Em `## Perfil Cognitivo` de personas com perfis psicométricos combinados complexos |
+| `## Relations` | Quando o genome depende ou complementa outros genomes instalados |
+| `## Activation Scope` | Quando o genome deve carregar seções diferentes por tipo de task |
 
 ---
 
@@ -216,6 +240,78 @@ Cobrir:
 
 ---
 
+## Seções track 4.0 (opcionais, retrocompatíveis)
+
+### `## Trait Interactions`
+
+Incluída dentro de `## Perfil Cognitivo` quando a combinação de traços psicométricos gera comportamentos emergentes relevantes para quem aplica o genome.
+
+**Por que importa:** pesquisa de 2026 (HumanLLM arXiv 2601.10198) demonstrou que avaliar traços em combinação (MPD — Multi-Pattern Dynamics) produz fidelidade de persona significativamente superior à avaliação por traço isolado (IPE). Um perfil DISC:D + Enneagram:9 cria tensão real que muda como o agente se comporta.
+
+Estrutura recomendada:
+
+```markdown
+### Trait Interactions
+
+| Combinação | Comportamento Emergente | Implicação para Agentes |
+|---|---|---|
+| DISC-D × Enneagram-9 | Liderança assertiva em público, conflito-aversivo em privado | Não espere confronto direto — busque harmonia primeiro |
+| Big Five O:H × C:H | Cria sistemas para explorar novidade — inventário, não caos | Respostas vêm em frameworks, não em brainstorms livres |
+| Enneagram-3w4 × DISC-DI | Competição orientada a distintividade, não só resultado | Gatilho: comparação com pares percebidos como criativos |
+```
+
+Regras:
+- incluir apenas combinações que gerem comportamento não-óbvio
+- máximo 5 entradas por genome
+- focar em implicações práticas para agentes que aplicam o genome
+
+### `## Relations`
+
+Declara dependências e relações tipadas com outros genomes instalados no projeto.
+
+**Por que importa:** Agentic RAG e sistemas de memória 2026 (A-MEM, MemOS) demonstram que representação explícita de relações entre nós de conhecimento reduz turnos necessários em 18% e aumenta completude de task em 19%.
+
+Estrutura recomendada:
+
+```markdown
+## Relations
+
+| Genome | Tipo | Nota |
+|---|---|---|
+| `persuasion-psychology` | depende-de | frameworks de persuasão usados nas heurísticas |
+| `brand-voice-acme` | sobrepõe | voz da marca tem precedência sobre tom genérico |
+| `storytelling-retention` | complementa | narrativa + copy trabalham juntos |
+```
+
+Tipos válidos:
+- `depende-de` — este genome pressupõe o outro instalado
+- `complementa` — combinação produz resultado superior
+- `contradiz` — aplicar ambos simultaneamente cria conflito — escolher um
+- `sobrepõe` — o outro tem precedência no campo declarado
+
+### `## Activation Scope`
+
+Define quais seções canônicas carregar por tipo de task. Permite injeção parcial do genome em contexto, reduzindo tokens e aumentando precisão.
+
+**Por que importa:** PRISM (arXiv 2603.18507, 2026) demonstrou que personas de expert melhoram alinhamento mas podem danificar acurácia factual quando ativadas integralmente em tasks analíticas. Roteamento seletivo por task resolve isso.
+
+Estrutura recomendada:
+
+```markdown
+## Activation Scope
+
+| Task type | Seções a carregar |
+|---|---|
+| `strategic-decision` | Filosofias, Modelos mentais, Perfil Cognitivo |
+| `content-generation` | Frameworks, Heurísticas, Skills, Estilo de Comunicação |
+| `review-critique` | Vieses e Pontos Cegos, Mentes, Application notes |
+| `research` | O que saber, Evidence, Relations |
+```
+
+Se esta seção estiver ausente: carregar o genome completo (comportamento padrão).
+
+---
+
 ## Regras de compatibilidade
 
 ### Leitura por sistema 2.0
@@ -247,6 +343,15 @@ Quando um genome persona for gerado sem profiler completo:
 - `confidence: low`
 - incluir disclaimer explícito em `## Application notes`
 
+### Campos track 4.0 (adição retrocompatível)
+
+Os campos `relations`, `activation_scope`, `hexaco_h` e `anchor_prompt` são retrocompatíveis por adição:
+
+- leitores 2.0/3.0 que não reconhecem esses campos os ignoram
+- o genome continua válido e operacional sem eles
+- nenhum campo track 4.0 é obrigatório
+- `anchor_prompt` é recomendado para genomes persona usados em sessões longas (multi-turn)
+
 ---
 
 ## Meta file recomendado
@@ -268,8 +373,14 @@ Além do markdown, recomenda-se um `.meta.json` correspondente com:
   "enneagram": "3w4",
   "big_five": "O:H C:H E:H A:M N:L",
   "mbti": "ENTJ",
+  "hexaco_h": "medium",
   "confidence": "medium",
-  "profiler_report": ".aioson/profiler-reports/stefan-georgi/enriched-profile.md"
+  "profiler_report": ".aioson/profiler-reports/stefan-georgi/enriched-profile.md",
+  "anchor_prompt": "Pensa em copy como vendedor infatigável. Pesquisa antes de escrever. Mecanismo vem antes do headline. Especificidade > generalidade. Evitar: persuasão genérica sem ângulo único.",
+  "relations": [
+    { "genome": "copywriting", "type": "complementa" },
+    { "genome": "persuasion-psychology", "type": "depende-de" }
+  ]
 }
 ```
 
