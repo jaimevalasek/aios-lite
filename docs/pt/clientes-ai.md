@@ -232,12 +232,16 @@ Alias compativel:
 
 ### Estrutura dos comandos Gemini
 
-Cada arquivo `.gemini/commands/aios-*.toml` aponta para o agente correspondente:
+Cada arquivo `.gemini/commands/aios-*.toml` aponta para o agente correspondente usando o campo `prompt` e injeção de arquivo:
 
 ```toml
-name = "aios-setup"
 description = "Project onboarding"
-instruction_file = ".aioson/agents/setup.md"
+prompt = """
+@{ .aioson/context/project.context.md }
+@{ .aioson/agents/setup.md }
+
+{{args}}
+"""
 ```
 
 ---
