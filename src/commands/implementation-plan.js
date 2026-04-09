@@ -15,6 +15,7 @@ const {
 } = require('../runtime-store');
 
 const CONTEXT_DIR = path.join('.aioson', 'context');
+const PLANS_DIR = path.join('.aioson', 'plans');
 
 async function pathExists(targetPath) {
   try {
@@ -23,6 +24,26 @@ async function pathExists(targetPath) {
   } catch {
     return false;
   }
+}
+
+/**
+ * Resolve the best path for an implementation plan given a slug.
+ */
+async function resolvePlanPath(projectDir, featureSlug) {
+  if (featureSlug) {
+    // 1. Try new structured directory: .aioson/plans/{slug}/manifest.md
+    const structuredPath = path.join(projectDir, PLANS_DIR, featureSlug, 'manifest.md');
+    if (await pathExists(structuredPath)) return structuredPath;
+
+    // 2. Try legacy flat file: .aioson/context/implementation-plan-{slug}.md
+    const legacyPath = path.join(projectDir, CONTEXT_DIR, `implementation-plan-${featureSlug}.md`);
+    if (await pathExists(legacyPath)) return legacyPath;
+
+    return structuredPath; // default to new structure even if missing
+  }
+
+  // No slug -> implementation-plan.md in context
+  return path.join(projectDir, CONTEXT_DIR, 'implementation-plan.md');
 }
 
 /**
@@ -47,7 +68,10 @@ async function computeSourceHash(projectDir, filePaths) {
  */
 async function detectPlanFiles(projectDir) {
   const contextDir = path.resolve(projectDir, CONTEXT_DIR);
+  const plansDir = path.resolve(projectDir, PLANS_DIR);
   const plans = [];
+
+  // Scan context (legacy/simple)
   try {
     const files = await fs.readdir(contextDir);
     for (const f of files) {
@@ -55,12 +79,24 @@ async function detectPlanFiles(projectDir) {
         const slug = f === 'implementation-plan.md'
           ? null
           : f.replace('implementation-plan-', '').replace('.md', '');
-        plans.push({ file: f, featureSlug: slug, path: path.join(CONTEXT_DIR, f) });
+        plans.push({ file: f, featureSlug: slug, path: path.join(CONTEXT_DIR, f), type: 'legacy' });
       }
     }
-  } catch {
-    // context dir may not exist
-  }
+  } catch { /* ignore */ }
+
+  // Scan structured plans
+  try {
+    const entries = await fs.readdir(plansDir, { withFileTypes: true });
+    for (const entry of entries) {
+      if (entry.isDirectory()) {
+        const manifest = path.join(plansDir, entry.name, 'manifest.md');
+        if (await pathExists(manifest)) {
+          plans.push({ file: 'manifest.md', featureSlug: entry.name, path: path.join(PLANS_DIR, entry.name, 'manifest.md'), type: 'structured' });
+        }
+      }
+    }
+  } catch { /* ignore */ }
+
   return plans;
 }
 
@@ -95,13 +131,10 @@ function countPhases(content) {
  * Shows the current implementation plan.
  */
 async function handleShow(projectDir, featureSlug, { logger, t }) {
-  const fileName = featureSlug
-    ? `implementation-plan-${featureSlug}.md`
-    : 'implementation-plan.md';
-  const planPath = path.resolve(projectDir, CONTEXT_DIR, fileName);
+  const planPath = await resolvePlanPath(projectDir, featureSlug);
 
   if (!(await pathExists(planPath))) {
-    logger.error(t('implementation_plan.not_found', { file: fileName }));
+    logger.error(t('implementation_plan.not_found', { file: path.basename(planPath) }));
     return { found: false };
   }
 
@@ -109,7 +142,7 @@ async function handleShow(projectDir, featureSlug, { logger, t }) {
   const meta = parsePlanFrontmatter(content);
   const phases = countPhases(content);
 
-  logger.log(`Plan: ${fileName}`);
+  logger.log(`Plan: ${path.basename(planPath)}`);
   logger.log(`Status: ${meta.status || 'unknown'}`);
   logger.log(`Classification: ${meta.classification || 'unknown'}`);
   logger.log(`Phases: ${phases}`);
@@ -199,13 +232,10 @@ async function handleCheckpoint(projectDir, featureSlug, phaseNumber, { logger, 
  * Checks if source artifacts changed after the plan was created.
  */
 async function handleStale(projectDir, featureSlug, { logger, t }) {
-  const fileName = featureSlug
-    ? `implementation-plan-${featureSlug}.md`
-    : 'implementation-plan.md';
-  const planPath = path.resolve(projectDir, CONTEXT_DIR, fileName);
+  const planPath = await resolvePlanPath(projectDir, featureSlug);
 
   if (!(await pathExists(planPath))) {
-    logger.error(t('implementation_plan.not_found', { file: fileName }));
+    logger.error(t('implementation_plan.not_found', { file: path.basename(planPath) }));
     return { found: false, stale: false };
   }
 
@@ -248,13 +278,10 @@ async function handleStale(projectDir, featureSlug, { logger, t }) {
  * Registers an existing plan file into the runtime SQLite.
  */
 async function handleRegister(projectDir, featureSlug, { logger, t }) {
-  const fileName = featureSlug
-    ? `implementation-plan-${featureSlug}.md`
-    : 'implementation-plan.md';
-  const planPath = path.resolve(projectDir, CONTEXT_DIR, fileName);
+  const planPath = await resolvePlanPath(projectDir, featureSlug);
 
   if (!(await pathExists(planPath))) {
-    logger.error(t('implementation_plan.not_found', { file: fileName }));
+    logger.error(t('implementation_plan.not_found', { file: path.basename(planPath) }));
     return { registered: false };
   }
 

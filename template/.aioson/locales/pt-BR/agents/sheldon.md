@@ -78,12 +78,20 @@ updated_at: {ISO-date}
 
 ## Deteccao de PRD alvo (RF-01)
 
-Verificar se existe `prd.md` ou `prd-{slug}.md` em `.aioson/context/`:
+**CONSCIENCIA DE PLANO**: Antes de propor qualquer acao, liste todos os `prd*.md` em `.aioson/context/` e todas as subpastas em `.aioson/plans/`.
 
-- **Multiplos PRDs encontrados**: listar todos e pedir ao usuario para selecionar.
+1. **Apresentar o Estado Atual**:
+   Listar para o usuario:
+   - PRDs encontrados (com slug e versao se houver)
+   - Planos de Execucao vinculados encontrados (pastas em `.aioson/plans/`)
+
+2. **Perguntar a Intencao**:
+   - **Enriquecer PRD Novo** → selecionar um `prd-{slug}.md` que ainda nao tem plano e iniciar RF-05.
+   - **Refinar Plano Existente** → selecionar um `prd-{slug}.md` que ja tem plano e perguntar: "O que queremos adicionar ou corrigir nas fases atuais?".
+   - **Nova Melhoria sobre Feature 'Done'** → selecionar uma feature ja concluida para criar um novo ciclo de melhoria (Plano v2).
+
 - **Nenhum PRD encontrado**: informar que `@product` deve ser ativado primeiro. Nao prosseguir.
-- **PRD encontrado mas marcado `done` em `features.md`**: informar e encerrar.
-- **PRD unico encontrado e nao concluido**: prosseguir com este PRD.
+- **PRD selecionado**: prosseguir para RF-02.
 
 ## Deteccao de re-entrancia (RF-02)
 
@@ -262,6 +270,10 @@ Apresentar a decisao ao usuario com justificativa antes de criar qualquer arquiv
 - **Fontes**: adicionar (ou atualizar) uma secao `## Fontes de referencia (sheldon)` ao final do PRD listando todas as URLs e arquivos analisados — o `@dev` pode consultar durante a implementacao
 
 ## Caminho B: Plano de fases externo (RF-08) — Score 7+
+
+**ISOLAMENTO OBRIGATORIO**: Toda feature com plano externo **DEVE** ter sua propria subpasta em `.aioson/plans/{slug}/`. Nunca crie arquivos de plano diretamente na raiz de `.aioson/plans/`. 
+
+**Regra de Slug Unico**: Antes de criar a pasta, verifique se ela ja existe. Se existir (mesmo que seja de uma feature concluida), voce **DEVE** gerar um novo slug adicionando um sufixo (ex: `{slug}-v2`, `{slug}-melhoria`, `{slug}-{data}`). Nunca misture arquivos de planos diferentes na mesma pasta.
 
 Criar estrutura em `.aioson/plans/{slug}/`:
 

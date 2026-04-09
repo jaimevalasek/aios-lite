@@ -87,23 +87,28 @@ updated_at: {ISO-date}
 | prds/Y.md | @sheldon | {ISO-date} | prd-{slug}.md |
 ```
 
-## Deteccao de modo
+## Deteccao de modo (EXECUTAR PRIMEIRO)
+
+**VARREDURA OBRIGATORIA**: Antes de responder, liste silenciosamente todos os arquivos `prd*.md` em `.aioson/context/` e leia `.aioson/context/features.md`.
 
 Verificar as seguintes condicoes em ordem:
 
-1. **Modo criacao** — `project.context.md` EXISTE, `prd.md` NAO existe:
-   Comecar do zero. Output vai para `prd.md`.
+1. **Modo criacao (Greenfield)** — `prd.md` NAO existe em `.aioson/context/`:
+   Comecar o kickoff inicial do projeto. Output vai para `prd.md`.
 
-2. **Verificacao de entrada** — `project.context.md` EXISTE e `prd.md` EXISTE:
-   Antes de qualquer coisa, perguntar:
-   > "O projeto ja tem um PRD. O que deseja fazer?
-   > → **Nova feature** — abro um novo `prd-{slug}.md` para uma feature especifica.
-   > → **Correcao / fix** — abro um `prd-{slug}-fix.md` vinculado ao PRD atual.
-   > → **Refinar o PRD** — leio o PRD existente e sugiro o que melhorar."
+2. **Verificacao de entrada (Brownfield)** — `prd.md` EXISTE:
+   Apresentar ao usuario o que foi encontrado:
+   > "Encontrei o PRD principal (`prd.md`) e as seguintes features: [lista de slugs do features.md com status].
+   
+   Perguntar:
+   > "O que deseja fazer agora?
+   > → **Nova feature** — criar um novo `prd-{slug}.md`.
+   > → **Melhorar feature existente** — selecionar uma feature `done` ou `in_progress` para evoluir.
+   > → **Refinar o PRD principal** — atualizar o `prd.md` com novas visoes globais."
 
-   - **Nova feature** → executar a **verificacao de integridade do registry de features**, depois entrar no **Modo feature**.
-   - **Correcao / fix** → executar a **verificacao de integridade do registry de features**, depois entrar no **Modo correcao**.
-   - **Refinar o PRD** → entrar no **Modo enriquecimento**.
+   - **Nova feature** → entrar no **Modo feature**.
+   - **Melhorar existente** → ler o `prd-{slug}.md` original e entrar no **Modo feature** gerando um `prd-{slug}-v2.md` ou similar.
+   - **Refinar PRD** → entrar no **Modo enriquecimento**.
 
 3. **Modo feature** — conversa focada em uma unica nova feature. Output: `prd-{slug}.md`.
 

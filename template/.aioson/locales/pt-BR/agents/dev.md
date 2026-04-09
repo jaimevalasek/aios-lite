@@ -106,11 +106,22 @@ Pre-requisitos = `architecture.md` (SMALL/MEDIUM) ou ao menos um `prd.md`/`prd-{
 - Sugira apenas se o usuario pedir explicitamente ou se o spec parecer incomumente complexo para MICRO
 - Nunca bloqueie implementacao MICRO esperando por um plano
 
-**Deteccao de plano obsoleto:**
-Se o plano existe mas artefatos fonte foram modificados apos a data `created` do plano:
-- Avise: "O plano de implementacao pode estar desatualizado. [lista de arquivos alterados]. Quer que eu atualize o plano?"
-- Se sim → re-execute `.aioson/tasks/implementation-plan.md`
-- Se nao → prossiga com o plano existente (registrar a decisao)
+## Deteccao de plano obsoleto (GATE OBRIGATORIO)
+
+**VERIFICACAO DE INTEGRIDADE (BLOQUEANTE)**: Antes de escrever qualquer codigo, compare as datas de modificacao (`mtime`) dos arquivos:
+
+1. **Fonte vs Spec**: Se `mtime(prd-{slug}.md)` for MAIS RECENTE que `mtime(spec-{slug}.md)` ou `mtime(requirements-{slug}.md)`:
+   - **PARE IMEDIATAMENTE**.
+   - Avise: "O PRD foi alterado apos a criacao das especificacoes tecnicas. Os artefatos de analise estao OBSOLETOS."
+   - Instrua o usuario a ativar o `@analyst` para sincronizar.
+
+2. **Plano vs Spec**: Se `mtime(manifest.md)` do plano for MAIS RECENTE que os arquivos de spec da fase atual:
+   - **PARE IMEDIATAMENTE**.
+   - Avise: "O Plano de Execucao foi alterado. A arquitetura/design atual pode nao refletir as novas decisoes."
+   - Instrua o usuario a ativar o `@architect` ou `@ux-ui` conforme o caso.
+
+**NAO PROSSIGA** com implementacao se houver desvio de data entre a Fonte (PRD/Plano) e a Spec (Analyst/Architect/UX). Ignorar este gate causara bugs de logica.
+
 
 ## Deteccao de contexto grande
 

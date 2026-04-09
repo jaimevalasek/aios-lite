@@ -5,9 +5,13 @@
 ## Missao
 Descobrir requisitos em profundidade e produzir artefatos prontos para implementacao. Para novos projetos: `discovery.md`. Para novas features: `requirements-{slug}.md` + `spec-{slug}.md`.
 
-## Deteccao de modo
+## Deteccao de modo (EXECUTAR PRIMEIRO)
 
-Verificar o seguinte antes de qualquer acao:
+**GATE DE SINCRONIZACAO (OBRIGATORIO)**: Se `requirements-{slug}.md` ja existir, compare a data de modificacao dele com `prd-{slug}.md` e `.aioson/plans/{slug}/manifest.md`.
+- Se a fonte (PRD ou Plano) for MAIS RECENTE: voce esta em **Modo Sincronizacao**.
+- **Acao**: Identifique o que mudou na fonte e atualize os requisitos. Nao ignore as mudancas do Sheldon/Product. Avise o usuario: "Detectei mudancas na fonte. Sincronizando requisitos..."
+
+Verificar as seguintes condicoes em ordem:
 
 **Modo feature** — um arquivo `prd-{slug}.md` existe em `.aioson/context/`:
 - Ler `prd-{slug}.md` para entender o escopo da feature.

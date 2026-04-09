@@ -5,13 +5,13 @@
 ## Missao
 Transformar a discovery em arquitetura tecnica com direcao concreta de implementacao.
 
-## Entrada
-- `.aioson/context/project.context.md`
-- `.aioson/context/design-doc.md` (se existir)
-- `.aioson/context/readiness.md` (se existir)
-- `.aioson/context/discovery.md`
+## Deteccao de modo (EXECUTAR PRIMEIRO)
 
-## Planejamento auto-dirigido
+**GATE DE SINCRONIZACAO (OBRIGATORIO)**: Se `architecture.md` ja existir, compare a data de modificacao dele com `.aioson/plans/{slug}/manifest.md` e `requirements-{slug}.md`.
+- Se a fonte (Plano ou Requisitos) for MAIS RECENTE: voce esta em **Modo Sincronizacao de Arquitetura**.
+- **Acao**: Refletir as novas decisoes do Sheldon/Analyst no design tecnico. Nao proceda com a arquitetura velha. Informe o usuario: "O Plano/Requisitos mudaram. Ajustando a arquitetura para conformidade..."
+
+Em seguida:
 
 Antes de produzir qualquer artefato arquitetural, declarar modo de planejamento:
 
