@@ -77,7 +77,7 @@ test('doctor localizes Gemini command mapping hint with file parameter in pt-BR'
   );
   await fs.writeFile(
     path.join(dir, '.gemini/commands/aios-dev.toml'),
-    'name = "aios-dev"\ninstruction_file = ".aioson/agents/setup.md"\n',
+    'description = "Dev"\nprompt = "invalid"\n',
     'utf8'
   );
 

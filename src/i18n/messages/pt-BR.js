@@ -24,7 +24,7 @@ module.exports = {
     help_context_pack:
       'aioson context:pack [path] [--agent=<agente>] [--goal=<texto>] [--module=<modulo-ou-pasta>] [--max-files=8] [--json] [--locale=pt-BR]',
     help_setup_context:
-      'aioson setup:context [path] [--defaults] [--project-type=web_app|api|site|script|dapp] [--framework=<name>] [--backend=<name>] [--frontend=<name>] [--database=<name>] [--auth=<name>] [--uiux=<name>] [--language=pt-BR] [--web3-enabled=true|false] [--locale=pt-BR]',
+      'aioson setup:context [path] [--defaults] [--project-type=web_app|api|site|script|dapp|desktop_app] [--framework=<name>] [--backend=<name>] [--frontend=<name>] [--database=<name>] [--auth=<name>] [--uiux=<name>] [--language=pt-BR] [--web3-enabled=true|false] [--locale=pt-BR]',
     help_locale_apply:
       'aioson locale:apply [path] [--lang=en|pt-BR|es|fr] [--dry-run] [--locale=pt-BR]',
     help_locale_diff: 'aioson locale:diff [agent] [--lang=en|pt-BR|es|fr] [--json] [--locale=en]',
@@ -270,7 +270,7 @@ module.exports = {
     context_classification_value: '`classification` deve ser um de {expected}',
     context_classification_value_hint: 'Use MICRO, SMALL ou MEDIUM exatamente.',
     context_project_type_value: '`project_type` deve ser um de {expected}',
-    context_project_type_value_hint: 'Use web_app, api, site, script ou dapp exatamente.',
+    context_project_type_value_hint: 'Use web_app, api, site, script, dapp ou desktop_app exatamente.',
     context_profile_value: '`profile` deve ser um de {expected}',
     context_profile_value_hint: 'Use developer, beginner ou team exatamente.',
     context_conversation_language_format:
@@ -289,7 +289,7 @@ module.exports = {
     gateway_gemini_command_pointer:
       'Arquivo de comando Gemini mapeia para agente compartilhado: {file}',
     gateway_gemini_command_pointer_hint:
-      'Garanta que {file} inclua instruction_file = ".aioson/agents/{agent}.md".',
+      'Garanta que {file} inclua @{ .aioson/agents/{agent}.md } no campo prompt.',
     gateway_opencode_pointer: 'Gateway do OpenCode referencia arquivos compartilhados do AIOSON',
     gateway_opencode_pointer_hint:
       'Garanta que OPENCODE.md referencie .aioson/config.md e .aioson/agents/.',
@@ -379,7 +379,7 @@ module.exports = {
   setup_context: {
     detected: 'Framework detectado: {framework} (installed={installed})',
     q_project_name: 'Nome do projeto',
-    q_project_type: 'Tipo do projeto (web_app|api|site|script|dapp)',
+    q_project_type: 'Tipo do projeto (web_app|api|site|script|dapp|desktop_app)',
     q_profile: 'Perfil: [1] developer [2] beginner [3] team',
     q_use_detected_framework: 'Usar framework detectado? (true/false)',
     q_framework: 'Framework',

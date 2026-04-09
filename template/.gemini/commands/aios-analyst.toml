@@ -1,4 +1,7 @@
-name = "aios-analyst"
 description = "Requirements analysis"
-instruction_file = ".aioson/agents/analyst.md"
-requires_context = [".aioson/context/project.context.md"]
+prompt = """
+@{ .aioson/context/project.context.md }
+@{ .aioson/agents/analyst.md }
+
+{{args}}
+"""

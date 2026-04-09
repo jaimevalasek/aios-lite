@@ -1,6 +1,7 @@
-name = "aios-pair"
 description = "Compatibility alias for aios-deyvin"
-instruction_file = ".aioson/agents/deyvin.md"
-requires_context = [
-  ".aioson/context/project.context.md"
-]
+prompt = """
+@{ .aioson/context/project.context.md }
+@{ .aioson/agents/deyvin.md }
+
+{{args}}
+"""

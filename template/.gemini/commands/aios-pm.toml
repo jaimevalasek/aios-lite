@@ -1,8 +1,9 @@
-name = "aios-pm"
 description = "Lightweight PRD"
-instruction_file = ".aioson/agents/pm.md"
-requires_context = [
-  ".aioson/context/project.context.md",
-  ".aioson/context/discovery.md",
-  ".aioson/context/architecture.md"
-]
+prompt = """
+@{ .aioson/context/project.context.md }
+@{ .aioson/context/discovery.md }
+@{ .aioson/context/architecture.md }
+@{ .aioson/agents/pm.md }
+
+{{args}}
+"""

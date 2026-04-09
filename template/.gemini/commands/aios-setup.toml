@@ -1,3 +1,6 @@
-name = "aios-setup"
 description = "Project onboarding"
-instruction_file = ".aioson/agents/setup.md"
+prompt = """
+@{ .aioson/agents/setup.md }
+
+{{args}}
+"""

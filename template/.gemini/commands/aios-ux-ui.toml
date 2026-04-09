@@ -1,8 +1,9 @@
-name = "aios-ux-ui"
 description = "Frontend design and UX specification"
-instruction_file = ".aioson/agents/ux-ui.md"
-requires_context = [
-  ".aioson/context/project.context.md",
-  ".aioson/context/discovery.md",
-  ".aioson/context/architecture.md"
-]
+prompt = """
+@{ .aioson/context/project.context.md }
+@{ .aioson/context/discovery.md }
+@{ .aioson/context/architecture.md }
+@{ .aioson/agents/ux-ui.md }
+
+{{args}}
+"""

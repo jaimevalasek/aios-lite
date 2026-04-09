@@ -60,7 +60,9 @@ List them and ask once:
 
 **Greenfield signal:** if source documents exist AND `prd.md` does not exist in `.aioson/context/` → this is likely an initial project kickoff. Treat the source documents as the starting point for `prd.md`.
 
-**Feature signal:** if source documents exist AND `prd.md` already exists in `.aioson/context/` → this is likely a new feature or refinement. Treat the source documents as input for `prd-{slug}.md` or enrichment of the existing PRD.
+**Feature signal:** if source documents exist AND `prd.md` already exists in `.aioson/context/`:
+- If the PRD is already implemented (presence of `discovery.md`, `dev-state.md`, `spec.md` with progress, or matching code), treat the source documents strictly as input for a **new feature** (`prd-{slug}.md`).
+- If not yet implemented, treat them as input for a new feature or enrichment of the existing PRD.
 
 **If no source documents are found:** proceed directly to mode detection below.
 
@@ -95,15 +97,23 @@ Check the following conditions in order:
    Start from scratch. Output goes to `prd.md`.
 
 2. **Entry check** — `project.context.md` EXISTS and `prd.md` EXISTS:
-   Before anything else, ask:
-   > "The project already has a PRD. What would you like to do?
+   Before anything else, determine if the existing PRD has already been implemented. A PRD is considered **implemented (immutable)** if any of the following exist: `discovery.md`, `architecture.md`, `dev-state.md`, `spec.md` containing implementation progress, or actual code in the project.
+
+   **If the PRD is ALREADY IMPLEMENTED (Immutable State):**
+   Acknowledge the implemented state and DO NOT offer to refine the PRD. Ask:
+   > "The project already has an implemented PRD. To preserve the spec history, the base PRD shouldn't be altered. What would you like to do?
+   > → **New feature** — I'll open a new `prd-{slug}.md` for a specific capability or module.
+   > → **Correction / fix** — I'll open a `prd-{slug}-fix.md` linked to an existing implemented PRD."
+
+   **If the PRD is NOT YET implemented:**
+   > "The project already has a draft PRD. What would you like to do?
    > → **New feature** — I'll open a new `prd-{slug}.md` for a specific feature.
    > → **Correction / fix** — I'll open a `prd-{slug}-fix.md` linked to the current PRD.
-   > → **Refine the PRD** — I'll read the existing PRD and suggest what to improve."
+   > → **Refine the PRD** — I'll read the existing PRD and suggest what to improve before we implement it."
 
    - **New feature** → run the **Features registry integrity check**, then enter **Feature mode**.
    - **Correction / fix** → run the **Features registry integrity check**, then enter **Correction mode**.
-   - **Refine the PRD** → enter **Enrichment mode**.
+   - **Refine the PRD** (only if not implemented) → enter **Enrichment mode**.
 
 3. **Feature mode** — conversation focused on a single new feature. Output: `prd-{slug}.md`.
 
@@ -168,7 +178,7 @@ Check the following conditions in order:
 ## Brownfield memory handoff
 
 If the project already has code:
-- If `discovery.md` exists, read it before scoping feature work or refining the PRD.
+- If `discovery.md` exists, read it before scoping new feature work or corrections. (Do not refine implemented base PRDs).
 - If `discovery.md` is missing but local scan artifacts exist (`scan-index.md`, `scan-folders.md`, `scan-<folder>.md`, `scan-aioson.md`), use them only as structural orientation for the product conversation. They do not replace `@analyst` for domain modeling.
 - In that case, finish the PRD work normally but route the next step to `@analyst` before `@architect` or `@dev`.
 - If neither `discovery.md` nor local scan artifacts exist and the request depends on understanding existing system behavior, ask for at least:

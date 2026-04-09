@@ -1,6 +1,7 @@
-name = "aios-qa"
 description = "Quality review"
-instruction_file = ".aioson/agents/qa.md"
-requires_context = [
-  ".aioson/context/discovery.md"
-]
+prompt = """
+@{ .aioson/context/discovery.md }
+@{ .aioson/agents/qa.md }
+
+{{args}}
+"""

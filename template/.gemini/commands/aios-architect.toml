@@ -1,7 +1,8 @@
-name = "aios-architect"
 description = "Project architecture"
-instruction_file = ".aioson/agents/architect.md"
-requires_context = [
-  ".aioson/context/project.context.md",
-  ".aioson/context/discovery.md"
-]
+prompt = """
+@{ .aioson/context/project.context.md }
+@{ .aioson/context/discovery.md }
+@{ .aioson/agents/architect.md }
+
+{{args}}
+"""

@@ -1,6 +1,7 @@
-name = "aios-deyvin"
 description = "Continuity pair programming"
-instruction_file = ".aioson/agents/deyvin.md"
-requires_context = [
-  ".aioson/context/project.context.md"
-]
+prompt = """
+@{ .aioson/context/project.context.md }
+@{ .aioson/agents/deyvin.md }
+
+{{args}}
+"""

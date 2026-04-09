@@ -1,6 +1,7 @@
-name = "aios-tester"
 description = "Systematic test engineering for implemented apps"
-instruction_file = ".aioson/agents/tester.md"
-requires_context = [
-  ".aioson/context/project.context.md"
-]
+prompt = """
+@{ .aioson/context/project.context.md }
+@{ .aioson/agents/tester.md }
+
+{{args}}
+"""

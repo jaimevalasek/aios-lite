@@ -217,7 +217,7 @@ const CONTEXT_REQUIRED_FIELDS = [
 ];
 
 const CONTEXT_ALLOWED_CLASSIFICATIONS = ['MICRO', 'SMALL', 'MEDIUM'];
-const CONTEXT_ALLOWED_PROJECT_TYPES = ['web_app', 'api', 'site', 'script', 'dapp'];
+const CONTEXT_ALLOWED_PROJECT_TYPES = ['web_app', 'api', 'site', 'script', 'dapp', 'desktop_app'];
 const CONTEXT_ALLOWED_PROFILES = ['developer', 'beginner', 'team'];
 
 const AGENT_DEFINITIONS = [

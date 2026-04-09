@@ -63,6 +63,7 @@ Allowed `project_type` values:
 - `site`
 - `script`
 - `dapp`
+- `desktop_app`
 
 Optional Web3 context fields (recommended for `project_type=dapp`):
 - `web3_enabled` (boolean)

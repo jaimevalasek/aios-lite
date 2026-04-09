@@ -130,7 +130,7 @@ async function runDoctor(targetDir) {
       key: 'doctor.gateway_gemini_command_pointer',
       params: { file: expectation.file },
       ok: await fileContainsAll(commandPath, [
-        `instruction_file = ".aioson/agents/${expectation.agent}.md"`
+        `@{ .aioson/agents/${expectation.agent}.md }`
       ]),
       hintKey: 'doctor.gateway_gemini_command_pointer_hint',
       hintParams: {

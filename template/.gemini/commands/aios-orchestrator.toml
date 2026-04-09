@@ -1,8 +1,9 @@
-name = "aios-orchestrator"
 description = "Multi-agent orchestration"
-instruction_file = ".aioson/agents/orchestrator.md"
-requires_context = [
-  ".aioson/context/discovery.md",
-  ".aioson/context/architecture.md",
-  ".aioson/context/prd.md"
-]
+prompt = """
+@{ .aioson/context/discovery.md }
+@{ .aioson/context/architecture.md }
+@{ .aioson/context/prd.md }
+@{ .aioson/agents/orchestrator.md }
+
+{{args}}
+"""
