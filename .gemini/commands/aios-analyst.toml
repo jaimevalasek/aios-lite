@@ -1,0 +1,7 @@
+description = "Requirements analysis"
+prompt = """
+@{ .aioson/context/project.context.md }
+@{ .aioson/agents/analyst.md }
+
+{{args}}
+"""

@@ -1,0 +1,7 @@
+description = "Systematic test engineering for implemented apps"
+prompt = """
+@{ .aioson/context/project.context.md }
+@{ .aioson/agents/tester.md }
+
+{{args}}
+"""

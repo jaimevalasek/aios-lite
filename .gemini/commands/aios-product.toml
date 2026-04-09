@@ -1,0 +1,6 @@
+description = "Conversational product wizard — prd.md"
+prompt = """
+@{ .aioson/agents/product.md }
+
+{{args}}
+"""

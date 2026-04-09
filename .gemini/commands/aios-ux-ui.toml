@@ -1,0 +1,9 @@
+description = "Frontend design and UX specification"
+prompt = """
+@{ .aioson/context/project.context.md }
+@{ .aioson/context/discovery.md }
+@{ .aioson/context/architecture.md }
+@{ .aioson/agents/ux-ui.md }
+
+{{args}}
+"""

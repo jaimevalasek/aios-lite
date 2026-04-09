@@ -1,0 +1,7 @@
+description = "Continuity pair programming"
+prompt = """
+@{ .aioson/context/project.context.md }
+@{ .aioson/agents/deyvin.md }
+
+{{args}}
+"""
