@@ -126,6 +126,7 @@ async function listFilesRecursive(dir) {
  * Returns a skip-reason string if the file should be skipped, or false if it should be installed.
  */
 function shouldSkipTemplatePath(rel, profile = null) {
+  if (rel === '.gitignore') return 'merge-only';
   if (rel === '.aioson/context/.gitkeep') return false;
   if (rel.startsWith('.aioson/context/')) return 'context-protected';
   // Never overwrite user-installed skills (only the .gitkeep is created)
@@ -288,6 +289,11 @@ module.exports = {
   readInstallProfile,
   listFilesRecursive,
   ensureGitignoreEntry,
+  ensureGitignoreEntries,
+  ensureProjectGitignorePolicy,
+  countProjectFiles
+};
+oreEntry,
   ensureGitignoreEntries,
   ensureProjectGitignorePolicy,
   countProjectFiles
