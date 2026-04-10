@@ -463,13 +463,18 @@ async function runVerifyGate({ args, options = {}, logger }) {
       if (contract.criteria && Array.isArray(contract.criteria)) {
         contractCriteria = contract.criteria;
         for (const c of contract.criteria) {
-          // Add to acceptance criteria for reporting
-          requirements.acceptance_criteria.push({ text: `[Harness ${c.id}] ${c.description}`, checked: false });
-          
+          let mapped = false;
           // Map assertion to deterministic check if possible
-          // Pattern mapping: if assertion looks like "file:src/foo.ts", add to required files
+          // Pattern mapping: if assertion looks like "path/to/file.js", add to required files
           if (c.assertion.includes('/') && !c.assertion.includes(' ')) {
             requirements.required_files.push(c.assertion.trim());
+            mapped = true;
+          }
+          
+          // Only add to acceptance criteria for reporting if not deterministically mapped
+          // This prevents "Unchecked criterion" issues for things already checked via files/patterns
+          if (!mapped) {
+            requirements.acceptance_criteria.push({ text: `[Harness ${c.id}] ${c.description}`, checked: false });
           }
         }
       }

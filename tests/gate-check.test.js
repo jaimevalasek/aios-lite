@@ -7,6 +7,7 @@ const os = require('node:os');
 const path = require('node:path');
 
 const { runGateCheck } = require('../src/commands/gate-check');
+const { runVerifyGate } = require('../src/commands/verify-gate');
 
 async function makeTmpDir() {
   return fs.mkdtemp(path.join(os.tmpdir(), 'aioson-gate-check-'));
@@ -157,3 +158,55 @@ test('gate:check: human output shows result and recommendation', async () => {
   await runGateCheck({ args: [tmpDir], options: { feature: 'checkout', gate: 'A' }, logger });
   assert.ok(logger.lines.some((l) => l.includes('Gate') || l.includes('Result')));
 });
+
+test('verify:gate: processa flag --contract e falha se critério não for atendido', async () => {
+  const tmpDir = await makeTmpDir();
+  
+  // Setup: Spec e Contrato
+  await writeFile(tmpDir, '.aioson/context/spec-test.md', '# Spec\n## Done criteria\n- [ ] Task 1\n');
+  const contract = {
+    criteria: [
+      { id: 'C1', description: 'Arquivo crítico deve existir', assertion: 'src/critical.js' }
+    ]
+  };
+  await writeFile(tmpDir, 'contract.json', JSON.stringify(contract));
+
+  const result = await runVerifyGate({
+    args: [tmpDir],
+    options: {
+      json: true,
+      spec: '.aioson/context/spec-test.md',
+      contract: 'contract.json',
+      artifact: tmpDir
+    },
+    logger: makeLogger()
+  });
+
+  assert.strictEqual(result.verdict, 'FAIL_WITH_ISSUES');
+  assert.ok(result.issues.some(i => i.includes('Missing required file: `src/critical.js`')), 'Deve reportar arquivo do contrato como faltando');
+});
+
+test('verify:gate: PASS quando contrato é atendido', async () => {
+  const tmpDir = await makeTmpDir();
+  
+  await writeFile(tmpDir, 'spec.md', '# Spec\n## Done criteria\n- [x] OK\n');
+  await writeFile(tmpDir, 'src/critical.js', 'console.log("ok");');
+  const contract = {
+    criteria: [{ id: 'C1', description: 'Exists', assertion: 'src/critical.js' }]
+  };
+  await writeFile(tmpDir, 'contract.json', JSON.stringify(contract));
+
+  const result = await runVerifyGate({
+    args: [tmpDir],
+    options: {
+      json: true,
+      spec: 'spec.md',
+      contract: 'contract.json',
+      artifact: tmpDir
+    },
+    logger: makeLogger()
+  });
+
+  assert.strictEqual(result.verdict, 'PASS');
+});
+

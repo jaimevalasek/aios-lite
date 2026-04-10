@@ -96,7 +96,7 @@ async function runHarnessValidate({ args, options = {}, logger, t }) {
   
   try {
     const specPath = path.join(targetDir, '.aioson', 'context', `spec-${slug}.md`);
-    const cmd = `aioson verify:gate . --spec="${specPath}" ${artifact ? `--artifact="${artifact}"` : ''} --json`;
+    const cmd = `aioson verify:gate . --spec="${specPath}" --contract="${contractPath}" ${artifact ? `--artifact="${artifact}"` : ''} --json`;
     
     const output = execSync(cmd, { cwd: targetDir, encoding: 'utf8' });
     const result = JSON.parse(output);

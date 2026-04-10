@@ -70,6 +70,7 @@ class CircuitBreaker {
     this.progress.consecutive_errors = 0;
     this.progress.iterations += 1;
     this.progress.last_updated = new Date().toISOString();
+    this.progress.ready_for_done_gate = true;
 
     if (this.progress.circuit_state === 'HALF_OPEN') {
       this.progress.circuit_state = 'CLOSED';
@@ -87,12 +88,18 @@ class CircuitBreaker {
     this.progress.consecutive_errors += 1;
     this.progress.last_error = reason;
     this.progress.last_updated = new Date().toISOString();
+    this.progress.ready_for_done_gate = false;
 
-    const { error_streak_limit } = this.contract.governor;
+    const { error_streak_limit, max_steps } = this.contract.governor;
 
     if (error_streak_limit > 0 && this.progress.consecutive_errors >= error_streak_limit) {
       this.progress.circuit_state = 'OPEN';
       this.progress.status = 'circuit_open';
+      this.progress.last_error = `error_streak_limit_reached: ${reason}`;
+    } else if (max_steps > 0 && this.progress.iterations >= max_steps) {
+      this.progress.circuit_state = 'OPEN';
+      this.progress.status = 'circuit_open';
+      this.progress.last_error = `max_steps_reached: ${reason}`;
     }
 
     await this._save();
@@ -109,7 +116,8 @@ class CircuitBreaker {
       last_updated: new Date().toISOString(),
       circuit_state: 'CLOSED',
       iterations: 0,
-      consecutive_errors: 0
+      consecutive_errors: 0,
+      ready_for_done_gate: false
     };
   }
 

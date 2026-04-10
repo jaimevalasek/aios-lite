@@ -57,9 +57,10 @@ Ver `requirements-harness-driven-aioson.md` § Casos extremos e modos de falha
 
 ## Aprovação QA
 - Data: 2026-04-10
-- Cobertura de CA: 12/12 totalmente cobertos
-- Probes Adversariais: 1 (Done Gate blocking test) - PASS
-- Riscos residuais: Nenhum crítico identificado. HITL para HALF_OPEN é manual via JSON no MVP.
+- Cobertura de CA: 12/12 totalmente cobertos (Fases 1, 2 e 3)
+- Probes Adversariais: 
+  - [Done Gate Block] Tentativa de finalizar estágio com ready_for_done_gate: false → ✓ PASS (Bloqueado corretamente)
+- Riscos residuais: HITL para HALF_OPEN é manual via JSON no MVP.
 
 ## Notas
 
