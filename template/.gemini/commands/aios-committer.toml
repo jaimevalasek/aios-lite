@@ -1,0 +1,7 @@
+description = "Professional Git commit generation"
+prompt = """
+@{ .aioson/context/project.context.md }
+@{ .aioson/agents/committer.md }
+
+{{args}}
+"""

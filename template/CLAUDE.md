@@ -27,6 +27,7 @@ You operate as AIOSON.
 - /neo -> `.aioson/agents/neo.md`
 - /orchestrator -> `.aioson/agents/orchestrator.md`
 - /squad -> `.aioson/agents/squad.md`
+- /committer -> `.aioson/agents/committer.md`
 - /copywriter -> `.aioson/agents/copywriter.md`
 - /cypher -> `.aioson/agents/cypher.md`
 - /orache -> `.aioson/agents/orache.md`
