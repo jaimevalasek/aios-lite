@@ -172,6 +172,7 @@ const { runGenomePublish, runGenomeInstallStore, runGenomeInstall, runGenomeList
 const { runSkillPublish, runSkillInstallStore, runSkillListRemote } = require('./commands/store-skill');
 const { runSquadPublish, runSquadInstall, runSquadGrant, runSquadList } = require('./commands/store-squad');
 const { runSystemPackage, runSystemPublish, runSystemList, runSystemInstall } = require('./commands/store-system');
+const { runBriefingApprove, runBriefingUnapprove } = require('./commands/briefing');
 
 const JSON_SUPPORTED_COMMANDS = new Set([
   'init',
@@ -1168,6 +1169,10 @@ async function main() {
       result = await runSystemList({ args, options, logger: commandLogger, t });
     } else if (command === 'system:install' || command === 'system-install') {
       result = await runSystemInstall({ args, options, logger: commandLogger, t });
+    } else if (command === 'briefing:approve' || command === 'briefing-approve') {
+      result = await runBriefingApprove({ args, options, logger: commandLogger });
+    } else if (command === 'briefing:unapprove' || command === 'briefing-unapprove') {
+      result = await runBriefingUnapprove({ args, options, logger: commandLogger });
     } else {
       const message = t('cli.unknown_command', { command });
       if (jsonMode) {
