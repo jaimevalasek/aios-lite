@@ -89,6 +89,39 @@ updated_at: {ISO-date}
 | prds/Y.md | @sheldon | {ISO-date} | prd-{slug}.md |
 ```
 
+## Briefing-aware detection
+
+Run **after** source document detection and **before** mode detection.
+
+Check silently if `.aioson/briefings/` exists in the project root.
+- **If absent:** do nothing. Do not mention briefings. Continue to mode detection.
+- **If present:** read `.aioson/briefings/config.md` YAML frontmatter. Check the `briefings:` array for entries with `status: approved` AND `prd_generated: null`.
+  - **If no approved+unimplemented briefings:** continue to mode detection without any mention.
+  - **If one or more approved+unimplemented briefings found:** present to the user before mode detection:
+    > "I found approved briefings waiting for a PRD:
+    > - `{slug}` — approved on {approved_at}
+    > - ...
+    > Would you like to follow one of them?"
+    - If user confirms: read all files in `.aioson/briefings/{slug}/` and use them as source material. Set the active briefing slug internally — it will be used in **Briefing-source output** below.
+    - If user declines: continue to mode detection normally. Do not mention briefings again.
+
+## Briefing-source output
+
+When a PRD is generated from an approved briefing (user confirmed in "Briefing-aware detection"):
+
+1. **Prepend YAML frontmatter** to the PRD file:
+   ```markdown
+   ---
+   briefing_source: {slug}
+   ---
+   ```
+   This field is read by `@sheldon` and `@analyst` for enrichment context and coherence validation.
+
+2. **Update `.aioson/briefings/config.md`** after writing the PRD:
+   - Set `prd_generated: prd-{slug}.md` (the new PRD file path)
+   - Set `status: implemented`
+   - Set `updated_at` to today's date
+
 ## Mode detection
 
 Check the following conditions in order:

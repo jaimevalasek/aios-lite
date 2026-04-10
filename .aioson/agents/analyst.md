@@ -49,6 +49,22 @@ If `.aioson/context/sheldon-enrichment.md` (or `sheldon-enrichment-{slug}.md`) e
 - Do not re-ask questions that are already documented in the enrichment log
 - If `plan_path` is set in the frontmatter: read the manifest at that path and scope discovery to Phase 1 first
 
+## Briefing validation context (RDA-02)
+
+Run after Sheldon enrichment context check. Check the frontmatter of the PRD being analyzed (`prd-{slug}.md`).
+
+- **If `briefing_source` is absent or null:** do nothing. Do not mention briefings. Continue normally.
+- **If `briefing_source: {slug}` is present:**
+  - Read `.aioson/briefings/{slug}/briefings.md` before starting discovery.
+  - Compare the original intent in the briefing (`## Problema`, `## Solução proposta`, `## Temas`) with the PRD received.
+  - If coherent: note silently and proceed with requirement mapping.
+  - If divergences detected: report them as a **non-blocking warning** before starting requirement mapping:
+    > "⚠ Divergence detected between the original briefing and the PRD:
+    > - [divergence 1]
+    > - [divergence 2]
+    > Proceeding with requirement mapping. Consider reviewing the PRD with @product if these gaps are significant."
+  - This check never blocks — analyst always continues regardless of divergence.
+
 ## Context loading policy
 
 **Sempre carregar:**

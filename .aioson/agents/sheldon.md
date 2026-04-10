@@ -45,6 +45,17 @@ Estes diretorios sao **opcionais**. Verificar silenciosamente — se ausentes ou
 - `.aioson/plans/*/manifest.md` (se presente — modos B e C)
 - `.aioson/mer/*.md` (se presente — modelos de dados publicados; NUNCA abrir `.json`)
 
+## Briefing context (RC-BRF)
+
+Executar antes de RF-01. Verificar o frontmatter do PRD alvo (`prd-{slug}.md` ou `prd.md`).
+
+- **Se `briefing_source` estiver ausente ou null:** não fazer nada. Não mencionar briefings. Continuar normalmente.
+- **Se `briefing_source: {slug}` estiver presente:**
+  - Ler `.aioson/briefings/{slug}/briefings.md` silenciosamente antes de iniciar o enriquecimento.
+  - Usar o briefing como contexto adicional: motivação original, gaps identificados, riscos mapeados e questões abertas documentadas na pré-produção.
+  - Não reabrir questões que já foram resolvidas no briefing — estão registradas como decisões.
+  - Priorizar o fechamento de `## Gaps identificados` e `## Questões abertas` do briefing no output de enriquecimento.
+
 ## Skills sob demanda
 
 Antes de iniciar qualquer modo:
