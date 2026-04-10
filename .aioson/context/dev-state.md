@@ -1,14 +1,14 @@
 ---
 active_feature: cypher-agent
-active_phase: 2
+active_phase: 3
 active_plan: .aioson/plans/cypher-agent/manifest.md
 last_spec_version: null
 context_package:
   - .aioson/context/project.context.md
   - .aioson/context/prd-cypher-agent.md
   - .aioson/plans/cypher-agent/manifest.md
-  - .aioson/plans/cypher-agent/plan-cli-commands.md
-next_step: "Implementar Fase 2 — comandos CLI briefing:approve e briefing:unapprove + locales en/pt-BR"
+  - .aioson/plans/cypher-agent/plan-integrations.md
+next_step: "Implementar Fase 3 — @product briefing-aware, @sheldon briefing-aware, @analyst briefing-aware"
 status: in_progress
 updated_at: "2026-04-10"
 ---
@@ -30,10 +30,11 @@ Feature `cypher-agent` — Fase 1 concluída, próxima é Fase 2 (CLI commands +
 - `spec-*.md` de outras features
 
 ## O que foi feito
+- 2026-04-10: Fase 2 — `src/commands/briefing.js` com briefing:approve e briefing:unapprove (readline nativo, --slug flag, parser YAML config.md). Registrado em cli.js. Locales en/pt-BR criados e sincronizados para template/.
 - 2026-04-10: Fase 1 — criado `template/.aioson/agents/cypher.md` com todos os fluxos core (novo briefing, conversacional, continuar existente), formato de `config.md` e `briefings.md`, 8 seções obrigatórias, skills referenciadas. Sincronizado para `.aioson/agents/`. `/cypher` registrado nos dois CLAUDE.md.
 
 ## Próximo passo
-Fase 2: implementar `src/commands/briefing.js` com `briefing:approve` (seleção interativa de briefings draft) e `briefing:unapprove` (retornar approved → draft). Decisão de biblioteca de prompt (inquirer vs readline vs flag --slug) ainda pendente — verificar `plan-cli-commands.md`.
+Fase 3: patches de integração em @product (briefing-aware), @sheldon (briefing-aware) e @analyst (briefing-aware). Ler `plan-integrations.md` para escopo exato.
 
 ## Visão geral das features
 

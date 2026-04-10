@@ -15,7 +15,7 @@ Implementar o agente `@cypher` — camada de pré-produção do AIOSON que trans
 | Fase | Arquivo | Escopo | Status | Dependências |
 |------|---------|--------|--------|-------------|
 | 1 | plan-core-agent.md | Agent file + estrutura de briefings + fluxos core | done | — |
-| 2 | plan-cli-commands.md | `briefing:approve` + `briefing:unapprove` + locales | pending | Fase 1 |
+| 2 | plan-cli-commands.md | `briefing:approve` + `briefing:unapprove` + locales | done | Fase 1 |
 | 3 | plan-integrations.md | @product, @sheldon, @analyst briefing-aware | pending | Fase 2 |
 
 ## Decisões pré-tomadas
