@@ -1,15 +1,12 @@
 ---
 active_feature: cypher-agent
-active_phase: 3
-active_plan: .aioson/plans/cypher-agent/manifest.md
+active_phase: null
+active_plan: null
 last_spec_version: null
 context_package:
   - .aioson/context/project.context.md
-  - .aioson/context/prd-cypher-agent.md
-  - .aioson/plans/cypher-agent/manifest.md
-  - .aioson/plans/cypher-agent/plan-integrations.md
-next_step: "Implementar Fase 3 — @product briefing-aware, @sheldon briefing-aware, @analyst briefing-aware"
-status: in_progress
+next_step: "Feature cypher-agent concluída (3/3 fases). Próxima feature a definir."
+status: done
 updated_at: "2026-04-10"
 ---
 
@@ -30,14 +27,15 @@ Feature `cypher-agent` — Fase 1 concluída, próxima é Fase 2 (CLI commands +
 - `spec-*.md` de outras features
 
 ## O que foi feito
+- 2026-04-10: Fase 3 — patches de integração em @product (briefing-aware detection + briefing-source output), @sheldon (RC-BRF), @analyst (RDA-02). 18 arquivos (agentes + locales en/pt-BR + template) sincronizados.
 - 2026-04-10: Fase 2 — `src/commands/briefing.js` com briefing:approve e briefing:unapprove (readline nativo, --slug flag, parser YAML config.md). Registrado em cli.js. Locales en/pt-BR criados e sincronizados para template/.
 - 2026-04-10: Fase 1 — criado `template/.aioson/agents/cypher.md` com todos os fluxos core (novo briefing, conversacional, continuar existente), formato de `config.md` e `briefings.md`, 8 seções obrigatórias, skills referenciadas. Sincronizado para `.aioson/agents/`. `/cypher` registrado nos dois CLAUDE.md.
 
 ## Próximo passo
-Fase 3: patches de integração em @product (briefing-aware), @sheldon (briefing-aware) e @analyst (briefing-aware). Ler `plan-integrations.md` para escopo exato.
+Feature cypher-agent concluída — todas as 3 fases entregues.
 
 ## Visão geral das features
 
 | Feature | Status | Fase | Plano | Última atividade |
 |---------|--------|------|-------|-----------------|
-| cypher-agent | in_progress | 1/3 done | .aioson/plans/cypher-agent/ | 2026-04-10 |
+| cypher-agent | done | 3/3 | .aioson/plans/cypher-agent/ | 2026-04-10 |
