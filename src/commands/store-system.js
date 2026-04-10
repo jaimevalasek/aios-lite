@@ -29,6 +29,8 @@ const SYSTEM_ALLOWED_EXTS = new Set([
 const SKIP_DIRS = new Set([
   'node_modules', '.git', 'dist', 'build', '.turbo', '.next',
   '.cache', 'coverage', '.nyc_output', 'out',
+  // AIOSON tooling — não faz parte do código-fonte do sistema
+  '.aioson', '.claude', '.gemini', '.codex', 'researchs',
 ]);
 
 const SKIP_FILES = new Set([

@@ -61,7 +61,12 @@ module.exports = {
       'aioson qa:scan [path] [--url=<app-url>] [--depth=3] [--max-pages=50] [--headed] [--html] [--json] [--locale=pt-BR]',
     help_qa_report:
       'aioson qa:report [path] [--html] [--json] [--locale=pt-BR]',
-    help_web_map:
+    help_harness_init:
+      'aioson harness:init [path] --slug=<slug> [--mode=BALANCED|URGENT|ECONOMICAL] [--locale=pt-BR]',
+    help_harness_validate:
+      'aioson harness:validate [path] --slug=<slug> [--artifact=<path>] [--locale=pt-BR]',
+    web_map: {
+
       'aioson web:map [path] --url=<url> [--depth=<N>] [--max-pages=<N>] [--include-external] [--json] [--locale=pt-BR]',
     help_web_scrape:
       'aioson web:scrape [path] --url=<url> [--format=markdown|text|html|links] [--json] [--locale=pt-BR]',
@@ -803,6 +808,14 @@ module.exports = {
     not_found: 'Nenhum relatorio QA encontrado. Execute: aioson qa:run ou aioson qa:scan',
     html_report_written: 'Relatorio HTML escrito: {path}'
   },
+  harness: {
+    init_success: 'Harness inicializado para a feature: {slug}',
+    init_exists: 'Harness ja inicializado em {path}',
+    contract_not_found: 'Contrato nao encontrado para o slug: {slug}',
+    validating: 'Validando harness para {slug}...',
+    blocked: 'Execucao pausada: {reason}',
+    init_dry_run: '[dry-run] Inicializaria harness para {slug}'
+  },
   web_map: {
     url_missing: 'Opcao obrigatoria ausente: --url=<url>.',
     starting: 'Mapeando site: {url}',
@@ -1165,15 +1178,29 @@ module.exports = {
 
   auth: {
     login_no_token: 'Nenhum token informado. Obtenha o seu em: {url}',
-    login_hint: 'Execute: aioson auth:login --token=<seu-token>',
+    login_hint: 'Execute: aioson auth:login',
+    login_hint_token: 'Ou obtenha um token manualmente em: {url}',
     login_verifying: 'Verificando token...',
-    login_ok: 'Autenticado como {username}. Token salvo em {path}.',
-    login_saved: 'Token salvo em {path}. (Nao foi possivel verificar — API pode estar offline.)',
+    login_ok: '✓ Autenticado como {username}. Token salvo em {path}.',
+    login_saved: '✓ Token salvo em {path}. (Nao foi possivel verificar — API pode estar offline.)',
     logout_ok: 'Logout realizado. Token removido.',
     status_not_authenticated: 'Nao autenticado.',
     status_checking: 'Verificando token...',
     status_ok: 'Autenticado como {username}.',
-    status_token_offline: 'Token salvo (ultimo usuario conhecido: {username}). API offline ou inacessivel.'
+    status_token_offline: 'Token salvo (ultimo usuario conhecido: {username}). API offline ou inacessivel.',
+    // Fluxo browser (callback — Mac/Windows nativos)
+    browser_opening: 'Abrindo o browser...',
+    browser_waiting: 'Aguardando autenticacao no browser... (Ctrl+C para cancelar)',
+    browser_timeout: 'Tempo esgotado. Tente novamente.',
+    browser_state_mismatch: 'Falha de seguranca: state invalido.',
+    browser_no_token: 'Nenhum token recebido do browser.',
+    browser_failed: 'Login via browser falhou: {error}',
+    browser_server_error: 'Erro ao iniciar servidor local de callback',
+    // Fluxo paste (WSL2, SSH, headless)
+    paste_open_browser: 'Abra o link abaixo no seu navegador:',
+    paste_instruction: 'Apos fazer login, a pagina exibira um token. Copie-o e cole aqui.',
+    paste_token_prompt: 'Cole o token aqui:',
+    paste_no_token: 'Nenhum token informado.',
   },
 
   workspace: {
@@ -1190,7 +1217,7 @@ module.exports = {
   },
 
   store: {
-    error_not_authenticated: 'Nao autenticado. Execute: aioson auth:login --token=<seu-token>',
+    error_not_authenticated: 'Nao autenticado. Execute: aioson auth:login',
     error_missing_slug: 'Informe --slug.',
     error_missing_code_or_slug: 'Informe um slug (--slug=X) ou um codigo de instalacao.',
     error_invalid_response: 'Resposta invalida do aioson.com.',

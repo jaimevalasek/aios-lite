@@ -1,0 +1,54 @@
+---
+project: "<project_name>"
+updated: "<ISO-8601>"
+---
+
+# Project Spec
+
+> Living document — update at the end of each working session via `*update-spec`.
+> Read at the start of each session before any prompt.
+
+## Stack
+[Copy from project.context.md § Stack]
+
+## Current state
+[What phase is the project in right now?
+Example: "Auth module complete. Starting appointments CRUD."]
+
+## Features
+
+### Done
+- (none yet)
+
+### In progress
+- (none yet)
+
+### Planned
+- [List features from prd.md if available, or high-level goals]
+
+## Open decisions
+- [Unresolved architectural or product questions]
+
+## Key decisions
+- [YYYY-MM-DD] [Decision made] — [Reason / trade-off accepted]
+
+## Session Learnings
+
+> Updated automatically at the end of each productive session.
+> Read at the start of each session to inform behavior.
+
+### Preferences
+- (none yet)
+
+### Process Patterns
+- (none yet)
+
+### Domain Insights
+- (none yet)
+
+### Quality Signals
+- (none yet)
+
+## Notes
+- [Important context, warnings, or constraints for future sessions]
+- [Known tech debt or deferred work]

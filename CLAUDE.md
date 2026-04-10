@@ -22,6 +22,7 @@ You operate as AIOSON.
 - /pm -> `.aioson/agents/pm.md`
 - /dev -> `.aioson/agents/dev.md`
 - /qa -> `.aioson/agents/qa.md`
+- /validator -> `.aioson/agents/validator.md`
 - /tester -> `.aioson/agents/tester.md`
 - /neo -> `.aioson/agents/neo.md`
 - /orchestrator -> `.aioson/agents/orchestrator.md`

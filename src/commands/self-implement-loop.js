@@ -20,10 +20,12 @@
 const path = require('node:path');
 const { execSync, execFileSync } = require('node:child_process');
 const { randomUUID } = require('node:crypto');
-const fs = require('node:fs/promises');
+const fs = require('node:fs');
+const fsp = require('node:fs/promises');
 
 const bus = require('../squad/intra-bus');
 const stateManager = require('../squad/state-manager');
+const { createCircuitBreaker } = require('../harness/circuit-breaker');
 
 // ─── Agent execution ─────────────────────────────────────────────────────────
 
@@ -131,12 +133,36 @@ async function runSelfLoop({ args, options = {}, logger }) {
   const targetDir = path.resolve(process.cwd(), args[0] || '.');
   const agent = String(options.agent || options.a || 'dev').trim();
   const task = String(options.task || options.t || '').trim();
-  const maxIterations = Math.min(Math.max(Number(options['max-iterations'] || 3), 1), 5);
   const spec = options.spec ? String(options.spec).trim() : null;
   const artifact = options.artifact ? String(options.artifact).trim() : null;
   const criteria = options['verification-criteria'] || options.criteria || '';
   const squad = options.squad ? String(options.squad).trim() : null;
   const timeoutMs = (Number(options.timeout) || 300) * 1000;
+
+  // Harness Integration — Discover contract
+  let cb = null;
+  let contractPath = options.contract;
+
+  // Auto-discover contract if not provided but feature slug is known
+  if (!contractPath && spec) {
+    const slug = path.basename(spec, '.md').replace(/^spec-/, '');
+    const autoPath = path.join(targetDir, '.aioson', 'plans', slug, 'harness-contract.json');
+    if (fs.existsSync(autoPath)) contractPath = autoPath;
+  }
+
+  if (contractPath && fs.existsSync(contractPath)) {
+    const progressPath = path.join(path.dirname(contractPath), 'progress.json');
+    cb = createCircuitBreaker(contractPath, progressPath);
+    await cb.load();
+    logger.log(`[Harness] Contract loaded: ${path.relative(targetDir, contractPath)}`);
+  }
+
+  // Set max iterations: Contract policy takes precedence over flag
+  let maxIterations = Math.min(Math.max(Number(options['max-iterations'] || 3), 1), 5);
+  if (cb && cb.contract && cb.contract.governor && cb.contract.governor.max_steps > 0) {
+    maxIterations = cb.contract.governor.max_steps;
+    logger.log(`[Harness] Max iterations set by contract: ${maxIterations}`);
+  }
 
   if (!task) {
     logger.error('Error: --task is required');
@@ -153,6 +179,17 @@ async function runSelfLoop({ args, options = {}, logger }) {
   logger.log('');
 
   for (let iteration = 1; iteration <= maxIterations; iteration++) {
+    // Harness Check
+    if (cb) {
+      const { allowed, reason } = cb.check();
+      if (!allowed) {
+        logger.log(`── Harness Block ──────────────────────────────────────────`);
+        logger.log(`  ✗ Execution paused: ${reason}`);
+        logger.log(`  Intervenção humana necessária antes de retomar.`);
+        return { ok: false, iterations: iteration - 1, verdict: 'BLOCKED', reason };
+      }
+    }
+
     logger.log(`── Iteration ${iteration}/${maxIterations} ──────────────────────────`);
 
     // Step 1: Execute agent
@@ -198,6 +235,8 @@ async function runSelfLoop({ args, options = {}, logger }) {
     if (verifyResult.ok) {
       logger.log(`  ✓ PASS${iteration > 1 ? ` (after ${iteration} iteration${iteration > 1 ? 's' : ''})` : ''}`);
 
+      if (cb) await cb.recordSuccess();
+
       // Record success in state
       if (squad) {
         await stateManager.updateState(targetDir, squad, {
@@ -216,6 +255,11 @@ async function runSelfLoop({ args, options = {}, logger }) {
     logger.log(`  ✗ ${verifyResult.verdict} — ${verifyResult.issues.length} issue(s)`);
     for (const issue of verifyResult.issues.slice(0, 5)) {
       logger.log(`    - ${issue.message}`);
+    }
+
+    if (cb) {
+      const firstIssue = verifyResult.issues[0]?.message || verifyResult.verdict;
+      await cb.recordError(firstIssue);
     }
 
     feedbackHistory.push({

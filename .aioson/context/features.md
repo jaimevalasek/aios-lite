@@ -1,0 +1,6 @@
+# Features
+
+| slug | status | started | completed |
+|------|--------|---------|-----------|
+| cypher-agent | done | 2026-04-10 | 2026-04-10 |
+| harness-driven-aioson | done | 2026-04-10 | 2026-04-10 |

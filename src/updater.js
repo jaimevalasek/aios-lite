@@ -23,7 +23,7 @@ async function updateInstallation(targetDir, options = {}) {
     mode: 'update',
     backupOnOverwrite: true,
     frameworkDetection: options.frameworkDetection || null,
-    installProfile: null,
+    installProfile: savedProfile,
     selectiveUpdate: !options.all
   });
 

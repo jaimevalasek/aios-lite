@@ -59,6 +59,10 @@ module.exports = {
       'aioson qa:scan [path] [--url=<app-url>] [--depth=3] [--max-pages=50] [--headed] [--html] [--json] [--locale=en]',
     help_qa_report:
       'aioson qa:report [path] [--html] [--json] [--locale=en]',
+    help_harness_init:
+      'aioson harness:init [path] --slug=<slug> [--mode=BALANCED|URGENT|ECONOMICAL] [--locale=en]',
+    help_harness_validate:
+      'aioson harness:validate [path] --slug=<slug> [--artifact=<path>] [--locale=en]',
     help_web_map:
       'aioson web:map [path] --url=<url> [--depth=<N>] [--max-pages=<N>] [--include-external] [--json] [--locale=en]',
     help_web_scrape:
@@ -806,6 +810,14 @@ module.exports = {
     not_found: 'No QA report found. Run: aioson qa:run or aioson qa:scan',
     html_report_written: 'HTML report written: {path}'
   },
+  harness: {
+    init_success: 'Harness initialized for feature: {slug}',
+    init_exists: 'Harness already initialized in {path}',
+    contract_not_found: 'Contract not found for slug: {slug}',
+    validating: 'Validating harness for {slug}...',
+    blocked: 'Execution paused: {reason}',
+    init_dry_run: '[dry-run] Would initialize harness for {slug}'
+  },
   web_map: {
     url_missing: 'Missing required option: --url=<url>.',
     starting: 'Mapping site: {url}',
@@ -1170,15 +1182,29 @@ module.exports = {
 
   auth: {
     login_no_token: 'No token provided. Get yours at: {url}',
-    login_hint: 'Run: aioson auth:login --token=<your-token>',
+    login_hint: 'Run: aioson auth:login',
+    login_hint_token: 'Or get a token manually at: {url}',
     login_verifying: 'Verifying token...',
-    login_ok: 'Logged in as {username}. Token saved to {path}.',
-    login_saved: 'Token saved to {path}. (Could not verify — API may be offline.)',
+    login_ok: '✓ Logged in as {username}. Token saved to {path}.',
+    login_saved: '✓ Token saved to {path}. (Could not verify — API may be offline.)',
     logout_ok: 'Logged out. Token removed.',
     status_not_authenticated: 'Not authenticated.',
     status_checking: 'Checking token...',
     status_ok: 'Authenticated as {username}.',
-    status_token_offline: 'Token saved (last known user: {username}). API offline or unreachable.'
+    status_token_offline: 'Token saved (last known user: {username}). API offline or unreachable.',
+    // Browser flow
+    browser_opening: 'Opening browser...',
+    browser_waiting: 'Waiting for browser authentication... (Ctrl+C to cancel)',
+    browser_timeout: 'Timed out. Please try again.',
+    browser_state_mismatch: 'Security check failed: invalid state.',
+    browser_no_token: 'No token received from browser.',
+    browser_failed: 'Browser login failed: {error}',
+    browser_server_error: 'Failed to start local callback server',
+    // Paste flow (WSL2, SSH, headless)
+    paste_open_browser: 'Open the link below in your browser:',
+    paste_instruction: 'After logging in, the page will show a token. Copy it and paste it here.',
+    paste_token_prompt: 'Paste the token here:',
+    paste_no_token: 'No token provided.',
   },
 
   workspace: {
@@ -1195,7 +1221,7 @@ module.exports = {
   },
 
   store: {
-    error_not_authenticated: 'Not authenticated. Run: aioson auth:login --token=<your-token>',
+    error_not_authenticated: 'Not authenticated. Run: aioson auth:login',
     error_missing_slug: 'Missing --slug.',
     error_missing_code_or_slug: 'Provide a slug (--slug=X) or an install code.',
     error_invalid_response: 'Invalid response from aioson.com.',

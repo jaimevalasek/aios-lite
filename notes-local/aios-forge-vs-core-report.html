@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AIOS Lite vs AIOS Core — Relatório Comparativo</title>
+  <style>
+    :root {
+      --green: #16a34a;
+      --green-light: #dcfce7;
+      --red: #dc2626;
+      --red-light: #fee2e2;
+      --yellow: #ca8a04;
+      --yellow-light: #fef9c3;
+      --blue: #2563eb;
+      --blue-light: #dbeafe;
+      --gray: #6b7280;
+      --gray-light: #f9fafb;
+      --border: #e5e7eb;
+      --text: #111827;
+      --text-muted: #6b7280;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 15px;
+      line-height: 1.6;
+      color: var(--text);
+      background: #f3f4f6;
+      padding: 2rem;
+    }
+
+    .container { max-width: 1100px; margin: 0 auto; }
+
+    /* Header */
+    .header {
+      background: white;
+      border-radius: 12px;
+      padding: 2rem 2.5rem;
+      margin-bottom: 1.5rem;
+      border: 1px solid var(--border);
+    }
+    .header h1 { font-size: 1.75rem; font-weight: 700; margin-bottom: 0.25rem; }
+    .header .meta { color: var(--text-muted); font-size: 0.875rem; }
+    .header .meta span { margin-right: 1.5rem; }
+    .badge {
+      display: inline-block;
+      padding: 0.2em 0.65em;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      line-height: 1.4;
+    }
+    .badge-green { background: var(--green-light); color: var(--green); }
+    .badge-red   { background: var(--red-light);   color: var(--red); }
+    .badge-blue  { background: var(--blue-light);  color: var(--blue); }
+    .badge-gray  { background: #f3f4f6;            color: var(--gray); }
+
+    /* Summary cards */
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .card {
+      background: white;
+      border-radius: 10px;
+      padding: 1.25rem 1.5rem;
+      border: 1px solid var(--border);
+    }
+    .card-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 0.5rem; }
+    .card-value { font-size: 1.5rem; font-weight: 700; }
+    .card-sub   { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem; }
+    .card-green .card-value { color: var(--green); }
+    .card-red   .card-value { color: var(--red); }
+    .card-blue  .card-value { color: var(--blue); }
+
+    /* Sections */
+    .section {
+      background: white;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      margin-bottom: 1.5rem;
+      overflow: hidden;
+    }
+    .section-header {
+      padding: 1rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      background: var(--gray-light);
+    }
+    .section-header h2 { font-size: 1rem; font-weight: 600; }
+    .section-body { padding: 1.5rem; }
+
+    /* Comparison table */
+    .cmp-table { width: 100%; border-collapse: collapse; }
+    .cmp-table th {
+      text-align: left;
+      padding: 0.6rem 1rem;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      border-bottom: 2px solid var(--border);
+    }
+    .cmp-table th.col-lite  { color: var(--green); }
+    .cmp-table th.col-core  { color: var(--red); }
+    .cmp-table td {
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+      font-size: 0.9rem;
+    }
+    .cmp-table tr:last-child td { border-bottom: none; }
+    .cmp-table tr:hover { background: var(--gray-light); }
+    .cmp-table td.col-dim { font-weight: 600; width: 22%; }
+    .cmp-table td.col-lite { color: #15803d; }
+    .cmp-table td.col-core { color: #b91c1c; }
+
+    .icon-good  { color: var(--green); font-weight: 700; }
+    .icon-bad   { color: var(--red);   font-weight: 700; }
+    .icon-warn  { color: var(--yellow); font-weight: 700; }
+
+    /* Agent matrix */
+    .agent-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 0.75rem;
+    }
+    .agent-card {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.9rem 1rem;
+    }
+    .agent-card .agent-name { font-weight: 600; font-size: 0.9rem; margin-bottom: 0.4rem; }
+    .agent-card .agent-detail { font-size: 0.8rem; color: var(--text-muted); line-height: 1.5; }
+    .agent-card.new { border-color: var(--green); background: #f0fdf4; }
+    .agent-card.enhanced { border-color: var(--blue); background: #eff6ff; }
+    .agent-card.unchanged { border-color: var(--border); }
+
+    /* Token estimate */
+    .token-row {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .token-row:last-child { border-bottom: none; }
+    .token-label { width: 200px; font-size: 0.9rem; }
+    .token-bar-wrap { flex: 1; background: #f3f4f6; border-radius: 9999px; height: 10px; overflow: hidden; }
+    .token-bar { height: 100%; border-radius: 9999px; }
+    .bar-lite { background: var(--green); }
+    .bar-core { background: var(--red); }
+    .token-val { width: 80px; text-align: right; font-size: 0.85rem; font-weight: 600; }
+
+    /* Feature list */
+    .feature-list { list-style: none; }
+    .feature-list li {
+      padding: 0.5rem 0;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: flex-start;
+      gap: 0.6rem;
+      font-size: 0.9rem;
+    }
+    .feature-list li:last-child { border-bottom: none; }
+    .feature-list .tag {
+      flex-shrink: 0;
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 0.15em 0.5em;
+      border-radius: 4px;
+      margin-top: 0.15em;
+    }
+    .tag-new { background: #dcfce7; color: #15803d; }
+    .tag-imp { background: #dbeafe; color: #1d4ed8; }
+    .tag-fix { background: #fef9c3; color: #a16207; }
+
+    /* Verdict */
+    .verdict {
+      background: linear-gradient(135deg, #f0fdf4 0%, #eff6ff 100%);
+      border: 1px solid #86efac;
+      border-radius: 10px;
+      padding: 1.5rem 2rem;
+      margin-bottom: 1.5rem;
+    }
+    .verdict h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 0.75rem; color: var(--green); }
+    .verdict p { font-size: 0.9rem; line-height: 1.7; color: #1f2937; }
+
+    code {
+      font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+      font-size: 0.85em;
+      background: #f3f4f6;
+      padding: 0.1em 0.4em;
+      border-radius: 4px;
+    }
+    .footnote { font-size: 0.78rem; color: var(--text-muted); margin-top: 1rem; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Header -->
+  <div class="header">
+    <h1>AIOS Lite vs AIOS Core — Relatório Comparativo</h1>
+    <div class="meta">
+      <span>Gerado em: <strong>2026-03-02</strong></span>
+      <span>Versão analisada: <strong>aios-lite v0.1.12</strong></span>
+      <span>
+        <span class="badge badge-green">177 testes passando</span>
+        &nbsp;
+        <span class="badge badge-blue">4 locales</span>
+      </span>
+    </div>
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="summary-grid">
+    <div class="card card-green">
+      <div class="card-label">Agentes ativos (MICRO)</div>
+      <div class="card-value">2</div>
+      <div class="card-sub">vs 12 no aios-core (sempre)</div>
+    </div>
+    <div class="card card-green">
+      <div class="card-label">Camada de histórias</div>
+      <div class="card-value">Nenhuma</div>
+      <div class="card-sub">aios-core: SM gera história por feature</div>
+    </div>
+    <div class="card card-blue">
+      <div class="card-label">Locales suportados</div>
+      <div class="card-value">4</div>
+      <div class="card-sub">en · pt-BR · es · fr</div>
+    </div>
+    <div class="card card-green">
+      <div class="card-label">Token overhead vs core</div>
+      <div class="card-value">−70%</div>
+      <div class="card-sub">estimativa em projetos MICRO/SMALL</div>
+    </div>
+  </div>
+
+  <!-- Main Comparison -->
+  <div class="section">
+    <div class="section-header">
+      <span>⚖️</span>
+      <h2>Comparativo Direto</h2>
+    </div>
+    <div class="section-body">
+      <table class="cmp-table">
+        <thead>
+          <tr>
+            <th>Dimensão</th>
+            <th class="col-lite">AIOS Lite v0.1.12</th>
+            <th class="col-core">AIOS Core</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="col-dim">Modelo de ativação</td>
+            <td class="col-lite"><span class="icon-good">✓</span> Classification-gated: MICRO (2 agentes), SMALL (5), MEDIUM (8)</td>
+            <td class="col-core"><span class="icon-bad">✗</span> 12 agentes sempre ativos, independente da complexidade</td>
+          </tr>
+          <tr>
+            <td class="col-dim">Camada de Stories</td>
+            <td class="col-lite"><span class="icon-good">✓</span> Inexistente — contexto vai direto do discovery para o dev</td>
+            <td class="col-core"><span class="icon-bad">✗</span> Story Manager (SM) gera história detalhada por feature, duplicando todo o contexto</td>
+          </tr>
+          <tr>
+            <td class="col-dim">Execução de spec</td>
+            <td class="col-lite"><span class="icon-good">✓</span> Sequência enxuta por classificação. MICRO vai direto ao @dev</td>
+            <td class="col-core"><span class="icon-bad">✗</span> 13 passos de spec execution fixos para qualquer projeto</td>
+          </tr>
+          <tr>
+            <td class="col-dim">QA pipeline</td>
+            <td class="col-lite"><span class="icon-good">✓</span> @qa com risk-first checklist adaptada ao risco real do projeto</td>
+            <td class="col-core"><span class="icon-bad">✗</span> 10 fases de QA independente do tamanho do projeto</td>
+          </tr>
+          <tr>
+            <td class="col-dim">Stacks suportadas</td>
+            <td class="col-lite"><span class="icon-good">✓</span> Qualquer stack — FastAPI, Go, Rust, Phoenix, Spring Boot. @setup registra o que o usuário descreve</td>
+            <td class="col-core"><span class="icon-warn">~</span> Foco em stacks predefinidas; stacks novas exigem customização manual</td>
+          </tr>
+          <tr>
+            <td class="col-dim">Análise MICRO</td>
+            <td class="col-lite"><span class="icon-good">✓</span> MICRO shortcut: @analyst entrega só discovery.md compacto (3 perguntas, sem tabela de entidades)</td>
+            <td class="col-core"><span class="icon-bad">✗</span> Sem shortcut — fluxo completo mesmo para scripts simples</td>
+          </tr>
+          <tr>
+            <td class="col-dim">Limites de output</td>
+            <td class="col-lite"><span class="icon-good">✓</span> @architect: MICRO ≤40 linhas, SMALL ≤80 linhas, MEDIUM sem limite</td>
+            <td class="col-core"><span class="icon-bad">✗</span> Sem limites de output — resposta cresce sem freio</td>
+          </tr>
+          <tr>
+            <td class="col-dim">No-duplication rule</td>
+            <td class="col-lite"><span class="icon-good">✓</span> @architect e @dev referenciam seções de docs anteriores, nunca copiam conteúdo</td>
+            <td class="col-core"><span class="icon-bad">✗</span> Cada agente tende a re-declarar contexto recebido, multiplicando tokens</td>
+          </tr>
+          <tr>
+            <td class="col-dim">Execução atômica</td>
+            <td class="col-lite"><span class="icon-good">✓</span> @dev opera em passos declarar → implementar → validar → commitar. Para em estado quebrado</td>
+            <td class="col-core"><span class="icon-bad">✗</span> Sem protocolo de atomicidade — entrega feature inteira em um passe</td>
+          </tr>
+          <tr>
+            <td class="col-dim">Protocolo de sessão</td>
+            <td class="col-lite"><span class="icon-good">✓</span> @orchestrator tem início/durante/fim de sessão + comando <code>*update-spec</code></td>
+            <td class="col-core"><span class="icon-bad">✗</span> Sem conceito de sessão — contexto não persiste entre conversas</td>
+          </tr>
+          <tr>
+            <td class="col-dim">Spec viva (spec.md)</td>
+            <td class="col-lite"><span class="icon-good">✓</span> @setup oferece geração de <code>spec.md</code> (features Done/In progress/Planned + decisões)</td>
+            <td class="col-core"><span class="icon-bad">✗</span> Sem conceito equivalente — documentos são estáticos</td>
+          </tr>
+          <tr>
+            <td class="col-dim">Internacionalização</td>
+            <td class="col-lite"><span class="icon-good">✓</span> 4 locales completos (en, pt-BR, es, fr). <code>locale:apply</code> substitui os agentes base</td>
+            <td class="col-core"><span class="icon-bad">✗</span> Inglês como único idioma suportado</td>
+          </tr>
+          <tr>
+            <td class="col-dim">Web3</td>
+            <td class="col-lite"><span class="icon-good">✓</span> Ethereum, Solana, Midnight Network (Compact). Detecção automática de framework</td>
+            <td class="col-core"><span class="icon-warn">~</span> Suporte básico Ethereum/EVM; sem Midnight/Compact</td>
+          </tr>
+          <tr>
+            <td class="col-dim">Guia de uso</td>
+            <td class="col-lite"><span class="icon-good">✓</span> <code>guia-engineer.md</code>: metodologia Akita, prompts bom vs ruim, ritual de sessão, delegação segura vs vigilância</td>
+            <td class="col-core"><span class="icon-bad">✗</span> Sem guia de como usar eficientemente com IA</td>
+          </tr>
+          <tr>
+            <td class="col-dim">Velocidade percebida</td>
+            <td class="col-lite"><span class="icon-good">✓</span> MICRO: 1 agente. SMALL: 4 agentes. Cada agente com limite de output</td>
+            <td class="col-core"><span class="icon-bad">✗</span> Conhecido na comunidade como "lento e gastador de tokens"</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Token Estimation -->
+  <div class="section">
+    <div class="section-header">
+      <span>🪙</span>
+      <h2>Estimativa de Consumo de Tokens por Tipo de Projeto</h2>
+    </div>
+    <div class="section-body">
+      <div class="token-row">
+        <div class="token-label"><strong>MICRO</strong> — Script / landing page</div>
+        <div style="flex:1">
+          <div style="display:flex;gap:0.5rem;align-items:center;margin-bottom:4px">
+            <span style="width:70px;font-size:0.78rem;color:#15803d">Lite</span>
+            <div class="token-bar-wrap"><div class="token-bar bar-lite" style="width:12%"></div></div>
+            <span class="token-val" style="color:#15803d">~3K</span>
+          </div>
+          <div style="display:flex;gap:0.5rem;align-items:center">
+            <span style="width:70px;font-size:0.78rem;color:#b91c1c">Core</span>
+            <div class="token-bar-wrap"><div class="token-bar bar-core" style="width:80%"></div></div>
+            <span class="token-val" style="color:#b91c1c">~20K+</span>
+          </div>
+        </div>
+      </div>
+      <div class="token-row">
+        <div class="token-label"><strong>SMALL</strong> — API REST / app simples</div>
+        <div style="flex:1">
+          <div style="display:flex;gap:0.5rem;align-items:center;margin-bottom:4px">
+            <span style="width:70px;font-size:0.78rem;color:#15803d">Lite</span>
+            <div class="token-bar-wrap"><div class="token-bar bar-lite" style="width:25%"></div></div>
+            <span class="token-val" style="color:#15803d">~10K</span>
+          </div>
+          <div style="display:flex;gap:0.5rem;align-items:center">
+            <span style="width:70px;font-size:0.78rem;color:#b91c1c">Core</span>
+            <div class="token-bar-wrap"><div class="token-bar bar-core" style="width:90%"></div></div>
+            <span class="token-val" style="color:#b91c1c">~40K+</span>
+          </div>
+        </div>
+      </div>
+      <div class="token-row">
+        <div class="token-label"><strong>MEDIUM</strong> — SaaS / plataforma</div>
+        <div style="flex:1">
+          <div style="display:flex;gap:0.5rem;align-items:center;margin-bottom:4px">
+            <span style="width:70px;font-size:0.78rem;color:#15803d">Lite</span>
+            <div class="token-bar-wrap"><div class="token-bar bar-lite" style="width:55%"></div></div>
+            <span class="token-val" style="color:#15803d">~25K</span>
+          </div>
+          <div style="display:flex;gap:0.5rem;align-items:center">
+            <span style="width:70px;font-size:0.78rem;color:#b91c1c">Core</span>
+            <div class="token-bar-wrap"><div class="token-bar bar-core" style="width:100%"></div></div>
+            <span class="token-val" style="color:#b91c1c">~80K+</span>
+          </div>
+        </div>
+      </div>
+      <p class="footnote">* Estimativas baseadas em análise de estrutura de agentes. Valores reais variam com complexidade de cada projeto. O principal driver do custo no aios-core é a camada SM (Story Manager) que re-serializa todo o contexto para cada feature.</p>
+    </div>
+  </div>
+
+  <!-- Agent Matrix -->
+  <div class="section">
+    <div class="section-header">
+      <span>🤖</span>
+      <h2>Matriz de Agentes — aios-lite v0.1.12</h2>
+    </div>
+    <div class="section-body">
+      <div style="display:flex;gap:0.75rem;margin-bottom:1rem;flex-wrap:wrap">
+        <span style="display:flex;align-items:center;gap:0.4rem;font-size:0.8rem"><span style="width:12px;height:12px;background:#f0fdf4;border:1.5px solid #16a34a;border-radius:3px;display:inline-block"></span>Enriquecido nesta versão</span>
+        <span style="display:flex;align-items:center;gap:0.4rem;font-size:0.8rem"><span style="width:12px;height:12px;background:#eff6ff;border:1.5px solid #2563eb;border-radius:3px;display:inline-block"></span>Aprimorado</span>
+        <span style="display:flex;align-items:center;gap:0.4rem;font-size:0.8rem"><span style="width:12px;height:12px;background:white;border:1.5px solid #e5e7eb;border-radius:3px;display:inline-block"></span>Estável</span>
+      </div>
+      <div class="agent-grid">
+        <div class="agent-card enhanced">
+          <div class="agent-name">@setup</div>
+          <div class="agent-detail">
+            Detecta framework · Onboarding por perfil · Jetstream warning ·
+            Qualquer stack · <strong>Gera spec.md (novo)</strong> · locale:apply
+          </div>
+        </div>
+        <div class="agent-card enhanced">
+          <div class="agent-name">@analyst</div>
+          <div class="agent-detail">
+            Discovery 3 fases · <strong>MICRO shortcut</strong> (3 perguntas, sem tabela) ·
+            Mapeamento de entidades · Regras de negócio · Riscos
+          </div>
+        </div>
+        <div class="agent-card enhanced">
+          <div class="agent-name">@architect</div>
+          <div class="agent-detail">
+            Estrutura por stack · <strong>Output limits</strong> (MICRO ≤40, SMALL ≤80) ·
+            <strong>No-copy rule</strong> · Decisões técnicas
+          </div>
+        </div>
+        <div class="agent-card unchanged">
+          <div class="agent-name">@ux-ui</div>
+          <div class="agent-detail">
+            Design system · Componentes · Estados (loading/empty/error) ·
+            Acessibilidade · ui-spec.md
+          </div>
+        </div>
+        <div class="agent-card unchanged">
+          <div class="agent-name">@pm</div>
+          <div class="agent-detail">
+            User stories · Critérios de aceite · Priorização MoSCoW ·
+            prd.md ≤2 páginas · Roadmap
+          </div>
+        </div>
+        <div class="agent-card enhanced">
+          <div class="agent-name">@dev</div>
+          <div class="agent-detail">
+            Implementação por stack · <strong>Execução atômica</strong> (declarar → implementar → validar → commitar) ·
+            Any-stack conventions · <strong>Lê spec.md</strong>
+          </div>
+        </div>
+        <div class="agent-card unchanged">
+          <div class="agent-name">@qa</div>
+          <div class="agent-detail">
+            Risk-first checklist · Auditoria de contratos Web3 ·
+            Testes por classificação · Cobertura de edge cases
+          </div>
+        </div>
+        <div class="agent-card enhanced">
+          <div class="agent-name">@orchestrator</div>
+          <div class="agent-detail">
+            Paralelismo MEDIUM · Dependency graph · <strong>Protocolo de sessão</strong>
+            (início/durante/fim) · <strong>*update-spec</strong> · Status files
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- What's New -->
+  <div class="section">
+    <div class="section-header">
+      <span>🚀</span>
+      <h2>Changelog desta Versão — Principais Entregas</h2>
+    </div>
+    <div class="section-body">
+      <ul class="feature-list">
+        <li>
+          <span class="tag tag-new">NOVO</span>
+          <div><strong>Metodologia Akita absorvida nos agentes</strong> — Execução atômica no @dev, protocolo de sessão no @orchestrator, geração de spec.md no @setup. Zero agentes novos criados.</div>
+        </li>
+        <li>
+          <span class="tag tag-new">NOVO</span>
+          <div><strong>spec.md — documento vivo</strong> — Template gerado pelo @setup após onboarding. Captura estado atual, features (Done/In progress/Planned), decisões e blockers. Atualizado via <code>*update-spec</code>.</div>
+        </li>
+        <li>
+          <span class="tag tag-new">NOVO</span>
+          <div><strong>guia-engineer.md</strong> — Guia completo de pair programming com IA: squad mode vs engineer mode, ritual de sessão, prompt ruim vs bom, checklist de clarificação, vigilância permanente.</div>
+        </li>
+        <li>
+          <span class="tag tag-new">NOVO</span>
+          <div><strong>Midnight Network (Cardano/NIGHT)</strong> — Suporte completo na docs web3.md: linguagem Compact, ledger/circuit/witness, código real bboard.compact, TypeScript witnesses, checklist de auditoria ZK.</div>
+        </li>
+        <li>
+          <span class="tag tag-new">NOVO</span>
+          <div><strong>Cenários práticos expandidos</strong> — docs/pt/cenarios.md: Node.js/Fastify (SMALL), Rails/Hotwire (SMALL), Python/FastAPI (MICRO) com código real e fluxo completo de agentes.</div>
+        </li>
+        <li>
+          <span class="tag tag-imp">MELHORIA</span>
+          <div><strong>18 locales enriquecidos</strong> — pt-BR, es, fr para 6 agentes (setup, architect, analyst, dev, pm, orchestrator) passaram de ~50 linhas para ~150-170 linhas cada, com paridade total com o agente base.</div>
+        </li>
+        <li>
+          <span class="tag tag-imp">MELHORIA</span>
+          <div><strong>MICRO shortcut no @analyst</strong> — Projetos score 0-1 entregam discovery.md compacto (3 perguntas, sem tabela de entidades). Evita custo de discovery completo onde não é necessário.</div>
+        </li>
+        <li>
+          <span class="tag tag-imp">MELHORIA</span>
+          <div><strong>Output targets no @architect</strong> — MICRO ≤40 linhas, SMALL ≤80 linhas, MEDIUM sem limite. Regra de no-copy: referenciar seções de docs anteriores, nunca copiar.</div>
+        </li>
+        <li>
+          <span class="tag tag-imp">MELHORIA</span>
+          <div><strong>Any-stack no @setup e @dev</strong> — FastAPI, Go, Rust, SvelteKit, Phoenix, Spring Boot e qualquer stack não listada é registrada e suportada sem forçar opção predefinida.</div>
+        </li>
+        <li>
+          <span class="tag tag-fix">CORREÇÃO</span>
+          <div><strong>Docs sem pressuposição de projeto</strong> — Exemplo anterior dizia "Descreva o que a landing page precisa ter" (pressupondo tipo de projeto). Corrigido para fluxo neutro e genérico.</div>
+        </li>
+        <li>
+          <span class="tag tag-fix">CORREÇÃO</span>
+          <div><strong>Token risk-first checklist no @qa</strong> — Contrato de teste esperava "Risk-first checklist"; agente usava "Risk checklist". Sincronizado em base + en locale.</div>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Classification System -->
+  <div class="section">
+    <div class="section-header">
+      <span>🎯</span>
+      <h2>Sistema de Classificação — Como o Lite decide o que ativar</h2>
+    </div>
+    <div class="section-body">
+      <table class="cmp-table">
+        <thead>
+          <tr>
+            <th>Dimensão</th>
+            <th>1 → 0pts</th>
+            <th>2 → 1pt</th>
+            <th>3+ → 2pts</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="col-dim">Tipos de usuário</td>
+            <td>1 tipo</td>
+            <td>2 tipos</td>
+            <td>3 ou mais tipos</td>
+          </tr>
+          <tr>
+            <td class="col-dim">Integrações externas</td>
+            <td>0 integrações</td>
+            <td>1-2 integrações</td>
+            <td>3+ integrações</td>
+          </tr>
+          <tr>
+            <td class="col-dim">Complexidade de regras</td>
+            <td>Nenhuma (none)</td>
+            <td>Algumas (some)</td>
+            <td>Complexas (complex)</td>
+          </tr>
+        </tbody>
+      </table>
+      <div style="margin-top:1.25rem;display:grid;grid-template-columns:repeat(3,1fr);gap:1rem">
+        <div style="border:1.5px solid #16a34a;border-radius:8px;padding:1rem;background:#f0fdf4">
+          <div style="font-weight:700;color:#15803d;margin-bottom:0.4rem">MICRO · 0-1pt</div>
+          <div style="font-size:0.85rem;color:#166534">@setup → @dev<br>Sem analyst, architect, qa<br><em>script, landing, API simples</em></div>
+        </div>
+        <div style="border:1.5px solid #2563eb;border-radius:8px;padding:1rem;background:#eff6ff">
+          <div style="font-weight:700;color:#1d4ed8;margin-bottom:0.4rem">SMALL · 2-3pts</div>
+          <div style="font-size:0.85rem;color:#1e40af">@setup → @analyst → @architect → @dev → @qa<br><em>API, app, web app com auth</em></div>
+        </div>
+        <div style="border:1.5px solid #7c3aed;border-radius:8px;padding:1rem;background:#f5f3ff">
+          <div style="font-weight:700;color:#6d28d9;margin-bottom:0.4rem">MEDIUM · 4-6pts</div>
+          <div style="font-size:0.85rem;color:#5b21b6">Pipeline completo + @ux-ui + @pm + @orchestrator<br><em>SaaS, plataforma, dApp complexo</em></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Verdict -->
+  <div class="verdict">
+    <h3>✅ Conclusão</h3>
+    <p>
+      O aios-lite v0.1.12 é uma alternativa substancialmente mais eficiente ao aios-core para a maioria dos casos de uso reais.
+      A principal vantagem estrutural é o <strong>sistema de classificação por complexidade</strong>: um script ou landing page ativa 2 agentes;
+      uma plataforma SaaS ativa 8. O aios-core ativa 12 agentes para qualquer projeto.
+    </p>
+    <br>
+    <p>
+      Com a incorporação da <strong>metodologia Akita</strong> nesta versão — execução atômica no @dev, protocolo de sessão no @orchestrator
+      e spec.md como documento vivo — o lite ganhou o que faltava: disciplina de processo para projetos que duram semanas,
+      sem adicionar peso de tokens para projetos curtos (spec.md é opcional).
+    </p>
+    <br>
+    <p>
+      A única vantagem real do aios-core hoje é para <strong>organizações grandes com processos muito maduros</strong> que precisam de
+      granularidade extrema na gestão de histórias. Para todos os outros casos — desde scripts até plataformas SaaS — o aios-lite
+      entrega mais rápido, com menos tokens e com processo suficientemente rigoroso.
+    </p>
+  </div>
+
+  <p class="footnote" style="text-align:center;margin-bottom:2rem">
+    Relatório gerado para uso interno · aios-lite v0.1.12 · notas privadas (notes-local/)
+  </p>
+
+</div>
+</body>
+</html>

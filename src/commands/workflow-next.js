@@ -371,6 +371,27 @@ async function finalizeCurrentStage(targetDir, config, state, stageName) {
     throw new Error('No stage is active to complete.');
   }
 
+  // ── Harness Done Gate ───────────────────────────────────────────────────
+  if (state.mode === 'feature' && state.featureSlug) {
+    const contractPath = path.join(targetDir, '.aioson', 'plans', state.featureSlug, 'harness-contract.json');
+    const progressPath = path.join(targetDir, '.aioson', 'plans', state.featureSlug, 'progress.json');
+    
+    // Se contrato existe, verificamos o progresso
+    const fs = require('node:fs');
+    if (fs.existsSync(contractPath) && fs.existsSync(progressPath)) {
+      try {
+        const progress = JSON.parse(fs.readFileSync(progressPath, 'utf8'));
+        // Bloqueia se não estiver pronto para o gate E o estágio for crítico (dev/qa)
+        if (!progress.ready_for_done_gate && (normalizedStage === 'dev' || normalizedStage === 'qa')) {
+          throw new Error(`[Harness Block] A feature "${state.featureSlug}" não passou na validação contratual. Execute 'aioson harness:validate' e resolva os problemas antes de concluir o estágio @${normalizedStage}.`);
+        }
+      } catch (err) {
+        if (err.message.includes('[Harness Block]')) throw err;
+        // Se erro de parse, ignoramos para não quebrar o workflow por corrupção
+      }
+    }
+  }
+
   if (state.detour && state.detour.active && normalizeAgentName(state.detour.agent) === normalizedStage) {
     const validDetour = await validateStageArtifacts(targetDir, state, normalizedStage);
     if (!validDetour) {

@@ -454,6 +454,30 @@ async function runVerifyGate({ args, options = {}, logger }) {
   // ── Parse spec requirements ───────────────────────────────────────────────
   const requirements = parseSpecRequirements(specContent);
 
+  // ── Harness Integration ───────────────────────────────────────────────────
+  let contractCriteria = [];
+  if (options.contract) {
+    try {
+      const contractContent = await fs.readFile(path.resolve(targetDir, options.contract), 'utf8');
+      const contract = JSON.parse(contractContent);
+      if (contract.criteria && Array.isArray(contract.criteria)) {
+        contractCriteria = contract.criteria;
+        for (const c of contract.criteria) {
+          // Add to acceptance criteria for reporting
+          requirements.acceptance_criteria.push({ text: `[Harness ${c.id}] ${c.description}`, checked: false });
+          
+          // Map assertion to deterministic check if possible
+          // Pattern mapping: if assertion looks like "file:src/foo.ts", add to required files
+          if (c.assertion.includes('/') && !c.assertion.includes(' ')) {
+            requirements.required_files.push(c.assertion.trim());
+          }
+        }
+      }
+    } catch (err) {
+      logger.warn(`[VerifyGate] Falha ao ler contrato: ${err.message}`);
+    }
+  }
+
   // ── Collect artifact files ────────────────────────────────────────────────
   const allFiles = await collectFiles(artifactPath);
 
@@ -499,6 +523,16 @@ async function runVerifyGate({ args, options = {}, logger }) {
   const relOut = path.relative(targetDir, outPath);
 
   if (options.json) {
+    // Map issues/passes back to contract IDs if possible
+    const criteriaResults = contractCriteria.map(c => {
+      const passed = !allIssues.some(i => i.includes(c.id) || i.includes(c.assertion));
+      return {
+        id: c.id,
+        passed,
+        reason: passed ? null : allIssues.find(i => i.includes(c.id) || i.includes(c.assertion))
+      };
+    });
+
     return {
       ok: verdict === 'PASS' || verdict === 'PASS_WITH_NOTES',
       verdict,
@@ -509,6 +543,7 @@ async function runVerifyGate({ args, options = {}, logger }) {
       issues: allIssues,
       notes: allNotes,
       passes: allPasses,
+      criteria_results: criteriaResults,
       requirements: {
         required_files: requirements.required_files.length,
         acceptance_criteria: requirements.acceptance_criteria.length,
