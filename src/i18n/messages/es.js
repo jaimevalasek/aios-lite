@@ -1068,5 +1068,38 @@ module.exports = {
     install_inspect_files: 'Archivos en este paquete ({count} en total):',
     install_inspect_hint: 'Ejecute sin --inspect para instalar.',
     install_unverified_hint: '  Tip: Use --inspect para revisar los archivos antes de instalar, o --force para omitir esta advertencia.'
+  },
+
+  system: {
+    error_no_manifest: 'system.json no encontrado en {path}. Cree un system.json en la raiz del proyecto de sistema.',
+    error_invalid_manifest: 'system.json invalido — verifique que sea un JSON valido.',
+    error_manifest_missing_slug: 'system.json debe incluir el campo "slug".',
+    error_manifest_missing_version: 'system.json debe incluir el campo "version".',
+    error_manifest_missing_name: 'system.json debe incluir el campo "name".',
+    error_missing_package_json: 'package.json no encontrado. Un sistema debe ser un proyecto Node.js valido.',
+
+    package_reading_manifest: 'Leyendo system.json...',
+    package_manifest_ok: 'Sistema: {name} ({slug} v{version})',
+    package_collecting_files: 'Recopilando archivos fuente...',
+    package_files_found: '  {count} archivos ({kb} KB)',
+    package_dry_run: '[dry-run] Empaquetaria {slug} v{version} — ningun archivo escrito.',
+    package_saved: 'Paquete guardado en: {path}',
+
+    publish_reading_manifest: 'Leyendo system.json...',
+    publish_dry_run: '[dry-run] Publicaria el sistema "{slug}" v{version} (visibilidad: {visibility}).',
+    publish_sending: 'Enviando a aioson.com...',
+    publish_done: 'Publicado: aioson.com/store/systems/{slug}\n  Instalar en aioson-play usando el slug: {slug}',
+    publish_summary: '  Archivos: {files} ({kb} KB)',
+
+    list_remote_empty: 'Ningun sistema publicado aun.',
+    list_remote_header: '{count} sistema(s) publicado(s):',
+    list_remote_item: '  {slug}  v{version}  [{visibility}]  {name}',
+    list_local_empty: 'Ningun sistema en cache en este proyecto.',
+    list_local_header: '{count} sistema(s) en cache:',
+    list_local_item: '  {slug}',
+
+    install_fetching: 'Buscando sistema "{ref}" en aioson.com...',
+    install_writing: 'Escribiendo archivos...',
+    install_done: 'Sistema "{slug}" instalado en {path}.'
   }
 };

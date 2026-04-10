@@ -1271,5 +1271,38 @@ module.exports = {
     install_inspect_files: 'Files in this package ({count} total):',
     install_inspect_hint: 'Run without --inspect to install.',
     install_unverified_hint: '  Tip: Run with --inspect to review files before installing, or --force to suppress this warning.'
+  },
+
+  system: {
+    error_no_manifest: 'system.json not found at {path}. Create a system.json in the root of your system project.',
+    error_invalid_manifest: 'Invalid system.json — check that it is valid JSON.',
+    error_manifest_missing_slug: 'system.json must include the "slug" field.',
+    error_manifest_missing_version: 'system.json must include the "version" field.',
+    error_manifest_missing_name: 'system.json must include the "name" field.',
+    error_missing_package_json: 'package.json not found. A system must be a valid Node.js project.',
+
+    package_reading_manifest: 'Reading system.json...',
+    package_manifest_ok: 'System: {name} ({slug} v{version})',
+    package_collecting_files: 'Collecting source files...',
+    package_files_found: '  {count} files ({kb} KB)',
+    package_dry_run: '[dry-run] Would package {slug} v{version} — no files written.',
+    package_saved: 'Package saved at: {path}',
+
+    publish_reading_manifest: 'Reading system.json...',
+    publish_dry_run: '[dry-run] Would publish system "{slug}" v{version} (visibility: {visibility}).',
+    publish_sending: 'Sending to aioson.com...',
+    publish_done: 'Published: aioson.com/store/systems/{slug}\n  Install in aioson-play using slug: {slug}',
+    publish_summary: '  Files: {files} ({kb} KB)',
+
+    list_remote_empty: 'No systems published yet.',
+    list_remote_header: '{count} system(s) published:',
+    list_remote_item: '  {slug}  v{version}  [{visibility}]  {name}',
+    list_local_empty: 'No systems cached in this project.',
+    list_local_header: '{count} system(s) cached:',
+    list_local_item: '  {slug}',
+
+    install_fetching: 'Fetching system "{ref}" from aioson.com...',
+    install_writing: 'Writing files...',
+    install_done: 'System "{slug}" installed at {path}.'
   }
 };

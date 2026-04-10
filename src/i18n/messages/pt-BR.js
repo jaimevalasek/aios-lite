@@ -1263,5 +1263,38 @@ module.exports = {
     install_inspect_files: 'Arquivos neste pacote ({count} no total):',
     install_inspect_hint: 'Execute sem --inspect para instalar.',
     install_unverified_hint: '  Dica: Use --inspect para revisar os arquivos antes de instalar, ou --force para ignorar este aviso.'
+  },
+
+  system: {
+    error_no_manifest: 'system.json nao encontrado em {path}. Crie um system.json no diretorio raiz do sistema.',
+    error_invalid_manifest: 'system.json invalido — verifique se e um JSON valido.',
+    error_manifest_missing_slug: 'system.json deve conter o campo "slug".',
+    error_manifest_missing_version: 'system.json deve conter o campo "version".',
+    error_manifest_missing_name: 'system.json deve conter o campo "name".',
+    error_missing_package_json: 'package.json nao encontrado. Um sistema deve ser um projeto Node.js valido.',
+
+    package_reading_manifest: 'Lendo system.json...',
+    package_manifest_ok: 'Sistema: {name} ({slug} v{version})',
+    package_collecting_files: 'Coletando arquivos fonte...',
+    package_files_found: '  {count} arquivos ({kb} KB)',
+    package_dry_run: '[dry-run] Pacotaria {slug} v{version} — nenhum arquivo gravado.',
+    package_saved: 'Pacote salvo em: {path}',
+
+    publish_reading_manifest: 'Lendo system.json...',
+    publish_dry_run: '[dry-run] Publicaria sistema "{slug}" v{version} (visibilidade: {visibility}).',
+    publish_sending: 'Enviando para aioson.com...',
+    publish_done: 'Publicado: aioson.com/store/systems/{slug}\n  Instalar no aioson-play usando o slug: {slug}',
+    publish_summary: '  Arquivos: {files} ({kb} KB)',
+
+    list_remote_empty: 'Nenhum sistema publicado ainda.',
+    list_remote_header: '{count} sistema(s) publicado(s):',
+    list_remote_item: '  {slug}  v{version}  [{visibility}]  {name}',
+    list_local_empty: 'Nenhum sistema em cache neste projeto.',
+    list_local_header: '{count} sistema(s) em cache:',
+    list_local_item: '  {slug}',
+
+    install_fetching: 'Buscando sistema "{ref}" no aioson.com...',
+    install_writing: 'Gravando arquivos...',
+    install_done: 'Sistema "{slug}" instalado em {path}.'
   }
 };

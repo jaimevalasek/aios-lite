@@ -171,6 +171,7 @@ const { runWorkspaceInit, runWorkspaceStatus, runWorkspaceOpen } = require('./co
 const { runGenomePublish, runGenomeInstallStore, runGenomeInstall, runGenomeList, runGenomeRemove } = require('./commands/store-genome');
 const { runSkillPublish, runSkillInstallStore, runSkillListRemote } = require('./commands/store-skill');
 const { runSquadPublish, runSquadInstall, runSquadGrant, runSquadList } = require('./commands/store-squad');
+const { runSystemPackage, runSystemPublish, runSystemList, runSystemInstall } = require('./commands/store-system');
 
 const JSON_SUPPORTED_COMMANDS = new Set([
   'init',
@@ -539,7 +540,15 @@ const JSON_SUPPORTED_COMMANDS = new Set([
   'squad:install',
   'squad-install',
   'squad:grant',
-  'squad-grant'
+  'squad-grant',
+  'system:package',
+  'system-package',
+  'system:publish',
+  'system-publish',
+  'system:list',
+  'system-list',
+  'system:install',
+  'system-install'
 ]);
 
 const LEGACY_DASHBOARD_COMMANDS = new Set([
@@ -1151,6 +1160,14 @@ async function main() {
       result = await runSquadInstall({ args, options, logger: commandLogger, t });
     } else if (command === 'squad:grant' || command === 'squad-grant') {
       result = await runSquadGrant({ args, options, logger: commandLogger, t });
+    } else if (command === 'system:package' || command === 'system-package') {
+      result = await runSystemPackage({ args, options, logger: commandLogger, t });
+    } else if (command === 'system:publish' || command === 'system-publish') {
+      result = await runSystemPublish({ args, options, logger: commandLogger, t });
+    } else if (command === 'system:list' || command === 'system-list') {
+      result = await runSystemList({ args, options, logger: commandLogger, t });
+    } else if (command === 'system:install' || command === 'system-install') {
+      result = await runSystemInstall({ args, options, logger: commandLogger, t });
     } else {
       const message = t('cli.unknown_command', { command });
       if (jsonMode) {

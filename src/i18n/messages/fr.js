@@ -1075,5 +1075,38 @@ module.exports = {
     install_inspect_files: 'Fichiers dans ce paquet ({count} au total) :',
     install_inspect_hint: 'Ex\u00e9cutez sans --inspect pour installer.',
     install_unverified_hint: '  Astuce : Utilisez --inspect pour examiner les fichiers avant l\'installation, ou --force pour ignorer cet avertissement.'
+  },
+
+  system: {
+    error_no_manifest: 'system.json introuvable dans {path}. Creez un system.json a la racine du projet systeme.',
+    error_invalid_manifest: 'system.json invalide — verifiez que c\'est un JSON valide.',
+    error_manifest_missing_slug: 'system.json doit contenir le champ "slug".',
+    error_manifest_missing_version: 'system.json doit contenir le champ "version".',
+    error_manifest_missing_name: 'system.json doit contenir le champ "name".',
+    error_missing_package_json: 'package.json introuvable. Un systeme doit etre un projet Node.js valide.',
+
+    package_reading_manifest: 'Lecture de system.json...',
+    package_manifest_ok: 'Systeme : {name} ({slug} v{version})',
+    package_collecting_files: 'Collecte des fichiers sources...',
+    package_files_found: '  {count} fichiers ({kb} Ko)',
+    package_dry_run: '[dry-run] Emballerait {slug} v{version} — aucun fichier ecrit.',
+    package_saved: 'Paquet sauvegarde dans : {path}',
+
+    publish_reading_manifest: 'Lecture de system.json...',
+    publish_dry_run: '[dry-run] Publierait le systeme "{slug}" v{version} (visibilite : {visibility}).',
+    publish_sending: 'Envoi vers aioson.com...',
+    publish_done: 'Publie : aioson.com/store/systems/{slug}\n  Installer dans aioson-play avec le slug : {slug}',
+    publish_summary: '  Fichiers : {files} ({kb} Ko)',
+
+    list_remote_empty: 'Aucun systeme publie pour l\'instant.',
+    list_remote_header: '{count} systeme(s) publie(s) :',
+    list_remote_item: '  {slug}  v{version}  [{visibility}]  {name}',
+    list_local_empty: 'Aucun systeme en cache dans ce projet.',
+    list_local_header: '{count} systeme(s) en cache :',
+    list_local_item: '  {slug}',
+
+    install_fetching: 'Recuperation du systeme "{ref}" depuis aioson.com...',
+    install_writing: 'Ecriture des fichiers...',
+    install_done: 'Systeme "{slug}" installe dans {path}.'
   }
 };
