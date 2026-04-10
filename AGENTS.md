@@ -93,6 +93,8 @@ When running Codex directly (without `aioson workflow:next`), these rules apply:
 - @neo → `.aioson/agents/neo.md`
 - @orchestrator → `.aioson/agents/orchestrator.md`
 - @squad → `.aioson/agents/squad.md`
+- @copywriter → `.aioson/agents/copywriter.md`
+- @cypher → `.aioson/agents/cypher.md`
 - @genome → `.aioson/agents/genome.md`
 - @profiler-researcher → `.aioson/agents/profiler-researcher.md`
 - @profiler-enricher → `.aioson/agents/profiler-enricher.md`
@@ -169,6 +171,10 @@ All agents may read from here to avoid redundant searches.
 
 ## Session protocol
 If `.aioson/context/spec.md` exists, read it at session start and update it at session end.
+
+## Golden rule
+Small project, small solution.
+read it at session start and update it at session end.
 
 ## Golden rule
 Small project, small solution.

@@ -37,6 +37,8 @@ Describe your intent. The agent system will match and execute.
 | @neo | "where do I start?", "what should I do next?", "show project status", "guide me", "use the neo agent" |
 | @orchestrator | "coordinate this session", "use the orchestrator agent" |
 | @squad | "assemble a squad", "use the squad agent", "montar squad" |
+| @copywriter | "write copy for this page", "conversion strategy", "use the copywriter agent" |
+| @cypher | "create a briefing from plans", "pre-production planning", "use the cypher agent" |
 | @genome | "generate a genome", "use the genome agent", "gerar genome" |
 | @profiler-researcher | "start the profiler research", "profile this person", "pesquisar DNA mental" |
 | @profiler-enricher | "enrich this profile", "analyze this person's cognition", "consolidar perfil cognitivo" |
@@ -87,6 +89,7 @@ When running Codex directly (without `aioson workflow:next`), these rules apply:
 - @pm → `.aioson/agents/pm.md`
 - @dev → `.aioson/agents/dev.md`
 - @qa → `.aioson/agents/qa.md`
+- @validator → `.aioson/agents/validator.md`
 - @tester → `.aioson/agents/tester.md`
 - @neo → `.aioson/agents/neo.md`
 - @orchestrator → `.aioson/agents/orchestrator.md`
@@ -169,4 +172,6 @@ All agents may read from here to avoid redundant searches.
 If `.aioson/context/spec.md` exists, read it at session start and update it at session end.
 
 ## Golden rule
+Small project, small solution.
+ Golden rule
 Small project, small solution.

@@ -1,0 +1,7 @@
+description = "Technical validation against success contract"
+prompt = """
+@{ .aioson/context/project.context.md }
+@{ .aioson/agents/validator.md }
+
+{{args}}
+"""

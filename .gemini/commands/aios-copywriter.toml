@@ -1,0 +1,8 @@
+description = "Conversion-focused marketing copy"
+prompt = """
+@{ .aioson/context/project.context.md }
+@{ .aioson/agents/copywriter.md }
+
+{{args}}
+}}
+"""
