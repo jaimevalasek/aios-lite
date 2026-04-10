@@ -1,3 +1,19 @@
+changelogs/
+node_modules/
+npm-debug.log*
+.DS_Store
+*:Zone.Identifier
+AIOSON-PLANNING Final.md
+mapping/
+notes-local/
+prds/
+qa-senior.txt
+products-features/
+plans/
+searchings/
+researchs/
+squad-searches/
+
 # Local overrides — machine-specific, not for version control
 CLAUDE.local.md
 AGENTS.local.md
