@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "session_ended_at": "2026-04-10T22:42:58.713Z",
+  "last_agent": "@product",
+  "last_stage": "product",
+  "what_was_done": "Stage @product completed.",
+  "what_comes_next": "Next stage: @dev",
+  "next_agent": "@dev",
+  "open_decisions": [],
+  "context_files_updated": [],
+  "workflow_mode": "feature",
+  "classification": "MEDIUM",
+  "feature_slug": "qa-test"
+}

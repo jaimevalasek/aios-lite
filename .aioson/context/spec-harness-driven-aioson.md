@@ -55,6 +55,12 @@ Ver `requirements-harness-driven-aioson.md` § Casos extremos e modos de falha
 - **Invoca:** `verify-gate.js`, `self-implement-loop.js`, `agent:prompt validator`
 - **Registrado em:** `src/cli.js`
 
+## Aprovação QA
+- Data: 2026-04-10
+- Cobertura de CA: 12/12 totalmente cobertos
+- Probes Adversariais: 1 (Done Gate blocking test) - PASS
+- Riscos residuais: Nenhum crítico identificado. HITL para HALF_OPEN é manual via JSON no MVP.
+
 ## Notas
 
 - **Para @dev:** Antes de qualquer alteração em `verify-gate.js` e `self-implement-loop.js`, ler os arquivos completos. São módulos com lógica existente — enhancement, não reescrita.
