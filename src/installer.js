@@ -259,6 +259,9 @@ async function installTemplate(targetDir, options = {}) {
       await fs.writeFile(gitkeep, '', 'utf8');
     }
 
+    // Squad research cache — created on install so @orache can write without mkdir
+    await ensureDir(path.join(targetDir, 'squad-searches', 'standalone'));
+
     await writeInstallMetadata(targetDir, mode, frameworkDetection, installProfile);
 
     await ensureProjectGitignorePolicy(targetDir);
