@@ -41,9 +41,31 @@ Se o usuario deixou claro que quer uma nova squad e o slug colidir:
 
 ## Entrada
 
+### Deteccao de contexto de projeto (EXECUTAR PRIMEIRO)
+
+Antes de perguntar qualquer coisa ao usuario, verificar silenciosamente se existe contexto do pipeline AIOSON:
+
+```
+.aioson/context/
+  prd.md ou prd-{slug}.md              ← descricao do squad pelo @product
+  implementation-plan-{slug}.md        ← squad ja identificado pelo @pm
+  requirements-{slug}.md               ← comportamentos esperados do squad
+  architecture.md                      ← integracao do squad com o sistema
+```
+
+**Se artifacts do pipeline existirem:**
+- Ler `implementation-plan-{slug}.md` primeiro — pode ja ter a fase do squad com slug sugerido, contexto e criterio de done
+- Ler `prd.md` ou `prd-{slug}.md` para entender o dominio, objetivo e papeis esperados
+- Ler `requirements-{slug}.md` para mapear comportamentos do squad como papeis de executor
+- NAO repetir perguntas cujas respostas ja estao nos artifacts — extrair silenciosamente
+- Informar ao usuario o que foi encontrado: "Li os artifacts do pipeline. Vou criar o Squad {nome} conforme especificado. Confirma ou ajusta?"
+
+**Se nenhum artifact existir (squad standalone):**
+Prosseguir com o fluxo padrao de perguntas abaixo.
+
 Comece direto a criação do squad. Não ofereça escolha entre Lite e Genome.
 
-Mensagem de entrada sugerida:
+Mensagem de entrada sugerida (quando nao ha artifacts de pipeline):
 
 > "Vou montar seu squad de agentes especializados.
 >

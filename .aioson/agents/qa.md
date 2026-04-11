@@ -97,11 +97,70 @@ Para bases de codigo existentes:
 - Interagir e responder em pt-BR.
 - Respeitar `conversation_language` do contexto.
 
+## Verificacao de fidelidade de plano
+
+Antes da revisao de codigo, executar esta verificacao se existirem artefatos de planejamento.
+
+### Camada 1 vs Camada 2 — manifest Sheldon vs implementation-plan do PM
+
+Se `.aioson/plans/{slug}/manifest.md` E `.aioson/context/implementation-plan-{slug}.md` existirem:
+
+Comparar:
+- As fases do implementation-plan mapeiam para as fases do manifest?
+- Decisoes `pre-tomadas` no manifest foram respeitadas no implementation-plan?
+- Decisoes `adiadas` no manifest foram resolvidas e registradas no implementation-plan ou em `spec-{slug}.md`?
+
+### Camada 2 vs Camada 3 — implementation-plan vs codigo implementado
+
+Se `implementation-plan-{slug}.md` existe:
+
+Comparar:
+- As tasks de cada fase foram implementadas?
+- Os criterios de done de cada fase foram atendidos?
+- O context_package foi suficiente ou o dev teve que improvisar (indicado por arquivos lidos fora do pacote em `spec-{slug}.md`)?
+
+### Camada 1 vs Camada 3 — manifest vs codigo (quando PM nao rodou)
+
+Se apenas `manifest.md` existe (sem implementation-plan):
+
+Comparar o codigo implementado diretamente contra as fases e criterios do manifest.
+
+### Threshold de divergencia
+
+Divergencia **significativa** = qualquer um destes:
+- Uma decisao `pre-tomada` foi ignorada ou revertida na implementacao
+- Uma fase inteira do plano nao tem correspondencia no codigo
+- O codigo introduz modulos ou entidades nao presentes em nenhuma camada do plano
+
+Divergencia **menor** = diferenca de nomenclatura, ordem de implementacao dentro de uma fase, ou ajuste tecnico sem impacto funcional.
+
+### Acao ao detectar divergencia significativa
+
+Apresentar ao usuario antes de continuar a revisao de codigo:
+
+```
+⚠ Divergencia detectada entre o plano e a implementacao:
+
+Camada 1 → Camada 2 (manifest vs implementation-plan):
+- [divergencia 1 — ex: Fase 2 do manifest nao aparece no implementation-plan]
+
+Camada 2 → Camada 3 (implementation-plan vs codigo):
+- [divergencia 1 — ex: task 3.2 (criar servico X) nao foi implementada]
+
+Opcoes:
+A) Reimplementar seguindo o plano — ativar @dev com a lista de correcoes acima
+B) Realinhar o plano para refletir o que foi feito — ativar @pm para re-fatiar
+C) Aceitar e documentar — registrar como decisao em spec-{slug}.md e continuar o QA
+```
+
+Aguardar decisao do usuario antes de prosseguir. Nao emitir VERDICT enquanto houver divergencia significativa nao resolvida.
+
 ## Processo de revisao
-1. **Mapear criterios de aceite** do `prd.md` — marcar cada um: coberto / parcial / faltando.
-2. **Revisao por risco** — percorrer o checklist por categoria.
-3. **Escrever testes ausentes** — para achados Criticos/Altos, escrever o teste. Nao apenas descrevê-lo.
-4. **Entregar relatorio** — ordenado por severidade, cada achado: local + risco + correcao.
+1. **Verificacao de fidelidade de plano** — executar a secao acima primeiro.
+2. **Mapear criterios de aceite** do `prd-{slug}.md` — marcar cada um: coberto / parcial / faltando.
+3. **Revisao por risco** — percorrer o checklist por categoria.
+4. **Escrever testes ausentes** — para achados Criticos/Altos, escrever o teste. Nao apenas descrevê-lo.
+5. **Entregar relatorio** — ordenado por severidade, cada achado: local + risco + correcao.
 
 ## Checklist de riscos
 
