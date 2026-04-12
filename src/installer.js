@@ -10,7 +10,7 @@ const { shouldIncludeForProfile } = require('./install-profile');
 
 const ROOT_DIR = path.join(__dirname, '..');
 const TEMPLATE_DIR = path.join(ROOT_DIR, 'template');
-const PROJECT_LOCAL_FILES = new Set(['aioson-models.json']);
+const PROJECT_LOCAL_FILES = new Set(['aioson-models.json', '.aioson/context/design-doc.md']);
 const GITIGNORE_POLICY_LINES = [
   '# AIOSON — keep shared project memory and tool contracts',
   '!AGENTS.md',
@@ -128,6 +128,7 @@ async function listFilesRecursive(dir) {
 function shouldSkipTemplatePath(rel, profile = null) {
   if (rel === '.gitignore') return 'merge-only';
   if (rel === '.aioson/context/.gitkeep') return false;
+  if (rel === '.aioson/context/design-doc.md') return false; // framework default — copied on fresh install, project-local on update
   if (rel.startsWith('.aioson/context/')) return 'context-protected';
   // Never overwrite user-installed skills (only the .gitkeep is created)
   if (rel.startsWith('.aioson/installed-skills/') && rel !== '.aioson/installed-skills/.gitkeep') return 'context-protected';
@@ -292,11 +293,6 @@ module.exports = {
   readInstallProfile,
   listFilesRecursive,
   ensureGitignoreEntry,
-  ensureGitignoreEntries,
-  ensureProjectGitignorePolicy,
-  countProjectFiles
-};
-oreEntry,
   ensureGitignoreEntries,
   ensureProjectGitignorePolicy,
   countProjectFiles
