@@ -5,7 +5,7 @@ last_gate: qa
 active_feature: none
 active_work: "none"
 blockers: none
-next_recommendation: "Corrigir AC-06: installer.js não distribui design-doc.md para novos projetos (context-protected). Fix: exceção no shouldSkipTemplatePath para .aioson/context/design-doc.md em fresh install."
+next_recommendation: "Projeto estável. Todas as features done. Próxima ação: iniciar nova feature via @product."
 ---
 
 # Project Pulse
@@ -13,11 +13,11 @@ next_recommendation: "Corrigir AC-06: installer.js não distribui design-doc.md 
 ## Status
 
 - **Last agent:** @qa
-- **Status:** Feature `design-governance` certificada. 5/6 ACs passam. AC-06 falha: installer não distribui design-doc.md para novos projetos (context-protected). Finding LOW em @deyvin edge case. Aprovado com ressalvas.
+- **Status:** Feature `design-governance` — VERDICT: PASS ✅. 6/6 ACs cobertos. AC-06 corrigido e testado. Finding LOW fechado como intencional. Projeto estável.
 
 - **Active feature:** none
 - **Active work:** none
-- **Next:** Fix AC-06 — exceção no installer para `.aioson/context/design-doc.md` em fresh install
+- **Next:** Nova feature via @product
 
 ## Active Work
 
@@ -27,7 +27,7 @@ next_recommendation: "Corrigir AC-06: installer.js não distribui design-doc.md 
 
 ## Recent Activity
 
-- 2026-04-12 @qa → design-governance: 5/6 ACs PASS. Finding MEDIUM: AC-06 falha — installer não distribui design-doc.md. Finding LOW: @deyvin edge case diverge. Aprovado com ressalvas.
+- 2026-04-12 @qa → design-governance: PASS ✅ 6/6 ACs. AC-06 corrigido + testado. Finding LOW fechado. Feature encerrada sem pendências.
 - 2026-04-12 @dev → design-governance: Feature implementada. 4 arquivos criados/atualizados, sync via npm run sync:agents, commit ad7ae86.
 - 2026-04-12 @analyst → design-governance: discovery.md + requirements + spec gerados. Classificação SMALL.
 - 2026-04-12 @product → project: prd.md principal criado com design governance como escopo central.

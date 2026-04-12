@@ -65,11 +65,17 @@ pending_review: []
 | AC-05 | ✅ PASS |
 | AC-06 | ❌ FAIL |
 
-**Finding MEDIUM — AC-06:** `installer.js` classifica toda a pasta `.aioson/context/` como `context-protected`, impedindo que `template/.aioson/context/design-doc.md` seja copiado em `aioson setup .`. Novos projetos não recebem o template. Correção: adicionar exceção no installer para `design-doc.md` em fresh install.
+**Finding MEDIUM — AC-06:** RESOLVIDO. Fix aplicado em `src/installer.js` (commit `8c10874`): exceção em `shouldSkipTemplatePath` + `design-doc.md` adicionado ao `PROJECT_LOCAL_FILES`. Testes adicionados em `tests/installer.test.js` (commit `bf2b49b`). Probe adversarial confirmou comportamento correto.
 
-**Finding LOW — @deyvin edge case:** FECHADO como comportamento intencional. Implementação (continuar com arquivo único após 1 turno) está correta para pair mode — silêncio = aprovação implícita. Extração automática sem confirmação violaria a filosofia "nunca bloquear" do pair mode. Requirements atualizados para refletir a decisão.
+**Finding LOW — @deyvin edge case:** FECHADO como comportamento intencional. Implementação (continuar com arquivo único após 1 turno) está correta para pair mode — silêncio = aprovação implícita. Extração automática sem confirmação violaria a filosofia "nunca bloquear" do pair mode. Requirements atualizados para refletir a decisão (commit `2d7d9f9`).
 
-**Próxima ação:** Criar task para corrigir AC-06 no installer antes da próxima release.
+## Aprovação QA (re-verificação pós-fix)
+
+- **Data:** 2026-04-12
+- **Agente:** @qa
+- **Cobertura de CA:** 6/6 totalmente cobertos
+- **Verdict:** PASS ✅
+- **Riscos residuais:** nenhum
 
 ---
 
