@@ -14,7 +14,11 @@ pending_review: []
 # Spec — Design Governance
 
 ## O que foi construído
-[A ser preenchido pelo @dev durante a implementação]
+- `template/.aioson/context/design-doc.md` — template base com 5 seções obrigatórias criado e sincronizado para `.aioson/context/design-doc.md`
+- `@discovery-design-doc` — redefinido como gate pré-dev SMALL/MEDIUM: lê design-doc base, cria-o se ausente, produz plano técnico com paths exatos
+- `@dev` — Design-doc pre-flight (SMALL/MEDIUM) + Protocolo de alerta de tamanho de arquivo (>500 linhas, não-bloqueante)
+- `@deyvin` — mesmas adições com variação pair mode (alerta informativo, sem aguardar confirmação)
+- Sync via `npm run sync:agents` propagou todas as mudanças para `.aioson/agents/`
 
 ## Entidades adicionadas
 
@@ -45,6 +49,29 @@ pending_review: []
 ## Dependências
 - Lê: `.aioson/context/design-doc.md`, `prd-{slug}.md`, `requirements-{slug}.md`
 - Escreve: `template/.aioson/context/design-doc.md`, agentes modificados em `template/` e `.aioson/agents/`
+
+## QA — Resultado da certificação
+
+**Data:** 2026-04-12  
+**Agente:** @qa  
+**Verdict:** APROVADO COM RESSALVAS
+
+| AC | Status |
+|----|--------|
+| AC-01 | ✅ PASS |
+| AC-02 | ✅ PASS |
+| AC-03 | ✅ PASS |
+| AC-04 | ✅ PASS |
+| AC-05 | ✅ PASS |
+| AC-06 | ❌ FAIL |
+
+**Finding MEDIUM — AC-06:** `installer.js` classifica toda a pasta `.aioson/context/` como `context-protected`, impedindo que `template/.aioson/context/design-doc.md` seja copiado em `aioson setup .`. Novos projetos não recebem o template. Correção: adicionar exceção no installer para `design-doc.md` em fresh install.
+
+**Finding LOW — @deyvin edge case:** requirements especificam "extração em arquivo separado" quando usuário não responde ao alerta; implementação continua com arquivo único. Comportamento pode ser intencional (alerta puramente informativo em pair mode).
+
+**Próxima ação:** Criar task para corrigir AC-06 no installer antes da próxima release.
+
+---
 
 ## Notas
 - **Inception mode**: após editar agentes em `.aioson/agents/`, copiar para `template/.aioson/agents/` também (ou rodar `npm run sync:agents` na direção inversa se o script suportar).
