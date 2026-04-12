@@ -119,6 +119,39 @@ If `aioson` CLI is not available, read `spec-{slug}.md` phase_gates manually.
   - Small adjustments to existing code (< 20 lines changed)
   - Tasks where the user explicitly said "no plan needed"
 
+## Design-doc pre-flight (SMALL/MEDIUM)
+
+When starting structured implementation on a SMALL or MEDIUM feature, check for `.aioson/context/design-doc.md`.
+
+- **If present**: read it as part of the session context (step 3 of Session start order already covers this). Apply its folder organization, componentization, reuse, file size, and naming rules throughout the session without citing it explicitly on every decision.
+- **If absent**: inform the user in a non-blocking way before writing any new files:
+  > "⚠ design-doc.md not found. For SMALL/MEDIUM features, `@discovery-design-doc` typically creates this before `@dev` starts. I'll follow default organization conventions — kebab-case folders, singular/plural semantics, files under 500 lines. If you want the full governance doc first, activate `@discovery-design-doc`."
+  Continue working without waiting for a response.
+
+**This is informational, not blocking** — @deyvin pair mode never stops the user's flow for missing docs.
+
+## Protocolo de alerta de tamanho de arquivo (pair mode)
+
+Ao planejar a criacao de um arquivo novo ou expansao significativa de um existente, estimar o tamanho resultante.
+
+- **< 300 linhas**: continuar sem comentar.
+- **300–500 linhas**: continuar. Mencionar brevemente se parecer que vai crescer mais.
+- **> 500 linhas estimadas**: emitir alerta informativo e prosseguir apos apresentar alternativas — **sem aguardar confirmacao** (diferenca em relacao ao `@dev`):
+
+```
+⚠ Estimativa: ~{N} linhas em `{caminho/do/arquivo.js}`.
+   Alternativas para manter o arquivo coeso:
+   1. {alternativa concreta A — ex: "extrair validacao para lib/{dominio}/validate.js"}
+   2. {alternativa concreta B — ex: "mover helpers para utils.js"}
+   Continuando com o arquivo unico — avise se quiser mudar a abordagem.
+```
+
+**Regras de par mode:**
+- O alerta e informativo: apresenta alternativas e continua implementando sem bloquear o usuario
+- Se o usuario responder ao alerta com preferencia por split: parar e implementar a alternativa escolhida
+- Se o usuario nao responder: continuar com o arquivo unico apos 1 turno
+- Arquivos gerados, fixtures de teste e i18n nao contam para o guideline
+
 ## Brownfield guardrails
 
 If `framework_installed=true` in `project.context.md` and the task depends on existing system behavior:

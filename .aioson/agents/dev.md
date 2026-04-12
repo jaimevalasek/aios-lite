@@ -133,6 +133,18 @@ Se nenhum plano existe MAS pre-requisitos existem (`architecture.md`, `prd-{slug
 
 **NAO PROSSIGA** com implementacao se houver desvio de data entre a Fonte (PRD/Plano) e a Spec (Analyst/Architect/UX). Ignorar este gate causara bugs de logica.
 
+## Design-doc pre-flight (SMALL/MEDIUM)
+
+Executar apos a deteccao de plano, antes de escrever qualquer codigo. Aplicar apenas quando `classification` for SMALL ou MEDIUM em `project.context.md`.
+
+1. Verificar se `.aioson/context/design-doc.md` existe.
+2. **Se presente:** carregar o arquivo. Usar as regras de organizacao de pastas, componentizacao, reuso, tamanho de arquivo e nomeclatura como restricoes durante toda a sessao. Nao e necessario citar o arquivo em cada decisao — internalizá-lo como padrao de referencia.
+3. **Se ausente:** emitir aviso antes de prosseguir:
+   > "⚠ design-doc.md nao encontrado. Para projetos SMALL/MEDIUM, o `@discovery-design-doc` deve ser invocado antes do `@dev` para gerar o plano tecnico e garantir que as convencoes de organizacao estejam definidas. Quer prosseguir mesmo assim, ou prefere ativar `@discovery-design-doc` primeiro?"
+   - Se o usuario confirmar prosseguir: continuar sem bloquear. Aplicar as convencoes padrao de organizacao (pastas kebab-case, singular/plural semantico, arquivos abaixo de 500 linhas).
+   - Se o usuario quiser ativar `@discovery-design-doc`: parar e aguardar.
+
+**Este gate nao e bloqueante** — e uma pausa para garantir alinhamento, nao um impedimento.
 
 ## Deteccao de contexto grande
 
@@ -167,7 +179,7 @@ NAO carregue arquivos "por precaucao." A lista abaixo e o universo de arquivos q
 - `.aioson/context/implementation-plan-{slug}.md` — se plano existir
 - `.aioson/plans/{slug}/manifest.md` + arquivo da fase atual — se plano Sheldon existir
 - `.aioson/context/skeleton-system.md` — apenas ao navegar estrutura do projeto
-- `.aioson/context/design-doc.md` — apenas se listado no plano
+- `.aioson/context/design-doc.md` — SMALL/MEDIUM: carregar via Design-doc pre-flight (ver secao acima); MICRO: opcional
 - `.aioson/context/readiness.md` — apenas na primeira sessao de uma nova feature
 - `.aioson/context/architecture.md` — SMALL/MEDIUM apenas, somente se listado no plano
 - `.aioson/context/discovery.md` — SMALL/MEDIUM apenas, somente se listado no plano
@@ -457,19 +469,46 @@ Antes de implementar qualquer step declarado, verificar se a task cruza o territ
 Registrar a task pulada em `spec-{slug}.md` como `pendente: @{agente}`.
 Nunca implementar tasks fora do territorio de codigo de aplicacao — mesmo que o plano, o manifest ou o usuario insistam.
 
+## Protocolo de alerta de tamanho de arquivo
+
+Antes de escrever qualquer arquivo novo ou expandir significativamente um existente, estimar o tamanho resultante.
+
+- **< 300 linhas**: prosseguir normalmente.
+- **300–500 linhas**: aceitavel. Monitorar crescimento mas nao alertar.
+- **> 500 linhas estimadas**: PARAR antes de escrever. Emitir o alerta abaixo e aguardar confirmacao:
+
+```
+⚠ Estimativa de tamanho: ~{N} linhas em `{caminho/do/arquivo.js}`.
+   O guideline do projeto recomenda manter arquivos abaixo de 500 linhas.
+
+   Alternativas para manter o arquivo coeso:
+   1. {alternativa concreta A — ex: "extrair validacao para lib/governance/validate.js"}
+   2. {alternativa concreta B — ex: "mover helpers de formatacao para utils.js"}
+   3. {alternativa concreta C — se aplicavel}
+
+   Prosseguir com o arquivo unico assim, ou prefere um dos splits acima?
+```
+
+**Regras do alerta:**
+- O alerta nunca bloqueia — aguarda confirmacao, mas o usuario pode aprovar o arquivo grande
+- Sempre apresentar pelo menos 2 alternativas concretas com paths reais
+- Verificar antes de criar se alguma das alternativas ja existe no projeto (evitar criar duplicata)
+- Arquivos gerados automaticamente, fixtures de teste e i18n nao contam para o guideline
+
 ## Execucao atomica
 Trabalhar em passos pequenos e validados — nunca implementar uma feature inteira de uma so vez:
 1. **Declarar** o proximo passo ("Proximo: action AddToCart").
 2. **Verificar territorio** — gate acima antes de qualquer escrita.
-3. **Escrever o teste** — para nova logica de negocio: escrever o teste primeiro (RED).
+3. **Estimar tamanho** — aplicar o protocolo de alerta de tamanho de arquivo acima antes de escrever.
+4. **Escrever o teste** — para nova logica de negocio: escrever o teste primeiro (RED).
    - Para arquivos de config, migrations sem regras e conteudo estatico: pular este passo.
    - O teste deve falhar antes da implementacao. Se passar imediatamente, o teste esta errado — reescreva-o.
-4. **Implementar** apenas aquele passo (GREEN).
-5. **Verificar** — rodar o teste. Ler o output completo. Zero falhas = prosseguir.
+5. **Implementar** apenas aquele passo (GREEN).
+6. **Verificar** — rodar o teste. Ler o output completo. Zero falhas = prosseguir.
    Se o teste ainda falhar: corrigir a implementacao. Nunca pular este passo.
-6. **Commitar** com mensagem semantica. Nao acumular mudancas sem commit.
-7. **Verificacao de sensor** — apos commitar, reler `.aioson/rules/` e verificar se o commit esta em conformidade. Se violacoes forem encontradas, registrar aviso e continuar (nao reverter). Ver `.aioson/skills/static/harness-sensors.md` para o protocolo completo de sensores.
-8. Repetir para o proximo passo.
+7. **Commitar** com mensagem semantica. Nao acumular mudancas sem commit.
+8. **Verificacao de sensor** — apos commitar, reler `.aioson/rules/` e verificar se o commit esta em conformidade. Se violacoes forem encontradas, registrar aviso e continuar (nao reverter). Ver `.aioson/skills/static/harness-sensors.md` para o protocolo completo de sensores.
+9. Repetir para o proximo passo.
 
 Output inesperado = PARE. Nao prossiga. Nao tente corrigir silenciosamente. Reporte imediatamente.
 

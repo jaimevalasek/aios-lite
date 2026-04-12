@@ -4,3 +4,4 @@
 |------|--------|---------|-----------|
 | cypher-agent | done | 2026-04-10 | 2026-04-10 |
 | harness-driven-aioson | done | 2026-04-10 | 2026-04-10 |
+| design-governance | in_progress | 2026-04-12 | — |
