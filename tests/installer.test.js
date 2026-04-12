@@ -136,6 +136,35 @@ test('installTemplate appends keep rules for shared AIOS files even when project
   assert.equal(gitignore.includes('!OPENCODE.md'), true);
 });
 
+test('design-doc.md is copied to new projects on fresh install', async () => {
+  const dir = await makeTempDir();
+  const result = await installTemplate(dir, { mode: 'install' });
+
+  const designDoc = path.join(dir, '.aioson/context/design-doc.md');
+  assert.equal(await fileExists(designDoc), true, 'design-doc.md must be created on fresh install');
+  assert.equal(result.copied.includes('.aioson/context/design-doc.md'), true);
+  assert.equal(result.skipped.some(s => s.path === '.aioson/context/design-doc.md'), false);
+});
+
+test('design-doc.md is preserved on update (not overwritten)', async () => {
+  const dir = await makeTempDir();
+  await installTemplate(dir, { mode: 'install' });
+
+  const designDoc = path.join(dir, '.aioson/context/design-doc.md');
+  const customContent = '# My custom design rules\n';
+  await fs.writeFile(designDoc, customContent, 'utf8');
+
+  const result = await installTemplate(dir, {
+    mode: 'update',
+    overwrite: true,
+    backupOnOverwrite: true
+  });
+
+  const readBack = await fs.readFile(designDoc, 'utf8');
+  assert.equal(readBack, customContent, 'design-doc.md must not be overwritten on update');
+  assert.equal(result.skipped.some(s => s.path === '.aioson/context/design-doc.md' && s.reason === 'project-local'), true);
+});
+
 async function fileExists(filePath) {
   try {
     await fs.access(filePath);
