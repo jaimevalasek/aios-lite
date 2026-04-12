@@ -115,7 +115,7 @@ Arquivo base distribuído pelo `aioson setup .` — define as regras de organiza
 - **`design-doc.md` vazio ou incompleto**: `@dev` lê o arquivo mas não encontra seções obrigatórias → emite aviso de design-doc incompleto, lista seções faltando, prossegue com defaults do framework
 - **Projeto MICRO invoca `@discovery-design-doc`**: não é um erro — mas o agente deve informar que para MICRO o gate é opcional e prosseguir de forma mais leve
 - **Arquivo existente já tem 600 linhas (antes desta feature)**: o alerta é para novos arquivos sendo criados — não é retroativo. Não bloquear edições em arquivos legados.
-- **`@deyvin` em pair mode, usuário não responde ao alerta**: após 1 turno de espera, prosseguir com a alternativa mais conservadora (extração em arquivo separado)
+- **`@deyvin` em pair mode, usuário não responde ao alerta**: após 1 turno de espera, continuar com o arquivo único — silêncio do usuário é interpretado como aprovação implícita. Extração nunca é automática em pair mode (ação não confirmada).
 - **`npm run sync:agents` não executado após mudança**: os agentes em `.aioson/agents/` ficam desatualizados em relação ao template. Isso é responsabilidade do desenvolvedor — não é tratado pela feature.
 
 ---

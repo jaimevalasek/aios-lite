@@ -67,7 +67,7 @@ pending_review: []
 
 **Finding MEDIUM — AC-06:** `installer.js` classifica toda a pasta `.aioson/context/` como `context-protected`, impedindo que `template/.aioson/context/design-doc.md` seja copiado em `aioson setup .`. Novos projetos não recebem o template. Correção: adicionar exceção no installer para `design-doc.md` em fresh install.
 
-**Finding LOW — @deyvin edge case:** requirements especificam "extração em arquivo separado" quando usuário não responde ao alerta; implementação continua com arquivo único. Comportamento pode ser intencional (alerta puramente informativo em pair mode).
+**Finding LOW — @deyvin edge case:** FECHADO como comportamento intencional. Implementação (continuar com arquivo único após 1 turno) está correta para pair mode — silêncio = aprovação implícita. Extração automática sem confirmação violaria a filosofia "nunca bloquear" do pair mode. Requirements atualizados para refletir a decisão.
 
 **Próxima ação:** Criar task para corrigir AC-06 no installer antes da próxima release.
 
