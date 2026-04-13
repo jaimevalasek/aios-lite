@@ -14,7 +14,8 @@ These directories are **optional**. Check silently — if a directory is absent 
    - If `agents:` includes `deyvin` → load. Otherwise skip.
    - Loaded rules **override** the default conventions in this file.
 2. **`.aioson/docs/`** — If files exist, load only those whose `description` frontmatter is relevant to the current task, or that are explicitly referenced by a loaded rule.
-3. **`.aioson/context/design-doc*.md`** — If `design-doc.md` or `design-doc-{slug}.md` files exist, read each file's YAML frontmatter:
+3. **`.aioson/design-docs/`** — If `.md` files exist, load all of them. These are the project's code governance rules (folder structure, naming, componentization, reuse, file size) — use them as hard constraints, not suggestions.
+4. **`.aioson/context/design-doc*.md`** — If `design-doc.md` or `design-doc-{slug}.md` files exist, read each file's YAML frontmatter:
    - If `agents:` is absent → load when the `scope` or `description` matches the current task.
    - If `agents:` includes `deyvin` → load. Otherwise skip.
    - Design docs provide architectural decisions, technical flows, and implementation guidance — use them as constraints, not suggestions.
@@ -75,7 +76,7 @@ At session start, build context in this order before touching code:
 7. Read `.aioson/context/features.md` if present; if a feature is in progress, read the matching `prd-{slug}.md`, `requirements-{slug}.md`, and `spec-{slug}.md`
 8. Read `.aioson/context/skeleton-system.md` if present
 9. Read `.aioson/context/discovery.md` if present
-10. Read `.aioson/context/architecture.md`, `design-doc.md`, `readiness.md`, `prd.md`, and `ui-spec.md` only when relevant to the active task
+10. Read `.aioson/context/architecture.md`, `readiness.md`, `prd.md`, and `ui-spec.md` only when relevant to the active task
 11. Inspect recent runtime state in `.aioson/runtime/aios.sqlite` when you need to understand recent tasks, runs, or last known activity
 12. Use Git only as a fallback when memory + runtime + rules/docs are not enough
 
@@ -119,16 +120,14 @@ If `aioson` CLI is not available, read `spec-{slug}.md` phase_gates manually.
   - Small adjustments to existing code (< 20 lines changed)
   - Tasks where the user explicitly said "no plan needed"
 
-## Design-doc pre-flight (SMALL/MEDIUM)
+## Design-docs pre-flight
 
-When starting structured implementation on a SMALL or MEDIUM feature, check for `.aioson/context/design-doc.md`.
+At every implementation session — regardless of project classification — scan `.aioson/design-docs/` and load all `.md` files present (step 3 of "Project rules, docs & design docs" already covers this).
 
-- **If present**: read it as part of the session context (step 3 of Session start order already covers this). Apply its folder organization, componentization, reuse, file size, and naming rules throughout the session without citing it explicitly on every decision.
-- **If absent**: inform the user in a non-blocking way before writing any new files:
-  > "⚠ design-doc.md not found. For SMALL/MEDIUM features, `@discovery-design-doc` typically creates this before `@dev` starts. I'll follow default organization conventions — kebab-case folders, singular/plural semantics, files under 500 lines. If you want the full governance doc first, activate `@discovery-design-doc`."
-  Continue working without waiting for a response.
+- **If present**: apply folder organization, componentization, reuse, file size, and naming rules throughout the session without citing them explicitly on every decision.
+- **If absent or empty**: apply universal defaults silently — kebab-case folders, singular/plural semantics, files under 500 lines. Do not warn the user.
 
-**This is informational, not blocking** — @deyvin pair mode never stops the user's flow for missing docs.
+**This is never blocking** — @deyvin pair mode never stops the user's flow for missing docs.
 
 ## Protocolo de alerta de tamanho de arquivo (pair mode)
 
@@ -302,7 +301,7 @@ If `aioson` CLI is not available, update `.aioson/context/project-pulse.md` manu
 ## Hard constraints
 
 - Use `conversation_language` from project context for all interaction and output.
-- Never skip `.aioson/rules/`, `.aioson/docs/`, or relevant `design-doc*.md` files when they exist.
+- Never skip `.aioson/rules/`, `.aioson/docs/`, `.aioson/design-docs/`, or relevant `design-doc*.md` files when they exist.
 - Do not pretend certainty when a conclusion is inferred from incomplete memory; say what is confirmed vs inferred.
 - Do not silently replace `@product`, `@analyst`, or `@architect` when the task clearly needs them.
 - When the immediate scope gate triggers, do not code first. Output only the handoff and the reason.

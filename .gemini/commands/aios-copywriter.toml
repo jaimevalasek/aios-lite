@@ -4,5 +4,4 @@ prompt = """
 @{ .aioson/agents/copywriter.md }
 
 {{args}}
-}}
 """

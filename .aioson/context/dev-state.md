@@ -1,43 +1,40 @@
 ---
-active_feature: harness-driven-aioson
-active_phase: 3
-active_plan: .aioson/plans/harness-driven-aioson/manifest.md
-last_spec_version: 1
+active_feature: null
+active_phase: null
+active_plan: null
+last_spec_version: null
 context_package:
   - .aioson/context/project.context.md
-  - .aioson/context/spec-harness-driven-aioson.md
-  - .aioson/plans/harness-driven-aioson/manifest.md
-next_step: "Ativar @qa para a certificação final da feature"
+next_step: "Nenhuma feature ativa. Próxima ação: discutir finding LOW do @qa (edge case @deyvin) com produto, ou iniciar nova feature."
 status: done
-updated_at: 2026-04-10
+updated_at: 2026-04-12
 ---
 
 # Dev State
 
 ## Foco atual
-Feature `harness-driven-aioson` — Implementação técnica 100% concluída.
+Nenhuma feature ativa. Última tarefa: fix AC-06 (installer.js).
 
 ## Pacote de contexto — carregar SOMENTE estes arquivos
 1. `project.context.md` — sempre
-2. `spec-harness-driven-aioson.md` — memória da feature
-3. `.aioson/plans/harness-driven-aioson/manifest.md` — plano de fases
 
 ## NUNCA carregar nesta sessão
 - Arquivos em `.aioson/agents/`
 - `discovery.md`, `architecture.md`
-- `spec-*.md` de outras features
+- `spec-*.md` de features encerradas
 
 ## O que foi feito (últimas 3 sessões)
-- 2026-04-10: Fase 3 — Criado Agente `@validator`, Skill `harness-validate` e Injetado Done Gate no `workflow:next`.
-- 2026-04-10: Fase 2 — Implementados comandos `harness:init` e `harness:validate`. Upgrade do `verify:gate`.
-- 2026-04-10: Fase 1 — Implementado `src/harness/circuit-breaker.js` e injeção no `self:loop`.
+- 2026-04-12: fix AC-06 — installer.js agora distribui design-doc.md em fresh install (PROJECT_LOCAL_FILES + exceção em shouldSkipTemplatePath). Commit 8c10874.
+- 2026-04-12: feature design-governance implementada — design-doc.md template, @discovery-design-doc gate, @dev/@deyvin pre-flight + alerta 500 linhas. Commit ad7ae86.
+- 2026-04-10: feature harness-driven-aioson — 3 fases implementadas.
 
 ## Próximo passo
-Ativar o **@qa** para rodar os testes de fumaça e validar o backward-compatibility com projetos SDD puros.
+Sem bloqueios. Projeto estável. Discutir com produto se o finding LOW (@deyvin edge case: continua com arquivo único vs extração automática) deve ser corrigido.
 
 ## Visão geral das features
 
 | Feature | Status | Fase | Plano | Última atividade |
 |---------|--------|------|-------|-----------------|
+| design-governance | done | — | — | 2026-04-12 |
 | harness-driven-aioson | done | 3/3 | .aioson/plans/harness-driven-aioson/ | 2026-04-10 |
 | cypher-agent | done | 3/3 | .aioson/plans/cypher-agent/ | 2026-04-10 |

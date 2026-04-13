@@ -229,7 +229,23 @@ Verificar `features.md` durante o inventory pass e cruzar com as fases definidas
 
 Cada fase deve conter tasks **atomicas e concretas** — nao "implementar o modulo", mas "criar migration `cart_items` com campos `id`, `cart_id`, `product_id`, `quantity`".
 
-Apos apresentar o plano, perguntar: "Quer ajustar algo antes de aprovar?" e ao confirmar mudar status para `approved`.
+Apos apresentar o plano, exibir obrigatoriamente o **Approval Checkpoint** abaixo — sem excecoes:
+
+---
+## ✅ Checkpoint de Aprovacao — `implementation-plan-{slug}.md`
+
+**Status atual:** `draft` — aguardando sua aprovacao para avancar.
+
+| Opcao | O que digitar | O que acontece |
+|-------|--------------|----------------|
+| Aprovar | `aprovar` ou `ok` | Status muda para `approved`; proximo agente pode iniciar |
+| Revisar | `revisar [o que ajustar]` | Ajuste feito no plano antes de aprovar |
+| Rejeitar | `rejeitar` | Plano descartado; recomecar o @pm |
+
+> Nao avance para o proximo agente sem receber uma dessas tres respostas.
+---
+
+Ao receber `aprovar` (ou equivalente): usar ferramenta de escrita para mudar `status: draft` para `status: approved` no frontmatter de `implementation-plan-{slug}.md` e, em seguida, executar o Gate C signal.
 
 ### Output secundario — enriquecimento do PRD
 
@@ -322,7 +338,7 @@ Ao finalizar a sessao em **modo feature**, executar este gate:
 - [ ] Decisoes abertas documentadas em "Perguntas em aberto"
 
 **Se Gate C passou:**
-1. Atualizar `spec-{slug}.md` — definir `phase_gates.plan: approved` no frontmatter.
+1. **GATE SIGNAL (escrita obrigatória no disco):** Usar a ferramenta de escrita de arquivo para atualizar o frontmatter de `.aioson/context/spec-{slug}.md` e definir `phase_gates.plan: approved`. Não apenas anunciar verbalmente — o arquivo deve ser escrito antes de comunicar ao usuário.
 2. Comunicar ao usuario:
    > "Gate C aprovado — ative **@orchestrator** (MEDIUM) ou **@dev** (SMALL) para iniciar a implementacao."
 

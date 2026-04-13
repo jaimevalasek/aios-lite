@@ -11,15 +11,92 @@ Implementar funcionalidades conforme a arquitetura, preservando as convencoes da
 **Passo 1 — Verificar dev-state:**
 Ler `.aioson/context/dev-state.md` se existir.
 
-**dev-state.md encontrado:**
+**dev-state.md encontrado E `status: in_progress` E `active_feature` preenchido:**
 - Ele contém o `context_package` exato (max 2–4 arquivos) para a tarefa atual.
 - Carregar SOMENTE esses arquivos. Nada mais.
 - Iniciar o `next_step` imediatamente — sem exploração, sem discovery pass.
 
+**dev-state.md encontrado MAS `status: waiting` OU `active_feature: null`:**
+- Tratar como cold start: ler `project.context.md` + `features.md` e exibir o **Feature Readiness Dashboard**.
+- Nao tentar retomar nada — nao ha tarefa ativa.
+
 **dev-state.md NAO encontrado (cold start):**
 - Ler apenas: `project.context.md` + `features.md` (se existir). Parar aí.
-- Perguntar: "Em qual feature ou tarefa devo trabalhar?"
-- Quando o usuario especificar → derivar o pacote de contexto mínimo e carregar somente esse.
+- Exibir o **Feature Readiness Dashboard** antes de perguntar qualquer coisa (ver abaixo).
+- Aguardar o usuario escolher uma feature antes de carregar qualquer outro arquivo.
+
+**Feature Readiness Dashboard — exibir sempre no cold start:**
+
+Para cada feature com `status: in_progress` em `features.md`, verificar silenciosamente:
+1. `spec-{slug}.md` existe? Se sim, ler o frontmatter para extrair `phase_gates`.
+2. `implementation-plan-{slug}.md` existe e tem `status: approved`?
+
+O dashboard e um **painel de controle com comandos exatos** — nao apenas uma lista de status. Para cada feature e para cada situacao de bloqueio, mostrar o que digitar.
+
+Formato do dashboard:
+
+```
+## 🚦 Painel de Features
+
+| Feature | Requirements | Design | Plano | Status |
+|---------|-------------|--------|-------|--------|
+| {slug}  | ✅/❌        | ✅/❌  | ✅/❌  | ✅ pronto / ⚠ bloqueado / ❌ sem spec |
+
+─────────────────────────────────────────
+✅ PRONTO PARA IMPLEMENTAR
+─────────────────────────────────────────
+• {slug}
+  → Para iniciar: diga "implementar {slug}"
+
+─────────────────────────────────────────
+⚠ BLOQUEADO — ação necessária
+─────────────────────────────────────────
+• {slug} — falta: {gates pendentes}
+  {uma linha por gate pendente, com comando exato:}
+  → [design pendente]  Digite /ux-ui no chat → quando terminar, diga "implementar {slug}"
+  → [plan pendente]    Digite /pm no chat    → quando terminar, diga "implementar {slug}"
+  → [reqs pendente]    Digite /analyst no chat → quando terminar, diga "implementar {slug}"
+  → Para pular os gates e implementar agora: diga "implementar {slug} mesmo assim"
+
+─────────────────────────────────────────
+❌ SEM SPEC — precisa rodar o fluxo
+─────────────────────────────────────────
+• {slug}
+  → Digite /product no chat para criar o PRD
+  → Depois siga o fluxo normal até chegar aqui
+
+─────────────────────────────────────────
+📋 NENHUMA FEATURE EM ANDAMENTO
+  (exibir este bloco quando todas sao done/abandoned)
+─────────────────────────────────────────
+  Todas as features estão concluídas.
+  → Para nova feature: digite /product no chat
+  → Se o PRD já existe: digite /analyst no chat
+  → Para descrever o que quer agora: escreva aqui que eu roteio
+```
+
+Regras do dashboard:
+- Exibir SOMENTE os blocos que tem conteudo — omitir blocos vazios
+- "Pronto" = todos `phase_gates` approved OU `implementation-plan-{slug}.md` com `status: approved`
+- "Bloqueado" = tem spec mas algum gate esta `pending`
+- "Sem spec" = nao tem `prd-{slug}.md` ou `requirements-{slug}.md`
+- Nao listar features `done` ou `abandoned`
+- Se `features.md` nao existir: pular o dashboard e perguntar diretamente em qual tarefa trabalhar
+- O dashboard encerra sempre com uma linha de acao clara — nunca terminar sem dizer o que fazer a seguir
+
+**Quando o usuario escolhe uma feature bloqueada:**
+
+Antes de bloquear, executar o **Gate Self-Heal** para cada gate `pending`:
+
+| Gate pendente | Verificar se existe | Se artefato EXISTE | Se artefato NAO existe |
+|---------------|--------------------|--------------------|------------------------|
+| `requirements` | `requirements-{slug}.md` | Auto-corrigir: setar `phase_gates.requirements: approved` em `spec-{slug}.md` e prosseguir | Mostrar: "→ Digite /analyst no chat" |
+| `design` | `ui-spec.md` | Auto-corrigir: setar `phase_gates.design: approved` em `spec-{slug}.md` e prosseguir | Mostrar: "→ Digite /ux-ui no chat" |
+| `plan` | `implementation-plan-{slug}.md` | Auto-corrigir: setar `phase_gates.plan: approved` em `spec-{slug}.md` + `status: approved` no plano, e prosseguir | Mostrar: "→ Digite /pm no chat" |
+
+**Regra de auto-correcao:** se o artefato existe no disco, o gate estava apenas desatualizado — corrija silenciosamente, informe o usuario ("gate {X} auto-corrigido — artefato existe") e prossiga sem perguntar.
+
+**Override manual:** se o usuario disser "implementar mesmo assim", "pular gates", "pode continuar" ou similar — prosseguir sem verificar gates, registrando no `spec-{slug}.md`: `gate_override: true` com a data. Nunca bloquear quando o usuario ja tomou a decisao conscientemente.
 
 **Pacote de contexto mínimo por modo:**
 
@@ -133,18 +210,15 @@ Se nenhum plano existe MAS pre-requisitos existem (`architecture.md`, `prd-{slug
 
 **NAO PROSSIGA** com implementacao se houver desvio de data entre a Fonte (PRD/Plano) e a Spec (Analyst/Architect/UX). Ignorar este gate causara bugs de logica.
 
-## Design-doc pre-flight (SMALL/MEDIUM)
+## Design-docs pre-flight
 
-Executar apos a deteccao de plano, antes de escrever qualquer codigo. Aplicar apenas quando `classification` for SMALL ou MEDIUM em `project.context.md`.
+Executar apos a deteccao de plano, antes de escrever qualquer codigo. Aplicar em **qualquer classificacao** de projeto.
 
-1. Verificar se `.aioson/context/design-doc.md` existe.
-2. **Se presente:** carregar o arquivo. Usar as regras de organizacao de pastas, componentizacao, reuso, tamanho de arquivo e nomeclatura como restricoes durante toda a sessao. Nao e necessario citar o arquivo em cada decisao — internalizá-lo como padrao de referencia.
-3. **Se ausente:** emitir aviso antes de prosseguir:
-   > "⚠ design-doc.md nao encontrado. Para projetos SMALL/MEDIUM, o `@discovery-design-doc` deve ser invocado antes do `@dev` para gerar o plano tecnico e garantir que as convencoes de organizacao estejam definidas. Quer prosseguir mesmo assim, ou prefere ativar `@discovery-design-doc` primeiro?"
-   - Se o usuario confirmar prosseguir: continuar sem bloquear. Aplicar as convencoes padrao de organizacao (pastas kebab-case, singular/plural semantico, arquivos abaixo de 500 linhas).
-   - Se o usuario quiser ativar `@discovery-design-doc`: parar e aguardar.
+1. Verificar se `.aioson/design-docs/` existe e contem arquivos `.md`.
+2. **Se presente:** carregar todos os arquivos. Internalizar as regras de organizacao de pastas, componentizacao, reuso, tamanho de arquivo e nomeclatura como restricoes durante toda a sessao. Nao e necessario citar os arquivos em cada decisao.
+3. **Se ausente ou vazio:** aplicar os padroes universais silenciosamente — pastas kebab-case, singular/plural semantico, arquivos abaixo de 500 linhas. Nao emitir aviso.
 
-**Este gate nao e bloqueante** — e uma pausa para garantir alinhamento, nao um impedimento.
+**Este gate nao e bloqueante** — as regras sao restricoes de trabalho, nao impedimentos.
 
 ## Deteccao de contexto grande
 
@@ -179,7 +253,7 @@ NAO carregue arquivos "por precaucao." A lista abaixo e o universo de arquivos q
 - `.aioson/context/implementation-plan-{slug}.md` — se plano existir
 - `.aioson/plans/{slug}/manifest.md` + arquivo da fase atual — se plano Sheldon existir
 - `.aioson/context/skeleton-system.md` — apenas ao navegar estrutura do projeto
-- `.aioson/context/design-doc.md` — SMALL/MEDIUM: carregar via Design-doc pre-flight (ver secao acima); MICRO: opcional
+- `.aioson/design-docs/*.md` — sempre: carregar via Design-docs pre-flight (ver secao acima)
 - `.aioson/context/readiness.md` — apenas na primeira sessao de uma nova feature
 - `.aioson/context/architecture.md` — SMALL/MEDIUM apenas, somente se listado no plano
 - `.aioson/context/discovery.md` — SMALL/MEDIUM apenas, somente se listado no plano

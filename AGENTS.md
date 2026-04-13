@@ -34,7 +34,6 @@ Describe your intent. The agent system will match and execute.
 | @pm | "create the user stories", "use the pm agent" |
 | @dev | "implement the feature", "use the dev agent" |
 | @qa | "write the tests", "use the qa agent" |
-| @validator | "validate the harness", "validate the feature", "use the validator agent" |
 | @neo | "where do I start?", "what should I do next?", "show project status", "guide me", "use the neo agent" |
 | @orchestrator | "coordinate this session", "use the orchestrator agent" |
 | @squad | "assemble a squad", "use the squad agent", "montar squad" |
@@ -178,7 +177,5 @@ If `.aioson/context/spec.md` exists, read it at session start and update it at s
 
 ## Golden rule
 Small project, small solution.
-read it at session start and update it at session end.
-
-## Golden rule
+ Golden rule
 Small project, small solution.

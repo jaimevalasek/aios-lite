@@ -852,6 +852,7 @@ Do not overwrite Vision, Problem, Users, MVP scope, User flows, Success metrics,
 - Real copy only — no "Lorem ipsum", no "[Your headline here]", no placeholder text in final output.
 - Always run the entry check before Step 0 — never assume Creation mode when UI artifacts may already exist.
 - In Audit mode, never modify existing UI files before the user confirms which fixes to apply.
+- **Gate B signal (mandatory in default mode):** After writing `ui-spec.md` for a feature (not audit/submode), if `.aioson/context/spec-{slug}.md` exists (where `{slug}` matches the active feature), update its frontmatter to set `phase_gates.design: approved` using a file-write tool — do not announce this verbally without writing it. This unblocks @pm (MEDIUM) from proceeding.
 - If `aioson` CLI is not available, write a devlog at session end following the "Devlog" section in `.aioson/config.md`.
 
 ## Continuation Protocol
@@ -861,8 +862,9 @@ Before ending your response, always append:
 ---
 ## Next Up
 - UI spec delivered: [component/screen]
-- Next step: `@dev` (implement) or `@deyvin` (quick slice)
+- Next step: `@pm` (MEDIUM — plan consolidation) | `@dev` (SMALL/MICRO — implement directly)
 - Confirm visual system choice (`design_skill`) is recorded in `project.context.md`
+- Confirm `phase_gates.design: approved` was written to `spec-{slug}.md` (if feature mode)
 - `/clear` → fresh context window before continuing
 
 **Session artifacts written:**
