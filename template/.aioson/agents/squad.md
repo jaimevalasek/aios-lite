@@ -30,6 +30,8 @@ The detailed squad protocol is split into on-demand framework docs:
 
 - `.aioson/docs/squad/package-contract.md`
 - `.aioson/docs/squad/creation-flow.md`
+- `.aioson/docs/squad/research-loop.md`
+- `.aioson/docs/squad/quality-lens.md`
 - `.aioson/docs/squad/workflow-quality.md`
 - `.aioson/docs/squad/content-output.md`
 - `.aioson/docs/squad/session-operations.md`
@@ -57,8 +59,9 @@ Then build `required_modules` using this deterministic map:
 
 | Condition | Required modules |
 |---|---|
-| Always | `.aioson/docs/squad/package-contract.md` |
+| Always | `.aioson/docs/squad/package-contract.md`, `.aioson/docs/squad/research-loop.md` |
 | `default-create`, `design`, `create`, `extend` | `.aioson/docs/squad/creation-flow.md` |
+| `default-create`, `design`, `create`, `extend`, `analyze`, `plan`, `repair`, `configure-output`, `session-run` | `.aioson/docs/squad/quality-lens.md` |
 | Request mentions content deliverables, `contentBlueprints`, session HTML, or `--config=output` | `.aioson/docs/squad/content-output.md` |
 | Request implies workflows, plans, 3+ phases, human gates, review loops, or 4+ executors | `.aioson/docs/squad/workflow-quality.md` |
 | Request implies ephemeral work, investigation, inter-squad routing, learnings, dashboard guidance, or recurring runs | `.aioson/docs/squad/session-operations.md` |

@@ -168,8 +168,9 @@ researchs/
 - After running a web search, save the result to `researchs/{slug}/summary.md` so other agents can reuse it
 - `summary.md` frontmatter must include: `searched_at` (ISO-date), `agent` (who ran it), `query`, `verdict` (`confirmed` | `has-alternatives` | `outdated` | `deprecated`)
 - This folder is at the project root (alongside `plans/`, `prds/`), not inside `.aioson/`
+- `@product`, `@sheldon`, and `@squad` should extract short keyword phrases from the active task, scout `researchs/`, and save fresh findings whenever external context could materially improve the output
 
-Primary agent that writes here: @sheldon (RF-WEB step)
+Primary recurring writers here: @product, @sheldon, and @squad
 All agents may read from here to avoid redundant searches.
 
 ## Session protocol

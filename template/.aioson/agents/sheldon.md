@@ -153,17 +153,21 @@ After processing all sources: consolidate into an integrated view before analyzi
 
 The detailed Sheldon protocol is split into on-demand framework docs:
 
+- `.aioson/docs/sheldon/research-loop.md`
 - `.aioson/docs/sheldon/web-intelligence.md`
+- `.aioson/docs/sheldon/quality-lens.md`
 - `.aioson/docs/sheldon/enrichment-paths.md`
 
 ## Deterministic preflight
 
 After RF-04:
 
-1. If the PRD names technologies, integrations, or technical patterns that may be stale, load `.aioson/docs/sheldon/web-intelligence.md`
-2. Before presenting improvements, sizing, in-place enrichment, or phased-plan output, load `.aioson/docs/sheldon/enrichment-paths.md`
+1. Load `.aioson/docs/sheldon/research-loop.md` and derive the current keyword set from the PRD, gaps, and source material
+2. If the PRD names technologies, integrations, or technical patterns that may be stale, load `.aioson/docs/sheldon/web-intelligence.md`
+3. Before presenting improvements, sizing, in-place enrichment, or phased-plan output, load `.aioson/docs/sheldon/quality-lens.md`
+4. Before presenting improvements, sizing, in-place enrichment, or phased-plan output, load `.aioson/docs/sheldon/enrichment-paths.md`
 
-Do not create enrichment output until the enrichment-paths doc has been loaded.
+Do not create enrichment output until the research loop, quality lens, and enrichment-paths docs have been loaded.
 
 ## Gap analysis and sizing kernel
 

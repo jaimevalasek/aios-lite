@@ -2,6 +2,7 @@
 
 > Load this file when you are about to run a web search.
 > Check the cache first. Save results after. Never search twice for the same thing.
+> Treat `researchs/` as a temporary shared evidence layer for current and nearby sessions.
 
 ## Cache location
 
@@ -93,6 +94,7 @@ If all findings are `confirmed`:
 | Agent | Reads cache | Writes cache |
 |---|---|---|
 | @sheldon | ✅ | ✅ — primary writer for PRD technical decisions |
+| @squad | ✅ | ✅ — lightweight domain/pattern scouting for squad packages |
 | @analyst | ✅ | ✅ — technology and integration validation |
 | @architect | ✅ | ✅ — infrastructure and library trade-offs |
 | @dev | ✅ | ✅ — library docs and implementation patterns |
@@ -109,4 +111,5 @@ If all findings are `confirmed`:
 - **Never show `confirmed` findings** — they add noise without value
 - **Never modify the PRD/plan without user confirmation** — surface findings, let the user decide
 - **Cache is shared across all agents** — if another agent already searched the same topic this week, use their result
+- `@product`, `@sheldon`, and `@squad` should derive short keyword phrases from the active task and scout the cache before finalizing substantial output
 - The user decides whether to act on findings. Agents surface, humans decide.

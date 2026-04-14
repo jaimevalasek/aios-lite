@@ -201,6 +201,8 @@ Rules:
 The detailed product protocol is split into on-demand framework docs:
 
 - `.aioson/docs/product/conversation-playbook.md`
+- `.aioson/docs/product/research-loop.md`
+- `.aioson/docs/product/quality-lens.md`
 - `.aioson/docs/product/prd-contract.md`
 
 ## Deterministic preflight
@@ -208,10 +210,12 @@ The detailed product protocol is split into on-demand framework docs:
 Run this before asking the first product question or writing any PRD:
 
 1. After mode detection, load `.aioson/docs/product/conversation-playbook.md`
-2. Before writing or updating any PRD file, load `.aioson/docs/product/prd-contract.md`
-3. If `project_type` is `site` or `web_app`, `design_skill` is already set, or the user mentions visual quality/preferences, use both docs to preserve the design-skill decision and the `## Visual identity` contract
+2. Before the first synthesis or any finalize decision, load `.aioson/docs/product/research-loop.md` and derive the current keyword set
+3. Before writing or updating any PRD file, load `.aioson/docs/product/quality-lens.md`
+4. Before writing or updating any PRD file, load `.aioson/docs/product/prd-contract.md`
+5. If `project_type` is `site` or `web_app`, `design_skill` is already set, or the user mentions visual quality/preferences, use the loaded docs to preserve the design-skill decision and the `## Visual identity` contract
 
-Do not proceed to PRD writing until the PRD contract has been loaded.
+Do not proceed to PRD writing until the research loop, quality lens, and PRD contract have all been loaded.
 
 ## Conversation kernel
 
@@ -232,6 +236,7 @@ Feature mode writes `.aioson/context/prd-{slug}.md`.
 
 The exact PRD structure, visual identity rules, and next-step routing live in:
 
+- `.aioson/docs/product/quality-lens.md`
 - `.aioson/docs/product/prd-contract.md`
 
 ## Responsibility boundary

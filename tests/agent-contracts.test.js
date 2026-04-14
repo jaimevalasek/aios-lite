@@ -216,12 +216,16 @@ test('product, sheldon, and dev kernels use deterministic on-demand docs and sta
   const checks = [
     [product, '## Built-in product modules'],
     [product, '.aioson/docs/product/conversation-playbook.md'],
+    [product, '.aioson/docs/product/research-loop.md'],
+    [product, '.aioson/docs/product/quality-lens.md'],
     [product, '.aioson/docs/product/prd-contract.md'],
     [product, '## Deterministic preflight'],
     [product, '## Conversation kernel'],
     [product, '## Output kernel'],
     [sheldon, '## Built-in sheldon modules'],
+    [sheldon, '.aioson/docs/sheldon/research-loop.md'],
     [sheldon, '.aioson/docs/sheldon/web-intelligence.md'],
+    [sheldon, '.aioson/docs/sheldon/quality-lens.md'],
     [sheldon, '.aioson/docs/sheldon/enrichment-paths.md'],
     [sheldon, '## Deterministic preflight'],
     [sheldon, '## Gap analysis and sizing kernel'],
@@ -244,8 +248,12 @@ test('product, sheldon, and dev kernels use deterministic on-demand docs and sta
 test('product, sheldon, and dev on-demand docs are managed and preserve critical guidance', async () => {
   const managedDocs = [
     '.aioson/docs/product/conversation-playbook.md',
+    '.aioson/docs/product/research-loop.md',
+    '.aioson/docs/product/quality-lens.md',
     '.aioson/docs/product/prd-contract.md',
+    '.aioson/docs/sheldon/research-loop.md',
     '.aioson/docs/sheldon/web-intelligence.md',
+    '.aioson/docs/sheldon/quality-lens.md',
     '.aioson/docs/sheldon/enrichment-paths.md',
     '.aioson/docs/dev/stack-conventions.md',
     '.aioson/docs/dev/execution-discipline.md'
@@ -257,8 +265,12 @@ test('product, sheldon, and dev on-demand docs are managed and preserve critical
   }
 
   const conversationPlaybook = await read(path.join(ROOT, 'template/.aioson/docs/product/conversation-playbook.md'));
+  const productResearchLoop = await read(path.join(ROOT, 'template/.aioson/docs/product/research-loop.md'));
+  const productQualityLens = await read(path.join(ROOT, 'template/.aioson/docs/product/quality-lens.md'));
   const prdContract = await read(path.join(ROOT, 'template/.aioson/docs/product/prd-contract.md'));
+  const sheldonResearchLoop = await read(path.join(ROOT, 'template/.aioson/docs/sheldon/research-loop.md'));
   const webIntel = await read(path.join(ROOT, 'template/.aioson/docs/sheldon/web-intelligence.md'));
+  const sheldonQualityLens = await read(path.join(ROOT, 'template/.aioson/docs/sheldon/quality-lens.md'));
   const enrichmentPaths = await read(path.join(ROOT, 'template/.aioson/docs/sheldon/enrichment-paths.md'));
   const stackConventions = await read(path.join(ROOT, 'template/.aioson/docs/dev/stack-conventions.md'));
   const executionDiscipline = await read(path.join(ROOT, 'template/.aioson/docs/dev/execution-discipline.md'));
@@ -267,12 +279,23 @@ test('product, sheldon, and dev on-demand docs are managed and preserve critical
     [conversationPlaybook, '6 - Finalize'],
     [conversationPlaybook, '### Surprise mode'],
     [conversationPlaybook, 'design_skill'],
+    [productResearchLoop, '.aioson/skills/static/web-research-cache.md'],
+    [productResearchLoop, '3-7'],
+    [productResearchLoop, 'researchs/'],
+    [productQualityLens, '## Positive patterns'],
+    [productQualityLens, '## Anti-patterns and replacements'],
+    [productQualityLens, '## Review scorecard'],
     [prdContract, '## Visual identity'],
     [prdContract, 'pending-selection'],
     [prdContract, 'classification'],
+    [sheldonResearchLoop, '.aioson/skills/static/web-research-cache.md'],
+    [sheldonResearchLoop, 'reprioritize improvements'],
     [webIntel, 'researchs/{decision-slug}/summary.md'],
     [webIntel, 'confirmed'],
     [webIntel, 'deprecated'],
+    [sheldonQualityLens, '## Positive patterns'],
+    [sheldonQualityLens, '## Anti-patterns and replacements'],
+    [sheldonQualityLens, '## Review scorecard'],
     [enrichmentPaths, '.aioson/plans/{slug}/manifest.md'],
     [enrichmentPaths, '## Delivery plan'],
     [enrichmentPaths, 'sheldon-enrichment.md'],
@@ -318,6 +341,8 @@ test('squad and genome contracts stay canonical and preserve squad package and g
     '## Deterministic preflight',
     '.aioson/docs/squad/package-contract.md',
     '.aioson/docs/squad/creation-flow.md',
+    '.aioson/docs/squad/research-loop.md',
+    '.aioson/docs/squad/quality-lens.md',
     '.aioson/docs/squad/workflow-quality.md',
     '.aioson/docs/squad/content-output.md',
     '.aioson/docs/squad/session-operations.md',
@@ -356,6 +381,8 @@ test('squad on-demand docs are shipped, managed, and preserve critical guidance'
   const managedDocs = [
     '.aioson/docs/squad/package-contract.md',
     '.aioson/docs/squad/creation-flow.md',
+    '.aioson/docs/squad/research-loop.md',
+    '.aioson/docs/squad/quality-lens.md',
     '.aioson/docs/squad/workflow-quality.md',
     '.aioson/docs/squad/content-output.md',
     '.aioson/docs/squad/session-operations.md',
@@ -369,6 +396,8 @@ test('squad on-demand docs are shipped, managed, and preserve critical guidance'
 
   const packageContract = await read(path.join(ROOT, 'template/.aioson/docs/squad/package-contract.md'));
   const creationFlow = await read(path.join(ROOT, 'template/.aioson/docs/squad/creation-flow.md'));
+  const squadResearchLoop = await read(path.join(ROOT, 'template/.aioson/docs/squad/research-loop.md'));
+  const squadQualityLens = await read(path.join(ROOT, 'template/.aioson/docs/squad/quality-lens.md'));
   const workflowQuality = await read(path.join(ROOT, 'template/.aioson/docs/squad/workflow-quality.md'));
   const contentOutput = await read(path.join(ROOT, 'template/.aioson/docs/squad/content-output.md'));
   const sessionOps = await read(path.join(ROOT, 'template/.aioson/docs/squad/session-operations.md'));
@@ -383,6 +412,12 @@ test('squad on-demand docs are shipped, managed, and preserve critical guidance'
     [creationFlow, 'single block'],
     [creationFlow, 'high autonomy'],
     [creationFlow, 'dominant-driver'],
+    [squadResearchLoop, '.aioson/skills/static/web-research-cache.md'],
+    [squadResearchLoop, 'executor vocabulary'],
+    [squadResearchLoop, '@orache'],
+    [squadQualityLens, '## Positive patterns'],
+    [squadQualityLens, '## Anti-patterns and replacements'],
+    [squadQualityLens, '## Review scorecard'],
     [workflowQuality, 'modelTier'],
     [workflowQuality, 'review'],
     [workflowQuality, 'warm-up'],

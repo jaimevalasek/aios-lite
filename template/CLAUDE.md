@@ -80,7 +80,7 @@ When running Claude Code directly (without `aioson workflow:next`), these rules 
 
 ## Shared research cache: researchs/
 
-All agents may read from and write to `researchs/` (project root). Before running any web search, check if `researchs/{slug}/summary.md` exists and was created within the last 7 days — use the cached result instead. After searching, save results there for reuse by other agents. See AGENTS.md for the full convention.
+All agents may read from and write to `researchs/` (project root). Before running any web search, check if `researchs/{slug}/summary.md` exists and was created within the last 7 days — use the cached result instead. After searching, save results there for reuse by other agents. `@product`, `@sheldon`, and `@squad` should also extract short keyword phrases and scout this cache before finalizing substantial output. See AGENTS.md for the full convention.
 
 ## Local overrides
 
