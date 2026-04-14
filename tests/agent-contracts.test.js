@@ -222,22 +222,33 @@ test('deyvin contract prioritizes memory and hard-gates oversized requests', asy
   }
 });
 
-test('squad and genome contracts stay canonical and preserve genome workflow', async () => {
+test('squad and genome contracts stay canonical and preserve squad package and genome binding rules', async () => {
   const squad = await read(path.join(ROOT, 'template/.aioson/agents/squad.md'));
   const genome = await read(path.join(ROOT, 'template/.aioson/agents/genome.md'));
 
   const squadTokens = [
     'LANGUAGE BOUNDARY',
-    'Lite mode',
-    'Genome mode',
+    '## Project rules, docs & design docs',
+    '## Subcommand routing',
+    '## Ephemeral squads',
+    '## Investigation integration',
     '## Executor classification',
-    '## Agent generation'
+    '.aioson/squads/{squad-slug}/agents/agents.md',
+    '.aioson/squads/{squad-slug}/squad.manifest.json',
+    '.aioson/squads/{squad-slug}/squad.md',
+    'contentBlueprints',
+    'AGENTS.md',
+    'output/{squad-slug}/{session-id}.html',
+    'aioson-logs/{squad-slug}/'
   ];
   const genomeTokens = [
     'interaction_language',
     '## Persona Pipeline Integration',
     'version: 3',
     'format: genome-v3',
+    'genomeBindings',
+    '.aioson/squads/{slug}/squad.md',
+    '.aioson/squads/{squad-slug}/agents/',
     'Do not modify official `.aioson/agents/` files with user custom genomes',
     'The Genome 2.0 should not become verbose by default'
   ];
@@ -248,6 +259,8 @@ test('squad and genome contracts stay canonical and preserve genome workflow', a
   for (const token of genomeTokens) {
     assert.equal(genome.includes(token), true, `missing genome token: ${token}`);
   }
+  assert.equal(squad.includes('Lite mode'), false);
+  assert.equal(squad.includes('Genome mode flow'), false);
 });
 
 test('profiler agents ship canonical prompts with interaction-language guidance', async () => {

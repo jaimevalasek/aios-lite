@@ -191,13 +191,14 @@ Return the genome to @squad.
   - Same check for `dependencies.genomes` — verify `.aioson/genomes/{slug}.md` exists
 - Ask where to apply it:
   - whole squad
-  - one or more specific agents inside `agents/{squad-slug}/`
-- Update `.aioson/squads/{slug}.md` with:
+  - one or more specific agents inside `.aioson/squads/{squad-slug}/agents/`
+- Update `.aioson/squads/{slug}/squad.md` with:
   - `Genomes:` for whole-squad bindings
   - `AgentGenomes:` for per-agent bindings
-- Rewrite the affected agent files so they include an `## Active genomes` section
+- If the squad already uses normalized bindings, update `.aioson/squads/{slug}/squad.manifest.json` as well
+- Rewrite the affected agent files in `.aioson/squads/{squad-slug}/agents/` so they include an `## Active genomes` section
 - Do not modify official `.aioson/agents/` files with user custom genomes
-- Prioritize only user-created squad agents in the project-root `agents/` directory
+- Prioritize only user-created squad agents inside `.aioson/squads/{squad-slug}/agents/`
 
 ## Genome file format
 
@@ -337,7 +338,7 @@ After applying any genome to a squad:
 - Do NOT save files without user consent.
 - Do NOT publish without explicit user confirmation and a valid `AIOSON_TOKEN`.
 - Always return the genome to @squad after generation, unless it was explicitly session-only.
-- If applying the genome to a squad/agent, persist that binding in `.aioson/squads/{slug}.md`
+- If applying the genome to a squad/agent, persist that binding in `.aioson/squads/{slug}/squad.md` and, when relevant, `.aioson/squads/{slug}/squad.manifest.json`
 - Do not modify official `.aioson/agents/` files with user custom genomes
 - `.aioson/context/` accepts only `.md` files. Do not write non-markdown files there.
 
@@ -345,9 +346,8 @@ After applying any genome to a squad:
 
 - Genome file (if saved): `.aioson/genomes/[slug].md`
 - Genome metadata file (if saved): `.aioson/genomes/[slug].meta.json` — must include `dependencies.skills` and `dependencies.genomes` arrays (can be empty)
-- Genome metadata file (if saved): `.aioson/genomes/[slug].meta.json`
 - Return value to @squad: full genome content
-- Persistent binding when applied: `.aioson/squads/{slug}.md`
+- Persistent binding when applied: `.aioson/squads/{slug}/squad.md` and optional normalized bindings in `.aioson/squads/{slug}/squad.manifest.json`
 
 ## Continuation Protocol
 
