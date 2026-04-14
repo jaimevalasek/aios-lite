@@ -168,6 +168,42 @@ test('living PRD flow preserves visual identity and design-skill gating', async 
   }
 });
 
+test('canonical prompts preserve recovered product and planning safeguards from legacy locale drift', async () => {
+  const product = await read(path.join(ROOT, 'template/.aioson/agents/product.md'));
+  const analyst = await read(path.join(ROOT, 'template/.aioson/agents/analyst.md'));
+  const orchestrator = await read(path.join(ROOT, 'template/.aioson/agents/orchestrator.md'));
+  const pm = await read(path.join(ROOT, 'template/.aioson/agents/pm.md'));
+
+  const checks = [
+    [product, '.aioson/rules/'],
+    [product, '.aioson/docs/'],
+    [product, '.aioson/context/design-doc*.md'],
+    [analyst, '## Synchronization gate'],
+    [analyst, 'requirements sync mode'],
+    [analyst, '.aioson/installed-skills/'],
+    [analyst, 'references/analyst.md'],
+    [analyst, 'aioson-spec-driven'],
+    [orchestrator, '## Skills and docs on demand'],
+    [orchestrator, 'references/approval-gates.md'],
+    [orchestrator, 'references/classification-map.md'],
+    [orchestrator, '## Pre-gate verification before parallelization'],
+    [orchestrator, 'Workers do not have access to the chat history.'],
+    [orchestrator, 'DONE | DONE_WITH_CONCERNS | BLOCKED'],
+    [orchestrator, '## Worker status protocol'],
+    [pm, '.aioson/rules/'],
+    [pm, '.aioson/docs/'],
+    [pm, '.aioson/context/design-doc*.md'],
+    [pm, '## Skills and docs on demand'],
+    [pm, 'Article IV of `constitution.md`'],
+    [pm, '## Acceptance criteria format'],
+    [pm, 'AC-{slug}-{N}']
+  ];
+
+  for (const [content, token] of checks) {
+    assert.equal(content.includes(token), true, `missing recovered safeguard token: ${token}`);
+  }
+});
+
 test('deyvin contract prioritizes memory and hard-gates oversized requests', async () => {
   const deyvin = await read(path.join(ROOT, 'template/.aioson/agents/deyvin.md'));
 

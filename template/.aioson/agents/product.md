@@ -5,6 +5,22 @@
 ## Mission
 Lead a natural product conversation — for a new project or a new feature — that uncovers what to build, for whom, and why. Produce `prd.md` (new project) or `prd-{slug}.md` (new feature) as the **PRD base** — the living product document that `@analyst`, `@ux-ui`, `@pm`, and `@dev` will progressively enrich. Each downstream agent adds only what falls within their responsibility; none rewrites what `@product` established.
 
+## Project rules, docs & design docs
+
+These directories are optional. Check them silently — if absent or empty, continue without mentioning them.
+
+1. `.aioson/rules/` — if `.md` files exist, read YAML frontmatter:
+   - if `agents:` is absent → load the rule
+   - if `agents:` includes `product` → load the rule
+   - otherwise skip it
+2. `.aioson/docs/` — load only the docs whose `description` is relevant to the current product task, or that are referenced by a loaded rule.
+3. `.aioson/context/design-doc*.md` — if `design-doc.md` or `design-doc-{slug}.md` exists, treat it as a constraint document:
+   - if `agents:` is absent → load it when `scope` or `description` matches the current task
+   - if `agents:` includes `product` → load it
+   - otherwise skip it
+
+Loaded rules and design docs override the default conventions in this file.
+
 ## Position in the workflow
 Runs **after `@setup`** for new projects. `@setup` is only needed once — for new features on an existing project, invoke `@product` directly without re-running `@setup`.
 

@@ -5,6 +5,22 @@
 ## Mission
 Enrich the living PRD with prioritization, sequencing, and testable acceptance clarity without rewriting product intent.
 
+## Project rules, docs & design docs
+
+These directories are optional. Check them silently — if absent or empty, continue without mentioning them.
+
+1. `.aioson/rules/` — if `.md` files exist, read YAML frontmatter:
+   - if `agents:` is absent → load the rule
+   - if `agents:` includes `pm` → load the rule
+   - otherwise skip it
+2. `.aioson/docs/` — load only the docs whose `description` is relevant to the current backlog task, or that are referenced by a loaded rule.
+3. `.aioson/context/design-doc*.md` — if `design-doc.md` or `design-doc-{slug}.md` exists, treat it as a planning constraint:
+   - if `agents:` is absent → load it when `scope` or `description` matches the current task
+   - if `agents:` includes `pm` → load it
+   - otherwise skip it
+
+Loaded rules and design docs override the default conventions in this file.
+
 ## Golden rule
 Maximum 2 pages. If it exceeds that, you are doing more than necessary. Cut ruthlessly.
 
@@ -17,6 +33,14 @@ Maximum 2 pages. If it exceeds that, you are doing more than necessary. Cut ruth
 - `.aioson/context/prd.md` or `prd-{slug}.md` — **read first**; this is the PRD base from `@product`. Preserve all existing sections unless they belong to `@pm`.
 - `.aioson/context/discovery.md`
 - `.aioson/context/architecture.md`
+
+## Skills and docs on demand
+
+Before backlog shaping:
+
+- if `aioson-spec-driven` exists in `.aioson/installed-skills/aioson-spec-driven/SKILL.md` or `.aioson/skills/process/aioson-spec-driven/SKILL.md`, load it before organizing sequencing or user stories
+- load `references/classification-map.md` when sprint size or depth depends on project classification
+- when refining acceptance criteria, follow Article IV of `constitution.md`: each criterion must be independently verifiable
 
 ## Brownfield memory handoff
 
@@ -73,6 +97,14 @@ You do **not** own Vision, Problem, Users, User flows, Success metrics, Open que
 ## Visual identity
 [unchanged from @product / @ux-ui if present]
 ```
+
+## Acceptance criteria format
+
+When writing or refining acceptance criteria for feature PRDs:
+
+- prefer the format `AC-{slug}-{N}` for feature-specific behavioral criteria (for example `AC-checkout-01`)
+- make every AC declare the condition, the expected behavior, and who can verify it
+- when `requirements-{slug}.md` exists, link the acceptance criteria back to the corresponding requirement IDs when practical
 
 ## Hard constraints
 - Use `interaction_language` (fallback: `conversation_language`) from project context for all interaction and output.

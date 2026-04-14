@@ -12,10 +12,30 @@ Orchestrate parallel execution only for MEDIUM projects. Never activate for MICR
 - `.aioson/context/architecture.md`
 - `.aioson/context/prd.md`
 
+## Skills and docs on demand
+
+Before orchestrating parallel execution:
+
+- if `aioson-spec-driven` exists in `.aioson/installed-skills/aioson-spec-driven/SKILL.md` or `.aioson/skills/process/aioson-spec-driven/SKILL.md`, load it first
+- load `references/approval-gates.md` to understand which gates must pass before each phase
+- load `references/classification-map.md` to calibrate orchestration depth
+
 ## Activation condition
 Check classification in `project.context.md`. If not MEDIUM, stop and inform the user that sequential execution is sufficient.
 
 ## Process
+
+## Pre-gate verification before parallelization
+
+Before creating any worker or subagent for implementation:
+
+1. Read the frontmatter of `spec-{slug}.md` for the active feature.
+2. Verify the required gates for the phases about to execute:
+   - data-layer work → Gate A (`requirements`) must be `approved`
+   - architecture-dependent work → Gate B (`design`) must be `approved`
+   - implementation execution → Gate C (`plan`) must be `approved`
+3. If a required gate is still `pending`, stop and route back to the correct upstream agent instead of parallelizing prematurely.
+4. Only create workers for phases whose prerequisite gates are already approved.
 
 ### Step 1 — Identify modules and dependencies
 Read `prd.md` and `architecture.md`. List every module and identify direct dependencies between them.
@@ -89,6 +109,32 @@ When done:
 The controller (this chat) preserves full context for coordination.
 Subagents have surgical context for execution.
 
+### Worker statelessness contract
+
+Workers do not have access to the chat history. Every delegated brief must be self-contained.
+
+Before spawning a worker:
+- identify the exact files it must read
+- identify the exact files it may write
+- list the upstream decisions it must respect from `spec.md`, `architecture.md`, or the implementation plan
+- state what is explicitly out of scope
+- define the completion signal: `DONE`, `DONE_WITH_CONCERNS`, or `BLOCKED`
+
+If a follow-up task is materially different from the current worker scope, prefer spawning a new worker over continuing with a polluted brief.
+
+### Worker notification format
+
+Workers should report with a compact notification block so the coordinator can distinguish worker output from user input:
+
+```xml
+<task-notification>
+  worker: agent-1
+  phase: auth
+  status: DONE | DONE_WITH_CONCERNS | BLOCKED
+  summary: [one sentence explaining completion or the blocker]
+</task-notification>
+```
+
 ### Step 4 — Monitor shared decisions
 Each subagent must write to its status file before making decisions that affect shared contracts (models, routes, schemas). Check `.aioson/context/parallel/shared-decisions.md` for conflicts before proceeding.
 
@@ -113,6 +159,16 @@ Shared decisions go into `.aioson/context/parallel/shared-decisions.md`:
 - users table: soft deletes enabled (agent-1, 2026-01-15)
 - roles: enum admin|user|guest (agent-1, 2026-01-15)
 ```
+
+## Worker status protocol
+
+Workers should keep a one-sentence status line in present tense inside their status file at each meaningful checkpoint.
+
+- Good: `Writing the user migration.`
+- Good: `Blocked: payment schema is missing from architecture.md.`
+- Bad: `Working on auth.`
+
+If the same worker status repeats across two coordinator checks, treat the worker as potentially stalled and review the brief before continuing.
 
 ## Session protocol
 Use this at the start and end of every working session, regardless of classification.

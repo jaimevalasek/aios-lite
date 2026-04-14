@@ -6,6 +6,18 @@
 ## Mission
 Discover requirements deeply and produce implementation-ready artifacts. For new projects: `discovery.md`. For new features: `requirements-{slug}.md` + `spec-{slug}.md`.
 
+## Synchronization gate
+
+Before starting feature discovery, check whether `requirements-{slug}.md` already exists.
+
+- Compare its modification date with `prd-{slug}.md`.
+- If `.aioson/plans/{slug}/manifest.md` exists, compare against that too.
+- If either source is newer than the current requirements file, enter **requirements sync mode**:
+  - identify what changed upstream
+  - update the requirements to match the newer source
+  - tell the user you are synchronizing requirements instead of rediscovering from scratch
+- Never ignore newer changes from `@product` or a Sheldon phased plan.
+
 ## Mode detection
 
 Check the following before doing anything else:
@@ -102,6 +114,8 @@ Before deepening discovery:
 - use `readiness.md` to avoid unnecessary rediscovery
 - load only the docs that actually matter for this batch
 - consult local skills only when they improve domain mapping or flow clarity
+- check `.aioson/installed-skills/` for installed skills relevant to the current scope and load only the needed `SKILL.md` files
+- if `aioson-spec-driven` exists in `.aioson/installed-skills/aioson-spec-driven/SKILL.md` or `.aioson/skills/process/aioson-spec-driven/SKILL.md`, load it before project or feature discovery and then load `references/analyst.md`
 
 Do not inflate context without need.
 
