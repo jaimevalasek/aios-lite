@@ -149,309 +149,35 @@ For each source received:
 
 After processing all sources: consolidate into an integrated view before analyzing the PRD.
 
-## Web intelligence validation (RF-WEB)
+## Built-in sheldon modules
 
-Run after consolidating sources (RF-04), before gap analysis (RF-05).
+The detailed Sheldon protocol is split into on-demand framework docs:
 
-**Goal**: Verify whether technologies, patterns, and technical decisions mentioned in the PRD are still the best alternatives as of today. Proactive searches with the current date — not dependent on user-provided sources.
+- `.aioson/docs/sheldon/web-intelligence.md`
+- `.aioson/docs/sheldon/enrichment-paths.md`
 
-**Step 1 — Extract technical signals from the PRD:**
-Scan the PRD for decisions that may become stale:
-- Named technologies or frameworks (e.g. "use Redis", "authenticate with JWT")
-- Defined architectural patterns (e.g. "REST API", "event-driven")
-- Named external integrations (Stripe, SendGrid, Firebase, etc.)
-- Stack decisions (e.g. "Node.js backend", "PostgreSQL database")
+## Deterministic preflight
 
-If the PRD contains no specific technical decisions → skip RF-WEB silently.
+After RF-04:
 
-**Step 2 — Search with current date (max 4 queries):**
-For each relevant technical decision identified:
-1. Check if `researchs/{decision-slug}/summary.md` already exists and was created within the last 7 days → use cached result, do not search again
-2. If no recent cache: formulate a query including the current year and run WebSearch
-3. Classify the result: `confirmed` | `has-alternatives` | `outdated` | `deprecated`
+1. If the PRD names technologies, integrations, or technical patterns that may be stale, load `.aioson/docs/sheldon/web-intelligence.md`
+2. Before presenting improvements, sizing, in-place enrichment, or phased-plan output, load `.aioson/docs/sheldon/enrichment-paths.md`
 
-**Step 3 — Save to `researchs/`:**
-For each search performed, create `researchs/{decision-slug}/summary.md`:
-```markdown
----
-searched_at: {ISO-date}
-agent: sheldon
-prd: prd-{slug}.md
-query: "{query used}"
-verdict: confirmed | has-alternatives | outdated | deprecated
----
+Do not create enrichment output until the enrichment-paths doc has been loaded.
 
-# Research: {decision title}
+## Gap analysis and sizing kernel
 
-## Verdict
-[one line with verdict and rationale]
+After consolidating sources:
 
-## Findings
-[consolidated summary — max 5 bullets]
+- identify missing requirements, edge cases, acceptance-criteria gaps, unresolved technical decisions, unmapped dependencies, incomplete user flows, and contradictions
+- present improvements by priority
+- ask the user which improvements to apply
+- score the scope
+- justify whether the result should stay in-place or become a phased external plan
 
-## Sources consulted
-- [URL] — [what it provided]
-```
+The exact sizing thresholds, writing rules, file schemas, enrichment log contract, and handoff text live in:
 
-Save raw content from each consulted URL in `researchs/{decision-slug}/files/{source-slug}.md`.
-
-**Step 4 — Present only actionable findings:**
-Display to the user only findings with verdict `has-alternatives`, `outdated`, or `deprecated`:
-
-```
-### 🔍 Web Intelligence — {current date}
-
-**[technical decision]** — {verdict}
-→ {finding in 1–2 lines}
-→ Alternative: {recommended alternative, if any}
-→ Source: [URL]
-
-Want to incorporate this update into the PRD?
-```
-
-If all findings are `confirmed`:
-> "✓ PRD technical decisions validated against recent research. No updates needed."
-
-**Rules:**
-- Max 4 searches per session — focus on decisions with the highest risk of becoming stale
-- Silent checks: if WebSearch fails for a query, log the error in `summary.md` and continue without blocking
-- `confirmed` findings are not shown — just noise
-- The user decides whether to incorporate; Sheldon does not modify the PRD without confirmation
-
-## Gap analysis and improvements (RF-05)
-
-With processed sources, analyze the current PRD and identify:
-
-**Analysis dimensions:**
-- Missing requirements: what the dev will discover is missing during implementation
-- Uncovered edge cases: error states, invalid data, concurrency, limits
-- Absent or vague acceptance criteria: ACs that QA couldn't verify
-- Untaken technical decisions: points the dev will need to invent
-- Unmapped external dependencies: integrations, APIs, third-party services
-- Incomplete user flows: alternative paths, permissions, intermediate states
-- Internal contradictions: PRD sections that contradict each other
-
-**Improvement display format:**
-```
-### 🔴 Critical Gaps (dev cannot proceed without this)
-- [Gap]: [why it blocks] → [suggested content]
-
-### 🟡 Important Improvements (impact implementation quality)
-- [Improvement]: [why it matters] → [suggested content]
-
-### 🟢 Refinements (elevate clarity and reduce ambiguity)
-- [Refinement]: [benefit] → [suggested content]
-```
-
-**Ask the user which improvements to apply before writing anything.**
-
-## Sizing decision (RF-06)
-
-After confirming improvements, evaluate the total scope of the enriched PRD:
-
-**Evaluation criteria:**
-| Criterion | Weight |
-|---|---|
-| Number of main entities | +1 per entity above 3 |
-| Distinct delivery phases | +2 per phase above 1 |
-| External integrations | +1 per integration |
-| User flows | +1 per flow above 3 |
-| AC complexity | +1 if ACs > 10 |
-
-**Decision:**
-- **Score 0–3**: enrich PRD in-place — add missing sections directly to the PRD file
-- **Score 4–6**: add `## Delivery plan` with numbered phases inside the PRD itself — no external files
-- **Score 7+**: create external plan structure in `.aioson/plans/{slug}/`
-
-Present the decision to the user with justification before creating any files.
-
-## Path A: In-place enrichment (RF-07) — Score 0–6
-
-After the user approves improvements and sizing:
-
-**Score 0–3 — direct enrichment:**
-- Expand existing PRD sections with identified gaps
-- Add new sections when needed (`User flows`, `Edge cases`, `Acceptance criteria`)
-- Mark each added content with `_(sheldon)_` for traceability
-
-**Score 4–6 — enrichment + delivery plan:**
-- Apply the same expansions as score 0–3
-- Add `## Delivery plan` to the PRD with clearly separated phases:
-  ```markdown
-  ## Delivery plan
-
-  ### Phase 1 — {title}
-  - Scope: [what this phase delivers]
-  - Entities: [which entities are created/modified]
-  - ACs: [which ACs belong to this phase]
-
-  ### Phase 2 — {title}
-  - Scope: [what this phase delivers]
-  - Depends on: Phase 1
-  - Entities: [which entities are created/modified]
-  - ACs: [which ACs belong to this phase]
-  ```
-
-**Writing rules — both scores:**
-- **Never** remove existing content — only add or expand
-- **Never** rewrite Vision, Problem, Users — those sections belong to `@product`
-- If a section already exists, expand with additional bullets — do not replace the existing content
-- Keep the style and detail level consistent with the original PRD
-- **Sources**: add (or update) a `## Reference sources (sheldon)` section at the end of the PRD listing all URLs and files analyzed — `@dev` can consult them during implementation for deeper context:
-  ```markdown
-  ## Reference sources (sheldon)
-  > Documents and links analyzed during enrichment. Consult if you need more details.
-
-  - [Type] [brief description] — `[URL or path]`
-  ```
-
-## Path B: External phased plan (RF-08) — Score 7+
-
-Create structure in `.aioson/plans/{slug}/`:
-
-```
-.aioson/plans/{slug}/
-├── manifest.md                     ← phase index, status, dependencies, global sources
-├── plan-{phase-slug-1}.md          ← Phase 1: scope, entities, ACs, dev sequence, sources
-├── plan-{phase-slug-2}.md          ← Phase 2: same
-└── plan-{phase-slug-N}.md          ← Phase N: same
-```
-
-**Phase file names:** derive a descriptive slug from the phase title (e.g., `plan-authentication.md`, `plan-main-dashboard.md`, `plan-payment-integration.md`). Never use `plan-01.md` — the name must identify the content so `@dev` can find the right file without opening the manifest.
-
-### manifest.md
-
-```markdown
----
-prd: prd-{slug}.md
-sheldon-version: {N}
-created: {ISO-date}
-status: ready           # ready | in_progress | done
----
-
-# Execution Plan — {Project Name}
-
-## Overview
-[1–2 lines describing the total scope]
-
-## Phases
-
-| Phase | File | Scope | Status | Dependencies |
-|-------|------|-------|--------|-------------|
-| 1 | plan-{phase-slug-1}.md | [summary] | pending | — |
-| 2 | plan-{phase-slug-2}.md | [summary] | pending | Phase 1 |
-
-## Pre-made decisions
-- [Decision A] — [reason]
-
-## Deferred decisions
-- [Decision B] — [who decides and when]
-
-## Reference sources
-> Links and documents analyzed during enrichment. Consult for deeper context.
-
-- [Type] [brief description] — `[URL or path]`
-```
-
-### plan-{phase-slug}.md
-
-```markdown
----
-phase: N
-slug: {phase-slug}
-title: {Phase Title}
-depends_on: [previous-phase-slug or null]
-status: pending         # pending | in_progress | done | qa_approved
----
-
-# Phase N — {Title}
-
-## Scope of this phase
-[What this phase delivers]
-
-## New or modified entities
-[Tables, fields, relationships]
-
-## User flows covered
-[Which flows the dev should implement in this phase]
-
-## Acceptance criteria for this phase
-| AC | Description |
-|---|---|
-| AC-01 | [verifiable behavior] |
-
-## Suggested implementation sequence
-1. [Step 1]
-2. [Step 2]
-
-## External dependencies
-[Integrations, services, seeds needed]
-
-## Notes for @dev
-[Alerts, decisions already made, patterns to follow]
-
-## Notes for @qa
-[What to verify specifically in this phase]
-
-## Reference sources for this phase
-> Consult if you need more details during implementation.
-
-- [Type] [brief description] — `[URL or path]`
-```
-
-**Creation rules:**
-- Create `manifest.md` first, confirm with user, then create `plan-{slug}.md` files
-- The slug for each phase must be unique within the plan and describe what the phase delivers
-- Each phase must be independently implementable (no circular dependencies)
-- ACs for each phase must be independently verifiable by QA
-- Pre-made decisions in the manifest are FINAL — downstream agents do not re-discuss
-- Deferred decisions are marked with who decides (dev, architect, user)
-- **Sources**: include in each `plan-{slug}.md` only the sources that informed that specific phase; include all sources in the manifest as a global reference
-
-## Enrichment log (RF-09)
-
-Create or update `.aioson/context/sheldon-enrichment.md` at the end of each session:
-
-```markdown
----
-prd: prd-{slug}.md
-last_enriched: {ISO-date}
-enrichment_rounds: {N}
-plan_path: .aioson/plans/{slug}/manifest.md   # or null if in-place
-sizing_score: {score}
-sizing_decision: inplace | phased_inplace | phased_external
----
-
-# Sheldon Enrichment Log — {PRD Name}
-
-## Round {N} — {ISO-date}
-
-### Sources used
-- [type] [description or URL]
-
-### Improvements applied
-- [improvement title] — [section modified]
-
-### Improvements discarded by user
-- [title] — [reason recorded or "user chose not to include"]
-
-### Sizing decision
-Score: {N} → {decision}
-Justification: [1 line]
-```
-
-> **`.aioson/context/` rule:** this folder accepts only `.md` files. Never write `.html`, `.css`, `.js`, or any other non-markdown file inside `.aioson/`.
-
-## Handoff to next agent (RF-10)
-
-At the end of the session (or when user confirms satisfaction):
-
-**If in-place enrichment:**
-> "PRD enriched. Next step: activate @analyst."
-
-**If phased plan created:**
-> "Execution plan created at `.aioson/plans/{slug}/manifest.md`
-> {N} phases defined. Next step: activate @analyst — it will read the manifest and Phase 1 first."
+- `.aioson/docs/sheldon/enrichment-paths.md`
 
 ## Hard constraints
 - **Never implement code** — role is exclusively PRD analysis and enrichment

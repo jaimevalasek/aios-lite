@@ -145,14 +145,18 @@ test('core agent contracts keep actionable sections in canonical prompts', async
 
 test('living PRD flow preserves visual identity and design-skill gating', async () => {
   const product = await read(path.join(ROOT, 'template/.aioson/agents/product.md'));
+  const productConversation = await read(path.join(ROOT, 'template/.aioson/docs/product/conversation-playbook.md'));
+  const productPrdContract = await read(path.join(ROOT, 'template/.aioson/docs/product/prd-contract.md'));
   const pm = await read(path.join(ROOT, 'template/.aioson/agents/pm.md'));
   const ux = await read(path.join(ROOT, 'template/.aioson/agents/ux-ui.md'));
 
   const checks = [
     [product, 'PRD base'],
-    [product, '## Visual identity'],
-    [product, 'If pending: write `pending-selection`'],
-    [product, 'ask explicitly whether to register one of the installed design skills'],
+    [product, '.aioson/docs/product/conversation-playbook.md'],
+    [product, '.aioson/docs/product/prd-contract.md'],
+    [productConversation, 'ask whether to register one of the installed design skills'],
+    [productPrdContract, '## Visual identity'],
+    [productPrdContract, 'pending-selection'],
     [pm, 'Update the same PRD file you read'],
     [pm, '## Delivery plan'],
     [pm, '## Acceptance criteria'],
@@ -201,6 +205,88 @@ test('canonical prompts preserve recovered product and planning safeguards from 
 
   for (const [content, token] of checks) {
     assert.equal(content.includes(token), true, `missing recovered safeguard token: ${token}`);
+  }
+});
+
+test('product, sheldon, and dev kernels use deterministic on-demand docs and stay within size targets', async () => {
+  const product = await read(path.join(ROOT, 'template/.aioson/agents/product.md'));
+  const sheldon = await read(path.join(ROOT, 'template/.aioson/agents/sheldon.md'));
+  const dev = await read(path.join(ROOT, 'template/.aioson/agents/dev.md'));
+
+  const checks = [
+    [product, '## Built-in product modules'],
+    [product, '.aioson/docs/product/conversation-playbook.md'],
+    [product, '.aioson/docs/product/prd-contract.md'],
+    [product, '## Deterministic preflight'],
+    [product, '## Conversation kernel'],
+    [product, '## Output kernel'],
+    [sheldon, '## Built-in sheldon modules'],
+    [sheldon, '.aioson/docs/sheldon/web-intelligence.md'],
+    [sheldon, '.aioson/docs/sheldon/enrichment-paths.md'],
+    [sheldon, '## Deterministic preflight'],
+    [sheldon, '## Gap analysis and sizing kernel'],
+    [dev, '## Built-in dev modules'],
+    [dev, '.aioson/docs/dev/stack-conventions.md'],
+    [dev, '.aioson/docs/dev/execution-discipline.md'],
+    [dev, '## Deterministic preflight'],
+    [dev, '## Execution invariants']
+  ];
+
+  for (const [content, token] of checks) {
+    assert.equal(content.includes(token), true, `missing kernel token: ${token}`);
+  }
+
+  assert.ok(Buffer.byteLength(product, 'utf8') <= 15000, 'product kernel should stay within the generalist target');
+  assert.ok(Buffer.byteLength(sheldon, 'utf8') <= 15000, 'sheldon kernel should stay within the generalist target');
+  assert.ok(Buffer.byteLength(dev, 'utf8') <= 15000, 'dev kernel should stay within the generalist target');
+});
+
+test('product, sheldon, and dev on-demand docs are managed and preserve critical guidance', async () => {
+  const managedDocs = [
+    '.aioson/docs/product/conversation-playbook.md',
+    '.aioson/docs/product/prd-contract.md',
+    '.aioson/docs/sheldon/web-intelligence.md',
+    '.aioson/docs/sheldon/enrichment-paths.md',
+    '.aioson/docs/dev/stack-conventions.md',
+    '.aioson/docs/dev/execution-discipline.md'
+  ];
+
+  for (const file of managedDocs) {
+    assert.equal(MANAGED_FILES.includes(file), true, `missing managed core-agent doc: ${file}`);
+    await assert.doesNotReject(() => fs.access(path.join(ROOT, 'template', file)));
+  }
+
+  const conversationPlaybook = await read(path.join(ROOT, 'template/.aioson/docs/product/conversation-playbook.md'));
+  const prdContract = await read(path.join(ROOT, 'template/.aioson/docs/product/prd-contract.md'));
+  const webIntel = await read(path.join(ROOT, 'template/.aioson/docs/sheldon/web-intelligence.md'));
+  const enrichmentPaths = await read(path.join(ROOT, 'template/.aioson/docs/sheldon/enrichment-paths.md'));
+  const stackConventions = await read(path.join(ROOT, 'template/.aioson/docs/dev/stack-conventions.md'));
+  const executionDiscipline = await read(path.join(ROOT, 'template/.aioson/docs/dev/execution-discipline.md'));
+
+  const checks = [
+    [conversationPlaybook, '6 - Finalize'],
+    [conversationPlaybook, '### Surprise mode'],
+    [conversationPlaybook, 'design_skill'],
+    [prdContract, '## Visual identity'],
+    [prdContract, 'pending-selection'],
+    [prdContract, 'classification'],
+    [webIntel, 'researchs/{decision-slug}/summary.md'],
+    [webIntel, 'confirmed'],
+    [webIntel, 'deprecated'],
+    [enrichmentPaths, '.aioson/plans/{slug}/manifest.md'],
+    [enrichmentPaths, '## Delivery plan'],
+    [enrichmentPaths, 'sheldon-enrichment.md'],
+    [stackConventions, 'Form Requests'],
+    [stackConventions, 'design_skill'],
+    [stackConventions, 'react-motion-patterns.md'],
+    [executionDiscipline, 'feat(module):'],
+    [executionDiscipline, 'TaskCreate'],
+    [executionDiscipline, '`*update-skeleton`'],
+    [executionDiscipline, 'debugging-protocol.md']
+  ];
+
+  for (const [content, token] of checks) {
+    assert.equal(content.includes(token), true, `missing core-agent doc token: ${token}`);
   }
 });
 

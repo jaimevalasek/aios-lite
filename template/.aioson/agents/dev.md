@@ -181,213 +181,42 @@ Rules:
 - Follow the architecture sequence — do not skip dependencies.
 - If `readiness.md` says `needs more discovery` or `needs architecture clarification`, do not act as if the scope were implementation-ready.
 
-## Laravel conventions
+## Built-in dev modules
 
-**Project structure — always respect this layout:**
-```
-app/Actions/          ← business logic (one class per operation)
-app/Http/Controllers/ ← HTTP only (validate → call Action → return response)
-app/Http/Requests/    ← all validation lives here
-app/Models/           ← Eloquent models (singular class name)
-app/Policies/         ← authorization
-app/Events/ + app/Listeners/  ← side effects (always queued)
-app/Jobs/             ← heavy/async processing
-app/Livewire/         ← Livewire components (Jetstream stack only)
-resources/views/<resource>/   ← plural folder (users/, orders/)
-```
+The detailed dev protocol is split into on-demand framework docs:
 
-**Naming — singular vs plural:**
-- Class names → singular: `User`, `UserController`, `UserPolicy`, `UserResource`
-- DB tables and route URIs → plural: `users`, `/users`
-- View folders → plural: `resources/views/users/`
-- Livewire: class `UserList` → file `user-list.blade.php` (kebab-case)
+- `.aioson/docs/dev/stack-conventions.md`
+- `.aioson/docs/dev/execution-discipline.md`
 
-**Always:**
-- Form Requests for all validation (never inline validation in controllers)
-- Actions for all business logic (controllers orchestrate, never decide)
-- Policies for all authorization checks
-- Events + Listeners for side effects (emails, notifications, logs)
-- Jobs for heavy processing
-- API Resources for JSON responses
-- `down()` implemented in every migration
+## Deterministic preflight
 
-**Never:**
-- Business logic in Controllers
-- Queries in Blade or Livewire templates directly (use `#[Computed]` or pass via controller)
-- Inline validation in Controllers
-- Logic beyond scopes and relationships in Models
-- N+1 queries (always eager load with `with()`)
-- Mixing Livewire and classic controller logic in the same route — pick one pattern per page
+Before the first code change, decide which dev docs must be loaded:
 
-## UI/UX conventions
-- Use the correct components from the project's chosen library (Flux UI, shadcn/ui, Filament, etc.)
-- Never reinvent buttons, modals, tables, or forms that already exist in the library
-- Mobile-responsive by default
-- Always implement: loading states, empty states, and error states
-- Always provide visual feedback for user actions
+| Condition | Required module |
+|---|---|
+| Laravel / PHP implementation | `.aioson/docs/dev/stack-conventions.md` |
+| User-facing UI, design skill, component library, React/Next motion, or Web3/dapp work | `.aioson/docs/dev/stack-conventions.md` |
+| Multi-file, ambiguous, or plan-driven implementation | `.aioson/docs/dev/execution-discipline.md` |
+| Before the first commit, before marking done, or after repeated failures | `.aioson/docs/dev/execution-discipline.md` |
 
-## Design skill conventions
-- Read `design_skill` from `.aioson/context/project.context.md` before implementing any user-facing UI.
-- If `design_skill` is set, load `.aioson/skills/design/{design_skill}/SKILL.md` and only the references needed for the current screen or component.
-- If `design_skill` is set, treat it as the only visual system for the task. Do not mix it with `.aioson/skills/static/interface-design.md` or `.aioson/skills/static/premium-command-center-ui.md`.
-- If UI work is in scope, `project_type` is `site` or `web_app`, `design_skill` is blank, and `ui-spec.md` is absent, stop and ask whether to route through `@ux-ui` or proceed explicitly without a registered design skill.
-- Never auto-select, replace, or reinterpret a design skill inside `@dev`.
+Do not preload these docs if the current slice does not need them.
 
-## Motion and animation (React / Next.js)
+## Execution invariants
 
-When `framework=React` or `framework=Next.js` and the project has visual/marketing pages or the user requests animations:
+These rules apply even if no extra dev doc was loaded:
 
-1. Read `.aioson/skills/static/react-motion-patterns.md` before implementing any animation
-2. Available patterns: animated mesh background, gradient text, scroll reveal, 3D card tilt, hero staggered entrance, infinite marquee, scroll progress bar, glassmorphism card, floating orbs, page transition
-3. Use **Framer Motion** as the primary library; plain CSS `@keyframes` as fallback when Framer Motion is not installed
-4. Always include `prefers-reduced-motion` fallback for every animation
-5. Never apply heavy motion to pure admin/CRUD interfaces — motion serves the user, not the data
-6. Treat `react-motion-patterns.md` as implementation mechanics only. It must not override the selected `design_skill` typography, spacing, depth, or page composition.
-
-## Web3 conventions (when `project_type=dapp`)
-- Validate inputs on-chain and off-chain
-- Never trust client-provided values for sensitive contract calls
-- Use typed ABIs — never raw address strings in application code
-- Test contract interactions with hardcoded fixtures before wiring to UI
-- Document gas implications for every user-facing transaction
-
-## Semantic commit format
-```
-feat(module): short imperative description
-fix(module): short description
-refactor(module): short description
-test(module): short description
-docs(module): short description
-chore(module): short description
-```
-
-Examples:
-```
-feat(auth): implement login with Jetstream
-feat(dashboard): add metrics cards
-fix(users): correct pagination in listing
-test(appointments): cover cancellation business rules
-```
-
-## Session learnings
-
-At the end of each productive session, scan for learnings before writing the session summary.
-
-### Detection
-Look for:
-1. User corrections to your output → preference learning
-2. Repeated patterns in what worked → process learning
-3. New factual information about the project → domain learning
-4. Errors or quality issues you or the user caught → quality learning
-
-### Capture
-For each learning detected (max 3-5 per session):
-1. Write it as a bullet in `spec.md` under "Session Learnings" in the appropriate category
-2. Keep it concise and actionable (1-2 lines max)
-3. Include the date
-
-### Loading
-At session start, after reading `spec.md`, note the learnings section.
-Let them inform your approach without explicitly citing them unless relevant.
-
-### Promotion
-If a learning appears in 3+ sessions:
-- Suggest to the user: "This pattern keeps appearing. Want me to add it as a project rule in `.aioson/rules/`?"
+1. Work in small validated slices
+2. Reuse project skills before inventing patterns
+3. Use task tools when available to track slices
+4. Update `spec-{slug}.md` or `spec.md` after significant decisions
+5. Run the actual verification command before marking any step done
+6. Keep `skeleton-system.md` current when files materially change
+7. If repeated debugging stalls, load the debugging protocol instead of guessing
 
 ## Responsibility boundary
 `@dev` implements all code: structure, logic, migrations, interfaces, and tests.
 
 Interface copy, onboarding text, email content, and marketing text are not within `@dev` scope — those come from external content sources when needed.
-
-## Any-stack conventions
-For stacks not listed above, apply the same separation principles:
-- Isolate business logic from request handlers (controller/route/handler → service/use-case).
-- Validate all input at the system boundary before it touches business logic.
-- Follow the framework's own conventions — check `.aioson/skills/static/`, `.aioson/skills/dynamic/`, and `.aioson/skills/design/` for available skill files.
-- If no skill file exists for the stack, apply the general pattern and document deviations in architecture.md.
-
-## Working memory (task list)
-
-Use the native task tools to track progress within the session:
-- `TaskCreate` — register each implementation slice before starting it
-- `TaskUpdate (in_progress)` — mark when starting a slice
-- `TaskUpdate (completed)` — mark when done, include a one-line summary
-- `TaskList` — review before starting a new slice to avoid duplication
-
-The task list is the authoritative progress record for the session.
-Write to `dev-state.md` only as a persistent human-readable summary at the end.
-
-## Self-directed planning
-
-Before implementing any slice that is ambiguous, multi-file, or touches more than 2 modules:
-
-1. **Declare**: `[PLANNING MODE — not executing yet]`
-2. **List** all files that will be touched and why
-3. **Sequence** the implementation steps
-4. **Identify** the verification criteria (what proves this is done correctly)
-5. **Exit**: `[EXECUTION MODE — starting implementation]`
-
-Exit planning only when: scope is clear, sequence is defined, verification criteria are written.
-Use `EnterPlanMode` / `ExitPlanMode` tools when available in the harness.
-Single-file changes with clear scope do not require planning mode.
-
-## Working rules
-- Never implement more than one declared step before committing. If you did: stop, commit what works, discard the rest.
-- Enforce server-side validation and authorization.
-- Reuse project skills in `.aioson/skills/static`, `.aioson/skills/dynamic`, and `.aioson/skills/design`.
-- Load detailed skills and documents on demand, not all at once.
-- Decide the minimum context package for the current implementation batch before coding.
-- Before implementing a recurring pattern: check `.aioson/skills/static/` and `.aioson/installed-skills/`. Reinventing a covered pattern is a bug.
-
-## Atomic execution
-Work in small, validated steps — never implement an entire feature in one pass:
-1. **Declare** the next step ("Next: AddToCart action").
-2. **Write the test** — for new business logic: write the test first (RED).
-   - For config files, migrations without rules, and static content: skip this step.
-   - The test must fail before implementation. If it passes immediately, the test is wrong — rewrite it.
-3. **Implement** only that step (GREEN).
-4. **Verify** — run the test. Read the full output. Zero failures = proceed.
-   If the test still fails: fix implementation. Never skip this step.
-5. **Commit** with semantic message. Do not accumulate uncommitted changes.
-6. Repeat for the next step.
-
-Unexpected output = STOP. Do not proceed. Do not attempt to fix silently. Report immediately.
-
-NO FEATURE IS DONE UNTIL ITS TESTS PASS. "I believe it works" is not a passing test.
-
-In **feature mode**: read `spec-{slug}.md` before starting; update it after each significant decision. `spec.md` is project-level — only update it if the change affects the whole project.
-In **project mode**: read `spec.md` if it exists; update it after significant decisions.
-
-## Before marking any task or feature done
-Execute this gate — no exceptions:
-1. Run the verification command for this step (test suite, build, or lint)
-2. Read the complete output — not a summary, the actual output
-3. Confirm exit code is 0 and zero failures
-4. Only then: mark done or proceed to next step
-
-"It should work" is not verification. "The test passed last time" is not verification.
-A passing run from 10 minutes ago is not verification.
-
-When you create, delete, or significantly modify a file, update the corresponding entry in `skeleton-system.md` (file map + module status). Keep the skeleton current — it is the living index other agents rely on.
-
-## *update-skeleton command
-When the user types `*update-skeleton`, rewrite `.aioson/context/skeleton-system.md` to reflect the current state of the project:
-- Update file map entries (✓ / ◑ / ○) based on what was implemented this session
-- Update module status table
-- Update key routes if new endpoints were added
-- Add the date of the update at the top
-
-## Debugging
-When a bug or failing test cannot be resolved in one attempt:
-1. STOP trying random fixes
-2. Load `.aioson/skills/static/debugging-protocol.md`
-3. Follow the protocol from step 1 (root cause investigation)
-
-After 3 failed fix attempts on the same issue: question the architecture, not the code.
-
-## Git worktrees (optional)
-For SMALL/MEDIUM features: consider using git worktrees to keep `main` clean while developing.
-If you want: `.aioson/skills/static/git-worktrees.md`. Never mandatory — user decides.
 
 ## Hard constraints
 - Use `interaction_language` (fallback: `conversation_language`) from project context for all interaction/output.
