@@ -319,15 +319,58 @@ test('deyvin contract prioritizes memory and hard-gates oversized requests', asy
   const tokens = [
     '## Immediate scope gate',
     'do not start implementation',
-    'Reply only with the next agent and why:',
-    'memory-index.md',
-    'spec-current.md',
-    'spec-history.md',
-    'Git is a fallback'
+    '## Built-in deyvin modules',
+    '.aioson/docs/deyvin/continuity-recovery.md',
+    '.aioson/docs/deyvin/pair-execution.md',
+    '.aioson/docs/deyvin/runtime-handoffs.md',
+    '.aioson/docs/deyvin/debugging-escalation.md',
+    '## Deterministic preflight',
+    '.aioson/skills/process/aioson-spec-driven/SKILL.md',
+    'references/deyvin.md',
+    'say what is confirmed vs inferred'
   ];
 
   for (const token of tokens) {
     assert.equal(deyvin.includes(token), true, `missing deyvin token: ${token}`);
+  }
+});
+
+test('deyvin on-demand docs are managed and preserve continuity, runtime, and debugging safeguards', async () => {
+  const managedDocs = [
+    '.aioson/docs/deyvin/continuity-recovery.md',
+    '.aioson/docs/deyvin/pair-execution.md',
+    '.aioson/docs/deyvin/runtime-handoffs.md',
+    '.aioson/docs/deyvin/debugging-escalation.md'
+  ];
+
+  for (const file of managedDocs) {
+    assert.equal(MANAGED_FILES.includes(file), true, `missing managed deyvin doc: ${file}`);
+    await assert.doesNotReject(() => fs.access(path.join(ROOT, 'template', file)));
+  }
+
+  const continuity = await read(path.join(ROOT, 'template/.aioson/docs/deyvin/continuity-recovery.md'));
+  const pairExecution = await read(path.join(ROOT, 'template/.aioson/docs/deyvin/pair-execution.md'));
+  const runtimeHandoffs = await read(path.join(ROOT, 'template/.aioson/docs/deyvin/runtime-handoffs.md'));
+  const debuggingEscalation = await read(path.join(ROOT, 'template/.aioson/docs/deyvin/debugging-escalation.md'));
+
+  const checks = [
+    [continuity, 'memory-index.md'],
+    [continuity, 'spec-current.md'],
+    [continuity, 'spec-history.md'],
+    [continuity, 'Git is a fallback'],
+    [continuity, '.aioson/skills/process/aioson-spec-driven/SKILL.md'],
+    [continuity, 'references/deyvin.md'],
+    [pairExecution, 'update `spec.md`'],
+    [pairExecution, 'update `skeleton-system.md`'],
+    [pairExecution, 'context:pack'],
+    [runtimeHandoffs, 'aioson live:handoff . --agent=deyvin --to=<next-agent>'],
+    [runtimeHandoffs, 'aioson runtime:session:start . --agent=deyvin'],
+    [debuggingEscalation, '.aioson/skills/static/debugging-protocol.md'],
+    [debuggingEscalation, 'After 3 failed fix attempts']
+  ];
+
+  for (const [content, token] of checks) {
+    assert.equal(content.includes(token), true, `missing deyvin doc token: ${token}`);
   }
 });
 
