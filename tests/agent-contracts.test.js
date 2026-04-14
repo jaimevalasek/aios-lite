@@ -228,15 +228,19 @@ test('squad and genome contracts stay canonical and preserve squad package and g
 
   const squadTokens = [
     'LANGUAGE BOUNDARY',
-    '## Project rules, docs & design docs',
-    '## Subcommand routing',
-    '## Ephemeral squads',
-    '## Investigation integration',
-    '## Executor classification',
-    '.aioson/squads/{squad-slug}/agents/agents.md',
+    '## Built-in squad modules',
+    '## Deterministic preflight',
+    '.aioson/docs/squad/package-contract.md',
+    '.aioson/docs/squad/creation-flow.md',
+    '.aioson/docs/squad/workflow-quality.md',
+    '.aioson/docs/squad/content-output.md',
+    '.aioson/docs/squad/session-operations.md',
+    '.aioson/docs/squad/genome-bindings.md',
+    '.aioson/tasks/squad-design.md',
+    '.aioson/tasks/squad-create.md',
+    '.aioson/tasks/squad-validate.md',
+    '.aioson/squads/{squad-slug}/agents/',
     '.aioson/squads/{squad-slug}/squad.manifest.json',
-    '.aioson/squads/{squad-slug}/squad.md',
-    'contentBlueprints',
     'AGENTS.md',
     'output/{squad-slug}/{session-id}.html',
     'aioson-logs/{squad-slug}/'
@@ -259,8 +263,58 @@ test('squad and genome contracts stay canonical and preserve squad package and g
   for (const token of genomeTokens) {
     assert.equal(genome.includes(token), true, `missing genome token: ${token}`);
   }
-  assert.equal(squad.includes('Lite mode'), false);
-  assert.equal(squad.includes('Genome mode flow'), false);
+  assert.ok(Buffer.byteLength(squad, 'utf8') <= 12000, 'squad kernel should stay within the orchestrator prompt target');
+});
+
+test('squad on-demand docs are shipped, managed, and preserve critical guidance', async () => {
+  const managedDocs = [
+    '.aioson/docs/squad/package-contract.md',
+    '.aioson/docs/squad/creation-flow.md',
+    '.aioson/docs/squad/workflow-quality.md',
+    '.aioson/docs/squad/content-output.md',
+    '.aioson/docs/squad/session-operations.md',
+    '.aioson/docs/squad/genome-bindings.md'
+  ];
+
+  for (const file of managedDocs) {
+    assert.equal(MANAGED_FILES.includes(file), true, `missing managed squad doc: ${file}`);
+    await assert.doesNotReject(() => fs.access(path.join(ROOT, 'template', file)));
+  }
+
+  const packageContract = await read(path.join(ROOT, 'template/.aioson/docs/squad/package-contract.md'));
+  const creationFlow = await read(path.join(ROOT, 'template/.aioson/docs/squad/creation-flow.md'));
+  const workflowQuality = await read(path.join(ROOT, 'template/.aioson/docs/squad/workflow-quality.md'));
+  const contentOutput = await read(path.join(ROOT, 'template/.aioson/docs/squad/content-output.md'));
+  const sessionOps = await read(path.join(ROOT, 'template/.aioson/docs/squad/session-operations.md'));
+  const genomeBindings = await read(path.join(ROOT, 'template/.aioson/docs/squad/genome-bindings.md'));
+
+  const checks = [
+    [packageContract, '.aioson/squads/{squad-slug}/agents/agents.md'],
+    [packageContract, '.aioson/squads/{squad-slug}/squad.manifest.json'],
+    [packageContract, '.aioson/squads/{squad-slug}/squad.md'],
+    [packageContract, 'CLAUDE.md'],
+    [packageContract, 'AGENTS.md'],
+    [creationFlow, 'single block'],
+    [creationFlow, 'high autonomy'],
+    [creationFlow, 'dominant-driver'],
+    [workflowQuality, 'modelTier'],
+    [workflowQuality, 'review'],
+    [workflowQuality, 'warm-up'],
+    [contentOutput, 'contentBlueprints'],
+    [contentOutput, 'content.json'],
+    [contentOutput, 'output/{squad-slug}/{session-id}.html'],
+    [sessionOps, 'ephemeral'],
+    [sessionOps, '@orache'],
+    [sessionOps, 'learnings/index.md'],
+    [sessionOps, 'CronCreate'],
+    [genomeBindings, 'genomeBindings'],
+    [genomeBindings, '## Active genomes'],
+    [genomeBindings, '.aioson/squads/{slug}/squad.md']
+  ];
+
+  for (const [content, token] of checks) {
+    assert.equal(content.includes(token), true, `missing squad doc token: ${token}`);
+  }
 });
 
 test('profiler agents ship canonical prompts with interaction-language guidance', async () => {
