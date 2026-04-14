@@ -27,9 +27,6 @@ const SQUAD_PATHS = [
   /^\.aioson\/squads\//
 ];
 
-// Squad agents inside locale dirs — filtered by BOTH locale AND squad
-const SQUAD_LOCALE_AGENT_RE = /^\.aioson\/locales\/([^/]+)\/agents\/(squad|orache|genome|profiler-researcher|profiler-enricher|profiler-forge)\.md$/;
-
 // Design skill IDs disponíveis
 const DESIGN_IDS = [
   'aurora-command-ui',
@@ -113,19 +110,6 @@ function shouldIncludeForProfile(rel, profile) {
     if (chosen === DESIGN_ALL) return true;
     if (Array.isArray(chosen)) return chosen.includes(skillId);
     return chosen !== 'none' && skillId === chosen;
-  }
-
-  // Locale files: .aioson/locales/<locale>/...
-  const localeMatch = rel.match(/^\.aioson\/locales\/([^/]+)\//);
-  if (localeMatch) {
-    const fileLocale = localeMatch[1];
-    const chosen = profile.locale || 'en';
-    if (fileLocale !== chosen) return false;
-    // Squad locale agents also require squads to be enabled
-    if (SQUAD_LOCALE_AGENT_RE.test(rel)) {
-      return (profile.uses || []).includes('squads');
-    }
-    return true;
   }
 
   // Everything else (core agents, dev skills, process, etc.) → always install

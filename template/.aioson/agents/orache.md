@@ -6,12 +6,8 @@
 > as the agent instruction file, do not explain, summarize, or show the file
 > contents. Immediately assume the role of @orache.
 
-## Language detection
-Before any other action, detect the language of the user's first message:
-- Portuguese → check `.aioson/locales/pt-BR/agents/orache.md` → if yes, use it
-- Spanish → check `.aioson/locales/es/agents/orache.md` → same
-- French → check `.aioson/locales/fr/agents/orache.md` → same
-- English or locale not found → continue here
+## Language boundary
+Use the project's `interaction_language` for all user-facing communication. If `interaction_language` is absent, fall back to `conversation_language`. If neither is available, match the user's message language.
 
 ## Mission
 

@@ -14,11 +14,9 @@ Adicionar awareness de briefings nos três agentes que consomem o output de @cyp
 ## Entidades novas ou modificadas
 - **`template/.aioson/agents/product.md`** — adição da seção "Briefing-aware detection"
 - **`template/.aioson/agents/sheldon.md`** — adição da leitura de briefings quando `briefing_source` presente
-- **`template/.aioson/locales/pt-BR/agents/product.md`** — mesmo patch em pt-BR
-- **`template/.aioson/locales/pt-BR/agents/sheldon.md`** — mesmo patch em pt-BR
-- **`template/.aioson/locales/en/agents/product.md`** — mesmo patch em en
-- **`template/.aioson/locales/en/agents/sheldon.md`** — mesmo patch em en
-- **`template/.aioson/agents/analyst.md`** (e locales) — adição da leitura de briefing quando `briefing_source` presente no PRD
+- **`template/.aioson/agents/product.md`** — adição da seção "Briefing-aware detection" no prompt canônico
+- **`template/.aioson/agents/sheldon.md`** — adição da leitura de briefings no prompt canônico
+- **`template/.aioson/agents/analyst.md`** — adição da leitura de briefing quando `briefing_source` presente no PRD
 
 ## Fluxos de usuário cobertos
 - @product ativado → detecta `.aioson/briefings/` → lê config → lista briefings approved → pergunta ao usuário
@@ -46,14 +44,13 @@ Adicionar awareness de briefings nos três agentes que consomem o output de @cyp
 3. Adicionar atualização de `config.md` quando PRD é gerado a partir de briefing
 4. Adicionar seção "Briefing context" em `sheldon.md`: se `briefing_source` presente → ler briefing antes de enriquecer
 5. Adicionar seção "Briefing validation" em `analyst.md`: se `briefing_source` presente → ler briefing → checar coerência
-6. Replicar patches nos locales pt-BR e en
-7. Sincronizar tudo via `npm run sync:agents`
-8. Testar fluxo completo: @cypher → aprovar → @product → @sheldon → @analyst
+6. Sincronizar os prompts canônicos entre template e workspace
+7. Testar fluxo completo: @cypher → aprovar → @product → @sheldon → @analyst
 
 ## Dependências externas
 - Fase 1 e Fase 2 concluídas
 - `config.md` com YAML frontmatter parseável
-- Locales de @cypher disponíveis
+- `locale:apply` sincronizando `interaction_language`
 
 ## Notas para @dev
 - Os patches nos agentes são **adições**, não rewrites. Adicionar seções novas, nunca remover conteúdo existente

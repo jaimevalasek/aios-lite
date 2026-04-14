@@ -9,16 +9,16 @@ function readText(relativePath) {
   return fs.readFileSync(path.join(process.cwd(), relativePath), 'utf8');
 }
 
-test('workspace @dev prompt stays in sync with pt-BR locale pack', () => {
-  const base = readText('.aioson/agents/dev.md');
-  const localized = readText('.aioson/locales/pt-BR/agents/dev.md');
+test('workspace @dev prompt stays in sync with the canonical template prompt', () => {
+  const workspace = readText('.aioson/agents/dev.md');
+  const template = readText('template/.aioson/agents/dev.md');
 
-  assert.equal(localized, base);
+  assert.equal(workspace, template);
 });
 
-test('template @dev prompt stays in sync with pt-BR locale pack', () => {
-  const base = readText('template/.aioson/agents/dev.md');
-  const localized = readText('template/.aioson/locales/pt-BR/agents/dev.md');
+test('workspace @setup prompt stays in sync with the canonical template prompt', () => {
+  const workspace = readText('.aioson/agents/setup.md');
+  const template = readText('template/.aioson/agents/setup.md');
 
-  assert.equal(localized, base);
+  assert.equal(workspace, template);
 });

@@ -29,14 +29,14 @@ test('resolveAgentLocale maps base language and fallback correctly', () => {
   assert.equal(resolveAgentLocale('unknown'), 'en');
 });
 
-test('getLocalizedAgentPath builds expected path', () => {
+test('getLocalizedAgentPath keeps the legacy locale-pack path shape', () => {
   assert.equal(
     getLocalizedAgentPath('setup', 'pt-BR'),
     '.aioson/locales/pt-BR/agents/setup.md'
   );
 });
 
-test('applyAgentLocale copies localized files into active agents directory', async () => {
+test('applyAgentLocale restores canonical prompts into the active agents directory', async () => {
   const dir = await makeTempDir();
   await installTemplate(dir, { mode: 'install' });
 
@@ -46,11 +46,8 @@ test('applyAgentLocale copies localized files into active agents directory', asy
   assert.equal(result.copied.length > 0, true);
 
   const setupPath = path.join(dir, '.aioson/agents/setup.md');
-  const sourcePath = path.join(dir, '.aioson/locales/en/agents/setup.md');
-  const [content, sourceContent] = await Promise.all([
-    fs.readFile(setupPath, 'utf8'),
-    fs.readFile(sourcePath, 'utf8')
-  ]);
+  const sourceContent = await readRepoTemplate('.aioson/agents/setup.md');
+  const content = await fs.readFile(setupPath, 'utf8');
   assert.equal(content, sourceContent);
 });
 
@@ -62,13 +59,10 @@ test('applyAgentLocale preserves requested interaction tags while restoring cano
   assert.equal(esResult.locale, 'es-MX');
   assert.equal(esResult.promptLocale, 'en');
   assert.equal(esResult.copied.length > 0, true);
-  const esSetupPath = path.join(esDir, '.aioson/agents/setup.md');
-  const esSourcePath = path.join(esDir, '.aioson/locales/en/agents/setup.md');
-  const [esContent, esSourceContent] = await Promise.all([
-    fs.readFile(esSetupPath, 'utf8'),
-    fs.readFile(esSourcePath, 'utf8')
-  ]);
-  assert.equal(esContent, esSourceContent);
+  assert.equal(
+    await fs.readFile(path.join(esDir, '.aioson/agents/setup.md'), 'utf8'),
+    await readRepoTemplate('.aioson/agents/setup.md')
+  );
 
   const frDir = await makeTempDir();
   await installTemplate(frDir, { mode: 'install' });
@@ -77,16 +71,13 @@ test('applyAgentLocale preserves requested interaction tags while restoring cano
   assert.equal(frResult.locale, 'fr-CA');
   assert.equal(frResult.promptLocale, 'en');
   assert.equal(frResult.copied.length > 0, true);
-  const frSetupPath = path.join(frDir, '.aioson/agents/setup.md');
-  const frSourcePath = path.join(frDir, '.aioson/locales/en/agents/setup.md');
-  const [frContent, frSourceContent] = await Promise.all([
-    fs.readFile(frSetupPath, 'utf8'),
-    fs.readFile(frSourcePath, 'utf8')
-  ]);
-  assert.equal(frContent, frSourceContent);
+  assert.equal(
+    await fs.readFile(path.join(frDir, '.aioson/agents/setup.md'), 'utf8'),
+    await readRepoTemplate('.aioson/agents/setup.md')
+  );
 });
 
-test('applyAgentLocale falls back to canonical base prompts when english locale file is only a wrapper', async () => {
+test('applyAgentLocale restores canonical prompts for locale-boundary agents too', async () => {
   const dir = await makeTempDir();
   await installTemplate(dir, { mode: 'install' });
 

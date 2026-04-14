@@ -48,7 +48,8 @@ Quando o agente perceber que está próximo do threshold:
 - `framework`
 - `framework_installed` (boolean) — `true` means the framework was detected in the workspace; downstream agents skip installation commands. `false` means it was not detected; agents must include installation steps before any implementation.
 - `classification`
-- `conversation_language` (BCP-47, for example `en`, `pt-BR`)
+- `interaction_language` (BCP-47, for example `en`, `pt-BR`)
+- `conversation_language` (legacy compatibility alias; keep synchronized with `interaction_language`)
 - `aioson_version`
 
 Optional UI context fields:
@@ -374,10 +375,8 @@ When the same setting exists in multiple tiers, the lower tier wins (local > pro
 Until the user tier is implemented in the CLI, use `CLAUDE.local.md` for personal
 preferences that should not affect other team members.
 
-## Agent locale packs
-- Localized agent prompts are stored in `.aioson/locales/<locale>/agents/`.
-- Active runtime prompts are in `.aioson/agents/`.
-- Built-in locale packs: `en`, `pt-BR`, `es`, `fr`.
-- Apply locale pack using:
-  - `aioson locale:apply` (reads `conversation_language` from context)
-  - `aioson locale:apply --lang=pt-BR` (manual override, also accepts `en`, `es`, `fr`)
+## Agent language model
+- Canonical agent prompts are stored only in `.aioson/agents/` and written in English.
+- User-facing communication is controlled by `interaction_language`.
+- `conversation_language` remains as a compatibility alias for older projects.
+- Use `aioson locale:apply` to restore canonical prompts and synchronize the chosen `interaction_language`.

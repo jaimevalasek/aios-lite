@@ -22,6 +22,10 @@ async function fileExists(filePath) {
   }
 }
 
+async function readRepoTemplate(relPath) {
+  return fs.readFile(path.resolve(__dirname, '..', 'template', relPath), 'utf8');
+}
+
 test('test:smoke runs end-to-end and keeps workspace when requested', async () => {
   const baseDir = await makeTempDir();
   const { t } = createTranslator('en');
@@ -131,14 +135,10 @@ test('test:smoke keeps canonical prompts while preserving requested interaction 
 
     assert.equal(result.ok, true);
     assert.equal(result.language, check);
-
-    const setupAgentPath = path.join(result.projectDir, '.aioson/agents/setup.md');
-    const sourcePath = path.join(result.projectDir, '.aioson/locales/en/agents/setup.md');
-    const [setupAgentContent, sourceContent] = await Promise.all([
-      fs.readFile(setupAgentPath, 'utf8'),
-      fs.readFile(sourcePath, 'utf8')
-    ]);
-    assert.equal(setupAgentContent, sourceContent);
+    assert.equal(
+      await fs.readFile(path.join(result.projectDir, '.aioson/agents/setup.md'), 'utf8'),
+      await readRepoTemplate('.aioson/agents/setup.md')
+    );
 
     const context = await validateProjectContextFile(result.projectDir);
     assert.equal(context.valid, true);

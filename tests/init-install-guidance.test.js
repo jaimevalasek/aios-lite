@@ -13,6 +13,10 @@ async function makeTempDir() {
   return fs.mkdtemp(path.join(os.tmpdir(), 'aioson-guidance-'));
 }
 
+async function readRepoTemplate(relPath) {
+  return fs.readFile(path.resolve(__dirname, '..', 'template', relPath), 'utf8');
+}
+
 function createCollectLogger() {
   const lines = [];
   return {
@@ -78,7 +82,7 @@ test('install prints agent onboarding hints and honors explicit --tool', async (
   );
 });
 
-test('init applies localized agent pack when --lang is provided', async () => {
+test('init synchronizes canonical agent prompts when --lang is provided', async () => {
   const tempDir = await makeTempDir();
   const originalCwd = process.cwd();
   process.chdir(tempDir);
@@ -100,19 +104,16 @@ test('init applies localized agent pack when --lang is provided', async () => {
       true
     );
 
-    const setupPath = path.join(tempDir, 'demo-lang/.aioson/agents/setup.md');
-    const sourcePath = path.join(tempDir, 'demo-lang/.aioson/locales/en/agents/setup.md');
-    const [setupContent, sourceContent] = await Promise.all([
-      fs.readFile(setupPath, 'utf8'),
-      fs.readFile(sourcePath, 'utf8')
-    ]);
-    assert.equal(setupContent, sourceContent);
+    assert.equal(
+      await fs.readFile(path.join(tempDir, 'demo-lang/.aioson/agents/setup.md'), 'utf8'),
+      await readRepoTemplate('.aioson/agents/setup.md')
+    );
   } finally {
     process.chdir(originalCwd);
   }
 });
 
-test('install applies localized agent pack when --lang is provided', async () => {
+test('install synchronizes canonical agent prompts when --lang is provided', async () => {
   const tempDir = await makeTempDir();
   const { t } = createTranslator('en');
   const logger = createCollectLogger();
@@ -130,11 +131,8 @@ test('install applies localized agent pack when --lang is provided', async () =>
     true
   );
 
-  const setupPath = path.join(tempDir, '.aioson/agents/setup.md');
-  const sourcePath = path.join(tempDir, '.aioson/locales/en/agents/setup.md');
-  const [setupContent, sourceContent] = await Promise.all([
-    fs.readFile(setupPath, 'utf8'),
-    fs.readFile(sourcePath, 'utf8')
-  ]);
-  assert.equal(setupContent, sourceContent);
+  assert.equal(
+    await fs.readFile(path.join(tempDir, '.aioson/agents/setup.md'), 'utf8'),
+    await readRepoTemplate('.aioson/agents/setup.md')
+  );
 });

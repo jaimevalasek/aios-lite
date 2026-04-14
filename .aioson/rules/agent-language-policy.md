@@ -77,7 +77,7 @@ Exemplos que **NÃO justificam** locale_scope (usar inglês):
 | Slug / nome do agente | Inglês (`pharmacist-advisor`, `order-manager`) |
 | Arquivo do agente (missão, foco, restrições) | Inglês |
 | Código fonte (variáveis, funções, classes) | Inglês |
-| Output do agente para o usuário | `conversation_language` do projeto |
+| Output do agente para o usuário | `interaction_language` do projeto (fallback: `conversation_language`) |
 | Documentos de conteúdo (PRD, specs, plans) | Idioma do projeto |
 
 ### Squad com locale_scope declarado

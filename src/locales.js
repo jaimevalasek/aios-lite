@@ -44,46 +44,6 @@ function getActiveAgentPath(agentId) {
   return `.aioson/agents/${agentId}.md`;
 }
 
-function isUnsafeEnglishWrapper(content, agentId) {
-  const text = String(content || '');
-  if (!text) return false;
-  if (text.includes('template/.aioson/agents/')) return true;
-  return text.includes(`.aioson/agents/${agentId}.md`);
-}
-
-async function resolveCanonicalAgentSource(agentId) {
-  const localeRel = getLocalizedAgentPath(agentId, 'en');
-  const baseRel = getActiveAgentPath(agentId);
-  const localeAbs = path.join(TEMPLATE_DIR, localeRel);
-  const baseAbs = path.join(TEMPLATE_DIR, baseRel);
-
-  if (await exists(localeAbs)) {
-    const localeContent = await fs.readFile(localeAbs, 'utf8');
-    if (!isUnsafeEnglishWrapper(localeContent, agentId)) {
-      return {
-        sourceRel: localeRel,
-        sourceAbs: localeAbs
-      };
-    }
-  }
-
-  if (await exists(baseAbs)) {
-    return {
-      sourceRel: baseRel,
-      sourceAbs: baseAbs
-    };
-  }
-
-  if (await exists(localeAbs)) {
-    return {
-      sourceRel: localeRel,
-      sourceAbs: localeAbs
-    };
-  }
-
-  return null;
-}
-
 async function applyAgentLocale(targetDir, locale, options = {}) {
   const interactionLanguage = normalizeInteractionLanguage(locale || 'en');
   const dryRun = Boolean(options.dryRun);
@@ -91,20 +51,21 @@ async function applyAgentLocale(targetDir, locale, options = {}) {
   const missing = [];
 
   for (const agent of AGENT_DEFINITIONS) {
-    const source = await resolveCanonicalAgentSource(agent.id);
+    const sourceRel = getActiveAgentPath(agent.id);
+    const sourceAbs = path.join(TEMPLATE_DIR, sourceRel);
     const destRel = getActiveAgentPath(agent.id);
     const destAbs = path.join(targetDir, destRel);
 
-    if (!source) {
-      missing.push(getLocalizedAgentPath(agent.id, 'en'));
+    if (!(await exists(sourceAbs))) {
+      missing.push(sourceRel);
       continue;
     }
 
     if (!dryRun) {
       await ensureDir(path.dirname(destAbs));
-      await fs.copyFile(source.sourceAbs, destAbs);
+      await fs.copyFile(sourceAbs, destAbs);
     }
-    copied.push({ source: source.sourceRel, target: destRel });
+    copied.push({ source: sourceRel, target: destRel });
   }
 
   return {

@@ -13,6 +13,10 @@ async function makeTempDir() {
   return fs.mkdtemp(path.join(os.tmpdir(), 'aioson-update-'));
 }
 
+async function readRepoTemplate(relPath) {
+  return fs.readFile(path.resolve(__dirname, '..', 'template', relPath), 'utf8');
+}
+
 function createQuietLogger() {
   return {
     log() {},
@@ -20,7 +24,7 @@ function createQuietLogger() {
   };
 }
 
-test('update reapplies active agent locale from project context', async () => {
+test('update reapplies canonical prompts from project context language', async () => {
   const dir = await makeTempDir();
   await installTemplate(dir, { mode: 'install' });
 
@@ -32,6 +36,7 @@ profile: "developer"
 framework: "Node"
 framework_installed: true
 classification: "MICRO"
+interaction_language: "es"
 conversation_language: "es"
 aioson_version: "0.1.8"
 ---
@@ -53,17 +58,13 @@ aioson_version: "0.1.8"
   assert.equal(Boolean(result.localeSync), true);
   assert.equal(result.localeSync.locale, 'es');
   assert.equal(result.localeSync.promptLocale, 'en');
-
-  const setupPath = path.join(dir, '.aioson/agents/setup.md');
-  const sourcePath = path.join(dir, '.aioson/locales/en/agents/setup.md');
-  const [setupContent, sourceContent] = await Promise.all([
-    fs.readFile(setupPath, 'utf8'),
-    fs.readFile(sourcePath, 'utf8')
-  ]);
-  assert.equal(setupContent, sourceContent);
+  assert.equal(
+    await fs.readFile(path.join(dir, '.aioson/agents/setup.md'), 'utf8'),
+    await readRepoTemplate('.aioson/agents/setup.md')
+  );
 });
 
-test('update honors explicit --lang override for locale synchronization', async () => {
+test('update honors explicit --lang override for canonical prompt synchronization', async () => {
   const dir = await makeTempDir();
   await installTemplate(dir, { mode: 'install' });
 
@@ -75,6 +76,7 @@ profile: "developer"
 framework: "Node"
 framework_installed: true
 classification: "MICRO"
+interaction_language: "es"
 conversation_language: "es"
 aioson_version: "0.1.9"
 ---
@@ -96,14 +98,10 @@ aioson_version: "0.1.9"
   assert.equal(Boolean(result.localeSync), true);
   assert.equal(result.localeSync.locale, 'fr');
   assert.equal(result.localeSync.promptLocale, 'en');
-
-  const setupPath = path.join(dir, '.aioson/agents/setup.md');
-  const sourcePath = path.join(dir, '.aioson/locales/en/agents/setup.md');
-  const [setupContent, sourceContent] = await Promise.all([
-    fs.readFile(setupPath, 'utf8'),
-    fs.readFile(sourcePath, 'utf8')
-  ]);
-  assert.equal(setupContent, sourceContent);
+  assert.equal(
+    await fs.readFile(path.join(dir, '.aioson/agents/setup.md'), 'utf8'),
+    await readRepoTemplate('.aioson/agents/setup.md')
+  );
 });
 
 test('update --dry-run with --lang plans locale sync without mutating files', async () => {
@@ -118,6 +116,7 @@ profile: "developer"
 framework: "Node"
 framework_installed: true
 classification: "MICRO"
+interaction_language: "en"
 conversation_language: "en"
 aioson_version: "0.1.9"
 ---
