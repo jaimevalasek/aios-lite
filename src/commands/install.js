@@ -3,7 +3,7 @@
 const path = require('node:path');
 const { detectFramework } = require('../detector');
 const { installTemplate, readInstallProfile } = require('../installer');
-const { applyAgentLocale } = require('../locales');
+const { applyAgentLocale, normalizeInteractionLanguage } = require('../locales');
 const { resolvePromptTool } = require('../prompt-tool');
 const { runInstallWizard } = require('../install-wizard');
 const { renderRevealAnimation, renderInstallSummary, renderProgress } = require('../install-animation');
@@ -63,7 +63,11 @@ async function runInstall({ args, options, logger, t }) {
   const effectiveLocale = requestedLanguage || (installProfile && installProfile.locale) || null;
   let localeApply = null;
   if (effectiveLocale) {
-    localeApply = await applyAgentLocale(targetDir, effectiveLocale, { dryRun });
+    localeApply = await applyAgentLocale(
+      targetDir,
+      normalizeInteractionLanguage(effectiveLocale),
+      { dryRun }
+    );
     if (dryRun) {
       logger.log(t('locale_apply.dry_run_applied', { locale: localeApply.locale }));
     } else {

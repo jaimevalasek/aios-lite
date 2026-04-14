@@ -3,6 +3,7 @@
 const path = require('node:path');
 const readline = require('node:readline/promises');
 const { detectFramework, isMonorepoDetection } = require('../detector');
+const { normalizeLanguageTag } = require('../context');
 
 /**
  * Infer conversation language from the OS locale environment variables.
@@ -13,14 +14,7 @@ function detectSystemLanguage() {
   const raw = process.env.LANGUAGE || process.env.LANG || process.env.LC_ALL || '';
   const base = raw.split(':')[0].split('.')[0].trim();
   if (!base || base === 'C' || base === 'POSIX') return 'en';
-  const normalized = base.replace('_', '-');
-  const supported = ['en', 'pt-BR', 'es', 'fr'];
-  if (supported.includes(normalized)) return normalized;
-  const lang = normalized.split('-')[0].toLowerCase();
-  if (lang === 'pt') return 'pt-BR';
-  if (lang === 'es') return 'es';
-  if (lang === 'fr') return 'fr';
-  return 'en';
+  return normalizeLanguageTag(base, 'en');
 }
 const { getCliVersionSync } = require('../version');
 const {
@@ -226,7 +220,10 @@ function applyExplicitOverrides(data, options, detectedInstalled) {
     output.frameworkInstalled = normalizeBoolean(options['framework-installed'], detectedInstalled);
   }
   const langValue = options.language ?? options.lang;
-  if (langValue !== undefined) output.conversationLanguage = String(langValue);
+  if (langValue !== undefined) {
+    output.conversationLanguage = String(langValue);
+    output.interactionLanguage = String(langValue);
+  }
   if (hasOption(options, 'design-skill')) output.designSkill = String(options['design-skill']);
   if (hasOption(options, 'test-runner')) output.testRunner = String(options['test-runner']);
   if (hasOption(options, 'web3-enabled')) {
@@ -489,6 +486,7 @@ async function runSetupContext({ args, options, logger, t }) {
     framework: detectedFramework,
     frameworkInstalled: detectedInstalled,
     conversationLanguage: detectSystemLanguage(),
+    interactionLanguage: detectSystemLanguage(),
     designSkill: '',
     testRunner: '',
     web3Enabled: inferredWeb3Enabled,
@@ -557,6 +555,7 @@ async function runSetupContext({ args, options, logger, t }) {
 
       data.profile = normalizeProfile(await ask(rl, t('setup_context.q_profile'), data.profile), data.profile);
       data.conversationLanguage = await ask(rl, t('setup_context.q_language'), data.conversationLanguage);
+      data.interactionLanguage = data.conversationLanguage;
 
       let profileData = null;
       if (data.profile === 'developer') {
@@ -612,6 +611,8 @@ async function runSetupContext({ args, options, logger, t }) {
   }
 
   data = applyExplicitOverrides(data, options, detectedInstalled);
+  if (!data.interactionLanguage) data.interactionLanguage = data.conversationLanguage || 'en';
+  if (!data.conversationLanguage) data.conversationLanguage = data.interactionLanguage;
 
   const classificationResult = calculateClassification({
     userTypesCount,
@@ -641,7 +642,7 @@ async function runSetupContext({ args, options, logger, t }) {
   const squadApiSection = await renderSquadApiSection(targetDir);
   const fullContent = squadApiSection ? content + '\n' + squadApiSection + '\n' : content;
   const filePath = await writeProjectContext(targetDir, fullContent);
-  const localeApplyResult = await applyAgentLocale(targetDir, data.conversationLanguage, {
+  const localeApplyResult = await applyAgentLocale(targetDir, data.interactionLanguage, {
     dryRun: false
   });
 

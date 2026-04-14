@@ -3,7 +3,7 @@
 const path = require('node:path');
 const { detectFramework } = require('../detector');
 const { updateInstallation } = require('../updater');
-const { validateProjectContextFile } = require('../context');
+const { validateProjectContextFile, getInteractionLanguage } = require('../context');
 const { applyAgentLocale } = require('../locales');
 
 async function runUpdate({ args, options, logger, t }) {
@@ -28,8 +28,8 @@ async function runUpdate({ args, options, logger, t }) {
     const context = await validateProjectContextFile(targetDir);
     const language =
       requestedLanguage ||
-      (context.parsed && context.data && context.data.conversation_language
-        ? context.data.conversation_language
+      (context.parsed && context.data
+        ? getInteractionLanguage(context.data, '')
         : null) ||
       (result.savedProfile && result.savedProfile.locale
         ? result.savedProfile.locale

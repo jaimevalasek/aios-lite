@@ -1,8 +1,8 @@
 'use strict';
 
 const path = require('node:path');
-const { applyAgentLocale, resolveAgentLocale } = require('../locales');
-const { validateProjectContextFile } = require('../context');
+const { applyAgentLocale, normalizeInteractionLanguage } = require('../locales');
+const { validateProjectContextFile, getInteractionLanguage } = require('../context');
 
 async function runLocaleApply({ args, options, logger, t }) {
   const targetDir = path.resolve(process.cwd(), args[0] || '.');
@@ -11,13 +11,16 @@ async function runLocaleApply({ args, options, logger, t }) {
   let requestedLanguage = options.language || options.lang || '';
   if (!requestedLanguage) {
     const context = await validateProjectContextFile(targetDir);
-    if (context.parsed && context.data && context.data.conversation_language) {
-      requestedLanguage = context.data.conversation_language;
+    if (context.parsed && context.data) {
+      requestedLanguage = getInteractionLanguage(context.data, 'en');
     }
   }
 
-  const locale = resolveAgentLocale(requestedLanguage || 'en');
-  const result = await applyAgentLocale(targetDir, locale, { dryRun });
+  const result = await applyAgentLocale(
+    targetDir,
+    normalizeInteractionLanguage(requestedLanguage || 'en'),
+    { dryRun }
+  );
 
   logger.log(
     dryRun

@@ -64,6 +64,7 @@ test('renderProjectContext writes required frontmatter fields', () => {
     aiosonVersion: '0.1.5'
   });
 
+  assert.equal(markdown.includes('interaction_language: "en"'), true);
   assert.equal(markdown.includes('conversation_language: "en"'), true);
   assert.equal(markdown.includes('design_skill: "cognitive-ui"'), true);
   assert.equal(markdown.includes('project_type: "dapp"'), true);

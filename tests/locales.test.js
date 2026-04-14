@@ -38,31 +38,46 @@ test('applyAgentLocale copies localized files into active agents directory', asy
 
   const result = await applyAgentLocale(dir, 'pt-BR');
   assert.equal(result.locale, 'pt-BR');
+  assert.equal(result.promptLocale, 'en');
   assert.equal(result.copied.length > 0, true);
 
   const setupPath = path.join(dir, '.aioson/agents/setup.md');
-  const content = await fs.readFile(setupPath, 'utf8');
-  assert.equal(content.includes('(pt-BR)'), true);
+  const sourcePath = path.join(dir, '.aioson/locales/en/agents/setup.md');
+  const [content, sourceContent] = await Promise.all([
+    fs.readFile(setupPath, 'utf8'),
+    fs.readFile(sourcePath, 'utf8')
+  ]);
+  assert.equal(content, sourceContent);
 });
 
-test('applyAgentLocale copies spanish and french localized files', async () => {
+test('applyAgentLocale preserves requested interaction tags while restoring canonical prompts', async () => {
   const esDir = await makeTempDir();
   await installTemplate(esDir, { mode: 'install' });
 
   const esResult = await applyAgentLocale(esDir, 'es-MX');
-  assert.equal(esResult.locale, 'es');
+  assert.equal(esResult.locale, 'es-MX');
+  assert.equal(esResult.promptLocale, 'en');
   assert.equal(esResult.copied.length > 0, true);
   const esSetupPath = path.join(esDir, '.aioson/agents/setup.md');
-  const esContent = await fs.readFile(esSetupPath, 'utf8');
-  assert.equal(esContent.includes('(es)'), true);
+  const esSourcePath = path.join(esDir, '.aioson/locales/en/agents/setup.md');
+  const [esContent, esSourceContent] = await Promise.all([
+    fs.readFile(esSetupPath, 'utf8'),
+    fs.readFile(esSourcePath, 'utf8')
+  ]);
+  assert.equal(esContent, esSourceContent);
 
   const frDir = await makeTempDir();
   await installTemplate(frDir, { mode: 'install' });
 
   const frResult = await applyAgentLocale(frDir, 'fr-CA');
-  assert.equal(frResult.locale, 'fr');
+  assert.equal(frResult.locale, 'fr-CA');
+  assert.equal(frResult.promptLocale, 'en');
   assert.equal(frResult.copied.length > 0, true);
   const frSetupPath = path.join(frDir, '.aioson/agents/setup.md');
-  const frContent = await fs.readFile(frSetupPath, 'utf8');
-  assert.equal(frContent.includes('(fr)'), true);
+  const frSourcePath = path.join(frDir, '.aioson/locales/en/agents/setup.md');
+  const [frContent, frSourceContent] = await Promise.all([
+    fs.readFile(frSetupPath, 'utf8'),
+    fs.readFile(frSourcePath, 'utf8')
+  ]);
+  assert.equal(frContent, frSourceContent);
 });

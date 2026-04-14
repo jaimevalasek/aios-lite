@@ -52,10 +52,15 @@ aioson_version: "0.1.8"
   assert.equal(result.ok, true);
   assert.equal(Boolean(result.localeSync), true);
   assert.equal(result.localeSync.locale, 'es');
+  assert.equal(result.localeSync.promptLocale, 'en');
 
   const setupPath = path.join(dir, '.aioson/agents/setup.md');
-  const setupContent = await fs.readFile(setupPath, 'utf8');
-  assert.equal(setupContent.includes('(es)'), true);
+  const sourcePath = path.join(dir, '.aioson/locales/en/agents/setup.md');
+  const [setupContent, sourceContent] = await Promise.all([
+    fs.readFile(setupPath, 'utf8'),
+    fs.readFile(sourcePath, 'utf8')
+  ]);
+  assert.equal(setupContent, sourceContent);
 });
 
 test('update honors explicit --lang override for locale synchronization', async () => {
@@ -90,10 +95,15 @@ aioson_version: "0.1.9"
   assert.equal(result.ok, true);
   assert.equal(Boolean(result.localeSync), true);
   assert.equal(result.localeSync.locale, 'fr');
+  assert.equal(result.localeSync.promptLocale, 'en');
 
   const setupPath = path.join(dir, '.aioson/agents/setup.md');
-  const setupContent = await fs.readFile(setupPath, 'utf8');
-  assert.equal(setupContent.includes('(fr)'), true);
+  const sourcePath = path.join(dir, '.aioson/locales/en/agents/setup.md');
+  const [setupContent, sourceContent] = await Promise.all([
+    fs.readFile(setupPath, 'utf8'),
+    fs.readFile(sourcePath, 'utf8')
+  ]);
+  assert.equal(setupContent, sourceContent);
 });
 
 test('update --dry-run with --lang plans locale sync without mutating files', async () => {
@@ -131,6 +141,7 @@ aioson_version: "0.1.9"
   assert.equal(result.ok, true);
   assert.equal(Boolean(result.localeSync), true);
   assert.equal(result.localeSync.locale, 'pt-BR');
+  assert.equal(result.localeSync.promptLocale, 'en');
   assert.equal(result.localeSync.dryRun, true);
 
   const after = await fs.readFile(setupPath, 'utf8');

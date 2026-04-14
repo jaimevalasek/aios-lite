@@ -1,7 +1,6 @@
 'use strict';
 
 const { AGENT_DEFINITIONS } = require('./constants');
-const { getLocalizedAgentPath } = require('./locales');
 
 function normalizeAgentName(input) {
   return String(input || '')
@@ -23,14 +22,14 @@ function listAgentDefinitions() {
 }
 
 function resolveInstructionPath(agent, locale) {
-  if (!locale) return agent.path;
-  return getLocalizedAgentPath(agent.id, locale);
+  return agent.path;
 }
 
 function buildAgentPrompt(agent, tool, options = {}) {
   const safeTool = String(tool || 'codex').toLowerCase();
   const instructionPath = options.instructionPath || agent.path;
   const targetDir = options.targetDir ? String(options.targetDir) : '.';
+  const interactionLanguage = String(options.interactionLanguage || 'en');
   const dependencyText =
     agent.dependsOn.length > 0
       ? `Check required context files first: ${agent.dependsOn.join(', ')}.`
@@ -44,6 +43,8 @@ function buildAgentPrompt(agent, tool, options = {}) {
     '> Runtime persistence belongs to the AIOSON gateway. Do not try to replay telemetry manually with `aioson runtime-log` shell snippets from inside the agent session.',
     '',
     '> If the user needs dashboard-visible tracked execution in an external client, they must enter through `aioson workflow:next` or `aioson agent:prompt` before continuing.',
+    '',
+    `**Language boundary:** Agent instructions are canonical in English. All user-facing communication must be in ${interactionLanguage}.`,
     '',
     `**Scope boundary:** You operate exclusively as ${agent.command}. Do not perform work that belongs to another agent. When your work is complete, output only the handoff — which agent is next and why. Do not continue into that agent\'s territory.`,
   ].join('\n');

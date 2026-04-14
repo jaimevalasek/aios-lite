@@ -3,7 +3,7 @@
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const readline = require('node:readline');
-const { validateProjectContextFile } = require('../context');
+const { validateProjectContextFile, getInteractionLanguage } = require('../context');
 const { resolveAgentLocale } = require('../locales');
 const { ensureDir } = require('../utils');
 const {
@@ -17,9 +17,9 @@ function resolveTargetDir(args) {
 
 async function detectProjectLocale(targetDir) {
   const context = await validateProjectContextFile(targetDir);
-  if (context.parsed && context.data && context.data.conversation_language) {
+  if (context.parsed && context.data) {
     return {
-      locale: resolveAgentLocale(context.data.conversation_language),
+      locale: resolveAgentLocale(getInteractionLanguage(context.data, 'en')),
       source: 'project-context'
     };
   }

@@ -215,7 +215,7 @@ function buildAgentTemplate(slug, opts) {
 
   // ── Hard constraints ────────────────────────────────────────────────────
   lines.push('## Hard constraints');
-  lines.push('- Use `conversation_language` from project context for all interaction');
+  lines.push('- Use `interaction_language` from project context for all interaction (fallback: `conversation_language`)');
   lines.push('- Do not invent facts or requirements — ask when uncertain');
   if (scope === 'squad' && squadSlug) {
     lines.push(`- Stay within squad scope: ${squadSlug}`);

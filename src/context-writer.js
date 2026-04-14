@@ -60,7 +60,7 @@ function normalizeBoolean(value, fallback = false) {
 }
 
 function renderProjectContext(data) {
-  const language = data.conversationLanguage || 'en';
+  const language = data.interactionLanguage || data.conversationLanguage || 'en';
   const codeCommentLanguage = data.codeCommentLanguage || language;
   const generatedAt = data.generatedAt || new Date().toISOString();
   const designSkill = data.designSkill || '';
@@ -80,6 +80,7 @@ profile: "${data.profile}"
 framework: "${data.framework}"
 framework_installed: ${data.frameworkInstalled ? 'true' : 'false'}
 classification: "${data.classification}"
+interaction_language: "${language}"
 conversation_language: "${language}"
 design_skill: "${designSkill}"
 test_runner: "${testRunner}"

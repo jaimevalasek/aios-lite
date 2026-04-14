@@ -95,11 +95,18 @@ test('init applies localized agent pack when --lang is provided', async () => {
 
     assert.equal(Boolean(result.localeApply), true);
     assert.equal(result.localeApply.locale, 'es');
-    assert.equal(logger.lines.some((line) => line.includes('Locale pack applied: es')), true);
+    assert.equal(
+      logger.lines.some((line) => line.includes('Interaction language synchronized: es')),
+      true
+    );
 
     const setupPath = path.join(tempDir, 'demo-lang/.aioson/agents/setup.md');
-    const setupContent = await fs.readFile(setupPath, 'utf8');
-    assert.equal(setupContent.includes('(es)'), true);
+    const sourcePath = path.join(tempDir, 'demo-lang/.aioson/locales/en/agents/setup.md');
+    const [setupContent, sourceContent] = await Promise.all([
+      fs.readFile(setupPath, 'utf8'),
+      fs.readFile(sourcePath, 'utf8')
+    ]);
+    assert.equal(setupContent, sourceContent);
   } finally {
     process.chdir(originalCwd);
   }
@@ -118,9 +125,16 @@ test('install applies localized agent pack when --lang is provided', async () =>
 
   assert.equal(Boolean(result.localeApply), true);
   assert.equal(result.localeApply.locale, 'pt-BR');
-  assert.equal(logger.lines.some((line) => line.includes('Locale pack applied: pt-BR')), true);
+  assert.equal(
+    logger.lines.some((line) => line.includes('Interaction language synchronized: pt-BR')),
+    true
+  );
 
   const setupPath = path.join(tempDir, '.aioson/agents/setup.md');
-  const setupContent = await fs.readFile(setupPath, 'utf8');
-  assert.equal(setupContent.includes('(pt-BR)'), true);
+  const sourcePath = path.join(tempDir, '.aioson/locales/en/agents/setup.md');
+  const [setupContent, sourceContent] = await Promise.all([
+    fs.readFile(setupPath, 'utf8'),
+    fs.readFile(sourcePath, 'utf8')
+  ]);
+  assert.equal(setupContent, sourceContent);
 });

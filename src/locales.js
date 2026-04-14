@@ -4,15 +4,16 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const { AGENT_DEFINITIONS } = require('./constants');
 const { exists, ensureDir } = require('./utils');
+const { normalizeLanguageTag } = require('./context');
 
 const SUPPORTED_AGENT_LOCALES = ['en', 'pt-BR', 'es', 'fr'];
 
-function normalizeLanguageTag(value) {
-  return String(value || '').trim();
-}
-
 function localeForPath(value) {
   return String(value || '').replace(/_/g, '-');
+}
+
+function normalizeInteractionLanguage(languageTag, fallback = 'en') {
+  return normalizeLanguageTag(languageTag, fallback);
 }
 
 function resolveAgentLocale(languageTag) {
@@ -43,13 +44,13 @@ function getActiveAgentPath(agentId) {
 }
 
 async function applyAgentLocale(targetDir, locale, options = {}) {
-  const resolved = resolveAgentLocale(locale);
+  const interactionLanguage = normalizeInteractionLanguage(locale || 'en');
   const dryRun = Boolean(options.dryRun);
   const copied = [];
   const missing = [];
 
   for (const agent of AGENT_DEFINITIONS) {
-    const sourceRel = getLocalizedAgentPath(agent.id, resolved);
+    const sourceRel = getLocalizedAgentPath(agent.id, 'en');
     const destRel = getActiveAgentPath(agent.id);
     const sourceAbs = path.join(targetDir, sourceRel);
     const destAbs = path.join(targetDir, destRel);
@@ -67,7 +68,8 @@ async function applyAgentLocale(targetDir, locale, options = {}) {
   }
 
   return {
-    locale: resolved,
+    locale: interactionLanguage,
+    promptLocale: 'en',
     copied,
     missing,
     dryRun
@@ -77,6 +79,7 @@ async function applyAgentLocale(targetDir, locale, options = {}) {
 module.exports = {
   SUPPORTED_AGENT_LOCALES,
   normalizeLanguageTag,
+  normalizeInteractionLanguage,
   resolveAgentLocale,
   getLocalizedAgentPath,
   getActiveAgentPath,

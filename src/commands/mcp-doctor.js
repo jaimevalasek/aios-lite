@@ -2,7 +2,7 @@
 
 const fs = require('node:fs/promises');
 const path = require('node:path');
-const { validateProjectContextFile } = require('../context');
+const { validateProjectContextFile, getInteractionLanguage } = require('../context');
 const { localizeContextParseReason } = require('../context-parse-reason');
 const { exists, readTextIfExists } = require('../utils');
 const { extractStackValue, normalizeDatabaseEngine } = require('./mcp-init');
@@ -354,6 +354,7 @@ async function runMcpDoctor({ args, options = {}, logger, t }) {
       filePath: contextPath,
       projectType: String(contextData.project_type || ''),
       framework: String(contextData.framework || ''),
+      interactionLanguage: getInteractionLanguage(contextData, 'en'),
       conversationLanguage: String(contextData.conversation_language || '')
     },
     plan: {

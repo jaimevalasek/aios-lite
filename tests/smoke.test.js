@@ -114,30 +114,36 @@ test('test:smoke supports parallel orchestration profile', async () => {
   await fs.rm(result.workspaceRoot, { recursive: true, force: true });
 });
 
-test('test:smoke applies es/fr localized agent packs into active prompts', async () => {
+test('test:smoke keeps canonical prompts while preserving requested interaction language', async () => {
   const baseDir = await makeTempDir();
   const { t } = createTranslator('en');
   const logger = { log() {}, error() {} };
 
-  const checks = [
-    { lang: 'es', marker: '(es)' },
-    { lang: 'fr', marker: '(fr)' }
-  ];
+  const checks = ['es', 'fr'];
 
   for (const check of checks) {
     const result = await runSmokeTest({
       args: [baseDir],
-      options: { lang: check.lang, keep: true },
+      options: { lang: check, keep: true },
       logger,
       t
     });
 
     assert.equal(result.ok, true);
-    assert.equal(result.language, check.lang);
+    assert.equal(result.language, check);
 
     const setupAgentPath = path.join(result.projectDir, '.aioson/agents/setup.md');
-    const setupAgentContent = await fs.readFile(setupAgentPath, 'utf8');
-    assert.equal(setupAgentContent.includes(check.marker), true);
+    const sourcePath = path.join(result.projectDir, '.aioson/locales/en/agents/setup.md');
+    const [setupAgentContent, sourceContent] = await Promise.all([
+      fs.readFile(setupAgentPath, 'utf8'),
+      fs.readFile(sourcePath, 'utf8')
+    ]);
+    assert.equal(setupAgentContent, sourceContent);
+
+    const context = await validateProjectContextFile(result.projectDir);
+    assert.equal(context.valid, true);
+    assert.equal(context.data.interaction_language, check);
+    assert.equal(context.data.conversation_language, check);
 
     await fs.rm(result.workspaceRoot, { recursive: true, force: true });
   }

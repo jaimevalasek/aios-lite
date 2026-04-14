@@ -5,8 +5,8 @@ const path = require('node:path');
 const { REQUIRED_FILES } = require('./constants');
 const { installTemplate, TEMPLATE_DIR } = require('./installer');
 const { exists, copyFileWithDir } = require('./utils');
-const { validateProjectContextFile } = require('./context');
-const { applyAgentLocale, resolveAgentLocale } = require('./locales');
+const { validateProjectContextFile, getInteractionLanguage } = require('./context');
+const { applyAgentLocale } = require('./locales');
 
 function parseMajor(version) {
   const cleaned = String(version || '').replace(/^v/, '');
@@ -254,10 +254,9 @@ async function applyDoctorFixes(targetDir, report, options = {}) {
     report.contextValidation &&
     report.contextValidation.parsed &&
     report.contextValidation.valid &&
-    report.contextValidation.data &&
-    report.contextValidation.data.conversation_language
+    report.contextValidation.data
   ) {
-    const locale = resolveAgentLocale(report.contextValidation.data.conversation_language);
+    const locale = getInteractionLanguage(report.contextValidation.data, 'en');
     const localeResult = await applyAgentLocale(targetDir, locale, { dryRun });
     if (localeResult.copied.length > 0) changedCount += localeResult.copied.length;
     actions.push({

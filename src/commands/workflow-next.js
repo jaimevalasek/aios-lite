@@ -3,8 +3,8 @@
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const { getAgentDefinition, resolveInstructionPath, buildAgentPrompt } = require('../agents');
-const { resolveAgentLocale } = require('../locales');
-const { validateProjectContextFile } = require('../context');
+const { normalizeInteractionLanguage } = require('../locales');
+const { validateProjectContextFile, getInteractionLanguage } = require('../context');
 const { exists, ensureDir } = require('../utils');
 const { syncWorkflowRuntime } = require('../execution-gateway');
 const { writeHandoff, buildWorkflowHandoff } = require('../session-handoff');
@@ -155,11 +155,11 @@ async function readWorkflowConfig(targetDir) {
 
 async function resolveLocaleForTarget(targetDir, options) {
   const fromOption = options.language || options.lang;
-  if (fromOption) return resolveAgentLocale(fromOption);
+  if (fromOption) return normalizeInteractionLanguage(fromOption);
 
   const context = await validateProjectContextFile(targetDir);
-  if (context.parsed && context.data && context.data.conversation_language) {
-    return resolveAgentLocale(context.data.conversation_language);
+  if (context.parsed && context.data) {
+    return getInteractionLanguage(context.data, 'en');
   }
 
   return 'en';
@@ -461,7 +461,11 @@ async function activateStage(targetDir, state, locale, tool, explicitAgent = nul
   }
 
   const instructionPath = await resolveExistingInstructionPath(targetDir, agent, locale);
-  const prompt = buildAgentPrompt(agent, tool, { instructionPath, targetDir });
+  const prompt = buildAgentPrompt(agent, tool, {
+    instructionPath,
+    targetDir,
+    interactionLanguage: locale
+  });
 
   let nextState = state;
   if (explicitAgent && stageName !== normalizeAgentName(state.next)) {

@@ -8,8 +8,8 @@ const {
   resolveInstructionPath,
   buildAgentPrompt
 } = require('../agents');
-const { resolveAgentLocale } = require('../locales');
-const { validateProjectContextFile } = require('../context');
+const { normalizeInteractionLanguage } = require('../locales');
+const { validateProjectContextFile, getInteractionLanguage } = require('../context');
 const { exists } = require('../utils');
 const { loadOrCreateState, runWorkflowNext } = require('./workflow-next');
 const {
@@ -31,11 +31,11 @@ const WORKFLOW_AGENT_IDS = new Set([
 
 async function resolveLocaleForTarget(targetDir, options) {
   const fromOption = options.language || options.lang;
-  if (fromOption) return resolveAgentLocale(fromOption);
+  if (fromOption) return normalizeInteractionLanguage(fromOption);
 
   const context = await validateProjectContextFile(targetDir);
-  if (context.parsed && context.data && context.data.conversation_language) {
-    return resolveAgentLocale(context.data.conversation_language);
+  if (context.parsed && context.data) {
+    return getInteractionLanguage(context.data, 'en');
   }
 
   return 'en';
@@ -119,7 +119,10 @@ async function runAgentPrompt({ args, options, logger, t }) {
 
   if (!prompt) {
     instructionPath = await resolveExistingInstructionPath(targetDir, promptAgent, locale);
-    prompt = buildAgentPrompt(promptAgent, tool, { instructionPath });
+    prompt = buildAgentPrompt(promptAgent, tool, {
+      instructionPath,
+      interactionLanguage: locale
+    });
     const runtimeClass = classifyDirectAgentRuntime(promptAgent.id);
     const handoffLabel = runtimeClass.source === 'squad_session'
       ? 'Squad session handoff'

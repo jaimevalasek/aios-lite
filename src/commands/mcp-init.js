@@ -2,7 +2,7 @@
 
 const fs = require('node:fs/promises');
 const path = require('node:path');
-const { validateProjectContextFile } = require('../context');
+const { validateProjectContextFile, getInteractionLanguage } = require('../context');
 const { createTranslator } = require('../i18n');
 const { ensureDir, readTextIfExists } = require('../utils');
 
@@ -160,7 +160,8 @@ function buildMcpPlan(targetDir, contextData, contextMarkdown, t) {
       path: targetDir,
       framework: contextData.framework || '',
       project_type: contextData.project_type || '',
-      conversation_language: contextData.conversation_language || 'en'
+      interaction_language: getInteractionLanguage(contextData, 'en'),
+      conversation_language: getInteractionLanguage(contextData, 'en')
     },
     database_engine: databaseEngine,
     web3_enabled: web3Enabled,

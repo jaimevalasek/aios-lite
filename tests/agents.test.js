@@ -53,11 +53,13 @@ test('getAgentDefinition resolves profiler-forge agent', () => {
 test('buildAgentPrompt includes target output', () => {
   const agent = getAgentDefinition('analyst');
   const prompt = buildAgentPrompt(agent, 'codex', {
-    instructionPath: resolveInstructionPath(agent, 'pt-BR')
+    instructionPath: resolveInstructionPath(agent, 'pt-BR'),
+    interactionLanguage: 'pt-BR'
   });
   assert.equal(prompt.includes(agent.output), true);
-  assert.equal(prompt.includes('.aioson/locales/pt-BR/agents/analyst.md'), true);
+  assert.equal(prompt.includes('.aioson/agents/analyst.md'), true);
   assert.equal(prompt.includes('AIOSON Runtime boundary'), true);
+  assert.equal(prompt.includes('All user-facing communication must be in pt-BR.'), true);
   assert.equal(prompt.includes('--agent=@analyst'), false);
   assert.equal(prompt.includes('aioson agent:prompt'), true);
 });

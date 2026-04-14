@@ -7,29 +7,29 @@ module.exports = {
     usage: 'Utilisation :',
     help_item_line: '  {text}',
     help_init:
-      'aioson init <project-name> [--force] [--dry-run] [--lang=en|pt-BR|es|fr] [--tool=codex|claude|gemini|opencode] [--locale=fr]',
+      'aioson init <project-name> [--force] [--dry-run] [--lang=<bcp47-tag>] [--tool=codex|claude|gemini|opencode] [--locale=fr]',
     help_install:
-      'aioson install [path] [--force] [--dry-run] [--lang=en|pt-BR|es|fr] [--tool=codex|claude|gemini|opencode] [--locale=fr]',
+      'aioson install [path] [--force] [--dry-run] [--lang=<bcp47-tag>] [--tool=codex|claude|gemini|opencode] [--locale=fr]',
     help_setup:
-      'aioson setup [path] [--defaults] [--framework=<nom>] [--lang=en|pt-BR|es|fr] [--project-name=<nom>] [--force] [--dry-run] [--tool=codex|claude|gemini|opencode] [--locale=fr]',
+      'aioson setup [path] [--defaults] [--framework=<nom>] [--lang=<bcp47-tag>] [--project-name=<nom>] [--force] [--dry-run] [--tool=codex|claude|gemini|opencode] [--locale=fr]',
     help_update:
-      'aioson update [path] [--dry-run] [--lang=en|pt-BR|es|fr] [--locale=fr]',
+      'aioson update [path] [--dry-run] [--lang=<bcp47-tag>] [--locale=fr]',
     help_info: 'aioson info [path] [--json] [--locale=fr]',
     help_doctor: 'aioson doctor [path] [--fix] [--dry-run] [--json] [--locale=fr]',
     help_i18n_add: 'aioson i18n:add <locale> [--force] [--dry-run] [--locale=fr]',
-    help_agents: 'aioson agents [path] [--lang=en|pt-BR|es|fr] [--locale=fr]',
+    help_agents: 'aioson agents [path] [--lang=<bcp47-tag>] [--locale=fr]',
     help_agent_prompt:
-      'aioson agent:prompt <agent> [path] [--tool=codex|claude|gemini|opencode] [--lang=en|pt-BR|es|fr] [--locale=fr]',
+      'aioson agent:prompt <agent> [path] [--tool=codex|claude|gemini|opencode] [--lang=<bcp47-tag>] [--locale=fr]',
     help_context_validate: 'aioson context:validate [path] [--json] [--locale=fr]',
     help_context_pack:
       'aioson context:pack [path] [--agent=<agent>] [--goal=<texte>] [--module=<module-ou-dossier>] [--max-files=8] [--json] [--locale=fr]',
     help_setup_context:
-      'aioson setup:context [path] [--defaults] [--project-type=web_app|api|site|script|dapp|desktop_app] [--framework=<name>] [--backend=<name>] [--frontend=<name>] [--database=<name>] [--auth=<name>] [--uiux=<name>] [--language=fr] [--web3-enabled=true|false] [--locale=fr]',
-    help_locale_apply: 'aioson locale:apply [path] [--lang=en|pt-BR|es|fr] [--dry-run] [--locale=fr]',
-    help_locale_diff: 'aioson locale:diff [agent] [--lang=en|pt-BR|es|fr] [--json] [--locale=en]',
+      'aioson setup:context [path] [--defaults] [--project-type=web_app|api|site|script|dapp|desktop_app] [--framework=<name>] [--backend=<name>] [--frontend=<name>] [--database=<name>] [--auth=<name>] [--uiux=<name>] [--language=<bcp47-tag>] [--web3-enabled=true|false] [--locale=fr]',
+    help_locale_apply: 'aioson locale:apply [path] [--lang=<bcp47-tag>] [--dry-run] [--locale=fr]',
+    help_locale_diff: 'aioson locale:diff [agent] [--lang=<bcp47-tag>] [--json] [--locale=en]',
     help_test_agents: 'aioson test:agents [--json] [--locale=en]',
     help_test_smoke:
-      'aioson test:smoke [workspace-path] [--lang=en|pt-BR|es|fr] [--web3=ethereum|solana|cardano] [--profile=standard|mixed|parallel] [--keep] [--json] [--locale=fr]',
+      'aioson test:smoke [workspace-path] [--lang=<bcp47-tag>] [--web3=ethereum|solana|cardano] [--profile=standard|mixed|parallel] [--keep] [--json] [--locale=fr]',
     help_test_package:
       'aioson test:package [source-path] [--keep] [--dry-run] [--json] [--locale=fr]',
     help_workflow_plan:
@@ -105,7 +105,7 @@ module.exports = {
   },
   init: {
     usage_error:
-      'Utilisation : aioson init <project-name> [--force] [--dry-run] [--all] [--lang=en|pt-BR|es|fr] [--tool=codex|claude|gemini|opencode] [--locale=fr]',
+      'Utilisation : aioson init <project-name> [--force] [--dry-run] [--all] [--lang=<bcp47-tag>] [--tool=codex|claude|gemini|opencode] [--locale=fr]',
     non_empty_dir: 'Le repertoire n est pas vide : {targetDir}. Utilisez --force pour continuer.',
     created_at: 'Projet cree dans : {targetDir}',
     files_copied: 'Fichiers copies : {count}',
@@ -190,6 +190,9 @@ module.exports = {
     context_project_type_value_hint: 'Utilisez web_app, api, site, script, dapp ou desktop_app exactement.',
     context_profile_value: '`profile` doit etre une des valeurs {expected}',
     context_profile_value_hint: 'Utilisez developer, beginner ou team exactement.',
+    context_interaction_language_format:
+      '`interaction_language` n est pas une balise BCP-47 valide',
+    context_interaction_language_format_hint: 'Utilisez des valeurs comme en, en-US, pt-BR.',
     context_conversation_language_format: '`conversation_language` n est pas une balise BCP-47 valide',
     context_conversation_language_format_hint: 'Utilisez des valeurs comme en, en-US, pt-BR.',
     node_version: 'Node.js >= 18 (actuel : {version})',
@@ -369,11 +372,11 @@ module.exports = {
       'Monorepo detecte : framework Web3 et framework applicatif coexistent. Confirmer le framework principal avec l utilisateur et documenter la structure dans Notes.',
     written: 'Fichier contexte ecrit : {path}',
     classification_result: 'Classification : {classification} (score={score}/6)',
-    locale_applied: 'Pack d agents localise applique : {locale} ({count} fichiers)'
+    locale_applied: 'Langue d interaction synchronisee : {locale} ({count} prompts d agent restaures)'
   },
   locale_apply: {
-    applied: 'Pack locale applique : {locale}',
-    dry_run_applied: '[dry-run] Le pack locale serait applique : {locale}',
+    applied: 'Langue d interaction synchronisee : {locale}',
+    dry_run_applied: '[dry-run] La langue d interaction serait synchronisee : {locale}',
     copied_count: 'Fichiers copies : {count}',
     missing_count: 'Fichiers locale manquants : {count}',
     copy_line: '  Fichier : {source} -> {target}'

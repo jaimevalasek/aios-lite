@@ -3,7 +3,7 @@
 const path = require('node:path');
 const fs = require('node:fs/promises');
 const { readTextIfExists, ensureDir, exists } = require('../utils');
-const { validateProjectContextFile } = require('../context');
+const { validateProjectContextFile, getInteractionLanguage } = require('../context');
 
 const DEFAULT_PERSONAS = ['naive', 'hacker', 'power', 'mobile'];
 
@@ -90,7 +90,7 @@ async function runQaInit({ args, options = {}, logger, t }) {
   }
 
   const projectName = String(contextData.project_name || path.basename(targetDir) || 'Project');
-  const language = String(contextData.conversation_language || 'en');
+  const language = getInteractionLanguage(contextData, 'en');
 
   // Parse prd.md for AC items
   const acItems = parseAcItems(prdContent);

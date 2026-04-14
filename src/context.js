@@ -86,6 +86,23 @@ function isValidLanguageTag(value) {
   return /^[a-zA-Z]{2,3}(-[a-zA-Z0-9]{2,8})*$/.test(tag);
 }
 
+function normalizeLanguageTag(value, fallback = 'en') {
+  const tag = String(value || '').trim().replace(/_/g, '-');
+  if (!tag) return fallback;
+  return isValidLanguageTag(tag) ? tag : fallback;
+}
+
+function getInteractionLanguage(data, fallback = 'en') {
+  if (!data || typeof data !== 'object') return fallback;
+  if (Object.prototype.hasOwnProperty.call(data, 'interaction_language')) {
+    return normalizeLanguageTag(data.interaction_language, fallback);
+  }
+  if (Object.prototype.hasOwnProperty.call(data, 'conversation_language')) {
+    return normalizeLanguageTag(data.conversation_language, fallback);
+  }
+  return fallback;
+}
+
 function validateContextData(data) {
   const issues = [];
 
@@ -145,6 +162,18 @@ function validateContextData(data) {
       key: 'doctor.context_profile_value',
       params: { expected: CONTEXT_ALLOWED_PROFILES.join('|') },
       hintKey: 'doctor.context_profile_value_hint'
+    });
+  }
+
+  if (
+    Object.prototype.hasOwnProperty.call(data, 'interaction_language') &&
+    !isValidLanguageTag(data.interaction_language)
+  ) {
+    issues.push({
+      id: 'context:interaction_language:format',
+      key: 'doctor.context_interaction_language_format',
+      params: {},
+      hintKey: 'doctor.context_interaction_language_format_hint'
     });
   }
 
@@ -212,6 +241,7 @@ module.exports = {
   parseYamlFrontmatter,
   validateContextData,
   validateProjectContextFile,
-  isValidLanguageTag
+  isValidLanguageTag,
+  normalizeLanguageTag,
+  getInteractionLanguage
 };
-
