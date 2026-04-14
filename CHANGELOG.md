@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.7.3] - 2026-04-13
+### Fixed
+- `@dev` pt-BR locale pack realigned with the canonical prompt flow, restoring the proper cold-start fallback when `dev-state.md` is already `done` and another feature is still `in_progress` in `features.md`.
+- Added a regression test to keep the `@dev` prompt synchronized between the canonical file and the pt-BR locale pack, preventing future drift in the distributed template.
+- Setup prompt templates now reference the current `aioson_version` (`1.7.3`) instead of the stale `1.5.1` example.
+
 ## [1.7.2] - 2026-04-07
 ### Fixed
 - Removed 5 spurious Windows alternate data stream files (`SKILL.md:Zone.Identifier`) from `template/.aioson/skills/design-system/` that leaked from a local Windows copy operation and were never tracked by git.

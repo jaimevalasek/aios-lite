@@ -387,7 +387,7 @@ contract_framework: ""
 wallet_provider: ""
 indexer: ""
 rpc_provider: ""
-aioson_version: "1.5.1"
+aioson_version: "1.7.3"
 generated_at: "ISO-8601"
 ---
 
