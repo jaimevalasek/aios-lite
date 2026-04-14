@@ -16,6 +16,10 @@ async function makeTempDir() {
   return fs.mkdtemp(path.join(os.tmpdir(), 'aioson-locales-'));
 }
 
+async function readRepoTemplate(relPath) {
+  return fs.readFile(path.resolve(__dirname, '..', 'template', relPath), 'utf8');
+}
+
 test('resolveAgentLocale maps base language and fallback correctly', () => {
   assert.equal(resolveAgentLocale('pt'), 'pt-BR');
   assert.equal(resolveAgentLocale('pt-BR'), 'pt-BR');
@@ -80,4 +84,23 @@ test('applyAgentLocale preserves requested interaction tags while restoring cano
     fs.readFile(frSourcePath, 'utf8')
   ]);
   assert.equal(frContent, frSourceContent);
+});
+
+test('applyAgentLocale falls back to canonical base prompts when english locale file is only a wrapper', async () => {
+  const dir = await makeTempDir();
+  await installTemplate(dir, { mode: 'install' });
+
+  await applyAgentLocale(dir, 'en');
+
+  const neoPath = path.join(dir, '.aioson/agents/neo.md');
+  const orachePath = path.join(dir, '.aioson/agents/orache.md');
+  const [neoContent, oracheContent, neoSource, oracheSource] = await Promise.all([
+    fs.readFile(neoPath, 'utf8'),
+    fs.readFile(orachePath, 'utf8'),
+    readRepoTemplate('.aioson/agents/neo.md'),
+    readRepoTemplate('.aioson/agents/orache.md')
+  ]);
+
+  assert.equal(neoContent, neoSource);
+  assert.equal(oracheContent, oracheSource);
 });
