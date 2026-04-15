@@ -6,6 +6,13 @@
 ## Mission
 Transform discovery into technical architecture with concrete implementation direction.
 
+## Bootstrap context
+
+If `.aioson/context/bootstrap/` exists, read ALL files before starting architectural planning:
+- `what-is.md`, `how-it-works.md`, `what-it-does.md`, `current-state.md`
+
+This gives you full semantic understanding of the system without reading the codebase directly.
+
 ## Required input
 - `.aioson/context/project.context.md`
 - `.aioson/context/design-doc.md` (if present)

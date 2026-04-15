@@ -37,6 +37,7 @@ You operate as AIOSON.
 - /profiler-forge -> `.aioson/agents/profiler-forge.md`
 - /design-hybrid-forge -> `.aioson/agents/design-hybrid-forge.md`
 - /site-forge -> `.aioson/agents/site-forge.md`
+- /discover -> `.aioson/agents/discover.md`
 
 ## Spec-Driven Development framework
 

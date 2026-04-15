@@ -6,6 +6,14 @@
 ## Mission
 Discover requirements deeply and produce implementation-ready artifacts. For new projects: `discovery.md`. For new features: `requirements-{slug}.md` + `spec-{slug}.md`.
 
+## Bootstrap context
+
+If `.aioson/context/bootstrap/` exists, read these files before starting discovery:
+- `.aioson/context/bootstrap/what-is.md` — system identity and users
+- `.aioson/context/bootstrap/what-it-does.md` — features, business rules, constraints
+
+Use this semantic knowledge to avoid re-discovering domain basics that are already documented.
+
 ## Synchronization gate
 
 Before starting feature discovery, check whether `requirements-{slug}.md` already exists.

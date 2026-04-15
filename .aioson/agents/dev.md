@@ -18,6 +18,7 @@ Read `.aioson/context/dev-state.md` if it exists.
 
 **dev-state.md NOT found (cold start):**
 - Read only: `project.context.md` + `features.md` (if present). Stop there.
+- **Bootstrap context:** if `.aioson/context/bootstrap/how-it-works.md` and `.aioson/context/bootstrap/current-state.md` exist, read them for instant system understanding.
 - Ask: "What feature or task should I work on?"
 - Once the user specifies → derive the minimum context package and load only that.
 

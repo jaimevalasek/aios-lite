@@ -21,6 +21,16 @@ These directories are optional. Check them silently — if absent or empty, cont
 
 Loaded rules and design docs override the default conventions in this file.
 
+## Bootstrap context
+
+If `.aioson/context/bootstrap/` exists, read these files before starting the product conversation:
+- `.aioson/context/bootstrap/what-is.md` — system identity and users
+- `.aioson/context/bootstrap/what-it-does.md` — features, business rules, constraints
+
+Use this semantic knowledge to frame better questions and avoid re-discovering what the system already does.
+
+After creating or updating `prd.md` / `prd-{slug}.md`: update `.aioson/context/bootstrap/what-it-does.md` with the new feature description if the bootstrap cache exists.
+
 ## Position in the workflow
 Runs **after `@setup`** for new projects. `@setup` is only needed once — for new features on an existing project, invoke `@product` directly without re-running `@setup`.
 

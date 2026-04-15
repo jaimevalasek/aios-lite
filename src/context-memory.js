@@ -21,6 +21,11 @@ const SCAN_INDEX_FILE = `${CONTEXT_DIR}/scan-index.md`;
 const SCAN_FOLDERS_FILE = `${CONTEXT_DIR}/scan-folders.md`;
 const SCAN_AIOSON_FILE = `${CONTEXT_DIR}/scan-aioson.md`;
 const CONTEXT_PACK_FILE = `${CONTEXT_DIR}/context-pack.md`;
+const BOOTSTRAP_DIR = '.aioson/context/bootstrap';
+const BOOTSTRAP_WHAT_IS = `${BOOTSTRAP_DIR}/what-is.md`;
+const BOOTSTRAP_HOW_IT_WORKS = `${BOOTSTRAP_DIR}/how-it-works.md`;
+const BOOTSTRAP_WHAT_IT_DOES = `${BOOTSTRAP_DIR}/what-it-does.md`;
+const BOOTSTRAP_CURRENT_STATE = `${BOOTSTRAP_DIR}/current-state.md`;
 
 const SPEC_SECTION_ALIASES = {
   stack: ['stack'],
@@ -138,6 +143,34 @@ const CONTEXT_DOC_SPECS = [
     group: 'scan',
     readWhen: 'you need generated context pages, squads, genomes or local MCP artifacts',
     tags: ['scan', 'brownfield', 'aioson']
+  },
+  {
+    relPath: BOOTSTRAP_WHAT_IS,
+    title: 'System Identity',
+    group: 'bootstrap',
+    readWhen: 'you need to understand what the system IS, who uses it, and why it exists',
+    tags: ['bootstrap', 'identity', 'semantic']
+  },
+  {
+    relPath: BOOTSTRAP_HOW_IT_WORKS,
+    title: 'System Mechanics',
+    group: 'bootstrap',
+    readWhen: 'you need to understand how the system works — architecture, modules, data flow',
+    tags: ['bootstrap', 'architecture', 'semantic']
+  },
+  {
+    relPath: BOOTSTRAP_WHAT_IT_DOES,
+    title: 'System Features',
+    group: 'bootstrap',
+    readWhen: 'you need to know what features exist, business rules, and user workflows',
+    tags: ['bootstrap', 'features', 'semantic']
+  },
+  {
+    relPath: BOOTSTRAP_CURRENT_STATE,
+    title: 'System Current State',
+    group: 'bootstrap',
+    readWhen: 'you need to know what is implemented, in progress, or planned',
+    tags: ['bootstrap', 'state', 'semantic']
   }
 ];
 
@@ -499,9 +532,10 @@ function buildMemoryIndexMarkdown({ generatedAt, catalog }) {
     ''
   ];
 
-  const groupOrder = ['foundation', 'system', 'development', 'scope', 'modules', 'scan'];
+  const groupOrder = ['foundation', 'bootstrap', 'system', 'development', 'scope', 'modules', 'scan'];
   const groupTitles = {
     foundation: 'Foundation Docs',
+    bootstrap: 'Bootstrap — Semantic Knowledge Cache',
     system: 'System Memory',
     development: 'Development Memory',
     scope: 'Scope Docs',
@@ -578,6 +612,24 @@ function rankContextDoc(doc, { agent, goal, module }) {
   if (doc.relPath === READINESS_FILE && /(ready|readiness|plan|architect|analyst|pm)/.test(lowerGoal || lowerAgent)) {
     score += 35;
     reasons.push('readiness signal');
+  }
+  if (doc.group === 'bootstrap') {
+    if (doc.relPath === BOOTSTRAP_WHAT_IS && /(product|analyst|what|identity|understand|discover)/.test(lowerAgent || lowerGoal)) {
+      score += 70;
+      reasons.push('semantic system identity');
+    }
+    if (doc.relPath === BOOTSTRAP_HOW_IT_WORKS && /(dev|architect|how|architecture|implement|refactor)/.test(lowerAgent || lowerGoal)) {
+      score += 70;
+      reasons.push('semantic system mechanics');
+    }
+    if (doc.relPath === BOOTSTRAP_WHAT_IT_DOES && /(product|analyst|feature|business|rule|workflow)/.test(lowerAgent || lowerGoal)) {
+      score += 65;
+      reasons.push('semantic features and business rules');
+    }
+    if (doc.relPath === BOOTSTRAP_CURRENT_STATE && /(dev|qa|state|current|progress|status)/.test(lowerAgent || lowerGoal)) {
+      score += 65;
+      reasons.push('semantic current state');
+    }
   }
   if (/module-/.test(doc.relPath) && lowerModule) {
     if (normalizeForLookup(doc.relPath).includes(lowerModule)) {
@@ -826,6 +878,11 @@ module.exports = {
   SCAN_FOLDERS_FILE,
   SCAN_AIOSON_FILE,
   CONTEXT_PACK_FILE,
+  BOOTSTRAP_DIR,
+  BOOTSTRAP_WHAT_IS,
+  BOOTSTRAP_HOW_IT_WORKS,
+  BOOTSTRAP_WHAT_IT_DOES,
+  BOOTSTRAP_CURRENT_STATE,
   buildModuleMemoryRelativePath,
   buildSpecCurrentMarkdown,
   buildSpecHistoryMarkdown,
