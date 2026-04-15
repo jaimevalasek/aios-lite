@@ -6,6 +6,7 @@ const fs = require('node:fs/promises');
 const os = require('node:os');
 const path = require('node:path');
 const { spawn } = require('node:child_process');
+const { execFileSync } = require('node:child_process');
 
 async function makeTempDir() {
   return fs.mkdtemp(path.join(os.tmpdir(), 'aioson-json-cli-'));
@@ -98,6 +99,12 @@ function createGenomeSnapshot() {
 
 function createDataUrl(payload) {
   return `data:application/json,${encodeURIComponent(JSON.stringify(payload))}`;
+}
+
+function initGitRepo(dir) {
+  execFileSync('git', ['init'], { cwd: dir, stdio: 'ignore' });
+  execFileSync('git', ['config', 'user.email', 'test@example.com'], { cwd: dir, stdio: 'ignore' });
+  execFileSync('git', ['config', 'user.name', 'Test User'], { cwd: dir, stdio: 'ignore' });
 }
 
 test('info --json returns structured payload', async () => {
@@ -207,6 +214,35 @@ test('legacy dashboard commands return a structured migration error with --json'
   assert.equal(parsed.error.code, 'dashboard_moved');
   assert.equal(parsed.error.command, 'dashboard:init');
   assert.equal(parsed.error.message.includes('.aioson/'), true);
+});
+
+test('git:guard --json returns structured payload without human logs', async () => {
+  const dir = await makeTempDir();
+  initGitRepo(dir);
+  await fs.mkdir(path.join(dir, 'src'), { recursive: true });
+  await fs.writeFile(path.join(dir, 'src', 'index.js'), 'console.log("ok");\n', 'utf8');
+  execFileSync('git', ['add', '--', 'src/index.js'], { cwd: dir, stdio: 'ignore' });
+
+  const cli = await runCli(['git:guard', dir, '--json']);
+  assert.equal(cli.code, 0);
+  assert.equal(cli.stderr.trim(), '');
+  const parsed = JSON.parse(cli.stdout);
+  assert.equal(parsed.ok, true);
+  assert.equal(parsed.summary.stagedCount, 1);
+  assert.equal(Array.isArray(parsed.stagedFiles), true);
+});
+
+test('git:guard --install-hook --json returns structured hook payload', async () => {
+  const dir = await makeTempDir();
+  initGitRepo(dir);
+
+  const cli = await runCli(['git:guard', dir, '--install-hook', '--json']);
+  assert.equal(cli.code, 0);
+  assert.equal(cli.stderr.trim(), '');
+  const parsed = JSON.parse(cli.stdout);
+  assert.equal(parsed.ok, true);
+  assert.equal(typeof parsed.hookPath, 'string');
+  assert.equal(parsed.hookPath.endsWith(path.join('.git', 'hooks', 'pre-commit')), true);
 });
 
 test('cloud:import:squad --dry-run --json returns structured payload without human logs', async () => {

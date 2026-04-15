@@ -1,39 +1,34 @@
 ---
-last_updated: 2026-04-12
-last_agent: qa
-last_gate: qa
-active_feature: none
-active_work: "none"
-blockers: none
-next_recommendation: "Projeto estável. Todas as features done. Próxima ação: iniciar nova feature via @product."
+updated_at: null
+last_agent: null
+last_gate: null
+active_features: 0
+blocked: false
+blocked_reason: null
 ---
 
 # Project Pulse
 
-## Status
+> Global project state. Updated by every agent at session end.
+> Read this FIRST when starting any session to orient quickly.
+> Max 30 lines of content — trim older entries when growing beyond that.
 
-- **Last agent:** @qa
-- **Status:** Feature `design-governance` — VERDICT: PASS ✅. 6/6 ACs cobertos. AC-06 corrigido e testado. Finding LOW fechado como intencional. Projeto estável.
+## Active work
 
-- **Active feature:** none
-- **Active work:** none
-- **Next:** Nova feature via @product
+| Feature | Phase | Agent | Status | Last checkpoint |
+|---------|-------|-------|--------|-----------------|
+| — | — | — | — | — |
 
-## Active Work
+## Recent activity (last 3 sessions)
 
-| Feature | Agent | Status |
-|---------|-------|--------|
-| — | — | — |
-
-## Recent Activity
-
-- 2026-04-12 @qa → design-governance: PASS ✅ 6/6 ACs. AC-06 corrigido + testado. Finding LOW fechado. Feature encerrada sem pendências.
-- 2026-04-12 @dev → design-governance: Feature implementada. 4 arquivos criados/atualizados, sync via npm run sync:agents, commit ad7ae86.
-- 2026-04-12 @analyst → design-governance: discovery.md + requirements + spec gerados. Classificação SMALL.
-- 2026-04-12 @product → project: prd.md principal criado com design governance como escopo central.
+| Date | Agent | Action | Result |
+|------|-------|--------|--------|
+| — | — | — | — |
 
 ## Blockers
-none
 
-## Next Recommended Action
-Ativar `@qa` para certificar a feature `design-governance` — verificar os 6 ACs de `requirements-design-governance.md`.
+None.
+
+## Next recommended action
+
+No active work. Start with `@product` for a new feature or `@setup` for a new project.

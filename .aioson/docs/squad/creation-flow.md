@@ -1,5 +1,5 @@
 ---
-description: "Squad creation flow — entry message, intake questions, autonomy, discovery mini-package, and executor classification."
+description: "Squad creation flow — entry message, project artifact detection, intake questions, autonomy, discovery mini-package, and executor classification."
 ---
 
 # Squad Creation Flow
@@ -22,9 +22,27 @@ Start direct squad creation with:
 
 If the user later wants genomes, route to `@genome`.
 
+## Project artifact detection
+
+Before asking follow-up questions, scan `.aioson/context/` for reusable upstream artifacts:
+
+- `implementation-plan-*.md`
+- `requirements-*.md`
+- `architecture.md`
+- `prd.md` or `prd-*.md`
+
+If one or more files are clearly relevant to the squad request:
+
+1. Read the implementation plan first when present.
+2. Extract domain, goal, expected outputs, constraints, expected behaviors, and done signals.
+3. Record the consumed file paths in blueprint `sourceDocs`.
+4. Do not ask again for information that is already explicit in those artifacts.
+
+If multiple artifacts exist but relevance is ambiguous, ask one short disambiguation question instead of ignoring them.
+
 ## Intake
 
-Ask for:
+Ask only for what is still missing after reading the project artifacts. Typical fields are:
 
 1. domain or theme
 2. main goal
@@ -109,7 +127,9 @@ Do not create extra executors just to look comprehensive.
 By the end of creation, you should know:
 
 - the squad slug
+- the source artifacts that informed the design
 - the executor roster
 - which roles are workers vs agents vs assistants vs clones vs human gates
 - whether the squad is content-first, software-first, or mixed
 - whether workflows, review loops, and content blueprints are needed
+- whether the squad is universal or locale-specific

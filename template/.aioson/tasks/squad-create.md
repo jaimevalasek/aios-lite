@@ -16,6 +16,12 @@
 
 ### Passo 1 — Ler blueprint
 Leia `.aioson/squads/.designs/<slug>.blueprint.json` e valide que os campos obrigatórios existem (slug, name, problem, goal, mode, executors).
+Se existirem, preserve também:
+- `locale_scope`
+- `locale_rationale`
+- `domainClassification`
+- `investigation`
+- `sourceDocs`
 
 ### Passo 2 — Criar estrutura de diretórios
 ```
@@ -48,7 +54,11 @@ Leia o campo `uiCapability` do blueprint. Se ausente, trate como `mode: none`.
 
 **Se `mode = executor`:**
 1. Execute os mesmos passos de skills acima (executor depende das skills)
-2. Gere o arquivo `.aioson/squads/{slug}/agents/ui-specialist.md` usando o template do agente `@ui-specialist` definido em `squad.md` (seção "Visual & UI capability detection → Option 2")
+2. Gere o arquivo `.aioson/squads/{slug}/agents/ui-specialist.md` seguindo `.aioson/docs/squad/package-contract.md`:
+   - usar a mesma estrutura dos demais executores permanentes
+   - missão focada em UI, layout, componentes e direção visual
+   - output esperado: `ui-spec.md` e, quando fizer sentido, HTML/entregável visual
+   - deixar explícito quando delegar contexto de negócio de volta ao `@orquestrador`
 3. Registre o executor no `squad.manifest.json` com `modelTier: powerful` e `behavioralProfile: compliant-dominant`
 4. Adicione ao routing guide do orquestrador: "Visual / UI / layout requests → @ui-specialist"
 
@@ -61,8 +71,22 @@ Em todos os casos, salve `uiCapability` no `squad.manifest.json`.
 ### Passo 3 — Gerar squad.manifest.json
 Monte o manifesto a partir do blueprint. O JSON deve seguir o schema `squad-manifest.schema.json`. Copie executors, skills, mcps, genomes, contentBlueprints do blueprint. Adicione package paths e rules.
 
+Persistência obrigatória:
+- `locale_scope`: usar `"universal"` por padrão quando o blueprint não trouxer valor explícito
+- `locale_rationale`: copiar quando existir
+- `domainClassification`: copiar quando existir
+- `investigation`: copiar quando existir
+- `sourceDocs`: copiar quando existir
+
 ### Passo 4 — Gerar agents.md (manifesto textual)
-Siga o formato existente no squad.md atual:
+Siga `.aioson/docs/squad/package-contract.md` na seção `agents/agents.md`.
+
+Regras adicionais para o manifesto textual:
+- agrupe executores por tipo quando houver workers, clones, assistants ou human-gates
+- se uma categoria não existir, omita a seção em vez de deixar placeholder
+- reflita `locale_scope`, skills, MCPs e política de revisão quando isso mudar o comportamento real do squad
+
+Formato mínimo:
 ```markdown
 # Squad <name>
 
@@ -86,28 +110,31 @@ Siga o formato existente no squad.md atual:
 ```
 
 ### Passo 5 — Gerar cada executor
-Para cada executor no blueprint, crie `.aioson/squads/<slug>/agents/<executor-slug>.md` seguindo o template atual do squad.md (seção "Step 2 — Generate each specialist agent"):
+Para cada executor no blueprint, crie `.aioson/squads/<slug>/agents/<executor-slug>.md` seguindo `.aioson/docs/squad/package-contract.md` na seção `Executor generation`:
 - Header com `# Agent @<slug>` + bloco ACTIVATED
 - Mission, Quick context, Active genomes, Focus, Response standard, Hard constraints, Output contract
+- Se `locale_scope` for locale-specific, escreva o prompt no idioma do locale; identificadores de código continuam em inglês
 
 ### Passo 6 — Gerar orquestrador
-Crie `.aioson/squads/<slug>/agents/orquestrador.md` seguindo o template atual (seção "Step 3 — Generate the orchestrator").
+Crie `.aioson/squads/<slug>/agents/orquestrador.md` seguindo `.aioson/docs/squad/package-contract.md` na seção `Orchestrator prompt`.
+Se `uiCapability.mode = executor`, inclua no routing guide que demandas visuais vão para `@ui-specialist`.
 
 ### Passo 7 — Gerar docs
 - `docs/design-doc.md`: resumo do design derivado do blueprint
 - `docs/readiness.md`: estado de readiness derivado do blueprint
 
 ### Passo 8 — Registrar nos gateways
-Atualize `CLAUDE.md` e `AGENTS.md` no root do projeto conforme as regras existentes no squad.md.
+Atualize `CLAUDE.md` e `AGENTS.md` no root do projeto conforme `.aioson/docs/squad/package-contract.md` na seção `Gateway registration`.
 
 ### Passo 9 — Salvar metadata
-Salve `.aioson/squads/<slug>/squad.md` no formato existente.
+Salve `.aioson/squads/<slug>/squad.md` conforme `.aioson/docs/squad/package-contract.md` na seção `Squad metadata`.
+Inclua `locale_scope`, `locale_rationale`, `investigation` e `sourceDocs` quando existirem.
 
 ### Passo 10 — Rodar validate
 Após criar tudo, execute mentalmente a task squad-validate (leia `.aioson/tasks/squad-validate.md`) para verificar que o pacote está consistente.
 
 ### Passo 11 — Warm-up round
-Siga as regras existentes no squad.md: mostre cada especialista com problem reading, initial recommendation, main risk, suggested next step.
+Siga `.aioson/docs/squad/workflow-quality.md` na seção `Confirmation, coverage, and warm-up`: mostre cada especialista com problem reading, initial recommendation, main risk e suggested next step.
 
 ## Saída
 - Pacote completo em `.aioson/squads/<slug>/`
@@ -116,6 +143,6 @@ Siga as regras existentes no squad.md: mostre cada especialista com problem read
 
 ## Regras
 - SEMPRE leia o blueprint antes de gerar
-- SIGA os templates de executor e orquestrador do squad.md original
+- SIGA `.aioson/docs/squad/package-contract.md` e `.aioson/docs/squad/workflow-quality.md`
 - MANTENHA o HTML deliverable após cada rodada (regra existente)
 - NÃO pule o warm-up — é mandatório

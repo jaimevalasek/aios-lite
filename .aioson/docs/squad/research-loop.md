@@ -37,6 +37,9 @@ Keep phrases concrete and searchable. Favor `2-6` words.
 
 At least one phrase must be validated through cache or fresh research whenever the squad serves an external domain, recurring workflow, content system, regulated environment, or specialized audience.
 
+For regulated domains, this lightweight loop does not replace mandatory `@orache` investigation.
+If an `investigation` report already exists, use it as the primary evidence source and run fresh scouting only to fill missing gaps.
+
 ## How to use the findings
 
 Use research to improve:

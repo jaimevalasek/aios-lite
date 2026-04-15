@@ -38,6 +38,34 @@
       "enum": ["private", "public"],
       "default": "private"
     },
+    "locale_scope": {
+      "type": "string",
+      "description": "Universal or locale-specific scope for agent prompt files",
+      "pattern": "^(universal|[A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8})*)$"
+    },
+    "locale_rationale": {
+      "type": "string",
+      "description": "Why the squad is locale-specific when locale_scope is not universal"
+    },
+    "domainClassification": {
+      "type": "object",
+      "description": "Classification of the squad domain for research and safety routing",
+      "properties": {
+        "tier": {
+          "type": "string",
+          "enum": ["tier-1-regulated", "tier-2-specialized", "tier-3-common"]
+        },
+        "rationale": { "type": "string" },
+        "regulations": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "investigationPolicy": {
+          "type": "string",
+          "enum": ["required", "recommended", "optional"]
+        }
+      }
+    },
     "ephemeral": {
       "type": "boolean",
       "default": false,
@@ -48,6 +76,22 @@
       "description": "Time-to-live for ephemeral squads (e.g. '24h', '7d'). After TTL, squad files are eligible for cleanup."
     },
     "aiosLiteCompatibility": { "type": "string" },
+    "sourceDocs": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Project artifacts consumed during squad design"
+    },
+    "investigation": {
+      "type": "object",
+      "description": "Reference to a persisted @orache investigation report",
+      "properties": {
+        "slug": { "type": "string" },
+        "path": { "type": "string" },
+        "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+        "dimensionsCovered": { "type": "integer", "minimum": 0, "maximum": 7 },
+        "date": { "type": "string", "format": "date" }
+      }
+    },
     "storagePolicy": {
       "type": "object",
       "properties": {

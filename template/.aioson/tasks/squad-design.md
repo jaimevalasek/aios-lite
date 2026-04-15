@@ -13,7 +13,25 @@
 
 ## Processo
 
-### Passo 0 — Verificar artisan input e templates disponíveis
+### Passo 0 — Verificar contexto do projeto, artisan input e templates disponíveis
+
+**0A — Artifacts do pipeline AIOSON**
+
+Antes de perguntar qualquer coisa, procure:
+- `.aioson/context/implementation-plan-*.md`
+- `.aioson/context/requirements-*.md`
+- `.aioson/context/architecture.md`
+- `.aioson/context/prd.md` e `prd-*.md`
+
+Se encontrar arquivos claramente relevantes para o squad atual:
+1. Leia primeiro o `implementation-plan` quando existir
+2. Depois leia `requirements`, `architecture` e `prd` relevantes
+3. Extraia: domain, goal, output type, constraints, expected behaviors, risks e sinais de done
+4. Registre os caminhos consumidos em `sourceDocs`
+5. NÃO repita perguntas cujas respostas já estão explícitas nesses artifacts
+6. Se houver mais de um conjunto possível de artifacts, faça uma única pergunta curta de desambiguação
+
+**0B — Artisan input**
 
 Se o usuário forneceu `--from-artisan <id>`:
 1. Procure `.aioson/squads/.artisan/<id>.md`
@@ -22,7 +40,7 @@ Se o usuário forneceu `--from-artisan <id>`:
 4. Use como base para o blueprint — pule para o Passo 5 (calcular readiness)
 5. Mostre ao usuário: "Li o PRD do Artisan. Posso gerar o blueprint com base nele — quer ajustar algo?"
 
-Caso contrário, verifique templates:
+**0C — Templates**
 Verifique se existe `.aioson/templates/squads/`. Se existir, liste os templates disponíveis e pergunte:
 "Quer partir de um template? Opções: content-basic, research-analysis, software-delivery, media-channel — ou começar do zero."
 Se o usuário escolher um template, leia o `template.json` e use como base para o blueprint (executores, content blueprints, mode).
@@ -37,6 +55,28 @@ Pergunte em um bloco só (não faça múltiplas rodadas):
 
 Se o usuário já forneceu contexto suficiente (texto, docs, imagens), infira as respostas e siga em frente. Pergunte somente se há lacunas materiais.
 
+### Passo 1.5 — Gate de classificação de domínio + locale scope
+
+Antes de definir executores, classifique o domínio usando `.aioson/docs/squad/domain-classification.md`:
+
+- **Tier 1 — regulado:** investigação via `@squad investigate` / `@orache` é obrigatória. Não finalize o blueprint sem relatório.
+- **Tier 2 — especializado:** recomende fortemente investigação. Se o usuário recusar, registre a limitação em `assumptions` e `risks`.
+- **Tier 3 — comum:** prossiga sem criar fricção desnecessária.
+
+Se já existir investigação relevante, reutilize o relatório em vez de pedir uma nova.
+
+Depois da classificação:
+- decida `locale_scope` com base em `.aioson/rules/agent-language-policy.md` quando a rule existir
+- sugira `universal` por padrão
+- se o squad for claramente local, confirme um locale específico (`pt-BR`, `es-MX`, etc.) e registre `locale_rationale`
+- capture no blueprint:
+  - `domainClassification.tier`
+  - `domainClassification.rationale`
+  - `domainClassification.regulations` quando existirem
+  - `domainClassification.investigationPolicy`
+  - `locale_scope`
+  - `locale_rationale` quando aplicável
+
 ### Passo 2 — Derivar design-doc mental
 Antes de definir executores, consolide:
 - Problema que está sendo resolvido
@@ -45,6 +85,9 @@ Antes de definir executores, consolide:
 - Risks e assumptions
 - Skills e docs que precisam entrar no contexto
 - Mode do squad (content | software | research | mixed)
+- Source docs consumidos
+- Investigation aplicada e o que ela muda no design
+- Locale scope do squad
 
 ### Passo 3 — Definir executores
 Determine 3-5 roles especializados. Para cada executor, defina:
@@ -97,6 +140,7 @@ Avalie cada dimensão:
 - contextReady: há contexto suficiente?
 - blueprintReady: o blueprint está completo?
 - generationReady: dá para gerar os executores?
+- se `domainClassification.tier = tier-1-regulated`: generationReady = false enquanto não houver `investigation`
 
 ### Passo 6 — Gerar blueprint JSON
 Salve o blueprint em `.aioson/squads/.designs/<slug>.blueprint.json`
@@ -137,6 +181,8 @@ Se tudo OK: prosseguir para Passo 7.
 Mostre ao usuário:
 - Executores propostos com roles
 - Content blueprints definidos
+- Tier de domínio e política de investigação
+- Locale scope
 - Assumptions feitas
 - Risks identificados
 - Readiness status
@@ -156,3 +202,5 @@ Pergunte se quer ajustar algo antes de criar.
 - NÃO crie o pacote do squad aqui — isso é responsabilidade da task create
 - NÃO pule o blueprint — ele é obrigatório
 - MANTENHA o blueprint leve — o LLM preenche lacunas na fase create
+- NÃO ignore `implementation-plan` / `requirements` relevantes quando existirem
+- NÃO bypass o gate de domínio regulado

@@ -22,6 +22,46 @@ async function pathExists(targetPath) {
   }
 }
 
+async function readJsonIfExists(filePath) {
+  try {
+    const raw = await fs.readFile(filePath, 'utf8');
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+async function writeJson(filePath, value) {
+  await fs.mkdir(path.dirname(filePath), { recursive: true });
+  await fs.writeFile(filePath, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
+}
+
+async function syncInvestigationLinkToSquad(projectDir, squadSlug, row) {
+  const manifestPath = path.join(projectDir, '.aioson', 'squads', squadSlug, 'squad.manifest.json');
+  const blueprintPath = path.join(projectDir, '.aioson', 'squads', '.designs', `${squadSlug}.blueprint.json`);
+  const investigationRef = {
+    slug: row.investigation_slug,
+    path: row.report_path || null,
+    confidence: Number(row.confidence) || 0,
+    dimensionsCovered: Number(row.dimensions_covered) || 0,
+    date: row.created_at ? String(row.created_at).slice(0, 10) : null
+  };
+
+  const manifest = await readJsonIfExists(manifestPath);
+  if (!manifest || typeof manifest !== 'object') {
+    throw new Error(`Squad manifest not found: ${manifestPath}`);
+  }
+
+  manifest.investigation = investigationRef;
+  await writeJson(manifestPath, manifest);
+
+  const blueprint = await readJsonIfExists(blueprintPath);
+  if (blueprint && typeof blueprint === 'object') {
+    blueprint.investigation = investigationRef;
+    await writeJson(blueprintPath, blueprint);
+  }
+}
+
 /**
  * Count how many of the 7 investigation dimensions are present in a report.
  * Looks for headers like "## D1:", "## D2:", ..., "## D7:" in the markdown.
@@ -164,8 +204,15 @@ async function handleLink(projectDir, invSlug, squadSlug, { logger, t }) {
   }
   const { db } = handle;
   try {
+    const investigation = getInvestigation(db, invSlug);
+    if (!investigation) {
+      logger.error(t('squad_investigate.not_found', { slug: invSlug }));
+      return { linked: false };
+    }
+
     const success = linkInvestigation(db, invSlug, squadSlug);
     if (success) {
+      await syncInvestigationLinkToSquad(projectDir, squadSlug, investigation);
       logger.log(t('squad_investigate.linked', { investigation: invSlug, squad: squadSlug }));
     } else {
       logger.error(t('squad_investigate.not_found', { slug: invSlug }));
@@ -206,6 +253,12 @@ async function handleRegister(projectDir, reportPath, options, { logger, t }) {
       reportPath: relPath,
       linkedSquadSlug: options.squad || null
     });
+    if (options.squad) {
+      const row = getInvestigation(db, slug);
+      if (row) {
+        await syncInvestigationLinkToSquad(projectDir, options.squad, row);
+      }
+    }
     logger.log(t('squad_investigate.registered', { slug, path: relPath }));
     return { registered: true, slug };
   } finally {

@@ -10,6 +10,55 @@ async function readJsonIfExists(filePath) {
   } catch { return null; }
 }
 
+async function resolveInvestigationEvidence(projectDir, slug, manifest) {
+  const investigation = manifest && typeof manifest.investigation === 'object'
+    ? manifest.investigation
+    : null;
+
+  if (investigation && (investigation.slug || investigation.path)) {
+    const relPath = investigation.path
+      ? String(investigation.path).replace(/\\/g, '/').replace(/^\.\//, '')
+      : null;
+    let existsOnDisk = false;
+    if (relPath) {
+      try {
+        await fs.access(path.resolve(projectDir, relPath));
+        existsOnDisk = true;
+      } catch {
+        existsOnDisk = false;
+      }
+    }
+
+    return {
+      present: true,
+      source: 'manifest',
+      slug: investigation.slug || slug,
+      path: relPath,
+      existsOnDisk
+    };
+  }
+
+  const legacyDir = path.join(projectDir, 'squad-searches', slug);
+  try {
+    await fs.access(legacyDir);
+    return {
+      present: true,
+      source: 'legacy-dir',
+      slug,
+      path: path.relative(projectDir, legacyDir).replace(/\\/g, '/'),
+      existsOnDisk: true
+    };
+  } catch {
+    return {
+      present: false,
+      source: null,
+      slug: null,
+      path: null,
+      existsOnDisk: false
+    };
+  }
+}
+
 function scoreCompletude(manifest) {
   let score = 0;
   const details = {};
@@ -37,7 +86,10 @@ function scoreCompletude(manifest) {
   if (hasWorker) { score += 2; details.workersPresent = true; }
 
   // Investigation report (3pts)
-  if (manifest._investigationPath) { score += 3; details.investigationReport = true; }
+  if (manifest._hasInvestigation) {
+    score += 3;
+    details.investigationReport = manifest._investigationSource || true;
+  }
 
   // Model tiering (2pts)
   const allTiered = executors.length > 0 && executors.every(e => e.modelTier);
@@ -139,7 +191,10 @@ function scorePotencial(manifest) {
   if (hasVeto) { score += 5; details.antiPatternGuards = true; }
 
   // Domain vocabulary — investigation (5pts)
-  if (manifest._investigationPath) { score += 5; details.domainVocabulary = true; }
+  if (manifest._hasInvestigation) {
+    score += 5;
+    details.domainVocabulary = manifest._investigationSource || true;
+  }
 
   // Structural patterns — content blueprints (5pts)
   const blueprints = Array.isArray(manifest.contentBlueprints) ? manifest.contentBlueprints : [];
@@ -187,12 +242,10 @@ async function runSquadScore({ args = [], options = {}, logger = console, transl
     return { valid: false, error: 'Manifest not found' };
   }
 
-  // Check for investigation
-  const squadSearchDir = path.join(projectDir, 'squad-searches', slug);
-  try {
-    await fs.access(squadSearchDir);
-    manifest._investigationPath = squadSearchDir;
-  } catch { /* no investigation */ }
+  const investigationEvidence = await resolveInvestigationEvidence(projectDir, slug, manifest);
+  manifest._hasInvestigation = investigationEvidence.present;
+  manifest._investigationSource = investigationEvidence.source;
+  manifest._investigationPath = investigationEvidence.path;
 
   const d1 = scoreCompletude(manifest);
   const d2 = scoreProfundidade(manifest);

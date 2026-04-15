@@ -146,6 +146,16 @@ test('design-doc.md is copied to new projects on fresh install', async () => {
   assert.equal(result.skipped.some(s => s.path === '.aioson/context/design-doc.md'), false);
 });
 
+test('git-guard.json is copied to new projects on fresh install', async () => {
+  const dir = await makeTempDir();
+  const result = await installTemplate(dir, { mode: 'install' });
+
+  const guardConfig = path.join(dir, '.aioson/git-guard.json');
+  assert.equal(await fileExists(guardConfig), true, 'git-guard.json must be created on fresh install');
+  assert.equal(result.copied.includes('.aioson/git-guard.json'), true);
+  assert.equal(result.skipped.some(s => s.path === '.aioson/git-guard.json'), false);
+});
+
 test('design-doc.md is preserved on update (not overwritten)', async () => {
   const dir = await makeTempDir();
   await installTemplate(dir, { mode: 'install' });
@@ -163,6 +173,31 @@ test('design-doc.md is preserved on update (not overwritten)', async () => {
   const readBack = await fs.readFile(designDoc, 'utf8');
   assert.equal(readBack, customContent, 'design-doc.md must not be overwritten on update');
   assert.equal(result.skipped.some(s => s.path === '.aioson/context/design-doc.md' && s.reason === 'project-local'), true);
+});
+
+test('git-guard.json is preserved on update (not overwritten)', async () => {
+  const dir = await makeTempDir();
+  await installTemplate(dir, { mode: 'install' });
+
+  const guardConfig = path.join(dir, '.aioson/git-guard.json');
+  const customContent = `${JSON.stringify({
+    version: 1,
+    allowPaths: ['fixtures/**'],
+    blockPaths: ['drafts/**'],
+    allowExtensions: [],
+    blockExtensions: []
+  }, null, 2)}\n`;
+  await fs.writeFile(guardConfig, customContent, 'utf8');
+
+  const result = await installTemplate(dir, {
+    mode: 'update',
+    overwrite: true,
+    backupOnOverwrite: true
+  });
+
+  const readBack = await fs.readFile(guardConfig, 'utf8');
+  assert.equal(readBack, customContent, 'git-guard.json must not be overwritten on update');
+  assert.equal(result.skipped.some(s => s.path === '.aioson/git-guard.json' && s.reason === 'project-local'), true);
 });
 
 async function fileExists(filePath) {

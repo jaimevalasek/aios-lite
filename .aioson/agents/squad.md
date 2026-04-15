@@ -30,6 +30,7 @@ The detailed squad protocol is split into on-demand framework docs:
 
 - `.aioson/docs/squad/package-contract.md`
 - `.aioson/docs/squad/creation-flow.md`
+- `.aioson/docs/squad/domain-classification.md`
 - `.aioson/docs/squad/research-loop.md`
 - `.aioson/docs/squad/quality-lens.md`
 - `.aioson/docs/squad/workflow-quality.md`
@@ -38,6 +39,18 @@ The detailed squad protocol is split into on-demand framework docs:
 - `.aioson/docs/squad/genome-bindings.md`
 
 These docs are part of the canonical framework. Load only the modules required by the current request.
+
+## Built-in squad skills
+The squad framework also ships an on-demand skill router:
+
+- `.aioson/skills/squad/SKILL.md`
+
+Load this router when the operation materially shapes executor design, workflow structure,
+content formats, review loops, or quality gates. After loading it:
+
+1. Load only the domain, pattern, format, and reference files it points to for the current squad.
+2. Reuse relevant squad skills before inventing a new structure.
+3. Do not load unrelated squad skills just because they exist.
 
 ## Deterministic preflight
 Before acting, derive one primary `operation`:
@@ -59,9 +72,12 @@ Then build `required_modules` using this deterministic map:
 
 | Condition | Required modules |
 |---|---|
-| Always | `.aioson/docs/squad/package-contract.md`, `.aioson/docs/squad/research-loop.md` |
+| `default-create`, `create`, `extend`, `repair`, `validate` | `.aioson/docs/squad/package-contract.md` |
 | `default-create`, `design`, `create`, `extend` | `.aioson/docs/squad/creation-flow.md` |
-| `default-create`, `design`, `create`, `extend`, `analyze`, `plan`, `repair`, `configure-output`, `session-run` | `.aioson/docs/squad/quality-lens.md` |
+| `default-create`, `design`, or request introduces a regulated domain, specialized domain, locale-specific audience, or country-specific constraints | `.aioson/docs/squad/domain-classification.md` |
+| `default-create`, `design`, `create`, `extend`, `analyze`, `plan`, `repair` | `.aioson/docs/squad/research-loop.md` |
+| `default-create`, `design`, `create`, `extend`, `analyze`, `plan`, `repair` | `.aioson/docs/squad/quality-lens.md` |
+| `default-create`, `design`, `create`, `extend`, `analyze`, `plan`, `repair`, or request implies recurring content, pipelines, multi-platform delivery, persona-based work, review loops, or executor-pattern choices | `.aioson/skills/squad/SKILL.md`, then only the relevant files under `domains/`, `patterns/`, `formats/`, and `references/` |
 | Request mentions content deliverables, `contentBlueprints`, session HTML, or `--config=output` | `.aioson/docs/squad/content-output.md` |
 | Request implies workflows, plans, 3+ phases, human gates, review loops, or 4+ executors | `.aioson/docs/squad/workflow-quality.md` |
 | Request implies ephemeral work, investigation, inter-squad routing, learnings, dashboard guidance, or recurring runs | `.aioson/docs/squad/session-operations.md` |
@@ -71,9 +87,9 @@ Preflight rules:
 
 1. If a subcommand is explicit, read the matching `.aioson/tasks/` file immediately.
 2. Task files control step order for explicit subcommands.
-3. The squad docs above provide the cross-cutting contract and must still be loaded when required by the map.
-4. Do not proceed until every required module has been loaded.
-5. Do not preload modules that are not required.
+3. The squad docs above and the squad skill router provide cross-cutting contract and pattern guidance and must still be loaded when required by the map.
+4. Do not proceed until every required module and required squad skill file has been loaded.
+5. Do not preload docs, squad skills, or patterns that are not required.
 
 ## Subcommand routing
 If the user includes a squad subcommand, route to the matching task:
@@ -111,10 +127,12 @@ If no subcommand is provided, run the default fast path:
 - Use `@genome` when the user wants to generate or apply genomes.
 - Use `@orache` when deep domain investigation is required.
 - Use task files for explicit squad operations.
-- Use squad docs only as needed for the current operation.
+- Use squad docs for package contract and operating protocol.
+- Use squad skills for domain patterns, workflow templates, review loops, and format choices.
 
 ## Hard constraints
 - Do not invent domain facts.
+- Do not bypass the domain-classification gate for new or materially expanded squads.
 - Do not silently merge or reuse an existing squad when the user asked for a new one.
 - Do not create package files outside the canonical squad root.
 - Do not write HTML or other non-markdown artifacts under `.aioson/context/`.

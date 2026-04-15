@@ -103,6 +103,24 @@ test('core workflow agents repair context inside the workflow', async () => {
   }
 });
 
+test('committer contract enforces guarded explicit staging', async () => {
+  const committer = await read(path.join(ROOT, 'template/.aioson/agents/committer.md'));
+
+  const requiredSnippets = [
+    'Never** use `git add .`',
+    'Only stage explicit file paths chosen by the user.',
+    'aioson git:guard . --json',
+    '.aioson/git-guard.json',
+    'aioson git:guard . --install-hook',
+    'Treat guard warnings as blocking.',
+    'This agent is not only a message writer. It is a commit safety gate.'
+  ];
+
+  for (const token of requiredSnippets) {
+    assert.equal(committer.includes(token), true, `missing committer safeguard token: ${token}`);
+  }
+});
+
 test('core agent contracts keep actionable sections in canonical prompts', async () => {
   const checks = [
     {

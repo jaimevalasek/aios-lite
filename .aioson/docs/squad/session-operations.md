@@ -33,11 +33,19 @@ Offer investigation when:
 - the squad will be reused repeatedly
 - richer domain vocabulary and benchmarks would materially help
 
-If investigation is accepted:
+If the domain-classification gate marked the domain as regulated, investigation is mandatory and blocks final squad generation.
+
+If investigation is accepted or required:
 
 1. invoke `@orache`
 2. read the `squad-searches/` report
-3. use it to refine executors, vocabulary, blueprints, quality checks, and anti-patterns
+3. persist an `investigation` object in the blueprint and final manifest
+4. use it to refine executors, vocabulary, blueprints, quality checks, and anti-patterns
+5. translate regulations into hard constraints, human gates, or review criteria
+6. translate anti-patterns into checklist items and `vetoConditions`
+7. translate benchmarks into workflow quality bars and warm-up expectations
+
+If the report covers fewer than 4 of the 7 investigation dimensions, ask whether the user wants a deeper pass before finalizing the squad.
 
 ## Inter-squad routing
 

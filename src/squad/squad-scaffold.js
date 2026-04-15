@@ -10,7 +10,7 @@
  * Integrates with state-manager.js for STATE.md generation.
  *
  * Usage:
- *   node squad-scaffold.js --slug=<slug> --name="Name" --mode=content|code|hybrid
+ *   node squad-scaffold.js --slug=<slug> --name="Name" --mode=content|software|research|mixed
  */
 
 const fs = require('node:fs/promises');
@@ -19,27 +19,94 @@ const stateManager = require('./state-manager');
 
 const SQUADS_DIR = path.join('.aioson', 'squads');
 
-// ─── Templates ───────────���─────────────────────────��─────────────────────────
+// ─── Templates ───────────────────────────────────────────────────────────────
+
+function normalizeMode(mode) {
+  const raw = String(mode || '').trim().toLowerCase();
+  if (raw === 'code') return 'software';
+  if (raw === 'hybrid') return 'mixed';
+  if (raw === 'content' || raw === 'software' || raw === 'research' || raw === 'mixed') {
+    return raw;
+  }
+  return null;
+}
 
 function agentsSkeleton(name, mode) {
   const executorTypes = {
     content: ['writer', 'editor', 'researcher'],
-    code: ['developer', 'reviewer', 'tester'],
-    hybrid: ['researcher', 'developer', 'writer']
+    software: ['developer', 'reviewer', 'tester'],
+    research: ['researcher', 'analyst', 'reviewer'],
+    mixed: ['researcher', 'developer', 'writer']
   };
 
-  const types = executorTypes[mode] || executorTypes.hybrid;
-  const slots = types.map((t) => `### ${t}\n- **Role:** (define)\n- **Tools:** (define)\n- **Checklist:** (define)`);
+  const types = executorTypes[mode] || executorTypes.mixed;
+  const slots = [
+    '## Mission',
+    '(define the squad mission here)',
+    '',
+    '## Does',
+    '- (define the main responsibilities)',
+    '',
+    '## Does not',
+    '- (define explicit out-of-scope boundaries)',
+    '',
+    '## Permanent executors',
+    '- @orquestrador — coordinates work, routes requests, and synthesizes outputs',
+    ...types.map((t) => `- @${t} — (define role)`),
+    '',
+    '## Squad skills',
+    '- (declare reusable skills when they exist)',
+    '',
+    '## Squad MCPs',
+    '- (declare MCPs when they exist)',
+    '',
+    '## Subagent policy',
+    '- (define when temporary subagents are allowed)',
+    '',
+    '## Outputs and review',
+    '- (define output locations and review policy)'
+  ];
 
-  return `# ${name} — Agent Roster\n\n${slots.join('\n\n')}\n`;
+  return `# Squad ${name}\n\n${slots.join('\n')}\n`;
 }
 
 function manifestSkeleton(slug, name, mode) {
+  const rootDir = `${SQUADS_DIR}/${slug}`;
   return JSON.stringify({
+    schemaVersion: '1.0.0',
+    packageVersion: '1.0.0',
     slug,
     name,
     mode,
-    created_at: new Date().toISOString(),
+    mission: `Define the mission for ${name}.`,
+    goal: `Define the goal for ${name}.`,
+    visibility: 'private',
+    locale_scope: 'universal',
+    storagePolicy: {
+      primary: 'file',
+      artifacts: `output/${slug}/`,
+      exports: {
+        html: true,
+        markdown: true,
+        json: true
+      }
+    },
+    package: {
+      rootDir,
+      agentsDir: `${rootDir}/agents`,
+      workersDir: `${rootDir}/workers`,
+      workflowsDir: `${rootDir}/workflows`,
+      checklistsDir: `${rootDir}/checklists`,
+      skillsDir: `${rootDir}/skills`,
+      templatesDir: `${rootDir}/templates`,
+      docsDir: `${rootDir}/docs`
+    },
+    rules: {
+      outputsDir: `output/${slug}`,
+      logsDir: `aioson-logs/${slug}`,
+      mediaDir: `media/${slug}`,
+      reviewPolicy: []
+    },
     budget: {
       max_tokens_per_session: null,
       max_tokens_per_task: null,
@@ -54,12 +121,66 @@ function manifestSkeleton(slug, name, mode) {
     anti_loop: {
       threshold: 8,
       action: 'feedback'
-    }
+    },
+    skills: [],
+    mcps: [],
+    subagents: [],
+    contentBlueprints: [],
+    executors: [
+      {
+        slug: 'orquestrador',
+        title: 'Orquestrador',
+        type: 'agent',
+        role: 'Coordinate the squad execution and synthesize specialist outputs.',
+        file: `${rootDir}/agents/orquestrador.md`,
+        usesLLM: true,
+        deterministic: false,
+        modelTier: 'balanced',
+        skills: [],
+        genomes: []
+      }
+    ],
+    checklists: [
+      {
+        slug: 'quality',
+        title: 'Quality Checklist',
+        file: `${rootDir}/checklists/quality.md`
+      }
+    ],
+    workflows: [
+      {
+        slug: 'default',
+        title: 'Default Workflow',
+        file: `${rootDir}/workflows/default.md`,
+        phases: []
+      }
+    ],
+    genomes: [],
+    created_at: new Date().toISOString()
   }, null, 2);
 }
 
-function squadMdSkeleton(name, mode) {
-  return `# ${name}\n\n## Overview\n(describe the squad's purpose)\n\n## Mode\n${mode}\n\n## Executors\nSee agents/agents.md\n\n## Workflows\n(define execution workflows)\n\n## Quality Gates\nSee checklists/quality.md\n`;
+function squadMdSkeleton(slug, name, mode) {
+  return `# ${name}
+
+Mode: ${mode}
+Goal: (define the squad goal)
+Agents: .aioson/squads/${slug}/agents
+Manifest: .aioson/squads/${slug}/squad.manifest.json
+Output: output/${slug}
+Logs: aioson-logs/${slug}
+Media: media/${slug}
+LatestSession: output/${slug}/latest.html
+
+## Skills
+- (declare squad-level skills here)
+
+## MCPs
+- (declare MCPs here)
+
+## SubagentPolicy
+- (define temporary subagent rules)
+`;
 }
 
 function designDocSkeleton(name) {
@@ -78,6 +199,47 @@ function learningsIndexSkeleton(name) {
   return `# ${name} — Learnings Index\n\nsession_count: 0\n\n## Extracted Learnings\n*(populated automatically by learning-extractor after sessions)*\n\n## Manual Observations\n*(add observations here)*\n`;
 }
 
+function orchestratorSkeleton(name, slug) {
+  return `# Agent @orquestrador
+
+> ⚡ **ACTIVATED** — Execute immediately as @orquestrador.
+
+## Mission
+Coordinate the ${name} squad, route requests to the right executor, and synthesize the final output.
+
+## Quick context
+Squad: ${name} | Slug: ${slug}
+
+## Focus
+- Route work to the right specialist
+- Protect scope and output quality
+- Keep workflows, reviews, and hand-offs coherent
+
+## Hard constraints
+- Respect the squad manifest and package contract
+- Do not absorb specialist work silently when routing is required
+- Keep user-facing interaction aligned with the squad locale policy
+
+## Output contract
+- Primary synthesis: .aioson/squads/${slug}/docs/design-doc.md
+- Session deliverables: output/${slug}/
+`;
+}
+
+function workflowSkeleton(name) {
+  return `# Workflow: default
+
+## Goal
+Default execution flow for ${name}.
+
+## Phases
+1. Intake
+2. Execution
+3. Review
+4. Final synthesis
+`;
+}
+
 // ─── Public API ──────────────────────────────────────────────────────────────
 
 /**
@@ -88,12 +250,13 @@ function learningsIndexSkeleton(name) {
  * @returns {Promise<object>}  — { ok, slug, files, directories }
  */
 async function scaffoldSquad(projectDir, options = {}) {
-  const { slug, name, mode = 'hybrid' } = options;
+  const { slug, name } = options;
+  const mode = normalizeMode(options.mode || 'mixed');
 
   if (!slug) return { ok: false, error: 'slug is required' };
   if (!name) return { ok: false, error: 'name is required' };
-  if (!['content', 'code', 'hybrid'].includes(mode)) {
-    return { ok: false, error: `Invalid mode "${mode}" — use content|code|hybrid` };
+  if (!mode) {
+    return { ok: false, error: `Invalid mode "${options.mode}" — use content|software|research|mixed` };
   }
 
   const squadDir = path.join(projectDir, SQUADS_DIR, slug);
@@ -125,18 +288,19 @@ async function scaffoldSquad(projectDir, options = {}) {
 
   // Squad directory files
   await writeFile(path.join(base, 'agents', 'agents.md'), agentsSkeleton(name, mode));
+  await writeFile(path.join(base, 'agents', 'orquestrador.md'), orchestratorSkeleton(name, slug));
   await writeFile(path.join(base, 'squad.manifest.json'), manifestSkeleton(slug, name, mode));
-  await writeFile(path.join(base, 'squad.md'), squadMdSkeleton(name, mode));
+  await writeFile(path.join(base, 'squad.md'), squadMdSkeleton(slug, name, mode));
   await writeFile(path.join(base, 'docs', 'design-doc.md'), designDocSkeleton(name));
   await writeFile(path.join(base, 'docs', 'readiness.md'), readinessSkeleton(name));
   await writeFile(path.join(base, 'checklists', 'quality.md'), qualitySkeleton(name));
   await writeFile(path.join(base, 'learnings', 'index.md'), learningsIndexSkeleton(name));
+  await writeFile(path.join(base, 'workflows', 'default.md'), workflowSkeleton(name));
 
   // Empty directories
-  await ensureDir(path.join(base, 'workflows'));
-  await ensureDir(path.join(base, 'scripts'));
-  await ensureDir(path.join(base, 'script-plans'));
-  await ensureDir(path.join(base, 'bus'));
+  await ensureDir(path.join(base, 'workers'));
+  await ensureDir(path.join(base, 'skills'));
+  await ensureDir(path.join(base, 'templates'));
 
   // Output directories
   await ensureDir(path.join('output', slug));

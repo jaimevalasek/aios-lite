@@ -26,6 +26,23 @@ async function pathExists(targetPath) {
   }
 }
 
+async function readManifestInvestigationMeta(projectDir, squadSlug) {
+  const manifestPath = path.resolve(projectDir, SQUADS_DIR, squadSlug, 'squad.manifest.json');
+  try {
+    const raw = await fs.readFile(manifestPath, 'utf8');
+    const manifest = JSON.parse(raw);
+    const investigation = manifest && typeof manifest.investigation === 'object'
+      ? manifest.investigation
+      : null;
+    return {
+      slug: investigation?.slug || null,
+      path: investigation?.path || null
+    };
+  } catch {
+    return { slug: null, path: null };
+  }
+}
+
 /**
  * Compute hash of squad manifest for staleness detection.
  */
@@ -203,6 +220,7 @@ async function handleStale(projectDir, squadSlug, { logger, t }) {
   const planDate = new Date(meta.created);
   const manifestFile = path.resolve(projectDir, SQUADS_DIR, squadSlug, 'squad.manifest.json');
   let stale = false;
+  const investigationMeta = await readManifestInvestigationMeta(projectDir, squadSlug);
 
   try {
     const stat = await fs.stat(manifestFile);
@@ -229,6 +247,19 @@ async function handleStale(projectDir, squadSlug, { logger, t }) {
     }
   } catch {
     // designs dir may not exist
+  }
+
+  if (investigationMeta.path) {
+    try {
+      const invFile = path.resolve(projectDir, investigationMeta.path);
+      const stat = await fs.stat(invFile);
+      if (stat.mtime > planDate) {
+        logger.log('  ⚠ investigation report modified after plan was created');
+        stale = true;
+      }
+    } catch {
+      // linked investigation may be missing on disk
+    }
   }
 
   if (stale) {
@@ -260,6 +291,7 @@ async function handleRegister(projectDir, squadSlug, { logger, t }) {
   const meta = parsePlanFrontmatter(content);
   const rounds = countRounds(content);
   const hash = await computeManifestHash(projectDir, squadSlug);
+  const investigationMeta = await readManifestInvestigationMeta(projectDir, squadSlug);
 
   const handle = await openRuntimeDb(projectDir);
   const { db } = handle;
@@ -270,7 +302,7 @@ async function handleRegister(projectDir, squadSlug, { logger, t }) {
       roundsTotal: rounds,
       roundsCompleted: 0,
       basedOnBlueprint: meta.based_on_blueprint || null,
-      basedOnInvestigation: meta.based_on_investigation || null,
+      basedOnInvestigation: meta.based_on_investigation || investigationMeta.slug || investigationMeta.path || null,
       sourceHash: hash
     });
     logger.log(t('squad_plan.registered', { planSlug, rounds }));

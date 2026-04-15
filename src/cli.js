@@ -167,6 +167,7 @@ const { runPatternDetect } = require('./commands/pattern-detect');
 const { runSelfLoop } = require('./commands/self-implement-loop');
 const { runSquadCard } = require('./commands/squad-card');
 const { runAgentExportSkill } = require('./commands/agent-export-skill');
+const { runGitGuard } = require('./commands/git-guard');
 const { runAuthLogin, runAuthLogout, runAuthStatus } = require('./commands/auth');
 const { runWorkspaceInit, runWorkspaceStatus, runWorkspaceOpen } = require('./commands/workspace');
 const { runGenomePublish, runGenomeInstallStore, runGenomeInstall, runGenomeList, runGenomeRemove } = require('./commands/store-genome');
@@ -335,6 +336,8 @@ const JSON_SUPPORTED_COMMANDS = new Set([
   'self-loop',
   'squad:card',
   'squad-card',
+  'git:guard',
+  'git-guard',
   'agent:export-skill',
   'agent-export-skill',
   'squad:learning',
@@ -943,6 +946,8 @@ async function main() {
       result = await runSelfLoop({ args, options, logger: commandLogger });
     } else if (command === 'squad:card' || command === 'squad-card') {
       result = await runSquadCard({ args, options, logger: commandLogger });
+    } else if (command === 'git:guard' || command === 'git-guard') {
+      result = await runGitGuard({ args, options, logger: commandLogger });
     } else if (command === 'agent:export-skill' || command === 'agent-export-skill') {
       result = await runAgentExportSkill({ args, options, logger: commandLogger });
     } else if (command === 'squad:learning' || command === 'squad-learning') {

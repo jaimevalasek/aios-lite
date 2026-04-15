@@ -157,6 +157,36 @@
 | `cloud:publish:squad` | Publica snapshot de uma squad local | Quando quer distribuir uma squad para outro projeto ou catálogo |
 | `cloud:publish:genome` | Publica snapshot de um genome local | Quando quer versionar e compartilhar um genome |
 
+### Autenticação e Workspaces (Cloud)
+
+| Comando | O que faz | Quando usar |
+|---|---|---|
+| `auth:login` | Autentica o CLI na AIOSON Store via `--token` | Quando for interagir com recursos em nuvem, instalar pacotes privados ou publicar itens na Store |
+| `auth:logout` | Remove o token de autenticação local | Quando quiser desconectar o ambiente da conta atual |
+| `auth:status` | Verifica o estado da sua autenticação | Para confirmar se você está logado na AIOSON Store |
+| `workspace:init` | Inicializa um projeto local e o vincula a um workspace remoto `--name=<slug>` | Quando começar um projeto que terá persistência, tracking e controle sincronizados no cloud |
+| `workspace:status` | Exibe os detalhes e metadados do workspace conectado | Para verificar o id, nome e status de sincronização do projeto atual |
+| `workspace:open` | Abre o painel do workspace conectado no seu navegador web | Quando precisar ver configurações do workspace na interface do cloud |
+
+### AIOSON Store (Sistemas, Genomes, Squads e Skills)
+
+A nova versão da Store permite empacotar, distribuir e instalar não só agentes, mas sistemas completos (boilerplates), genomes estruturados e skills.
+
+| Comando | O que faz | Quando usar |
+|---|---|---|
+| `system:package` | Lê o `system.json` e empacota o projeto local em `.aioson/system-packages` | Quando quiser testar o empacotamento completo do seu sistema antes de submetê-lo |
+| `system:publish` | Empacota e publica seu sistema/boilerplate na AIOSON Store | Quando quiser distribuir uma base arquitetural inteira para que outros comecem projetos rapidamente |
+| `system:list` | Lista os sistemas disponíveis localmente ou na nuvem | Para descobrir boilerplates e sistemas base que podem ser instalados |
+| `system:install` | Baixa e inicializa um sistema completo a partir da Store | Para dar kickstart num projeto novo a partir de um `system` já configurado com squads e arquitetura |
+| `squad:list` | Lista squads instaladas localmente ou remotamente na Store `--remote` | Para descobrir e inspecionar quais squads estão ativas ou disponíveis na nuvem |
+| `squad:publish` | Publica uma squad local na AIOSON Store | Quando quiser compartilhar ou monetizar `--paid` uma squad montada |
+| `squad:install` | Baixa e instala uma squad da Store no projeto local | Para importar capacidades, agentes e workflows empacotados distribuídos na Store |
+| `squad:grant` | Concede licença de acesso a uma squad para um email de usuário | Quando você gerencia permissões manuais de suas squads privadas/pagas |
+| `genome:publish` | Publica um dos seus genomes na AIOSON Store | Quando criar um padrão de conhecimento valioso (ex: regras de negócio) e quiser distribuir |
+| `genome:install` / `install:store` | Baixa e vincula um genome remoto no seu projeto local | Quando precisar instalar pacotes de conhecimento remotos para uso dos seus agentes |
+| `genome:list` / `remove` | Lista ou desinstala genomes presentes no projeto | Para gerenciar os pacotes de conhecimento instalados na pasta `.aioson/genomes` |
+| `skill:publish` | Empacota e publica uma skill local na AIOSON Store | Quando criar uma ferramenta ou integração e quiser distribuí-la para a comunidade |
+
 ### Contexto e recuperação de sessão
 
 | Comando | O que faz | Quando usar |

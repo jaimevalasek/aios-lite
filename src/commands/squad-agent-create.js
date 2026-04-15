@@ -9,6 +9,7 @@ const SQUADS_DIR = '.aioson/squads';
 
 const VALID_TYPES = ['agent', 'assistant', 'clone', 'worker'];
 const VALID_TIERS = ['0', '1', '2', '3'];
+const VALID_MODEL_TIERS = ['powerful', 'balanced', 'fast', 'none'];
 const VALID_DISC = [
   'dominant-driver', 'influential-expressive', 'steady-amiable',
   'compliant-analytical', 'dominant-influential', 'influential-steady',
@@ -24,6 +25,11 @@ function slugify(name) {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '');
+}
+
+function resolveExecutorModelTier(type, modelTier) {
+  if (type === 'worker') return 'none';
+  return modelTier || 'balanced';
 }
 
 // ---------------------------------------------------------------------------
@@ -49,8 +55,10 @@ function buildAgentTemplate(slug, opts) {
     type = 'agent',
     tier = null,
     disc = null,
+    modelTier = null,
     domain = null,
     specialist = null,
+    localeScope = 'universal',
     withInfra = false
   } = opts;
 
@@ -61,8 +69,8 @@ function buildAgentTemplate(slug, opts) {
   lines.push('');
 
   const identity = scope === 'squad' && squadSlug
-    ? `<!-- identity: squad:${squadSlug}/${slug} | type: ${type}${tier ? ` | tier: ${tier}` : ''} -->`
-    : `<!-- identity: my-agent:${slug} | type: ${type}${tier ? ` | tier: ${tier}` : ''} -->`;
+    ? `<!-- identity: squad:${squadSlug}/${slug} | type: ${type}${tier ? ` | tier: ${tier}` : ''}${modelTier ? ` | modelTier: ${modelTier}` : ''} -->`
+    : `<!-- identity: my-agent:${slug} | type: ${type}${tier ? ` | tier: ${tier}` : ''}${modelTier ? ` | modelTier: ${modelTier}` : ''} -->`;
   lines.push(identity);
   lines.push('');
   lines.push(`> ⚡ **ACTIVATED** — Execute immediately as @${slug}.`);
@@ -88,6 +96,7 @@ function buildAgentTemplate(slug, opts) {
   if (scope === 'squad' && squadSlug) {
     lines.push('## Quick context');
     lines.push(`Squad: ${squadName || squadSlug} | Agent: @${slug} | Type: ${type}${tier ? ` | Tier: ${tier}` : ''}`);
+    lines.push(`Locale scope: ${localeScope}`);
     if (domain) lines.push(`Domain: ${domain}`);
     lines.push('');
   }
@@ -215,7 +224,11 @@ function buildAgentTemplate(slug, opts) {
 
   // ── Hard constraints ────────────────────────────────────────────────────
   lines.push('## Hard constraints');
-  lines.push('- Use `interaction_language` from project context for all interaction. If it is absent, fall back to `conversation_language`.');
+  if (scope === 'squad' && localeScope && localeScope !== 'universal') {
+    lines.push(`- This squad is locale-specific (${localeScope}). Use that locale for prompt examples and user-facing output inside this squad.`);
+  } else {
+    lines.push('- Use `interaction_language` from project context for all interaction. If it is absent, fall back to `conversation_language`.');
+  }
   lines.push('- Do not invent facts or requirements — ask when uncertain');
   if (scope === 'squad' && squadSlug) {
     lines.push(`- Stay within squad scope: ${squadSlug}`);
@@ -463,6 +476,8 @@ async function runSquadAgentCreate({ args = [], options = {}, logger = console, 
   const type = options.type || 'agent';
   const tier = options.tier || null;
   const disc = options.disc || null;
+  const modelTier = options['model-tier'] || options.modelTier || null;
+  const behavioralProfile = options['behavioral-profile'] || options.behavioralProfile || disc || null;
   const domain = options.domain || null;
   const specialist = options.specialist || null;
   const withInfra = !!options['with-infra'];
@@ -498,6 +513,18 @@ async function runSquadAgentCreate({ args = [], options = {}, logger = console, 
     return { ok: false, error: 'invalid_disc' };
   }
 
+  if (behavioralProfile && !VALID_DISC.includes(behavioralProfile)) {
+    const msg = `Invalid behavioral profile: "${behavioralProfile}". Valid: ${VALID_DISC.join(', ')}`;
+    logger.error(msg);
+    return { ok: false, error: 'invalid_behavioral_profile' };
+  }
+
+  if (modelTier && !VALID_MODEL_TIERS.includes(modelTier)) {
+    const msg = `Invalid model tier: "${modelTier}". Use: ${VALID_MODEL_TIERS.join(', ')}`;
+    logger.error(msg);
+    return { ok: false, error: 'invalid_model_tier' };
+  }
+
   // Determine scope
   let resolvedScope = scope;
   if (!resolvedScope) {
@@ -512,6 +539,8 @@ async function runSquadAgentCreate({ args = [], options = {}, logger = console, 
 
   // If scope=squad, validate squad exists
   let squadName = null;
+  let squadManifest = null;
+  let localeScope = 'universal';
   if (resolvedScope === 'squad') {
     if (!squadSlug) {
       const squads = await listSquads(projectDir);
@@ -536,8 +565,9 @@ async function runSquadAgentCreate({ args = [], options = {}, logger = console, 
     if (await exists(manifestPath)) {
       try {
         const raw = await fs.readFile(manifestPath, 'utf8');
-        const manifest = JSON.parse(raw);
-        squadName = manifest.name || squadSlug;
+        squadManifest = JSON.parse(raw);
+        squadName = squadManifest.name || squadSlug;
+        localeScope = squadManifest.locale_scope || 'universal';
       } catch { squadName = squadSlug; }
     } else {
       squadName = squadSlug;
@@ -565,7 +595,8 @@ async function runSquadAgentCreate({ args = [], options = {}, logger = console, 
   // Build agent template
   const content = buildAgentTemplate(slug, {
     mission, focus, scope: resolvedScope,
-    squadSlug, squadName, type, tier, disc, domain, specialist,
+    squadSlug, squadName, type, tier, disc, modelTier: resolveExecutorModelTier(type, modelTier), domain, specialist,
+    localeScope,
     withInfra
   });
 
@@ -574,6 +605,7 @@ async function runSquadAgentCreate({ args = [], options = {}, logger = console, 
     logger.log(`[dry-run] Would create: ${agentRelPath}`);
     logger.log(`[dry-run] Scope: ${resolvedScope} | Type: ${type}${tier ? ` | Tier: ${tier}` : ''}`);
     if (resolvedScope === 'squad') logger.log(`[dry-run] Squad: ${squadSlug}`);
+    if (resolvedScope === 'squad') logger.log(`[dry-run] Locale scope: ${localeScope}`);
     if (withInfra) logger.log('[dry-run] Would generate operational infrastructure stubs');
     logger.log('');
     logger.log(content);
@@ -623,17 +655,23 @@ async function runSquadAgentCreate({ args = [], options = {}, logger = console, 
     const manifestPath = path.join(projectDir, SQUADS_DIR, squadSlug, 'squad.manifest.json');
     if (await exists(manifestPath)) {
       try {
-        const raw = await fs.readFile(manifestPath, 'utf8');
-        const manifest = JSON.parse(raw);
+        const manifest = squadManifest || JSON.parse(await fs.readFile(manifestPath, 'utf8'));
         if (!Array.isArray(manifest.executors)) manifest.executors = [];
 
         const alreadyExists = manifest.executors.some(e => e.slug === slug);
         if (!alreadyExists) {
+          const resolvedModelTier = resolveExecutorModelTier(type, modelTier);
           manifest.executors.push({
             slug,
+            title: name,
             type,
-            role: slug,
+            role: mission || slug,
             file: agentRelPath,
+            usesLLM: type !== 'worker',
+            deterministic: type === 'worker',
+            modelTier: resolvedModelTier,
+            behavioralProfile: behavioralProfile || undefined,
+            domain: domain || undefined,
             tier: tier ? Number(tier) : undefined,
             disc: disc || undefined,
             skills: [],
@@ -651,6 +689,8 @@ async function runSquadAgentCreate({ args = [], options = {}, logger = console, 
   logger.log(`  Agent created: ${agentRelPath}`);
   logger.log(`  Scope: ${resolvedScope === 'my-agents' ? 'my-agents (versioned, available globally)' : `squad:${squadSlug}`}`);
   logger.log(`  Type: ${type}${tier ? ` | Tier: ${tier}` : ''}${disc ? ` | DISC: ${disc}` : ''}`);
+  if (resolvedScope === 'squad') logger.log(`  Locale scope: ${localeScope}`);
+  if (modelTier || type === 'worker') logger.log(`  Model tier: ${resolveExecutorModelTier(type, modelTier)}`);
   logger.log(`  Slug: @${slug}`);
   if (registeredClaude) logger.log('  Registered in CLAUDE.md');
   if (registeredAgents) logger.log('  Registered in AGENTS.md');
@@ -687,6 +727,8 @@ async function runSquadAgentCreate({ args = [], options = {}, logger = console, 
     type,
     tier: tier ? Number(tier) : null,
     disc,
+    modelTier: resolveExecutorModelTier(type, modelTier),
+    behavioralProfile,
     squad: squadSlug,
     registeredClaude,
     registeredAgents,

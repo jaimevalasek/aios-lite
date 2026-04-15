@@ -10,7 +10,11 @@ const { shouldIncludeForProfile } = require('./install-profile');
 
 const ROOT_DIR = path.join(__dirname, '..');
 const TEMPLATE_DIR = path.join(ROOT_DIR, 'template');
-const PROJECT_LOCAL_FILES = new Set(['aioson-models.json', '.aioson/context/design-doc.md']);
+const PROJECT_LOCAL_FILES = new Set([
+  'aioson-models.json',
+  '.aioson/context/design-doc.md',
+  '.aioson/git-guard.json'
+]);
 const GITIGNORE_POLICY_LINES = [
   '# AIOSON — keep shared project memory and tool contracts',
   '!AGENTS.md',

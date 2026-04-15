@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "description": "Project-specific overrides for aioson git:guard. allowPaths suppress both path-based and content-based checks for listed paths.",
+  "allowPaths": ["tests/git-guard.test.js", "tests/agent-contracts.test.js", "tests/installer.test.js", "src/lib/git-commit-guard.js", "src/parser.js"],
+  "blockPaths": [],
+  "allowExtensions": [],
+  "blockExtensions": []
+}

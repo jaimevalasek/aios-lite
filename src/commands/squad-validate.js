@@ -14,6 +14,14 @@ async function readJsonIfExists(filePath) {
   } catch { return null; }
 }
 
+function normalizeRelPath(relPath) {
+  return String(relPath || '').replace(/\\/g, '/').replace(/^\.\//, '').replace(/\/+$/, '');
+}
+
+function isLocaleSpecific(localeScope) {
+  return Boolean(localeScope && localeScope !== 'universal');
+}
+
 function validateManifestFields(manifest) {
   const errors = [];
   const warnings = [];
@@ -31,6 +39,18 @@ function validateManifestFields(manifest) {
 
   if (manifest.mode && !['content', 'software', 'research', 'mixed'].includes(manifest.mode)) {
     warnings.push(`Unknown mode: "${manifest.mode}"`);
+  }
+
+  if (manifest.locale_scope && !/^(universal|[A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8})*)$/.test(manifest.locale_scope)) {
+    errors.push(`Invalid locale_scope: "${manifest.locale_scope}"`);
+  }
+
+  if (!manifest.package || typeof manifest.package !== 'object') {
+    warnings.push('Missing package object — squad uses legacy manifest contract');
+  }
+
+  if (!manifest.rules || typeof manifest.rules !== 'object') {
+    warnings.push('Missing rules object — squad uses legacy manifest contract');
   }
 
   return { errors, warnings };
@@ -77,9 +97,10 @@ async function validateStructure(projectDir, slug, manifest) {
   }
 
   // Check output dir (warning only)
-  const outputDir = path.join(projectDir, 'output', slug);
+  const outputRel = normalizeRelPath(manifest?.rules?.outputsDir || `output/${slug}`);
+  const outputDir = path.join(projectDir, outputRel);
   if (!(await pathExists(outputDir))) {
-    warnings.push(`Output directory not found: output/${slug}/`);
+    warnings.push(`Output directory not found: ${outputRel}/`);
   }
 
   return { errors, warnings };
@@ -265,6 +286,76 @@ async function validateSemanticDeep(projectDir, slug, manifest) {
         warnings.push(`Readiness "${dim}" is "ready" but has blocker: "${val.blocker}"`);
       }
     }
+  }
+
+  // 8. Canonical package contract
+  const packageInfo = manifest.package && typeof manifest.package === 'object' ? manifest.package : {};
+  const rules = manifest.rules && typeof manifest.rules === 'object' ? manifest.rules : {};
+  const canonicalPaths = [
+    ['package.rootDir', packageInfo.rootDir, `.aioson/squads/${slug}`],
+    ['package.agentsDir', packageInfo.agentsDir, `.aioson/squads/${slug}/agents`],
+    ['package.workersDir', packageInfo.workersDir, `.aioson/squads/${slug}/workers`],
+    ['package.workflowsDir', packageInfo.workflowsDir, `.aioson/squads/${slug}/workflows`],
+    ['package.checklistsDir', packageInfo.checklistsDir, `.aioson/squads/${slug}/checklists`],
+    ['package.skillsDir', packageInfo.skillsDir, `.aioson/squads/${slug}/skills`],
+    ['package.templatesDir', packageInfo.templatesDir, `.aioson/squads/${slug}/templates`],
+    ['package.docsDir', packageInfo.docsDir, `.aioson/squads/${slug}/docs`],
+    ['rules.outputsDir', rules.outputsDir, `output/${slug}`],
+    ['rules.logsDir', rules.logsDir, `aioson-logs/${slug}`],
+    ['rules.mediaDir', rules.mediaDir, `media/${slug}`]
+  ];
+
+  for (const [label, actual, expected] of canonicalPaths) {
+    if (!actual) {
+      warnings.push(`Missing ${label} — expected "${expected}"`);
+      continue;
+    }
+    if (normalizeRelPath(actual) !== expected) {
+      warnings.push(`${label} points to "${actual}" instead of canonical "${expected}"`);
+    }
+  }
+
+  // 9. Locale policy validation
+  if (isLocaleSpecific(manifest.locale_scope) && !manifest.locale_rationale) {
+    warnings.push(`locale_scope "${manifest.locale_scope}" is locale-specific but locale_rationale is missing`);
+  }
+
+  // 10. Source docs validation
+  const sourceDocs = Array.isArray(manifest.sourceDocs) ? manifest.sourceDocs : [];
+  for (const docPath of sourceDocs) {
+    const absPath = path.join(projectDir, normalizeRelPath(docPath));
+    if (!(await pathExists(absPath))) {
+      warnings.push(`sourceDocs entry not found: ${docPath}`);
+    }
+  }
+
+  // 11. Investigation validation
+  const investigation = manifest.investigation && typeof manifest.investigation === 'object'
+    ? manifest.investigation
+    : null;
+  const domainClassification = manifest.domainClassification && typeof manifest.domainClassification === 'object'
+    ? manifest.domainClassification
+    : null;
+
+  if (investigation) {
+    if (!investigation.slug) {
+      warnings.push('investigation object is missing "slug"');
+    }
+    if (investigation.path) {
+      const investigationPath = path.join(projectDir, normalizeRelPath(investigation.path));
+      if (!(await pathExists(investigationPath))) {
+        warnings.push(`investigation.path not found: ${investigation.path}`);
+      }
+    } else {
+      warnings.push('investigation object is missing "path"');
+    }
+  }
+
+  const investigationRequired = domainClassification?.tier === 'tier-1-regulated'
+    || domainClassification?.investigationPolicy === 'required';
+
+  if (investigationRequired && !manifest.ephemeral && !investigation) {
+    errors.push('Regulated squad is missing required investigation metadata');
   }
 
   return { errors, warnings };

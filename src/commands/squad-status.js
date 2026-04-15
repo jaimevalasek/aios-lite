@@ -239,6 +239,9 @@ async function buildSquadRecordFromPackageDir(targetDir, slug) {
   const summaryContent = await fs.readFile(summaryPath, 'utf8').catch(() => null);
   const rules = manifest.rules && typeof manifest.rules === 'object' ? manifest.rules : {};
   const packageInfo = manifest.package && typeof manifest.package === 'object' ? manifest.package : {};
+  const investigation = manifest.investigation && typeof manifest.investigation === 'object'
+    ? manifest.investigation
+    : null;
   const agentsDir = normalizeRel(packageInfo.agentsDir || path.join(SQUADS_DIR, slug, 'agents'));
   const outputDir = normalizeRel(rules.outputsDir || `${OUTPUT_ROOT}/${slug}`);
   const logsDir = normalizeRel(rules.logsDir || `${normalizeRel(LOGS_ROOT)}/${slug}`);
@@ -308,7 +311,13 @@ async function buildSquadRecordFromPackageDir(targetDir, slug) {
         : '—',
     mtime: latestHtml?.mtime || manifestStat?.mtime || null,
     tierSummary: buildTierSummary(manifest.executors),
-    estimatedCost: estimateRunCost(manifest.executors)
+    estimatedCost: estimateRunCost(manifest.executors),
+    localeScope: String(manifest.locale_scope || 'universal'),
+    localeRationale: manifest.locale_rationale || null,
+    domainTier: manifest.domainClassification?.tier || null,
+    investigationSlug: investigation?.slug || null,
+    investigationPath: investigation?.path ? normalizeRel(investigation.path) : null,
+    sourceDocsCount: Array.isArray(manifest.sourceDocs) ? manifest.sourceDocs.length : 0
   };
 }
 
@@ -445,6 +454,18 @@ async function runSquadStatus({ args, logger, t }) {
     }
     if (squad.estimatedCost != null) {
       logger.log(t('squad_status.estimated_cost', { value: squad.estimatedCost.toFixed(3) }));
+    }
+    if (squad.localeScope) {
+      logger.log(`  Locale scope: ${squad.localeScope}${squad.localeRationale ? ` — ${squad.localeRationale}` : ''}`);
+    }
+    if (squad.domainTier) {
+      logger.log(`  Domain tier: ${squad.domainTier}`);
+    }
+    if (squad.investigationSlug) {
+      logger.log(`  Investigation: ${squad.investigationSlug}${squad.investigationPath ? ` → ${squad.investigationPath}` : ''}`);
+    }
+    if (squad.sourceDocsCount > 0) {
+      logger.log(`  Source docs: ${squad.sourceDocsCount}`);
     }
     if (i < squads.length - 1) logger.log('');
   }

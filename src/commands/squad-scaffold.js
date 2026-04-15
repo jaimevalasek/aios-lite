@@ -5,8 +5,9 @@
  *
  * Usage:
  *   aioson squad:scaffold . --slug=content-team --name="Content Team" --mode=content
- *   aioson squad:scaffold . --slug=dev-core --name="Dev Core" --mode=code
- *   aioson squad:scaffold . --slug=research --name="Research Hub" --mode=hybrid
+ *   aioson squad:scaffold . --slug=dev-core --name="Dev Core" --mode=software
+ *   aioson squad:scaffold . --slug=research --name="Research Hub" --mode=research
+ *   aioson squad:scaffold . --slug=studio --name="Studio" --mode=mixed
  *   aioson squad:scaffold . --slug=test --json
  */
 
@@ -17,7 +18,7 @@ async function runSquadScaffold({ args, options = {}, logger }) {
   const targetDir = path.resolve(process.cwd(), args[0] || '.');
   const slug = String(options.slug || '').trim();
   const name = String(options.name || slug || '').trim();
-  const mode = String(options.mode || 'hybrid').trim();
+  const mode = String(options.mode || 'mixed').trim();
 
   if (!slug) {
     logger.error('Error: --slug is required');

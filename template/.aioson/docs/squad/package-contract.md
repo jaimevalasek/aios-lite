@@ -32,10 +32,14 @@ Before writing executors, derive and register:
 - mission
 - goal
 - scope and out-of-scope
+- domain classification
+- locale scope and rationale
 - skills
 - MCPs
 - subagent policy
 - content blueprints when relevant
+- source docs when relevant
+- investigation summary when relevant
 - output strategy when relevant
 - design-doc summary
 - readiness status
@@ -71,6 +75,7 @@ At minimum, include:
 - `mission`
 - `goal`
 - `visibility`
+- `locale_scope`
 - `storagePolicy`
 - `package.rootDir`
 - `package.agentsDir`
@@ -91,6 +96,13 @@ At minimum, include:
 - `checklists`
 - `workflows`
 - `genomes`
+
+When they exist, also persist:
+
+- `locale_rationale`
+- `domainClassification`
+- `investigation`
+- `sourceDocs`
 
 The manifest must mirror the real files you generated.
 
@@ -129,6 +141,22 @@ Each executor prompt should make clear:
 - which squad skills it relies on
 - when to delegate to another executor
 - when to ask the orchestrator for a temporary subagent
+
+Agent file language follows `.aioson/rules/agent-language-policy.md`:
+
+- `locale_scope` absent or `universal` → prompt files in English
+- locale-specific `locale_scope` declared → prompt files in the locale language
+- source code identifiers remain in English in every case
+
+### UI specialist executor
+
+If `uiCapability.mode = "executor"`:
+
+- create `.aioson/squads/{squad-slug}/agents/ui-specialist.md`
+- treat it as a visual specialist responsible for UI direction, layout decisions, and HTML/UI-spec deliverables
+- give it `modelTier: powerful`
+- if using an assistant profile, prefer `behavioralProfile: compliant-dominant`
+- make the routing explicit: visual, layout, interface, landing page, and component-structure requests go to `@ui-specialist`
 
 ## Orchestrator prompt
 
@@ -178,6 +206,10 @@ Create `.aioson/squads/{squad-slug}/squad.md` with:
 - logs path
 - media path
 - latest session path
+- locale scope
+- locale rationale when present
+- source docs when present
+- investigation path when present
 - squad-level genomes
 - per-agent genomes
 - skills
