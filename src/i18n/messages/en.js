@@ -109,6 +109,8 @@ module.exports = {
       'aioson squad:roi [path] [--sub=config|metric|report|export] [--squad=<slug>] [--key=<metric>] [--value=<N>]',
     help_squad_score:
       'aioson squad:score [path] --squad=<slug> [--locale=en]',
+    help_commit_prepare:
+      'aioson commit:prepare [path] [--staged-only] [--json] [--locale=en]',
     help_learning:
       'aioson learning [path] [--sub=list|stats|promote] [--status=<status>] [--id=<learning-id>] [--locale=en]',
     help_runtime_init:

@@ -23,6 +23,14 @@ This agent is not only a message writer. It is a commit safety gate.
 
 ## Activation Protocol (Run FIRST)
 
+### Step 1 — Check for prepared context
+1. Check if `.aioson/context/commit-prep.json` exists.
+2. If it exists, `ready=true`, `generatedAt` is less than 30 minutes old, and it does **not** have `committedAt`:
+   - **Use it directly**. Load `diff`, `recentLog`, `projectPulse`, `relevantPlan`, `stagedFiles`, and `guard` from the file.
+   - Skip straight to generating the commit message (Step 4).
+3. If it does not exist, is stale, or already committed, continue to Step 2.
+
+### Step 2 — Prepare the stage
 1. Run `git status --short`.
 2. If there are unstaged or untracked files:
    - show the list to the user
@@ -33,17 +41,26 @@ This agent is not only a message writer. It is a commit safety gate.
      3. cancelar
    - if the user asks to adicionar tudo, refuse and explain that `@committer` only stages explicit paths for safety
 3. If the user selected files, stage only the exact chosen paths with `git add -- <file1> <file2> ...`.
-4. Run `aioson git:guard . --json`.
-5. If the guard fails:
-   - list the blocked paths/findings
-   - suggest `git restore --staged -- "<path>"`
-   - if the problem is generated/junk output, suggest adding it to `.gitignore`
-   - stop and wait for the user
-6. Only after the guard passes:
-   - run `git diff --staged`
-   - read `.aioson/context/project-pulse.md`
-   - inspect the latest relevant file in `plans/` or `.aioson/plans/` when available
-   - run `git log -n 3 --oneline`
+4. Run `aioson commit:prepare . --staged-only --json`.
+5. Read `.aioson/context/commit-prep.json`.
+6. If the prepare result says `ready=false` or `guardOk=false`:
+   - show the errors/warnings from the JSON
+   - suggest cleanup
+   - **stop** and wait for the user
+
+### Step 3 — Safety guard (always)
+Run `aioson git:guard . --json`.
+If it fails, stop and explain why — do not commit.
+
+### Step 4 — Gather context for the message
+From `commit-prep.json` you already have:
+- `diff`
+- `recentLog`
+- `projectPulse`
+- `relevantPlan`
+- `stagedFiles`
+
+Use these to write the commit message. You do **not** need to run `git diff`, `git log`, or read `project-pulse.md` again.
 
 ## Commit Message Standards
 
@@ -74,11 +91,13 @@ type(scope): short description in imperative mood
    - run `aioson git:guard . --json` again immediately before commit
    - if still safe, execute the commit
    - if not safe, stop and explain why
+   - **after a successful commit**, delete `.aioson/context/commit-prep.json` so it is never reused accidentally
+4. If the user does **not** approve the draft, do **not** delete `commit-prep.json` — keep it for the next attempt.
 
 ## Observability
 At session end, register: `aioson agent:done . --agent=committer --summary="<one-line summary of the commit made>" 2>/dev/null || true`
 
 ---
 ## ▶ Next Step
-**Run `git status --short` now and start with explicit file selection.**
+**Check `.aioson/context/commit-prep.json`. If present and valid, generate the commit message immediately. Otherwise run `git status --short` now and start explicit file selection.**
 ---
