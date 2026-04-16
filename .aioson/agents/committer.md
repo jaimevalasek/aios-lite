@@ -12,8 +12,9 @@ This agent is not only a message writer. It is a commit safety gate.
 
 ## Hard Safety Constraints
 
-- **Never** use `git add .`, `git add -A`, `git add -u`, directory-wide staging, globs, or `git commit -am`.
-- **Never** stage files implicitly. Only stage explicit file paths chosen by the user.
+- **Never** use `git add .`, `git add -A`, `git add -u`, `git add *`, or globs that match the entire repository.
+- **Never** stage files implicitly. Only stage paths explicitly chosen by the user.
+- **Staging explicit directories is allowed** when the user clearly names them (e.g. `src/commands/`, `resources/views/`). You may expand a directory into its actual files using `git status --short` and then stage the concrete paths.
 - Project policy overrides live in `.aioson/git-guard.json`. Respect them, but never use them to bypass secret/content detection.
 - **Always** run `aioson git:guard . --json` after staging is finalized and before reading `git diff --staged`.
 - If `aioson git:guard` returns `ok=false`, **stop**. Do not commit. Explain the blocked files and suggest cleanup.
@@ -33,34 +34,46 @@ This agent is not only a message writer. It is a commit safety gate.
 ### Step 2 — Prepare the stage
 1. Run `git status --short`.
 2. If there are unstaged or untracked files:
-   - show the list to the user
-   - ask which exact files should enter the stage
-   - offer only these options:
-     1. selecionar arquivos específicos
-     2. prosseguir apenas com o que já está no stage
-     3. cancelar
+   - **show the numbered list** to the user
+   - explain that the user can either:
+     - **run `aioson commit:prepare .` manually** (recommended) — this opens a terminal checkbox UI where they can pick files with ↑/↓ and Space
+     - tell you explicitly which paths to stage (files or directories)
+   - if they choose to tell you paths, resolve directory names into concrete files via `git status --short` and run `git add -- <resolved-paths>`
    - if the user asks to adicionar tudo, refuse and explain that `@committer` only stages explicit paths for safety
-3. If the user selected files, stage only the exact chosen paths with `git add -- <file1> <file2> ...`.
-4. Run `aioson commit:prepare . --staged-only --json`.
-5. Read `.aioson/context/commit-prep.json`.
-6. If the prepare result says `ready=false` or `guardOk=false`:
-   - show the errors/warnings from the JSON
-   - suggest cleanup
-   - **stop** and wait for the user
+3. **MANDATORY:** Run the preparation command. Try these in order until one succeeds:
+   - `aioson commit:prepare . --json`
+   - `node bin/aioson.js commit:prepare . --json`
+   - `npx aioson commit:prepare . --json`
+   - `./node_modules/.bin/aioson commit:prepare . --json`
+   - **Note:** `commit:prepare .` (without `--staged-only`) triggers the interactive checkbox when run in a terminal.
+4. If **all** preparation commands fail, use the **manual fallback**:
+   - run `git diff --staged` and capture the output
+   - read `.aioson/context/project-pulse.md`
+   - run `git log -n 3 --oneline`
+   - inspect the latest relevant file in `plans/` or `.aioson/plans/` when available
+   - continue to Step 4 using the manually gathered data
+   - you do **not** need to create `commit-prep.json` in this fallback path
+5. If a preparation command **succeeds**, read `.aioson/context/commit-prep.json`.
+   - If it says `ready=false` or `guardOk=false`:
+     - show the errors/warnings from the JSON
+     - suggest cleanup
+     - **stop** and wait for the user
 
 ### Step 3 — Safety guard (always)
 Run `aioson git:guard . --json`.
 If it fails, stop and explain why — do not commit.
 
 ### Step 4 — Gather context for the message
-From `commit-prep.json` you already have:
+If you are using `commit-prep.json`, you already have:
 - `diff`
 - `recentLog`
 - `projectPulse`
 - `relevantPlan`
 - `stagedFiles`
 
-Use these to write the commit message. You do **not** need to run `git diff`, `git log`, or read `project-pulse.md` again.
+If you used the manual fallback, you gathered the same data via shell commands.
+
+Use these sources to write the commit message. You do **not** need to re-run `git diff`, `git log`, or read `project-pulse.md` again.
 
 ## Commit Message Standards
 
@@ -99,5 +112,5 @@ At session end, register: `aioson agent:done . --agent=committer --summary="<one
 
 ---
 ## ▶ Next Step
-**Check `.aioson/context/commit-prep.json`. If present and valid, generate the commit message immediately. Otherwise run `git status --short` now and start explicit file selection.**
+**Check `.aioson/context/commit-prep.json`. If present and valid, generate the commit message immediately. Otherwise run `git status --short` now.**
 ---

@@ -15,6 +15,7 @@ const path = require('node:path');
 const { execFileSync } = require('node:child_process');
 const readline = require('node:readline');
 const { runGitGuard } = require('./git-guard');
+const { promptCheckbox } = require('../lib/terminal-checkbox');
 
 function runGit(gitRoot, args, options = {}) {
   return execFileSync('git', args, {
@@ -65,29 +66,17 @@ function askQuestion(rl, questionText) {
   });
 }
 
-async function promptFileSelection(files, promptPrefix) {
+async function promptFileSelectionCheckbox(files) {
   if (files.length === 0) return [];
 
-  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+  process.stdout.write('\nSelecione os arquivos para adicionar ao stage (todos começam marcados):\n');
 
-  process.stdout.write('\n');
-  files.forEach((file, i) => {
-    process.stdout.write(`  [${i + 1}] ${file}\n`);
-  });
-  process.stdout.write('\n');
+  const selected = await promptCheckbox(
+    files,
+    '↑/↓ navegar | Espaço selecionar | Enter confirmar | a=todos | n=limpar'
+  );
 
-  const answer = await askQuestion(rl, `${promptPrefix} (números separados por vírgula, ou ENTER para todos, ou "nenhum"): `);
-  rl.close();
-
-  if (answer.toLowerCase() === 'nenhum') return [];
-  if (!answer) return files;
-
-  const indices = answer
-    .split(',')
-    .map((s) => parseInt(s.trim(), 10))
-    .filter((n) => !isNaN(n) && n >= 1 && n <= files.length);
-
-  return indices.map((i) => files[i - 1]);
+  return selected;
 }
 
 async function promptYesNo(questionText) {
@@ -237,7 +226,7 @@ async function runCommitPrepare({ args, options, logger }) {
         ], 'O que deseja fazer?');
 
     if (choice === 1) {
-      filesToStage = nonInteractive ? [] : await promptFileSelection(allModified, 'Quais arquivos deseja adicionar ao stage');
+      filesToStage = nonInteractive ? [] : await promptFileSelectionCheckbox(allModified);
     } else if (choice === 2) {
       filesToStage = [];
     } else {
