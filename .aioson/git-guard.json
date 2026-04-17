@@ -8,7 +8,11 @@
     "src/lib/git-commit-guard.js",
     "tests/**"
   ],
-  "blockPaths": [],
+  "blockPaths": [
+    "done/**",
+    "references/**",
+    "node_modules/**"
+  ],
   "allowExtensions": [],
   "blockExtensions": []
 }
