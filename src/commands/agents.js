@@ -16,6 +16,8 @@ const {
   bootstrapDirectAgentPrompt,
   classifyDirectAgentRuntime
 } = require('../execution-gateway');
+const { readAutonomyProtocol, resolveEffectiveMode } = require('../autonomy-policy');
+const { readAgentManifest, buildAgentCapabilitySummary } = require('../agent-manifests');
 
 const WORKFLOW_AGENT_IDS = new Set([
   'setup',
@@ -93,6 +95,7 @@ async function runAgentPrompt({ args, options, logger, t }) {
   let promptAgent = agent;
   let instructionPath = null;
   let prompt = null;
+  let effectiveMode = null;
 
   if (WORKFLOW_AGENT_IDS.has(requestedAgent)) {
     const loaded = await loadOrCreateState(targetDir, options);
@@ -114,14 +117,26 @@ async function runAgentPrompt({ args, options, logger, t }) {
       promptAgent = getAgentDefinition(workflowResult.agent) || agent;
       instructionPath = workflowResult.instructionPath;
       prompt = workflowResult.prompt;
+      effectiveMode = workflowResult.effectiveMode || null;
     }
   }
 
   if (!prompt) {
     instructionPath = await resolveExistingInstructionPath(targetDir, promptAgent, locale);
+    const autonomyProtocol = await readAutonomyProtocol(targetDir);
+    const manifest = await readAgentManifest(targetDir, promptAgent.id);
+    effectiveMode = resolveEffectiveMode({
+      protocol: autonomyProtocol,
+      tool,
+      agentId: promptAgent.id,
+      manifest,
+      requestedMode: options.mode || null
+    });
     prompt = buildAgentPrompt(promptAgent, tool, {
       instructionPath,
-      interactionLanguage: locale
+      interactionLanguage: locale,
+      autonomyMode: effectiveMode,
+      capabilitySummary: buildAgentCapabilitySummary(manifest, tool)
     });
     const runtimeClass = classifyDirectAgentRuntime(promptAgent.id);
     const handoffLabel = runtimeClass.source === 'squad_session'
@@ -153,7 +168,8 @@ async function runAgentPrompt({ args, options, logger, t }) {
     locale,
     instructionPath,
     prompt,
-    runtime
+    runtime,
+    effectiveMode
   };
 }
 

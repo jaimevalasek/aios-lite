@@ -1,0 +1,20 @@
+{
+  "agent_id": "setup",
+  "version": "1.0",
+  "display_name": "Setup",
+  "capabilities": [
+    {
+      "id": "initialize_project_context",
+      "category": "create",
+      "description": "Create or repair the baseline project context for AIOSON.",
+      "inputs": [],
+      "outputs": [
+        { "type": "artifact", "path_pattern": ".aioson/context/project.context.md" }
+      ]
+    }
+  ],
+  "autonomy_modes": ["guarded"],
+  "default_mode": "guarded",
+  "supported_tools": ["codex", "claude", "gemini", "opencode"],
+  "risk_profile": "medium"
+}

@@ -108,6 +108,16 @@
       "file": "parallel-doctor.schema.json"
     },
     {
+      "id": "parallel_merge",
+      "command": "aioson parallel:merge --json",
+      "file": "parallel-merge.schema.json"
+    },
+    {
+      "id": "parallel_guard",
+      "command": "aioson parallel:guard --json",
+      "file": "parallel-guard.schema.json"
+    },
+    {
       "id": "cli_error",
       "command": "aioson <unknown> --json",
       "file": "error.schema.json"

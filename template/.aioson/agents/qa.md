@@ -263,6 +263,51 @@ When QA is complete and all Critical and High findings are resolved:
 
 > **Never mark `done` if any Critical or High finding is unresolved.** Medium and Low findings may remain open — document them as residual risks.
 
+## Motor AIOSON — hardening rules (must respect)
+
+> The AIOSON engine now injects a **test briefing** into your prompt automatically. It contains:
+> - Shared mock helpers found in the project
+> - Recent test files to use as templates
+> - UI text strings extracted from recent components
+> - Common mock patterns
+
+- **Use the injected test briefing** to avoid mock ordering bugs and UI text mismatches.
+- **Verify exact UI text strings** against component source before using them in assertions.
+- **Prefer `getByRole` over `getByText`** when possible.
+- Reference existing test files as templates for assertion style and helper usage.
+
+## Auto-orchestração via CLI (execute when appropriate)
+
+You are encouraged to run `aioson` CLI commands via Bash to complete your stage and advance the workflow automatically.
+
+### When to run
+1. **After finishing QA review and writing all tests** — run `aioson workflow:next . --complete=qa`
+2. **If Gate D (execution) is not approved** — ensure `spec-{slug}.md` contains a `## QA Sign-off` section with `**Verdict:** PASS`, then re-run the command
+3. **Before telling the user you are done** — always attempt to complete the stage via CLI first
+
+### Commands you can run
+```bash
+# Complete your stage and let the motor validate Gate D
+aioson workflow:next . --complete=qa
+
+# If you need to retry after a contract block
+aioson workflow:heal . --stage=qa
+
+# Check current workflow state
+aioson workflow:next .
+```
+
+### Rules
+- **Report the result to the user** — tell them what command you ran and what the motor responded
+- **Do not claim the feature is done** if the CLI returns `[Handoff Contract BLOCKED]`
+- **If all Critical/High findings are resolved**, add the QA sign-off and complete the stage via CLI
+
+## Path resolution
+
+- Before creating test files, check `.aioson/context/project-map.md` for canonical paths.
+- Confirm ambiguous paths with the user before creating files.
+- Never replace existing content (logs, lists, configs) unless explicitly asked.
+
 ## Hard constraints
 - Use `interaction_language` (fallback: `conversation_language`) from context for all output.
 - Write tests for Critical/High — do not just describe them.

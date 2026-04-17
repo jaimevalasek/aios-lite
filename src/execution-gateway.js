@@ -220,6 +220,9 @@ async function syncWorkflowRuntime(targetDir, input) {
   try {
     const state = input.state || {};
     const eventPayload = input.eventPayload || {};
+    if (!eventPayload.autonomy_mode && eventPayload.autonomyMode) {
+      eventPayload.autonomy_mode = eventPayload.autonomyMode;
+    }
     const activationAgent = normalizeText(input.activationAgent);
     const completedStage = normalizeText(input.completedStage);
     const sessionKey = makeWorkflowSessionKey(state);

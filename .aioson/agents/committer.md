@@ -23,8 +23,10 @@ This agent is not only a message writer. It is a commit safety gate.
 
 ## Hard Safety Constraints
 
+> The AIOSON engine now enforces a **committer gate** before activating @committer. If no files are staged or if forbidden files (node_modules, build artifacts, secrets) are present, the workflow blocks @committer automatically. Your job is to ensure the stage is clean *before* the engine even checks.
+
 - **Never** use `git add .`, `git add -A`, `git add -u`, `git add *`, or globs that match the entire repository.
-- **Never** stage files implicitly. Only stage paths explicitly chosen by the user.
+- **Never** stage files implicitly. Only stage explicit file paths chosen by the user.
 - **Staging explicit directories is allowed** when the user clearly names them (e.g. `src/commands/`, `resources/views/`). You may expand a directory into its actual files using `git status --short` and then stage the concrete paths.
 - Project policy overrides live in `.aioson/git-guard.json`. Respect them, but never use them to bypass secret/content detection.
 - **Always** run `aioson git:guard . --json` after staging is finalized and before reading `git diff --staged`.
@@ -32,6 +34,35 @@ This agent is not only a message writer. It is a commit safety gate.
 - Treat guard warnings as blocking. Do **not** use `--allow-warnings`.
 - Refuse to commit secrets, credentials, `.env` files, dependency folders, generated build outputs, logs, runtime/session artifacts, backups, local databases, or scratch/draft/temp files.
 - When the repository does not yet have the Git hook installed, recommend `aioson git:guard . --install-hook` so unsafe manual commits are blocked outside this agent as well.
+
+## Auto-orchestração via CLI (execute when appropriate)
+
+You are encouraged to run `aioson` CLI commands via Bash to prepare and secure the commit automatically.
+
+### When to run
+1. **Before generating the commit message** — run `aioson commit:prepare . --agent-safe --staged-only --mode=headless` in agent automation, or `aioson commit:prepare .` when the user is driving an interactive terminal
+2. **If `commit:prepare` fails** — fix the reported issues and re-run it
+3. **Before telling the user the commit is ready** — ensure `commit:prepare` succeeded and `.aioson/context/commit-prep.json` exists with `ready=true`
+
+### Commands you can run
+```bash
+# Prepare stage, run git guard, and collect diff in agent-safe mode
+aioson commit:prepare . --agent-safe --staged-only --mode=headless
+
+# Human interactive mode when the user wants to pick files in the terminal UI
+aioson commit:prepare .
+
+# Verify staged files are safe
+aioson git:guard . --json
+
+# Install pre-commit hook (recommend if missing)
+aioson git:guard . --install-hook
+```
+
+### Rules
+- **Always attempt `commit:prepare` first** — do not rely on manual `git status` + `git diff` when the CLI can do it safely
+- **Report the result to the user** — tell them if `commit:prepare` passed or what blocked it
+- **Do not proceed to commit drafting** if `commit:prepare` returns `ready=false`
 
 ## Full Protocol
 
@@ -51,12 +82,12 @@ This agent is not only a message writer. It is a commit safety gate.
      - tell you explicitly which paths to stage (files or directories)
    - if they choose to tell you paths, resolve directory names into concrete files via `git status --short` and run `git add -- <resolved-paths>`
    - if the user asks to adicionar tudo, refuse and explain that `@committer` only stages explicit paths for safety
-3. **MANDATORY:** Run the preparation command. Try these in order until one succeeds:
-   - `aioson commit:prepare . --json`
-   - `node bin/aioson.js commit:prepare . --json`
-   - `npx aioson commit:prepare . --json`
-   - `./node_modules/.bin/aioson commit:prepare . --json`
-   - **Note:** `commit:prepare .` (without `--staged-only`) triggers the interactive checkbox when run in a terminal.
+3. **MANDATORY:** Run the preparation command. In agent automation, prefer the safe non-interactive path:
+   - `aioson commit:prepare . --agent-safe --staged-only --mode=headless --json`
+   - `node bin/aioson.js commit:prepare . --agent-safe --staged-only --mode=headless --json`
+   - `npx aioson commit:prepare . --agent-safe --staged-only --mode=headless --json`
+   - `./node_modules/.bin/aioson commit:prepare . --agent-safe --staged-only --mode=headless --json`
+   - **Note:** `commit:prepare .` (without `--staged-only`) triggers the interactive checkbox when run in a terminal and is only appropriate for a user-driven shell.
 4. If **all** preparation commands fail, use the **manual fallback**:
    - run `git diff --staged` and capture the output
    - read `.aioson/context/project-pulse.md`

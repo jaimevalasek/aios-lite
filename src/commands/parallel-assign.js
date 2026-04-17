@@ -6,6 +6,20 @@ const { validateProjectContextFile } = require('../context');
 const { exists, toRelativeSafe } = require('../utils');
 const { parseWorkers, normalizeClassification } = require('./parallel-init');
 const { recordRuntimeOperation } = require('../execution-gateway');
+const {
+  WORKSPACE_MANIFEST_RELATIVE_PATH,
+  OWNERSHIP_MAP_RELATIVE_PATH,
+  MERGE_PLAN_RELATIVE_PATH,
+  buildLaneOwnershipEntries,
+  buildWorkspaceManifest,
+  buildOwnershipMap,
+  buildMergePlan,
+  extractStatusDependencyItems,
+  extractStatusWritePathItems,
+  extractStatusMergeRank,
+  replaceSection,
+  replaceMetadataLine
+} = require('../parallel-workspace');
 
 const SOURCE_ALIAS = {
   prd: '.aioson/context/prd.md',
@@ -164,30 +178,11 @@ function distributeScopes(scopes, workers) {
 }
 
 function replaceScopeSection(content, items) {
-  const text = String(content || '');
-  const lines = text.split(/\r?\n/);
-  const start = lines.findIndex((line) => line.trim() === '## Scope');
-  const scopeLines = items.length > 0 ? items.map((item) => `- ${item}`) : ['- [unassigned]'];
-
-  if (start === -1) {
-    const suffix = lines.length > 0 && lines[lines.length - 1] === '' ? '' : '\n';
-    return `${text}${suffix}\n## Scope\n${scopeLines.join('\n')}\n`;
-  }
-
-  let end = lines.length;
-  for (let i = start + 1; i < lines.length; i += 1) {
-    if (lines[i].startsWith('## ')) {
-      end = i;
-      break;
-    }
-  }
-
-  const replaced = [
-    ...lines.slice(0, start + 1),
-    ...scopeLines,
-    ...lines.slice(end)
-  ];
-  return `${replaced.join('\n').replace(/\n*$/, '\n')}`;
+  return replaceSection(
+    content,
+    'Scope',
+    items.length > 0 ? items.map((item) => `- ${item}`) : ['- [unassigned]']
+  );
 }
 
 function updateTimestamp(content, generatedAt) {
@@ -196,6 +191,13 @@ function updateTimestamp(content, generatedAt) {
     return text.replace(/^- updated_at:\s*.*$/m, `- updated_at: ${generatedAt}`);
   }
   return text;
+}
+
+function extractMetadata(content, key, fallback = '') {
+  const regex = new RegExp(`^-\\s*${key}:\\s*(.*)$`, 'im');
+  const match = String(content || '').match(regex);
+  if (!match) return fallback;
+  return String(match[1] || '').trim() || fallback;
 }
 
 function appendSharedDecision(content, generatedAt, sourcePath, workers, scopeCount) {
@@ -290,17 +292,88 @@ async function runParallelAssign({ args, options = {}, logger, t }) {
   const assignments = distributeScopes(extracted.scopes, workers);
   const generatedAt = new Date().toISOString();
   const filesUpdated = [];
+  const projectName =
+    String((context.data && context.data.project_name) || '').trim() || path.basename(targetDir) || 'project';
+  const laneStatusByIndex = new Map();
+  const enrichedAssignments = [];
 
   for (const lane of assignments) {
     const rel = `.aioson/context/parallel/agent-${lane.lane}.status.md`;
     const lanePath = path.join(targetDir, rel);
     const current = await fs.readFile(lanePath, 'utf8');
+    laneStatusByIndex.set(lane.lane, current);
+    enrichedAssignments.push({
+      ...lane,
+      owner: extractMetadata(current, 'owner', `lane-${lane.lane}`),
+      dependsOn: extractStatusDependencyItems(current),
+      writePaths: extractStatusWritePathItems(current),
+      mergeRank: extractStatusMergeRank(current, lane.lane)
+    });
+  }
+
+  const laneEntries = buildLaneOwnershipEntries(enrichedAssignments);
+
+  for (const lane of assignments) {
+    const rel = `.aioson/context/parallel/agent-${lane.lane}.status.md`;
+    const lanePath = path.join(targetDir, rel);
+    const current = laneStatusByIndex.get(lane.lane);
+    const laneEntry = laneEntries.find((item) => item.lane === lane.lane);
     let next = replaceScopeSection(current, lane.items);
     next = updateTimestamp(next, generatedAt);
+    next = replaceMetadataLine(next, 'owner', laneEntry.owner);
+    next = replaceSection(next, 'Ownership', [
+      `- lane_key: ${laneEntry.lane_key}`,
+      `- scope_keys: ${laneEntry.scope_keys.length > 0 ? laneEntry.scope_keys.join(', ') : '[unassigned]'}`,
+      `- write_scope: ${laneEntry.scope_labels.length > 0 ? laneEntry.scope_labels.join(' | ') : '[unassigned]'}`,
+      `- write_paths: ${laneEntry.write_paths.length > 0 ? laneEntry.write_paths.join(', ') : '[unassigned]'}`
+    ]);
+    next = replaceSection(next, 'Merge', [
+      `- merge_rank: ${laneEntry.merge_rank}`,
+      '- merge_strategy: lane-index-asc'
+    ]);
     if (!dryRun) {
       await fs.writeFile(lanePath, next, 'utf8');
     }
     filesUpdated.push(rel);
+  }
+
+  const workspaceManifest = buildWorkspaceManifest({
+    projectName,
+    classification: classification || 'MEDIUM',
+    workers,
+    generatedAt,
+    lanes: laneEntries,
+    sourceFile: sourceFile.relPath
+  });
+  const ownershipMap = buildOwnershipMap({
+    generatedAt,
+    lanes: laneEntries
+  });
+  const mergePlan = buildMergePlan({
+    generatedAt,
+    lanes: laneEntries,
+    sourceFile: sourceFile.relPath
+  });
+  const machineFiles = [
+    {
+      rel: WORKSPACE_MANIFEST_RELATIVE_PATH,
+      payload: workspaceManifest
+    },
+    {
+      rel: OWNERSHIP_MAP_RELATIVE_PATH,
+      payload: ownershipMap
+    },
+    {
+      rel: MERGE_PLAN_RELATIVE_PATH,
+      payload: mergePlan
+    }
+  ];
+
+  for (const file of machineFiles) {
+    if (!dryRun) {
+      await fs.writeFile(path.join(targetDir, file.rel), `${JSON.stringify(file.payload, null, 2)}\n`, 'utf8');
+    }
+    filesUpdated.push(file.rel);
   }
 
   const sharedPath = path.join(parallelDir, 'shared-decisions.md');
@@ -335,9 +408,15 @@ async function runParallelAssign({ args, options = {}, logger, t }) {
     assignments: assignments.map((item) => ({
       lane: item.lane,
       file: `.aioson/context/parallel/agent-${item.lane}.status.md`,
-      items: item.items
+      items: item.items,
+      writePaths: (laneEntries.find((laneEntry) => laneEntry.lane === item.lane) || {}).write_paths || []
     })),
-    filesUpdated
+    filesUpdated,
+    machineFiles: {
+      workspaceManifest: WORKSPACE_MANIFEST_RELATIVE_PATH,
+      ownershipMap: OWNERSHIP_MAP_RELATIVE_PATH,
+      mergePlan: MERGE_PLAN_RELATIVE_PATH
+    }
   };
 
   if (!dryRun) {
@@ -361,7 +440,8 @@ async function runParallelAssign({ args, options = {}, logger, t }) {
         extractionMethod: output.extractionMethod,
         fallbackUsed: output.fallbackUsed,
         scopeCount: output.scopeCount,
-        filesUpdated
+        filesUpdated,
+        machineFiles: output.machineFiles
       }
     });
   }

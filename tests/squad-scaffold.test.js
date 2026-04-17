@@ -108,9 +108,9 @@ test('scaffoldSquad creates empty workflow/scripts/bus directories', async () =>
 
     const base = path.join(tmpDir, '.aioson', 'squads', 'myteam');
     assert.ok(await exists(path.join(base, 'workflows')), 'workflows/');
-    assert.ok(await exists(path.join(base, 'scripts')), 'scripts/');
-    assert.ok(await exists(path.join(base, 'script-plans')), 'script-plans/');
-    assert.ok(await exists(path.join(base, 'bus')), 'bus/');
+    assert.ok(await exists(path.join(base, 'workers')), 'workers/');
+    assert.ok(await exists(path.join(base, 'skills')), 'skills/');
+    assert.ok(await exists(path.join(base, 'templates')), 'templates/');
   } finally {
     await fs.rm(tmpDir, { recursive: true });
   }
@@ -126,7 +126,7 @@ test('scaffoldSquad generates valid squad.manifest.json', async () => {
 
     assert.equal(manifest.slug, 'api-team');
     assert.equal(manifest.name, 'API Team');
-    assert.equal(manifest.mode, 'code');
+    assert.equal(manifest.mode, 'software');
     assert.ok(manifest.created_at);
     assert.ok(manifest.budget, 'should have budget field');
     assert.ok(Array.isArray(manifest.depends_on), 'depends_on should be array');
@@ -183,10 +183,11 @@ test('scaffoldSquad returns count of created files and directories', async () =>
 test('scaffoldSquad works for all three modes', async () => {
   const tmpDir = await makeTempDir();
   try {
-    for (const mode of ['content', 'code', 'hybrid']) {
-      const result = await scaffoldSquad(tmpDir, { slug: `squad-${mode}`, name: `Squad ${mode}`, mode });
-      assert.equal(result.ok, true, `should succeed for mode=${mode}`);
-      assert.equal(result.mode, mode);
+    const modeMap = { content: 'content', code: 'software', hybrid: 'mixed' };
+    for (const [input, normalized] of Object.entries(modeMap)) {
+      const result = await scaffoldSquad(tmpDir, { slug: `squad-${input}`, name: `Squad ${input}`, mode: input });
+      assert.equal(result.ok, true, `should succeed for mode=${input}`);
+      assert.equal(result.mode, normalized, `mode=${input} should normalize to ${normalized}`);
     }
   } finally {
     await fs.rm(tmpDir, { recursive: true });

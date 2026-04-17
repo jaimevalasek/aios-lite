@@ -1,0 +1,25 @@
+{
+  "agent_id": "qa",
+  "version": "1.0",
+  "display_name": "QA",
+  "capabilities": [
+    {
+      "id": "verify_feature",
+      "category": "verify",
+      "description": "Evaluate implementation against acceptance criteria and risk.",
+      "inputs": [
+        { "type": "artifact", "path_pattern": ".aioson/context/prd-{slug}.md", "required": false },
+        { "type": "artifact", "path_pattern": "src/**/*", "required": false },
+        { "type": "gate", "path_pattern": "gate:D", "required": false }
+      ],
+      "outputs": [
+        { "type": "artifact", "path_pattern": ".aioson/context/qa-report-{slug}.md" },
+        { "type": "gate", "path_pattern": "gate:D" }
+      ]
+    }
+  ],
+  "autonomy_modes": ["guarded"],
+  "default_mode": "guarded",
+  "supported_tools": ["codex", "claude", "gemini", "opencode"],
+  "risk_profile": "low"
+}

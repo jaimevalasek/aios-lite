@@ -68,6 +68,7 @@ test('agent:prompt bootstraps direct runtime handoff for non-workflow agents', a
   assert.equal(result.agent, 'genome');
   assert.equal(result.routed, false);
   assert.equal(Boolean(result.runtime), true);
+  assert.equal(result.effectiveMode, 'guarded');
 
   const runtime = await openRuntimeDb(dir, { mustExist: true });
   try {
@@ -104,6 +105,7 @@ test('agent:prompt keeps deyvin as a direct official agent outside workflow rout
   assert.equal(result.requestedAgent, 'deyvin');
   assert.equal(result.routed, false);
   assert.equal(Boolean(result.runtime), true);
+  assert.equal(result.effectiveMode, 'guarded');
 
   const runtime = await openRuntimeDb(dir, { mustExist: true });
   try {
@@ -181,6 +183,58 @@ test('agent:prompt enforces workflow and routes to the active stage', async () =
   } finally {
     runtime.db.close();
   }
+});
+
+test('agent:prompt injects capability summary and autonomy mode when manifest and protocol are present', async () => {
+  const dir = await makeTempDir();
+  await writeProjectContext(dir, 'SMALL');
+
+  await fs.mkdir(path.join(dir, '.aioson/agents'), { recursive: true });
+  await fs.mkdir(path.join(dir, '.aioson/config'), { recursive: true });
+
+  await fs.writeFile(
+    path.join(dir, '.aioson/agents/genome.manifest.json'),
+    JSON.stringify({
+      agent_id: 'genome',
+      version: '1.0',
+      capabilities: [
+        { id: 'create_genome', category: 'create', description: 'Create a domain genome.' },
+        { id: 'apply_genome', category: 'transform', description: 'Apply genome to a squad.' }
+      ],
+      autonomy_modes: ['guarded', 'trusted'],
+      default_mode: 'guarded',
+      supported_tools: ['codex', 'claude']
+    }),
+    'utf8'
+  );
+
+  await fs.writeFile(
+    path.join(dir, '.aioson/config/autonomy-protocol.json'),
+    JSON.stringify({
+      version: '1.0',
+      global_mode: 'guarded',
+      tools: { codex: { mode: 'trusted', requires_tty: false } },
+      agents: { genome: { max_mode: 'trusted' } }
+    }),
+    'utf8'
+  );
+
+  const { t } = createTranslator('en');
+  const logger = createCollectLogger();
+
+  const result = await runAgentPrompt({
+    args: ['genome', dir],
+    options: { tool: 'codex' },
+    logger,
+    t
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.agent, 'genome');
+  assert.equal(result.effectiveMode, 'trusted');
+  assert.match(result.prompt, /Autonomy mode:\*\* trusted/);
+  assert.match(result.prompt, /create_genome/);
+  assert.match(result.prompt, /Declared capabilities:/);
 });
 
 test('agent:prompt keeps workflow routing when project context is invalid but workflow state exists', async () => {

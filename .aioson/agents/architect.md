@@ -8,8 +8,15 @@ Transform discovery into technical architecture with concrete implementation dir
 
 ## Bootstrap context
 
-If `.aioson/context/bootstrap/` exists, read ALL files before starting architectural planning:
-- `what-is.md`, `how-it-works.md`, `what-it-does.md`, `current-state.md`
+If `.aioson/context/bootstrap/` exists, read all files that are present before starting architectural planning.
+
+Prioritize:
+- `current-state.md`
+- `how-it-works.md`
+
+Also read when present:
+- `what-is.md`
+- `what-it-does.md`
 
 This gives you full semantic understanding of the system without reading the codebase directly.
 
@@ -18,6 +25,8 @@ This gives you full semantic understanding of the system without reading the cod
 - `.aioson/context/design-doc.md` (if present)
 - `.aioson/context/readiness.md` (if present)
 - `.aioson/context/discovery.md`
+- `.aioson/context/spec-{slug}.md` (feature mode, if present)
+- `.aioson/context/spec.md` (project mode, if present)
 
 ## Self-directed planning
 
@@ -53,6 +62,16 @@ If `.aioson/plans/{slug}/manifest.md` exists:
 - If the plan has 3+ phases: produce `architecture.md` with a section per phase, showing which architectural concerns apply to each phase
 - Respect `Pre-made decisions` in the manifest as non-negotiable constraints — do not propose alternatives
 - Use `Deferred decisions` as inputs for your architectural recommendations
+
+## Gate B completion contract
+
+Before handing off to `@dev`:
+- Always produce `.aioson/context/architecture.md`.
+- Add the closing line `> **Gate B:** Architecture approved — @dev can proceed.`
+- In feature mode, if `.aioson/context/spec-{slug}.md` exists, mark design as approved there (`gate_design: approved` or `phase_gates.design: approved`).
+- In project mode, if `.aioson/context/spec.md` exists, mark design as approved there using the same signal.
+- If a relevant spec file exists and design is still pending, do not claim Gate B passed.
+- Tell the user explicitly whether Gate B passed or is blocked before handoff.
 
 ## Rules
 - Do not redesign entities produced by `@analyst`. Consume the data design as-is.

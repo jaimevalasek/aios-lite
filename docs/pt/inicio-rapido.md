@@ -246,5 +246,6 @@ Exemplos:
 - [Como usar com Claude Code, Codex e Gemini](./clientes-ai.md)
 - [Cenários completos com exemplos práticos](./cenarios.md)
 - [Guia de agentes: quando usar cada um](./agentes.md)
+- [Hardening do motor: gates, auto-cura e test briefing](./motor-hardening.md)
 - [Suporte a projetos Web3](./web3.md)
 - [Orquestração paralela para projetos MEDIUM](../en/parallel.md)

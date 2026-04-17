@@ -18,7 +18,7 @@ test('json schema index is valid and references existing schema files', async ()
   const index = await readJson(INDEX_FILE);
   assert.equal(index.schema_version, '1.0.0');
   assert.equal(Array.isArray(index.schemas), true);
-  assert.equal(index.schemas.length >= 21, true);
+  assert.equal(index.schemas.length >= 23, true);
 
   const expectedIds = new Set([
     'init',
@@ -41,6 +41,8 @@ test('json schema index is valid and references existing schema files', async ()
     'parallel_assign',
     'parallel_status',
     'parallel_doctor',
+    'parallel_merge',
+    'parallel_guard',
     'cli_error'
   ]);
 
@@ -63,7 +65,7 @@ test('json schema index is valid and references existing schema files', async ()
 test('json schema files expose required metadata', async () => {
   const files = await fs.readdir(SCHEMAS_DIR);
   const schemaFiles = files.filter((file) => file.endsWith('.schema.json'));
-  assert.equal(schemaFiles.length >= 21, true);
+  assert.equal(schemaFiles.length >= 23, true);
 
   for (const file of schemaFiles) {
     const schema = await readJson(path.join(SCHEMAS_DIR, file));

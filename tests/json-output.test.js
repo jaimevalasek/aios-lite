@@ -200,6 +200,97 @@ test('workflow:next --json returns structured payload without human logs', async
   assert.equal(parsed.statePath, '.aioson/context/workflow.state.json');
 });
 
+test('workflow:next --status --json returns structured workflow insights', async () => {
+  const dir = await makeTempDir();
+  await fs.mkdir(path.join(dir, '.aioson/context'), { recursive: true });
+  await fs.writeFile(
+    path.join(dir, '.aioson/context/project.context.md'),
+    `---\nproject_name: "demo"\nproject_type: "web_app"\nprofile: "developer"\nframework: "Next.js"\nframework_installed: true\nclassification: "SMALL"\nconversation_language: "en"\naioson_version: "1.2.1"\n---\n\n# Project Context\n`,
+    'utf8'
+  );
+  await fs.writeFile(path.join(dir, '.aioson/context/prd.md'), '# PRD\n', 'utf8');
+
+  const cli = await runCli(['workflow:next', dir, '--status', '--tool=codex', '--json']);
+  assert.equal(cli.code, 0);
+  assert.equal(cli.stderr.trim(), '');
+  const parsed = JSON.parse(cli.stdout);
+  assert.equal(parsed.ok, true);
+  assert.equal(parsed.activeStage, 'analyst');
+  assert.equal(parsed.tool, 'codex');
+  assert.equal(typeof parsed.suggestion.reason, 'string');
+});
+
+test('workflow:next --suggest --json returns a deterministic next command', async () => {
+  const dir = await makeTempDir();
+  await fs.mkdir(path.join(dir, '.aioson/context'), { recursive: true });
+  await fs.mkdir(path.join(dir, '.aioson/config'), { recursive: true });
+  await fs.writeFile(
+    path.join(dir, '.aioson/context/project.context.md'),
+    `---\nproject_name: "demo"\nproject_type: "web_app"\nprofile: "developer"\nframework: "Next.js"\nframework_installed: true\nclassification: "SMALL"\nconversation_language: "en"\naioson_version: "1.2.1"\n---\n\n# Project Context\n`,
+    'utf8'
+  );
+  await fs.writeFile(
+    path.join(dir, '.aioson/config/autonomy-protocol.json'),
+    JSON.stringify({
+      version: '1.0',
+      global_mode: 'guarded',
+      tools: {
+        codex: {
+          mode: 'trusted',
+          requires_tty: false
+        }
+      },
+      agents: {
+        dev: {
+          max_mode: 'trusted'
+        }
+      }
+    }, null, 2),
+    'utf8'
+  );
+  await fs.writeFile(
+    path.join(dir, '.aioson/context/features.md'),
+    '# Features\n\n| slug | status | started | completed |\n|------|--------|---------|-----------|\n| protocol-contracts | in_progress | 2026-04-16 | — |\n',
+    'utf8'
+  );
+  await fs.writeFile(path.join(dir, '.aioson/context/prd-protocol-contracts.md'), '# Feature PRD\n', 'utf8');
+  await fs.writeFile(path.join(dir, '.aioson/context/requirements-protocol-contracts.md'), '# Requirements\n', 'utf8');
+  await fs.writeFile(
+    path.join(dir, '.aioson/context/spec-protocol-contracts.md'),
+    '---\ngate_requirements: approved\ngate_design: approved\ngate_plan: approved\n---\n# Spec\n',
+    'utf8'
+  );
+  await fs.writeFile(path.join(dir, '.aioson/context/project-pulse.md'), '# Pulse\n', 'utf8');
+  await fs.writeFile(path.join(dir, '.aioson/context/dev-state.md'), '# Dev State\n', 'utf8');
+  await fs.writeFile(
+    path.join(dir, '.aioson/context/workflow.state.json'),
+    JSON.stringify({
+      version: 1,
+      mode: 'feature',
+      classification: 'SMALL',
+      sequence: ['product', 'analyst', 'architect', 'dev', 'qa'],
+      current: 'dev',
+      next: 'qa',
+      completed: ['product', 'analyst', 'architect'],
+      skipped: [],
+      featureSlug: 'protocol-contracts',
+      detour: null,
+      updatedAt: new Date().toISOString()
+    }, null, 2),
+    'utf8'
+  );
+
+  const cli = await runCli(['workflow:next', dir, '--suggest', '--tool=codex', '--json']);
+  assert.equal(cli.code, 0);
+  assert.equal(cli.stderr.trim(), '');
+  const parsed = JSON.parse(cli.stdout);
+  assert.equal(parsed.ok, true);
+  assert.equal(parsed.activeStage, 'dev');
+  assert.equal(parsed.effectiveMode, 'trusted');
+  assert.equal(parsed.suggestion.action, 'complete_stage');
+  assert.equal(parsed.suggestion.command, 'aioson workflow:next . --complete=dev --auto-heal --tool=codex');
+});
+
 test('legacy dashboard commands return a structured migration error with --json', async () => {
   const dir = await makeTempDir();
   const cli = await runCli([
@@ -243,6 +334,30 @@ test('git:guard --install-hook --json returns structured hook payload', async ()
   assert.equal(parsed.ok, true);
   assert.equal(typeof parsed.hookPath, 'string');
   assert.equal(parsed.hookPath.endsWith(path.join('.git', 'hooks', 'pre-commit')), true);
+});
+
+test('commit:prepare --json returns structured headless error when explicit staging is required', async () => {
+  const dir = await makeTempDir();
+  initGitRepo(dir);
+  await fs.mkdir(path.join(dir, 'src'), { recursive: true });
+  await fs.writeFile(path.join(dir, 'src', 'already-staged.js'), 'console.log("ok");\n', 'utf8');
+  await fs.writeFile(path.join(dir, 'src', 'not-staged.js'), 'console.log("pending");\n', 'utf8');
+  execFileSync('git', ['add', '--', 'src/already-staged.js'], { cwd: dir, stdio: 'ignore' });
+
+  const cli = await runCli([
+    'commit:prepare',
+    dir,
+    '--json',
+    '--agent-safe',
+    '--mode=headless'
+  ]);
+  assert.equal(cli.code, 1);
+  assert.equal(cli.stderr.trim(), '');
+  const parsed = JSON.parse(cli.stdout);
+  assert.equal(parsed.ok, false);
+  assert.equal(parsed.error, 'explicit_staging_required_in_headless');
+  assert.equal(parsed.agentSafe, true);
+  assert.ok(Array.isArray(parsed.suggestedCommands));
 });
 
 test('cloud:import:squad --dry-run --json returns structured payload without human logs', async () => {
@@ -598,7 +713,7 @@ test('parallel:init --json returns structured parallel workspace payload', async
   assert.equal(parsed.workers, 2);
   assert.equal(parsed.classification, 'MEDIUM');
   assert.equal(Array.isArray(parsed.files), true);
-  assert.equal(parsed.files.length, 3);
+  assert.equal(parsed.files.length, 6);
 });
 
 test('parallel:doctor --json returns structured diagnosis payload', async () => {
@@ -623,6 +738,11 @@ test('parallel:doctor --json returns structured diagnosis payload', async () => 
   assert.equal(typeof parsed.fix.enabled, 'boolean');
   assert.equal(Array.isArray(parsed.checks), true);
   assert.equal(typeof parsed.summary.failed, 'number');
+  assert.equal(parsed.state.manifestExists, true);
+  assert.equal(parsed.state.ownershipExists, true);
+  assert.equal(parsed.state.mergePlanExists, true);
+  assert.equal(parsed.analysis.sync.workspaceManifestInSync, true);
+  assert.equal(typeof parsed.analysis.dependencies.invalidCount, 'number');
 });
 
 test('parallel:assign --json returns structured assignment payload', async () => {
@@ -659,6 +779,11 @@ test('parallel:assign --json returns structured assignment payload', async () =>
   assert.equal(parsed.source, 'architecture');
   assert.equal(typeof parsed.scopeCount, 'number');
   assert.equal(Array.isArray(parsed.assignments), true);
+  assert.deepEqual(parsed.machineFiles, {
+    workspaceManifest: '.aioson/context/parallel/workspace.manifest.json',
+    ownershipMap: '.aioson/context/parallel/ownership-map.json',
+    mergePlan: '.aioson/context/parallel/merge-plan.json'
+  });
 });
 
 test('parallel:status --json returns consolidated lane report payload', async () => {
@@ -684,7 +809,73 @@ test('parallel:status --json returns consolidated lane report payload', async ()
   assert.equal(typeof parsed.blockerCount, 'number');
   assert.equal(typeof parsed.deliverables.total, 'number');
   assert.equal(typeof parsed.sharedDecisions.entries, 'number');
+  assert.deepEqual(parsed.machineFiles, {
+    workspaceManifest: true,
+    ownershipMap: true,
+    mergePlan: true
+  });
+  assert.equal(typeof parsed.ownership.conflictCount, 'number');
+  assert.equal(typeof parsed.dependencies.invalidCount, 'number');
+  assert.equal(typeof parsed.sync.workspaceManifestInSync, 'boolean');
+  assert.equal(parsed.merge.strategy, 'lane-index-asc');
   assert.equal(Array.isArray(parsed.lanes), true);
+});
+
+test('parallel:merge --json returns structured merge readiness payload', async () => {
+  const dir = await makeTempDir();
+  const contextPath = path.join(dir, '.aioson/context/project.context.md');
+  await fs.mkdir(path.dirname(contextPath), { recursive: true });
+  await fs.writeFile(
+    contextPath,
+    `---\nproject_name: \"demo\"\nproject_type: \"web_app\"\nprofile: \"developer\"\nframework: \"Node\"\nframework_installed: true\nclassification: \"MEDIUM\"\nconversation_language: \"en\"\naioson_version: \"0.1.9\"\n---\n\n# Project Context\n`,
+    'utf8'
+  );
+
+  const init = await runCli(['parallel:init', dir, '--workers=2', '--json']);
+  assert.equal(init.code, 0);
+
+  const cli = await runCli(['parallel:merge', dir, '--json']);
+  assert.equal(cli.code, 1);
+  assert.equal(cli.stderr.trim(), '');
+  const parsed = JSON.parse(cli.stdout);
+  assert.equal(parsed.ok, false);
+  assert.equal(parsed.laneCount, 2);
+  assert.equal(typeof parsed.merge.readyToApply, 'boolean');
+  assert.equal(Array.isArray(parsed.merge.plan), true);
+  assert.equal(typeof parsed.structural.sync.workspaceManifestInSync, 'boolean');
+});
+
+test('parallel:guard --json returns structured write-scope guard payload', async () => {
+  const dir = await makeTempDir();
+  const contextPath = path.join(dir, '.aioson/context/project.context.md');
+  await fs.mkdir(path.dirname(contextPath), { recursive: true });
+  await fs.writeFile(
+    contextPath,
+    `---\nproject_name: \"demo\"\nproject_type: \"web_app\"\nprofile: \"developer\"\nframework: \"Node\"\nframework_installed: true\nclassification: \"MEDIUM\"\nconversation_language: \"en\"\naioson_version: \"0.1.9\"\n---\n\n# Project Context\n`,
+    'utf8'
+  );
+
+  const init = await runCli(['parallel:init', dir, '--workers=2', '--json']);
+  assert.equal(init.code, 0);
+
+  const lane1Path = path.join(dir, '.aioson/context/parallel/agent-1.status.md');
+  const lane2Path = path.join(dir, '.aioson/context/parallel/agent-2.status.md');
+  let lane1Content = await fs.readFile(lane1Path, 'utf8');
+  lane1Content = lane1Content.replace('- write_paths: [unassigned]', '- write_paths: src/auth/**');
+  await fs.writeFile(lane1Path, lane1Content, 'utf8');
+  let lane2Content = await fs.readFile(lane2Path, 'utf8');
+  lane2Content = lane2Content.replace('- write_paths: [unassigned]', '- write_paths: src/billing/**');
+  await fs.writeFile(lane2Path, lane2Content, 'utf8');
+
+  const cli = await runCli(['parallel:guard', dir, '--lane=1', '--paths=src/auth/login.js', '--json']);
+  assert.equal(cli.code, 0);
+  assert.equal(cli.stderr.trim(), '');
+  const parsed = JSON.parse(cli.stdout);
+  assert.equal(parsed.ok, true);
+  assert.equal(parsed.lane, 1);
+  assert.equal(parsed.requestedCount, 1);
+  assert.equal(typeof parsed.writeScope.totalPathCount, 'number');
+  assert.equal(Array.isArray(parsed.results), true);
 });
 
 test('unknown command with --json returns structured error', async () => {

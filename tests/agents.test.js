@@ -54,10 +54,15 @@ test('buildAgentPrompt includes target output', () => {
   const agent = getAgentDefinition('analyst');
   const prompt = buildAgentPrompt(agent, 'codex', {
     instructionPath: resolveInstructionPath(agent, 'pt-BR'),
-    interactionLanguage: 'pt-BR'
+    interactionLanguage: 'pt-BR',
+    autonomyMode: 'trusted',
+    capabilitySummary: 'Declared capabilities: analyze_requirements (analyze).'
   });
   assert.equal(prompt.includes(agent.output), true);
   assert.equal(prompt.includes('.aioson/agents/analyst.md'), true);
+  assert.equal(prompt.includes('Autonomy Contract'), true);
+  assert.equal(prompt.includes('Autonomy mode:** trusted'), true);
+  assert.equal(prompt.includes('analyze_requirements'), true);
   assert.equal(prompt.includes('AIOSON Runtime boundary'), true);
   assert.equal(prompt.includes('All user-facing communication must be in pt-BR.'), true);
   assert.equal(prompt.includes('--agent=@analyst'), false);

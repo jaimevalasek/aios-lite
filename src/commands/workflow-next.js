@@ -7,7 +7,16 @@ const { normalizeInteractionLanguage } = require('../locales');
 const { validateProjectContextFile, getInteractionLanguage } = require('../context');
 const { exists, ensureDir } = require('../utils');
 const { syncWorkflowRuntime } = require('../execution-gateway');
-const { writeHandoff, buildWorkflowHandoff } = require('../session-handoff');
+const { writeHandoff, buildWorkflowHandoff, buildWorkflowHandoffProtocol } = require('../session-handoff');
+const { runTechnicalGate, formatGateError } = require('../workflow-gates');
+const { buildTestBriefing } = require('../test-briefing');
+const { validateHandoffContract, formatContractError } = require('../handoff-contract');
+const { buildPathGuardBlock } = require('../path-guard');
+const { logError, buildHealingPrompt } = require('../self-healing');
+const { validateHandoffProtocol } = require('../handoff-validator');
+const { readAutonomyProtocol, resolveEffectiveMode } = require('../autonomy-policy');
+const { readAgentManifest, buildAgentCapabilitySummary } = require('../agent-manifests');
+const { inspectStagedChanges } = require('../lib/git-commit-guard');
 
 const STATE_RELATIVE_PATH = '.aioson/context/workflow.state.json';
 const CONFIG_RELATIVE_PATH = '.aioson/context/workflow.config.json';
@@ -412,6 +421,22 @@ async function finalizeCurrentStage(targetDir, config, state, stageName) {
     throw new Error(`Cannot complete ${normalizedStage}; expected artifacts are missing.`);
   }
 
+  // ── Handoff Contract Gate ───────────────────────────────────────────────
+  const contractCheck = await validateHandoffContract(targetDir, state, normalizedStage);
+  if (!contractCheck.ok) {
+    const errMsg = formatContractError(contractCheck);
+    await logError(targetDir, normalizedStage, errMsg, 'contract');
+    throw new Error(errMsg);
+  }
+
+  // ── Technical Compilation/Test Gate ─────────────────────────────────────
+  const techGate = await runTechnicalGate(targetDir, normalizedStage);
+  if (!techGate.ok) {
+    const errMsg = formatGateError(techGate);
+    await logError(targetDir, normalizedStage, errMsg, 'technical');
+    throw new Error(errMsg);
+  }
+
   const completed = Array.from(new Set([...(state.completed || []), normalizedStage]));
   const next = findNextFromSequence(state.sequence, completed, state.skipped || []);
   const nextState = buildStatePayload({
@@ -444,7 +469,7 @@ function applySkip(config, state, target) {
   });
 }
 
-async function activateStage(targetDir, state, locale, tool, explicitAgent = null) {
+async function activateStage(targetDir, state, locale, tool, explicitAgent = null, requestedMode = null) {
   const stageName = normalizeAgentName(explicitAgent || state.current || state.next);
   if (!stageName) {
     return {
@@ -455,17 +480,76 @@ async function activateStage(targetDir, state, locale, tool, explicitAgent = nul
     };
   }
 
+  // ── Committer Safety Gate ───────────────────────────────────────────────
+  if (stageName === 'committer') {
+    const guard = await inspectStagedChanges(targetDir, { allowWarnings: false });
+    if (guard.summary.stagedCount === 0) {
+      throw new Error(
+        `[Committer Gate BLOCKED] Nenhum arquivo no stage para commit. ` +
+        `Execute primeiro: aioson commit:prepare . --agent-safe --staged-only --mode=headless`
+      );
+    }
+    if (!guard.ok) {
+      throw new Error(
+        `[Committer Gate BLOCKED] Arquivos proibidos detectados no stage ` +
+        `(node_modules, build artifacts, secrets, etc.). ` +
+        `Execute 'aioson git:guard .' para ver detalhes, corrija e rode 'aioson commit:prepare . --agent-safe --staged-only --mode=headless' antes de ativar @committer.`
+      );
+    }
+  }
+
+  // ── Test Briefing Injection for qa/tester ───────────────────────────────
+  let testBriefing = '';
+  if (stageName === 'qa' || stageName === 'tester') {
+    try {
+      testBriefing = await buildTestBriefing(targetDir);
+    } catch {
+      // Non-fatal: if briefing generation fails, proceed without it
+      testBriefing = '';
+    }
+  }
+
+  // ── Path Guard Injection for implementation agents ────────────────────────
+  let pathGuardBlock = '';
+  if (['dev', 'architect', 'ux-ui', 'qa', 'tester', 'committer'].includes(stageName)) {
+    try {
+      pathGuardBlock = await buildPathGuardBlock(targetDir);
+    } catch {
+      pathGuardBlock = '';
+    }
+  }
+
   const agent = getAgentDefinition(stageName);
   if (!agent) {
     throw new Error(`Unknown agent: ${stageName}`);
   }
 
+  const autonomyProtocol = await readAutonomyProtocol(targetDir);
+  const agentManifest = await readAgentManifest(targetDir, agent.id);
+  const effectiveMode = resolveEffectiveMode({
+    protocol: autonomyProtocol,
+    tool,
+    agentId: agent.id,
+    manifest: agentManifest,
+    requestedMode
+  });
+
   const instructionPath = await resolveExistingInstructionPath(targetDir, agent, locale);
-  const prompt = buildAgentPrompt(agent, tool, {
+  let prompt = buildAgentPrompt(agent, tool, {
     instructionPath,
     targetDir,
-    interactionLanguage: locale
+    interactionLanguage: locale,
+    autonomyMode: effectiveMode,
+    capabilitySummary: buildAgentCapabilitySummary(agentManifest, tool)
   });
+
+  if (testBriefing) {
+    prompt += '\n\n' + testBriefing;
+  }
+
+  if (pathGuardBlock) {
+    prompt += '\n\n' + pathGuardBlock;
+  }
 
   let nextState = state;
   if (explicitAgent && stageName !== normalizeAgentName(state.next)) {
@@ -489,11 +573,23 @@ async function activateStage(targetDir, state, locale, tool, explicitAgent = nul
     state: nextState,
     agent: stageName,
     instructionPath,
-    prompt
+    prompt,
+    effectiveMode
   };
 }
 
 async function runWorkflowNext({ args, options, logger, t }) {
+  if (options.status || options.suggest) {
+    const { runWorkflowStatus } = require('./workflow-status');
+    return runWorkflowStatus({ args, options, logger, t });
+  }
+
+  const logErrorLine = typeof logger.error === 'function'
+    ? logger.error.bind(logger)
+    : typeof logger.log === 'function'
+      ? logger.log.bind(logger)
+      : () => {};
+
   const targetDir = path.resolve(process.cwd(), args[0] || '.');
   const tool = options.tool || 'codex';
   const locale = await resolveLocaleForTarget(targetDir, options);
@@ -503,14 +599,119 @@ async function runWorkflowNext({ args, options, logger, t }) {
   let completedStage = null;
 
   if (options.complete || options['complete-current']) {
-    const result = await finalizeCurrentStage(
-      targetDir,
-      config,
-      state,
-      options.complete === true ? state.current || state.next : options.complete
-    );
-    state = result.state;
-    completedStage = result.completedStage;
+    let finalized;
+    try {
+      finalized = await finalizeCurrentStage(
+        targetDir,
+        config,
+        state,
+        options.complete === true ? state.current || state.next : options.complete
+      );
+    } catch (err) {
+      // ── Auto-heal intercept ───────────────────────────────────────────────
+      const autoHeal = Boolean(options['auto-heal'] || options.autoHeal);
+      const isHealabled = autoHeal && (
+        err.message.includes('[Technical Gate BLOCKED]') ||
+        err.message.includes('[Handoff Contract BLOCKED]')
+      );
+      if (isHealabled) {
+        const failedStage = normalizeAgentName(options.complete === true ? state.current || state.next : options.complete);
+        await logError(targetDir, failedStage, err.message, 'technical');
+        const retryCount = await require('../self-healing').getRetryCount(targetDir, failedStage);
+        if (retryCount < require('../self-healing').MAX_RETRIES) {
+          await require('../self-healing').incrementRetryCount(targetDir, failedStage, err.message.substring(0, 200));
+          // Build healing activation
+          const baseActivation = await activateStage(targetDir, state, locale, tool, failedStage, options.mode || null);
+          const healingPrompt = buildHealingPrompt(
+            baseActivation.prompt || '',
+            failedStage,
+            { error: err.message },
+            retryCount + 1
+          );
+          const healedState = {
+            ...baseActivation.state,
+            current: failedStage,
+            detour: null
+          };
+          await persistState(targetDir, healedState);
+          const eventPayload = {
+            id: Date.now(),
+            kind: 'workflow',
+            createdAt: new Date().toISOString(),
+            eventType: 'heal',
+            message: `Auto-heal @${failedStage} — retry ${retryCount + 1}/3`,
+            mode: state.mode,
+            classification: state.classification,
+            featureSlug: state.featureSlug,
+            current: failedStage,
+            next: state.next,
+            completed: state.completed,
+            skipped: state.skipped,
+            sequence: state.sequence,
+            healing: true,
+            retryCount: retryCount + 1,
+            autonomyMode: baseActivation.effectiveMode || null
+          };
+          await appendWorkflowEvent(targetDir, eventPayload);
+          const runtime = await syncWorkflowRuntime(targetDir, {
+            state: healedState,
+            eventPayload,
+            activationAgent: failedStage,
+            completedStage: null
+          });
+          const healingHandoff = buildWorkflowHandoff(healedState, null, failedStage);
+          healingHandoff.protocol = buildWorkflowHandoffProtocol(healedState, null, failedStage, {
+            autonomyMode: baseActivation.effectiveMode || null,
+            handoffContractOk: true,
+            technicalGateOk: false,
+            artifactUris: []
+          });
+          const healingValidation = await validateHandoffProtocol(targetDir, healingHandoff.protocol);
+          if (!healingValidation.ok) {
+            logErrorLine('Handoff protocol warning:');
+            for (const err of healingValidation.errors) logErrorLine(`  - ${err}`);
+          }
+          await writeHandoff(targetDir, healingHandoff);
+          logger.log(t('workflow_heal.title', { stage: `@${failedStage}`, count: retryCount + 1 }));
+          logger.log(healingPrompt);
+          return {
+            ok: true,
+            targetDir,
+            locale,
+            tool,
+            statePath: STATE_RELATIVE_PATH,
+            configPath: CONFIG_RELATIVE_PATH,
+            created: loaded.created,
+            mode: state.mode,
+            classification: state.classification,
+            current: healedState.current,
+            next: healedState.next,
+            detour: healedState.detour,
+            completed: healedState.completed,
+            skipped: healedState.skipped,
+            completedStage: null,
+            featureSlug: state.featureSlug,
+            runtime,
+            agent: failedStage,
+            instructionPath: baseActivation.instructionPath,
+            prompt: healingPrompt,
+            autoHealed: true,
+            effectiveMode: baseActivation.effectiveMode || null
+          };
+        }
+      }
+      throw err;
+    }
+    state = finalized.state;
+    completedStage = finalized.completedStage;
+    await require('../self-healing').incrementRetryCount(targetDir, completedStage, '');
+    const { getRetryCount } = require('../self-healing');
+    const retries = await getRetryCount(targetDir, completedStage);
+    if (retries > 0) {
+      // Reset retry count on successful completion after healing
+      const retriesPath = path.join(targetDir, '.aioson/context/pipeline-retries', `${completedStage}.json`);
+      try { await fs.unlink(retriesPath); } catch { /* ignore */ }
+    }
   }
 
   if (options.skip) {
@@ -518,7 +719,7 @@ async function runWorkflowNext({ args, options, logger, t }) {
   }
 
   const requestedAgent = options.agent ? normalizeAgentName(options.agent) : null;
-  const activation = await activateStage(targetDir, state, locale, tool, requestedAgent);
+  const activation = await activateStage(targetDir, state, locale, tool, requestedAgent, options.mode || null);
   state = activation.state;
   const statePath = await persistState(targetDir, state);
   const eventPayload = {
@@ -543,7 +744,8 @@ async function runWorkflowNext({ args, options, logger, t }) {
     requestedAgent: options.requestedAgent ? normalizeAgentName(options.requestedAgent) : null,
     completed: state.completed,
     skipped: state.skipped,
-    sequence: state.sequence
+    sequence: state.sequence,
+    autonomyMode: activation.effectiveMode || null
   };
   await appendWorkflowEvent(targetDir, eventPayload);
   const runtime = await syncWorkflowRuntime(targetDir, {
@@ -556,6 +758,18 @@ async function runWorkflowNext({ args, options, logger, t }) {
   // Generate session handoff when a stage completes or workflow finishes
   if (completedStage || !activation.agent) {
     const handoffData = buildWorkflowHandoff(state, completedStage, activation.agent);
+    handoffData.autonomyMode = activation.effectiveMode || null;
+    handoffData.protocol = buildWorkflowHandoffProtocol(state, completedStage, activation.agent, {
+      autonomyMode: activation.effectiveMode || null,
+      handoffContractOk: true,
+      technicalGateOk: true,
+      artifactUris: []
+    });
+    const handoffValidation = await validateHandoffProtocol(targetDir, handoffData.protocol);
+    if (!handoffValidation.ok) {
+      logErrorLine('Handoff protocol warning:');
+      for (const err of handoffValidation.errors) logErrorLine(`  - ${err}`);
+    }
     await writeHandoff(targetDir, handoffData);
   }
 
@@ -578,6 +792,7 @@ async function runWorkflowNext({ args, options, logger, t }) {
     featureSlug: state.featureSlug,
     runtime,
     agent: activation.agent,
+    effectiveMode: activation.effectiveMode || null,
     instructionPath: activation.instructionPath,
     prompt: activation.prompt
   };
@@ -622,5 +837,6 @@ module.exports = {
   loadOrCreateState,
   finalizeCurrentStage,
   applySkip,
+  activateStage,
   runWorkflowNext
 };

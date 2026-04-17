@@ -51,6 +51,15 @@
     "filesUpdated": {
       "type": "array",
       "items": { "type": "string" }
+    },
+    "machineFiles": {
+      "type": "object",
+      "properties": {
+        "workspaceManifest": { "type": "string" },
+        "ownershipMap": { "type": "string" },
+        "mergePlan": { "type": "string" }
+      },
+      "additionalProperties": true
     }
   },
   "additionalProperties": true

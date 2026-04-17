@@ -79,7 +79,7 @@ test('scoreCompletude scores workers present', () => {
 });
 
 test('scoreCompletude scores investigation report', () => {
-  const result = scoreCompletude({ _investigationPath: '/some/path' });
+  const result = scoreCompletude({ _hasInvestigation: true });
   assert.ok(result.details.investigationReport);
 });
 
@@ -192,7 +192,7 @@ test('scorePotencial scores anti-pattern guards', () => {
 });
 
 test('scorePotencial scores domain vocabulary via investigation', () => {
-  const result = scorePotencial({ _investigationPath: '/some/path' });
+  const result = scorePotencial({ _hasInvestigation: true });
   assert.ok(result.details.domainVocabulary);
 });
 

@@ -10,7 +10,10 @@ Orchestrate parallel execution only for MEDIUM projects. Never activate for MICR
 - `.aioson/context/project.context.md`
 - `.aioson/context/discovery.md`
 - `.aioson/context/architecture.md`
-- `.aioson/context/prd.md`
+- `.aioson/context/prd.md` or `prd-{slug}.md`
+- `.aioson/context/ui-spec.md` when present
+- `.aioson/context/implementation-plan.md` or `implementation-plan-{slug}.md` when present
+- `.aioson/context/parallel/` when resuming an existing orchestration session
 
 ## Skills and docs on demand
 
@@ -22,6 +25,20 @@ Before orchestrating parallel execution:
 
 ## Activation condition
 Check classification in `project.context.md`. If not MEDIUM, stop and inform the user that sequential execution is sufficient.
+
+## Runtime reality
+
+Current AIOSON orchestration is backed by the parallel workspace in `.aioson/context/parallel/`.
+
+Use the CLI-backed flow that actually exists today:
+- `aioson parallel:init .` — initialize the lane workspace
+- `aioson parallel:assign .` — distribute scopes across lane files
+- `aioson parallel:status .` — inspect lane progress and blockers
+- `aioson parallel:guard . --lane=<n> --paths=<path[,path2]>` — validate that a lane is allowed to write specific files before execution
+- `aioson parallel:merge . --apply` — execute deterministic merge only after every lane is structurally ready
+- `aioson parallel:doctor . --fix` — repair a broken parallel workspace when needed
+
+Do not describe TaskCreate, CronCreate, or native worker spawning as if they are guaranteed in the current client. Use them only when the harness explicitly provides them. Otherwise, use lane files and the CLI commands above as the source of truth.
 
 ## Process
 
@@ -52,24 +69,18 @@ Emails        (fully independent, can run at any time)
 
 ### Step 1b — Generate or verify implementation plan
 
-Before parallelizing any work, ensure an implementation plan exists:
+Implementation plans are optional support artifacts in the current runtime:
 
-1. Check if `.aioson/context/implementation-plan.md` exists
-2. **If not** → execute `.aioson/tasks/implementation-plan.md` first
-   - The plan will identify modules, dependencies, and parallel vs sequential phases
-   - Use the plan's execution strategy to inform module sequencing in Step 2
-   - The plan's "decisões pré-tomadas" are constraints — do not override them
-3. **If yes** → verify it's still valid:
-   - Compare `created` date in plan frontmatter with modification dates of source artifacts
-   - If artifacts changed after plan was created → warn user that plan may be stale
-   - If plan status is `draft` → ask user to approve before proceeding
-4. Use the plan's execution strategy to inform Step 2 (parallel vs sequential classification)
-   - If the plan marks phases as `parallel: true`, use that as the basis
-   - If the plan marks shared entities between phases, enforce sequential execution
-5. The plan's context package defines what each subagent should read — use it when generating subagent context in Step 3
-
-The implementation plan is the single source of truth for execution order.
-Subagent context files should reference the plan's phases, not re-derive the full dependency analysis.
+1. Check for `.aioson/context/implementation-plan-{slug}.md` first, then `.aioson/context/implementation-plan.md`.
+2. If a plan exists:
+   - verify whether it is stale against the source artifacts
+   - respect its pre-made decisions as constraints
+   - use its sequencing only when it still matches the current architecture and PRD
+3. If no plan exists:
+   - do not pretend one exists
+   - derive lane boundaries from PRD, architecture, discovery, and ui-spec
+   - record any shared-contract constraints in `shared-decisions.md`
+4. Do not reference `.aioson/tasks/implementation-plan.md` as if it were an executable runtime primitive.
 
 ### Step 2 — Classify parallel vs sequential
 - **Sequential** (must finish before the next starts): modules where output is required as input.
@@ -198,6 +209,11 @@ Use the native task tools to track coordination state within the session:
 The task list makes subagent progress visible in the Claude Code sidebar.
 Write to `spec.md` and status files for persistent cross-session records.
 
+If the current client does not expose native task tools, skip this section and use:
+- `.aioson/context/parallel/*.status.md`
+- `.aioson/context/parallel/shared-decisions.md`
+- `aioson parallel:status .`
+
 ### During session
 - Execute in atomic steps (declare → implement → validate → commit).
 - After each significant decision, record it in `spec.md` under "Decisions" with the date.
@@ -237,6 +253,8 @@ CronDelete — remove when the session ends
 
 Use cases: periodic health checks during parallel execution, polling shared-decisions.md,
 scheduled spec.md snapshots. Always clean up with `CronDelete` when the session ends.
+
+If Cron tools are unavailable, do not simulate them in prose. Use explicit manual checkpoints with `parallel:status` instead.
 
 ## Rules
 - Do not parallelize modules with direct dependency.

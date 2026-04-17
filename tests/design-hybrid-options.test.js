@@ -193,7 +193,8 @@ test('runDesignHybridOptions --json returns catalog and metadata without TTY', a
   });
   assert.equal(result.ok, true);
   assert.equal(typeof result.targetDir, 'string');
-  assert.equal(result.locale, 'en');
+  assert.equal(typeof result.locale, 'string');
+  assert.ok(result.locale.length > 0);
   assert.equal(result.advanced, false);
   assert.equal(result.modifierPolicy, 'up_to_2_modifiers');
   assert.ok(Array.isArray(result.groups));

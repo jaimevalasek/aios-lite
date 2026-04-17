@@ -1,0 +1,23 @@
+{
+  "agent_id": "committer",
+  "version": "1.0",
+  "display_name": "Committer",
+  "capabilities": [
+    {
+      "id": "prepare_commit",
+      "category": "verify",
+      "description": "Prepare a safe commit draft using guarded staging and commit metadata.",
+      "inputs": [
+        { "type": "artifact", "path_pattern": ".aioson/context/commit-prep.json", "required": false },
+        { "type": "state", "path_pattern": "git:stage", "required": false }
+      ],
+      "outputs": [
+        { "type": "artifact", "path_pattern": ".aioson/context/commit-prep.json" }
+      ]
+    }
+  ],
+  "autonomy_modes": ["guarded"],
+  "default_mode": "guarded",
+  "supported_tools": ["codex", "claude", "gemini", "opencode"],
+  "risk_profile": "high"
+}

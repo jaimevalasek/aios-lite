@@ -5,9 +5,11 @@ const path = require('node:path');
 const { exists, ensureDir } = require('./utils');
 
 const HANDOFF_RELATIVE_PATH = '.aioson/context/last-handoff.json';
+const HANDOFF_PROTOCOL_RELATIVE_PATH = '.aioson/context/handoff-protocol.json';
 
 async function writeHandoff(targetDir, payload) {
   const handoffPath = path.join(targetDir, HANDOFF_RELATIVE_PATH);
+  const protocolPath = path.join(targetDir, HANDOFF_PROTOCOL_RELATIVE_PATH);
   await ensureDir(path.dirname(handoffPath));
   const handoff = {
     version: 1,
@@ -24,7 +26,16 @@ async function writeHandoff(targetDir, payload) {
     feature_slug: payload.featureSlug || null
   };
   await fs.writeFile(handoffPath, `${JSON.stringify(handoff, null, 2)}\n`, 'utf8');
-  return { handoffPath: HANDOFF_RELATIVE_PATH, handoff };
+
+  const protocol = payload.protocol || buildBasicHandoffProtocol(payload);
+  await fs.writeFile(protocolPath, `${JSON.stringify(protocol, null, 2)}\n`, 'utf8');
+
+  return {
+    handoffPath: HANDOFF_RELATIVE_PATH,
+    protocolPath: HANDOFF_PROTOCOL_RELATIVE_PATH,
+    handoff,
+    protocol
+  };
 }
 
 async function readHandoff(targetDir) {
@@ -32,6 +43,17 @@ async function readHandoff(targetDir) {
   if (!(await exists(handoffPath))) return null;
   try {
     const content = await fs.readFile(handoffPath, 'utf8');
+    return JSON.parse(content);
+  } catch {
+    return null;
+  }
+}
+
+async function readHandoffProtocol(targetDir) {
+  const protocolPath = path.join(targetDir, HANDOFF_PROTOCOL_RELATIVE_PATH);
+  if (!(await exists(protocolPath))) return null;
+  try {
+    const content = await fs.readFile(protocolPath, 'utf8');
     return JSON.parse(content);
   } catch {
     return null;
@@ -58,6 +80,90 @@ function buildWorkflowHandoff(state, completedStage, nextAgent) {
   };
 }
 
+function mapStageToCapability(stageName) {
+  const normalized = String(stageName || '').replace(/^@/, '').trim().toLowerCase();
+  if (!normalized) return null;
+
+  const map = {
+    setup: 'initialize_project_context',
+    product: 'define_product_scope',
+    analyst: 'analyze_requirements',
+    architect: 'design_architecture',
+    'ux-ui': 'design_ui_spec',
+    pm: 'plan_delivery',
+    orchestrator: 'coordinate_parallel_work',
+    dev: 'implement_feature',
+    qa: 'verify_feature',
+    committer: 'prepare_commit'
+  };
+
+  return map[normalized] || null;
+}
+
+function buildWorkflowHandoffProtocol(state, completedStage, nextAgent, options = {}) {
+  const fromAgentId = completedStage || null;
+  const toAgentId = nextAgent || null;
+  const fromCapability = mapStageToCapability(fromAgentId);
+  const toCapability = mapStageToCapability(toAgentId);
+
+  return {
+    version: '1.0',
+    protocol_id: `hnd-${fromAgentId || 'init'}-${toAgentId || 'end'}-${Date.now()}`,
+    created_at: new Date().toISOString(),
+    workflow_mode: state.mode || null,
+    classification: state.classification || null,
+    feature_slug: state.featureSlug || null,
+    from: {
+      agent_id: fromAgentId,
+      capability_transferred: fromCapability
+    },
+    to: {
+      agent_id: toAgentId,
+      capability_required: toCapability
+    },
+    capabilities_transferred: fromCapability ? [fromCapability] : [],
+    artifact_uris: Array.isArray(options.artifactUris) ? options.artifactUris : [],
+    gate_status: options.gateStatus && typeof options.gateStatus === 'object' ? options.gateStatus : {},
+    autonomy_mode: options.autonomyMode || null,
+    validation: {
+      handoff_contract_ok: options.handoffContractOk !== false,
+      technical_gate_ok: options.technicalGateOk !== false,
+      validated_at: new Date().toISOString()
+    }
+  };
+}
+
+function buildBasicHandoffProtocol(payload) {
+  const fromAgentId = payload.lastStage ? String(payload.lastStage).replace(/^@/, '') : null;
+  const toAgentId = payload.nextAgent ? String(payload.nextAgent).replace(/^@/, '') : null;
+  const fromCapability = mapStageToCapability(fromAgentId);
+  return {
+    version: '1.0',
+    protocol_id: `hnd-${fromAgentId || 'init'}-${toAgentId || 'end'}-${Date.now()}`,
+    created_at: new Date().toISOString(),
+    workflow_mode: payload.workflowMode || null,
+    classification: payload.classification || null,
+    feature_slug: payload.featureSlug || null,
+    from: {
+      agent_id: fromAgentId,
+      capability_transferred: fromCapability
+    },
+    to: {
+      agent_id: toAgentId,
+      capability_required: mapStageToCapability(toAgentId)
+    },
+    capabilities_transferred: fromCapability ? [fromCapability] : [],
+    artifact_uris: Array.isArray(payload.contextFilesUpdated) ? payload.contextFilesUpdated : [],
+    gate_status: {},
+    autonomy_mode: payload.autonomyMode || null,
+    validation: {
+      handoff_contract_ok: true,
+      technical_gate_ok: true,
+      validated_at: new Date().toISOString()
+    }
+  };
+}
+
 function buildRuntimeLogHandoff(agentName, message, summary) {
   return {
     lastAgent: agentName ? `@${agentName.replace(/^@/, '')}` : null,
@@ -70,8 +176,11 @@ function buildRuntimeLogHandoff(agentName, message, summary) {
 
 module.exports = {
   HANDOFF_RELATIVE_PATH,
+  HANDOFF_PROTOCOL_RELATIVE_PATH,
   writeHandoff,
   readHandoff,
+  readHandoffProtocol,
   buildWorkflowHandoff,
+  buildWorkflowHandoffProtocol,
   buildRuntimeLogHandoff
 };

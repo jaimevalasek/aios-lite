@@ -7,6 +7,7 @@
  * Usage:
  *   aioson commit:prepare .
  *   aioson commit:prepare . --staged-only
+ *   aioson commit:prepare . --agent-safe --staged-only --mode=headless
  *   aioson commit:prepare . --json
  */
 
@@ -154,7 +155,12 @@ async function runCommitPrepare({ args, options, logger }) {
   const projectDir = path.resolve(process.cwd(), args[0] || '.');
   const jsonMode = Boolean(options.json);
   const stagedOnly = Boolean(options['staged-only'] || options.stagedOnly);
-  const nonInteractive = jsonMode || Boolean(options['non-interactive'] || options.nonInteractive);
+  const agentSafe = Boolean(options['agent-safe'] || options.agentSafe);
+  const requestedMode = String(options.mode || '').trim().toLowerCase();
+  const headlessMode = requestedMode === 'headless' || agentSafe;
+  const nonInteractive = jsonMode || Boolean(options['non-interactive'] || options.nonInteractive) || agentSafe;
+  const hasTty = Boolean(process.stdin && process.stdin.isTTY && process.stdout && process.stdout.isTTY);
+  const interactiveSelectionAllowed = !nonInteractive && hasTty && !headlessMode;
 
   let gitRoot;
   try {
@@ -217,16 +223,48 @@ async function runCommitPrepare({ args, options, logger }) {
       logger.log('Arquivos modificados ou não rastreados encontrados:');
     }
 
-    const choice = nonInteractive
-      ? 2 // default to "proceed with staged only" to avoid blocking in non-interactive environments
-      : await promptMenu([
+    if (!interactiveSelectionAllowed) {
+      const failure = {
+        ok: false,
+        error: headlessMode ? 'explicit_staging_required_in_headless' : 'explicit_staging_required',
+        message: headlessMode
+          ? 'Modo agent-safe/headless não pode abrir seleção interativa de arquivos. Faça stage explícito antes de continuar ou rode com --staged-only se quiser usar somente o stage atual.'
+          : 'Modo não interativo sem TTY não pode abrir seleção de arquivos. Faça stage explícito antes de continuar ou rode com --staged-only.',
+        gitRoot,
+        stagedFiles: staged,
+        unstagedFiles: unstaged,
+        untrackedFiles: untracked,
+        modifiedFiles: allModified,
+        suggestedCommands: headlessMode
+          ? [
+              'git add -- <explicit-paths>',
+              'aioson commit:prepare . --agent-safe --staged-only --mode=headless'
+            ]
+          : [
+              'git add -- <explicit-paths>',
+              'aioson commit:prepare . --staged-only'
+            ],
+        ready: false,
+        nonInteractive: true,
+        agentSafe,
+        mode: requestedMode || null
+      };
+      if (jsonMode) return failure;
+      logger.error(failure.message);
+      logger.error('Comandos sugeridos:');
+      failure.suggestedCommands.forEach((command) => logger.error(`  ${command}`));
+      process.exitCode = 1;
+      return failure;
+    }
+
+    const choice = await promptMenu([
           'selecionar arquivos específicos',
           'prosseguir apenas com o que já está no stage',
           'cancelar'
         ], 'O que deseja fazer?');
 
     if (choice === 1) {
-      filesToStage = nonInteractive ? [] : await promptFileSelectionCheckbox(allModified);
+      filesToStage = await promptFileSelectionCheckbox(allModified);
     } else if (choice === 2) {
       filesToStage = [];
     } else {
@@ -344,6 +382,7 @@ async function runCommitPrepare({ args, options, logger }) {
   const prep = {
     generatedAt: new Date().toISOString(),
     gitRoot,
+    preparationMode: agentSafe ? 'agent_safe' : stagedOnly ? 'staged_only' : interactiveSelectionAllowed ? 'interactive' : 'non_interactive',
     status: {
       staged,
       unstaged,

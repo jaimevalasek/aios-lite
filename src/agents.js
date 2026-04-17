@@ -30,10 +30,20 @@ function buildAgentPrompt(agent, tool, options = {}) {
   const instructionPath = options.instructionPath || agent.path;
   const targetDir = options.targetDir ? String(options.targetDir) : '.';
   const interactionLanguage = String(options.interactionLanguage || 'en');
+  const autonomyMode = String(options.autonomyMode || '').trim();
+  const capabilitySummary = String(options.capabilitySummary || '').trim();
   const dependencyText =
     agent.dependsOn.length > 0
       ? `Check required context files first: ${agent.dependsOn.join(', ')}.`
       : 'No prerequisite context files are required.';
+
+  const autonomyBlock = [
+    '',
+    '## Autonomy Contract',
+    '',
+    `**Autonomy mode:** ${autonomyMode || 'guarded'}. Respect this as the maximum automation level allowed for this activation.`,
+    capabilitySummary ? `**Capability summary:** ${capabilitySummary}` : '**Capability summary:** No manifest declared for this agent in the current workspace.'
+  ].join('\n');
 
   const lifecycleBlock = [
     '',
@@ -50,18 +60,18 @@ function buildAgentPrompt(agent, tool, options = {}) {
   ].join('\n');
 
   if (safeTool === 'claude') {
-    return `Read ${instructionPath} and execute ${agent.command}. ${dependencyText} Write output to ${agent.output}.${lifecycleBlock}`;
+    return `Read ${instructionPath} and execute ${agent.command}. ${dependencyText} Write output to ${agent.output}.${autonomyBlock}${lifecycleBlock}`;
   }
 
   if (safeTool === 'gemini') {
-    return `Run the Gemini command mapped to ${instructionPath} and execute ${agent.command}. ${dependencyText} Save result to ${agent.output}.${lifecycleBlock}`;
+    return `Run the Gemini command mapped to ${instructionPath} and execute ${agent.command}. ${dependencyText} Save result to ${agent.output}.${autonomyBlock}${lifecycleBlock}`;
   }
 
   if (safeTool === 'opencode') {
-    return `Use agent "${agent.id}" from ${instructionPath}. ${dependencyText} Save output to ${agent.output}.${lifecycleBlock}`;
+    return `Use agent "${agent.id}" from ${instructionPath}. ${dependencyText} Save output to ${agent.output}.${autonomyBlock}${lifecycleBlock}`;
   }
 
-  return `Read AGENTS.md and execute ${agent.command} using ${instructionPath}. ${dependencyText} Save output to ${agent.output}.${lifecycleBlock}`;
+  return `Read AGENTS.md and execute ${agent.command} using ${instructionPath}. ${dependencyText} Save output to ${agent.output}.${autonomyBlock}${lifecycleBlock}`;
 }
 
 module.exports = {

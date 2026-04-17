@@ -305,6 +305,7 @@ async function loadGuardConfig(projectDir, options = {}) {
       version,
       description: parsed.description || '',
       allowPaths: validateStringArray(parsed, 'allowPaths'),
+      contentAllowPaths: validateStringArray(parsed, 'contentAllowPaths'),
       blockPaths: validateStringArray(parsed, 'blockPaths'),
       allowExtensions: validateStringArray(parsed, 'allowExtensions'),
       blockExtensions: validateStringArray(parsed, 'blockExtensions')
@@ -314,6 +315,10 @@ async function loadGuardConfig(projectDir, options = {}) {
 
 function isAllowlistedPath(relPath, policy) {
   return matchesAnyPattern(relPath, policy.allowPaths) || matchesAnyExtension(relPath, policy.allowExtensions);
+}
+
+function isContentAllowlistedPath(relPath, policy) {
+  return matchesAnyPattern(relPath, policy.contentAllowPaths || []);
 }
 
 function collectPathFindings(relPath, rules, severity) {
@@ -438,7 +443,7 @@ async function inspectStagedChanges(projectDir, options = {}) {
       const buffer = readStagedBlob(gitRoot, relPath);
       size = buffer.length;
       binary = isBinaryBuffer(buffer);
-      if (!binary && !allowlisted) {
+      if (!binary && !isContentAllowlistedPath(relPath, policyState.config)) {
         const text = buffer.toString('utf8');
         fileFindings.push(...collectContentFindings(relPath, text));
       }

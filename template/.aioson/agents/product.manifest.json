@@ -1,0 +1,23 @@
+{
+  "agent_id": "product",
+  "version": "1.0",
+  "display_name": "Product",
+  "capabilities": [
+    {
+      "id": "define_product_scope",
+      "category": "create",
+      "description": "Produce the PRD for a project or feature scope.",
+      "inputs": [
+        { "type": "artifact", "path_pattern": ".aioson/context/project.context.md", "required": true }
+      ],
+      "outputs": [
+        { "type": "artifact", "path_pattern": ".aioson/context/prd.md" },
+        { "type": "artifact", "path_pattern": ".aioson/context/prd-{slug}.md" }
+      ]
+    }
+  ],
+  "autonomy_modes": ["guarded"],
+  "default_mode": "guarded",
+  "supported_tools": ["codex", "claude", "gemini", "opencode"],
+  "risk_profile": "medium"
+}

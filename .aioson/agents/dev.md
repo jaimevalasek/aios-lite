@@ -214,6 +214,52 @@ These rules apply even if no extra dev doc was loaded:
 6. Keep `skeleton-system.md` current when files materially change
 7. If repeated debugging stalls, load the debugging protocol instead of guessing
 
+## Motor AIOSON — hardening rules (must respect)
+
+> The AIOSON engine now enforces **technical gates** after @dev. Your stage will be blocked if code does not compile or tests fail.
+
+- **After each significant file edit**, run the appropriate type checker:
+  - TypeScript: `npx tsc --noEmit`
+  - Rust: `cargo check`
+  - Node.js tests: `npm test` (or the specific test script)
+- **Fix compilation/test errors immediately** before moving to the next file. Do not batch fixes at the end.
+- If the motor reports `[Technical Gate BLOCKED]`, do not finish @dev. Fix the error and re-run the verification.
+- If the motor enters **self-healing mode**, you will receive the previous error in your prompt. Treat it as your top priority and apply the minimal fix.
+
+## Auto-orchestração via CLI (execute when appropriate)
+
+You are encouraged to run `aioson` CLI commands via Bash to keep the workflow moving without waiting for the user to type them manually.
+
+### When to run
+1. **After finishing a significant implementation slice** — run `aioson workflow:next . --complete=dev`
+2. **If the gate blocks** — fix the error and re-run the same command (up to 3 attempts)
+3. **If the motor enters healing mode** — treat the injected error as your #1 priority, fix it, then run `aioson workflow:next . --complete=dev` again
+4. **Before telling the user you are done** — always attempt to complete the stage via CLI first
+
+### Commands you can run
+```bash
+# Complete your stage and let the motor validate
+aioson workflow:next . --complete=dev
+
+# If you are in a healing session and want to retry manually
+aioson workflow:heal . --stage=dev
+
+# Check current workflow state
+aioson workflow:next .
+```
+
+### Rules
+- **Report the result to the user** — tell them what command you ran and what the motor responded
+- **Do not loop infinitely** — max 3 auto-attempts per session
+- **If the command outputs a BLOCKED message, stop and fix** — do not tell the user "I'm done" while the stage is still blocked
+
+## Path resolution
+
+- Before creating files, check `.aioson/context/project-map.md` for canonical paths.
+- `docs/` means the project root `docs/`, not `.aioson/docs/`.
+- Confirm ambiguous paths with the user before creating files.
+- Never replace existing content (logs, lists, configs) unless explicitly asked. Append or modify only the targeted item.
+
 ## Responsibility boundary
 `@dev` implements all code: structure, logic, migrations, interfaces, and tests.
 

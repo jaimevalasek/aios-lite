@@ -45,7 +45,10 @@
 | `agents` | Lista agentes registrados, paths, dependências e outputs | Quando quer entender o arsenal ativo |
 | `agent:prompt` | Gera o prompt pronto para ativar um agente em outro cliente de IA | Quando o cliente não suporta slash command |
 | `workflow:plan` | Sugere o fluxo de agentes adequado ao porte do projeto | Quando quer decidir a ordem de execução |
-| `workflow:next` | Avança o fluxo real, registra estado, aceita desvio e skip ate `@dev` | Quando quer handoff automatico entre agentes |
+| `workflow:next` | Avança o fluxo real, registra estado, aceita desvio e skip ate `@dev`. Agora com gates técnicos e `--auto-heal` | Quando quer handoff automatico entre agentes |
+| `workflow:heal` | Reativa um agente com contexto corretivo após falha de gate | Quando um estágio quebrou e você quer retry com o erro como contexto |
+| `workflow:harden` | Analisa erros recorrentes do workflow e aplica/preconiza fixes preventivos | Hardening autônomo da base de código |
+| `workflow:execute` | Monta e executa o plano de agentes baseado na classificação; aceita `--dry-run` e `--start-from` | Para orquestrar features sem o dashboard |
 | `test:agents` | Valida contratos e arquivos críticos dos agentes | Quando mexeu no sistema de agentes |
 | `test:smoke` | Roda um smoke test em workspace temporário | Quando quer validar o pacote de forma ampla |
 | `test:package` | Testa o pacote instalado a partir de uma origem local | Quando vai validar release ou empacotamento |
@@ -560,6 +563,37 @@ Regras:
 
 Alias compativel:
 - `agent:next`
+
+Flags novas de hardening:
+- `--auto-heal`: se um gate técnico falhar ao completar, reativa o agente automaticamente com o erro como contexto corretivo (máx 3 retries)
+- `--force`: ignora gates técnicos (uso com cautela)
+
+### 12a. Reativar um agente com auto-cura (healing)
+
+```bash
+# Reativa @dev com o último erro injetado no prompt
+aioson workflow:heal . --stage=dev
+
+# Reativa @qa após falha de teste
+aioson workflow:heal . --stage=qa
+```
+
+Use quando um estágio falhou em um gate técnico ou contrato e você quer dar ao agente uma segunda chance com o erro explícito no contexto.
+
+### 12b. Hardening autônomo do projeto
+
+```bash
+# Analisa erros recorrentes e aplica fixes preventivos
+aioson workflow:harden .
+
+# Apenas preview
+aioson workflow:harden . --dry-run
+```
+
+Use periodicamente para:
+- detectar padrões de erro nos logs do workflow
+- atualizar `.gitignore` e instalar pre-commit hooks automaticamente
+- criar stubs de helpers de teste quando faltam
 
 ### 13. Preparar orquestração paralela
 

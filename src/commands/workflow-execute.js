@@ -1,113 +1,482 @@
 'use strict';
 
 /**
- * aioson workflow:execute — orchestrate the full agent workflow for a feature.
+ * aioson workflow:execute — unified runner shell on top of workflow:next.
  *
- * Uses agent:prompt, gate:check, pulse:update, feature:close as building blocks.
- * Always supports --dry-run to preview the plan without executing.
- *
- * Usage:
- *   aioson workflow:execute . --feature=checkout --tool=claude --dry-run
- *   aioson workflow:execute . --feature=checkout --tool=claude
- *   aioson workflow:execute . --feature=checkout --tool=claude --start-from=dev
- *   aioson workflow:execute . --feature=checkout --json --dry-run
+ * Dry-run previews the next actionable steps using the real workflow state.
+ * Execution advances one or more valid checkpoints and writes a resumable snapshot.
  */
 
+const fs = require('node:fs/promises');
 const path = require('node:path');
-const { execSync } = require('node:child_process');
 const {
   detectClassification,
   scanArtifacts,
   readPhaseGates
 } = require('../preflight-engine');
+const {
+  readAutonomyProtocol,
+  getToolPolicy,
+  canRunHeadless,
+  resolveEffectiveMode
+} = require('../autonomy-policy');
+const { readAgentManifest } = require('../agent-manifests');
+const { exists, ensureDir } = require('../utils');
+const { validateHandoffContract } = require('../handoff-contract');
+const { readHandoff, readHandoffProtocol } = require('../session-handoff');
+const {
+  STATE_RELATIVE_PATH,
+  buildDefaultWorkflowConfig,
+  readWorkflowConfig,
+  runWorkflowNext
+} = require('./workflow-next');
+const { runWorkflowStatus } = require('./workflow-status');
+const {
+  PARALLEL_RELATIVE_DIR,
+  collectWritePathConflicts,
+  extractStatusWritePathItems
+} = require('../parallel-workspace');
 
 const BAR = '━'.repeat(45);
+const EXECUTION_STATE_RELATIVE_PATH = '.aioson/context/workflow-execute.json';
 
-const WORKFLOW_BY_CLASSIFICATION = {
-  MICRO: [
-    { agent: 'dev', gate_before: null, gate_after: null, description: 'Direct implementation' }
-  ],
-  SMALL: [
-    { agent: 'product', gate_before: null, gate_after: null, description: 'Generate PRD' },
-    { agent: 'sheldon', gate_before: null, gate_after: null, description: 'Enrich PRD (recommended)', optional: true },
-    { agent: 'analyst', gate_before: null, gate_after: 'A', description: 'Map requirements + spec' },
-    { agent: 'dev', gate_before: 'A', gate_after: 'C', description: 'Implementation' },
-    { agent: 'qa', gate_before: 'C', gate_after: 'D', description: 'QA + feature closure' }
-  ],
-  MEDIUM: [
-    { agent: 'product', gate_before: null, gate_after: null, description: 'Generate PRD' },
-    { agent: 'sheldon', gate_before: null, gate_after: null, description: 'Enrich PRD (required)', optional: false },
-    { agent: 'analyst', gate_before: null, gate_after: 'A', description: 'Map requirements + spec' },
-    { agent: 'architect', gate_before: 'A', gate_after: 'B', description: 'Architecture design' },
-    { agent: 'ux-ui', gate_before: 'A', gate_after: 'B', description: 'UI/UX design', optional: true },
-    { agent: 'pm', gate_before: 'B', gate_after: null, description: 'Backlog + PM plan' },
-    { agent: 'dev', gate_before: 'C', gate_after: 'C', description: 'Implementation' },
-    { agent: 'qa', gate_before: 'C', gate_after: 'D', description: 'QA + feature closure' }
-  ]
+const STEP_META = {
+  setup: { description: 'Initialize project context', gate_before: null, gate_after: null },
+  product: { description: 'Generate PRD', gate_before: null, gate_after: null },
+  analyst: { description: 'Map requirements + spec', gate_before: null, gate_after: 'A' },
+  architect: { description: 'Architecture design', gate_before: 'A', gate_after: 'B' },
+  'ux-ui': { description: 'UI/UX design', gate_before: 'A', gate_after: 'B', optional: true },
+  pm: { description: 'Backlog + PM plan', gate_before: 'B', gate_after: 'C' },
+  orchestrator: { description: 'Coordinate execution lanes', gate_before: 'C', gate_after: null },
+  dev: { description: 'Implementation', gate_before: null, gate_after: 'C' },
+  qa: { description: 'QA + feature closure', gate_before: 'C', gate_after: 'D' },
+  committer: { description: 'Prepare commit', gate_before: 'D', gate_after: null }
 };
 
-const GATE_NAMES = { A: 'requirements', B: 'design', C: 'plan', D: 'execution' };
+const GATE_NAMES = {
+  A: 'requirements',
+  B: 'design',
+  C: 'plan',
+  D: 'execution'
+};
 
-async function buildExecutionPlan(targetDir, slug, classification, startFrom) {
-  const steps = WORKFLOW_BY_CLASSIFICATION[classification] || WORKFLOW_BY_CLASSIFICATION.SMALL;
+async function readJsonIfExists(filePath) {
+  if (!(await exists(filePath))) return null;
+  try {
+    const raw = await fs.readFile(filePath, 'utf8');
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+async function writeJson(filePath, payload) {
+  await ensureDir(path.dirname(filePath));
+  await fs.writeFile(filePath, `${JSON.stringify(payload, null, 2)}\n`, 'utf8');
+}
+
+function normalizeClassification(value, fallback = 'SMALL') {
+  const safe = String(value || '').trim().toUpperCase();
+  return ['MICRO', 'SMALL', 'MEDIUM'].includes(safe) ? safe : fallback;
+}
+
+function normalizeAgentName(value) {
+  return String(value || '').trim().toLowerCase().replace(/^@/, '');
+}
+
+function findNextFromSequence(sequence, completed, skipped = []) {
+  const done = new Set([...(completed || []), ...(skipped || [])].map(normalizeAgentName));
+  return sequence.find((stage) => !done.has(normalizeAgentName(stage))) || null;
+}
+
+function getFocusStage(state) {
+  if (!state || typeof state !== 'object') return null;
+  return state.current || state.next || null;
+}
+
+function isGateApproved(gates, gateLetter) {
+  if (!gateLetter) return true;
+  const gateName = GATE_NAMES[gateLetter];
+  return gateName ? gates[gateName] === 'approved' : true;
+}
+
+async function resolveFeatureSequence(targetDir, classification) {
+  const fallback = buildDefaultWorkflowConfig();
+  try {
+    const { config } = await readWorkflowConfig(targetDir);
+    const sequence = config.feature && config.feature[classification];
+    return Array.isArray(sequence) && sequence.length > 0
+      ? [...sequence]
+      : [...(fallback.feature[classification] || fallback.feature.SMALL)];
+  } catch {
+    return [...(fallback.feature[classification] || fallback.feature.SMALL)];
+  }
+}
+
+function inferCompletedStagesFromArtifacts(sequence, artifacts, gates) {
+  const completed = [];
+
+  for (const stage of sequence) {
+    const normalized = normalizeAgentName(stage);
+    let inferred = false;
+
+    if (normalized === 'product') {
+      inferred = Boolean(artifacts.prd && artifacts.prd.exists);
+    } else if (normalized === 'analyst') {
+      inferred = Boolean(artifacts.requirements && artifacts.requirements.exists && gates.requirements === 'approved');
+    } else if (normalized === 'architect') {
+      inferred = Boolean(artifacts.architecture && artifacts.architecture.exists && gates.design === 'approved');
+    } else if (normalized === 'pm') {
+      inferred = Boolean(artifacts.implementation_plan && artifacts.implementation_plan.exists && gates.plan === 'approved');
+    } else if (normalized === 'qa') {
+      inferred = gates.execution === 'approved';
+    } else {
+      break;
+    }
+
+    if (!inferred) break;
+    completed.push(normalized);
+  }
+
+  return completed;
+}
+
+async function seedFeatureWorkflowState(targetDir, slug, classification, startFrom) {
+  const statePath = path.join(targetDir, STATE_RELATIVE_PATH);
+  const existing = await readJsonIfExists(statePath);
+  const focusStage = getFocusStage(existing);
+
+  if (
+    existing &&
+    existing.mode === 'feature' &&
+    existing.featureSlug &&
+    existing.featureSlug !== slug &&
+    focusStage
+  ) {
+    return {
+      ok: false,
+      reason: 'different_active_feature',
+      active_feature: existing.featureSlug,
+      active_stage: focusStage
+    };
+  }
+
+  if (existing && existing.mode === 'feature' && existing.featureSlug === slug) {
+    return {
+      ok: true,
+      resumed: true,
+      state: existing,
+      statePath: STATE_RELATIVE_PATH
+    };
+  }
+
   const artifacts = await scanArtifacts(targetDir, slug);
   const gates = await readPhaseGates(targetDir, slug);
+  const sequence = await resolveFeatureSequence(targetDir, classification);
+  const completed = inferCompletedStagesFromArtifacts(sequence, artifacts, gates);
+  const normalizedStartFrom = startFrom ? normalizeAgentName(startFrom) : null;
 
-  const plan = [];
-  let stepNum = 1;
-  let startFromReached = !startFrom;
+  let skipped = [];
+  let next = findNextFromSequence(sequence, completed, skipped);
 
-  for (const step of steps) {
-    if (startFrom && !startFromReached) {
-      if (step.agent === startFrom) startFromReached = true;
-      else continue;
+  if (normalizedStartFrom && sequence.includes(normalizedStartFrom)) {
+    const targetIndex = sequence.indexOf(normalizedStartFrom);
+    skipped = sequence.slice(0, targetIndex).filter((stage) => !completed.includes(stage));
+    next = normalizedStartFrom;
+  }
+
+  const state = {
+    version: 1,
+    mode: 'feature',
+    classification,
+    sequence,
+    current: null,
+    next,
+    completed,
+    skipped,
+    featureSlug: slug,
+    detour: null,
+    updatedAt: new Date().toISOString()
+  };
+
+  await writeJson(statePath, state);
+  return {
+    ok: true,
+    resumed: false,
+    state,
+    statePath: STATE_RELATIVE_PATH
+  };
+}
+
+async function buildExecutionPlan(targetDir, slug, classification, workflowState = null, startFrom = null) {
+  const sequence = workflowState && Array.isArray(workflowState.sequence) && workflowState.sequence.length > 0
+    ? [...workflowState.sequence]
+    : await resolveFeatureSequence(targetDir, classification);
+  const artifacts = await scanArtifacts(targetDir, slug);
+  const gates = await readPhaseGates(targetDir, slug);
+  const normalizedStartFrom = startFrom ? normalizeAgentName(startFrom) : null;
+  const focusStage = getFocusStage(workflowState);
+  const inferredCompleted = inferCompletedStagesFromArtifacts(sequence, artifacts, gates);
+  const completedSet = new Set((workflowState && workflowState.completed) || inferredCompleted);
+  const skippedSet = new Set((workflowState && workflowState.skipped) || []);
+
+  const applyStartFrom = Boolean(
+    normalizedStartFrom &&
+    sequence.includes(normalizedStartFrom) &&
+    (!workflowState || (!workflowState.current && workflowState.next === normalizedStartFrom))
+  );
+
+  const scopedSequence = applyStartFrom
+    ? sequence.slice(sequence.indexOf(normalizedStartFrom)).filter(Boolean)
+    : sequence;
+
+  const steps = [];
+  for (const [index, agent] of scopedSequence.entries()) {
+    const meta = STEP_META[agent] || {
+      description: `Execute @${agent}`,
+      gate_before: null,
+      gate_after: null,
+      optional: false
+    };
+
+    let status = 'pending';
+    if (completedSet.has(agent)) status = 'completed';
+    else if (skippedSet.has(agent)) status = 'skipped';
+    else if (focusStage === agent) status = 'active';
+
+    const predictedBlockers = [];
+    if (status !== 'completed' && status !== 'skipped' && meta.gate_before && !isGateApproved(gates, meta.gate_before)) {
+      predictedBlockers.push(`gate ${meta.gate_before} not approved`);
+      if (status === 'pending') status = 'blocked';
     }
 
-    // Determine if step can be skipped (artifact already exists)
-    let skip = false;
-    let skipReason = null;
-
-    if (step.agent === 'product' && artifacts.prd.exists) {
-      skip = true; skipReason = 'prd already exists';
-    } else if (step.agent === 'sheldon' && artifacts.sheldon_enrichment.exists) {
-      skip = true; skipReason = 'sheldon enrichment already exists';
-    } else if (step.agent === 'analyst' && artifacts.requirements.exists && gates.requirements === 'approved') {
-      skip = true; skipReason = 'requirements + Gate A already approved';
-    } else if (step.agent === 'architect' && artifacts.architecture.exists && gates.design === 'approved') {
-      skip = true; skipReason = 'architecture + Gate B already approved';
+    if (status === 'active' && workflowState) {
+      const contractCheck = await validateHandoffContract(targetDir, workflowState, agent);
+      if (!contractCheck.ok) {
+        predictedBlockers.push(...contractCheck.missing);
+      }
     }
 
-    plan.push({
-      step: stepNum++,
-      agent: step.agent,
-      description: step.description,
-      gate_before: step.gate_before,
-      gate_after: step.gate_after,
-      optional: step.optional || false,
+    const skip = status === 'skipped' || (
+      status === 'completed' &&
+      inferredCompleted.includes(agent)
+    );
+    const skipReason = status === 'skipped'
+      ? 'workflow state marks this stage as skipped'
+      : skip
+        ? 'artifacts already satisfy this stage'
+        : null;
+
+    steps.push({
+      step: index + 1,
+      agent,
+      description: meta.description,
+      gate_before: meta.gate_before,
+      gate_after: meta.gate_after,
+      optional: Boolean(meta.optional),
+      status,
       skip,
-      skip_reason: skipReason
+      skip_reason: skipReason,
+      predicted_blockers: predictedBlockers
     });
   }
 
-  return plan;
+  return {
+    steps,
+    artifacts,
+    gates,
+    sequence
+  };
 }
 
-function runCommand(cmd) {
-  try {
-    execSync(cmd, { stdio: 'inherit' });
-    return { ok: true };
-  } catch (err) {
-    return { ok: false, error: err.message };
+function buildCheckpointPayload(activation, handoff, handoffProtocol) {
+  const safeActivation = activation && typeof activation === 'object' ? activation : {};
+  return {
+    active_stage: safeActivation.agent || null,
+    current: safeActivation.current || null,
+    next: safeActivation.next || null,
+    effective_mode: safeActivation.effectiveMode || null,
+    instruction_path: safeActivation.instructionPath || null,
+    prompt: safeActivation.prompt || null,
+    handoff,
+    handoff_protocol: handoffProtocol
+  };
+}
+
+async function writeExecutionCheckpoint(targetDir, payload) {
+  const execPath = path.join(targetDir, EXECUTION_STATE_RELATIVE_PATH);
+  const existing = await readJsonIfExists(execPath);
+  const history = Array.isArray(existing && existing.history) ? [...existing.history] : [];
+  if (payload.checkpoint) {
+    history.push({
+      at: new Date().toISOString(),
+      active_stage: payload.checkpoint.active_stage || null,
+      next: payload.checkpoint.next || null,
+      effective_mode: payload.checkpoint.effective_mode || null,
+      handoff_to: payload.checkpoint.handoff && payload.checkpoint.handoff.next_agent
+        ? String(payload.checkpoint.handoff.next_agent).replace(/^@/, '')
+        : null
+    });
   }
+  const nextPayload = {
+    version: 1,
+    feature: payload.feature,
+    classification: payload.classification,
+    tool: payload.tool,
+    requested_mode: payload.requestedMode || null,
+    status: payload.status,
+    started_at: existing && existing.feature === payload.feature ? existing.started_at : new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    resumed_count: existing && existing.feature === payload.feature ? Number(existing.resumed_count || 0) + (payload.resumed ? 1 : 0) : (payload.resumed ? 1 : 0),
+    workflow_state_path: STATE_RELATIVE_PATH,
+    checkpoint: payload.checkpoint || null,
+    status_snapshot: payload.statusSnapshot || null,
+    suggestion: payload.suggestion || null,
+    resume_command: payload.resumeCommand || null,
+    history
+  };
+  await writeJson(execPath, nextPayload);
+  return nextPayload;
+}
+
+async function readStatusSnapshot(targetDir, tool, t) {
+  return runWorkflowStatus({
+    args: [targetDir],
+    options: { json: true, tool },
+    logger: { log() {}, error() {} },
+    t
+  });
+}
+
+function parseLaneStatusIndex(fileName) {
+  const match = String(fileName || '').match(/^agent-(\d+)\.status\.md$/);
+  if (!match) return null;
+  const value = Number(match[1]);
+  if (!Number.isFinite(value) || value <= 0) return null;
+  return Math.floor(value);
+}
+
+async function readLaneWritePaths(parallelDir, index) {
+  const absPath = path.join(parallelDir, `agent-${index}.status.md`);
+  try {
+    const content = await fs.readFile(absPath, 'utf8');
+    return { lane: index, writePathItems: extractStatusWritePathItems(content) };
+  } catch {
+    return { lane: index, writePathItems: [] };
+  }
+}
+
+async function runLaneGuardPreflight(targetDir, laneIndex) {
+  const parallelDir = path.join(targetDir, PARALLEL_RELATIVE_DIR);
+  if (!(await exists(parallelDir))) {
+    return { ok: true, skipped: true, reason: 'no_parallel_workspace' };
+  }
+
+  let entries;
+  try {
+    entries = await fs.readdir(parallelDir);
+  } catch {
+    return { ok: true, skipped: true, reason: 'parallel_dir_unreadable' };
+  }
+
+  const laneIndices = entries
+    .map(parseLaneStatusIndex)
+    .filter((v) => v !== null)
+    .sort((a, b) => a - b);
+
+  if (!laneIndices.includes(laneIndex)) {
+    return { ok: false, skipped: false, reason: 'lane_not_found', lane: laneIndex };
+  }
+
+  const lanes = await Promise.all(laneIndices.map((i) => readLaneWritePaths(parallelDir, i)));
+  const conflictReport = collectWritePathConflicts(lanes);
+  const laneConflicts = conflictReport.conflicts.filter((c) =>
+    Array.isArray(c.lanes) && c.lanes.includes(laneIndex)
+  );
+  const targetLane = lanes.find((l) => l.lane === laneIndex);
+  const writePathCount = targetLane ? targetLane.writePathItems.length : 0;
+  const unassigned = writePathCount === 0;
+
+  return {
+    ok: laneConflicts.length === 0 && !unassigned,
+    skipped: false,
+    lane: laneIndex,
+    writePathCount,
+    unassigned,
+    conflictCount: laneConflicts.length,
+    conflicts: laneConflicts,
+    invalidCount: conflictReport.invalidCount,
+    invalidPatterns: conflictReport.invalidPatterns
+  };
+}
+
+async function performRunnerTransition(targetDir, suggestion, tool, requestedMode, logger, t) {
+  if (!suggestion || !suggestion.action) {
+    return { ok: false, reason: 'missing_suggestion' };
+  }
+
+  if (suggestion.action === 'workflow_complete') {
+    return { ok: true, transition: 'complete', result: null };
+  }
+
+  if (suggestion.action === 'activate_stage' || suggestion.action === 'continue_stage') {
+    const result = await runWorkflowNext({
+      args: [targetDir],
+      options: {
+        tool,
+        ...(requestedMode ? { mode: requestedMode } : {}),
+        ...(suggestion.agent ? { agent: suggestion.agent } : {})
+      },
+      logger,
+      t
+    });
+    return {
+      ok: true,
+      transition: 'activate',
+      agent: suggestion.agent || null,
+      result
+    };
+  }
+
+  if (suggestion.action === 'complete_stage' && suggestion.agent) {
+    const safeAgent = normalizeAgentName(suggestion.agent);
+    const result = await runWorkflowNext({
+      args: [targetDir],
+      options: {
+        tool,
+        complete: safeAgent,
+        ...(requestedMode ? { mode: requestedMode } : {}),
+        ...((safeAgent === 'dev' || safeAgent === 'qa') ? { 'auto-heal': true } : {})
+      },
+      logger,
+      t
+    });
+    return {
+      ok: true,
+      transition: 'complete',
+      agent: safeAgent,
+      result
+    };
+  }
+
+  return { ok: false, reason: 'unsupported_suggestion_action', action: suggestion.action };
 }
 
 async function runWorkflowExecute({ args, options = {}, logger }) {
   const targetDir = path.resolve(process.cwd(), args[0] || '.');
-  const slug = options.feature ? String(options.feature) : null;
-  const tool = options.tool ? String(options.tool) : 'claude';
+  const slug = options.feature ? String(options.feature).trim() : null;
+  const tool = options.tool ? String(options.tool).trim() : 'claude';
+  const requestedMode = options.mode ? String(options.mode).trim() : null;
   const dryRun = Boolean(options['dry-run'] || options.dry);
-  const startFrom = options['start-from'] ? String(options['start-from']) : null;
+  const startFrom = options['start-from'] ? String(options['start-from']).trim() : null;
   const skipOptional = Boolean(options['skip-optional']);
+  const parsedMaxCheckpoints = Number.parseInt(String(options['max-checkpoints'] || '1'), 10);
+  const maxCheckpoints = Number.isInteger(parsedMaxCheckpoints) && parsedMaxCheckpoints > 0
+    ? parsedMaxCheckpoints
+    : 1;
+  const parsedLane = options.lane !== undefined ? Number(options.lane) : null;
+  const laneIndex = Number.isInteger(parsedLane) && parsedLane > 0 ? parsedLane : null;
+  const t = (key, payload) => payload?.agent || payload?.stage || key;
 
   if (!slug) {
     if (options.json) return { ok: false, reason: 'missing_feature' };
@@ -116,22 +485,89 @@ async function runWorkflowExecute({ args, options = {}, logger }) {
   }
 
   let classification = await detectClassification(targetDir, slug);
-  if (!classification) classification = options.classification ? String(options.classification).toUpperCase() : 'SMALL';
+  if (!classification) {
+    classification = options.classification ? String(options.classification).toUpperCase() : 'SMALL';
+  }
+  classification = normalizeClassification(classification, 'SMALL');
 
-  const plan = await buildExecutionPlan(targetDir, slug, classification, startFrom);
-  const activePlan = plan.filter((s) => !s.skip && !(skipOptional && s.optional));
-  const skippedPlan = plan.filter((s) => s.skip);
+  const autonomyProtocol = await readAutonomyProtocol(targetDir);
+  const toolPolicy = getToolPolicy(autonomyProtocol, tool);
+  if (requestedMode === 'headless' && !canRunHeadless(toolPolicy)) {
+    const failure = { ok: false, reason: 'headless_not_supported', tool };
+    if (options.json) return failure;
+    logger.error(`Tool ${tool} does not support headless mode. Fallback required.`);
+    return failure;
+  }
 
-  if (dryRun || options.json) {
+  const parallelGuard = laneIndex !== null
+    ? await runLaneGuardPreflight(targetDir, laneIndex)
+    : null;
+
+  if (parallelGuard && !parallelGuard.ok && !parallelGuard.skipped) {
+    if (parallelGuard.reason === 'lane_not_found') {
+      const failure = { ok: false, reason: 'parallel_lane_not_found', lane: laneIndex };
+      if (options.json) return failure;
+      logger.error(`Lane ${laneIndex} not found in parallel workspace.`);
+      return failure;
+    }
+    if (parallelGuard.conflictCount > 0) {
+      logger.error(
+        `[parallel:guard] Lane ${laneIndex} has ${parallelGuard.conflictCount} write-scope conflict(s) with other lanes. Proceeding with warning.`
+      );
+    }
+    if (parallelGuard.unassigned) {
+      logger.error(
+        `[parallel:guard] Lane ${laneIndex} has no write paths declared. Run parallel:assign before executing.`
+      );
+    }
+  }
+
+  const seeded = await seedFeatureWorkflowState(targetDir, slug, classification, startFrom);
+  if (!seeded.ok) {
+    if (options.json) return seeded;
+    logger.error(
+      `Another active feature workflow is in progress: ${seeded.active_feature} (@${seeded.active_stage}).`
+    );
+    return seeded;
+  }
+
+  const planData = await buildExecutionPlan(targetDir, slug, classification, seeded.state, startFrom);
+  for (const step of planData.steps) {
+    const manifest = await readAgentManifest(targetDir, step.agent);
+    step.effective_mode = resolveEffectiveMode({
+      protocol: autonomyProtocol,
+      tool,
+      agentId: step.agent,
+      manifest,
+      requestedMode
+    });
+  }
+
+  const activePlan = planData.steps.filter((step) => step.status !== 'completed' && !(skipOptional && step.optional));
+  const blockedSteps = planData.steps.filter((step) => step.predicted_blockers.length > 0);
+  const statusSnapshot = await readStatusSnapshot(targetDir, tool, t);
+  const resumeCommand = `aioson workflow:execute ${targetDir} --feature=${slug} --tool=${tool}${requestedMode ? ` --mode=${requestedMode}` : ''}${maxCheckpoints !== 1 ? ` --max-checkpoints=${maxCheckpoints}` : ''}`;
+
+  if (dryRun) {
     const result = {
       ok: true,
       feature: slug,
       classification,
       tool,
+      requested_mode: requestedMode,
       dry_run: true,
-      steps: plan,
+      resumed: seeded.resumed,
+      state_path: seeded.statePath,
+      execution_state_path: EXECUTION_STATE_RELATIVE_PATH,
+      max_checkpoints: maxCheckpoints,
+      steps: planData.steps,
       active_steps: activePlan.length,
-      skipped_steps: skippedPlan.length
+      blocked_steps: blockedSteps.length,
+      gates: planData.gates,
+      status_snapshot: statusSnapshot,
+      suggestion: statusSnapshot && statusSnapshot.suggestion ? statusSnapshot.suggestion : null,
+      resume_command: resumeCommand,
+      parallel_guard: parallelGuard
     };
 
     if (options.json) return result;
@@ -139,103 +575,143 @@ async function runWorkflowExecute({ args, options = {}, logger }) {
     logger.log('');
     logger.log(`Workflow Execution Plan — ${slug} (${classification})`);
     logger.log(BAR);
-
-    for (const step of plan) {
-      const icon = step.skip ? '○ (skip)' : `Step ${step.step}:`;
-      const optional = step.optional ? ' (optional)' : '';
-      const gateInfo = step.gate_after ? ` → Gate ${step.gate_after} check` : '';
-      const skipInfo = step.skip ? ` — ${step.skip_reason}` : '';
-      logger.log(`${icon} @${step.agent}${optional} — ${step.description}${gateInfo}${skipInfo}`);
+    for (const step of planData.steps) {
+      const gateInfo = step.gate_after ? ` → Gate ${step.gate_after}` : '';
+      const statusInfo = `[${step.status}]`;
+      const modeInfo = step.effective_mode ? ` [mode=${step.effective_mode}]` : '';
+      logger.log(`Step ${step.step}: @${step.agent} ${statusInfo} — ${step.description}${gateInfo}${modeInfo}`);
+      for (const blocker of step.predicted_blockers) {
+        logger.log(`  - blocker: ${blocker}`);
+      }
     }
-
     logger.log('');
-    logger.log(`Gates enforced: ${plan.filter((s) => s.gate_after && !s.skip).map((s) => s.gate_after).join(', ') || 'none'}`);
-    logger.log(`Active sessions: ${activePlan.length} | Skipped: ${skippedPlan.length}`);
+    logger.log(`Blocked steps: ${blockedSteps.length} | Remaining: ${activePlan.length}`);
+    logger.log(`Resume state: ${seeded.resumed ? 'existing workflow state reused' : 'new workflow state seeded'}`);
+    if (statusSnapshot && statusSnapshot.suggestion && statusSnapshot.suggestion.command) {
+      logger.log(`Suggested command: ${statusSnapshot.suggestion.command}`);
+    }
     logger.log('');
-    logger.log('Run without --dry-run to execute.');
-    logger.log('');
-
     return result;
   }
 
-  // Execute
-  logger.log('');
-  logger.log(`Workflow Execution — ${slug} (${classification})`);
-  logger.log(BAR);
+  const executionTransitions = [];
+  let activation = null;
+  let currentStatus = statusSnapshot;
 
-  let completed = 0;
-  let failed = 0;
-  const executionLog = [];
+  for (let index = 0; index < maxCheckpoints; index += 1) {
+    const suggestion = currentStatus && currentStatus.suggestion ? currentStatus.suggestion : null;
+    let transitionResult;
 
-  for (const step of plan) {
-    if (step.skip) {
-      logger.log(`[skip] @${step.agent} — ${step.skip_reason}`);
-      executionLog.push({ step: step.step, agent: step.agent, status: 'skipped', reason: step.skip_reason });
-      continue;
+    try {
+      transitionResult = await performRunnerTransition(
+        targetDir,
+        suggestion,
+        tool,
+        requestedMode,
+        logger,
+        t
+      );
+    } catch (error) {
+      const failure = {
+        ok: false,
+        reason: 'workflow_next_failed',
+        feature: slug,
+        classification,
+        message: error.message,
+        transitions: executionTransitions
+      };
+      if (options.json) return failure;
+      logger.error(error.message);
+      return failure;
     }
 
-    if (skipOptional && step.optional) {
-      logger.log(`[skip] @${step.agent} — optional, skipped`);
-      executionLog.push({ step: step.step, agent: step.agent, status: 'skipped', reason: 'optional' });
-      continue;
+    if (!transitionResult.ok) {
+      const failure = {
+        ok: false,
+        reason: transitionResult.reason || 'runner_transition_failed',
+        feature: slug,
+        classification,
+        transitions: executionTransitions
+      };
+      if (options.json) return failure;
+      logger.error(`Runner transition failed: ${failure.reason}`);
+      return failure;
     }
 
-    // Gate check before
-    if (step.gate_before) {
-      logger.log(`[Gate ${step.gate_before} check] pre-step ${step.step}...`);
-      const gateCmd = `aioson gate:check ${targetDir} --feature=${slug} --gate=${step.gate_before}`;
-      const gateResult = runCommand(gateCmd);
-      if (!gateResult.ok) {
-        logger.log(`[Gate ${step.gate_before}] BLOCKED — cannot proceed with @${step.agent}`);
-        executionLog.push({ step: step.step, agent: step.agent, status: 'blocked', gate: step.gate_before });
-        failed++;
-        break;
-      }
-    }
-
-    logger.log(`[Step ${step.step}/${activePlan.length}] @${step.agent} — ${step.description}...`);
-    const agentCmd = `aioson agent:prompt ${targetDir} --agent=${step.agent} --feature=${slug} --tool=${tool}`;
-    const agentResult = runCommand(agentCmd);
-
-    if (!agentResult.ok) {
-      logger.log(`[Step ${step.step}] @${step.agent} FAILED`);
-      executionLog.push({ step: step.step, agent: step.agent, status: 'failed' });
-      failed++;
+    if (transitionResult.transition === 'complete' && !transitionResult.result) {
       break;
     }
 
-    // Gate check after
-    if (step.gate_after) {
-      logger.log(`[Gate ${step.gate_after} check] post-step ${step.step}...`);
+    activation = transitionResult.result || activation;
+    executionTransitions.push({
+      index: index + 1,
+      transition: transitionResult.transition,
+      agent: transitionResult.agent || null,
+      active_stage: activation && activation.agent ? activation.agent : null,
+      next_stage: activation && activation.next ? activation.next : null,
+      completed_stage: activation && activation.completedStage ? activation.completedStage : null
+    });
+
+    currentStatus = await readStatusSnapshot(targetDir, tool, t);
+
+    const nextSuggestion = currentStatus && currentStatus.suggestion ? currentStatus.suggestion : null;
+    if (!nextSuggestion || nextSuggestion.action === 'continue_stage' || nextSuggestion.action === 'workflow_complete') {
+      break;
     }
-
-    // Pulse update
-    const pulseCmd = `aioson pulse:update ${targetDir} --agent=${step.agent} --feature=${slug} --action="${step.description}" 2>/dev/null || true`;
-    runCommand(pulseCmd);
-
-    executionLog.push({ step: step.step, agent: step.agent, status: 'completed' });
-    completed++;
-    logger.log(`[Step ${step.step}] @${step.agent} ✓`);
   }
 
-  const allDone = completed === activePlan.length;
-  if (allDone) {
-    logger.log('');
-    logger.log(`Workflow complete: ${slug} → done`);
-    logger.log(`Total sessions: ${completed}`);
-  } else {
-    logger.log('');
-    logger.log(`Workflow stopped: ${completed} completed, ${failed} failed.`);
-  }
-
-  return {
-    ok: allDone,
+  const handoff = await readHandoff(targetDir);
+  const handoffProtocol = await readHandoffProtocol(targetDir);
+  const refreshedStatus = currentStatus || await readStatusSnapshot(targetDir, tool, t);
+  const executionState = await writeExecutionCheckpoint(targetDir, {
     feature: slug,
     classification,
-    completed,
-    failed,
-    execution_log: executionLog
+    tool,
+    requestedMode,
+    resumed: seeded.resumed,
+    status: activation && activation.agent ? 'active' : 'completed',
+    checkpoint: buildCheckpointPayload(activation, handoff, handoffProtocol),
+    statusSnapshot: refreshedStatus,
+    suggestion: refreshedStatus && refreshedStatus.suggestion ? refreshedStatus.suggestion : null,
+    resumeCommand
+  });
+
+  const result = {
+    ok: true,
+    feature: slug,
+    classification,
+    tool,
+    requested_mode: requestedMode,
+    resumed: seeded.resumed,
+    state_path: seeded.statePath,
+    execution_state_path: EXECUTION_STATE_RELATIVE_PATH,
+    max_checkpoints: maxCheckpoints,
+    checkpoint: executionState.checkpoint,
+    execution_state: executionState,
+    status_snapshot: refreshedStatus,
+    suggestion: refreshedStatus && refreshedStatus.suggestion ? refreshedStatus.suggestion : null,
+    resume_command: resumeCommand,
+    transitions: executionTransitions,
+    active_stage: activation && activation.agent ? activation.agent : null,
+    next_stage: activation && activation.next ? activation.next : null,
+    handoff,
+    handoff_protocol: handoffProtocol,
+    parallel_guard: parallelGuard
   };
+
+  if (!options.json) {
+    logger.log('');
+    logger.log(`Workflow checkpoint stored at ${EXECUTION_STATE_RELATIVE_PATH}`);
+    logger.log(`Feature: ${slug}`);
+    logger.log(`Resumed: ${seeded.resumed ? 'yes' : 'no'}`);
+  }
+
+  return result;
 }
 
-module.exports = { runWorkflowExecute };
+module.exports = {
+  EXECUTION_STATE_RELATIVE_PATH,
+  buildExecutionPlan,
+  seedFeatureWorkflowState,
+  runWorkflowExecute
+};

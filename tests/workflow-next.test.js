@@ -11,6 +11,7 @@ const {
   EVENTS_RELATIVE_PATH
 } = require('../src/commands/workflow-next');
 const { openRuntimeDb } = require('../src/runtime-store');
+const { HANDOFF_PROTOCOL_RELATIVE_PATH } = require('../src/session-handoff');
 
 async function makeTempDir() {
   return fs.mkdtemp(path.join(os.tmpdir(), 'aioson-workflow-next-'));
@@ -213,4 +214,208 @@ test('workflow:next syncs workflow task, runs, and canonical events into runtime
   }
 
   await assert.doesNotReject(() => fs.access(path.join(dir, 'aioson-logs')));
+});
+
+test('workflow:next writes handoff-protocol.json in parallel with last-handoff.json', async () => {
+  const dir = await makeTempDir();
+  await writeProjectContext(dir, 'SMALL');
+  await writeFileEnsured(
+    path.join(dir, '.aioson/config/autonomy-protocol.json'),
+    JSON.stringify({
+      version: '1.0',
+      global_mode: 'guarded',
+      tools: {
+        codex: {
+          mode: 'trusted',
+          requires_tty: false
+        }
+      },
+      agents: {
+        dev: {
+          max_mode: 'trusted'
+        }
+      }
+    }, null, 2)
+  );
+  await writeFileEnsured(
+    path.join(dir, '.aioson/context/features.md'),
+    '# Features\n\n| slug | status | started | completed |\n|------|--------|---------|-----------|\n| protocol-contracts | in_progress | 2026-04-16 | — |\n'
+  );
+  await writeFileEnsured(path.join(dir, '.aioson/context/prd-protocol-contracts.md'), '# Feature PRD\n');
+  await writeFileEnsured(path.join(dir, '.aioson/context/requirements-protocol-contracts.md'), '# Requirements\n');
+  await writeFileEnsured(
+    path.join(dir, '.aioson/context/spec-protocol-contracts.md'),
+    '---\ngate_requirements: approved\ngate_design: approved\n---\n# Spec\n'
+  );
+  await writeFileEnsured(path.join(dir, '.aioson/context/discovery.md'), '# Discovery\n');
+  await writeFileEnsured(path.join(dir, '.aioson/context/architecture.md'), '# Architecture\n');
+  await writeFileEnsured(path.join(dir, '.aioson/context/project-pulse.md'), '# Pulse\n');
+  await writeFileEnsured(
+    path.join(dir, '.aioson/context/workflow.state.json'),
+    JSON.stringify({
+      version: 1,
+      mode: 'feature',
+      classification: 'SMALL',
+      sequence: ['product', 'analyst', 'architect', 'dev', 'qa'],
+      current: 'architect',
+      next: 'architect',
+      completed: ['product', 'analyst'],
+      skipped: [],
+      featureSlug: 'protocol-contracts',
+      detour: null,
+      updatedAt: new Date().toISOString()
+    }, null, 2)
+  );
+
+  const { t } = createTranslator('en');
+  const result = await runWorkflowNext({
+    args: [dir],
+    options: { tool: 'codex', complete: 'architect' },
+    logger: createQuietLogger(),
+    t
+  });
+
+  assert.equal(result.completedStage, 'architect');
+
+  const protocolPath = path.join(dir, HANDOFF_PROTOCOL_RELATIVE_PATH);
+  const raw = await fs.readFile(protocolPath, 'utf8');
+  const protocol = JSON.parse(raw);
+
+  assert.equal(protocol.version, '1.0');
+  assert.equal(protocol.from.agent_id, 'architect');
+  assert.equal(protocol.to.agent_id, 'dev');
+  assert.equal(protocol.to.capability_required, 'implement_feature');
+  assert.equal(protocol.autonomy_mode, 'trusted');
+  assert.equal(protocol.validation.handoff_contract_ok, true);
+  assert.equal(protocol.validation.technical_gate_ok, true);
+});
+
+test('workflow:next emits handoff protocol warning when next agent has no capability manifest', async () => {
+  const dir = await makeTempDir();
+  await writeProjectContext(dir, 'SMALL');
+
+  await writeFileEnsured(path.join(dir, '.aioson/context/features.md'),
+    '# Features\n\n| slug | status | started | completed |\n|------|--------|---------|-----------|\n| my-feat | in_progress | 2026-04-17 | — |\n'
+  );
+  await writeFileEnsured(path.join(dir, '.aioson/context/prd-my-feat.md'), '# PRD\n');
+  await writeFileEnsured(path.join(dir, '.aioson/context/requirements-my-feat.md'), '# Requirements\n');
+  await writeFileEnsured(
+    path.join(dir, '.aioson/context/spec-my-feat.md'),
+    '---\ngate_requirements: approved\ngate_design: approved\n---\n# Spec\n'
+  );
+  await writeFileEnsured(path.join(dir, '.aioson/context/discovery.md'), '# Discovery\n');
+  await writeFileEnsured(path.join(dir, '.aioson/context/architecture.md'), '# Architecture\n');
+  await writeFileEnsured(path.join(dir, '.aioson/context/project-pulse.md'), '# Pulse\n');
+  await writeFileEnsured(
+    path.join(dir, '.aioson/context/workflow.state.json'),
+    JSON.stringify({
+      version: 1,
+      mode: 'feature',
+      classification: 'SMALL',
+      sequence: ['product', 'analyst', 'architect', 'dev', 'qa'],
+      current: 'architect',
+      next: 'architect',
+      completed: ['product', 'analyst'],
+      skipped: [],
+      featureSlug: 'my-feat',
+      detour: null,
+      updatedAt: new Date().toISOString()
+    }, null, 2)
+  );
+
+  const warnings = [];
+  const { t } = createTranslator('en');
+  const result = await runWorkflowNext({
+    args: [dir],
+    options: { tool: 'codex', complete: 'architect' },
+    logger: { log() {}, error(line) { warnings.push(String(line)); } },
+    t
+  });
+
+  assert.equal(result.completedStage, 'architect');
+  assert.equal(warnings.some((line) => line.includes('Handoff protocol warning')), true);
+  assert.equal(warnings.some((line) => line.includes('dev') && line.includes('no capability manifest')), true);
+});
+
+test('workflow:next completes architect in project mode without spec.md when architecture.md exists', async () => {
+  const dir = await makeTempDir();
+  await writeProjectContext(dir, 'SMALL');
+  await writeFileEnsured(path.join(dir, '.aioson/context/prd.md'), '# PRD\n');
+  await writeFileEnsured(path.join(dir, '.aioson/context/discovery.md'), '# Discovery\n');
+  await writeFileEnsured(
+    path.join(dir, '.aioson/context/architecture.md'),
+    '# Architecture\n\n> **Gate B:** Architecture approved — @dev can proceed.\n'
+  );
+  await writeFileEnsured(path.join(dir, '.aioson/context/project-pulse.md'), '# Pulse\n');
+  await writeFileEnsured(
+    path.join(dir, '.aioson/context/workflow.state.json'),
+    JSON.stringify({
+      version: 1,
+      mode: 'project',
+      classification: 'SMALL',
+      sequence: ['setup', 'product', 'analyst', 'architect', 'dev', 'qa'],
+      current: 'architect',
+      next: 'architect',
+      completed: ['setup', 'product', 'analyst'],
+      skipped: [],
+      featureSlug: null,
+      detour: null,
+      updatedAt: new Date().toISOString()
+    }, null, 2)
+  );
+
+  const { t } = createTranslator('en');
+  const result = await runWorkflowNext({
+    args: [dir],
+    options: { tool: 'codex', complete: 'architect' },
+    logger: createQuietLogger(),
+    t
+  });
+
+  assert.equal(result.completedStage, 'architect');
+  assert.equal(result.mode, 'project');
+  assert.equal(result.agent, 'dev');
+  assert.equal(result.current, 'dev');
+  assert.equal(result.next, 'dev');
+});
+
+test('workflow:next blocks architect in project mode when spec.md explicitly keeps Gate B pending', async () => {
+  const dir = await makeTempDir();
+  await writeProjectContext(dir, 'SMALL');
+  await writeFileEnsured(path.join(dir, '.aioson/context/prd.md'), '# PRD\n');
+  await writeFileEnsured(path.join(dir, '.aioson/context/discovery.md'), '# Discovery\n');
+  await writeFileEnsured(path.join(dir, '.aioson/context/architecture.md'), '# Architecture\n');
+  await writeFileEnsured(
+    path.join(dir, '.aioson/context/spec.md'),
+    '---\ngate_design: pending\n---\n# Spec\n'
+  );
+  await writeFileEnsured(path.join(dir, '.aioson/context/project-pulse.md'), '# Pulse\n');
+  await writeFileEnsured(
+    path.join(dir, '.aioson/context/workflow.state.json'),
+    JSON.stringify({
+      version: 1,
+      mode: 'project',
+      classification: 'SMALL',
+      sequence: ['setup', 'product', 'analyst', 'architect', 'dev', 'qa'],
+      current: 'architect',
+      next: 'architect',
+      completed: ['setup', 'product', 'analyst'],
+      skipped: [],
+      featureSlug: null,
+      detour: null,
+      updatedAt: new Date().toISOString()
+    }, null, 2)
+  );
+
+  const { t } = createTranslator('en');
+  await assert.rejects(
+    () =>
+      runWorkflowNext({
+        args: [dir],
+        options: { tool: 'codex', complete: 'architect' },
+        logger: createQuietLogger(),
+        t
+      }),
+    /gate B not approved/
+  );
 });

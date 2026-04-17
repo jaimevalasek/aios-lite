@@ -22,11 +22,12 @@
     "laneCount": { "type": "integer", "minimum": 1 },
     "statusCounts": {
       "type": "object",
-      "required": ["pending", "in_progress", "completed", "blocked", "other"],
+      "required": ["pending", "in_progress", "completed", "merged", "blocked", "other"],
       "properties": {
         "pending": { "type": "integer", "minimum": 0 },
         "in_progress": { "type": "integer", "minimum": 0 },
         "completed": { "type": "integer", "minimum": 0 },
+        "merged": { "type": "integer", "minimum": 0 },
         "blocked": { "type": "integer", "minimum": 0 },
         "other": { "type": "integer", "minimum": 0 }
       },
@@ -49,6 +50,84 @@
       "properties": {
         "exists": { "type": "boolean" },
         "entries": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": true
+    },
+    "machineFiles": {
+      "type": "object",
+      "properties": {
+        "workspaceManifest": { "type": "boolean" },
+        "ownershipMap": { "type": "boolean" },
+        "mergePlan": { "type": "boolean" }
+      },
+      "additionalProperties": true
+    },
+    "ownership": {
+      "type": "object",
+      "properties": {
+        "assignedScopeCount": { "type": "integer", "minimum": 0 },
+        "conflictCount": { "type": "integer", "minimum": 0 },
+        "conflicts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "scope_key": { "type": "string" },
+              "lanes": {
+                "type": "array",
+                "items": { "type": "integer", "minimum": 1 }
+              }
+            },
+            "additionalProperties": true
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "writeScope": {
+      "type": "object",
+      "properties": {
+        "laneCount": { "type": "integer", "minimum": 0 },
+        "totalPathCount": { "type": "integer", "minimum": 0 },
+        "uncoveredAssignedLaneCount": { "type": "integer", "minimum": 0 },
+        "invalidPatternCount": { "type": "integer", "minimum": 0 },
+        "conflictCount": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": true
+    },
+    "dependencies": {
+      "type": "object",
+      "properties": {
+        "declaredCount": { "type": "integer", "minimum": 0 },
+        "invalidCount": { "type": "integer", "minimum": 0 },
+        "blockedCount": { "type": "integer", "minimum": 0 },
+        "orderViolationCount": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": true
+    },
+    "merge": {
+      "type": "object",
+      "properties": {
+        "strategy": { "type": ["string", "null"] },
+        "order": {
+          "type": "array",
+          "items": { "type": "integer", "minimum": 1 }
+        },
+        "laneCount": { "type": "integer", "minimum": 0 },
+        "orderViolationCount": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": true
+    },
+    "sync": {
+      "type": "object",
+      "properties": {
+        "workspaceManifestInSync": { "type": "boolean" },
+        "ownershipMapInSync": { "type": "boolean" },
+        "mergePlanInSync": { "type": "boolean" },
+        "staleFiles": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
       },
       "additionalProperties": true
     },
@@ -75,6 +154,17 @@
           "priority": { "type": "string" },
           "updatedAt": { "type": "string" },
           "scopeCount": { "type": "integer", "minimum": 0 },
+          "dependencyCount": { "type": "integer", "minimum": 0 },
+          "dependencies": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "mergeRank": { "type": "integer", "minimum": 1 },
+          "writePathCount": { "type": "integer", "minimum": 0 },
+          "writePaths": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
           "blockerCount": { "type": "integer", "minimum": 0 },
           "deliverables": {
             "type": "object",

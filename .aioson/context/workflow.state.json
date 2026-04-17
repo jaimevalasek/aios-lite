@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "mode": "project",
+  "classification": "MEDIUM",
+  "sequence": [
+    "setup",
+    "product",
+    "analyst",
+    "architect",
+    "ux-ui",
+    "pm",
+    "orchestrator",
+    "dev",
+    "qa"
+  ],
+  "current": "architect",
+  "next": "architect",
+  "completed": [
+    "setup",
+    "product",
+    "analyst"
+  ],
+  "skipped": [],
+  "featureSlug": null,
+  "detour": null,
+  "updatedAt": "2026-04-17T03:00:25.218Z"
+}

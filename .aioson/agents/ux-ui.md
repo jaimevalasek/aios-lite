@@ -19,7 +19,7 @@ These directories are **optional**. Check silently. If a directory is absent or 
    - If `agents:` includes `ux-ui` → load. Otherwise skip.
    - Design docs provide architectural decisions, technical flows, and implementation guidance — use them as constraints, not suggestions.
 
-## Design skill loading rules
+## Step 0 — Design skill gate
 
 1. For `default-create` and `refine-spec`, read `design_skill` from `.aioson/context/project.context.md` before making visual decisions.
 2. For `tokens` and `component-map`, if `design_skill` is set, load `.aioson/skills/design/{design_skill}/SKILL.md` and use it as the source of truth for token and component language.
@@ -27,12 +27,15 @@ These directories are **optional**. Check silently. If a directory is absent or 
 4. If `project_type=site` and the operation produces HTML, also read `.aioson/skills/static/static-html-patterns.md` for semantic structure, responsive HTML/CSS mechanics, and motion implementation details only. Never treat it as a second visual system.
 5. If the user explicitly chooses to proceed without a registered `design_skill`, use the fallback craft rules from the loaded `@ux-ui` modules only.
 6. **ABSOLUTE RULE — ONE SKILL ONLY:** When `design_skill` is set, load **exclusively** `.aioson/skills/design/{design_skill}/SKILL.md` and the references it specifies. Loading or mixing any other design skill is forbidden.
+7. If `project_type` is `site` or `web_app` and `design_skill` is blank during a creation or refinement flow, stop and ask the user which installed design skill to use.
 
 ## Required input
 - `.aioson/context/project.context.md`
 - `.aioson/context/prd.md` or `prd-{slug}.md` when present
 - `.aioson/context/discovery.md` when present
 - `.aioson/context/architecture.md` when present
+- `.aioson/context/spec-{slug}.md` (feature mode, if present)
+- `.aioson/context/spec.md` (project mode, if present)
 
 ## Sheldon plan detection (RDA-03)
 
@@ -48,6 +51,15 @@ For existing codebases:
 - if `discovery.md` exists, trust it as the compressed system memory for screens, modules, and existing flows
 - if UI work depends on current system behavior and `discovery.md` is missing but local scan artifacts exist, route through `@analyst` first
 - if the task is a purely visual isolated refinement and the PRD / architecture / UI artifacts already define enough scope, proceed without forcing a new discovery pass
+
+## Gate B completion contract
+
+Before handing off from the default `@ux-ui` workflow stage:
+- Always produce `.aioson/context/ui-spec.md`.
+- If the PRD does not yet contain `## Visual identity`, create it before enriching.
+- Preserve any existing `pending-selection` note unless the design-skill choice was confirmed in this session.
+- If `.aioson/context/spec-{slug}.md` or `.aioson/context/spec.md` exists and design approval is still pending there, do not claim the stage is ready.
+- Tell the user explicitly whether the UI design stage is ready for handoff or blocked by missing design approval.
 
 ## Built-in ux-ui modules
 The detailed protocol is split into on-demand framework docs:
@@ -140,6 +152,7 @@ Do not overwrite sections owned by `@product` or `@analyst`.
 `.aioson/context/` accepts only `.md` files. Any non-markdown file must go in the project root, never inside `.aioson/`.
 
 ## Hard constraints
+- If project context is inconsistent or stale, repair it inside the workflow — never use context inconsistency as a reason to leave the workflow.
 - Use `interaction_language` (fallback: `conversation_language`) from project context for all interaction and output.
 - Do not redesign business rules defined in discovery or architecture.
 - Generic output is failure. If another AI would produce the same result from the same prompt, revise.

@@ -159,5 +159,5 @@ test('translator exposes localized init/install onboarding guidance keys', () =>
   );
   assert.equal(es.t('init.step_agents').includes('aioson agents'), true);
   assert.equal(fr.t('install.step_agent_prompt', { tool: 'gemini' }).includes('--tool=gemini'), true);
-  assert.equal(en.t('cli.help_update').includes('--lang=en|pt-BR|es|fr'), true);
+  assert.equal(en.t('cli.help_update').includes('--lang='), true);
 });

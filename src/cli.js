@@ -22,10 +22,14 @@ const { runPackageTest } = require('./commands/package-e2e');
 const { runWorkflowPlan } = require('./commands/workflow-plan');
 const { runWorkflowNext } = require('./commands/workflow-next');
 const { runWorkflowStatus } = require('./commands/workflow-status');
+const { runWorkflowHeal } = require('./commands/workflow-heal');
+const { runWorkflowHarden } = require('./commands/workflow-harden');
 const { runParallelInit } = require('./commands/parallel-init');
 const { runParallelDoctor } = require('./commands/parallel-doctor');
 const { runParallelAssign } = require('./commands/parallel-assign');
 const { runParallelStatus } = require('./commands/parallel-status');
+const { runParallelMerge } = require('./commands/parallel-merge');
+const { runParallelGuard } = require('./commands/parallel-guard');
 const { runTestAgents } = require('./commands/test-agents');
 const { runLocaleDiff } = require('./commands/locale-diff');
 const { runQaDoctor } = require('./commands/qa-doctor');
@@ -221,11 +225,19 @@ const JSON_SUPPORTED_COMMANDS = new Set([
   'parallel-assign',
   'parallel:status',
   'parallel-status',
+  'parallel:merge',
+  'parallel-merge',
+  'parallel:guard',
+  'parallel-guard',
   'orchestrator:init',
   'orchestrator-init',
   'orchestrator:doctor',
   'orchestrator-doctor',
   'orchestrator:assign',
+  'orchestrator:merge',
+  'orchestrator-merge',
+  'orchestrator:guard',
+  'orchestrator-guard',
   'orchestrator-assign',
   'orchestrator:status',
   'orchestrator-status',
@@ -622,10 +634,13 @@ function printHelp(t, logger) {
   logHelpLine(t, logger, 'cli.help_workflow_plan');
   logHelpLine(t, logger, 'cli.help_workflow_next');
   logHelpLine(t, logger, 'cli.help_workflow_status');
+  logHelpLine(t, logger, 'cli.help_workflow_execute');
   logHelpLine(t, logger, 'cli.help_parallel_init');
   logHelpLine(t, logger, 'cli.help_parallel_doctor');
   logHelpLine(t, logger, 'cli.help_parallel_assign');
   logHelpLine(t, logger, 'cli.help_parallel_status');
+  logHelpLine(t, logger, 'cli.help_parallel_merge');
+  logHelpLine(t, logger, 'cli.help_parallel_guard');
   logHelpLine(t, logger, 'cli.help_mcp_init');
   logHelpLine(t, logger, 'cli.help_mcp_doctor');
   logHelpLine(t, logger, 'cli.help_qa_doctor');
@@ -799,8 +814,7 @@ async function main() {
       command === 'agent:next' ||
       command === 'agent-next'
     ) {
-      // --status flag routes to workflow:status
-      if (options.status) {
+      if (options.status || options.suggest) {
         result = await runWorkflowStatus({ args, options, logger: commandLogger, t });
       } else {
         result = await runWorkflowNext({ args, options, logger: commandLogger, t });
@@ -810,6 +824,16 @@ async function main() {
       command === 'workflow-status'
     ) {
       result = await runWorkflowStatus({ args, options, logger: commandLogger, t });
+    } else if (
+      command === 'workflow:heal' ||
+      command === 'workflow-heal'
+    ) {
+      result = await runWorkflowHeal({ args, options, logger: commandLogger, t });
+    } else if (
+      command === 'workflow:harden' ||
+      command === 'workflow-harden'
+    ) {
+      result = await runWorkflowHarden({ args, options, logger: commandLogger, t });
     } else if (
       command === 'parallel:init' ||
       command === 'parallel-init' ||
@@ -838,6 +862,20 @@ async function main() {
       command === 'orchestrator-status'
     ) {
       result = await runParallelStatus({ args, options, logger: commandLogger, t });
+    } else if (
+      command === 'parallel:merge' ||
+      command === 'parallel-merge' ||
+      command === 'orchestrator:merge' ||
+      command === 'orchestrator-merge'
+    ) {
+      result = await runParallelMerge({ args, options, logger: commandLogger, t });
+    } else if (
+      command === 'parallel:guard' ||
+      command === 'parallel-guard' ||
+      command === 'orchestrator:guard' ||
+      command === 'orchestrator-guard'
+    ) {
+      result = await runParallelGuard({ args, options, logger: commandLogger, t });
     } else if (command === 'mcp:init' || command === 'mcp-init') {
       result = await runMcpInit({ args, options, logger: commandLogger, t });
     } else if (command === 'mcp:doctor' || command === 'mcp-doctor') {

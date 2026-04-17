@@ -20,7 +20,9 @@ function parseArgv(argv) {
       const boolOnly = new Set([
         'all', 'force', 'dry-run', 'no-interactive', 'fix', 'json',
         'help', 'version', 'no-launch', 'attach',
-        'allow-warnings', 'install-hook', 'uninstall-hook', 'remove-hook'
+        'allow-warnings', 'install-hook', 'uninstall-hook', 'remove-hook',
+        'agent-safe',
+        'status', 'suggest', 'apply'
       ]);
 
       const next = tokens[i + 1];

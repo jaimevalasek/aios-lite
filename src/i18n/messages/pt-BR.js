@@ -36,9 +36,11 @@ module.exports = {
     help_workflow_plan:
       'aioson workflow:plan [path] [--classification=MICRO|SMALL|MEDIUM] [--json] [--locale=pt-BR]',
     help_workflow_next:
-      'aioson workflow:next [path] [--complete[=<agente>]] [--agent=<agente>] [--skip=<agente>] [--status] [--tool=codex|claude|gemini|opencode] [--json] [--locale=pt-BR]',
+      'aioson workflow:next [path] [--complete[=<agente>]] [--agent=<agente>] [--skip=<agente>] [--status] [--suggest] [--tool=codex|claude|gemini|opencode] [--json] [--locale=pt-BR]',
     help_workflow_status:
-      'aioson workflow:status [path] [--json] [--locale=pt-BR]',
+      'aioson workflow:status [path] [--suggest] [--tool=codex|claude|gemini|opencode] [--json] [--locale=pt-BR]',
+    help_workflow_execute:
+      'aioson workflow:execute [path] [--steps=<n>] [--dry-run] [--lane=<n>] [--json] [--locale=pt-BR]',
     help_parallel_init:
       'aioson parallel:init [path] [--workers=2..6] [--force] [--dry-run] [--json] [--locale=pt-BR]',
     help_parallel_doctor:
@@ -47,6 +49,10 @@ module.exports = {
       'aioson parallel:assign [path] [--source=auto|prd|architecture|discovery|<file>] [--workers=2..6] [--force] [--dry-run] [--json] [--locale=pt-BR]',
     help_parallel_status:
       'aioson parallel:status [path] [--json] [--locale=pt-BR]',
+    help_parallel_merge:
+      'aioson parallel:merge [path] [--apply] [--json] [--locale=pt-BR]',
+    help_parallel_guard:
+      'aioson parallel:guard [path] --lane=<n> --paths=<path[,path2]> [--json] [--locale=pt-BR]',
     help_mcp_init:
       'aioson mcp:init [path] [--tool=claude|codex|gemini|opencode] [--dry-run] [--json] [--locale=pt-BR]',
     help_mcp_doctor:
@@ -107,6 +113,8 @@ module.exports = {
       'aioson squad:roi [path] [--sub=config|metric|report|export] [--squad=<slug>] [--key=<metrica>] [--value=<N>]',
     help_squad_score:
       'aioson squad:score [path] --squad=<slug> [--locale=pt-BR]',
+    help_commit_prepare:
+      'aioson commit:prepare [path] [--staged-only] [--agent-safe] [--mode=guarded|trusted|headless] [--json] [--locale=pt-BR]',
     help_learning:
       'aioson learning [path] [--sub=list|stats|promote] [--status=<status>] [--id=<learning-id>] [--locale=pt-BR]',
     help_runtime_init:
@@ -556,6 +564,9 @@ module.exports = {
     done: 'Workflow concluido. Nao ha proximo agente.',
     state_file: 'Arquivo de estado: {path}'
   },
+  workflow_heal: {
+    title: '🩹 Auto-cura ativada para {stage} (tentativa {count}/3):'
+  },
   parallel_init: {
     context_missing:
       'Arquivo de contexto nao encontrado: {path}. Execute setup:context primeiro.',
@@ -608,6 +619,66 @@ module.exports = {
     check_parallel_shared_missing: 'shared-decisions.md esta ausente.',
     check_parallel_shared_hint:
       'Execute parallel:doctor --fix para restaurar os arquivos base.',
+    check_parallel_manifest_ok: 'workspace.manifest.json esta presente.',
+    check_parallel_manifest_missing: 'workspace.manifest.json esta ausente.',
+    check_parallel_manifest_hint:
+      'Execute parallel:doctor --fix para restaurar o manifest do workspace.',
+    check_parallel_ownership_ok: 'ownership-map.json esta presente.',
+    check_parallel_ownership_missing: 'ownership-map.json esta ausente.',
+    check_parallel_ownership_hint:
+      'Execute parallel:doctor --fix para restaurar o mapa de ownership.',
+    check_parallel_merge_ok: 'merge-plan.json esta presente.',
+    check_parallel_merge_missing: 'merge-plan.json esta ausente.',
+    check_parallel_merge_hint:
+      'Execute parallel:doctor --fix para restaurar o plano de merge.',
+    check_machine_sync_ok:
+      'Os artefatos paralelos machine-readable estao sincronizados com os arquivos de lane.',
+    check_machine_sync_stale:
+      'Os artefatos paralelos machine-readable estao stale: {files}.',
+    check_machine_sync_hint:
+      'Execute parallel:doctor --fix para reconstruir os artefatos stale.',
+    check_ownership_conflicts_ok:
+      'Nenhum conflito de ownership foi detectado entre os escopos das lanes.',
+    check_ownership_conflicts_found:
+      '{count} conflito(s) de ownership foi/foram detectado(s) entre os escopos das lanes.',
+    check_ownership_conflicts_hint:
+      'Ajuste o ownership para que cada scope key pertenca a apenas uma lane.',
+    check_write_scope_present_ok:
+      'Todas as lanes com escopo atribuido tambem declaram write_paths.',
+    check_write_scope_present_missing:
+      '{count} lane(s) com escopo atribuido ainda nao declaram write_paths.',
+    check_write_scope_present_hint:
+      'Declare caminhos relativos ao projeto ou prefixos recursivos (por exemplo src/auth/**) no bloco Ownership de cada lane.',
+    check_write_scope_valid_ok:
+      'Todos os write_paths declarados usam padroes suportados.',
+    check_write_scope_valid_invalid:
+      '{count} padrao(oes) invalido(s) de write_paths foi/foram detectado(s).',
+    check_write_scope_valid_hint:
+      'Use caminhos relativos exatos ao projeto ou padroes recursivos terminando com /**.',
+    check_write_scope_conflicts_ok:
+      'Nenhuma sobreposicao de write_paths foi detectada entre as lanes.',
+    check_write_scope_conflicts_found:
+      '{count} sobreposicao(oes) de write_paths foi/foram detectada(s) entre as lanes.',
+    check_write_scope_conflicts_hint:
+      'Separe o ownership para que cada padrao de caminho pertenca a apenas uma lane.',
+    check_dependencies_valid_ok:
+      'Todas as dependencias declaradas entre lanes apontam para lanes validas.',
+    check_dependencies_valid_invalid:
+      '{count} referencia(s) invalida(s) de dependencia entre lanes foi/foram detectada(s).',
+    check_dependencies_valid_hint:
+      'Use referencias lane-N apenas para lanes existentes ou mova a coordenacao compartilhada para shared-decisions.',
+    check_dependencies_blocked_ok:
+      'Nenhuma lane esta bloqueada neste momento por dependencia incompleta.',
+    check_dependencies_blocked_found:
+      '{count} bloqueio(s) por dependencia entre lanes foi/foram detectado(s) com base no status atual.',
+    check_dependencies_blocked_hint:
+      'Conclua as lanes upstream ou retorne a lane dependente para pending antes da execucao.',
+    check_merge_order_ok:
+      'A ordem de merge respeita as dependencias declaradas entre lanes.',
+    check_merge_order_invalid:
+      '{count} violacao(oes) de ordem de merge contra dependencias declaradas foi/foram detectada(s).',
+    check_merge_order_hint:
+      'Ajuste merge ranks ou dependencias para que as lanes upstream sejam mescladas primeiro.',
     check_lanes_present_ok: '{count} arquivo(s) de lane detectado(s).',
     check_lanes_present_missing: 'Nenhum arquivo de status de lane foi encontrado.',
     check_lanes_present_hint: 'Execute parallel:init ou parallel:doctor --fix.',
@@ -653,13 +724,47 @@ module.exports = {
     status_pending: 'pendente',
     status_in_progress: 'em_andamento',
     status_completed: 'concluido',
+    status_merged: 'mesclado',
     status_blocked: 'bloqueado',
     status_other: 'outro',
     scopes_count: 'Total de itens de escopo: {count}',
     deliverables_progress: 'Entregaveis: {completed}/{total} concluidos',
     blockers_count: 'Bloqueios em aberto: {count}',
     shared_decisions: 'Entradas no log de decisoes compartilhadas: {count}',
+    ownership_conflicts: 'Conflitos de ownership: {count}',
+    write_scope_summary:
+      'Write scope: lanes_com_paths={lanes}, caminhos={paths}, lanes_com_escopo_sem_path={uncovered}, conflitos={conflicts}, invalidos={invalid}',
+    dependencies_summary:
+      'Dependencias: declaradas={declared}, invalidas={invalid}, bloqueadas={blocked}, violacoes_de_ordem={orderViolations}',
+    sync_summary: 'Drift dos arquivos machine-readable: {count}',
+    sync_stale_line: '- stale: {file}',
     lane_line: '- lane {lane}: status={status}, escopo={scope}, bloqueios={blockers}'
+  },
+  parallel_merge: {
+    parallel_missing:
+      'Diretorio paralelo nao encontrado: {path}. Execute parallel:init primeiro.',
+    no_lanes: 'Nenhum arquivo de lane foi encontrado em .aioson/context/parallel.',
+    ready: 'O merge deterministico esta pronto para {count} lane(s).',
+    applied: 'O merge deterministico foi aplicado em {count} lane(s).',
+    blocked: 'O merge deterministico esta bloqueado para {count} lane(s).',
+    order: 'Ordem de merge: {order}',
+    structural_summary:
+      'Checagens estruturais: stale={stale}, conflitos_de_ownership={conflicts}, conflitos_de_write_scope={writeConflicts}, write_paths_invalidos={invalidWritePaths}, dependencias_invalidas={invalid}, dependencias_bloqueadas={blocked}, violacoes_de_ordem={orderViolations}',
+    lane_line: '- lane {lane}: acao={action}, status={status}'
+  },
+  parallel_guard: {
+    invalid_lane: 'Valor invalido para --lane. Use um inteiro positivo.',
+    paths_required:
+      'Falta o valor de --paths. Informe um ou mais caminhos relativos ao projeto separados por virgula.',
+    parallel_missing:
+      'Diretorio paralelo nao encontrado: {path}. Execute parallel:init primeiro.',
+    no_lanes: 'Nenhum arquivo de lane foi encontrado em .aioson/context/parallel.',
+    lane_missing: 'A lane {lane} nao existe no workspace paralelo atual.',
+    allowed: 'O guard de escrita liberou a lane {lane} para {count} caminho(s).',
+    blocked: 'O guard de escrita bloqueou a lane {lane} para {count} caminho(s).',
+    write_scope_summary:
+      'Resumo do write scope: caminhos={paths}, conflitos={conflicts}, invalidos={invalid}',
+    path_line: '- path {path}: status={status}, owners={owners}'
   },
   mcp_init: {
     context_missing:

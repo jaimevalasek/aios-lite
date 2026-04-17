@@ -40,6 +40,9 @@
         "parallelDir": { "type": "string" },
         "dirExists": { "type": "boolean" },
         "sharedExists": { "type": "boolean" },
+        "manifestExists": { "type": "boolean" },
+        "ownershipExists": { "type": "boolean" },
+        "mergePlanExists": { "type": "boolean" },
         "laneFiles": {
           "type": "array",
           "items": { "type": "string" }
@@ -51,6 +54,39 @@
         "missingLaneIndices": {
           "type": "array",
           "items": { "type": "integer", "minimum": 1 }
+        }
+      },
+      "additionalProperties": true
+    },
+    "analysis": {
+      "type": "object",
+      "properties": {
+        "ownershipConflicts": {
+          "type": "array",
+          "items": { "type": "object", "additionalProperties": true }
+        },
+        "dependencies": {
+          "type": "object",
+          "properties": {
+            "declaredCount": { "type": "integer", "minimum": 0 },
+            "invalidCount": { "type": "integer", "minimum": 0 },
+            "blockedCount": { "type": "integer", "minimum": 0 },
+            "orderViolationCount": { "type": "integer", "minimum": 0 }
+          },
+          "additionalProperties": true
+        },
+        "sync": {
+          "type": "object",
+          "properties": {
+            "workspaceManifestInSync": { "type": "boolean" },
+            "ownershipMapInSync": { "type": "boolean" },
+            "mergePlanInSync": { "type": "boolean" },
+            "staleFiles": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          },
+          "additionalProperties": true
         }
       },
       "additionalProperties": true

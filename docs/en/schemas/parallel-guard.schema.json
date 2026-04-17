@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aiosforge.dev/schemas/parallel-guard.schema.json",
+  "title": "AIOSON parallel:guard --json output",
+  "type": "object",
+  "required": [
+    "ok",
+    "targetDir",
+    "parallelDir",
+    "lane",
+    "requestedCount",
+    "laneWritePathCount",
+    "writeScope",
+    "results",
+    "allowedCount",
+    "deniedCount",
+    "denied"
+  ],
+  "properties": {
+    "ok": { "type": "boolean" },
+    "targetDir": { "type": "string" },
+    "parallelDir": { "type": "string" },
+    "lane": { "type": "integer", "minimum": 1 },
+    "requestedCount": { "type": "integer", "minimum": 1 },
+    "laneWritePathCount": { "type": "integer", "minimum": 0 },
+    "writeScope": {
+      "type": "object",
+      "properties": {
+        "laneCount": { "type": "integer", "minimum": 0 },
+        "totalPathCount": { "type": "integer", "minimum": 0 },
+        "invalidPatternCount": { "type": "integer", "minimum": 0 },
+        "conflictCount": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": true
+    },
+    "results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["path", "ok", "reason", "matchedLanes"],
+        "properties": {
+          "path": { "type": "string" },
+          "normalizedPath": { "type": ["string", "null"] },
+          "ok": { "type": "boolean" },
+          "reason": { "type": "string" },
+          "ownerLane": { "type": "integer", "minimum": 1 },
+          "matchedLanes": {
+            "type": "array",
+            "items": { "type": "integer", "minimum": 1 }
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "allowedCount": { "type": "integer", "minimum": 0 },
+    "deniedCount": { "type": "integer", "minimum": 0 },
+    "denied": {
+      "type": "array",
+      "items": { "type": "object", "additionalProperties": true }
+    }
+  },
+  "additionalProperties": true
+}

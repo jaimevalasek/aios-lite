@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aiosforge.dev/schemas/parallel-merge.schema.json",
+  "title": "AIOSON parallel:merge --json output",
+  "type": "object",
+  "required": [
+    "ok",
+    "targetDir",
+    "apply",
+    "generatedAt",
+    "laneCount",
+    "structural",
+    "merge",
+    "filesUpdated",
+    "sharedDecisionUpdated"
+  ],
+  "properties": {
+    "ok": { "type": "boolean" },
+    "targetDir": { "type": "string" },
+    "apply": { "type": "boolean" },
+    "generatedAt": { "type": "string" },
+    "laneCount": { "type": "integer", "minimum": 1 },
+    "structural": {
+      "type": "object",
+      "properties": {
+        "sharedDecisionsExists": { "type": "boolean" },
+        "machineFiles": { "type": "object", "additionalProperties": true },
+        "missingMachineFiles": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "sync": {
+          "type": "object",
+          "properties": {
+            "workspaceManifestInSync": { "type": "boolean" },
+            "ownershipMapInSync": { "type": "boolean" },
+            "mergePlanInSync": { "type": "boolean" },
+            "staleFiles": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          },
+          "additionalProperties": true
+        },
+        "ownershipConflictCount": { "type": "integer", "minimum": 0 },
+        "writeScopeConflictCount": { "type": "integer", "minimum": 0 },
+        "invalidWritePathCount": { "type": "integer", "minimum": 0 },
+        "invalidDependencyCount": { "type": "integer", "minimum": 0 },
+        "blockedDependencyCount": { "type": "integer", "minimum": 0 },
+        "orderViolationCount": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": true
+    },
+    "merge": {
+      "type": "object",
+      "properties": {
+        "strategy": { "type": "string" },
+        "order": {
+          "type": "array",
+          "items": { "type": "integer", "minimum": 1 }
+        },
+        "readyToApply": { "type": "boolean" },
+        "readyLaneCount": { "type": "integer", "minimum": 0 },
+        "alreadyMergedCount": { "type": "integer", "minimum": 0 },
+        "blockedCount": { "type": "integer", "minimum": 0 },
+        "blocked": {
+          "type": "array",
+          "items": { "type": "object", "additionalProperties": true }
+        },
+        "plan": {
+          "type": "array",
+          "items": { "type": "object", "additionalProperties": true }
+        }
+      },
+      "additionalProperties": true
+    },
+    "filesUpdated": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "sharedDecisionUpdated": { "type": "boolean" }
+  },
+  "additionalProperties": true
+}

@@ -10,6 +10,23 @@ const {
   renderAgentStatus,
   PREREQUISITE_FILES
 } = require('./parallel-init');
+const {
+  WORKSPACE_MANIFEST_RELATIVE_PATH,
+  OWNERSHIP_MAP_RELATIVE_PATH,
+  MERGE_PLAN_RELATIVE_PATH,
+  buildLaneOwnershipEntries,
+  buildWorkspaceManifest,
+  buildOwnershipMap,
+  buildMergePlan,
+  collectOwnershipConflicts,
+  collectWritePathConflicts,
+  extractStatusScopeItems,
+  extractStatusDependencyItems,
+  extractStatusWritePathItems,
+  extractStatusMergeRank,
+  buildMachineSyncReport,
+  collectDependencyIssues
+} = require('../parallel-workspace');
 
 const DEFAULT_FIX_WORKERS = 3;
 
@@ -61,6 +78,13 @@ function formatCheckPrefix(check, t) {
   return t('parallel_doctor.prefix_fail');
 }
 
+function extractMetadata(content, key, fallback = '') {
+  const regex = new RegExp(`^-\\s*${key}:\\s*(.*)$`, 'im');
+  const match = String(content || '').match(regex);
+  if (!match) return fallback;
+  return String(match[1] || '').trim() || fallback;
+}
+
 async function collectPrerequisites(targetDir) {
   const items = [];
   for (const rel of PREREQUISITE_FILES) {
@@ -83,6 +107,9 @@ async function inspectParallelState(targetDir, workersOption) {
   const dirExists = await exists(parallelDir);
   const entries = dirExists ? await fs.readdir(parallelDir) : [];
   const sharedExists = entries.includes('shared-decisions.md');
+  const manifestExists = await exists(path.join(targetDir, WORKSPACE_MANIFEST_RELATIVE_PATH));
+  const ownershipExists = await exists(path.join(targetDir, OWNERSHIP_MAP_RELATIVE_PATH));
+  const mergePlanExists = await exists(path.join(targetDir, MERGE_PLAN_RELATIVE_PATH));
   const laneIndices = entries
     .map(parseLaneIndex)
     .filter((value) => value !== null)
@@ -103,6 +130,9 @@ async function inspectParallelState(targetDir, workersOption) {
     dirExists,
     entries,
     sharedExists,
+    manifestExists,
+    ownershipExists,
+    mergePlanExists,
     laneIndices,
     laneFiles,
     expectedWorkers,
@@ -111,7 +141,118 @@ async function inspectParallelState(targetDir, workersOption) {
   };
 }
 
-function buildChecks(context, state, prerequisites, workersOption, force, t) {
+async function analyzeParallelState(targetDir, state) {
+  const emptyAnalysis = {
+    laneEntries: [],
+    ownershipConflicts: [],
+    dependencies: {
+      declaredCount: 0,
+      invalidCount: 0,
+      blockedCount: 0,
+      orderViolationCount: 0,
+      invalid: [],
+      blocked: [],
+      orderViolations: []
+    },
+    writeScope: {
+      laneCount: 0,
+      totalPathCount: 0,
+      uncoveredAssignedLaneCount: 0,
+      invalidPatternCount: 0,
+      invalidPatterns: [],
+      conflictCount: 0,
+      conflicts: []
+    },
+    sync: {
+      workspaceManifestInSync: false,
+      ownershipMapInSync: false,
+      mergePlanInSync: false,
+      staleFiles: ['workspace.manifest.json', 'ownership-map.json', 'merge-plan.json']
+    }
+  };
+
+  if (!state.dirExists || state.laneIndices.length === 0) {
+    return emptyAnalysis;
+  }
+
+  const laneStates = [];
+  for (const index of state.laneIndices) {
+    const content = await fs.readFile(path.join(state.parallelDir, buildLaneFilename(index)), 'utf8');
+    laneStates.push({
+      lane: index,
+      owner: extractMetadata(content, 'owner', `lane-${index}`),
+      status: extractMetadata(content, 'status', 'pending'),
+      scopeItems: extractStatusScopeItems(content),
+      dependencyItems: extractStatusDependencyItems(content),
+      writePathItems: extractStatusWritePathItems(content),
+      mergeRank: extractStatusMergeRank(content, index)
+    });
+  }
+
+  const laneEntries = buildLaneOwnershipEntries(
+    laneStates.map((lane) => ({
+      lane: lane.lane,
+      items: lane.scopeItems,
+      owner: lane.owner,
+      dependsOn: lane.dependencyItems,
+      writePaths: lane.writePathItems,
+      mergeRank: lane.mergeRank
+    }))
+  );
+
+  const writeScope = collectWritePathConflicts(laneStates);
+  writeScope.laneCount = laneStates.filter((lane) => Array.isArray(lane.writePathItems) && lane.writePathItems.length > 0).length;
+  writeScope.totalPathCount = laneStates.reduce(
+    (sum, lane) => sum + (Array.isArray(lane.writePathItems) ? lane.writePathItems.length : 0),
+    0
+  );
+  writeScope.uncoveredAssignedLaneCount = laneStates.filter(
+    (lane) => Array.isArray(lane.scopeItems) && lane.scopeItems.length > 0 && (!lane.writePathItems || lane.writePathItems.length === 0)
+  ).length;
+
+  let workspaceManifest = null;
+  let ownershipMap = null;
+  let mergePlan = null;
+  try {
+    workspaceManifest = state.manifestExists
+      ? JSON.parse(await fs.readFile(path.join(targetDir, WORKSPACE_MANIFEST_RELATIVE_PATH), 'utf8'))
+      : null;
+  } catch {
+    workspaceManifest = null;
+  }
+  try {
+    ownershipMap = state.ownershipExists
+      ? JSON.parse(await fs.readFile(path.join(targetDir, OWNERSHIP_MAP_RELATIVE_PATH), 'utf8'))
+      : null;
+  } catch {
+    ownershipMap = null;
+  }
+  try {
+    mergePlan = state.mergePlanExists
+      ? JSON.parse(await fs.readFile(path.join(targetDir, MERGE_PLAN_RELATIVE_PATH), 'utf8'))
+      : null;
+  } catch {
+    mergePlan = null;
+  }
+
+  return {
+    laneEntries,
+    ownershipConflicts: collectOwnershipConflicts({ lanes: laneEntries }),
+    writeScope,
+    dependencies: collectDependencyIssues({
+      lanes: laneStates,
+      mergeOrder: mergePlan && Array.isArray(mergePlan.order) ? mergePlan.order : []
+    }),
+    sync: buildMachineSyncReport({
+      laneEntries,
+      workspaceManifest,
+      ownershipMap,
+      mergePlan
+    })
+  };
+}
+
+function buildChecks(context, state, prerequisites, workersOption, force, analysis, t) {
   const checks = [];
 
   checks.push(
@@ -178,6 +319,154 @@ function buildChecks(context, state, prerequisites, workersOption, force, t) {
         ? t('parallel_doctor.check_parallel_shared_ok')
         : t('parallel_doctor.check_parallel_shared_missing'),
       state.sharedExists ? '' : t('parallel_doctor.check_parallel_shared_hint')
+    )
+  );
+
+  checks.push(
+    makeCheck(
+      'parallel.manifest',
+      state.manifestExists,
+      'error',
+      state.manifestExists
+        ? t('parallel_doctor.check_parallel_manifest_ok')
+        : t('parallel_doctor.check_parallel_manifest_missing'),
+      state.manifestExists ? '' : t('parallel_doctor.check_parallel_manifest_hint')
+    )
+  );
+
+  checks.push(
+    makeCheck(
+      'parallel.ownership',
+      state.ownershipExists,
+      'error',
+      state.ownershipExists
+        ? t('parallel_doctor.check_parallel_ownership_ok')
+        : t('parallel_doctor.check_parallel_ownership_missing'),
+      state.ownershipExists ? '' : t('parallel_doctor.check_parallel_ownership_hint')
+    )
+  );
+
+  checks.push(
+    makeCheck(
+      'parallel.merge_plan',
+      state.mergePlanExists,
+      'error',
+      state.mergePlanExists
+        ? t('parallel_doctor.check_parallel_merge_ok')
+        : t('parallel_doctor.check_parallel_merge_missing'),
+      state.mergePlanExists ? '' : t('parallel_doctor.check_parallel_merge_hint')
+    )
+  );
+
+  checks.push(
+    makeCheck(
+      'parallel.machine_sync',
+      analysis.sync.staleFiles.length === 0,
+      'error',
+      analysis.sync.staleFiles.length === 0
+        ? t('parallel_doctor.check_machine_sync_ok')
+        : t('parallel_doctor.check_machine_sync_stale', {
+            files: analysis.sync.staleFiles.join(', ')
+          }),
+      analysis.sync.staleFiles.length === 0 ? '' : t('parallel_doctor.check_machine_sync_hint')
+    )
+  );
+
+  checks.push(
+    makeCheck(
+      'parallel.ownership_conflicts',
+      analysis.ownershipConflicts.length === 0,
+      'error',
+      analysis.ownershipConflicts.length === 0
+        ? t('parallel_doctor.check_ownership_conflicts_ok')
+        : t('parallel_doctor.check_ownership_conflicts_found', {
+            count: analysis.ownershipConflicts.length
+          }),
+      analysis.ownershipConflicts.length === 0 ? '' : t('parallel_doctor.check_ownership_conflicts_hint')
+    )
+  );
+
+  checks.push(
+    makeCheck(
+      'parallel.write_scope.present',
+      analysis.writeScope.uncoveredAssignedLaneCount === 0,
+      'warn',
+      analysis.writeScope.uncoveredAssignedLaneCount === 0
+        ? t('parallel_doctor.check_write_scope_present_ok')
+        : t('parallel_doctor.check_write_scope_present_missing', {
+            count: analysis.writeScope.uncoveredAssignedLaneCount
+          }),
+      analysis.writeScope.uncoveredAssignedLaneCount === 0 ? '' : t('parallel_doctor.check_write_scope_present_hint')
+    )
+  );
+
+  checks.push(
+    makeCheck(
+      'parallel.write_scope.valid',
+      analysis.writeScope.invalidPatternCount === 0,
+      'error',
+      analysis.writeScope.invalidPatternCount === 0
+        ? t('parallel_doctor.check_write_scope_valid_ok')
+        : t('parallel_doctor.check_write_scope_valid_invalid', {
+            count: analysis.writeScope.invalidPatternCount
+          }),
+      analysis.writeScope.invalidPatternCount === 0 ? '' : t('parallel_doctor.check_write_scope_valid_hint')
+    )
+  );
+
+  checks.push(
+    makeCheck(
+      'parallel.write_scope.conflicts',
+      analysis.writeScope.conflictCount === 0,
+      'error',
+      analysis.writeScope.conflictCount === 0
+        ? t('parallel_doctor.check_write_scope_conflicts_ok')
+        : t('parallel_doctor.check_write_scope_conflicts_found', {
+            count: analysis.writeScope.conflictCount
+          }),
+      analysis.writeScope.conflictCount === 0 ? '' : t('parallel_doctor.check_write_scope_conflicts_hint')
+    )
+  );
+
+  checks.push(
+    makeCheck(
+      'parallel.dependencies.valid',
+      analysis.dependencies.invalidCount === 0,
+      'error',
+      analysis.dependencies.invalidCount === 0
+        ? t('parallel_doctor.check_dependencies_valid_ok')
+        : t('parallel_doctor.check_dependencies_valid_invalid', {
+            count: analysis.dependencies.invalidCount
+          }),
+      analysis.dependencies.invalidCount === 0 ? '' : t('parallel_doctor.check_dependencies_valid_hint')
+    )
+  );
+
+  checks.push(
+    makeCheck(
+      'parallel.dependencies.blocked',
+      analysis.dependencies.blockedCount === 0,
+      'warn',
+      analysis.dependencies.blockedCount === 0
+        ? t('parallel_doctor.check_dependencies_blocked_ok')
+        : t('parallel_doctor.check_dependencies_blocked_found', {
+            count: analysis.dependencies.blockedCount
+          }),
+      analysis.dependencies.blockedCount === 0 ? '' : t('parallel_doctor.check_dependencies_blocked_hint')
+    )
+  );
+
+  checks.push(
+    makeCheck(
+      'parallel.merge_order',
+      analysis.dependencies.orderViolationCount === 0,
+      'error',
+      analysis.dependencies.orderViolationCount === 0
+        ? t('parallel_doctor.check_merge_order_ok')
+        : t('parallel_doctor.check_merge_order_invalid', {
+            count: analysis.dependencies.orderViolationCount
+          }),
+      analysis.dependencies.orderViolationCount === 0 ? '' : t('parallel_doctor.check_merge_order_hint')
     )
   );
 
@@ -320,6 +609,124 @@ async function applyParallelFixes(targetDir, context, state, options) {
     });
   }
 
+  const assignmentSeed = [];
+  for (const index of state.expectedLaneIndices) {
+    const lanePath = path.join(state.parallelDir, buildLaneFilename(index));
+    let scopeItems = [];
+    let dependencyItems = [];
+    let owner = `lane-${index}`;
+    let mergeRank = index;
+    try {
+      const content = await fs.readFile(lanePath, 'utf8');
+      scopeItems = extractStatusScopeItems(content);
+      dependencyItems = extractStatusDependencyItems(content);
+      const writePathItems = extractStatusWritePathItems(content);
+      owner = extractMetadata(content, 'owner', owner);
+      mergeRank = extractStatusMergeRank(content, index);
+      assignmentSeed.push({
+        lane: index,
+        items: scopeItems,
+        owner,
+        dependsOn: dependencyItems,
+        writePaths: writePathItems,
+        mergeRank
+      });
+    } catch {
+      assignmentSeed.push({
+        lane: index,
+        items: [],
+        owner,
+        dependsOn: [],
+        writePaths: [],
+        mergeRank
+      });
+      continue;
+    }
+  }
+  const laneEntries = buildLaneOwnershipEntries(assignmentSeed);
+  let currentWorkspaceManifest = null;
+  let currentOwnershipMap = null;
+  let currentMergePlan = null;
+  try {
+    currentWorkspaceManifest = state.manifestExists
+      ? JSON.parse(await fs.readFile(path.join(targetDir, WORKSPACE_MANIFEST_RELATIVE_PATH), 'utf8'))
+      : null;
+  } catch {
+    currentWorkspaceManifest = null;
+  }
+  try {
+    currentOwnershipMap = state.ownershipExists
+      ? JSON.parse(await fs.readFile(path.join(targetDir, OWNERSHIP_MAP_RELATIVE_PATH), 'utf8'))
+      : null;
+  } catch {
+    currentOwnershipMap = null;
+  }
+  try {
+    currentMergePlan = state.mergePlanExists
+      ? JSON.parse(await fs.readFile(path.join(targetDir, MERGE_PLAN_RELATIVE_PATH), 'utf8'))
+      : null;
+  } catch {
+    currentMergePlan = null;
+  }
+  const sync = buildMachineSyncReport({
+    laneEntries,
+    workspaceManifest: currentWorkspaceManifest,
+    ownershipMap: currentOwnershipMap,
+    mergePlan: currentMergePlan
+  });
+  const machineFiles = [
+    {
+      id: 'workspace_manifest',
+      rel: WORKSPACE_MANIFEST_RELATIVE_PATH,
+      exists: state.manifestExists,
+      inSync: sync.workspaceManifestInSync,
+      payload: buildWorkspaceManifest({
+        projectName,
+        classification,
+        workers: state.expectedWorkers,
+        generatedAt,
+        lanes: laneEntries
+      })
+    },
+    {
+      id: 'ownership_map',
+      rel: OWNERSHIP_MAP_RELATIVE_PATH,
+      exists: state.ownershipExists,
+      inSync: sync.ownershipMapInSync,
+      payload: buildOwnershipMap({
+        generatedAt,
+        lanes: laneEntries
+      })
+    },
+    {
+      id: 'merge_plan',
+      rel: MERGE_PLAN_RELATIVE_PATH,
+      exists: state.mergePlanExists,
+      inSync: sync.mergePlanInSync,
+      payload: buildMergePlan({
+        generatedAt,
+        lanes: laneEntries
+      })
+    }
+  ];
+
+  let machineFileChanges = 0;
+  for (const file of machineFiles) {
+    if (file.exists && file.inSync) continue;
+    if (!dryRun) {
+      await ensureDir(path.dirname(path.join(targetDir, file.rel)));
+      await fs.writeFile(path.join(targetDir, file.rel), `${JSON.stringify(file.payload, null, 2)}\n`, 'utf8');
+    }
+    machineFileChanges += 1;
+  }
+  actions.push({
+    id: 'machine_files',
+    applied: machineFileChanges > 0,
+    skipped: machineFileChanges === 0,
+    count: machineFileChanges
+  });
+  changedCount += machineFileChanges;
+
   return {
     dryRun,
     actions,
@@ -346,7 +753,8 @@ async function runParallelDoctor({ args, options = {}, logger, t }) {
   const context = await validateProjectContextFile(targetDir);
   const prerequisites = await collectPrerequisites(targetDir);
   let state = await inspectParallelState(targetDir, workersOption);
-  let checks = buildChecks(context, state, prerequisites, workersOption, force, t);
+  let analysis = await analyzeParallelState(targetDir, state);
+  let checks = buildChecks(context, state, prerequisites, workersOption, force, analysis, t);
   let fixResult = null;
 
   if (fix) {
@@ -363,7 +771,8 @@ async function runParallelDoctor({ args, options = {}, logger, t }) {
     });
 
     state = await inspectParallelState(targetDir, workersOption);
-    checks = buildChecks(context, state, prerequisites, workersOption, force, t);
+    analysis = await analyzeParallelState(targetDir, state);
+    checks = buildChecks(context, state, prerequisites, workersOption, force, analysis, t);
   }
 
   const summary = summarizeChecks(checks);
@@ -386,10 +795,14 @@ async function runParallelDoctor({ args, options = {}, logger, t }) {
       parallelDir: state.parallelDir,
       dirExists: state.dirExists,
       sharedExists: state.sharedExists,
+      manifestExists: state.manifestExists,
+      ownershipExists: state.ownershipExists,
+      mergePlanExists: state.mergePlanExists,
       laneFiles: state.laneFiles,
       laneIndices: state.laneIndices,
       missingLaneIndices: state.missingLaneIndices
     },
+    analysis,
     checks,
     summary
   };

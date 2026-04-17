@@ -5,6 +5,16 @@ const path = require('node:path');
 const { validateProjectContextFile } = require('../context');
 const { ensureDir, exists, toRelativeSafe } = require('../utils');
 const { recordRuntimeOperation } = require('../execution-gateway');
+const {
+  WORKSPACE_MANIFEST_RELATIVE_PATH,
+  OWNERSHIP_MAP_RELATIVE_PATH,
+  MERGE_PLAN_RELATIVE_PATH,
+  buildLaneKey,
+  buildLaneOwnershipEntries,
+  buildWorkspaceManifest,
+  buildOwnershipMap,
+  buildMergePlan
+} = require('../parallel-workspace');
 
 const MIN_WORKERS = 2;
 const MAX_WORKERS = 6;
@@ -51,12 +61,13 @@ function renderSharedDecisions(input) {
 
 function renderAgentStatus(input) {
   const lane = `agent-${input.index}`;
+  const laneKey = buildLaneKey(input.index);
   return `# Parallel Lane Status - ${lane}
 
 ## Metadata
 - lane: ${lane}
 - role: @dev
-- owner: [unassigned]
+- owner: ${laneKey}
 - status: pending
 - priority: medium
 - updated_at: ${input.generatedAt}
@@ -64,8 +75,18 @@ function renderAgentStatus(input) {
 ## Scope
 - [define module or feature boundary]
 
+## Ownership
+- lane_key: ${laneKey}
+- scope_keys: [unassigned]
+- write_scope: assign scopes with \`aioson parallel:assign\`
+- write_paths: [unassigned]
+
 ## Dependencies
-- [list dependencies on other lanes or shared decisions]
+- [list dependencies such as lane-1 or shared-decisions]
+
+## Merge
+- merge_rank: ${input.index}
+- merge_strategy: lane-index-asc
 
 ## Deliverables
 - [ ] Code changes completed
@@ -94,7 +115,12 @@ async function collectPrerequisites(targetDir) {
 
 function buildTargetFiles(targetDir, workers) {
   const parallelDir = path.join(targetDir, '.aioson/context/parallel');
-  const files = [path.join(parallelDir, 'shared-decisions.md')];
+  const files = [
+    path.join(targetDir, WORKSPACE_MANIFEST_RELATIVE_PATH),
+    path.join(targetDir, OWNERSHIP_MAP_RELATIVE_PATH),
+    path.join(targetDir, MERGE_PLAN_RELATIVE_PATH),
+    path.join(parallelDir, 'shared-decisions.md')
+  ];
   for (let i = 1; i <= workers; i += 1) {
     files.push(path.join(parallelDir, `agent-${i}.status.md`));
   }
@@ -163,6 +189,39 @@ async function runParallelInit({ args, options = {}, logger, t }) {
   if (!dryRun) {
     const parallelDir = path.join(targetDir, '.aioson/context/parallel');
     await ensureDir(parallelDir);
+    const laneAssignments = [];
+    for (let i = 1; i <= workers; i += 1) {
+      laneAssignments.push({ lane: i, items: [] });
+    }
+    const laneEntries = buildLaneOwnershipEntries(laneAssignments);
+
+    await fs.writeFile(
+      path.join(targetDir, WORKSPACE_MANIFEST_RELATIVE_PATH),
+      `${JSON.stringify(buildWorkspaceManifest({
+        projectName,
+        classification: classification || 'MEDIUM',
+        workers,
+        generatedAt,
+        lanes: laneEntries
+      }), null, 2)}\n`,
+      'utf8'
+    );
+    await fs.writeFile(
+      path.join(targetDir, OWNERSHIP_MAP_RELATIVE_PATH),
+      `${JSON.stringify(buildOwnershipMap({
+        generatedAt,
+        lanes: laneEntries
+      }), null, 2)}\n`,
+      'utf8'
+    );
+    await fs.writeFile(
+      path.join(targetDir, MERGE_PLAN_RELATIVE_PATH),
+      `${JSON.stringify(buildMergePlan({
+        generatedAt,
+        lanes: laneEntries
+      }), null, 2)}\n`,
+      'utf8'
+    );
 
     const sharedContent = renderSharedDecisions({
       projectName,
@@ -209,7 +268,10 @@ async function runParallelInit({ args, options = {}, logger, t }) {
         classification: output.classification,
         workers,
         files: output.files,
-        missingPrerequisites
+        missingPrerequisites,
+        workspaceManifest: WORKSPACE_MANIFEST_RELATIVE_PATH,
+        ownershipMap: OWNERSHIP_MAP_RELATIVE_PATH,
+        mergePlan: MERGE_PLAN_RELATIVE_PATH
       }
     });
   }

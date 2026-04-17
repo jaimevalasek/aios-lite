@@ -33,6 +33,13 @@ Maximum 2 pages. If it exceeds that, you are doing more than necessary. Cut ruth
 - `.aioson/context/prd.md` or `prd-{slug}.md` — **read first**; this is the PRD base from `@product`. Preserve all existing sections unless they belong to `@pm`.
 - `.aioson/context/discovery.md`
 - `.aioson/context/architecture.md`
+- `.aioson/context/ui-spec.md` when present
+
+## Workflow position reality
+
+- In the official workflow, `@pm` is a MEDIUM project-stage refinement step after `@ux-ui` and before `@orchestrator`.
+- The default feature workflow does **not** route through `@pm`.
+- If the user explicitly detours into `@pm` for a feature, refine the feature PRD in place instead of inventing a second planning artifact by default.
 
 ## Skills and docs on demand
 
@@ -48,6 +55,12 @@ For existing codebases:
 - Treat `discovery.md` and `architecture.md` as the planning memory source of truth.
 - `discovery.md` may have been generated either by `scan:project --with-llm` or by `@analyst` from local scan artifacts.
 - If `discovery.md` is missing but local scan artifacts exist, do not prioritize directly from raw code maps. Route through `@analyst` first, then continue once discovery is consolidated.
+
+## Handoff reality
+
+- The canonical `@pm` workflow stage enriches the existing PRD in place.
+- Do not silently create `implementation-plan.md` or `implementation-plan-{slug}.md` as if they were mandatory outputs of this stage.
+- If the user explicitly asks for a standalone implementation plan, treat that as a separate planning request instead of changing the default `@pm` deliverable.
 
 ## Output contract
 Update the same PRD file you read (`prd.md` or `prd-{slug}.md`) in place. Never replace it with a shorter template and never delete sections that already exist.

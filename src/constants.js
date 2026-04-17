@@ -245,7 +245,8 @@ const AGENT_DEFINITIONS = [
       '.aioson/context/project.context.md',
       '.aioson/context/prd.md or .aioson/context/prd-{slug}.md',
       '.aioson/context/discovery.md',
-      '.aioson/context/architecture.md'
+      '.aioson/context/architecture.md',
+      '.aioson/context/ui-spec.md (when present)'
     ],
     output: '.aioson/context/prd.md or prd-{slug}.md (enriched with delivery plan and acceptance criteria)'
   },
@@ -283,9 +284,12 @@ const AGENT_DEFINITIONS = [
     command: '@orchestrator',
     path: '.aioson/agents/orchestrator.md',
     dependsOn: [
+      '.aioson/context/project.context.md',
       '.aioson/context/discovery.md',
       '.aioson/context/architecture.md',
-      '.aioson/context/prd.md'
+      '.aioson/context/prd.md or .aioson/context/prd-{slug}.md',
+      '.aioson/context/ui-spec.md (when present)',
+      '.aioson/context/implementation-plan.md or implementation-plan-{slug}.md (when present)'
     ],
     output: '.aioson/context/parallel/*.status.md'
   },

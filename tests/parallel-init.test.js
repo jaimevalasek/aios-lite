@@ -79,14 +79,31 @@ test('parallel:init creates shared and lane status files for medium projects', a
   assert.equal(result.ok, true);
   assert.equal(result.classification, 'MEDIUM');
   assert.equal(result.workers, 4);
-  assert.equal(result.files.length, 5);
+  assert.equal(result.files.length, 8);
 
   const shared = path.join(dir, '.aioson/context/parallel/shared-decisions.md');
   const lane1 = path.join(dir, '.aioson/context/parallel/agent-1.status.md');
   const lane4 = path.join(dir, '.aioson/context/parallel/agent-4.status.md');
+  const manifestPath = path.join(dir, '.aioson/context/parallel/workspace.manifest.json');
+  const ownershipPath = path.join(dir, '.aioson/context/parallel/ownership-map.json');
+  const mergePlanPath = path.join(dir, '.aioson/context/parallel/merge-plan.json');
   await assert.doesNotReject(() => fs.access(shared));
   await assert.doesNotReject(() => fs.access(lane1));
   await assert.doesNotReject(() => fs.access(lane4));
+  await assert.doesNotReject(() => fs.access(manifestPath));
+  await assert.doesNotReject(() => fs.access(ownershipPath));
+  await assert.doesNotReject(() => fs.access(mergePlanPath));
+
+  const manifest = JSON.parse(await fs.readFile(manifestPath, 'utf8'));
+  const ownership = JSON.parse(await fs.readFile(ownershipPath, 'utf8'));
+  const mergePlan = JSON.parse(await fs.readFile(mergePlanPath, 'utf8'));
+  const lane1Content = await fs.readFile(lane1, 'utf8');
+  assert.equal(manifest.workers, 4);
+  assert.equal(manifest.merge_strategy, 'lane-index-asc');
+  assert.equal(manifest.lanes.length, 4);
+  assert.equal(ownership.lanes.length, 4);
+  assert.deepEqual(mergePlan.order, [1, 2, 3, 4]);
+  assert.equal(lane1Content.includes('- write_paths: [unassigned]'), true);
 
   const runtime = await openRuntimeDb(dir, { mustExist: true });
   try {
@@ -126,7 +143,7 @@ test('parallel:init rejects non-medium classification unless force is enabled', 
     t
   });
   assert.equal(forced.ok, true);
-  assert.equal(forced.files.length, 4);
+  assert.equal(forced.files.length, 7);
 });
 
 test('parallel:init localizes unknown classification fallback in pt-BR', async () => {
@@ -159,7 +176,7 @@ test('parallel:init dry-run does not write files', async () => {
 
   assert.equal(result.ok, true);
   assert.equal(result.dryRun, true);
-  assert.equal(result.files.length, 3);
+  assert.equal(result.files.length, 6);
   await assert.rejects(() =>
     fs.access(path.join(dir, '.aioson/context/parallel/shared-decisions.md'))
   );

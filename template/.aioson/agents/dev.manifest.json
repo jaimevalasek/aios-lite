@@ -1,0 +1,37 @@
+{
+  "agent_id": "dev",
+  "version": "1.0",
+  "display_name": "Dev",
+  "capabilities": [
+    {
+      "id": "implement_feature",
+      "category": "create",
+      "description": "Implement code changes according to spec and architecture.",
+      "inputs": [
+        { "type": "artifact", "path_pattern": ".aioson/context/spec-{slug}.md", "required": false },
+        { "type": "artifact", "path_pattern": ".aioson/context/implementation-plan-{slug}.md", "required": false },
+        { "type": "gate", "path_pattern": "gate:C", "required": false }
+      ],
+      "outputs": [
+        { "type": "artifact", "path_pattern": "src/**/*" },
+        { "type": "artifact", "path_pattern": "tests/**/*" },
+        { "type": "state", "path_pattern": ".aioson/context/dev-state.md" }
+      ]
+    },
+    {
+      "id": "refactor_code",
+      "category": "transform",
+      "description": "Refactor existing code while preserving behavior.",
+      "inputs": [
+        { "type": "artifact", "path_pattern": ".aioson/context/discovery.md", "required": false }
+      ],
+      "outputs": [
+        { "type": "artifact", "path_pattern": "src/**/*" }
+      ]
+    }
+  ],
+  "autonomy_modes": ["guarded", "trusted"],
+  "default_mode": "guarded",
+  "supported_tools": ["codex", "claude", "gemini", "opencode"],
+  "risk_profile": "medium"
+}

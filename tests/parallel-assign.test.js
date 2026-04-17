@@ -92,6 +92,18 @@ test('parallel:assign distributes scopes across lane files', async () => {
     t
   });
 
+  const lane2Path = path.join(dir, '.aioson/context/parallel/agent-2.status.md');
+  let lane2Content = await fs.readFile(lane2Path, 'utf8');
+  lane2Content = lane2Content.replace(
+    '- [list dependencies such as lane-1 or shared-decisions]',
+    '- lane-1'
+  );
+  lane2Content = lane2Content.replace(
+    '- write_paths: [unassigned]',
+    '- write_paths: src/billing/**, tests/billing/**'
+  );
+  await fs.writeFile(lane2Path, lane2Content, 'utf8');
+
   const result = await runParallelAssign({
     args: [dir],
     options: { workers: 3, source: 'architecture' },
@@ -102,6 +114,9 @@ test('parallel:assign distributes scopes across lane files', async () => {
   assert.equal(result.ok, true);
   assert.equal(result.scopeCount, 4);
   assert.equal(result.assignments.length, 3);
+  assert.equal(result.filesUpdated.includes('.aioson/context/parallel/workspace.manifest.json'), true);
+  assert.equal(result.filesUpdated.includes('.aioson/context/parallel/ownership-map.json'), true);
+  assert.equal(result.filesUpdated.includes('.aioson/context/parallel/merge-plan.json'), true);
 
   const lane1 = await fs.readFile(
     path.join(dir, '.aioson/context/parallel/agent-1.status.md'),
@@ -118,8 +133,24 @@ test('parallel:assign distributes scopes across lane files', async () => {
 
   assert.equal(lane1.includes('- Auth Module'), true);
   assert.equal(lane1.includes('- Admin Dashboard'), true);
+  assert.equal(lane1.includes('- lane_key: lane-1'), true);
   assert.equal(lane2.includes('- Billing Module'), true);
+  assert.equal(lane2.includes('- write_paths: src/billing/**, tests/billing/**'), true);
   assert.equal(lane3.includes('- Notification Pipeline'), true);
+
+  const ownership = JSON.parse(
+    await fs.readFile(path.join(dir, '.aioson/context/parallel/ownership-map.json'), 'utf8')
+  );
+  const mergePlan = JSON.parse(
+    await fs.readFile(path.join(dir, '.aioson/context/parallel/merge-plan.json'), 'utf8')
+  );
+  assert.equal(ownership.lanes.length, 3);
+  assert.deepEqual(ownership.lanes[0].scope_labels, ['Auth Module', 'Admin Dashboard']);
+  assert.deepEqual(ownership.lanes[1].depends_on, ['lane-1']);
+  assert.deepEqual(ownership.lanes[1].write_paths, ['src/billing/**', 'tests/billing/**']);
+  assert.deepEqual(mergePlan.order, [1, 2, 3]);
+  assert.equal(mergePlan.strategy, 'lane-index-asc');
+  assert.deepEqual(mergePlan.lanes[1].depends_on, ['lane-1']);
 
   const runtime = await openRuntimeDb(dir, { mustExist: true });
   try {
@@ -150,7 +181,9 @@ test('parallel:assign dry-run does not mutate lane files', async () => {
   });
 
   const lanePath = path.join(dir, '.aioson/context/parallel/agent-1.status.md');
+  const ownershipPath = path.join(dir, '.aioson/context/parallel/ownership-map.json');
   const before = await fs.readFile(lanePath, 'utf8');
+  const ownershipBefore = await fs.readFile(ownershipPath, 'utf8');
 
   const result = await runParallelAssign({
     args: [dir],
@@ -161,7 +194,9 @@ test('parallel:assign dry-run does not mutate lane files', async () => {
 
   assert.equal(result.ok, true);
   const after = await fs.readFile(lanePath, 'utf8');
+  const ownershipAfter = await fs.readFile(ownershipPath, 'utf8');
   assert.equal(after, before);
+  assert.equal(ownershipAfter, ownershipBefore);
 });
 
 test('parallel:assign fails when parallel directory is missing', async () => {
