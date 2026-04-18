@@ -18,10 +18,12 @@
   "completed": [
     "setup",
     "product",
-    "analyst"
+    "analyst",
+    "dev",
+    "qa"
   ],
   "skipped": [],
   "featureSlug": null,
   "detour": null,
-  "updatedAt": "2026-04-17T03:00:25.218Z"
+  "updatedAt": "2026-04-18T00:10:27.825Z"
 }

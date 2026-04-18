@@ -72,12 +72,9 @@ async function promptFileSelectionCheckbox(files) {
 
   process.stdout.write('\nSelecione os arquivos para adicionar ao stage (todos começam marcados):\n');
 
-  const selected = await promptCheckbox(
-    files,
-    '↑/↓ navegar | Espaço selecionar | Enter confirmar | a=todos | n=limpar'
-  );
+  const selected = await promptCheckbox(files);
 
-  return selected;
+  return selected; // null = cancelado pelo usuário
 }
 
 async function promptYesNo(questionText) {
@@ -102,6 +99,101 @@ async function promptMenu(items, questionText) {
   const num = parseInt(answer, 10);
   if (isNaN(num) || num < 1 || num > items.length) return -1;
   return num;
+}
+
+async function resolveGuardFindings(gitRoot, guardResult, logger) {
+  const findings = [
+    ...(guardResult.errors || []).map((f) => ({ ...f, severity: 'error' })),
+    ...(guardResult.warnings || []).map((f) => ({ ...f, severity: 'warning' }))
+  ];
+
+  if (findings.length === 0) return true;
+
+  const guardPath = path.join(gitRoot, '.aioson', 'git-guard.json');
+  let guardConfig = {};
+  try {
+    guardConfig = JSON.parse(fs.readFileSync(guardPath, 'utf8'));
+  } catch {
+    guardConfig = { version: 1, allowPaths: [], contentAllowPaths: [], blockPaths: [], allowExtensions: [], blockExtensions: [] };
+  }
+  if (!Array.isArray(guardConfig.contentAllowPaths)) guardConfig.contentAllowPaths = [];
+  if (!Array.isArray(guardConfig.blockPaths)) guardConfig.blockPaths = [];
+
+  const toUnstage = [];
+  let guardConfigChanged = false;
+
+  for (const finding of findings) {
+    const label = finding.severity === 'error' ? '[ERRO]' : '[AVISO]';
+    process.stdout.write(`\n${label} ${finding.path}\n`);
+    process.stdout.write(`  Motivo: ${finding.reason} [${finding.id}]\n`);
+
+    const isContent = finding.type === 'content';
+    const menuItems = [];
+    const actions = [];
+
+    if (isContent) {
+      menuItems.push('Marcar como confiável (adicionar a contentAllowPaths — falso positivo)');
+      actions.push('content_allow');
+    }
+    menuItems.push('Bloquear permanentemente (adicionar a blockPaths)');
+    actions.push('block');
+    menuItems.push('Remover do stage (não comitar agora)');
+    actions.push('unstage');
+    if (finding.severity === 'warning') {
+      menuItems.push('Ignorar este aviso e continuar');
+      actions.push('ignore');
+    }
+
+    const choice = await promptMenu(menuItems, 'O que fazer com este arquivo?');
+    if (choice === -1) {
+      logger.log('Entrada inválida — mantendo bloqueio.');
+      return false;
+    }
+
+    const action = actions[choice - 1];
+
+    if (action === 'content_allow') {
+      if (!guardConfig.contentAllowPaths.includes(finding.path)) {
+        guardConfig.contentAllowPaths.push(finding.path);
+        guardConfigChanged = true;
+        logger.log(`  ✔ Adicionado a contentAllowPaths: ${finding.path}`);
+      }
+    } else if (action === 'block') {
+      const pattern = `${finding.path.includes('**') ? finding.path : finding.path}`;
+      if (!guardConfig.blockPaths.includes(pattern)) {
+        guardConfig.blockPaths.push(pattern);
+        guardConfigChanged = true;
+        logger.log(`  ✔ Adicionado a blockPaths: ${pattern}`);
+      }
+    } else if (action === 'unstage') {
+      toUnstage.push(finding.path);
+      logger.log(`  ✔ Marcado para remover do stage: ${finding.path}`);
+    } else if (action === 'ignore') {
+      logger.log(`  ✔ Aviso ignorado: ${finding.path}`);
+    }
+  }
+
+  if (guardConfigChanged) {
+    try {
+      fs.writeFileSync(guardPath, `${JSON.stringify(guardConfig, null, 2)}\n`, 'utf8');
+      logger.log('\n✔ git-guard.json atualizado.');
+    } catch (err) {
+      logger.error(`Não foi possível salvar git-guard.json: ${err.message}`);
+      return false;
+    }
+  }
+
+  if (toUnstage.length > 0) {
+    try {
+      runGit(gitRoot, ['restore', '--staged', '--', ...toUnstage]);
+      logger.log(`✔ Removidos do stage: ${toUnstage.join(', ')}`);
+    } catch (err) {
+      logger.error(`Falha ao remover do stage: ${err.message}`);
+      return false;
+    }
+  }
+
+  return true;
 }
 
 function findLatestRelevantPlan(gitRoot) {
@@ -264,7 +356,14 @@ async function runCommitPrepare({ args, options, logger }) {
         ], 'O que deseja fazer?');
 
     if (choice === 1) {
-      filesToStage = await promptFileSelectionCheckbox(allModified);
+      const selected = await promptFileSelectionCheckbox(allModified);
+      if (selected === null) {
+        const cancelResult = { ok: false, error: 'cancelled_by_user', message: 'Operação cancelada pelo usuário.' };
+        if (jsonMode) return cancelResult;
+        logger.log('Cancelado.');
+        return cancelResult;
+      }
+      filesToStage = selected;
     } else if (choice === 2) {
       filesToStage = [];
     } else {
@@ -314,39 +413,65 @@ async function runCommitPrepare({ args, options, logger }) {
   }
 
   // Run git guard
-  const guardResult = await runGitGuard({
+  let guardResult = await runGitGuard({
     args: [projectDir],
     options: { json: true },
     logger: { log: () => {}, error: () => {} }
   });
 
   if (!guardResult.ok) {
-    const failure = {
-      ok: false,
-      error: 'guard_failed',
-      message: 'aioson git:guard bloqueou o commit. Corrija os problemas antes de continuar.',
-      gitRoot,
-      guard: guardResult,
-      stagedFiles,
-      ready: false
-    };
-    if (jsonMode) return failure;
-    logger.error(failure.message);
-    if (guardResult.errors && guardResult.errors.length > 0) {
-      logger.error('Erros:');
-      guardResult.errors.forEach((e) => logger.error(`  - ${e.path}: ${e.reason} [${e.id}]`));
+    if (jsonMode) {
+      return {
+        ok: false,
+        error: 'guard_failed',
+        message: 'aioson git:guard bloqueou o commit. Corrija os problemas antes de continuar.',
+        gitRoot,
+        guard: guardResult,
+        stagedFiles,
+        ready: false
+      };
     }
-    if (guardResult.warnings && guardResult.warnings.length > 0) {
-      logger.error('Avisos:');
-      guardResult.warnings.forEach((w) => logger.error(`  - ${w.path}: ${w.reason} [${w.id}]`));
+
+    if (!interactiveSelectionAllowed) {
+      logger.error('aioson git:guard bloqueou o commit. Corrija os problemas antes de continuar.');
+      if (guardResult.errors && guardResult.errors.length > 0) {
+        logger.error('Erros:');
+        guardResult.errors.forEach((e) => logger.error(`  - ${e.path}: ${e.reason} [${e.id}]`));
+      }
+      if (guardResult.warnings && guardResult.warnings.length > 0) {
+        logger.error('Avisos:');
+        guardResult.warnings.forEach((w) => logger.error(`  - ${w.path}: ${w.reason} [${w.id}]`));
+      }
+      process.exitCode = 1;
+      return { ok: false, error: 'guard_failed', message: 'guard bloqueou', gitRoot, guard: guardResult, stagedFiles, ready: false };
     }
-    if (guardResult.suggestedCommands && guardResult.suggestedCommands.length > 0) {
-      logger.error('Comandos sugeridos:');
-      guardResult.suggestedCommands.forEach((cmd) => logger.error(`  ${cmd}`));
+
+    // Interactive resolution
+    logger.log('\n⚠ git:guard encontrou problemas. Você pode resolver cada um agora:');
+    const resolved = await resolveGuardFindings(gitRoot, guardResult, logger);
+    if (!resolved) {
+      process.exitCode = 1;
+      return { ok: false, error: 'guard_resolution_cancelled', message: 'Resolução cancelada pelo usuário.', gitRoot, stagedFiles, ready: false };
     }
-    process.exitCode = 1;
-    return failure;
+
+    // Re-run guard after resolution
+    guardResult = await runGitGuard({
+      args: [projectDir],
+      options: { json: true },
+      logger: { log: () => {}, error: () => {} }
+    });
+
+    if (!guardResult.ok) {
+      logger.error('\n✖ git:guard ainda bloqueado após resolução:');
+      (guardResult.errors || []).forEach((e) => logger.error(`  [ERRO] ${e.path}: ${e.reason}`));
+      (guardResult.warnings || []).forEach((w) => logger.error(`  [AVISO] ${w.path}: ${w.reason}`));
+      process.exitCode = 1;
+      return { ok: false, error: 'guard_failed', message: 'guard ainda bloqueado após resolução', gitRoot, guard: guardResult, stagedFiles, ready: false };
+    }
   }
+
+  // Re-read staged files — resolution may have unstaged some
+  const finalStagedFiles = parseGitStatusShort(gitRoot).staged;
 
   // Collect diff
   let diff = '';
@@ -389,7 +514,7 @@ async function runCommitPrepare({ args, options, logger }) {
       untracked,
       filesToStage
     },
-    stagedFiles,
+    stagedFiles: finalStagedFiles,
     guard: guardResult,
     diff,
     recentLog,
@@ -403,7 +528,7 @@ async function runCommitPrepare({ args, options, logger }) {
 
   if (!jsonMode) {
     logger.log(`\n✔ Commit prep pronto. Dados salvos em: ${prepPath}`);
-    logger.log(`  Arquivos no stage: ${stagedFiles.length}`);
+    logger.log(`  Arquivos no stage: ${finalStagedFiles.length}`);
     logger.log(`  Guard: passou`);
     logger.log(`  Diff: ${diff.split('\n').length} linhas`);
     logger.log(`\nAgora ative @committer — ele usará esses dados sem gastar tokens em exploração.`);
@@ -413,7 +538,7 @@ async function runCommitPrepare({ args, options, logger }) {
     ok: true,
     gitRoot,
     prepPath,
-    stagedCount: stagedFiles.length,
+    stagedCount: finalStagedFiles.length,
     guardOk: true,
     ready: true
   };

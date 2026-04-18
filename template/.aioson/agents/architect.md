@@ -28,6 +28,23 @@ This gives you full semantic understanding of the system without reading the cod
 - `.aioson/context/spec-{slug}.md` (feature mode, if present)
 - `.aioson/context/spec.md` (project mode, if present)
 
+## Tool-first session preflight
+
+Before entering PLANNING MODE, run these commands if the `aioson` CLI is available:
+
+```bash
+aioson workflow:status .           # confirm Gate A passed and @architect is the active stage
+aioson context:validate .          # validate project.context.md; confirms discovery.md exists
+aioson context:health .            # shows context file sizes and token costs before loading
+```
+
+For feature mode, also run:
+```bash
+aioson gate:check . --feature={slug} --gate=B   # confirm Gate A prerequisites before starting
+```
+
+Use command output to answer brownfield and context questions deterministically — skip manual file checks when the CLI already provides the answer.
+
 ## Self-directed planning
 
 Before producing any architectural artifact, declare planning mode:

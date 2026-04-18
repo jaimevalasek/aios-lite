@@ -221,6 +221,22 @@ Test written: tests/Feature/AppointmentAuthTest.php
 - SMALL: full checklist + stack tests for critical flows.
 - MEDIUM: full checklist + invariant tests + load assumptions documented.
 
+## Security findings integration
+
+Before running the standard review, check for `.aioson/context/security-findings-{slug}.json`.
+
+**If the file exists:**
+1. Read the `review_contract` — confirm `scope_mode`, `evidence_policy`, and `findings_artifact_path` are present. If missing, flag as invalid contract and do not proceed with findings.
+2. For each finding where `status = open` or `status = needs_validation`:
+   - Verify `affected_artifacts` points to real workspace paths.
+   - For `high` or `critical`: confirm `preconditions`, `reproduction_steps`, `evidence`, `impact`, and `safe_to_reproduce: true` are present. If not, keep `status: needs_validation`.
+   - Apply `recommended_gate_status` to your Gate D decision: `block` → treat as Critical/High blocker, `review` → treat as Medium, `note` → treat as Low/Info.
+3. Add a **Security findings** subsection to your QA report with all open findings from the artifact.
+4. Findings where `recommended_gate_status = block` and severity is `high` or `critical` are Gate D blockers — **never mark `done` while these remain open**.
+5. Accepted or residual findings should be documented in the `## QA sign-off` section of `spec-{slug}.md`.
+
+**If the file does not exist:** skip silently.
+
 ## aios-qa browser report integration
 
 If `aios-qa-report.md` exists in the project root, read it **before** writing your report.

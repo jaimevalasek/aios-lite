@@ -104,12 +104,27 @@ async function runContextTrim({ args, options = {}, logger }) {
 
   const totalStaleSaved = staleSpecs.reduce((s, r) => s + r.sizeBytes, 0);
 
+  // Archive stale specs (executed before any return, including JSON)
+  let archivedCount = 0;
+  if (staleSpecs.length > 0 && (force || dryRun)) {
+    if (!dryRun) {
+      await fs.mkdir(archiveDir, { recursive: true });
+      for (const s of staleSpecs) {
+        const src = path.join(contextDir, s.file);
+        const dest = path.join(archiveDir, s.file);
+        await fs.rename(src, dest);
+      }
+      archivedCount = staleSpecs.length;
+    }
+  }
+
   if (options.json) {
     return {
       ok: true,
       staleSpecs,
       largeSections,
       totalStaleSavedBytes: totalStaleSaved,
+      archived: archivedCount,
       dryRun
     };
   }
@@ -120,7 +135,7 @@ async function runContextTrim({ args, options = {}, logger }) {
   if (staleSpecs.length === 0 && largeSections.length === 0) {
     logger.log('✓ No stale specs or oversized sections found.');
     logger.log('');
-    return { ok: true, staleSpecs: [], largeSections: [], totalStaleSavedBytes: 0, dryRun };
+    return { ok: true, staleSpecs: [], largeSections: [], totalStaleSavedBytes: 0, archived: 0, dryRun };
   }
 
   if (staleSpecs.length > 0) {
@@ -143,18 +158,9 @@ async function runContextTrim({ args, options = {}, logger }) {
     logger.log('');
   }
 
-  // Archive stale specs
   if (staleSpecs.length > 0) {
     if (force || dryRun) {
       if (!dryRun) {
-        await fs.mkdir(archiveDir, { recursive: true });
-        for (const s of staleSpecs) {
-          const src = path.join(contextDir, s.file);
-          const dest = path.join(archiveDir, s.file);
-          await fs.rename(src, dest);
-          logger.log(`  Archived: ${s.file} → context/archive/${s.file}`);
-        }
-        logger.log('');
         logger.log(`${staleSpecs.length} spec(s) archived to .aioson/context/archive/`);
       } else {
         logger.log(`[dry-run] Would archive ${staleSpecs.length} stale spec(s) to .aioson/context/archive/`);
@@ -169,7 +175,7 @@ async function runContextTrim({ args, options = {}, logger }) {
     staleSpecs,
     largeSections,
     totalStaleSavedBytes: totalStaleSaved,
-    archived: force && !dryRun ? staleSpecs.length : 0,
+    archived: archivedCount,
     dryRun
   };
 }

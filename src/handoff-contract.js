@@ -76,6 +76,16 @@ const CONTRACTS = {
     gates: [],
     contextUpdates: ['.aioson/context/project-pulse.md']
   },
+  pentester: {
+    artifacts: (targetDir, state) => {
+      if (state.mode === 'feature' && state.featureSlug) {
+        return [`.aioson/context/security-findings-${state.featureSlug}.json`];
+      }
+      return [];
+    },
+    gates: [],
+    contextUpdates: ['.aioson/context/project-pulse.md']
+  },
   qa: {
     artifacts: [],
     gates: ['D'],
@@ -87,6 +97,17 @@ const CONTRACTS = {
     contextUpdates: []
   }
 };
+
+async function readSecurityFindings(findingsPath) {
+  try {
+    const content = await readFileSafe(findingsPath);
+    if (!content) return [];
+    const data = JSON.parse(content);
+    return Array.isArray(data.findings) ? data.findings : [];
+  } catch {
+    return [];
+  }
+}
 
 async function resolveArtifacts(contract, targetDir, state) {
   const raw = typeof contract.artifacts === 'function'
@@ -186,6 +207,29 @@ async function validateHandoffContract(targetDir, state, stageName) {
     const abs = path.join(targetDir, p);
     if (!(await fileExists(abs))) {
       missing.push(`missing context file: ${p} (recommended)`);
+    }
+  }
+
+  // 4. Security findings check — qa stage only
+  // Blocks on open high/critical findings with recommended_gate_status=block.
+  if (stageName === 'qa' && state.featureSlug) {
+    const findingsPath = path.join(
+      targetDir,
+      `.aioson/context/security-findings-${state.featureSlug}.json`
+    );
+    if (await fileExists(findingsPath)) {
+      const findings = await readSecurityFindings(findingsPath);
+      const blockers = findings.filter(
+        (f) =>
+          (f.status === 'open' || f.status === 'needs_validation') &&
+          f.recommended_gate_status === 'block' &&
+          (f.severity === 'high' || f.severity === 'critical')
+      );
+      if (blockers.length > 0) {
+        missing.push(
+          `security: ${blockers.length} unresolved high/critical finding(s) blocking gate: ${blockers.map((f) => f.id).join(', ')}`
+        );
+      }
     }
   }
 

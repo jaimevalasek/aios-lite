@@ -1,40 +1,27 @@
 ---
-active_feature: null
-active_phase: null
+active_feature: doc-refresh
+active_phase: implementation
 active_plan: null
 last_spec_version: null
 context_package:
-  - .aioson/context/project.context.md
-next_step: "Nenhuma feature ativa. Próxima ação: discutir finding LOW do @qa (edge case @deyvin) com produto, ou iniciar nova feature."
+  - docs/pt/agentes.md
+  - docs/pt/README.md
+  - AGENTS.md
+next_step: "Atualizar docs/pt/agentes.md para incluir todos os 30 agentes oficiais com descrições e exemplos de uso. Atualizar visao geral e fluxos."
 status: done
-updated_at: 2026-04-12
+updated_at: 2026-04-17
 ---
 
 # Dev State
 
 ## Foco atual
-Nenhuma feature ativa. Última tarefa: fix AC-06 (installer.js).
+Atualizacao da documentacao do AIOSON para refletir todos os agentes oficiais existentes.
 
-## Pacote de contexto — carregar SOMENTE estes arquivos
-1. `project.context.md` — sempre
+## Contexto
+A docs/pt/agentes.md documenta apenas 15 dos 30 agentes oficiais em .aioson/agents/. A visao geral, os exemplos de uso e o resumo de fluxo por tamanho tambem estao desatualizados. AGENTS.md na raiz esta mais completo mas em ingles.
 
-## NUNCA carregar nesta sessão
-- Arquivos em `.aioson/agents/`
-- `discovery.md`, `architecture.md`
-- `spec-*.md` de features encerradas
-
-## O que foi feito (últimas 3 sessões)
-- 2026-04-12: fix AC-06 — installer.js agora distribui design-doc.md em fresh install (PROJECT_LOCAL_FILES + exceção em shouldSkipTemplatePath). Commit 8c10874.
-- 2026-04-12: feature design-governance implementada — design-doc.md template, @discovery-design-doc gate, @dev/@deyvin pre-flight + alerta 500 linhas. Commit ad7ae86.
-- 2026-04-10: feature harness-driven-aioson — 3 fases implementadas.
-
-## Próximo passo
-Sem bloqueios. Projeto estável. Discutir com produto se o finding LOW (@deyvin edge case: continua com arquivo único vs extração automática) deve ser corrigido.
-
-## Visão geral das features
-
-| Feature | Status | Fase | Plano | Última atividade |
-|---------|--------|------|-------|-----------------|
-| design-governance | done | — | — | 2026-04-12 |
-| harness-driven-aioson | done | 3/3 | .aioson/plans/harness-driven-aioson/ | 2026-04-10 |
-| cypher-agent | done | 3/3 | .aioson/plans/cypher-agent/ | 2026-04-10 |
+## Tarefa
+1. Atualizar a lista de visao geral no topo de docs/pt/agentes.md
+2. Adicionar secoes para os 15 agentes faltantes
+3. Atualizar o resumo de fluxo por tamanho se necessario
+4. Garantir que exemplos de ativacao e entregas estejam presentes

@@ -46,6 +46,7 @@ AGENTS.local.md
 !.aioson/my-agents/
 !.aioson/my-agents/**
 # AIOSON — local-only artifacts
+aioson-logs/
 aioson-models.json
 .aioson/backups/
 .aioson/cloud-imports/

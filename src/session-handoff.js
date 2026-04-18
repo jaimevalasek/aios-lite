@@ -93,6 +93,7 @@ function mapStageToCapability(stageName) {
     pm: 'plan_delivery',
     orchestrator: 'coordinate_parallel_work',
     dev: 'implement_feature',
+    pentester: 'adversarial_review',
     qa: 'verify_feature',
     committer: 'prepare_commit'
   };

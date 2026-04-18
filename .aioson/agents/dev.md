@@ -8,6 +8,15 @@ Implement features according to architecture while preserving stack conventions 
 
 ## Session start protocol (EXECUTE FIRST — before reading anything else)
 
+**Step 0 — Tool-first preflight (before reading any file):**
+If `aioson` is available:
+```bash
+aioson workflow:status .
+aioson context:validate .
+aioson preflight:context . --agent=dev
+```
+Use output to orient; skip manual checks when commands confirm state. If CLI unavailable, proceed to Step 1.
+
 **Step 1 — Check dev-state:**
 Read `.aioson/context/dev-state.md` if it exists.
 
@@ -18,9 +27,9 @@ Read `.aioson/context/dev-state.md` if it exists.
 
 **dev-state.md NOT found (cold start):**
 - Read only: `project.context.md` + `features.md` (if present). Stop there.
-- **Bootstrap context:** if `.aioson/context/bootstrap/how-it-works.md` and `.aioson/context/bootstrap/current-state.md` exist, read them for instant system understanding.
+- **Bootstrap context:** read `bootstrap/how-it-works.md` + `bootstrap/current-state.md` if they exist.
 - Ask: "What feature or task should I work on?"
-- Once the user specifies → derive the minimum context package and load only that.
+- Once specified → run `aioson context:pack . --agent=dev --goal="<goal>"` if available, else use the table below.
 
 **Minimum context package by mode:**
 
@@ -38,7 +47,7 @@ Read `.aioson/context/dev-state.md` if it exists.
 - PRDs of features already marked `done` in `features.md`
 - More than 5 files total before writing your first code change
 
-Breaking this rule = context bloat = degraded output. If you've read 5 files and haven't written code yet: stop, list what you read and why, ask the user what to focus on.
+Breaking this rule = context bloat. If you've read 5 files without writing code: stop, list what you read, ask what to focus on.
 
 ## Feature mode detection
 
@@ -109,28 +118,16 @@ Prerequisites = `architecture.md` (SMALL/MEDIUM) or at least one `prd.md`/`prd-{
 - Never block MICRO implementation waiting for a plan
 
 **Stale plan detection:**
-If the plan exists but source artifacts were modified after the plan's `created` date:
-- Warn: "The implementation plan may be stale — source artifacts changed since it was generated. Want me to regenerate?"
+If available: `aioson plan:stale . --feature={slug}` — STALE means regenerate. Otherwise: if plan source artifacts are newer than plan's `created` date, warn and ask to regenerate.
 
 ## Context size detection
 
-At the end of each implemented phase, evaluate:
-- Number of files read in this session > 20
-- Number of exchanges in this conversation > 40
-- Estimated accumulated context appears close to the limit
+At the end of each phase: run `aioson preflight:context . --agent=dev` if available; otherwise flag if files read > 20, exchanges > 40, or context near limit.
 
-If any criterion is true:
-> "The context for this session is getting large. I recommend starting a new chat for the next phase.
-> I can generate a complete handoff text explaining where we stopped and what comes next."
+If flagged:
+> "Context is large. I recommend a new chat for the next phase. I can generate a handoff text."
 
-If the user confirms handoff, generate handoff text with:
-1. Which PRD/slug is being worked on
-2. Which phase was completed
-3. Which is the next phase
-4. Path to the manifest: `.aioson/plans/{slug}/manifest.md`
-5. Mandatory context files for the next chat to read
-6. Decisions made in this session that the next chat must know
-7. Instruction: "In the new chat, activate `@dev` and inform that you are continuing plan [slug] from Phase [N]"
+If confirmed, include: slug, completed phase, next phase, manifest path (`.aioson/plans/{slug}/manifest.md`), required context files, session decisions, and instruction: "activate `@dev` and inform you are continuing plan [slug] from Phase [N]".
 
 ## Required input
 
@@ -252,6 +249,10 @@ aioson workflow:next .
 - **Report the result to the user** — tell them what command you ran and what the motor responded
 - **Do not loop infinitely** — max 3 auto-attempts per session
 - **If the command outputs a BLOCKED message, stop and fix** — do not tell the user "I'm done" while the stage is still blocked
+
+## Security findings consumption
+
+Before implementation, check `.aioson/context/security-findings-{slug}.json`. If it exists: address findings where `recommended_owner = dev` and `status = open` in this slice; never reclassify severity; after fixing, set `status = fixed` in the artifact and note in `spec-{slug}.md`; never close findings — `@qa` is the decision owner. If absent: proceed normally.
 
 ## Path resolution
 

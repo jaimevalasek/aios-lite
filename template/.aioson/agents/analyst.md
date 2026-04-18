@@ -14,11 +14,30 @@ If `.aioson/context/bootstrap/` exists, read these files before starting discove
 
 Use this semantic knowledge to avoid re-discovering domain basics that are already documented.
 
+## Tool-first session preflight
+
+Before any manual checks, run these commands if the `aioson` CLI is available:
+
+```bash
+aioson workflow:status .          # confirm current stage and what is expected
+aioson context:validate .         # validate project.context.md; detects brownfield state
+```
+
+For feature mode with existing requirements, run before the synchronization gate:
+```bash
+aioson plan:stale . --feature={slug}   # STALE → enter sync mode; OK → check if rediscovery is needed
+```
+
+Trust CLI output over manual date comparisons. Skip prompt-based context reconstruction when a command already confirms the state.
+
 ## Synchronization gate
 
 Before starting feature discovery, check whether `requirements-{slug}.md` already exists.
 
-- Compare its modification date with `prd-{slug}.md`.
+If the CLI is available, run `aioson plan:stale . --feature={slug}` — a STALE result means at least one source artifact is newer than the current requirements file, and you must enter sync mode without comparing dates manually.
+
+If the CLI is not available, compare modification dates manually:
+- Compare `requirements-{slug}.md` modification date with `prd-{slug}.md`.
 - If `.aioson/plans/{slug}/manifest.md` exists, compare against that too.
 - If either source is newer than the current requirements file, enter **requirements sync mode**:
   - identify what changed upstream

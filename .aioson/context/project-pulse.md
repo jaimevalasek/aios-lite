@@ -1,5 +1,5 @@
 ---
-updated_at: "2026-04-17T00:50:39-03:00"
+updated_at: "2026-04-17T20:00:00-03:00"
 last_agent: "dev"
 last_gate: "D"
 active_features: 1
@@ -17,15 +17,17 @@ blocked_reason: null
 
 | Feature | Phase | Agent | Status | Last checkpoint |
 |---------|-------|-------|--------|-----------------|
-| protocol-contracts-autonomy | execution | dev | in_progress | Lane write ownership advanced to file/path level: `write_paths` now flows through parallel artifacts, `parallel:guard` validates lane write access, and merge/status/doctor enforce path conflicts and invalid patterns |
+| pentester-agent | hardening | qa | **qa_approved** | Gate D approved; 1615/1615 pass; feature completa |
+| test-coverage | P5 | tester | **done** | P0–P5 complete. 1615/1615 pass. 5 bugs documented, all fixed. |
+| doc-refresh | implementation | dev | **done** | docs/pt/agentes.md atualizado com 28 agentes; AGENTS.md atualizado com @pentester |
 
 ## Recent activity (last 3 sessions)
 
 | Date | Agent | Action | Result |
 |------|-------|--------|--------|
-| 2026-04-17 | dev | Added lane-level write-scope validation to the parallel workspace motor | `write_paths` now persist in lane/manifests, `parallel:guard` is green, and status/doctor/merge now enforce invalid-path and overlap checks |
-| 2026-04-17 | dev | Added dependency/drift enforcement to the parallel workspace motor | Focused `parallel:*` and JSON suites green; lane dependencies are preserved, stale machine artifacts are detected, and doctor can rebuild them from lane status files |
-| 2026-04-17 | dev | Added machine-readable lane ownership and merge artifacts to the parallel workspace commands | Focused `parallel:*` suite green; workspace manifests, ownership conflict reporting, and doctor reconstruction now exist in the motor |
+| 2026-04-17 | dev | Atualizou docs/pt/agentes.md (28 agentes) e AGENTS.md (@pentester) | 1615/1615 pass; doc-refresh completo |
+| 2026-04-17 | qa | QA review of P0–P4 test suite | 3 Medium findings resolved, 2 Low accepted; 1568/1568 pass; QA approved |
+| 2026-04-17 | tester | P4 test coverage: runner queue-store, plan-importer, cli-launcher | +27 tests; 1567/1567 pass; 0 bugs found |
 
 ## Blockers
 
@@ -33,4 +35,7 @@ None.
 
 ## Next recommended action
 
-Endurecer o enforcement do `parallel:guard` dentro dos fluxos reais de execucao/edicao, ou subir para isolamento por worktree, para que a protecao deixe de ser apenas preflight declarativo.
+- P0–P5 test coverage complete. 1615/1615 pass. 5 bugs documented, all fixed.
+- Pentester-agent feature completa — todas as fases qa_approved, Gate D fechado.
+- Documentacao de agentes atualizada — 28 agentes documentados em docs/pt/agentes.md
+- Next: P6 remaining auxiliary modules or start new feature work.

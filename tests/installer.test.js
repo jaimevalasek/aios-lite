@@ -5,7 +5,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
 const os = require('node:os');
 const path = require('node:path');
-const { installTemplate, detectExistingInstall } = require('../src/installer');
+const { installTemplate, detectExistingInstall, ensureGitGuardBaseline, GIT_GUARD_BASELINE_BLOCK_PATHS } = require('../src/installer');
 
 async function makeTempDir() {
   return fs.mkdtemp(path.join(os.tmpdir(), 'aioson-installer-'));
@@ -175,19 +175,18 @@ test('design-doc.md is preserved on update (not overwritten)', async () => {
   assert.equal(result.skipped.some(s => s.path === '.aioson/context/design-doc.md' && s.reason === 'project-local'), true);
 });
 
-test('git-guard.json is preserved on update (not overwritten)', async () => {
+test('git-guard.json custom entries are preserved on update (baseline entries are merged in)', async () => {
   const dir = await makeTempDir();
   await installTemplate(dir, { mode: 'install' });
 
   const guardConfig = path.join(dir, '.aioson/git-guard.json');
-  const customContent = `${JSON.stringify({
+  await fs.writeFile(guardConfig, JSON.stringify({
     version: 1,
     allowPaths: ['fixtures/**'],
     blockPaths: ['drafts/**'],
     allowExtensions: [],
     blockExtensions: []
-  }, null, 2)}\n`;
-  await fs.writeFile(guardConfig, customContent, 'utf8');
+  }, null, 2) + '\n', 'utf8');
 
   const result = await installTemplate(dir, {
     mode: 'update',
@@ -195,9 +194,79 @@ test('git-guard.json is preserved on update (not overwritten)', async () => {
     backupOnOverwrite: true
   });
 
-  const readBack = await fs.readFile(guardConfig, 'utf8');
-  assert.equal(readBack, customContent, 'git-guard.json must not be overwritten on update');
+  const config = JSON.parse(await fs.readFile(guardConfig, 'utf8'));
+  // Custom entries must be preserved
+  assert.ok(config.allowPaths.includes('fixtures/**'), 'custom allowPaths preserved');
+  assert.ok(config.blockPaths.includes('drafts/**'), 'custom blockPaths preserved');
+  // Baseline entries must be merged in
+  for (const baseline of GIT_GUARD_BASELINE_BLOCK_PATHS) {
+    assert.ok(config.blockPaths.includes(baseline), `baseline "${baseline}" must be merged in on update`);
+  }
+  // File must not have been replaced by the template copy (skipped as project-local)
   assert.equal(result.skipped.some(s => s.path === '.aioson/git-guard.json' && s.reason === 'project-local'), true);
+});
+
+test('git-guard.json deleted before update is NOT restored from template', async () => {
+  const dir = await makeTempDir();
+  await installTemplate(dir, { mode: 'install' });
+
+  const guardConfig = path.join(dir, '.aioson/git-guard.json');
+  await fs.unlink(guardConfig);
+
+  const result = await installTemplate(dir, {
+    mode: 'update',
+    overwrite: true,
+    backupOnOverwrite: true
+  });
+
+  assert.equal(await fileExists(guardConfig), false, 'git-guard.json must not be restored from template on update');
+  assert.equal(result.skipped.some(s => s.path === '.aioson/git-guard.json' && s.reason === 'project-local'), true);
+});
+
+test('ensureGitGuardBaseline merges missing baseline blockPaths without removing custom ones', async () => {
+  const dir = await makeTempDir();
+  const guardPath = path.join(dir, '.aioson/git-guard.json');
+  await fs.mkdir(path.join(dir, '.aioson'), { recursive: true });
+  await fs.writeFile(guardPath, JSON.stringify({
+    version: 1,
+    blockPaths: ['done/**', 'references/**']
+  }, null, 2) + '\n', 'utf8');
+
+  const added = await ensureGitGuardBaseline(dir);
+
+  const result = JSON.parse(await fs.readFile(guardPath, 'utf8'));
+  assert.ok(added > 0, 'should have added missing baseline entries');
+  assert.ok(result.blockPaths.includes('done/**'), 'custom entry preserved');
+  assert.ok(result.blockPaths.includes('references/**'), 'custom entry preserved');
+  for (const baseline of GIT_GUARD_BASELINE_BLOCK_PATHS) {
+    assert.ok(result.blockPaths.includes(baseline), `baseline entry "${baseline}" must be present`);
+  }
+});
+
+test('ensureGitGuardBaseline is idempotent when baseline already present', async () => {
+  const dir = await makeTempDir();
+  const guardPath = path.join(dir, '.aioson/git-guard.json');
+  await fs.mkdir(path.join(dir, '.aioson'), { recursive: true });
+  await fs.writeFile(guardPath, JSON.stringify({
+    version: 1,
+    blockPaths: [...GIT_GUARD_BASELINE_BLOCK_PATHS, 'done/**']
+  }, null, 2) + '\n', 'utf8');
+
+  const added = await ensureGitGuardBaseline(dir);
+  assert.equal(added, 0, 'nothing should be added when baseline already present');
+  const result = JSON.parse(await fs.readFile(guardPath, 'utf8'));
+  assert.equal(result.blockPaths.length, GIT_GUARD_BASELINE_BLOCK_PATHS.length + 1, 'no duplicate entries');
+});
+
+test('ensureGitGuardBaseline is called during installTemplate and baseline is present after install', async () => {
+  const dir = await makeTempDir();
+  await installTemplate(dir, { mode: 'install' });
+
+  const guardPath = path.join(dir, '.aioson/git-guard.json');
+  const config = JSON.parse(await fs.readFile(guardPath, 'utf8'));
+  for (const baseline of GIT_GUARD_BASELINE_BLOCK_PATHS) {
+    assert.ok(config.blockPaths.includes(baseline), `baseline "${baseline}" must be in git-guard after install`);
+  }
 });
 
 async function fileExists(filePath) {

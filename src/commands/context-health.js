@@ -93,7 +93,9 @@ async function runContextHealth({ args, options = {}, logger }) {
     return doneFeatures.has(slug);
   });
 
-  const { db, dbPath } = await openRuntimeDb(targetDir, { mustExist: true }).catch(() => ({ db: null, dbPath: null }));
+  const dbResult = await openRuntimeDb(targetDir, { mustExist: true }).catch(() => ({ db: null, dbPath: null }));
+  const db = dbResult ? dbResult.db : null;
+  const dbPath = dbResult ? dbResult.dbPath : null;
   const cacheHitRate = await getCacheHitRate(db);
   if (db) db.close();
 

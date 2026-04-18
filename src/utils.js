@@ -33,6 +33,9 @@ function nowStamp() {
 
 function toRelativeSafe(baseDir, absolutePath) {
   const rel = path.relative(baseDir, absolutePath);
+  if (rel.startsWith('..')) {
+    throw new Error(`Path traversal detected: "${absolutePath}" escapes base "${baseDir}"`);
+  }
   return rel.split(path.sep).join('/');
 }
 

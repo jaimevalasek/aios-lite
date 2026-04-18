@@ -28,9 +28,14 @@ const DEFAULT_PERFORMANCE_THRESHOLDS = {
 
 function extractFrontmatterValue(markdown, key) {
   if (!markdown) return '';
-  const regex = new RegExp(`^-\\s*${key}:\\s*(.*)$`, 'im');
-  const match = String(markdown).match(regex);
-  return match ? String(match[1] || '').trim() : '';
+  // Try list-style first: "- key: value"
+  const listRegex = new RegExp(`^-\\s*${key}:\\s*(.*)$`, 'im');
+  const listMatch = String(markdown).match(listRegex);
+  if (listMatch) return String(listMatch[1] || '').trim();
+  // Fallback to pure YAML: "key: value"
+  const yamlRegex = new RegExp(`^${key}:\\s*(.*)$`, 'im');
+  const yamlMatch = String(markdown).match(yamlRegex);
+  return yamlMatch ? String(yamlMatch[1] || '').trim().replace(/^['"]|['"]$/g, '') : '';
 }
 
 function extractYamlValue(markdown, key) {

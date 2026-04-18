@@ -18,10 +18,26 @@ O AIOSON tem agentes oficiais de projeto e também pode criar agentes de squad. 
 @ux-ui        ← UI/UX quando há interfaces (SMALL e MEDIUM)
 @pm           ← apenas MEDIUM
 @orchestrator ← apenas MEDIUM
+@pentester    ← revisao adversarial e seguranca antes do fechamento (MEDIUM)
 @dev          ← sempre o último antes do QA
 @qa           ← projetos SMALL e MEDIUM
+@tester       ← engenharia de testes e cobertura sistematica
 @squad        ← cria squads especializados no projeto
 @genome       ← cria genomes de domínio reutilizáveis
+
+# Agentes especializados (uso sob demanda)
+@committer          ← gera mensagens de commit semanticas
+@copywriter         ← copy para paginas e estrategia de conversao
+@cypher             ← transforma plans em briefings estruturados
+@design-hybrid-forge ← cria skills hibridas de design
+@discover           ← descobre o sistema e mapeia conhecimento
+@neo                ← guia de inicio, status e proximos passos
+@orache             ← pesquisa de mercado e competidores
+@profiler-researcher  ← pesquisa perfil/DNA mental
+@profiler-enricher    ← enriquece perfil cognitivo
+@profiler-forge       ← gera advisor da persona (genome 3.0)
+@site-forge          ← clona/rebuild de sites com skill
+@validator           ← valida entregaveis e contratos
 ```
 
 > Para o fluxo completo de `@squad` e `@genome`, veja também [Squad e Genome](./squad-genome.md).
@@ -301,7 +317,7 @@ tests/
 
 ---
 
-## UI/UX (`@ux-ui`)
+## @ux-ui
 
 **Quando usar:** Quando o projeto tem interfaces (web apps, landing pages com formulários). SMALL e MEDIUM.
 
@@ -639,6 +655,290 @@ Se o usuário pedir para pular o teste, o `@dev` resiste, explica, e só cede ap
 
 ---
 
+---
+
+## Agentes especializados e auxiliares
+
+Agentes que nao fazem parte do fluxo principal de entrega, mas entram sob demanda para tarefas especificas.
+
+---
+
+## @committer
+
+**Quando usar:** Quando voce quer gerar mensagens de commit semanticas ou preparar um conjunto de mudancas para o Git.
+
+**O que faz:**
+- Le o diff staged (ou working tree) e gera mensagem de commit no formato convencional
+- Pode gerar `commit-prep.json` com lista de arquivos, tipo de mudanca e descricao
+- Respeita o escopo do projeto e o formato definido no `spec.md`
+
+**Como ativar:**
+```
+@committer
+```
+
+**Entrega:**
+- Mensagem de commit pronta para copiar ou mensagem semantica no formato `tipo(escopo): descricao`
+- Opcionalmente `.aioson/context/commit-prep.json`
+
+---
+
+## @copywriter
+
+**Quando usar:** Quando voce precisa de copy para landing pages, emails, CTAs ou qualquer texto voltado a conversao.
+
+**O que faz:**
+- Escreve copy com foco em conversao e clareza
+- Pode seguir uma voz de marca definida no PRD ou no `design-doc.md`
+- Gera variantes de headline, descricao e CTA
+- Nao substitui um redator humano, mas acelera a primeira versao
+
+**Como ativar:**
+```
+@copywriter
+```
+
+**Entrega:**
+- Textos prontos para uso em interfaces, landing pages ou campanhas
+
+---
+
+## @cypher
+
+**Quando usar:** Quando voce tem notas, rascunhos ou plans brutos em `plans/` e quer transforma-los em um briefing estruturado antes de iniciar o fluxo de produto.
+
+**O que faz:**
+- Le arquivos de `plans/` e sintetiza um briefing enriquecido
+- Identifica gaps, riscos e perguntas em aberto
+- Faz web research para validar suposicoes tecnicas ou de mercado
+- Produz `.aioson/briefings/{slug}/briefings.md`
+- Nao cria PRD — isso e responsabilidade do @product
+
+**Como ativar:**
+```
+@cypher
+```
+
+**Entrega:**
+- `.aioson/briefings/{slug}/briefings.md` com contexto, problema, solucao proposta, riscos, gaps e open questions
+- `.aioson/briefings/config.md` — registro de todos os briefings
+
+---
+
+## @design-hybrid-forge
+
+**Quando usar:** Quando voce quer criar uma skill de design hibrida combinando duas skills primarias ja existentes.
+
+**O que faz:**
+- Recebe duas skills de design (ex: `frontend-design` + `interface-design`)
+- Analisa os principios, tokens e decisoes de cada uma
+- Gera uma skill hibrida com contrato unico, nome, descricao e referencias
+- Salva em `.aioson/installed-skills/{hybrid-name}/`
+
+**Como ativar:**
+```
+@design-hybrid-forge
+```
+
+**Entrega:**
+- Skill hibrida completa em `.aioson/installed-skills/{slug}/SKILL.md`
+
+---
+
+## @discover
+
+**Quando usar:** Quando voce quer mapear um projeto existente (brownfield) antes de comecar a trabalhar nele, ou quando quer atualizar a memoria do sistema.
+
+**O que faz:**
+- Escaneia a estrutura de pastas e arquivos do projeto
+- Gera indices e mapas semanticos (`scan-index.md`, `scan-folders.md`)
+- Pode gerar ou atualizar `discovery.md` e `skeleton-system.md`
+- Constroi um cache de conhecimento que outros agentes consomem
+
+**Como ativar:**
+```
+@discover
+```
+
+**Ou via CLI:**
+```bash
+npx @jaimevalasek/aioson scan:project . --folder=src
+```
+
+**Entrega:**
+- `scan-index.md`, `scan-folders.md`, `scan-<pasta>.md`, `scan-aioson.md`
+- `memory-index.md`, `module-<pasta>.md`
+- Com `--with-llm`: `discovery.md` e `skeleton-system.md`
+
+---
+
+## @neo
+
+**Quando usar:** Quando voce esta perdido, quer entender o status atual do projeto ou nao sabe qual agente ativar em seguida.
+
+**O que faz:**
+- Le `project-pulse.md`, `features.md`, `spec.md` e `workflow.state.json`
+- Resume o estado atual do projeto em poucas linhas
+- Sugere o proximo agente ou acao com base no estado do workflow
+- Responde perguntas do tipo "por onde comeco?" e "o que falta fazer?"
+
+**Como ativar:**
+```
+@neo
+```
+
+**Entrega:**
+- Resumo do status do projeto
+- Recomendacao do proximo passo
+
+---
+
+## @orache
+
+**Quando usar:** Quando voce precisa de pesquisa de mercado, analise competitiva ou investigacao de dominio antes de definir o escopo do produto.
+
+**O que faz:**
+- Pesquisa na web sobre mercado, concorrentes e tendencias
+- Valida suposicoes de produto com dados externos
+- Gera resumos estruturados salvos em `researchs/{slug}/summary.md`
+- Segue o protocolo de cache de pesquisa: verifica `researchs/` antes de buscar novamente
+
+**Como ativar:**
+```
+@orache
+```
+
+**Entrega:**
+- `researchs/{slug}/summary.md` com frontmatter (searched_at, agent, query, verdict) + findings
+- `researchs/{slug}/files/` com conteudo raw das fontes consultadas
+
+---
+
+## @pentester
+
+**Quando usar:** Antes do fechamento de uma feature (especialmente MEDIUM), quando voce quer uma revisao adversarial focada em seguranca.
+
+**O que faz:**
+- Atua com mentalidade de atacante, nao de validador
+- Revisa superficies de ataque: memory context, tool invocation, auth, handoff, protocol contracts, secrets, runtime permissions
+- Gera findings estruturados em `.aioson/context/security-findings-{slug}.json`
+- So opera em ambiente local/controlado — nunca em producao ou internet publica
+- Findings `high`/`critical` podem bloquear o Gate D no @qa
+
+**Como ativar:**
+```
+@pentester
+```
+
+**Entrega:**
+- `.aioson/context/security-findings-{slug}.json` com review_contract, threat_surfaces e findings priorizados
+
+> **Importante:** O `@pentester` nao corrige vulnerabilidades — ele apenas encontra e documenta. A correcao e feita pelo `@dev` e a aprovacao pelo `@qa`.
+
+---
+
+## @profiler-researcher
+
+**Quando usar:** Quando voce quer pesquisar o "DNA mental" de uma pessoa — perfil cognitivo, comportamental e de comunicacao.
+
+**O que faz:**
+- Pesquisa na web e em fontes disponiveis sobre a pessoa-alvo
+- Gera um perfil inicial com dimensoes cognitivas e comportamentais
+- Salva o resultado para enriquecimento posterior
+
+**Como ativar:**
+```
+@profiler-researcher
+```
+
+**Entrega:**
+- Perfil inicial da persona em formato estruturado
+
+---
+
+## @profiler-enricher
+
+**Quando usar:** Quando voce ja tem um perfil inicial e quer aprofundar a analise cognitiva.
+
+**O que faz:**
+- Le o perfil gerado pelo `@profiler-researcher`
+- Analisa padroes de cognicao, comunicacao e decisao
+- Enriquece o perfil com insights mais profundos
+
+**Como ativar:**
+```
+@profiler-enricher
+```
+
+**Entrega:**
+- Perfil cognitivo enriquecido
+
+---
+
+## @profiler-forge
+
+**Quando usar:** Quando voce quer transformar um perfil enriquecido em um advisor funcional (genome 3.0) que pode ser usado por squads ou agentes.
+
+**O que faz:**
+- Le o perfil enriquecido
+- Gera um advisor com voice DNA, principios de decisao e framework operacional
+- Materializa o genome em um artefato reutilizavel
+
+**Como ativar:**
+```
+@profiler-forge
+```
+
+**Entrega:**
+- Advisor/Gerome 3.0 da persona
+
+---
+
+## @site-forge
+
+**Quando usar:** Quando voce quer clonar o design de um site existente ou reconstruir uma URL usando uma skill de design especifica.
+
+**O que faz:**
+- Recebe uma URL e uma skill de design (ou extrai a skill do proprio site)
+- Gera a estrutura, componentes e estilos necessarios
+- Pode produzir entregaveis HTML/CSS/JS ou integrar com o framework do projeto
+
+**Como ativar:**
+```
+@site-forge
+```
+
+**Exemplos de uso:**
+```
+Clone este site com a skill premium-command-center-ui
+Reconstrua https://exemplo.com usando a skill clean-saas-ui
+Extraia o design de https://exemplo.com como uma skill
+```
+
+**Entrega:**
+- Codigo e/ou skill extraida do site alvo
+
+---
+
+## @validator
+
+**Quando usar:** Quando voce quer validar entregaveis, contratos ou checklists antes de aprovar uma etapa.
+
+**O que faz:**
+- Valida se artefatos cumprem criterios definidos
+- Pode verificar conformidade com schemas, contratos ou regras de negocio
+- Funciona como uma camada adicional de verificacao antes de gates
+
+**Como ativar:**
+```
+@validator
+```
+
+**Entrega:**
+- Relatorio de validacao com pass/fail por criterio
+
+---
+
 ## Resumo: fluxo por tamanho
 
 ### MICRO
@@ -655,9 +955,11 @@ Duração típica: horas a dias. Análise leve, estrutura clara.
 
 ### MEDIUM
 ```
-@setup → @product → [@sheldon] → @analyst → @architect → @ux-ui → @pm → @orchestrator → @dev → @qa → [@tester]
+@setup → @product → [@sheldon] → @analyst → @architect → @ux-ui → @pm → @orchestrator → @dev → @pentester → @qa → [@tester]
 ```
-Duração típica: dias a semanas. Análise completa, paralelismo, backlog formal.
+Duração típica: dias a semanas. Análise completa, paralelismo, backlog formal, revisao adversarial obrigatoria.
+
+> O `@pentester` entra obrigatoriamente em projetos MEDIUM entre `@dev` e `@qa`. Em projetos sensiveis ou com requisitos de seguranca, ative-o tambem em SMALL.
 
 `[@sheldon]` — opcional, recomendado antes de iniciar a cadeia de execução para validar o PRD.
 `[@tester]` — opcional, recomendado quando a cobertura de testes for insuficiente após `@dev`.

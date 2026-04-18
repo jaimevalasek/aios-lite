@@ -145,6 +145,97 @@ describe('workflow engine hardening', () => {
     assert.ok(block.includes('docs/'));
   });
 
+  it('pentester contract requires security-findings artifact in feature mode', async () => {
+    const dir = await setupProject({ classification: 'MEDIUM' });
+
+    const check = await validateHandoffContract(
+      dir,
+      { mode: 'feature', featureSlug: 'my-feature', sequence: ['pentester'] },
+      'pentester'
+    );
+    assert.strictEqual(check.ok, false);
+    assert.ok(check.missing.some((m) => m.includes('security-findings-my-feature.json')));
+  });
+
+  it('pentester contract passes when security-findings artifact exists', async () => {
+    const dir = await setupProject({ classification: 'MEDIUM' });
+    const findingsPath = path.join(dir, '.aioson', 'context', 'security-findings-my-feature.json');
+    await fs.writeFile(findingsPath, JSON.stringify({ findings: [] }));
+
+    const check = await validateHandoffContract(
+      dir,
+      { mode: 'feature', featureSlug: 'my-feature', sequence: ['pentester'] },
+      'pentester'
+    );
+    assert.strictEqual(check.ok, true);
+  });
+
+  it('qa contract blocks when high/critical open findings with block status exist', async () => {
+    const dir = await setupProject({ classification: 'MEDIUM' });
+    await fs.writeFile(
+      path.join(dir, '.aioson', 'context', 'spec-feat.md'),
+      '---\ngate_execution: approved\n---\n## QA Sign-off\n\n**Verdict:** PASS\n'
+    );
+    const findings = {
+      findings: [
+        {
+          id: 'SF-feat-01',
+          severity: 'high',
+          status: 'open',
+          recommended_gate_status: 'block'
+        }
+      ]
+    };
+    await fs.writeFile(
+      path.join(dir, '.aioson', 'context', 'security-findings-feat.json'),
+      JSON.stringify(findings)
+    );
+
+    const check = await validateHandoffContract(
+      dir,
+      { mode: 'feature', featureSlug: 'feat', sequence: ['qa'] },
+      'qa'
+    );
+    assert.strictEqual(check.ok, false);
+    assert.ok(check.missing.some((m) => m.includes('SF-feat-01')));
+  });
+
+  it('qa contract passes when high findings are fixed or not blocking', async () => {
+    const dir = await setupProject({ classification: 'MEDIUM' });
+    await fs.writeFile(
+      path.join(dir, '.aioson', 'context', 'spec-feat.md'),
+      '---\ngate_execution: approved\n---\n## QA Sign-off\n\n**Verdict:** PASS\n'
+    );
+    const findings = {
+      findings: [
+        { id: 'SF-feat-01', severity: 'high', status: 'fixed', recommended_gate_status: 'block' },
+        { id: 'SF-feat-02', severity: 'medium', status: 'open', recommended_gate_status: 'review' }
+      ]
+    };
+    await fs.writeFile(
+      path.join(dir, '.aioson', 'context', 'security-findings-feat.json'),
+      JSON.stringify(findings)
+    );
+
+    const check = await validateHandoffContract(
+      dir,
+      { mode: 'feature', featureSlug: 'feat', sequence: ['qa'] },
+      'qa'
+    );
+    assert.strictEqual(check.ok, true);
+  });
+
+  it('MEDIUM feature workflow sequence includes pentester between dev and qa', () => {
+    const config = buildDefaultWorkflowConfig();
+    const seq = config.feature.MEDIUM;
+    const devIdx = seq.indexOf('dev');
+    const pentesterIdx = seq.indexOf('pentester');
+    const qaIdx = seq.indexOf('qa');
+    assert.ok(pentesterIdx !== -1, 'pentester must be in MEDIUM feature sequence');
+    assert.ok(devIdx < pentesterIdx, 'dev must come before pentester');
+    assert.ok(pentesterIdx < qaIdx, 'pentester must come before qa');
+  });
+
   it('auto-heal returns healing prompt when technical gate fails', async () => {
     const dir = await setupProject({ classification: 'SMALL', withTs: true });
     // Create a broken TS file

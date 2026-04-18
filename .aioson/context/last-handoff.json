@@ -1,14 +1,14 @@
 {
   "version": 1,
-  "session_ended_at": "2026-04-10T22:42:58.713Z",
-  "last_agent": "@product",
-  "last_stage": "product",
-  "what_was_done": "Stage @product completed.",
-  "what_comes_next": "Next stage: @dev",
-  "next_agent": "@dev",
+  "session_ended_at": "2026-04-18T00:10:27.869Z",
+  "last_agent": "@dev",
+  "last_stage": "dev",
+  "what_was_done": "Stage @dev completed.",
+  "what_comes_next": "Next stage: @architect",
+  "next_agent": "@architect",
   "open_decisions": [],
   "context_files_updated": [],
-  "workflow_mode": "feature",
+  "workflow_mode": "project",
   "classification": "MEDIUM",
-  "feature_slug": "qa-test"
+  "feature_slug": null
 }

@@ -6,12 +6,15 @@
     "src/i18n/**",
     "src/parser.js",
     "src/lib/git-commit-guard.js",
+    "src/commands/context-health.js",
+    "src/commands/context-trim.js",
     "tests/**"
   ],
   "blockPaths": [
     "done/**",
     "references/**",
-    "node_modules/**"
+    "node_modules/**",
+    "aioson-logs/**"
   ],
   "allowExtensions": [],
   "blockExtensions": []

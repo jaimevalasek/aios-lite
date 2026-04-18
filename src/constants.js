@@ -29,7 +29,9 @@ const MANAGED_FILES = [
   '.aioson/agents/pm.md',
   '.aioson/agents/dev.md',
   '.aioson/agents/qa.md',
+  '.aioson/agents/tester.md',
   '.aioson/agents/orchestrator.md',
+  '.aioson/agents/pentester.md',
   '.aioson/agents/squad.md',
   '.aioson/agents/orache.md',
   '.aioson/agents/genome.md',
@@ -261,6 +263,17 @@ const AGENT_DEFINITIONS = [
       '.aioson/context/architecture.md'
     ],
     output: 'code changes'
+  },
+  {
+    id: 'pentester',
+    displayName: 'Pentester',
+    command: '@pentester',
+    path: '.aioson/agents/pentester.md',
+    dependsOn: [
+      '.aioson/context/project.context.md',
+      '.aioson/context/spec-{slug}.md (active feature)'
+    ],
+    output: '.aioson/context/security-findings-{slug}.json'
   },
   {
     id: 'qa',

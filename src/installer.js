@@ -15,6 +15,13 @@ const PROJECT_LOCAL_FILES = new Set([
   '.aioson/context/design-doc.md',
   '.aioson/git-guard.json'
 ]);
+// Baseline blockPaths merged into every project's git-guard.json on install and update.
+// These are never removed — only added if missing. Project-specific entries are preserved.
+const GIT_GUARD_BASELINE_BLOCK_PATHS = [
+  'node_modules/**',
+  'aioson-logs/**'
+];
+
 const GITIGNORE_POLICY_LINES = [
   '# AIOSON — keep shared project memory and tool contracts',
   '!AGENTS.md',
@@ -42,6 +49,7 @@ const GITIGNORE_POLICY_LINES = [
   '!.aioson/my-agents/',
   '!.aioson/my-agents/**',
   '# AIOSON — local-only artifacts',
+  'aioson-logs/',
   'aioson-models.json',
   '.aioson/backups/',
   '.aioson/cloud-imports/',
@@ -91,6 +99,26 @@ async function ensureProjectGitignorePolicy(targetDir) {
   return ensureGitignoreEntries(targetDir, GITIGNORE_POLICY_LINES);
 }
 
+async function ensureGitGuardBaseline(targetDir) {
+  const guardPath = path.join(targetDir, '.aioson/git-guard.json');
+  if (!(await exists(guardPath))) return 0;
+
+  let config;
+  try {
+    config = JSON.parse(await fs.readFile(guardPath, 'utf8'));
+  } catch {
+    return 0; // corrupted — do not touch
+  }
+
+  const existing = new Set(Array.isArray(config.blockPaths) ? config.blockPaths : []);
+  const toAdd = GIT_GUARD_BASELINE_BLOCK_PATHS.filter((p) => !existing.has(p));
+  if (toAdd.length === 0) return 0;
+
+  config.blockPaths = [...(config.blockPaths || []), ...toAdd];
+  await fs.writeFile(guardPath, `${JSON.stringify(config, null, 2)}\n`, 'utf8');
+  return toAdd.length;
+}
+
 async function countProjectFiles(targetDir) {
   const SKIP = new Set(['.git', 'node_modules', 'vendor', '.aioson', 'dist', 'build', '__pycache__']);
   let count = 0;
@@ -111,7 +139,12 @@ async function listFilesRecursive(dir) {
   const out = [];
 
   async function walk(current) {
-    const entries = await fs.readdir(current, { withFileTypes: true });
+    let entries;
+    try {
+      entries = await fs.readdir(current, { withFileTypes: true });
+    } catch {
+      return;
+    }
     for (const entry of entries) {
       const full = path.join(current, entry.name);
       if (entry.isDirectory()) {
@@ -148,7 +181,14 @@ function shouldSkipTemplatePath(rel, profile = null) {
 async function writeInstallMetadata(targetDir, action, frameworkDetection, installProfile) {
   const metaPath = path.join(targetDir, '.aioson/install.json');
   await ensureDir(path.dirname(metaPath));
-  const existing = (await exists(metaPath)) ? JSON.parse(await fs.readFile(metaPath, 'utf8')) : {};
+  let existing = {};
+  if (await exists(metaPath)) {
+    try {
+      existing = JSON.parse(await fs.readFile(metaPath, 'utf8'));
+    } catch {
+      // corrupted install.json — reset rather than crash
+    }
+  }
 
   const version = await getCliVersion();
   const data = {
@@ -221,7 +261,10 @@ async function installTemplate(targetDir, options = {}) {
     const dest = path.join(targetDir, rel);
     const destExists = await exists(dest);
 
-    if (destExists && PROJECT_LOCAL_FILES.has(rel)) {
+    // Project-local files are never overwritten from template.
+    // On fresh install they are created once; on any subsequent operation they are preserved
+    // even if the file was manually deleted.
+    if (PROJECT_LOCAL_FILES.has(rel) && (destExists || mode !== 'install')) {
       skipped.push({ path: rel, reason: 'project-local' });
       continue;
     }
@@ -238,8 +281,12 @@ async function installTemplate(targetDir, options = {}) {
 
     if (destExists && mode === 'update' && backupOnOverwrite && MANAGED_FILES.includes(rel)) {
       if (!dryRun) {
-        const backupPath = await backupManagedFile(targetDir, rel, backupRoot);
-        if (backupPath) backedUp.push(toRelativeSafe(targetDir, backupPath));
+        try {
+          const backupPath = await backupManagedFile(targetDir, rel, backupRoot);
+          if (backupPath) backedUp.push(toRelativeSafe(targetDir, backupPath));
+        } catch {
+          // backup failed — warn but do not block the update
+        }
       } else {
         backedUp.push(toRelativeSafe(targetDir, path.join(backupRoot, rel)));
       }
@@ -270,6 +317,7 @@ async function installTemplate(targetDir, options = {}) {
     await writeInstallMetadata(targetDir, mode, frameworkDetection, installProfile);
 
     await ensureProjectGitignorePolicy(targetDir);
+    await ensureGitGuardBaseline(targetDir);
 
     runtime = await ensureProjectRuntime(targetDir);
   }
@@ -299,5 +347,7 @@ module.exports = {
   ensureGitignoreEntry,
   ensureGitignoreEntries,
   ensureProjectGitignorePolicy,
+  ensureGitGuardBaseline,
+  GIT_GUARD_BASELINE_BLOCK_PATHS,
   countProjectFiles
 };

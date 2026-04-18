@@ -7,10 +7,10 @@
 
 const readline = require('node:readline');
 
-function clearLines(count) {
-  for (let i = 0; i < count; i += 1) {
-    process.stdout.write('\x1B[1A\x1B[2K');
-  }
+function countVisualLines(text, cols) {
+  return text.split('\n').reduce((acc, line) => {
+    return acc + Math.max(1, Math.ceil((line.length || 1) / cols));
+  }, 0);
 }
 
 function render(items, selectedIndex, hint) {
@@ -24,7 +24,7 @@ function render(items, selectedIndex, hint) {
   return lines.join('\n');
 }
 
-function promptCheckbox(items, hint = '↑/↓ navegar | Espaço selecionar | Enter confirmar | a=todos | n=limpar') {
+function promptCheckbox(items, hint = '↑/↓ navegar | Espaço selecionar | Enter confirmar | Esc cancelar | a=todos | n=limpar') {
   return new Promise((resolve) => {
     const state = items.map((label) => ({ label, checked: true }));
     let selectedIndex = 0;
@@ -41,37 +41,53 @@ function promptCheckbox(items, hint = '↑/↓ navegar | Espaço selecionar | En
     readline.emitKeypressEvents(stdin);
 
     function draw() {
+      const cols = stdout.columns || 80;
       if (renderedLines > 0) {
-        clearLines(renderedLines);
+        stdout.write(`\x1B[${renderedLines}A\x1B[J`);
       }
       const output = render(state, selectedIndex, hint);
-      renderedLines = output.split('\n').length;
+      renderedLines = countVisualLines(output, cols);
       stdout.write(output + '\n');
     }
 
-    function finish() {
+    function cleanup() {
       if (stdin.setRawMode) {
         stdin.setRawMode(wasRaw);
       }
       stdin.pause();
       stdin.removeListener('keypress', onKeypress);
+      const cols = stdout.columns || 80;
       if (renderedLines > 0) {
-        clearLines(renderedLines);
+        stdout.write(`\x1B[${renderedLines}A\x1B[J`);
       }
-      const result = state.filter((s) => s.checked).map((s) => s.label);
-      resolve(result);
+      renderedLines = 0;
+    }
+
+    function confirm() {
+      cleanup();
+      resolve(state.filter((s) => s.checked).map((s) => s.label));
+    }
+
+    function cancel() {
+      cleanup();
+      resolve(null);
     }
 
     function onKeypress(str, key) {
       if (!key) return;
 
       if (key.name === 'c' && key.ctrl) {
-        finish();
+        cancel();
+        return;
+      }
+
+      if (key.name === 'escape') {
+        cancel();
         return;
       }
 
       if (key.name === 'return' || key.name === 'enter') {
-        finish();
+        confirm();
         return;
       }
 

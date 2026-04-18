@@ -1,0 +1,71 @@
+'use strict';
+
+const { describe, it } = require('node:test');
+const assert = require('node:assert/strict');
+const { parseArgv } = require('../src/parser');
+
+describe('parser.js — parseArgv', () => {
+  it('parses command and positional args', () => {
+    const result = parseArgv(['node', 'aioson', 'setup', '.']);
+    assert.equal(result.command, 'setup');
+    assert.deepEqual(result.args, ['.']);
+    assert.deepEqual(result.options, {});
+  });
+
+  it('parses long flags with values', () => {
+    const result = parseArgv(['node', 'aioson', 'workflow:next', '.', '--agent', 'dev']);
+    assert.equal(result.command, 'workflow:next');
+    assert.equal(result.options.agent, 'dev');
+  });
+
+  it('parses long flags with = syntax', () => {
+    const result = parseArgv(['node', 'aioson', 'workflow:next', '.', '--agent=dev']);
+    assert.equal(result.options.agent, 'dev');
+  });
+
+  it('parses boolean-only flags without consuming next token', () => {
+    const result = parseArgv(['node', 'aioson', 'workflow:next', '.', '--json', '--agent', 'dev']);
+    assert.equal(result.options.json, true);
+    assert.equal(result.options.agent, 'dev');
+  });
+
+  it('parses short flags', () => {
+    const result = parseArgv(['node', 'aioson', 'setup', '.', '-f', '-h', '-j', '-v']);
+    assert.equal(result.options.force, true);
+    assert.equal(result.options.help, true);
+    assert.equal(result.options.json, true);
+    assert.equal(result.options.version, true);
+  });
+
+  it('parses combined short flags', () => {
+    const result = parseArgv(['node', 'aioson', 'setup', '.', '-fhj']);
+    assert.equal(result.options.force, true);
+    assert.equal(result.options.help, true);
+    assert.equal(result.options.json, true);
+  });
+
+  it('defaults to help command when no command given', () => {
+    const result = parseArgv(['node', 'aioson']);
+    assert.equal(result.command, 'help');
+    assert.deepEqual(result.args, []);
+  });
+
+  it('parses multiple positional args', () => {
+    const result = parseArgv(['node', 'aioson', 'squad:plan', 'auth', 'messaging']);
+    assert.equal(result.command, 'squad:plan');
+    assert.deepEqual(result.args, ['auth', 'messaging']);
+  });
+
+  it('treats unknown token after bool flag as arg, not value', () => {
+    // --json is bool-only, so 'dev' should not be consumed as its value
+    const result = parseArgv(['node', 'aioson', 'workflow:next', '.', '--json', 'dev']);
+    assert.equal(result.options.json, true);
+    assert.deepEqual(result.args, ['.', 'dev']);
+  });
+
+  it('treats token starting with - after flag as boolean', () => {
+    const result = parseArgv(['node', 'aioson', 'cmd', '--agent', '--json']);
+    assert.equal(result.options.agent, true);
+    assert.equal(result.options.json, true);
+  });
+});

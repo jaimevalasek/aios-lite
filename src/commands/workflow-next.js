@@ -25,7 +25,7 @@ const EVENTS_RELATIVE_PATH = '.aioson/context/workflow.events.jsonl';
 const DEFAULT_FEATURE_WORKFLOW_BY_CLASSIFICATION = {
   MICRO: ['product', 'dev', 'qa'],
   SMALL: ['product', 'analyst', 'dev', 'qa'],
-  MEDIUM: ['product', 'analyst', 'dev', 'qa']
+  MEDIUM: ['product', 'analyst', 'dev', 'pentester', 'qa']
 };
 
 function normalizeAgentName(input) {
@@ -72,7 +72,8 @@ function parseFeaturesMarkdown(markdown) {
       started: parts[3],
       completed: parts[4]
     }))
-    .filter((row) => row.slug && row.slug !== 'slug');
+    .filter((row) => row.slug && row.slug !== 'slug')
+    .filter((row) => !/^-+$/ .test(row.slug));
 }
 
 async function readJsonIfExists(filePath) {
@@ -511,7 +512,7 @@ async function activateStage(targetDir, state, locale, tool, explicitAgent = nul
 
   // ── Path Guard Injection for implementation agents ────────────────────────
   let pathGuardBlock = '';
-  if (['dev', 'architect', 'ux-ui', 'qa', 'tester', 'committer'].includes(stageName)) {
+  if (['dev', 'architect', 'ux-ui', 'pentester', 'qa', 'tester', 'committer'].includes(stageName)) {
     try {
       pathGuardBlock = await buildPathGuardBlock(targetDir);
     } catch {
