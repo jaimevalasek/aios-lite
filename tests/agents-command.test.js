@@ -189,11 +189,11 @@ test('agent:prompt injects capability summary and autonomy mode when manifest an
   const dir = await makeTempDir();
   await writeProjectContext(dir, 'SMALL');
 
-  await fs.mkdir(path.join(dir, '.aioson/agents'), { recursive: true });
+  await fs.mkdir(path.join(dir, '.aioson/agents/manifests'), { recursive: true });
   await fs.mkdir(path.join(dir, '.aioson/config'), { recursive: true });
 
   await fs.writeFile(
-    path.join(dir, '.aioson/agents/genome.manifest.json'),
+    path.join(dir, '.aioson/agents/manifests/genome.manifest.json'),
     JSON.stringify({
       agent_id: 'genome',
       version: '1.0',

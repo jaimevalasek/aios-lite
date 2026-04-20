@@ -4,7 +4,7 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const { exists } = require('./utils');
 
-const MANIFESTS_RELATIVE_DIR = '.aioson/agents';
+const MANIFESTS_RELATIVE_DIR = '.aioson/agents/manifests';
 
 async function readAgentManifest(targetDir, agentId) {
   const safeAgentId = String(agentId || '').trim().toLowerCase();

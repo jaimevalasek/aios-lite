@@ -31,7 +31,7 @@ test('ux-ui prompt documents the runtime-backed Gate B completion path', async (
 
 test('pm prompt and manifest align with the living PRD workflow stage', async () => {
   const prompt = await read('template/.aioson/agents/pm.md');
-  const manifest = JSON.parse(await read('template/.aioson/agents/pm.manifest.json'));
+  const manifest = JSON.parse(await read('template/.aioson/agents/manifests/pm.manifest.json'));
   const pm = AGENT_DEFINITIONS.find((agent) => agent.id === 'pm');
 
   const promptChecks = [
@@ -52,7 +52,7 @@ test('pm prompt and manifest align with the living PRD workflow stage', async ()
 
 test('orchestrator prompt and manifest align with the existing parallel CLI runtime', async () => {
   const prompt = await read('template/.aioson/agents/orchestrator.md');
-  const manifest = JSON.parse(await read('template/.aioson/agents/orchestrator.manifest.json'));
+  const manifest = JSON.parse(await read('template/.aioson/agents/manifests/orchestrator.manifest.json'));
   const orchestrator = AGENT_DEFINITIONS.find((agent) => agent.id === 'orchestrator');
 
   const promptChecks = [

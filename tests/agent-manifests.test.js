@@ -36,9 +36,9 @@ test('resolveAgentCapabilities returns empty array when manifest has no capabili
   const fs = require('node:fs/promises');
 
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'aioson-manifest-'));
-  await fs.mkdir(path.join(dir, '.aioson/agents'), { recursive: true });
+  await fs.mkdir(path.join(dir, '.aioson/agents/manifests'), { recursive: true });
   await fs.writeFile(
-    path.join(dir, '.aioson/agents/mock.manifest.json'),
+    path.join(dir, '.aioson/agents/manifests/mock.manifest.json'),
     JSON.stringify({ agent_id: 'mock', version: '1.0' }),
     'utf8'
   );
