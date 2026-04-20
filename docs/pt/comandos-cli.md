@@ -142,13 +142,14 @@
 | `agent:done` | Registra conclusão de sessão de agente; aceita `--verdict`, `--artifacts` (CSV de paths) e `--plan-step` | Ao final de cada sessão de agente — é o comando que fecha a run e popula artifacts + verdict no SQLite |
 | `runtime:prune` | Remove registros antigos do SQLite de runtime | Quando o banco está grande e quer liberar espaço |
 
-### Skills
+### Skills e otimização de contexto
 
 | Comando | O que faz | Quando usar |
 |---|---|---|
 | `skill:install` | Instala skill de terceiros via npm, cloud ou path local | Quando quer adicionar capacidade ao projeto. Veja [Skills](./skills.md) |
 | `skill:list` | Lista skills instaladas em `.aioson/installed-skills/` | Quando quer saber quais skills estão ativas |
 | `skill:remove` | Remove skill instalada e limpa diretórios de ferramentas | Quando uma skill não é mais necessária |
+| `compress:agents` | Comprime arquivos de instrução dos agentes para reduzir consumo de tokens por sessão. Modo estrutural (gratuito) ou semântico via LLM (`--llm`). Salva backup automático em `.original.md`. Aceita `--agent`, `--rules`, `--dry-run`, `--restore`. | Quando quer reduzir custo de API sem alterar nenhuma lógica. Veja [compress:agents](./compress-agents.md) |
 | `design-hybrid:options` | Abre um seletor visual com setas + espaço para montar um preset temporário de variações de design | Quando quer alimentar a `design-hybrid-forge` com direções mais extravagantes, clássicas, animadas ou com CSS avançado. Usa o locale do projeto automaticamente e aceita `--locale` como override; com `--advanced` libera um 3º modificador. Veja [design-hybrid-forge](./design-hybrid-forge.md) |
 
 ### Cloud

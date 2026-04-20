@@ -5,21 +5,15 @@ priority: 10
 version: 1.0.0
 ---
 
-# Regra Disk-First: Artefatos Sempre em Disco
+# Disk-First: Artifacts Always on Disk
 
-Todo artefato produzido por um agente AIOSON deve ser gravado em disco antes do fim da sessão. Exibir o conteúdo apenas no chat não conta como entrega.
+Every artifact produced by an AIOSON agent MUST be written to disk before session end. Showing in chat does not count as delivery — the next agent starts without context and the work is lost.
 
-## Regra absoluta
+## Mandatory artifacts by agent
 
-**Se um agente produziu um artefato, ele DEVE estar em `.aioson/context/` (ou no caminho correto) ao fim da sessão.**
-
-Artefatos que ficam só no chat são perdidos na próxima sessão e quebram o pipeline — o próximo agente não encontra o artefato e não sabe o que foi decidido.
-
-## Tabela de artefatos obrigatórios por agente
-
-| Agente | Artefato obrigatório | Caminho |
+| Agent | Mandatory artifact | Path |
 |---|---|---|
-| `@product` | PRD | `.aioson/context/prd.md` ou `prd-{slug}.md` |
+| `@product` | PRD | `.aioson/context/prd.md` or `prd-{slug}.md` |
 | `@product` | features.md | `.aioson/context/features.md` |
 | `@analyst` | Discovery | `.aioson/context/discovery.md` |
 | `@analyst` | Requirements | `.aioson/context/requirements-{slug}.md` |
@@ -27,46 +21,24 @@ Artefatos que ficam só no chat são perdidos na próxima sessão e quebram o pi
 | `@ux-ui` | UI Spec | `.aioson/context/ui-spec-{slug}.md` |
 | `@sheldon` | Manifest | `.aioson/plans/{slug}/manifest.md` |
 | `@pm` | Implementation Plan | `.aioson/context/implementation-plan-{slug}.md` |
-| `@dev` | Spec de feature | `.aioson/context/spec-{slug}.md` |
-| `@qa` | Relatório QA | `.aioson/context/qa-report-{slug}.md` ou corrections |
+| `@dev` | Feature spec | `.aioson/context/spec-{slug}.md` |
+| `@qa` | QA report | `.aioson/context/qa-report-{slug}.md` |
 | `@squad` | Squad manifest | `.aioson/squads/{slug}/squad.manifest.json` |
 | `@squad` | Agent prompts | `.aioson/squads/{slug}/agents/{agent}.md` |
 
-## O que NÃO é disk-first
-
-- Mostrar o conteúdo do artefato no chat e perguntar "Posso salvar?"
-  → Salve diretamente. Informe ao usuário onde foi salvo.
-- Criar o artefato como bloco de código no chat sem usar Write tool
-  → Use a ferramenta de escrita. Código no chat não é disco.
-- Dizer "aqui está o implementation-plan" e não escrever o arquivo
-  → Escreva o arquivo primeiro, depois informe o caminho.
-
-## Padrão correto de entrega
+## Correct delivery pattern
 
 ```
-✅ Correto:
-1. Agente escreve o artefato em disco
-2. Informa: "Gravei `implementation-plan-agendamento.md` em `.aioson/context/`."
-
-❌ Errado:
-1. Agente exibe o artefato no chat
-2. Pergunta: "Deseja que eu salve este arquivo?"
+✅ Write artifact to disk → inform user of path.
+❌ Show in chat → ask "Can I save?" → Do NOT do this.
 ```
 
-## Exceções permitidas
+Exceptions: drafts shown mid-session for validation (before final save), artifacts explicitly cancelled by user.
 
-- **Rascunhos intermediários**: durante a elaboração, o agente pode mostrar partes no chat para validação antes de salvar a versão final
-- **Artefatos descartados**: se o usuário explicitamente cancelar um artefato, ele não precisa ser salvo
-- **project-pulse.md**: deve ser atualizado ao final de toda sessão, não apenas quando o agente produz um artefato primário
+`project-pulse.md` must be updated at session end regardless of other artifacts.
 
-## Ação obrigatória ao detectar violação
+## On violation detected
 
-Se ao fim de uma sessão um artefato primário não foi gravado em disco:
-
-1. **Gravar antes de encerrar** — nunca deixar para a próxima sessão
-2. Se o conteúdo já foi exibido no chat, usar esse conteúdo para gravar o arquivo
-3. Atualizar `project-pulse.md` com o estado atual
-
-## Por que isso importa
-
-O pipeline AIOSON é assíncrono por natureza — cada agente roda em uma sessão diferente. O disco é o único canal de comunicação entre sessões. Artefatos que existem apenas no chat são efetivamente perdidos: o próximo agente inicia sem contexto e o usuário precisa repetir o trabalho.
+1. Write the artifact before closing — never defer to next session.
+2. If content was shown in chat, use it to write the file now.
+3. Update `project-pulse.md`.

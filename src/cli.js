@@ -180,6 +180,7 @@ const { runSkillPublish, runSkillInstallStore, runSkillListRemote } = require('.
 const { runSquadPublish, runSquadInstall, runSquadGrant, runSquadList } = require('./commands/store-squad');
 const { runSystemPackage, runSystemPublish, runSystemList, runSystemInstall } = require('./commands/store-system');
 const { runBriefingApprove, runBriefingUnapprove } = require('./commands/briefing');
+const { runCompressAgents } = require('./commands/compress-agents');
 
 const JSON_SUPPORTED_COMMANDS = new Set([
   'init',
@@ -555,6 +556,8 @@ const JSON_SUPPORTED_COMMANDS = new Set([
   'genome-remove',
   'skill:publish',
   'skill-publish',
+  'compress:agents',
+  'compress-agents',
   'skill:install:store',
   'skill-install-store',
   'squad:list',
@@ -1209,6 +1212,8 @@ async function main() {
       result = await runGenomeList({ args, options, logger: commandLogger, t });
     } else if (command === 'genome:remove' || command === 'genome-remove') {
       result = await runGenomeRemove({ args, options, logger: commandLogger, t });
+    } else if (command === 'compress:agents' || command === 'compress-agents') {
+      result = await runCompressAgents({ args, options, logger: commandLogger });
     } else if (command === 'skill:publish' || command === 'skill-publish') {
       result = await runSkillPublish({ args, options, logger: commandLogger, t });
     } else if (command === 'squad:list' || command === 'squad-list') {

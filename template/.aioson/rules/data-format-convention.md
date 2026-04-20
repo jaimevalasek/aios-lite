@@ -7,104 +7,52 @@ version: 1.0.0
 
 # Data Format Convention
 
-Use the right format for the right consumer. The same data structure reads very differently depending on who (or what) will consume it next.
+## Decision rule (apply in order)
 
-## The three formats and their consumers
+```
+Will a machine (CLI, API, webhook, dashboard) consume this? → JSON
+Will human/agent read top-to-bottom as narrative?          → Markdown
+Will an agent reference specific fields to make decisions? → YAML
+```
 
-### YAML — structured data consumed by agents
+If uncertain: prefer Markdown. Only use YAML when structured fields are the point.
 
-Use `.yaml` when the output is structured reference data that **another agent or squad executor will read field-by-field** to make decisions or produce content.
+## The three formats
 
-LLMs read YAML more accurately than JSON for structured reference data because YAML allows comments, avoids excessive punctuation, and mirrors natural document structure.
+### YAML — structured data for agent field-by-field consumption
 
-**Use YAML for:**
-- ICP definitions, persona profiles, audience segments
-- Offer sheets, product definitions, pricing structures
-- Brand guidelines (structured parts: tone, values, vocabulary, positioning)
-- Competitive analysis snapshots (structured fields)
-- Briefing data that a copy squad or design squad will consume
-- Entity catalogs referenced across multiple sessions
+LLMs read YAML more accurately than JSON for reference data (comments allowed, less punctuation).
 
-**Naming:** `{slug}.yaml` in the relevant squad output or context directory.
+Use for: ICP profiles, persona profiles, audience segments, offer sheets, pricing structures, brand guidelines (structured parts), competitive analysis (structured), briefing data for copy/design squads.
 
-**Example — ICP profile (`icp-primary.yaml`):**
+**Example (`icp-primary.yaml`):**
 ```yaml
-# ICP — Primary Audience
-# Created by: @research-squad | Updated: 2026-04-02
-
 profile:
   name: "Empreendedor Refém"
   description: "Dono de negócio que depende de agências ou devs externos"
-
 pain_points:
   - Perda de controle sobre o produto
   - Atrasos e custos imprevisíveis
-  - Não consegue validar qualidade do que recebe
-
-desired_outcome: "Autonomia e velocidade — entregar sem depender de terceiros"
-
+desired_outcome: "Autonomia e velocidade"
 buying_trigger: "Prazo vencendo ou fatura chegando de dev que atrasou"
-
 messaging:
   primary: "Retome o controle do seu produto"
-  objection_1: "Não preciso saber programar?"
-  objection_1_answer: "Não. Você vai orquestrar, não digitar código."
-
 channels: [instagram, linkedin, youtube]
 ```
 
----
+### Markdown — narrative for humans and linear agent reading
 
-### Markdown — narrative content consumed by humans and agents linearly
+Use for: reports, analyses, article drafts, scripts, agent instructions, specs, PRDs, discovery docs, README files, any output read top-to-bottom.
 
-Use `.md` when the output is narrative — content that flows as text and benefits from headers, lists, and prose.
+Never use YAML or JSON for: articles, scripts, agent instructions, PRDs, analysis narratives.
 
-**Use Markdown for:**
-- Reports, analyses, article drafts
-- Scripts, hooks, copy blocks
-- Agent instructions and rules (this file is an example)
-- Specs, PRDs, discovery documents
-- Any output meant to be read from top to bottom
+### JSON — structured data for machine consumption
 
-**Never use YAML or JSON for:** articles, scripts, agent instructions, PRDs, analysis narratives, README files.
+Use for: `squad.manifest.json`, `content.json`, API payloads, webhook responses, CLI config files.
 
----
+Never change to YAML: `squad.manifest.json`, `content.json`, `squad.json`, `aioson-models.json` — machine-consumed, must stay JSON for CLI compatibility.
 
-### JSON — structured data consumed by machines
-
-Use `.json` when the output is consumed by code — CLIs, APIs, webhooks, dashboards, or configuration parsers.
-
-**Use JSON for:**
-- `squad.manifest.json` — consumed by the AIOSON CLI and dashboard
-- `content.json` — consumed by the webhook server and dashboard
-- API payloads and webhook responses
-- CLI configuration files
-- Any file that `JSON.parse()` will read programmatically
-
-**Never change to YAML:** `squad.manifest.json`, `content.json`, `squad.json`, `aioson-models.json`. These are machine-consumed and must stay JSON for CLI compatibility.
-
----
-
-## Decision rule (apply in this order)
-
-```
-Will a machine (CLI, API, webhook, dashboard) consume this file?
-  YES → JSON
-
-Will a human or agent read this top-to-bottom as narrative?
-  YES → Markdown
-
-Will an agent reference specific fields to make decisions or produce content?
-  YES → YAML
-```
-
-If uncertain: prefer Markdown. Only use YAML when the structured fields are the point — not the prose.
-
----
-
-## Squad executor guidance
-
-When a squad executor produces output, choose the format based on what happens next:
+## Squad executor output format
 
 | Output type | Format | Example |
 |---|---|---|
@@ -116,21 +64,11 @@ When a squad executor produces output, choose the format based on what happens n
 | Webhook payload, API response | `.json` | handled by `content.json` convention |
 | Squad manifest, config | `.json` | `squad.manifest.json` (do not change) |
 
-**Cross-squad consumption:** when Squad A produces data that Squad B will consume, prefer YAML for structured reference data. The receiving squad's executor can reference `output/squad-a/{file}.yaml` directly and access fields with precision — more reliable than parsing a Markdown table.
-
----
+**Cross-squad consumption:** when Squad A produces data for Squad B, prefer YAML for structured reference — more reliable than parsing a Markdown table.
 
 ## What NOT to change
 
-- Files with `.json` extension consumed by the AIOSON CLI or dashboard
+- `.json` files consumed by AIOSON CLI or dashboard
 - Agent instruction files (`agents/*.md`) — narrative, not data
-- Existing specs and context files (`spec-*.md`, `discovery.md`, `architecture.md`) — mixed narrative + structure, Markdown is correct
-- YAML frontmatter inside `.md` files — this is already the right pattern for metadata
-
----
-
-## Why this matters
-
-The same structured content stored as JSON or Markdown loses precision when an agent reads it. A JSON blob requires the agent to mentally parse brackets and quotes while tracking field relationships. A Markdown table requires the agent to infer column semantics from headers. A YAML document makes field names, nesting, and relationships immediately legible — the LLM spends its attention on the content, not the syntax.
-
-For squads that pass structured data between executors across sessions, this compounds: each session starts fresh, and a YAML profile loads faster and more accurately into working context than an equivalent JSON or Markdown representation.
+- Existing specs and context files — Markdown is correct
+- YAML frontmatter inside `.md` files

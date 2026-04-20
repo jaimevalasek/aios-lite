@@ -6,56 +6,41 @@ version: 1.0.0
 agents: [product, analyst, architect, ux-ui, pm, dev, qa, sheldon]
 ---
 
-# Regra de Fronteira: .aioson/context/
+# Context Boundary: .aioson/context/
 
-O diretório `.aioson/context/` é de uso exclusivo para artefatos em Markdown (`.md`).
+`.aioson/context/` is exclusively for Markdown artifacts. No agent may create non-Markdown files inside it.
 
-## Regra absoluta
+Prohibited: `.json`, `.yaml`/`.yml` (except conformance), `.js`, `.ts`, `.py`, any non-Markdown format.
 
-**Nenhum agente pode criar arquivos não-Markdown dentro de `.aioson/context/`.**
+## Correct location by artifact type
 
-Formatos proibidos dentro de `.aioson/context/`:
-- `.json` — use `.aioson/config.md` ou a raiz do projeto
-- `.yaml` / `.yml` — use `.aioson/skills/` ou a raiz do projeto
-- `.js`, `.ts`, `.py` — nunca pertencem a `.aioson/context/`
-- Qualquer outro formato não-Markdown
-
-## Localização correta por tipo de artefato
-
-| Tipo de artefato | Localização correta |
+| Artifact type | Correct location |
 |---|---|
-| Configuração de projeto | `.aioson/config.md` |
-| Conformance schema | `.aioson/context/conformance-{slug}.yaml` → **EXCEÇÃO: `.yaml` permitido apenas para conformance** |
-| Definições de squad | `.aioson/squads/{slug}/` |
-| Manifests de skill | `.aioson/skills/{categoria}/{slug}/SKILL.md` |
-| Artefatos de feature | `.aioson/context/{artefato}-{slug}.md` |
-| Artefatos de projeto | `.aioson/context/{artefato}.md` |
+| Project configuration | `.aioson/config.md` |
+| Conformance schema | `.aioson/context/conformance-{slug}.yaml` ← EXCEPTION: only `.yaml` allowed |
+| Squad definitions | `.aioson/squads/{slug}/` |
+| Skill manifests | `.aioson/skills/{category}/{slug}/SKILL.md` |
+| Feature artifacts | `.aioson/context/{artifact}-{slug}.md` |
+| Project artifacts | `.aioson/context/{artifact}.md` |
 
-## Artefatos válidos em .aioson/context/
+## Valid artifacts in .aioson/context/
 
 ```
-project.context.md          ← setup
-discovery.md                ← analyst
-requirements-{slug}.md      ← analyst
-architecture.md             ← architect
-ui-spec-{slug}.md           ← ux-ui
-prd.md / prd-{slug}.md      ← product
-spec-{slug}.md              ← dev
+project.context.md            ← setup
+discovery.md                  ← analyst
+requirements-{slug}.md        ← analyst
+architecture.md               ← architect
+ui-spec-{slug}.md             ← ux-ui
+prd.md / prd-{slug}.md        ← product
+spec-{slug}.md                ← dev
 implementation-plan-{slug}.md ← pm
-features.md                 ← product / pm
-project-pulse.md            ← todos (atualizam ao final)
-conformance-{slug}.yaml     ← ÚNICA exceção ao .md
+features.md                   ← product / pm
+project-pulse.md              ← all agents (update at session end)
+conformance-{slug}.yaml       ← sole exception to .md rule
 ```
 
-## Por que isso importa
+## On violation detected
 
-`.aioson/context/` é lido por múltiplos agentes como fonte de verdade. Arquivos em formatos não-Markdown quebram o pipeline de leitura sequencial dos agentes, que assumem que todo artefato de contexto é Markdown legível.
-
-## Ação obrigatória ao detectar violação
-
-Se um agente receber uma task que envolva criar um arquivo não-Markdown dentro de `.aioson/context/`:
-
-1. **Não criar o arquivo**
-2. Identificar o formato correto e localização alternativa
-3. Informar o usuário:
-   > "`.aioson/context/` aceita apenas arquivos `.md` (exceção: `conformance-{slug}.yaml`). Criarei `{artefato}` em `{localização-correta}` em vez disso."
+1. Do not create the file.
+2. Identify correct format and location.
+3. Inform user: "`.aioson/context/` accepts only `.md` (exception: `conformance-{slug}.yaml`). Creating `{artifact}` in `{correct-location}` instead."

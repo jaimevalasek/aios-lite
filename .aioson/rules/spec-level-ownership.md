@@ -6,35 +6,23 @@ version: 1.0.0
 agents: [dev, qa, pm, sheldon]
 ---
 
-# Ownership por Nível: spec.md vs spec-{slug}.md
+# Spec Ownership: Project vs Feature Level
 
-O sistema de specs tem dois níveis distintos. Misturá-los causa corrupção de contexto entre features.
+Two distinct levels — never mix them.
 
-## Os dois níveis
-
-| Arquivo | Nível | Dono | Conteúdo |
+| File | Level | Owner | Content |
 |---|---|---|---|
-| `spec.md` | **Projeto** | `@dev` (projeto inteiro) | Decisões técnicas que afetam todo o projeto (stack, padrões globais, infraestrutura) |
-| `spec-{slug}.md` | **Feature** | `@dev` (feature específica) | Decisões, entidades, dependências e ACs de UMA feature específica |
+| `spec.md` | **Project** | `@dev` (full project) | Stack, global patterns, infrastructure — decisions affecting the whole project |
+| `spec-{slug}.md` | **Feature** | `@dev` (specific feature) | Decisions, entities, dependencies, ACs for ONE feature |
 
-## Regras absolutas
+## Absolute rules
 
-**1. `spec.md` nunca recebe conteúdo de feature específica.**
-- Errado: adicionar "endpoints do módulo de agendamento" em `spec.md`
-- Certo: criar `spec-agendamento.md` para isso
+1. `spec.md` never receives feature-specific content → create `spec-{slug}.md` for that.
+2. `spec-{slug}.md` never receives project decisions → stack decisions go in `spec.md` or `architecture.md`.
+3. `spec-{slug}.md` is created by `@dev` at feature implementation start. One file per slug. Slug must match `prd-{slug}.md` and `implementation-plan-{slug}.md`.
+4. No `spec-{slug}.md` without a corresponding `prd-{slug}.md`.
 
-**2. `spec-{slug}.md` nunca recebe decisões de projeto.**
-- Errado: definir "usar PostgreSQL" em `spec-pagamento.md`
-- Certo: decisões de stack ficam em `spec.md` ou `architecture.md`
-
-**3. `spec-{slug}.md` é criado pelo `@dev` ao iniciar a implementação de cada feature.**
-- Um arquivo por feature slug
-- Slug deve coincidir com o slug do `prd-{slug}.md` e `implementation-plan-{slug}.md`
-
-**4. Não existe `spec-{slug}.md` sem um `prd-{slug}.md` correspondente.**
-- Se não há feature registrada em `features.md`, não há spec de feature
-
-## Estrutura obrigatória de spec-{slug}.md
+## Mandatory structure: spec-{slug}.md
 
 ```markdown
 ---
@@ -46,48 +34,28 @@ phase_gates:
   plan: approved | pending | skipped
 ---
 
-# Spec — {nome da feature}
+# Spec — {feature name}
 
-## Entidades implementadas
-...
-
-## Decisões técnicas
-...
-
-## Dependências
-...
-
-## Aprovação QA
-(preenchida por @qa ao fechar a feature)
+## Implemented entities
+## Technical decisions
+## Dependencies
+## QA approval
+(filled by @qa on feature close)
 ```
 
-## Estrutura obrigatória de spec.md (nível projeto)
+## Mandatory structure: spec.md (project level)
 
 ```markdown
-# Spec — {nome do projeto}
+# Spec — {project name}
 
-## Stack e infraestrutura
-...
-
-## Padrões globais de código
-...
-
-## Integrações externas
-...
-
-## Decisões de arquitetura cross-feature
-...
+## Stack and infrastructure
+## Global code patterns
+## External integrations
+## Cross-feature architecture decisions
 ```
 
-## Ação obrigatória ao detectar violação
+## On violation detected
 
-Ao perceber que está prestes a adicionar conteúdo de feature em `spec.md` ou conteúdo de projeto em `spec-{slug}.md`:
-
-1. **Não escrever no arquivo errado**
-2. Identificar o nível correto
-3. Escrever no arquivo correto (criando-o se necessário)
-4. Se o arquivo correto não existir ainda, criá-lo seguindo a estrutura obrigatória acima
-
-## Por que isso importa
-
-`spec.md` é lido por todos os agentes como referência de projeto. Poluí-lo com detalhes de features específicas torna impossível identificar as decisões globais. `spec-{slug}.md` é o contrato de implementação de uma feature — misturar features nele impede que o `@qa` rastreie ACs por feature.
+1. Do not write to the wrong file.
+2. Identify the correct level.
+3. Write to the correct file (create if needed following mandatory structure above).
