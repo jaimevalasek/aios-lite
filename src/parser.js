@@ -19,7 +19,7 @@ function parseArgv(argv) {
       // Boolean-only flags that never consume the next token
       const boolOnly = new Set([
         'all', 'force', 'dry-run', 'no-interactive', 'fix', 'json',
-        'help', 'version', 'no-launch', 'attach',
+        'help', 'version', 'no-launch', 'attach', 'tmux',
         'allow-warnings', 'install-hook', 'uninstall-hook', 'remove-hook',
         'agent-safe',
         'status', 'suggest', 'apply'

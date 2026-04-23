@@ -18,6 +18,7 @@ const {
 } = require('../runtime-store');
 const { ensureDir, exists } = require('../utils');
 const { SUPPORTED_PROMPT_TOOLS } = require('../prompt-tool');
+const { isTmuxAvailable, launchTmuxSession, buildSessionName, hasSession, attachSession } = require('../lib/tmux-launcher');
 
 const LIVE_EVENTS_LIMIT = 10;
 const LIVE_MESSAGE_LIMIT = 500;
@@ -732,6 +733,245 @@ function renderLiveSummary(snapshot) {
   return lines.join('\n');
 }
 
+// ANSI color helpers (no external deps)
+const ANSI = {
+  reset: '\x1b[0m',
+  bold: '\x1b[1m',
+  dim: '\x1b[2m',
+  green: '\x1b[32m',
+  yellow: '\x1b[33m',
+  red: '\x1b[31m',
+  cyan: '\x1b[36m',
+  magenta: '\x1b[35m',
+  blue: '\x1b[34m',
+  gray: '\x1b[90m'
+};
+
+function colorForContext(pct) {
+  if (pct >= 90) return ANSI.red;
+  if (pct >= 70) return ANSI.yellow;
+  return ANSI.green;
+}
+
+function colorForPhase(phase) {
+  if (phase === 'active') return ANSI.green;
+  if (phase === 'closed') return ANSI.gray;
+  return ANSI.yellow;
+}
+
+function colorForProcess(state) {
+  if (state === 'alive') return ANSI.green;
+  if (state === 'dead') return ANSI.red;
+  return ANSI.gray;
+}
+
+function formatDurationCompact(startedAt) {
+  if (!startedAt) return '';
+  const ms = Date.now() - Date.parse(startedAt);
+  if (!Number.isFinite(ms) || ms < 0) return '';
+  const m = Math.floor(ms / 60000);
+  const s = Math.floor((ms % 60000) / 1000);
+  if (m > 60) {
+    const h = Math.floor(m / 60);
+    return `${h}h${m % 60}m`;
+  }
+  return `${m}m${s}s`;
+}
+
+/**
+ * Print a one-line compact status bar with ANSI colors.
+ * Designed for small tmux panes (~4 lines).
+ */
+function printCompactStatus(snapshot, logger) {
+  const agent = snapshot.agent || '-';
+  const tool = snapshot.tool || '-';
+  const phase = snapshot.phase || 'idle';
+  const proc = snapshot.processState || 'not_tracked';
+  const pid = snapshot.pid || null;
+
+  // Context percentage if available
+  let ctxStr = '';
+  if (snapshot.run && snapshot.run.context_pct != null) {
+    const pct = Number(snapshot.run.context_pct) || 0;
+    ctxStr = `${colorForContext(pct)}ctx:${pct}%${ANSI.reset}`;
+  }
+
+  // Token / cost if available
+  let costStr = '';
+  if (snapshot.stats && snapshot.stats.tokens_total) {
+    const tokens = snapshot.stats.tokens_total;
+    const cost = snapshot.stats.cost_usd;
+    costStr = `${ANSI.cyan}${tokens >= 1000 ? (tokens / 1000).toFixed(1) + 'k' : tokens}tk${ANSI.reset}`;
+    if (cost != null) {
+      costStr += `${ANSI.gray}/${ANSI.reset}${ANSI.cyan}$${cost.toFixed(3)}${ANSI.reset}`;
+    }
+  }
+
+  // Plan progress
+  let planStr = '';
+  const planDone = snapshot.stats?.plan_steps_done ?? 0;
+  const planTotal = snapshot.stats?.plan_steps_total ?? 0;
+  if (planTotal > 0) {
+    planStr = `${ANSI.magenta}plan:${planDone}/${planTotal}${ANSI.reset}`;
+  }
+
+  // Duration
+  const dur = formatDurationCompact(snapshot.startedAt);
+  const durStr = dur ? `${ANSI.blue}${dur}${ANSI.reset}` : '';
+
+  // Recent event
+  let eventStr = '';
+  if (snapshot.recentEvents && snapshot.recentEvents.length > 0) {
+    const ev = snapshot.recentEvents[snapshot.recentEvents.length - 1];
+    eventStr = `${ANSI.gray}${ev.type}${ANSI.reset}`;
+    if (ev.summary) {
+      const short = String(ev.summary).slice(0, 35);
+      eventStr += `:${ANSI.gray}${short}${ANSI.reset}`;
+    }
+  }
+
+  // Warning
+  let warnStr = '';
+  if (snapshot.warning) {
+    warnStr = `${ANSI.red}⚠ ${snapshot.warning}${ANSI.reset}`;
+  }
+
+  // Build line 1
+  const parts = [
+    `${colorForPhase(phase)}●${ANSI.reset}`,
+    `${ANSI.bold}${agent}${ANSI.reset}`,
+    `|`,
+    `${ANSI.blue}${tool}${ANSI.reset}`,
+    `|`,
+    `${colorForProcess(proc)}${proc}${ANSI.reset}`,
+    pid ? `${ANSI.gray}(pid:${pid})${ANSI.reset}` : '',
+    ctxStr,
+    costStr,
+    planStr,
+    durStr,
+    eventStr,
+    warnStr
+  ].filter(Boolean);
+
+  logger.log(parts.join(' '));
+}
+
+/**
+ * Print two plain-text lines optimized for tmux status-bar.
+ * No ANSI colors — tmux handles its own styling.
+ * Designed for a 2-line pane.
+ */
+function renderMiniBar(pct, width = 10, usedLabel = '', totalLabel = '') {
+  const filled = Math.round((pct / 100) * width);
+  const empty = width - filled;
+  const bar = '█'.repeat(filled) + '░'.repeat(empty);
+  const color = pct > 80 ? '\x1b[31m' : pct > 50 ? '\x1b[33m' : '\x1b[32m';
+  const reset = '\x1b[0m';
+  const abs = usedLabel && totalLabel ? ` ${usedLabel}/${totalLabel}` : '';
+  return `${color}[${bar}]${reset}${abs} ${pct}%`;
+}
+
+function formatProjectPath(targetDir) {
+  if (!targetDir) return '-';
+  const home = process.env.HOME || process.env.USERPROFILE || '';
+  let path = String(targetDir).replace(/\\/g, '/');
+  if (home && path.startsWith(home.replace(/\\/g, '/'))) {
+    path = '~' + path.slice(home.length);
+  }
+  if (path.length <= 28) return path;
+  // Too long: keep last 2 segments with ellipsis
+  const segments = path.split('/').filter(Boolean);
+  if (segments.length <= 2) return path;
+  const lastTwo = segments.slice(-2).join('/');
+  return `~/.../${lastTwo}`;
+}
+
+function printTmuxBar(snapshot) {
+  const agent = snapshot.agent || '-';
+  const tool = snapshot.tool || '-';
+  const phase = snapshot.phase || 'idle';
+  const projectDir = formatProjectPath(snapshot.targetDir);
+  const dur = formatDurationCompact(snapshot.startedAt);
+
+  // Build core info
+  const parts = [];
+  parts.push(`\x1b[1;36m${projectDir}\x1b[0m`);
+  parts.push(`\x1b[1;35m${agent}\x1b[0m`);
+  parts.push(`\x1b[90m${tool}\x1b[0m`);
+
+  if (phase === 'active') {
+    parts.push(`\x1b[32m●\x1b[0m`);
+  } else if (phase === 'closed') {
+    parts.push(`\x1b[31m○\x1b[0m`);
+  } else {
+    parts.push(`\x1b[33m${phase}\x1b[0m`);
+  }
+
+  if (dur) {
+    parts.push(dur);
+  }
+
+  // Plan progress
+  const planDone = snapshot.stats?.plan_steps_done ?? 0;
+  const planTotal = snapshot.stats?.plan_steps_total ?? 0;
+  if (planTotal > 0) {
+    parts.push(`step ${planDone}/${planTotal}`);
+  }
+
+  // Context bar with absolute numbers
+  if (snapshot.run && snapshot.run.context_pct != null) {
+    const pct = Number(snapshot.run.context_pct) || 0;
+    parts.push(`ctx ${renderMiniBar(pct)}`);
+  } else if (snapshot.contextEstimated) {
+    const est = snapshot.contextEstimated;
+    const pct = est.pct ?? 0;
+    const used = est.estimatedTokens >= 1000 ? (est.estimatedTokens / 1000).toFixed(1) + 'k' : String(est.estimatedTokens);
+    const total = est.windowSize >= 1000 ? (est.windowSize / 1000).toFixed(1) + 'k' : String(est.windowSize);
+    parts.push(`ctx ${renderMiniBar(pct, 10, used, total)}`);
+  }
+
+  // Cost
+  if (snapshot.stats && snapshot.stats.tokens_total) {
+    const tokens = snapshot.stats.tokens_total;
+    const cost = snapshot.stats.cost_usd;
+    const tk = tokens >= 1000 ? (tokens / 1000).toFixed(1) + 'k' : tokens;
+    if (cost != null) {
+      parts.push(`$${cost.toFixed(2)} (${tk}tk)`);
+    } else {
+      parts.push(`${tk}tk`);
+    }
+  }
+
+  // Recent useful event (skip session_started boilerplate)
+  let lastEvent = null;
+  if (snapshot.recentEvents && snapshot.recentEvents.length > 0) {
+    for (let i = snapshot.recentEvents.length - 1; i >= 0; i--) {
+      const ev = snapshot.recentEvents[i];
+      const type = String(ev.type || '');
+      if (type !== 'session_started' && type !== 'session_closed') {
+        lastEvent = ev;
+        break;
+      }
+    }
+  }
+  if (lastEvent) {
+    const short = String(lastEvent.summary || lastEvent.type || '').slice(0, 40);
+    if (short) {
+      parts.push(`\x1b[90m${short}\x1b[0m`);
+    }
+  }
+
+  // Warning
+  if (snapshot.warning) {
+    parts.push(`\x1b[1;31m! ${snapshot.warning}\x1b[0m`);
+  }
+
+  // When running inside the tmux updater, omit newline so the line can be overwritten.
+  // When called directly by a user, append newline for clean shell prompt.
+  const suffix = process.env.AIOSON_TMUX_BAR ? '' : '\n';
+  process.stdout.write(parts.join(' │ ') + suffix);
+}
+
 function printLiveStatusSnapshot(snapshot, logger) {
   logger.log(`Live session: ${snapshot.sessionKey || 'none'}`);
   logger.log(`Phase: ${snapshot.phase}`);
@@ -819,11 +1059,17 @@ async function getLiveStatusSnapshot(targetDir, t, options = {}) {
     });
     state.stats = normalizeLiveStats(state.stats, planStats);
 
+    // Prefer run.agent_name when no explicit --agent was passed;
+    // this lets events emitted by other agents update the bar dynamically.
+    const effectiveAgent = options.agent
+      ? context.agentName
+      : (context.run?.agent_name || context.agentName);
+
     const snapshot = {
       ok: true,
       targetDir,
       dbPath,
-      agent: context.agentName,
+      agent: effectiveAgent,
       tool: state.tool_session || null,
       phase: context.phase,
       open: context.open,
@@ -839,10 +1085,20 @@ async function getLiveStatusSnapshot(targetDir, t, options = {}) {
       task: context.task,
       stats: state.stats,
       recentEvents: Array.isArray(state.last_events) && state.last_events.length > 0 ? state.last_events : context.recentEvents,
+      contextEstimated: state.context_estimated || null,
       warning: context.processState === 'dead' && context.phase === 'active'
         ? t('live.process_dead_warning')
         : null
     };
+
+    // Fallback: estimate context on-the-fly if not recorded at session start
+    if (!snapshot.contextEstimated && snapshot.phase !== 'idle') {
+      try {
+        snapshot.contextEstimated = await estimateContextSize(targetDir);
+      } catch {
+        // non-fatal
+      }
+    }
 
     return snapshot;
   } finally {
@@ -880,6 +1136,16 @@ async function runLiveStart({ args, options = {}, logger, t }) {
     throw new Error(t('live.tool_binary_not_found', { binary: toolBinary }));
   }
 
+  const useTmux = Boolean(options.tmux) || process.env.AIOSON_TMUX === '1';
+
+  // Pre-check tmux availability so we can warn early
+  if (useTmux && !noLaunch) {
+    const tmuxOk = await isTmuxAvailable();
+    if (!tmuxOk && !options.json) {
+      logger.log(t('live.tmux_not_found', { tool }));
+    }
+  }
+
   const { db, dbPath, runtimeDir } = await openRuntimeDb(targetDir);
 
   try {
@@ -895,56 +1161,107 @@ async function runLiveStart({ args, options = {}, logger, t }) {
         projectPath: targetDir
       });
 
-      const existingTool = state.tool_session || null;
-      if (existingTool && existingTool !== tool) {
-        throw new Error(t('live.tool_mismatch', { existing: existingTool, requested: tool }));
-      }
-
-      const attach = Boolean(options.attach);
-      let attachChild = null;
-      let attachResult = null;
-
-      if (attach && !noLaunch) {
-        attachChild = spawn(binaryPath, parseToolArgs(options['tool-args'] || options.toolArgs), {
-          cwd: targetDir,
-          env: process.env,
-          stdio: 'inherit'
-        });
-        state.child_pid = attachChild.pid || null;
-        if (existing.task?.task_key) {
-          const taskMeta = parseTaskMeta(existing.task);
-          taskMeta.child_pid = state.child_pid;
-          updateTask(db, { taskKey: existing.task.task_key, metaJson: taskMeta });
+      // ── Tmux session recovery: if tmux was killed, close the stale live session ──
+      if (useTmux) {
+        const sessionName = buildSessionName(targetDir, agentName);
+        const tmuxAlive = await hasSession(sessionName);
+        if (!tmuxAlive) {
+          // Tmux is gone — close the stale live session in DB and continue to create new
+          const now = new Date().toISOString();
+          updateRun(db, {
+            runKey: existing.run.run_key,
+            status: 'completed',
+            summary: 'Closed because tmux session was terminated',
+            eventType: 'session_closed',
+            phase: 'live',
+            message: 'Tmux session ended — live session auto-closed'
+          });
+          if (existing.task?.task_key) {
+            updateTask(db, {
+              taskKey: existing.task.task_key,
+              status: 'completed',
+              goal: 'Auto-closed after tmux termination'
+            });
+          }
+          await clearAgentSession(runtimeDir, agentName);
+          if (!options.json) {
+            logger.log(t('live.tmux_recreate', { agent: agentName, session: existing.sessionKey }));
+          }
+          // Fall through to create a new session below
+        } else {
+          // Tmux still alive — reattach instead of creating new
+          if (!options.json) {
+            logger.log(t('live.tmux_reattach', { agent: agentName, session: existing.sessionKey }));
+          }
+          const sessionName = buildSessionName(targetDir, agentName);
+          await attachSession(sessionName);
+          return {
+            ok: true,
+            targetDir,
+            dbPath,
+            tmux: true,
+            reused: true,
+            agent: existing.agentName,
+            tool: state.tool_session || tool,
+            taskKey: existing.task?.task_key || existing.sessionRef?.taskKey || null,
+            runKey: existing.run.run_key,
+            sessionKey: existing.sessionKey,
+            open: true
+          };
         }
+      } else {
+        // Non-tmux reuse logic (original behavior)
+        const existingTool = state.tool_session || null;
+        if (existingTool && existingTool !== tool) {
+          throw new Error(t('live.tool_mismatch', { existing: existingTool, requested: tool }));
+        }
+
+        const attach = Boolean(options.attach);
+        let attachChild = null;
+        let attachResult = null;
+
+        if (attach && !noLaunch) {
+          attachChild = spawn(binaryPath, parseToolArgs(options['tool-args'] || options.toolArgs), {
+            cwd: targetDir,
+            env: process.env,
+            stdio: 'inherit'
+          });
+          state.child_pid = attachChild.pid || null;
+          if (existing.task?.task_key) {
+            const taskMeta = parseTaskMeta(existing.task);
+            taskMeta.child_pid = state.child_pid;
+            updateTask(db, { taskKey: existing.task.task_key, metaJson: taskMeta });
+          }
+        }
+
+        await writeLiveState(runtimeDir, existing.sessionKey, state);
+
+        if (!options.json) {
+          logger.log(t('live.session_already_active', { agent: agentName, session: existing.sessionKey, runKey: existing.run.run_key, dbPath }));
+        }
+
+        if (attachChild) {
+          attachResult = await waitForChild(attachChild);
+        }
+
+        return {
+          ok: true,
+          targetDir,
+          dbPath,
+          agent: existing.agentName,
+          tool: state.tool_session || tool,
+          taskKey: existing.task?.task_key || existing.sessionRef?.taskKey || null,
+          runKey: existing.run.run_key,
+          sessionKey: existing.sessionKey,
+          pid: state.child_pid || null,
+          processState: detectProcessState(state.child_pid),
+          reused: true,
+          open: true,
+          attached: attach,
+          childExitCode: attachResult?.code ?? null,
+          childSignal: attachResult?.signal ?? null
+        };
       }
-
-      await writeLiveState(runtimeDir, existing.sessionKey, state);
-
-      if (!options.json) {
-        logger.log(t('live.session_already_active', { agent: agentName, session: existing.sessionKey, runKey: existing.run.run_key, dbPath }));
-      }
-
-      if (attachChild) {
-        attachResult = await waitForChild(attachChild);
-      }
-
-      return {
-        ok: true,
-        targetDir,
-        dbPath,
-        agent: existing.agentName,
-        tool: state.tool_session || tool,
-        taskKey: existing.task?.task_key || existing.sessionRef?.taskKey || null,
-        runKey: existing.run.run_key,
-        sessionKey: existing.sessionKey,
-        pid: state.child_pid || null,
-        processState: detectProcessState(state.child_pid),
-        reused: true,
-        open: true,
-        attached: attach,
-        childExitCode: attachResult?.code ?? null,
-        childSignal: attachResult?.signal ?? null
-      };
     }
 
     const now = new Date().toISOString();
@@ -994,17 +1311,46 @@ async function runLiveStart({ args, options = {}, logger, t }) {
 
     let child = null;
     let childResult = null;
+    let tmuxResult = null;
     if (!noLaunch) {
-      child = spawn(binaryPath, parseToolArgs(options['tool-args'] || options.toolArgs), {
-        cwd: targetDir,
-        env: process.env,
-        stdio: 'inherit'
-      });
-      taskMeta.child_pid = child.pid || null;
-      updateTask(db, {
-        taskKey,
-        metaJson: taskMeta
-      });
+      if (useTmux) {
+        const tmuxOk = await isTmuxAvailable();
+        if (tmuxOk) {
+          if (!options.json) {
+            logger.log(t('live.tmux_starting', { agent: agentName, tool }));
+          }
+          tmuxResult = await launchTmuxSession({
+            targetDir,
+            agentName,
+            tool,
+            binaryPath,
+            toolArgs: parseToolArgs(options['tool-args'] || options.toolArgs)
+          });
+        } else {
+          // Fallback to normal spawn if tmux not available
+          child = spawn(binaryPath, parseToolArgs(options['tool-args'] || options.toolArgs), {
+            cwd: targetDir,
+            env: process.env,
+            stdio: 'inherit'
+          });
+          taskMeta.child_pid = child.pid || null;
+          updateTask(db, {
+            taskKey,
+            metaJson: taskMeta
+          });
+        }
+      } else {
+        child = spawn(binaryPath, parseToolArgs(options['tool-args'] || options.toolArgs), {
+          cwd: targetDir,
+          env: process.env,
+          stdio: 'inherit'
+        });
+        taskMeta.child_pid = child.pid || null;
+        updateTask(db, {
+          taskKey,
+          metaJson: taskMeta
+        });
+      }
     }
 
     await writeAgentSession(runtimeDir, agentName, {
@@ -1051,6 +1397,14 @@ async function runLiveStart({ args, options = {}, logger, t }) {
       }]
     });
 
+    // Estimate context size for observability
+    try {
+      const ctxEst = await estimateContextSize(targetDir);
+      state.context_estimated = ctxEst;
+    } catch {
+      // non-fatal
+    }
+
     await writeLiveState(runtimeDir, sessionKey, state);
     await appendLiveEvent(runtimeDir, sessionKey, {
       ts: now,
@@ -1095,6 +1449,25 @@ async function runLiveStart({ args, options = {}, logger, t }) {
 
     if (child) {
       childResult = await waitForChild(child);
+    }
+
+    if (tmuxResult) {
+      return {
+        ok: true,
+        targetDir,
+        dbPath,
+        tmux: true,
+        sessionName: tmuxResult.sessionName,
+        agent: agentName,
+        tool,
+        taskKey,
+        runKey,
+        sessionKey,
+        pid: null,
+        processState: 'tmux',
+        reused: false,
+        open: true
+      };
     }
 
     return {
@@ -1426,7 +1799,13 @@ async function runLiveStatus({ args, options = {}, logger, t }) {
   if (!watchSeconds) {
     const snapshot = await getLiveStatusSnapshot(targetDir, t, options);
     if (!options.json) {
-      printLiveStatusSnapshot(snapshot, logger);
+      if (options.format === 'compact') {
+        printCompactStatus(snapshot, logger);
+      } else if (options.format === 'tmux-bar') {
+        printTmuxBar(snapshot, logger);
+      } else {
+        printLiveStatusSnapshot(snapshot, logger);
+      }
     }
     return snapshot;
   }
@@ -1442,7 +1821,13 @@ async function runLiveStatus({ args, options = {}, logger, t }) {
       if (process.stdout && process.stdout.isTTY) {
         process.stdout.write('\x1Bc');
       }
-      printLiveStatusSnapshot(snapshot, logger);
+      if (options.format === 'compact') {
+        printCompactStatus(snapshot, logger);
+      } else if (options.format === 'tmux-bar') {
+        printTmuxBar(snapshot, logger);
+      } else {
+        printLiveStatusSnapshot(snapshot, logger);
+      }
       if (stopped) break;
       await sleep(Math.round(watchSeconds * 1000));
     }
@@ -1639,3 +2024,48 @@ module.exports = {
   runLiveClose,
   runLiveList
 };
+
+// ── Context estimation helpers ──
+
+const CONTEXT_FILES = [
+  '.aioson/context/project.context.md',
+  '.aioson/context/spec.md',
+  '.aioson/context/features.md',
+  '.aioson/context/context-pack.md',
+  '.aioson/context/discovery.md',
+  '.aioson/context/architecture.md',
+  '.aioson/context/readiness.md',
+  '.aioson/context/design-doc.md',
+  '.aioson/context/skeleton-system.md'
+];
+
+async function estimateContextSize(projectDir) {
+  let totalBytes = 0;
+  const foundFiles = [];
+
+  for (const rel of CONTEXT_FILES) {
+    const filePath = path.join(projectDir, rel);
+    try {
+      const stat = await fs.stat(filePath);
+      if (stat.isFile()) {
+        totalBytes += stat.size;
+        foundFiles.push(rel);
+      }
+    } catch {
+      // ignore missing files
+    }
+  }
+
+  // Heuristic: ~4 chars per token (english-ish text)
+  const estimatedTokens = Math.round(totalBytes / 4);
+  // Default window size assumption (200k for Sonnet-class)
+  const windowSize = 200000;
+
+  return {
+    totalBytes,
+    estimatedTokens,
+    windowSize,
+    pct: Math.min(100, Math.round((estimatedTokens / windowSize) * 100)),
+    files: foundFiles
+  };
+}

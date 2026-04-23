@@ -152,9 +152,9 @@ module.exports = {
     help_runtime_emit:
       'aioson runtime:emit [path] --agent=<name> [--type=<event>] [--summary=<text>] [--title=<text>] [--refs=<file[,file2]>] [--plan-step=<id>] [--meta=<json>] [--json] [--locale=en]',
     help_live_start:
-      'aioson live:start [path] --tool=codex|claude|gemini|opencode --agent=<name> [--tool-bin=<binary>] [--tool-args=<args>] [--title=<text>] [--goal=<text>] [--plan=<file>] [--session=<key>] [--message=<text>] [--attach] [--no-launch] [--json] [--locale=en]',
+      'aioson live:start [path] --tool=codex|claude|gemini|opencode --agent=<name> [--tool-bin=<binary>] [--tool-args=<args>] [--title=<text>] [--goal=<text>] [--plan=<file>] [--session=<key>] [--message=<text>] [--attach] [--no-launch] [--tmux] [--json] [--locale=en]',
     help_live_status:
-      'aioson live:status [path] [--agent=<name>] [--limit=8] [--watch=2] [--json] [--locale=en]',
+      'aioson live:status [path] [--agent=<name>] [--limit=8] [--watch=2] [--format=compact|tmux-bar] [--json] [--locale=en]',
     help_live_handoff:
       'aioson live:handoff [path] --agent=<name> --to=<name> [--reason=<text>] [--summary=<text>] [--message=<text>] [--json] [--locale=en]',
     help_live_close:
@@ -975,6 +975,10 @@ module.exports = {
     handoff_recorded: 'Live handoff recorded: {from} -> {to} | {session} ({dbPath})',
     session_closed: 'Live session closed: {agent} | {session} ({dbPath})',
     process_dead_warning: 'Process is dead while the live session is still open. Close it manually with `aioson live:close . --status=failed`.',
+    tmux_not_found: 'tmux not found. Install tmux to use --tmux, or remove the flag to continue without terminal split.',
+    tmux_starting: 'Starting tmux session: agent {agent} | tool {tool} ...',
+    tmux_recreate: 'Previous tmux session ended. Recreating live session for {agent} ({session})...',
+    tmux_reattach: 'Tmux session still active. Reattaching to {agent} ({session})...',
     list_title: 'Live sessions ({count}):',
     list_empty: 'No live sessions found.',
     list_line: '- {session} | {agent} | {tool} | {phase} | {updatedAt}'

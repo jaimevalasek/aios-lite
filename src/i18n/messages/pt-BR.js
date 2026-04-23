@@ -150,9 +150,9 @@ module.exports = {
     help_runtime_emit:
       'aioson runtime:emit [path] --agent=<nome> [--type=<evento>] [--summary=<texto>] [--title=<texto>] [--refs=<arquivo[,arquivo2]>] [--plan-step=<id>] [--meta=<json>] [--json] [--locale=pt-BR]',
     help_live_start:
-      'aioson live:start [path] --tool=codex|claude|gemini|opencode --agent=<nome> [--tool-bin=<binario>] [--tool-args=<args>] [--title=<texto>] [--goal=<texto>] [--plan=<arquivo>] [--session=<chave>] [--message=<texto>] [--attach] [--no-launch] [--json] [--locale=pt-BR]',
+      'aioson live:start [path] --tool=codex|claude|gemini|opencode --agent=<nome> [--tool-bin=<binario>] [--tool-args=<args>] [--title=<texto>] [--goal=<texto>] [--plan=<arquivo>] [--session=<chave>] [--message=<texto>] [--attach] [--no-launch] [--tmux] [--json] [--locale=pt-BR]',
     help_live_status:
-      'aioson live:status [path] [--agent=<nome>] [--limit=8] [--watch=2] [--json] [--locale=pt-BR]',
+      'aioson live:status [path] [--agent=<nome>] [--limit=8] [--watch=2] [--format=compact|tmux-bar] [--json] [--locale=pt-BR]',
     help_live_handoff:
       'aioson live:handoff [path] --agent=<nome> --to=<nome> [--reason=<texto>] [--summary=<texto>] [--message=<texto>] [--json] [--locale=pt-BR]',
     help_live_close:
@@ -1006,6 +1006,10 @@ module.exports = {
     handoff_recorded: 'Handoff live registrado: {from} -> {to} | {session} ({dbPath})',
     session_closed: 'Sessao live encerrada: {agent} | {session} ({dbPath})',
     process_dead_warning: 'O processo morreu enquanto a sessao live ainda esta aberta. Encerre manualmente com `aioson live:close . --status=failed`.',
+    tmux_not_found: 'tmux nao encontrado. Instale tmux para usar --tmux, ou remova a flag para continuar sem split de terminal.',
+    tmux_starting: 'Iniciando sessao tmux: agente {agent} | ferramenta {tool} ...',
+    tmux_recreate: 'Sessao tmux anterior encerrada. Recriando sessao live para {agent} ({session})...',
+    tmux_reattach: 'Sessao tmux ainda ativa. Reanexando a {agent} ({session})...',
     list_title: 'Sessoes live ({count}):',
     list_empty: 'Nenhuma sessao live encontrada.',
     list_line: '- {session} | {agent} | {tool} | {phase} | {updatedAt}'
