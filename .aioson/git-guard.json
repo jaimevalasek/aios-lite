@@ -8,12 +8,14 @@
     "src/lib/git-commit-guard.js",
     "src/commands/context-health.js",
     "src/commands/context-trim.js",
-    "tests/**"
+    "tests/**",
+    "src/commands/live.js"
   ],
   "blockPaths": [
     "done/**",
     "references/**",
     "node_modules/**",
+    "integrations/**",
     "aioson-logs/**"
   ],
   "allowExtensions": [],

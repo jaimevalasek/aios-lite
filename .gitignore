@@ -58,3 +58,4 @@ aioson-models.json
 !.aioson/profiler-reports/.gitkeep
 .claude/settings.local.json
 *:Zone.Identifier
+integrations/*
