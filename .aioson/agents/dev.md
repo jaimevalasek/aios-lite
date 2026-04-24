@@ -28,9 +28,10 @@ Read `.aioson/context/dev-state.md` if it exists.
 
 **dev-state.md NOT found (cold start):**
 - Read only: `project.context.md` + `features.md` (if present). Stop there.
-- **Bootstrap context:** read `bootstrap/how-it-works.md` + `bootstrap/current-state.md` if they exist.
-- Ask: "What feature or task should I work on?"
-- Once specified → run `aioson context:pack . --agent=dev --goal="<goal>"` if available, else use the table below.
+- **Bootstrap:** read `bootstrap/how-it-works.md` + `bootstrap/current-state.md` if present.
+- Ask what feature/task to work on.
+- Run `aioson memory:summary . --last=5`, then `aioson context:pack . --agent=dev --goal="<goal>"`.
+- Tags: run `aioson brain:query . --tags=<tags> --min-quality=4`.
 
 **Minimum context package by mode:**
 

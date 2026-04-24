@@ -58,7 +58,11 @@ if (tags.length > 0) {
 // --- Load nodes ---
 let nodes = [];
 for (const brain of brainFiles) {
-  const brainPath = path.join(BRAINS_DIR, '..', brain.path);
+  const brainPath = path.isAbsolute(brain.path)
+    ? brain.path
+    : brain.path.startsWith('.aioson/brains/')
+      ? path.join(BRAINS_DIR, '..', '..', brain.path)
+      : path.join(BRAINS_DIR, brain.path);
   if (!fs.existsSync(brainPath)) {
     process.stderr.write(`Warning: brain file not found: ${brainPath}\n`);
     continue;

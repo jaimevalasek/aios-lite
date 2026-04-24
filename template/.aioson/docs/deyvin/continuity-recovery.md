@@ -10,17 +10,19 @@ Load this module at the start of every `@deyvin` session before touching code.
 
 Build context in this order:
 
-1. Read `.aioson/context/project.context.md`
-2. Check `.aioson/rules/`; load universal rules and rules targeted at `deyvin`
-3. Check `.aioson/docs/`; load docs referenced by rules or relevant to the task
-4. If `.aioson/context/context-pack.md` exists and matches the task, read it early
-5. Read `.aioson/context/memory-index.md` if present
-6. Read `.aioson/context/spec-current.md` and `.aioson/context/spec-history.md` if present
-7. Read `.aioson/context/spec.md` if present
-8. Read `.aioson/context/features.md` if present; if a feature is in progress, also read `prd-{slug}.md`, `requirements-{slug}.md`, and `spec-{slug}.md`
-9. Read `.aioson/context/skeleton-system.md`, `discovery.md`, and `architecture.md` as needed
-10. Inspect recent runtime state in `.aioson/runtime/aios.sqlite` when you need the latest tasks, runs, or activity
-11. Use Git only as a fallback after memory + runtime + rules/docs
+1. If `aioson` is available, run `aioson memory:summary . --last=5` as the fast continuity bootstrap
+2. Read `.aioson/context/project.context.md`
+3. Check `.aioson/rules/`; load universal rules and rules targeted at `deyvin`
+4. Check `.aioson/docs/`; load docs referenced by rules or relevant to the task
+5. If the task is specific, run `aioson context:pack . --agent=deyvin --goal="<task>"` and read the generated pack
+6. Read `.aioson/context/memory-index.md` if present
+7. Read `.aioson/context/spec-current.md` and `.aioson/context/spec-history.md` if present
+8. Read `.aioson/context/spec.md` if present
+9. Read `.aioson/context/features.md` if present; if a feature is in progress, also read `prd-{slug}.md`, `requirements-{slug}.md`, and `spec-{slug}.md`
+10. Read `.aioson/context/skeleton-system.md`, `discovery.md`, and `architecture.md` as needed
+11. When the task matches procedural tags, run `aioson brain:query . --tags=<tags> --min-quality=4`
+12. Inspect recent runtime state in `.aioson/runtime/aios.sqlite` when memory summary is insufficient
+13. Use Git only as a fallback after memory + runtime + rules/docs
 
 If the user asks what happened recently, answer from memory and runtime first. Go to Git only if those sources are insufficient.
 

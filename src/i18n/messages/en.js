@@ -22,6 +22,10 @@ module.exports = {
     help_context_validate: 'aioson context:validate [path] [--json] [--locale=en]',
     help_context_pack:
       'aioson context:pack [path] [--agent=<agent>] [--goal=<text>] [--module=<module-or-folder>] [--max-files=8] [--json] [--locale=en]',
+    help_memory_status: 'aioson memory:status [path] [--json] [--locale=en]',
+    help_memory_summary: 'aioson memory:summary [path] [--last=5] [--json] [--locale=en]',
+    help_brain_query:
+      'aioson brain:query [path] [--tags=<csv>] [--agent=<agent>] [--min-quality=4] [--format=compact|json|ids] [--json] [--locale=en]',
     help_setup_context:
       'aioson setup:context [path] [--defaults] [--project-type=web_app|api|site|script|dapp|desktop_app] [--framework=<name>] [--backend=<name>] [--frontend=<name>] [--database=<name>] [--auth=<name>] [--uiux=<name>] [--language=<bcp47-tag>] [--web3-enabled=true|false] [--locale=en]',
     help_locale_apply: 'aioson locale:apply [path] [--lang=<bcp47-tag>] [--dry-run] [--locale=en]',

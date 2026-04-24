@@ -568,6 +568,7 @@ function rankContextDoc(doc, { agent, goal, module }) {
   const lowerGoal = normalizeForLookup(goal);
   const lowerAgent = normalizeForLookup(agent);
   const lowerModule = normalizeForLookup(module);
+  const lookupText = `${lowerAgent} ${lowerGoal}`.trim();
 
   if (doc.relPath === PROJECT_CONTEXT_FILE) {
     score += 100;
@@ -614,19 +615,19 @@ function rankContextDoc(doc, { agent, goal, module }) {
     reasons.push('readiness signal');
   }
   if (doc.group === 'bootstrap') {
-    if (doc.relPath === BOOTSTRAP_WHAT_IS && /(product|analyst|what|identity|understand|discover)/.test(lowerAgent || lowerGoal)) {
+    if (doc.relPath === BOOTSTRAP_WHAT_IS && /(product|analyst|what|identity|understand|discover|bootstrap|memory|continuity)/.test(lookupText)) {
       score += 70;
       reasons.push('semantic system identity');
     }
-    if (doc.relPath === BOOTSTRAP_HOW_IT_WORKS && /(dev|architect|how|architecture|implement|refactor)/.test(lowerAgent || lowerGoal)) {
+    if (doc.relPath === BOOTSTRAP_HOW_IT_WORKS && /(dev|architect|how|architecture|implement|refactor|bootstrap|memory|continuity)/.test(lookupText)) {
       score += 70;
       reasons.push('semantic system mechanics');
     }
-    if (doc.relPath === BOOTSTRAP_WHAT_IT_DOES && /(product|analyst|feature|business|rule|workflow)/.test(lowerAgent || lowerGoal)) {
+    if (doc.relPath === BOOTSTRAP_WHAT_IT_DOES && /(product|analyst|feature|business|rule|workflow|bootstrap|memory|continuity)/.test(lookupText)) {
       score += 65;
       reasons.push('semantic features and business rules');
     }
-    if (doc.relPath === BOOTSTRAP_CURRENT_STATE && /(dev|qa|state|current|progress|status)/.test(lowerAgent || lowerGoal)) {
+    if (doc.relPath === BOOTSTRAP_CURRENT_STATE && /(dev|qa|state|current|progress|status|bootstrap|memory|continuity)/.test(lookupText)) {
       score += 65;
       reasons.push('semantic current state');
     }

@@ -23,6 +23,10 @@ module.exports = {
     help_context_validate: 'aioson context:validate [path] [--json] [--locale=fr]',
     help_context_pack:
       'aioson context:pack [path] [--agent=<agent>] [--goal=<texte>] [--module=<module-ou-dossier>] [--max-files=8] [--json] [--locale=fr]',
+    help_memory_status: 'aioson memory:status [path] [--json] [--locale=fr]',
+    help_memory_summary: 'aioson memory:summary [path] [--last=5] [--json] [--locale=fr]',
+    help_brain_query:
+      'aioson brain:query [path] [--tags=<csv>] [--agent=<agent>] [--min-quality=4] [--format=compact|json|ids] [--json] [--locale=fr]',
     help_setup_context:
       'aioson setup:context [path] [--defaults] [--project-type=web_app|api|site|script|dapp|desktop_app] [--framework=<name>] [--backend=<name>] [--frontend=<name>] [--database=<name>] [--auth=<name>] [--uiux=<name>] [--language=<bcp47-tag>] [--web3-enabled=true|false] [--locale=fr]',
     help_locale_apply: 'aioson locale:apply [path] [--lang=<bcp47-tag>] [--dry-run] [--locale=fr]',

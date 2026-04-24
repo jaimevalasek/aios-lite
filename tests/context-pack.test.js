@@ -144,3 +144,54 @@ test('context:pack generates a focused context pack from existing memory and sca
     await fs.rm(projectDir, { recursive: true, force: true });
   }
 });
+
+test('context:pack considers goal terms even when agent is provided for bootstrap memory', async () => {
+  const projectDir = await fs.mkdtemp(path.join(os.tmpdir(), 'aioson-context-pack-bootstrap-'));
+
+  try {
+    await fs.mkdir(path.join(projectDir, '.aioson', 'context', 'bootstrap'), { recursive: true });
+    await fs.writeFile(path.join(projectDir, '.aioson', 'context', 'project.context.md'), 'framework: node\n', 'utf8');
+    await fs.writeFile(path.join(projectDir, '.aioson', 'context', 'discovery.md'), '# Discovery\n', 'utf8');
+    await fs.writeFile(
+      path.join(projectDir, '.aioson', 'context', 'bootstrap', 'what-is.md'),
+      '# What Is\n\nSystem identity.\n',
+      'utf8'
+    );
+    await fs.writeFile(
+      path.join(projectDir, '.aioson', 'context', 'bootstrap', 'how-it-works.md'),
+      '# How It Works\n\nSystem mechanics.\n',
+      'utf8'
+    );
+    await fs.writeFile(
+      path.join(projectDir, '.aioson', 'context', 'bootstrap', 'what-it-does.md'),
+      '# What It Does\n\nSystem features.\n',
+      'utf8'
+    );
+    await fs.writeFile(
+      path.join(projectDir, '.aioson', 'context', 'bootstrap', 'current-state.md'),
+      '# Current State\n\nSystem state.\n',
+      'utf8'
+    );
+
+    const { t } = createTranslator('en');
+    const result = await runContextPack({
+      args: [projectDir],
+      options: {
+        agent: 'deyvin',
+        goal: 'active memory bootstrap',
+        'max-files': 8,
+        json: true
+      },
+      logger: createCollectLogger(),
+      t
+    });
+
+    const selected = result.selectedFiles.map((file) => file.path);
+    assert.ok(selected.includes('.aioson/context/bootstrap/what-is.md'));
+    assert.ok(selected.includes('.aioson/context/bootstrap/how-it-works.md'));
+    assert.ok(selected.includes('.aioson/context/bootstrap/what-it-does.md'));
+    assert.ok(selected.includes('.aioson/context/bootstrap/current-state.md'));
+  } finally {
+    await fs.rm(projectDir, { recursive: true, force: true });
+  }
+});

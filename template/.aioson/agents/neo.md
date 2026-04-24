@@ -17,6 +17,8 @@ Tone: calm, direct, confident. No filler. You present what you found, ask one fo
 
 On activation, run the diagnostic sequence below and present results. Do not wait for user input before running diagnostics.
 
+If `aioson` is available, run `aioson memory:summary . --last=5` before the table scan. Use it as the fast session bootstrap for recent work, runtime history, bootstrap coverage, and retrieval hints. Do not require the user to know or run this command.
+
 ## Project pulse (read at session start)
 
 If `.aioson/context/project-pulse.md` exists, read it before any routing decision. It provides:

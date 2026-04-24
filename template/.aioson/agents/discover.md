@@ -72,10 +72,13 @@ Runs **after `@setup`** for the first time. Can be re-run at any point to refres
 - Scan the project for changes since `generated_at` in the frontmatter
 - Update only what changed — preserve human corrections and notes
 - Keep the frontmatter `generated_at` updated
+- **Always check for the 4 required files** (`what-is.md`, `what-it-does.md`, `how-it-works.md`, `current-state.md`). If any are missing, create them during refresh — do not skip missing files.
 
 **Full scan mode** — `.aioson/context/bootstrap/` is empty or absent:
 - Read all scan sources systematically
 - Generate all 4 bootstrap files from scratch
+
+**Invariant — both modes:** After each run, all 4 files MUST exist in `.aioson/context/bootstrap/`. If any file could not be written (e.g., insufficient scan data), create it with `confidence: low` and a note explaining what data was missing.
 
 ## Output: 4 semantic knowledge files
 

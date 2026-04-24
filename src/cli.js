@@ -142,6 +142,8 @@ const { runSessionGuard } = require('./commands/session-guard');
 const { runDevlogProcess } = require('./commands/devlog-process');
 const { runDevlogWatch } = require('./commands/devlog-watch');
 const { runDevlogExportBrains } = require('./commands/devlog-export-brains');
+const { runBrainQuery } = require('./commands/brain-query');
+const { runMemoryStatus, runMemorySummary } = require('./commands/memory');
 const { runSpecSync } = require('./commands/spec-sync');
 const { runSpecStatus } = require('./commands/spec-status');
 const { runSpecCheckpoint } = require('./commands/spec-checkpoint');
@@ -461,6 +463,12 @@ const JSON_SUPPORTED_COMMANDS = new Set([
   'devlog-watch',
   'devlog:export-brains',
   'devlog-export-brains',
+  'brain:query',
+  'brain-query',
+  'memory:status',
+  'memory-status',
+  'memory:summary',
+  'memory-summary',
   'runtime:backup',
   'runtime-backup',
   'runtime:restore',
@@ -631,6 +639,9 @@ function printHelp(t, logger) {
   logHelpLine(t, logger, 'cli.help_agent_prompt');
   logHelpLine(t, logger, 'cli.help_context_validate');
   logHelpLine(t, logger, 'cli.help_context_pack');
+  logHelpLine(t, logger, 'cli.help_memory_status');
+  logHelpLine(t, logger, 'cli.help_memory_summary');
+  logHelpLine(t, logger, 'cli.help_brain_query');
   logHelpLine(t, logger, 'cli.help_setup_context');
   logHelpLine(t, logger, 'cli.help_locale_apply');
   logHelpLine(t, logger, 'cli.help_locale_diff');
@@ -1092,6 +1103,12 @@ async function main() {
       result = await runDevlogWatch({ args, options, logger: commandLogger });
     } else if (command === 'devlog:export-brains' || command === 'devlog-export-brains') {
       result = await runDevlogExportBrains({ args, options, logger: commandLogger });
+    } else if (command === 'brain:query' || command === 'brain-query') {
+      result = await runBrainQuery({ args, options, logger: commandLogger });
+    } else if (command === 'memory:status' || command === 'memory-status') {
+      result = await runMemoryStatus({ args, options, logger: commandLogger });
+    } else if (command === 'memory:summary' || command === 'memory-summary') {
+      result = await runMemorySummary({ args, options, logger: commandLogger });
     } else if (command === 'runtime:prune' || command === 'runtime-prune') {
       result = await runRuntimePrune({ args, options, logger: commandLogger, t });
     } else if (command === 'runtime:backup' || command === 'runtime-backup') {

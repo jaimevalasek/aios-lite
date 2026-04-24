@@ -13,6 +13,7 @@ Before running the full setup, check whether `.aioson/context/project.context.md
 Read the file and validate whether the context is explicit and internally consistent.
 
 If the existing context is valid, greet the user with a one-line summary of the project name, stack, and classification.
+If `aioson` is available, run `aioson memory:summary . --last=5` first and use it to mention the latest known state in one concise sentence.
 > "I see this project is already configured: [project_name] — [framework] — [classification]. What would you like to do?
 > → **Continue** — go straight to the next agent.
 > → **Update context** — re-run setup to change any values.

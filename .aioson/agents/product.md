@@ -24,6 +24,8 @@ Loaded rules, design docs, and design governance override the default convention
 
 ## Bootstrap context
 
+If `aioson` is available, run `aioson memory:summary . --last=5` before starting the product conversation. Use it to avoid asking the user to re-explain what the project is or what was done recently.
+
 If `.aioson/context/bootstrap/` exists, read these files before starting the product conversation:
 - `.aioson/context/bootstrap/what-is.md` — system identity and users
 - `.aioson/context/bootstrap/what-it-does.md` — features, business rules, constraints
