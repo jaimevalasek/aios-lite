@@ -145,6 +145,10 @@ function rulesDir(targetDir) {
   return path.join(targetDir, '.aioson', 'rules');
 }
 
+function designDocsDir(targetDir) {
+  return path.join(targetDir, '.aioson', 'design-docs');
+}
+
 function artifactPath(targetDir, name, slug) {
   const dir = contextDir(targetDir);
   if (slug) return path.join(dir, `${name}-${slug}.md`);
@@ -360,6 +364,31 @@ async function detectClassification(targetDir, slug) {
 
 // ─── Rules discovery ──────────────────────────────────────────────────────────
 
+function parseAgentList(value) {
+  if (value === undefined || value === null) return null;
+  const raw = String(value).trim();
+  if (!raw) return [];
+  if (raw === '[]') return [];
+  if (raw.startsWith('[') && raw.endsWith(']')) {
+    return raw
+      .slice(1, -1)
+      .split(',')
+      .map((item) => item.trim().replace(/^["']|["']$/g, ''))
+      .filter(Boolean);
+  }
+  return raw
+    .split(',')
+    .map((item) => item.trim().replace(/^["']|["']$/g, ''))
+    .filter(Boolean);
+}
+
+function appliesToAgent(frontmatter, agent) {
+  const agents = parseAgentList(frontmatter.agents);
+  if (agents === null) return true;
+  if (agents.length === 0) return true;
+  return agents.includes('all') || agents.includes(agent);
+}
+
 async function discoverRules(targetDir, agent) {
   const dir = rulesDir(targetDir);
   const rules = [];
@@ -373,16 +402,41 @@ async function discoverRules(targetDir, agent) {
 
   for (const entry of entries) {
     if (!entry.endsWith('.md')) continue;
+    if (entry.toLowerCase() === 'readme.md') continue;
     const content = await readFileSafe(path.join(dir, entry));
     if (!content) continue;
 
     // Check applicability: universal rules or agent-specific
     const fm = parseFrontmatter(content);
-    const applies = !fm.agents || fm.agents.includes('all') || fm.agents.includes(agent);
-    if (applies) rules.push(entry);
+    if (appliesToAgent(fm, agent)) rules.push(entry);
   }
 
-  return rules;
+  return rules.sort();
+}
+
+async function discoverDesignDocs(targetDir, agent) {
+  const dir = designDocsDir(targetDir);
+  const docs = [];
+
+  let entries;
+  try {
+    entries = await fs.readdir(dir);
+  } catch {
+    return docs;
+  }
+
+  for (const entry of entries) {
+    if (!entry.endsWith('.md')) continue;
+    if (entry.toLowerCase() === 'readme.md') continue;
+    const content = await readFileSafe(path.join(dir, entry));
+    if (!content) continue;
+
+    const fm = parseFrontmatter(content);
+    if (!appliesToAgent(fm, agent)) continue;
+    docs.push(path.join('.aioson', 'design-docs', entry).split(path.sep).join('/'));
+  }
+
+  return docs.sort();
 }
 
 // ─── Context package builder ──────────────────────────────────────────────────
@@ -576,6 +630,7 @@ module.exports = {
   detectTestRunner,
   contextDir,
   rulesDir,
+  designDocsDir,
   artifactPath,
   loadProjectContext,
   scanArtifacts,
@@ -585,7 +640,10 @@ module.exports = {
   readDevState,
   readProjectPulse,
   detectClassification,
+  parseAgentList,
+  appliesToAgent,
   discoverRules,
+  discoverDesignDocs,
   buildContextPackage,
   evaluateReadiness,
   detectStaleDevState,

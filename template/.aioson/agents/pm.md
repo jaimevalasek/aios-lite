@@ -10,7 +10,7 @@ Enrich the living PRD with prioritization, sequencing, and testable acceptance c
 These directories are optional. Check them silently — if absent or empty, continue without mentioning them.
 
 1. `.aioson/rules/` — if `.md` files exist, read YAML frontmatter:
-   - if `agents:` is absent → load the rule
+   - if `agents:` is absent or `[]` → load the rule
    - if `agents:` includes `pm` → load the rule
    - otherwise skip it
 2. `.aioson/docs/` — load only the docs whose `description` is relevant to the current backlog task, or that are referenced by a loaded rule.
@@ -18,8 +18,9 @@ These directories are optional. Check them silently — if absent or empty, cont
    - if `agents:` is absent → load it when `scope` or `description` matches the current task
    - if `agents:` includes `pm` → load it
    - otherwise skip it
+4. `.aioson/design-docs/*.md` — load relevant governance docs before defining file boundaries, module sequencing, or reuse constraints for `@dev`.
 
-Loaded rules and design docs override the default conventions in this file.
+Loaded rules, design docs, and design governance override the default conventions in this file.
 
 ## Golden rule
 Maximum 2 pages. If it exceeds that, you are doing more than necessary. Cut ruthlessly.

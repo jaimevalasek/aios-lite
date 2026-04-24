@@ -19,9 +19,10 @@ Agora, o AIOSON distribui **5 arquivos de best-practice** em `.aioson/design-doc
 ## Como funciona
 
 1. **Instalação automática**: ao rodar `aioson install` ou `aioson init`, os 5 arquivos são copiados para `.aioson/design-docs/`.
-2. **Carregamento incondicional**: `@dev` e `@deyvin` carregam **todos** os `.aioson/design-docs/*.md` em toda sessão, independentemente da classificação do projeto ou de ter rodado `@discovery-design-doc`.
-3. **Hard constraints**: esses arquivos são tratados como restrições duras — o agente deve segui-las, não sugerir ignorá-las.
-4. **Extensível**: você pode adicionar novos arquivos `.md` em `.aioson/design-docs/` e os agentes os carregarão automaticamente.
+2. **Descoberta determinística**: `aioson preflight . --agent=<agente>` lista os `.aioson/design-docs/*.md` aplicáveis em `design_governance`.
+3. **Carregamento eficiente**: `@dev`, `@deyvin`, `@architect`, `@analyst`, `@pm`, `@product` e `@sheldon` carregam os arquivos listados quando a tarefa envolve estrutura, nomenclatura, reuso, componentização ou tamanho de arquivo.
+4. **Hard constraints**: os arquivos carregados são tratados como restrições duras — o agente deve segui-las, não sugerir ignorá-las.
+5. **Extensível**: você pode adicionar novos arquivos `.md` em `.aioson/design-docs/`; com `agents: []` ou sem `agents`, eles aparecem para todos os agentes.
 
 ## Diferença entre governança, design-doc e PRD
 
@@ -55,4 +56,4 @@ Se você instalou o AIOSON antes da v1.7.3, rode:
 aioson doctor . --fix
 ```
 
-O doctor detectará se `.aioson/design-docs/` está faltando e copiará os arquivos padrão.
+O doctor detectará arquivos padrão faltantes em `.aioson/design-docs/` e copiará apenas o que falta. Arquivos existentes são project-local e são preservados em updates.

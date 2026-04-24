@@ -160,6 +160,29 @@ test('preflight: rules are listed when rules dir has files', async () => {
   assert.ok(result.rules.includes('my-rule.md'));
 });
 
+test('preflight: design governance docs are listed in json mode', async () => {
+  const tmpDir = await makeTmpDir();
+  await writeFile(tmpDir, '.aioson/design-docs/file-size.md',
+    '---\nagents: []\n---\n# File Size');
+  const result = await runPreflight({
+    args: [tmpDir],
+    options: { json: true, agent: 'dev' },
+    logger: makeLogger()
+  });
+  assert.ok(result.design_governance.includes('.aioson/design-docs/file-size.md'));
+  assert.deepEqual(result.context_layers.design_governance, result.design_governance);
+});
+
+test('preflight: human output lists design governance docs', async () => {
+  const tmpDir = await makeTmpDir();
+  const logger = makeLogger();
+  await writeFile(tmpDir, '.aioson/design-docs/naming.md',
+    '---\nagents: []\n---\n# Naming');
+  await runPreflight({ args: [tmpDir], options: { agent: 'dev' }, logger });
+  assert.ok(logger.lines.some((l) => l.includes('Design governance')));
+  assert.ok(logger.lines.some((l) => l.includes('.aioson/design-docs/naming.md')));
+});
+
 test('preflight: dev_state is populated from dev-state.md', async () => {
   const tmpDir = await makeTmpDir();
   await writeFile(tmpDir, '.aioson/context/dev-state.md',

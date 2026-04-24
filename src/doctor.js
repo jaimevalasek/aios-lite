@@ -34,6 +34,14 @@ const GEMINI_COMMAND_EXPECTATIONS = [
   { file: '.gemini/commands/aios-orchestrator.toml', agent: 'orchestrator' }
 ];
 
+const DESIGN_GOVERNANCE_FILES = [
+  '.aioson/design-docs/code-reuse.md',
+  '.aioson/design-docs/componentization.md',
+  '.aioson/design-docs/file-size.md',
+  '.aioson/design-docs/folder-structure.md',
+  '.aioson/design-docs/naming.md'
+];
+
 const GATEWAY_FILE_BY_CHECK_ID = {
   'gateway:claude:contract': 'CLAUDE.md',
   'gateway:codex:contract': 'AGENTS.md',
@@ -76,6 +84,16 @@ async function runDoctor(targetDir) {
       key: 'doctor.required_file',
       params: { rel },
       ok: await exists(filePath)
+    });
+  }
+
+  for (const rel of DESIGN_GOVERNANCE_FILES) {
+    checks.push({
+      id: `design-governance:${rel}`,
+      key: 'doctor.required_file',
+      params: { rel },
+      ok: await exists(path.join(targetDir, rel)),
+      hintKey: 'doctor.context_hint'
     });
   }
 
@@ -243,6 +261,29 @@ async function applyDoctorFixes(targetDir, report, options = {}) {
   } else {
     actions.push({
       id: 'gateway_contracts',
+      applied: false,
+      skipped: true,
+      count: 0,
+      missingCount: 0
+    });
+  }
+
+  const missingDesignGovernanceFiles = report.checks
+    .filter((check) => !check.ok && check.id.startsWith('design-governance:'))
+    .map((check) => check.params.rel);
+
+  if (missingDesignGovernanceFiles.length > 0) {
+    const restored = await restoreTemplateFiles(targetDir, missingDesignGovernanceFiles, { dryRun });
+    if (restored.length > 0) changedCount += restored.length;
+    actions.push({
+      id: 'design_governance',
+      applied: restored.length > 0,
+      count: restored.length,
+      missingCount: missingDesignGovernanceFiles.length
+    });
+  } else {
+    actions.push({
+      id: 'design_governance',
       applied: false,
       skipped: true,
       count: 0,

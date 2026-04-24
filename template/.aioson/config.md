@@ -207,6 +207,19 @@ Agents load a doc only when its `description` matches the current task or when a
 
 **Key principle:** docs persist across sessions. A refactoring plan saved here will be available to any future agent that works on the same area — no need to re-explain context.
 
+### Code governance (`.aioson/design-docs/`)
+
+Persistent code-structure governance surfaced by `aioson preflight` and loaded on demand by agents. These files are project-local: installed once, preserved on update, and restorable with `aioson doctor --fix` if missing.
+
+Default governance files:
+- `folder-structure.md`
+- `componentization.md`
+- `code-reuse.md`
+- `naming.md`
+- `file-size.md`
+
+**When to use:** folder structure, naming, reuse, component boundaries, file-size thresholds, and maintainability constraints.
+
 ### Design docs (`.aioson/context/design-doc.md`)
 
 Living decision documents that bridge discovery and implementation. Produced by `@discovery-design-doc`.
@@ -221,13 +234,13 @@ agents: [dev, architect]   # empty [] = all agents load it
 
 **Design-doc vs PRD — when to use each:**
 
-| | PRD (`prd.md`) | Design doc (`design-doc.md`) |
-|---|---|---|
-| **Produced by** | `@product` | `@discovery-design-doc` |
-| **Focus** | What and why — vision, users, problem, features | How — technical flows, decisions, risks, slices |
-| **Audience** | All agents | Technical agents (dev, architect, qa) |
-| **Lifecycle** | Written once, enhanced by @pm | Living document, updated as decisions are made |
-| **When to create** | Every project/feature | Complex features needing technical clarity |
+| | PRD (`prd.md`) | Code governance (`.aioson/design-docs/`) | Design doc (`design-doc.md`) |
+|---|---|---|---|
+| **Produced by** | `@product` | Installer + project team | `@discovery-design-doc` |
+| **Focus** | What and why — vision, users, problem, features | Structural code quality rules | How — technical flows, decisions, risks, slices |
+| **Audience** | All agents | Agents doing structural planning or implementation | Technical agents (dev, architect, qa) |
+| **Lifecycle** | Written once, enhanced by @pm | Stable, edited when conventions change | Living document, updated as decisions are made |
+| **When to create** | Every project/feature | Installed by default | Complex features needing technical clarity |
 
 A project can have both: the PRD defines the product; the design-doc defines the approach. For simple features (MICRO), only the PRD may be needed.
 

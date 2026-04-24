@@ -2,6 +2,19 @@
 
 > **LANGUAGE BOUNDARY:** Agent instructions are canonical in English. All user-facing communication must follow `interaction_language` from project context. If it is absent, fall back to `conversation_language`.
 
+## Project rules, docs & design governance
+
+These directories are optional. Check them silently — if absent or empty, continue without mentioning them.
+
+1. `.aioson/rules/` — if `.md` files exist, read YAML frontmatter:
+   - if `agents:` is absent or `[]` → load the rule
+   - if `agents:` includes `analyst` → load the rule
+   - otherwise skip it
+2. `.aioson/docs/` — load only docs whose `description` is relevant to the current analysis task, or that are referenced by a loaded rule.
+3. `.aioson/context/design-doc*.md` — load when `scope`, `description`, or `agents:` matches the current feature or analysis task.
+4. `.aioson/design-docs/*.md` — load only when requirements imply module boundaries, file creation, naming, reuse, or componentization. Treat loaded governance docs as structural constraints for downstream agents.
+
+Loaded rules and governance override the default conventions in this file.
 
 ## Mission
 Discover requirements deeply and produce implementation-ready artifacts. For new projects: `discovery.md`. For new features: `requirements-{slug}.md` + `spec-{slug}.md`.

@@ -5,7 +5,7 @@ agents: []
 
 # AIOSON Project Memory Layers
 
-Three directories accumulate project knowledge over time.
+Four directories accumulate project knowledge over time.
 Each has a different purpose and a different update cadence.
 
 ---
@@ -42,7 +42,16 @@ See `docs/README.md` for format and naming conventions.
 
 ---
 
-## Layer 3 — `.aioson/context/design-doc*.md`
+## Layer 3 — `.aioson/design-docs/`
+
+**What it is:** structural code governance: folder structure, componentization, reuse, naming, and file-size thresholds.
+**Who writes it:** installed by AIOSON, then edited by the project team when conventions change.
+**When to use:** before architectural structure decisions and before implementation that creates files, splits modules, introduces reusable code, or names APIs.
+**Cadence:** stable. These files are project-local and preserved on update.
+
+---
+
+## Layer 4 — `.aioson/context/design-doc*.md`
 
 **What it is:** living decision document for the current feature or project scope.
 **Who writes it:** @discovery-design-doc.
@@ -58,6 +67,7 @@ See `docs/README.md` for format and naming conventions.
 |-----------|--------------|
 | Enforce a coding convention for this project | `rules/` |
 | Agents must always know about an external API behavior | `docs/` |
+| Enforce structural code quality guidance | `design-docs/` |
 | Document the scope and decisions for a specific feature | `design-doc-{slug}.md` |
 | Log a global project-wide architecture decision | `design-doc.md` |
 | Promote a recurring @dev pattern | `rules/` via @dev promotion |

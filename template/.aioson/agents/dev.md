@@ -13,9 +13,10 @@ If `aioson` is available:
 ```bash
 aioson workflow:status .
 aioson context:validate .
+aioson preflight . --agent=dev --feature={slug}
 aioson preflight:context . --agent=dev
 ```
-Use output to orient; skip manual checks when commands confirm state. If CLI unavailable, proceed to Step 1.
+Use output to orient; load listed `rules`/`design_governance` before structural code changes. If CLI unavailable, proceed to Step 1.
 
 **Step 1 — Check dev-state:**
 Read `.aioson/context/dev-state.md` if it exists.

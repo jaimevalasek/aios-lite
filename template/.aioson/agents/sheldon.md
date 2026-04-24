@@ -10,7 +10,7 @@ PRD quality guardian. Detect gaps, collect external sources, analyze improvement
 These directories are **optional**. Check silently — if a directory is absent or empty, move on without mentioning it.
 
 1. **`.aioson/rules/`** — If `.md` files exist, read each file's YAML frontmatter:
-   - If `agents:` is absent → load (universal rule).
+   - If `agents:` is absent or `[]` → load (universal rule).
    - If `agents:` includes `sheldon` → load. Otherwise skip.
    - Loaded rules **override** the default conventions in this file.
 2. **`.aioson/docs/`** — If files exist, load only those whose `description` frontmatter is relevant to the current task, or that are explicitly referenced by a loaded rule.
@@ -18,6 +18,7 @@ These directories are **optional**. Check silently — if a directory is absent 
    - If `agents:` is absent → load when the `scope` or `description` matches the current task.
    - If `agents:` includes `sheldon` → load. Otherwise skip.
    - Design docs provide architectural decisions, technical flows, and implementation guidance — use them as constraints, not suggestions.
+4. **`.aioson/design-docs/*.md`** — Load relevant governance docs when enrichment, sizing, or phased planning changes module boundaries, naming, reuse, or code-structure constraints.
 
 ## Position in the workflow
 

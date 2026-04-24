@@ -24,6 +24,7 @@ const {
   detectFramework,
   detectTestRunner,
   discoverRules,
+  discoverDesignDocs,
   buildContextPackage,
   evaluateReadiness,
   detectStaleDevState,
@@ -59,6 +60,7 @@ async function runPreflight({ args, options = {}, logger }) {
   const testRunnerInfo = await detectTestRunner(targetDir);
   const testRunner = testRunnerInfo ? testRunnerInfo.name : (ctx.data.test_runner || null);
   const rules = agent ? await discoverRules(targetDir, agent) : [];
+  const designDocs = agent ? await discoverDesignDocs(targetDir, agent) : [];
   const contextPackage = buildContextPackage(agent || 'dev', slug, classification, artifacts, devState, manifest);
   const readiness = evaluateReadiness(artifacts, phaseGates, classification, agent, devState, slug);
 
@@ -126,6 +128,11 @@ async function runPreflight({ args, options = {}, logger }) {
     } : { exists: false },
     context_package: contextPackage,
     rules,
+    design_governance: designDocs,
+    context_layers: {
+      rules,
+      design_governance: designDocs
+    },
     readiness: readiness.status,
     readiness_blockers: readiness.blockers,
     readiness_warnings: readiness.warnings || [],
@@ -222,6 +229,12 @@ async function runPreflight({ args, options = {}, logger }) {
   if (rules.length > 0) {
     logger.log('');
     logger.log(`Rules loaded: ${rules.join(', ')}`);
+  }
+
+  if (designDocs.length > 0) {
+    logger.log('');
+    logger.log('Design governance (load if implementation or structural planning touches code):');
+    designDocs.forEach((p, i) => logger.log(`  ${i + 1}. ${p}`));
   }
 
   if (pulse.last_agent) {

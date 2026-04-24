@@ -13,6 +13,11 @@ const TEMPLATE_DIR = path.join(ROOT_DIR, 'template');
 const PROJECT_LOCAL_FILES = new Set([
   'aioson-models.json',
   '.aioson/context/design-doc.md',
+  '.aioson/design-docs/code-reuse.md',
+  '.aioson/design-docs/componentization.md',
+  '.aioson/design-docs/file-size.md',
+  '.aioson/design-docs/folder-structure.md',
+  '.aioson/design-docs/naming.md',
   '.aioson/git-guard.json'
 ]);
 // Baseline blockPaths merged into every project's git-guard.json on install and update.

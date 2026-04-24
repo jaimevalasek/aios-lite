@@ -20,7 +20,10 @@ const {
   readDevState,
   readProjectPulse,
   detectClassification,
+  parseAgentList,
+  appliesToAgent,
   discoverRules,
+  discoverDesignDocs,
   buildContextPackage,
   evaluateReadiness,
   detectStaleDevState,
@@ -312,6 +315,19 @@ test('detectClassification: reads from spec frontmatter when context has no clas
 
 // ── discoverRules ─────────────────────────────────────────────────────────────
 
+test('parseAgentList: parses inline YAML arrays', () => {
+  assert.deepEqual(parseAgentList('[dev, architect]'), ['dev', 'architect']);
+  assert.deepEqual(parseAgentList('[]'), []);
+  assert.deepEqual(parseAgentList(undefined), null);
+});
+
+test('appliesToAgent: treats missing agents and empty agents as universal', () => {
+  assert.equal(appliesToAgent({}, 'dev'), true);
+  assert.equal(appliesToAgent({ agents: '[]' }, 'dev'), true);
+  assert.equal(appliesToAgent({ agents: '[architect]' }, 'dev'), false);
+  assert.equal(appliesToAgent({ agents: '[dev, architect]' }, 'dev'), true);
+});
+
 test('discoverRules: returns empty array when rules dir missing', async () => {
   const tmpDir = await makeTmpDir();
   const result = await discoverRules(tmpDir, 'dev');
@@ -325,6 +341,23 @@ test('discoverRules: returns universal rules for any agent', async () => {
   assert.ok(result.includes('my-rule.md'));
 });
 
+test('discoverRules: treats agents empty array as universal', async () => {
+  const tmpDir = await makeTmpDir();
+  await writeFile(tmpDir, '.aioson/rules/canonical-path-contract.md',
+    '---\nagents: []\n---\n# Canonical Path Contract');
+  const result = await discoverRules(tmpDir, 'product');
+  assert.ok(result.includes('canonical-path-contract.md'));
+});
+
+test('discoverRules: ignores README.md', async () => {
+  const tmpDir = await makeTmpDir();
+  await writeFile(tmpDir, '.aioson/rules/README.md', '# Agent Rules');
+  await writeFile(tmpDir, '.aioson/rules/my-rule.md', '# Rule');
+  const result = await discoverRules(tmpDir, 'dev');
+  assert.ok(result.includes('my-rule.md'));
+  assert.ok(!result.includes('README.md'));
+});
+
 test('discoverRules: skips non-md files', async () => {
   const tmpDir = await makeTmpDir();
   await writeFile(tmpDir, '.aioson/rules/rule.md', '# Rule');
@@ -332,6 +365,24 @@ test('discoverRules: skips non-md files', async () => {
   const result = await discoverRules(tmpDir, 'dev');
   assert.ok(result.includes('rule.md'));
   assert.ok(!result.includes('ignore.txt'));
+});
+
+// ── discoverDesignDocs ────────────────────────────────────────────────────────
+
+test('discoverDesignDocs: returns design governance docs for any agent when universal', async () => {
+  const tmpDir = await makeTmpDir();
+  await writeFile(tmpDir, '.aioson/design-docs/file-size.md',
+    '---\nagents: []\n---\n# File Size');
+  const result = await discoverDesignDocs(tmpDir, 'dev');
+  assert.deepEqual(result, ['.aioson/design-docs/file-size.md']);
+});
+
+test('discoverDesignDocs: filters agent-specific governance docs', async () => {
+  const tmpDir = await makeTmpDir();
+  await writeFile(tmpDir, '.aioson/design-docs/dev-only.md',
+    '---\nagents: [dev]\n---\n# Dev only');
+  const result = await discoverDesignDocs(tmpDir, 'architect');
+  assert.deepEqual(result, []);
 });
 
 // ── buildContextPackage ───────────────────────────────────────────────────────

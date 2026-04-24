@@ -175,6 +175,29 @@ test('design-doc.md is preserved on update (not overwritten)', async () => {
   assert.equal(result.skipped.some(s => s.path === '.aioson/context/design-doc.md' && s.reason === 'project-local'), true);
 });
 
+test('design governance docs are copied on install and preserved on update', async () => {
+  const dir = await makeTempDir();
+  const installResult = await installTemplate(dir, { mode: 'install' });
+
+  const governanceRel = '.aioson/design-docs/file-size.md';
+  const governancePath = path.join(dir, governanceRel);
+  assert.equal(await fileExists(governancePath), true, 'design governance doc must be created on fresh install');
+  assert.equal(installResult.copied.includes(governanceRel), true);
+
+  const customContent = '# Custom file size rules\n';
+  await fs.writeFile(governancePath, customContent, 'utf8');
+
+  const updateResult = await installTemplate(dir, {
+    mode: 'update',
+    overwrite: true,
+    backupOnOverwrite: true
+  });
+
+  const readBack = await fs.readFile(governancePath, 'utf8');
+  assert.equal(readBack, customContent, 'design governance docs must not be overwritten on update');
+  assert.equal(updateResult.skipped.some(s => s.path === governanceRel && s.reason === 'project-local'), true);
+});
+
 test('git-guard.json custom entries are preserved on update (baseline entries are merged in)', async () => {
   const dir = await makeTempDir();
   await installTemplate(dir, { mode: 'install' });

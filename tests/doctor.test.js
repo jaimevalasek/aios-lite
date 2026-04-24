@@ -12,6 +12,15 @@ async function makeTempDir() {
   return fs.mkdtemp(path.join(os.tmpdir(), 'aioson-doctor-'));
 }
 
+async function fileExists(filePath) {
+  try {
+    await fs.access(filePath);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 async function writeValidContext(dir, language = 'en') {
   await fs.writeFile(
     path.join(dir, '.aioson/context/project.context.md'),
@@ -65,6 +74,32 @@ test('doctor --fix restores missing required files safely', async () => {
 
   const after = await runDoctor(dir);
   assert.equal(after.ok, true);
+});
+
+test('doctor detects and fixes missing design governance docs', async () => {
+  const dir = await makeTempDir();
+  await installTemplate(dir, { mode: 'install' });
+  await writeValidContext(dir, 'en');
+
+  const governancePath = path.join(dir, '.aioson/design-docs/file-size.md');
+  await fs.unlink(governancePath);
+
+  const before = await runDoctor(dir);
+  assert.equal(before.ok, false);
+  assert.equal(
+    before.checks.some((c) => c.id === 'design-governance:.aioson/design-docs/file-size.md' && !c.ok),
+    true
+  );
+
+  const fixResult = await applyDoctorFixes(dir, before);
+  assert.equal(
+    fixResult.actions.some((action) => action.id === 'design_governance' && action.applied),
+    true
+  );
+
+  const after = await runDoctor(dir);
+  assert.equal(after.ok, true);
+  assert.equal(await fileExists(governancePath), true);
 });
 
 test('doctor --fix dry-run does not change files', async () => {
