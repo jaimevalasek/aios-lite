@@ -128,6 +128,22 @@ test('gate:check: Gate D BLOCKED without QA sign-off', async () => {
   assert.ok(result.missing.some((m) => m.includes('QA')));
 });
 
+test('gate:check: blocked recommendation uses the real feature slug', async () => {
+  const tmpDir = await makeTmpDir();
+  await writeFile(tmpDir, '.aioson/context/spec-checkout.md',
+    '---\ngate_requirements: approved\ngate_design: approved\ngate_plan: approved\ngate_execution: pending_qa_confirmation\n---\n# Spec\n');
+
+  const result = await runGateCheck({
+    args: [tmpDir],
+    options: { json: true, feature: 'checkout', gate: 'D' },
+    logger: makeLogger()
+  });
+
+  assert.equal(result.result, 'BLOCKED');
+  assert.ok(result.recommendation.includes('--feature=checkout'));
+  assert.ok(!result.recommendation.includes('<slug>'));
+});
+
 test('gate:check: Gate D PASS with QA sign-off PASS', async () => {
   const tmpDir = await makeTmpDir();
   await writeFile(tmpDir, '.aioson/context/spec-checkout.md',
@@ -209,4 +225,3 @@ test('verify:gate: PASS quando contrato é atendido', async () => {
 
   assert.strictEqual(result.verdict, 'PASS');
 });
-

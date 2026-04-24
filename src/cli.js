@@ -159,6 +159,7 @@ const { runPulseUpdate } = require('./commands/pulse-update');
 const { runStateSave } = require('./commands/state-save');
 const { runFeatureClose } = require('./commands/feature-close');
 const { runGateCheck } = require('./commands/gate-check');
+const { runGateApprove } = require('./commands/gate-approve');
 const { runArtifactValidate } = require('./commands/artifact-validate');
 const { runWorkflowExecute } = require('./commands/workflow-execute');
 const { runRunnerQueueFromPlan } = require('./commands/runner-queue-from-plan');
@@ -524,6 +525,8 @@ const JSON_SUPPORTED_COMMANDS = new Set([
   'feature-close',
   'gate:check',
   'gate-check',
+  'gate:approve',
+  'gate-approve',
   'artifact:validate',
   'artifact-validate',
   'workflow:execute',
@@ -1182,6 +1185,8 @@ async function main() {
       result = await runFeatureClose({ args, options, logger: commandLogger });
     } else if (command === 'gate:check' || command === 'gate-check') {
       result = await runGateCheck({ args, options, logger: commandLogger });
+    } else if (command === 'gate:approve' || command === 'gate-approve') {
+      result = await runGateApprove({ args, options, logger: commandLogger });
     } else if (command === 'artifact:validate' || command === 'artifact-validate') {
       result = await runArtifactValidate({ args, options, logger: commandLogger });
     } else if (command === 'workflow:execute' || command === 'workflow-execute') {

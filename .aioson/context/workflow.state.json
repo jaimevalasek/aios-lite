@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "mode": "project",
+  "mode": "feature",
   "classification": "MEDIUM",
   "sequence": [
     "setup",
@@ -13,17 +13,21 @@
     "dev",
     "qa"
   ],
-  "current": "architect",
-  "next": "architect",
+  "current": "qa",
+  "next": "qa",
   "completed": [
     "setup",
     "product",
     "analyst",
-    "dev",
-    "qa"
+    "architect",
+    "pm",
+    "orchestrator",
+    "dev"
   ],
-  "skipped": [],
-  "featureSlug": null,
+  "skipped": [
+    "ux-ui"
+  ],
+  "featureSlug": "sdlc-process-upgrade",
   "detour": null,
-  "updatedAt": "2026-04-18T00:10:27.825Z"
+  "updatedAt": "2026-04-24T05:21:31.000Z"
 }

@@ -53,7 +53,8 @@ const CONTRACTS = {
   },
   pm: {
     artifacts: (targetDir, state) => {
-      if (state.mode === 'feature' && state.featureSlug) {
+      // @pm owns implementation-plan only for MEDIUM features (AC-SDLC-16)
+      if (state.mode === 'feature' && state.featureSlug && state.classification === 'MEDIUM') {
         return [`.aioson/context/implementation-plan-${state.featureSlug}.md`];
       }
       return [];

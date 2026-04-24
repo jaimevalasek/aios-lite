@@ -1,0 +1,380 @@
+{
+  "version": 1,
+  "generated_at": "2026-04-24T04:17:11.992Z",
+  "lanes": [
+    {
+      "lane": 1,
+      "lane_key": "lane-1",
+      "owner": "lane-1",
+      "scope_labels": [
+        "Phase 1: Canonical paths and source contract",
+        "Phase 7: Product and Sheldon flow",
+        "Keep docs/pt/ as system documentation only",
+        "Keep root plans/ as source-only material",
+        "Fix Product and Sheldon handoffs so the next agent, reason, artifacts, and pass criteria are explicit"
+      ],
+      "scope_keys": [
+        "phase-1-canonical-paths-and-source-contract",
+        "phase-7-product-and-sheldon-flow",
+        "keep-docs-pt-as-system-documentation-only",
+        "keep-root-plans-as-source-only-material",
+        "fix-product-and-sheldon-handoffs-so-the-next-agent-reason-artifacts-and-pass-criteria-are-explicit"
+      ],
+      "write_paths": [
+        ".aioson/rules/**",
+        ".aioson/context/project-map.md",
+        ".aioson/agents/product.md",
+        ".aioson/agents/sheldon.md",
+        "template/.aioson/agents/product.md",
+        "template/.aioson/agents/sheldon.md",
+        "template/.aioson/rules/**"
+      ],
+      "write_scope": [
+        {
+          "type": "scope_label",
+          "value": "Phase 1: Canonical paths and source contract"
+        },
+        {
+          "type": "scope_label",
+          "value": "Phase 7: Product and Sheldon flow"
+        },
+        {
+          "type": "scope_label",
+          "value": "Keep docs/pt/ as system documentation only"
+        },
+        {
+          "type": "scope_label",
+          "value": "Keep root plans/ as source-only material"
+        },
+        {
+          "type": "scope_label",
+          "value": "Fix Product and Sheldon handoffs so the next agent, reason, artifacts, and pass criteria are explicit"
+        },
+        {
+          "type": "path_pattern",
+          "value": ".aioson/rules/**"
+        },
+        {
+          "type": "path_pattern",
+          "value": ".aioson/context/project-map.md"
+        },
+        {
+          "type": "path_pattern",
+          "value": ".aioson/agents/product.md"
+        },
+        {
+          "type": "path_pattern",
+          "value": ".aioson/agents/sheldon.md"
+        },
+        {
+          "type": "path_pattern",
+          "value": "template/.aioson/agents/product.md"
+        },
+        {
+          "type": "path_pattern",
+          "value": "template/.aioson/agents/sheldon.md"
+        },
+        {
+          "type": "path_pattern",
+          "value": "template/.aioson/rules/**"
+        }
+      ],
+      "depends_on": [
+        "shared-decisions"
+      ]
+    },
+    {
+      "lane": 2,
+      "lane_key": "lane-2",
+      "owner": "lane-2",
+      "scope_labels": [
+        "Phase 2: Gates and approval UX",
+        "Phase 3: State continuity and next step",
+        "Phase 5: Handoff and preflight readiness",
+        "Add deterministic gate:approve",
+        "Make artifact:validate, preflight, and workflow dry-run agree on nextmissing and nextagent"
+      ],
+      "scope_keys": [
+        "phase-2-gates-and-approval-ux",
+        "phase-3-state-continuity-and-next-step",
+        "phase-5-handoff-and-preflight-readiness",
+        "add-deterministic-gate-approve",
+        "make-artifact-validate-preflight-and-workflow-dry-run-agree-on-nextmissing-and-nextagent"
+      ],
+      "write_paths": [
+        "src/preflight-engine.js",
+        "src/commands/gate-check.js",
+        "src/commands/gate-approve.js",
+        "src/commands/artifact-validate.js",
+        "src/commands/preflight.js",
+        "src/commands/workflow-execute.js",
+        "src/commands/workflow-status.js",
+        "src/cli.js",
+        "src/i18n/messages/**"
+      ],
+      "write_scope": [
+        {
+          "type": "scope_label",
+          "value": "Phase 2: Gates and approval UX"
+        },
+        {
+          "type": "scope_label",
+          "value": "Phase 3: State continuity and next step"
+        },
+        {
+          "type": "scope_label",
+          "value": "Phase 5: Handoff and preflight readiness"
+        },
+        {
+          "type": "scope_label",
+          "value": "Add deterministic gate:approve"
+        },
+        {
+          "type": "scope_label",
+          "value": "Make artifact:validate, preflight, and workflow dry-run agree on nextmissing and nextagent"
+        },
+        {
+          "type": "path_pattern",
+          "value": "src/preflight-engine.js"
+        },
+        {
+          "type": "path_pattern",
+          "value": "src/commands/gate-check.js"
+        },
+        {
+          "type": "path_pattern",
+          "value": "src/commands/gate-approve.js"
+        },
+        {
+          "type": "path_pattern",
+          "value": "src/commands/artifact-validate.js"
+        },
+        {
+          "type": "path_pattern",
+          "value": "src/commands/preflight.js"
+        },
+        {
+          "type": "path_pattern",
+          "value": "src/commands/workflow-execute.js"
+        },
+        {
+          "type": "path_pattern",
+          "value": "src/commands/workflow-status.js"
+        },
+        {
+          "type": "path_pattern",
+          "value": "src/cli.js"
+        },
+        {
+          "type": "path_pattern",
+          "value": "src/i18n/messages/**"
+        }
+      ],
+      "depends_on": [
+        "shared-decisions"
+      ]
+    },
+    {
+      "lane": 3,
+      "lane_key": "lane-3",
+      "owner": "lane-3",
+      "scope_labels": [
+        "Phase 4: Implementation plan ownership",
+        "Phase 6: Dev execution context",
+        "Align PM, orchestrator, dev, deyvin, QA prompts/templates and SDD references",
+        "Make active Sheldon manifest precedence explicit in prompts and state"
+      ],
+      "scope_keys": [
+        "phase-4-implementation-plan-ownership",
+        "phase-6-dev-execution-context",
+        "align-pm-orchestrator-dev-deyvin-qa-prompts-templates-and-sdd-references",
+        "make-active-sheldon-manifest-precedence-explicit-in-prompts-and-state"
+      ],
+      "write_paths": [
+        ".aioson/agents/pm.md",
+        ".aioson/agents/orchestrator.md",
+        ".aioson/agents/dev.md",
+        ".aioson/agents/deyvin.md",
+        ".aioson/agents/qa.md",
+        "template/.aioson/agents/pm.md",
+        "template/.aioson/agents/orchestrator.md",
+        "template/.aioson/agents/dev.md",
+        "template/.aioson/agents/deyvin.md",
+        "template/.aioson/agents/qa.md",
+        ".aioson/skills/process/aioson-spec-driven/references/**",
+        "template/.aioson/skills/process/aioson-spec-driven/references/**",
+        "src/handoff-contract.js"
+      ],
+      "write_scope": [
+        {
+          "type": "scope_label",
+          "value": "Phase 4: Implementation plan ownership"
+        },
+        {
+          "type": "scope_label",
+          "value": "Phase 6: Dev execution context"
+        },
+        {
+          "type": "scope_label",
+          "value": "Align PM, orchestrator, dev, deyvin, QA prompts/templates and SDD references"
+        },
+        {
+          "type": "scope_label",
+          "value": "Make active Sheldon manifest precedence explicit in prompts and state"
+        },
+        {
+          "type": "path_pattern",
+          "value": ".aioson/agents/pm.md"
+        },
+        {
+          "type": "path_pattern",
+          "value": ".aioson/agents/orchestrator.md"
+        },
+        {
+          "type": "path_pattern",
+          "value": ".aioson/agents/dev.md"
+        },
+        {
+          "type": "path_pattern",
+          "value": ".aioson/agents/deyvin.md"
+        },
+        {
+          "type": "path_pattern",
+          "value": ".aioson/agents/qa.md"
+        },
+        {
+          "type": "path_pattern",
+          "value": "template/.aioson/agents/pm.md"
+        },
+        {
+          "type": "path_pattern",
+          "value": "template/.aioson/agents/orchestrator.md"
+        },
+        {
+          "type": "path_pattern",
+          "value": "template/.aioson/agents/dev.md"
+        },
+        {
+          "type": "path_pattern",
+          "value": "template/.aioson/agents/deyvin.md"
+        },
+        {
+          "type": "path_pattern",
+          "value": "template/.aioson/agents/qa.md"
+        },
+        {
+          "type": "path_pattern",
+          "value": ".aioson/skills/process/aioson-spec-driven/references/**"
+        },
+        {
+          "type": "path_pattern",
+          "value": "template/.aioson/skills/process/aioson-spec-driven/references/**"
+        },
+        {
+          "type": "path_pattern",
+          "value": "src/handoff-contract.js"
+        }
+      ],
+      "depends_on": [
+        "lane-1",
+        "lane-2",
+        "shared-decisions"
+      ]
+    },
+    {
+      "lane": 4,
+      "lane_key": "lane-4",
+      "owner": "lane-4",
+      "scope_labels": [
+        "Phase 8: Memory, observability, docs and regression tests",
+        "Complete bootstrap refresh behavior",
+        "Validate devlog processing against fixtures",
+        "Align runtime/pulse recovery records",
+        "Update docs only after behavior is implemented",
+        "Run and extend regression tests"
+      ],
+      "scope_keys": [
+        "phase-8-memory-observability-docs-and-regression-tests",
+        "complete-bootstrap-refresh-behavior",
+        "validate-devlog-processing-against-fixtures",
+        "align-runtime-pulse-recovery-records",
+        "update-docs-only-after-behavior-is-implemented",
+        "run-and-extend-regression-tests"
+      ],
+      "write_paths": [
+        ".aioson/agents/discover.md",
+        "template/.aioson/agents/discover.md",
+        ".aioson/context/bootstrap/**",
+        "src/commands/devlog-process.js",
+        "src/commands/runtime.js",
+        "src/commands/pulse-update.js",
+        "docs/pt/**",
+        "test/**"
+      ],
+      "write_scope": [
+        {
+          "type": "scope_label",
+          "value": "Phase 8: Memory, observability, docs and regression tests"
+        },
+        {
+          "type": "scope_label",
+          "value": "Complete bootstrap refresh behavior"
+        },
+        {
+          "type": "scope_label",
+          "value": "Validate devlog processing against fixtures"
+        },
+        {
+          "type": "scope_label",
+          "value": "Align runtime/pulse recovery records"
+        },
+        {
+          "type": "scope_label",
+          "value": "Update docs only after behavior is implemented"
+        },
+        {
+          "type": "scope_label",
+          "value": "Run and extend regression tests"
+        },
+        {
+          "type": "path_pattern",
+          "value": ".aioson/agents/discover.md"
+        },
+        {
+          "type": "path_pattern",
+          "value": "template/.aioson/agents/discover.md"
+        },
+        {
+          "type": "path_pattern",
+          "value": ".aioson/context/bootstrap/**"
+        },
+        {
+          "type": "path_pattern",
+          "value": "src/commands/devlog-process.js"
+        },
+        {
+          "type": "path_pattern",
+          "value": "src/commands/runtime.js"
+        },
+        {
+          "type": "path_pattern",
+          "value": "src/commands/pulse-update.js"
+        },
+        {
+          "type": "path_pattern",
+          "value": "docs/pt/**"
+        },
+        {
+          "type": "path_pattern",
+          "value": "test/**"
+        }
+      ],
+      "depends_on": [
+        "lane-1",
+        "lane-2",
+        "lane-3",
+        "shared-decisions"
+      ]
+    }
+  ]
+}

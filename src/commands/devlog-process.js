@@ -27,10 +27,11 @@ function parseFrontmatter(content) {
 }
 
 function extractSection(content, sectionName) {
-  const re = new RegExp(`^#{1,4}\\s+${sectionName}[\\s\\S]*?(?=^#{1,4}\\s|\\Z)`, 'im');
+  const escapedSection = String(sectionName).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const re = new RegExp(`(?:^|\\r?\\n)#{1,4}\\s+${escapedSection}[^\\n]*\\r?\\n([\\s\\S]*?)(?=\\r?\\n#{1,4}\\s+|$)`, 'i');
   const match = content.match(re);
   if (!match) return '';
-  return match[0].replace(/^#{1,4}\s+\S[^\n]*\n/, '').trim();
+  return match[1].trim();
 }
 
 function extractListItems(content, sectionName) {
@@ -186,14 +187,15 @@ async function processDevlogFile(db, filePath) {
   }
 
   // Close run
-  updateRun(db, runKey, {
+  updateRun(db, {
+    runKey,
     status,
     summary,
     finishedAt
   });
 
   if (status === 'completed') {
-    updateTask(db, taskKey, { status: 'completed', finishedAt });
+    updateTask(db, { taskKey, status: 'completed', finishedAt });
   }
 
   // Mark devlog as processed

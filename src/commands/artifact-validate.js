@@ -61,12 +61,13 @@ async function runArtifactValidate({ args, options = {}, logger }) {
     ? (artifacts.implementation_plan.frontmatter.status || 'present')
     : null;
 
-  // Requirement count
+  // Requirement count. Accept both simple IDs (REQ-01) and slugged IDs
+  // (REQ-SDLC-01), because feature contracts use slugged identifiers.
   let reqCount = null;
   if (artifacts.requirements.exists && artifacts.requirements.content) {
-    const reqs = artifacts.requirements.content.match(/\bREQ[-\s]?\d+\b/g) || [];
-    const acs = artifacts.requirements.content.match(/\bAC[-\s]?\d+\b/g) || [];
-    reqCount = `${reqs.length} REQs, ${acs.length} ACs`;
+    const reqs = artifacts.requirements.content.match(/\bREQ(?:-[A-Z0-9]+)+\b/g) || [];
+    const acs = artifacts.requirements.content.match(/\bAC(?:-[A-Z0-9]+)+\b/g) || [];
+    reqCount = `${new Set(reqs).size} REQs, ${new Set(acs).size} ACs`;
   }
 
   // Conformance required?
@@ -138,6 +139,26 @@ async function runArtifactValidate({ args, options = {}, logger }) {
 
   const valid = missing.length === 0;
 
+  // Determine next_missing and next_agent (AC-SDLC-22)
+  const ARTIFACT_OWNER_MAP = {
+    'project.context.md': { agent: '@setup', reason: 'setup not complete' },
+    [`prd-${slug}.md`]: { agent: '@product', reason: 'PRD not produced yet' },
+    [`requirements-${slug}.md`]: { agent: '@analyst', reason: 'requirements not produced yet (Gate A)' },
+    'architecture.md': { agent: '@architect', reason: 'architecture not produced yet (Gate B)' },
+    [`implementation-plan-${slug}.md`]: { agent: '@pm', reason: 'implementation plan not produced yet (Gate C)' },
+    [`spec-${slug}.md`]: { agent: '@analyst', reason: 'spec not produced yet — @analyst seeds the feature memory' },
+    [`conformance-${slug}.yaml`]: { agent: '@analyst', reason: 'conformance contract missing — @analyst creates it for MEDIUM features' }
+  };
+
+  let nextMissing = null;
+  let nextAgent = null;
+  if (!valid && missing.length > 0) {
+    const firstMissing = missing[0];
+    nextMissing = firstMissing.name;
+    const ownerInfo = ARTIFACT_OWNER_MAP[firstMissing.name];
+    if (ownerInfo) nextAgent = `${ownerInfo.agent} (${ownerInfo.reason})`;
+  }
+
   const result = {
     ok: valid,
     feature: slug,
@@ -150,6 +171,8 @@ async function runArtifactValidate({ args, options = {}, logger }) {
     })),
     missing_required: missing.map((c) => c.name),
     missing_optional: missingOptional.map((c) => c.name),
+    next_missing: nextMissing,
+    next_agent: nextAgent,
     integrity: valid ? 'VALID' : 'INVALID'
   };
 
@@ -179,6 +202,12 @@ async function runArtifactValidate({ args, options = {}, logger }) {
 
   if (valid && missingOptional.length > 0) {
     logger.log(`Missing optional: ${missingOptional.map((c) => c.name).join(', ')} (${classification || 'SMALL'} — acceptable)`);
+  }
+
+  if (!valid && nextAgent) {
+    logger.log('');
+    logger.log(`Next missing: ${nextMissing}`);
+    logger.log(`Next agent: ${nextAgent}`);
   }
 
   logger.log('');

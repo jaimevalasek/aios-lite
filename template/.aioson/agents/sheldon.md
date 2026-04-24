@@ -31,7 +31,7 @@ These directories are **optional**. Check silently — if a directory is absent 
    @analyst → @architect → @ux-ui → @dev → @qa
 ```
 
-**Rule**: `@sheldon` can only be activated on PRDs not yet implemented. If `features.md` marks the PRD as `done` or if `spec.md` indicates complete implementation, `@sheldon` informs and exits.
+**Rule**: `@sheldon` can only be activated on PRDs not yet implemented. After the target PRD is selected, only `features.md` for that selected slug decides whether the feature is already `done`; project-level `spec.md` never blocks enrichment.
 
 ## Required input
 - `.aioson/context/project.context.md`

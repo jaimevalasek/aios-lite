@@ -187,7 +187,7 @@ test('workflow:execute: dry-run predicts blockers for an active stage with missi
   assert.equal(result.ok, true);
   assert.equal(result.resumed, true);
   assert.equal(devStep.status, 'active');
-  assert.ok(devStep.predicted_blockers.some((item) => item.includes('gate C')));
+  assert.ok(devStep.predicted_blockers.some((item) => item.toLowerCase().includes('gate c')));
 });
 
 test('workflow:execute: resumes an existing feature workflow and writes a checkpoint file', async () => {
@@ -528,4 +528,117 @@ test('workflow:execute: parallel_guard is null when no --lane is provided', asyn
 
   assert.equal(result.ok, true);
   assert.equal(result.parallel_guard, null);
+});
+
+// ── AC-SDLC-08: gate-blocked message format (gate:approve + responsible agent) ─
+
+// Note: the default MEDIUM feature sequence is ['product', 'analyst', 'dev', 'pentester', 'qa'].
+// architect/orchestrator/pm are not in the default feature sequence.
+// These tests use a custom workflow.config.json to include the relevant agent in the sequence,
+// or use 'qa' (which has gate_before='C' and IS in the default feature sequence).
+
+test('workflow:execute: blocked step message includes gate:approve command (Gate A → architect custom sequence)', async () => {
+  const tmpDir = await makeTmpDir();
+  await writeFile(tmpDir, '.aioson/context/project.context.md', '---\nclassification: SMALL\n---');
+  await writeFile(tmpDir, '.aioson/context/prd-feat.md', '# PRD');
+  // Custom workflow.config.json includes architect so Gate A blocking is visible
+  await writeFile(
+    tmpDir,
+    '.aioson/context/workflow.config.json',
+    JSON.stringify({
+      version: 1,
+      feature: {
+        SMALL: ['product', 'analyst', 'architect', 'dev', 'qa']
+      }
+    }, null, 2)
+  );
+  // No requirements → Gate A (requirements) not approved → architect blocked
+
+  const result = await runWorkflowExecute({
+    args: [tmpDir],
+    options: { json: true, feature: 'feat', 'dry-run': true },
+    logger: makeLogger()
+  });
+
+  assert.equal(result.ok, true);
+  const architectStep = result.steps.find((s) => s.agent === 'architect');
+  assert.ok(architectStep, 'architect step must exist in custom sequence');
+  assert.equal(architectStep.status, 'blocked', 'architect must be blocked without Gate A');
+  assert.ok(architectStep.predicted_blockers.length > 0, 'architect must have predicted blockers');
+
+  const blockerMsg = architectStep.predicted_blockers[0];
+  assert.ok(
+    blockerMsg.includes('gate:approve'),
+    `blocker message must include gate:approve command, got: ${blockerMsg}`
+  );
+  assert.ok(
+    blockerMsg.includes('--gate=A'),
+    `blocker message must include --gate=A, got: ${blockerMsg}`
+  );
+  assert.ok(
+    blockerMsg.toLowerCase().includes('responsible'),
+    `blocker message must include responsible agent, got: ${blockerMsg}`
+  );
+});
+
+test('workflow:execute: blocked step message includes feature slug in gate:approve command', async () => {
+  const tmpDir = await makeTmpDir();
+  await writeFile(tmpDir, '.aioson/context/project.context.md', '---\nclassification: SMALL\n---');
+  await writeFile(tmpDir, '.aioson/context/prd-my-feature.md', '# PRD');
+  await writeFile(
+    tmpDir,
+    '.aioson/context/workflow.config.json',
+    JSON.stringify({ version: 1, feature: { SMALL: ['product', 'analyst', 'architect', 'dev', 'qa'] } }, null, 2)
+  );
+
+  const result = await runWorkflowExecute({
+    args: [tmpDir],
+    options: { json: true, feature: 'my-feature', 'dry-run': true },
+    logger: makeLogger()
+  });
+
+  assert.equal(result.ok, true);
+  const architectStep = result.steps.find((s) => s.agent === 'architect');
+  assert.ok(architectStep && architectStep.predicted_blockers.length > 0, 'architect must be blocked and have blockers');
+
+  const blockerMsg = architectStep.predicted_blockers[0];
+  assert.ok(
+    blockerMsg.includes('--feature=my-feature'),
+    `blocker must include feature slug in gate:approve command, got: ${blockerMsg}`
+  );
+});
+
+test('workflow:execute: Gate C blocked qa step names @pm or @dev as responsible', async () => {
+  const tmpDir = await makeTmpDir();
+  // MEDIUM feature sequence = ['product', 'analyst', 'dev', 'pentester', 'qa']
+  // qa has gate_before='C' and IS in the default MEDIUM feature sequence
+  await writeFile(tmpDir, '.aioson/context/project.context.md', '---\nclassification: MEDIUM\n---');
+  await writeFile(tmpDir, '.aioson/context/prd-feat.md', '# PRD');
+  await writeFile(tmpDir, '.aioson/context/requirements-feat.md', '# Reqs');
+  await writeFile(tmpDir, '.aioson/context/spec-feat.md',
+    '---\ngate_requirements: approved\ngate_design: approved\ngate_plan: pending\n---\n# Spec');
+  // Gate C (plan) = pending → qa step blocked
+
+  const result = await runWorkflowExecute({
+    args: [tmpDir],
+    options: { json: true, feature: 'feat', 'dry-run': true, classification: 'MEDIUM' },
+    logger: makeLogger()
+  });
+
+  assert.equal(result.ok, true);
+  // qa is in MEDIUM feature sequence and has gate_before='C'
+  const qaStep = result.steps.find((s) => s.agent === 'qa');
+  assert.ok(qaStep, 'qa step must exist in MEDIUM feature sequence');
+  assert.equal(qaStep.status, 'blocked', 'qa must be blocked when Gate C is pending');
+  assert.ok(qaStep.predicted_blockers.length > 0, 'qa must have predicted blockers');
+
+  const blockerMsg = qaStep.predicted_blockers[0];
+  assert.ok(
+    blockerMsg.toLowerCase().includes('@pm') || blockerMsg.toLowerCase().includes('@dev'),
+    `Gate C blocker must mention @pm or @dev, got: ${blockerMsg}`
+  );
+  assert.ok(
+    blockerMsg.includes('--gate=C'),
+    `Gate C blocker must include --gate=C, got: ${blockerMsg}`
+  );
 });

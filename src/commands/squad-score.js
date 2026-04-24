@@ -282,12 +282,16 @@ async function runSquadScore({ args = [], options = {}, logger = console, transl
   try {
     const { openRuntimeDb } = require('../runtime-store');
     const { db } = openRuntimeDb(projectDir);
-    const now = new Date().toISOString();
-    const stmt = db.prepare('INSERT OR REPLACE INTO squad_scores (squad_slug, dimension, score, max_score, details_json, scored_at) VALUES (?, ?, ?, ?, ?, ?)');
-    stmt.run(slug, 'completude', d1.score, d1.max, JSON.stringify(d1.details), now);
-    stmt.run(slug, 'profundidade', d2.score, d2.max, JSON.stringify(d2.details), now);
-    stmt.run(slug, 'qualidade', d3.score, d3.max, JSON.stringify(d3.details), now);
-    stmt.run(slug, 'potencial', d4.score, d4.max, JSON.stringify(d4.details), now);
+    try {
+      const now = new Date().toISOString();
+      const stmt = db.prepare('INSERT OR REPLACE INTO squad_scores (squad_slug, dimension, score, max_score, details_json, scored_at) VALUES (?, ?, ?, ?, ?, ?)');
+      stmt.run(slug, 'completude', d1.score, d1.max, JSON.stringify(d1.details), now);
+      stmt.run(slug, 'profundidade', d2.score, d2.max, JSON.stringify(d2.details), now);
+      stmt.run(slug, 'qualidade', d3.score, d3.max, JSON.stringify(d3.details), now);
+      stmt.run(slug, 'potencial', d4.score, d4.max, JSON.stringify(d4.details), now);
+    } finally {
+      db.close();
+    }
   } catch { /* runtime not available */ }
 
   return {

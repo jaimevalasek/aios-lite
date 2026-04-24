@@ -60,6 +60,13 @@ const GATE_NAMES = {
   D: 'execution'
 };
 
+const GATE_RESPONSIBLE_AGENT = {
+  A: '@analyst',
+  B: '@architect',
+  C: '@pm (for MEDIUM) or @dev (for SMALL/MICRO)',
+  D: '@qa'
+};
+
 async function readJsonIfExists(filePath) {
   if (!(await exists(filePath))) return null;
   try {
@@ -246,7 +253,13 @@ async function buildExecutionPlan(targetDir, slug, classification, workflowState
 
     const predictedBlockers = [];
     if (status !== 'completed' && status !== 'skipped' && meta.gate_before && !isGateApproved(gates, meta.gate_before)) {
-      predictedBlockers.push(`gate ${meta.gate_before} not approved`);
+      const responsible = GATE_RESPONSIBLE_AGENT[meta.gate_before] || 'previous agent';
+      const featureArg = slug ? ` --feature=${slug}` : '';
+      predictedBlockers.push(
+        `Gate ${meta.gate_before} (${GATE_NAMES[meta.gate_before] || meta.gate_before}) not approved — ` +
+        `responsible: ${responsible} — ` +
+        `approve with: aioson gate:approve .${featureArg} --gate=${meta.gate_before}`
+      );
       if (status === 'pending') status = 'blocked';
     }
 

@@ -1,0 +1,130 @@
+{
+  "version": 1,
+  "generated_at": "2026-04-24T04:17:11.992Z",
+  "project_name": "aioson",
+  "classification": "MEDIUM",
+  "workers": 4,
+  "lane_strategy": "isolated-lanes",
+  "merge_strategy": "lane-index-asc",
+  "source_file": null,
+  "lanes": [
+    {
+      "lane": 1,
+      "lane_key": "lane-1",
+      "owner": "lane-1",
+      "status_file": ".aioson/context/parallel/lane-1.status.md",
+      "scope_keys": [
+        "phase-1-canonical-paths-and-source-contract",
+        "phase-7-product-and-sheldon-flow",
+        "keep-docs-pt-as-system-documentation-only",
+        "keep-root-plans-as-source-only-material",
+        "fix-product-and-sheldon-handoffs-so-the-next-agent-reason-artifacts-and-pass-criteria-are-explicit"
+      ],
+      "write_paths": [
+        ".aioson/rules/**",
+        ".aioson/context/project-map.md",
+        ".aioson/agents/product.md",
+        ".aioson/agents/sheldon.md",
+        "template/.aioson/agents/product.md",
+        "template/.aioson/agents/sheldon.md",
+        "template/.aioson/rules/**"
+      ],
+      "merge_rank": 1,
+      "depends_on": [
+        "shared-decisions"
+      ]
+    },
+    {
+      "lane": 2,
+      "lane_key": "lane-2",
+      "owner": "lane-2",
+      "status_file": ".aioson/context/parallel/lane-2.status.md",
+      "scope_keys": [
+        "phase-2-gates-and-approval-ux",
+        "phase-3-state-continuity-and-next-step",
+        "phase-5-handoff-and-preflight-readiness",
+        "add-deterministic-gate-approve",
+        "make-artifact-validate-preflight-and-workflow-dry-run-agree-on-nextmissing-and-nextagent"
+      ],
+      "write_paths": [
+        "src/preflight-engine.js",
+        "src/commands/gate-check.js",
+        "src/commands/gate-approve.js",
+        "src/commands/artifact-validate.js",
+        "src/commands/preflight.js",
+        "src/commands/workflow-execute.js",
+        "src/commands/workflow-status.js",
+        "src/cli.js",
+        "src/i18n/messages/**"
+      ],
+      "merge_rank": 2,
+      "depends_on": [
+        "shared-decisions"
+      ]
+    },
+    {
+      "lane": 3,
+      "lane_key": "lane-3",
+      "owner": "lane-3",
+      "status_file": ".aioson/context/parallel/lane-3.status.md",
+      "scope_keys": [
+        "phase-4-implementation-plan-ownership",
+        "phase-6-dev-execution-context",
+        "align-pm-orchestrator-dev-deyvin-qa-prompts-templates-and-sdd-references",
+        "make-active-sheldon-manifest-precedence-explicit-in-prompts-and-state"
+      ],
+      "write_paths": [
+        ".aioson/agents/pm.md",
+        ".aioson/agents/orchestrator.md",
+        ".aioson/agents/dev.md",
+        ".aioson/agents/deyvin.md",
+        ".aioson/agents/qa.md",
+        "template/.aioson/agents/pm.md",
+        "template/.aioson/agents/orchestrator.md",
+        "template/.aioson/agents/dev.md",
+        "template/.aioson/agents/deyvin.md",
+        "template/.aioson/agents/qa.md",
+        ".aioson/skills/process/aioson-spec-driven/references/**",
+        "template/.aioson/skills/process/aioson-spec-driven/references/**",
+        "src/handoff-contract.js"
+      ],
+      "merge_rank": 3,
+      "depends_on": [
+        "lane-1",
+        "lane-2",
+        "shared-decisions"
+      ]
+    },
+    {
+      "lane": 4,
+      "lane_key": "lane-4",
+      "owner": "lane-4",
+      "status_file": ".aioson/context/parallel/lane-4.status.md",
+      "scope_keys": [
+        "phase-8-memory-observability-docs-and-regression-tests",
+        "complete-bootstrap-refresh-behavior",
+        "validate-devlog-processing-against-fixtures",
+        "align-runtime-pulse-recovery-records",
+        "update-docs-only-after-behavior-is-implemented",
+        "run-and-extend-regression-tests"
+      ],
+      "write_paths": [
+        ".aioson/agents/discover.md",
+        "template/.aioson/agents/discover.md",
+        ".aioson/context/bootstrap/**",
+        "src/commands/devlog-process.js",
+        "src/commands/runtime.js",
+        "src/commands/pulse-update.js",
+        "docs/pt/**",
+        "test/**"
+      ],
+      "merge_rank": 4,
+      "depends_on": [
+        "lane-1",
+        "lane-2",
+        "lane-3",
+        "shared-decisions"
+      ]
+    }
+  ]
+}

@@ -19,6 +19,7 @@ const {
   fileExists,
   parseGatesFromSpec,
   parseFrontmatter,
+  detectClassification,
   GATE_NAMES,
   GATE_ALIASES
 } = require('../preflight-engine');
@@ -52,6 +53,7 @@ async function checkGate(targetDir, slug, gateLetter) {
   const specContent = await readFileSafe(specFile);
   const gates = specContent ? parseGatesFromSpec(specContent) : {};
   const fm = specContent ? parseFrontmatter(specContent) : {};
+  const classification = await detectClassification(targetDir, slug);
 
   const gateName = GATE_NAMES[gateLetter];
   const gateStatus = gates[gateName] || 'pending';
@@ -79,12 +81,19 @@ async function checkGate(targetDir, slug, gateLetter) {
     const exists = await fileExists(filePath);
     if (exists) {
       let detail = null;
+      let ok = true;
       const content = await readFileSafe(filePath);
       if (content) {
         const fileFm = parseFrontmatter(content);
-        if (fileFm.status) detail = `status: ${fileFm.status}`;
+        const status = fileFm.status ? String(fileFm.status).toLowerCase() : null;
+        if (status) detail = `status: ${status}`;
+
+        if (gateLetter === 'C' && status !== 'approved') {
+          ok = false;
+          missing.push(`${fileName} status is ${status || 'missing'} — @pm must approve the implementation plan`);
+        }
       }
-      evidence.push({ type: 'artifact', file: fileName, exists: true, detail, ok: true });
+      evidence.push({ type: 'artifact', file: fileName, exists: true, detail, ok });
     } else {
       evidence.push({ type: 'artifact', file: fileName, exists: false, ok: false });
       missing.push(`${fileName} not found`);
@@ -130,11 +139,21 @@ async function checkGate(targetDir, slug, gateLetter) {
 
   let recommendation = '';
   if (result === 'PASS') {
-    const nextAgents = { A: '@architect', B: '@dev or @pm', C: '@dev', D: 'feature complete' };
+    const nextAgents = {
+      A: '@architect',
+      B: classification === 'MEDIUM' ? '@pm' : '@dev',
+      C: classification === 'MEDIUM' ? '@orchestrator' : '@dev',
+      D: 'feature complete'
+    };
     recommendation = `${nextAgents[gateLetter] || 'proceed'} can proceed`;
   } else {
-    const fixAgents = { A: 'complete requirements (@analyst)', B: 'complete design (@architect)', C: 'approve implementation plan', D: 'complete implementation and run @qa' };
-    recommendation = `BLOCKED — ${fixAgents[gateLetter] || 'resolve missing items'} first`;
+    const fixAgents = {
+      A: `activate @analyst to produce requirements-${slug}.md, then run: aioson gate:approve . --feature=${slug} --gate=A`,
+      B: `activate @architect to produce architecture.md, then run: aioson gate:approve . --feature=${slug} --gate=B`,
+      C: `activate @pm to produce and approve implementation-plan-${slug}.md, then run: aioson gate:approve . --feature=${slug} --gate=C`,
+      D: `activate @qa for final verification; if QA passes, run: aioson gate:approve . --feature=${slug} --gate=D`
+    };
+    recommendation = `BLOCKED — ${fixAgents[gateLetter] || 'resolve missing items'}`;
   }
 
   return {

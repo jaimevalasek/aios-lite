@@ -1,27 +1,37 @@
 ---
-active_feature: doc-refresh
-active_phase: implementation
-active_plan: null
-last_spec_version: null
+active_feature: sdlc-process-upgrade
+active_phase: post_review_corrections_complete
+active_plan: .aioson/plans/sdlc-process-upgrade/manifest.md
+last_spec_version: 2
 context_package:
-  - docs/pt/agentes.md
-  - docs/pt/README.md
-  - AGENTS.md
-next_step: "Atualizar docs/pt/agentes.md para incluir todos os 30 agentes oficiais com descrições e exemplos de uso. Atualizar visao geral e fluxos."
-status: done
-updated_at: 2026-04-17
+  - .aioson/context/project.context.md
+  - .aioson/context/prd-sdlc-process-upgrade.md
+  - .aioson/context/sheldon-enrichment-sdlc-process-upgrade.md
+  - .aioson/context/requirements-sdlc-process-upgrade.md
+  - .aioson/context/spec-sdlc-process-upgrade.md
+  - .aioson/context/architecture.md
+  - .aioson/context/conformance-sdlc-process-upgrade.yaml
+  - .aioson/context/implementation-plan-sdlc-process-upgrade.md
+  - .aioson/plans/sdlc-process-upgrade/manifest.md
+next_step: "Activate @qa for final Gate D confirmation. @dev corrections are complete and npm test passed (1681/1681)."
+status: qa_ready
+updated_at: 2026-04-24T02:21:31-03:00
 ---
 
 # Dev State
 
 ## Foco atual
-Atualizacao da documentacao do AIOSON para refletir todos os agentes oficiais existentes.
+Correcoes pos-revisao do `sdlc-process-upgrade` concluidas por `@dev`.
 
 ## Contexto
-A docs/pt/agentes.md documenta apenas 15 dos 30 agentes oficiais em .aioson/agents/. A visao geral, os exemplos de uso e o resumo de fluxo por tamanho tambem estao desatualizados. AGENTS.md na raiz esta mais completo mas em ingles.
+As correcoes atuais cobrem os problemas que ainda causavam desencontro entre artefatos, gates e handoffs:
+- `artifact:validate` conta IDs `REQ-SDLC-*` / `AC-SDLC-*` e aponta dono correto para spec/conformance ausentes.
+- `gate:check` bloqueia plano MEDIUM em rascunho no Gate C e recomenda o proximo agente por classificacao.
+- `preflight` entrega pacote completo para `@pm`, `@orchestrator`, `@dev`, `@deyvin` e `@qa`.
+- `devlog:process`, `squad-score`, Sheldon RF-01, regras de fronteira de contexto e testes de regressao foram alinhados.
 
-## Tarefa
-1. Atualizar a lista de visao geral no topo de docs/pt/agentes.md
-2. Adicionar secoes para os 15 agentes faltantes
-3. Atualizar o resumo de fluxo por tamanho se necessario
-4. Garantir que exemplos de ativacao e entregas estejam presentes
+Verificacao executada: `npm test` passou com 1681/1681 testes.
+
+## Proximos passos
+- Ativar `@qa` para confirmacao final de Gate D.
+- Nao voltar para `@dev` pelos achados ja corrigidos, salvo se `@qa` encontrar nova regressao.

@@ -31,7 +31,7 @@ These directories are **optional**. Check silently — if a directory is absent 
    @analyst → @architect → @ux-ui → @dev → @qa
 ```
 
-**Rule**: `@sheldon` can only be activated on PRDs not yet implemented. If `features.md` marks the PRD as `done` or if `spec.md` indicates complete implementation, `@sheldon` informs and exits.
+**Rule**: `@sheldon` can only be activated on PRDs not yet implemented. After the target PRD is selected, only `features.md` for that selected slug decides whether the feature is already `done`; project-level `spec.md` never blocks enrichment.
 
 ## Required input
 - `.aioson/context/project.context.md`
@@ -98,12 +98,20 @@ updated_at: {ISO-date}
 
 ## PRD target detection (RF-01)
 
-Check whether `prd.md` or `prd-{slug}.md` exists in `.aioson/context/`:
+Step order is mandatory — list first, check status after selection.
 
-- **Multiple PRDs found**: list all and ask the user to select one.
-- **No PRD found**: inform that `@product` must be activated first. Do not proceed.
-- **PRD found but marked `done` in `features.md`**: inform and exit — enrichment is not available for completed features.
-- **Single PRD found and not done**: proceed with this PRD.
+1. Scan `.aioson/context/` for `prd.md` and any `prd-{slug}.md` files.
+2. **No PRD found**: inform that `@product` must be activated first. Do not proceed.
+3. **One or more PRDs found**: list all of them to the user.
+4. **If multiple**: ask the user to select one before proceeding.
+5. **After selection** — check `features.md` for the selected PRD's slug:
+   - **Marked `done`**: inform and exit — enrichment is not available for completed features.
+   - **Marked `in_progress`** or **slug absent from `features.md`**: proceed.
+     - If slug is absent from `features.md`: emit a warning and suggest repair:
+       > "⚠ `{slug}` is not registered in `features.md`. Run `@product` to register it, or confirm and I'll proceed with enrichment anyway."
+     - Wait for user confirmation before proceeding when the slug is absent.
+
+**Note:** `spec.md` (project-level) is NOT a done indicator. Only `features.md` is authoritative for feature status. Never block enrichment based on `spec.md` content alone.
 
 ## Re-entrance detection (RF-02)
 

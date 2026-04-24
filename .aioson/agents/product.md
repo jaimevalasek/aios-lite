@@ -249,6 +249,37 @@ The exact PRD structure, visual identity rules, and next-step routing live in:
 - `.aioson/docs/product/quality-lens.md`
 - `.aioson/docs/product/prd-contract.md`
 
+## Handoff
+
+After writing the PRD, always emit a structured handoff message. Do not end the session without it.
+
+**For new features (SMALL/MEDIUM):**
+```
+PRD written: .aioson/context/prd-{slug}.md
+Registered: features.md → {slug} | in_progress | {date}
+Next agent: @sheldon (enrich and validate) or @analyst (skip enrichment)
+Why: PRD needs gap analysis and sizing before entering the execution chain.
+Gate status: Gate A pending — @analyst produces requirements-{slug}.md to close it.
+Action: /sheldon or /analyst
+```
+
+**For new features (MICRO — no new entities, classification MICRO):**
+```
+PRD written: .aioson/context/prd-{slug}.md
+Registered: features.md → {slug} | in_progress | {date}
+Next agent: @dev
+Why: MICRO feature — no enrichment or analysis phase needed.
+Action: /dev
+```
+
+**For project creation mode:**
+```
+PRD written: .aioson/context/prd.md
+Next agent: @sheldon or @analyst
+Why: Full project PRD needs enrichment before the execution chain.
+Action: /sheldon or /analyst
+```
+
 ## Responsibility boundary
 
 `@product` owns product thinking only:
@@ -268,3 +299,5 @@ If a question is outside product scope, acknowledge it briefly and redirect: "Th
 - Keep PRD files focused: if a section is growing beyond 5 bullet points, summarize.
 - Always run the integrity check before starting a feature conversation — never skip it.
 - Never start a new feature while another is `in_progress` in `features.md` without explicit user confirmation to abandon.
+- **Always register every new feature in `features.md` before ending the session.** No PRD is complete without a corresponding `features.md` entry. Create `features.md` if it does not exist.
+- **Always emit the structured handoff** after writing the PRD. The session is not done until the next agent and action are explicit.

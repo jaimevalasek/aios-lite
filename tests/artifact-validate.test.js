@@ -128,3 +128,132 @@ test('artifact:validate: feature is in result', async () => {
   });
   assert.equal(result.feature, 'my-feature');
 });
+
+// ── AC-SDLC-22: next_missing and next_agent ───────────────────────────────────
+
+test('artifact:validate: next_missing is first required missing file when chain incomplete', async () => {
+  const tmpDir = await makeTmpDir();
+  // Only project.context.md — prd is the first required artifact that is missing
+  await writeFile(tmpDir, '.aioson/context/project.context.md', '---\nclassification: SMALL\n---');
+
+  const result = await runArtifactValidate({
+    args: [tmpDir],
+    options: { json: true, feature: 'checkout' },
+    logger: makeLogger()
+  });
+
+  assert.equal(result.ok, false);
+  assert.ok(result.next_missing, 'must have next_missing field when chain incomplete');
+  assert.ok(result.next_missing.includes('prd-checkout.md'), `next_missing must be prd file, got: ${result.next_missing}`);
+});
+
+test('artifact:validate: next_agent points to @product when prd is missing', async () => {
+  const tmpDir = await makeTmpDir();
+  await writeFile(tmpDir, '.aioson/context/project.context.md', '---\nclassification: SMALL\n---');
+
+  const result = await runArtifactValidate({
+    args: [tmpDir],
+    options: { json: true, feature: 'checkout' },
+    logger: makeLogger()
+  });
+
+  assert.equal(result.ok, false);
+  assert.ok(result.next_agent, 'must have next_agent field when chain incomplete');
+  assert.ok(result.next_agent.includes('@product'), `next_agent must be @product when prd missing, got: ${result.next_agent}`);
+});
+
+test('artifact:validate: next_agent points to @analyst when prd exists but requirements missing', async () => {
+  const tmpDir = await makeTmpDir();
+  await writeFile(tmpDir, '.aioson/context/project.context.md', '---\nclassification: SMALL\n---');
+  await writeFile(tmpDir, '.aioson/context/prd-checkout.md', '# PRD');
+  // requirements is missing → @analyst
+
+  const result = await runArtifactValidate({
+    args: [tmpDir],
+    options: { json: true, feature: 'checkout' },
+    logger: makeLogger()
+  });
+
+  assert.equal(result.ok, false);
+  assert.ok(result.next_agent.includes('@analyst'), `next_agent must be @analyst when requirements missing, got: ${result.next_agent}`);
+});
+
+test('artifact:validate: counts slugged REQ and AC identifiers', async () => {
+  const tmpDir = await makeTmpDir();
+  await writeFile(tmpDir, '.aioson/context/project.context.md', '---\nclassification: SMALL\n---');
+  await writeFile(tmpDir, '.aioson/context/prd-checkout.md', '# PRD');
+  await writeFile(tmpDir, '.aioson/context/requirements-checkout.md', [
+    '# Reqs',
+    'REQ-SDLC-01',
+    'REQ-SDLC-02',
+    'AC-SDLC-01',
+    'AC-SDLC-02',
+    'AC-SDLC-03'
+  ].join('\n'));
+  await writeFile(tmpDir, '.aioson/context/spec-checkout.md', '# Spec');
+  await writeFile(tmpDir, '.aioson/context/architecture.md', '# Arch');
+  await writeFile(tmpDir, '.aioson/context/implementation-plan-checkout.md', '# Plan');
+
+  const result = await runArtifactValidate({
+    args: [tmpDir],
+    options: { json: true, feature: 'checkout' },
+    logger: makeLogger()
+  });
+
+  const reqEntry = result.chain.find((c) => c.name === 'requirements-checkout.md');
+  assert.equal(reqEntry.detail, '2 REQs, 3 ACs');
+});
+
+test('artifact:validate: next_agent points to @pm when implementation-plan missing (SMALL)', async () => {
+  const tmpDir = await makeTmpDir();
+  await writeFile(tmpDir, '.aioson/context/project.context.md', '---\nclassification: SMALL\n---');
+  await writeFile(tmpDir, '.aioson/context/prd-checkout.md', '# PRD');
+  await writeFile(tmpDir, '.aioson/context/requirements-checkout.md', '# Reqs');
+  await writeFile(tmpDir, '.aioson/context/spec-checkout.md', '# Spec');
+  await writeFile(tmpDir, '.aioson/context/architecture.md', '# Arch');
+  // implementation-plan missing
+
+  const result = await runArtifactValidate({
+    args: [tmpDir],
+    options: { json: true, feature: 'checkout' },
+    logger: makeLogger()
+  });
+
+  assert.equal(result.ok, false);
+  assert.ok(
+    result.next_missing && result.next_missing.includes('implementation-plan-checkout.md'),
+    `next_missing must be implementation-plan, got: ${result.next_missing}`
+  );
+  assert.ok(result.next_agent.includes('@pm'), `next_agent must be @pm, got: ${result.next_agent}`);
+});
+
+test('artifact:validate: next_missing and next_agent are null when chain is VALID', async () => {
+  const tmpDir = await makeTmpDir();
+  await writeFile(tmpDir, '.aioson/context/project.context.md', '---\nclassification: SMALL\n---');
+  await writeFile(tmpDir, '.aioson/context/prd-checkout.md', '# PRD');
+  await writeFile(tmpDir, '.aioson/context/requirements-checkout.md', '# Reqs');
+  await writeFile(tmpDir, '.aioson/context/spec-checkout.md', '# Spec');
+  await writeFile(tmpDir, '.aioson/context/architecture.md', '# Arch');
+  await writeFile(tmpDir, '.aioson/context/implementation-plan-checkout.md', '# Plan');
+
+  const result = await runArtifactValidate({
+    args: [tmpDir],
+    options: { json: true, feature: 'checkout' },
+    logger: makeLogger()
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.next_missing, null, 'next_missing must be null when chain valid');
+  assert.equal(result.next_agent, null, 'next_agent must be null when chain valid');
+});
+
+test('artifact:validate: human output shows next_missing and next_agent when blocked', async () => {
+  const tmpDir = await makeTmpDir();
+  await writeFile(tmpDir, '.aioson/context/project.context.md', '---\nclassification: SMALL\n---');
+  const logger = makeLogger();
+
+  await runArtifactValidate({ args: [tmpDir], options: { feature: 'checkout' }, logger });
+
+  assert.ok(logger.lines.some((l) => l.includes('Next missing')), 'human output must show Next missing line');
+  assert.ok(logger.lines.some((l) => l.includes('Next agent')), 'human output must show Next agent line');
+});

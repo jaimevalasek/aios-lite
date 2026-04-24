@@ -14,6 +14,7 @@ const {
   detectTestRunner,
   loadProjectContext,
   scanArtifacts,
+  scanActiveManifest,
   parseGatesFromSpec,
   readPhaseGates,
   readDevState,
@@ -22,6 +23,7 @@ const {
   discoverRules,
   buildContextPackage,
   evaluateReadiness,
+  detectStaleDevState,
   extractSpecVersion,
   extractLastCheckpoint,
   GATE_NAMES,
@@ -475,6 +477,145 @@ test('evaluateReadiness: qa skips Gate C check for MICRO', () => {
   const gates = { plan: 'pending' };
   const result = evaluateReadiness(artifacts, gates, 'MICRO', 'qa');
   assert.equal(result.status, 'READY');
+});
+
+// ── scanActiveManifest — phase table parsing (AC-SDLC-27) ────────────────────
+
+test('scanActiveManifest: returns exists=false when no manifest file', async () => {
+  const tmpDir = await makeTmpDir();
+  const result = await scanActiveManifest(tmpDir, 'no-such-feature');
+  assert.equal(result.exists, false);
+});
+
+test('scanActiveManifest: is_active=true when manifest status is ready', async () => {
+  const tmpDir = await makeTmpDir();
+  await writeFile(tmpDir, '.aioson/plans/feat/manifest.md', '---\nstatus: ready\n---\n# Manifest\n');
+  const result = await scanActiveManifest(tmpDir, 'feat');
+  assert.equal(result.exists, true);
+  assert.equal(result.is_active, true);
+});
+
+test('scanActiveManifest: is_active=false when manifest status is done', async () => {
+  const tmpDir = await makeTmpDir();
+  await writeFile(tmpDir, '.aioson/plans/feat/manifest.md', '---\nstatus: done\n---\n# Manifest\n');
+  const result = await scanActiveManifest(tmpDir, 'feat');
+  assert.equal(result.exists, true);
+  assert.equal(result.is_active, false);
+});
+
+test('scanActiveManifest: is_active=false when manifest status is complete', async () => {
+  const tmpDir = await makeTmpDir();
+  await writeFile(tmpDir, '.aioson/plans/feat/manifest.md', '---\nstatus: complete\n---\n# Manifest\n');
+  const result = await scanActiveManifest(tmpDir, 'feat');
+  assert.equal(result.is_active, false);
+});
+
+test('scanActiveManifest: next_pending_phase is null when no phase table', async () => {
+  const tmpDir = await makeTmpDir();
+  await writeFile(tmpDir, '.aioson/plans/feat/manifest.md',
+    '---\nstatus: ready\n---\n# Manifest\nNo phase table here.\n');
+  const result = await scanActiveManifest(tmpDir, 'feat');
+  assert.equal(result.exists, true);
+  assert.equal(result.next_pending_phase, null);
+});
+
+test('scanActiveManifest: next_pending_phase is first non-done phase from table', async () => {
+  const tmpDir = await makeTmpDir();
+  const manifestContent = `---
+status: ready
+---
+
+# Manifest
+
+## Phase table
+
+| Phase | File | Status | Purpose |
+|---|---|---|---|
+| 1 | \`plan-phase-one.md\` | done | Phase one purpose |
+| 2 | \`plan-phase-two.md\` | done | Phase two purpose |
+| 3 | \`plan-phase-three.md\` | pending | Phase three purpose |
+| 4 | \`plan-phase-four.md\` | pending | Phase four purpose |
+`;
+
+  await writeFile(tmpDir, '.aioson/plans/feat/manifest.md', manifestContent);
+  const result = await scanActiveManifest(tmpDir, 'feat');
+
+  assert.equal(result.exists, true);
+  assert.equal(result.is_active, true);
+  assert.ok(result.next_pending_phase, 'must have next_pending_phase');
+  assert.equal(result.next_pending_phase.phase, 3, 'next pending phase must be 3 (phases 1 and 2 are done)');
+  assert.ok(result.next_pending_phase.file.includes('plan-phase-three'), `file must be phase-three, got: ${result.next_pending_phase.file}`);
+  assert.equal(result.next_pending_phase.status, 'pending');
+});
+
+test('scanActiveManifest: next_pending_phase is null when all phases are done', async () => {
+  const tmpDir = await makeTmpDir();
+  const manifestContent = `---
+status: ready
+---
+
+# Manifest
+
+| Phase | File | Status | Purpose |
+|---|---|---|---|
+| 1 | \`plan-one.md\` | done | Done phase |
+| 2 | \`plan-two.md\` | qa_approved | QA approved phase |
+`;
+
+  await writeFile(tmpDir, '.aioson/plans/feat/manifest.md', manifestContent);
+  const result = await scanActiveManifest(tmpDir, 'feat');
+
+  assert.equal(result.next_pending_phase, null, 'next_pending_phase must be null when all phases done');
+});
+
+test('scanActiveManifest: phases array contains all parsed phases', async () => {
+  const tmpDir = await makeTmpDir();
+  const manifestContent = `---
+status: ready
+---
+
+| Phase | File | Status | Purpose |
+|---|---|---|---|
+| 1 | \`plan-alpha.md\` | done | Alpha |
+| 2 | \`plan-beta.md\` | pending | Beta |
+`;
+
+  await writeFile(tmpDir, '.aioson/plans/feat/manifest.md', manifestContent);
+  const result = await scanActiveManifest(tmpDir, 'feat');
+
+  assert.ok(Array.isArray(result.phases), 'phases must be an array');
+  assert.equal(result.phases.length, 2, 'must have 2 phases');
+  assert.equal(result.phases[0].phase, 1);
+  assert.equal(result.phases[0].status, 'done');
+  assert.equal(result.phases[1].phase, 2);
+  assert.equal(result.phases[1].status, 'pending');
+});
+
+// ── detectStaleDevState ───────────────────────────────────────────────────────
+
+test('detectStaleDevState: returns null when dev-state does not exist', () => {
+  const result = detectStaleDevState({ exists: false }, 'checkout');
+  assert.equal(result, null);
+});
+
+test('detectStaleDevState: returns null when active_feature matches slug and is active', () => {
+  const devState = { exists: true, active_feature: 'checkout', status: 'in_progress' };
+  const result = detectStaleDevState(devState, 'checkout');
+  assert.equal(result, null);
+});
+
+test('detectStaleDevState: warns when active_feature differs from slug', () => {
+  const devState = { exists: true, active_feature: 'billing', status: 'in_progress' };
+  const result = detectStaleDevState(devState, 'checkout');
+  assert.ok(result !== null, 'must warn for feature mismatch');
+  assert.ok(result.includes('billing'), 'warning must name the stale feature');
+});
+
+test('detectStaleDevState: warns when status is done', () => {
+  const devState = { exists: true, active_feature: 'checkout', status: 'done' };
+  const result = detectStaleDevState(devState, 'checkout');
+  assert.ok(result !== null, 'must warn when dev-state is done');
+  assert.ok(result.toLowerCase().includes('done') || result.toLowerCase().includes('complet'), 'warning must mention done status');
 });
 
 // ── Phase 2 fixes: extractLastCheckpoint last occurrence ──────────────────────

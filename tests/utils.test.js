@@ -133,8 +133,10 @@ describe('utils.js — toRelativeSafe', () => {
     assert.equal(rel, 'src/file.js');
   });
 
-  it('handles paths outside baseDir', () => {
-    const rel = toRelativeSafe('/home/user/project', '/etc/passwd');
-    assert.ok(rel.includes('..') || rel.startsWith('..'));
+  it('rejects paths outside baseDir', () => {
+    assert.throws(
+      () => toRelativeSafe('/home/user/project', '/etc/passwd'),
+      /Path traversal detected/
+    );
   });
 });

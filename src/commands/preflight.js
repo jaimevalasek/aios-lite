@@ -16,6 +16,7 @@ const path = require('node:path');
 const {
   loadProjectContext,
   scanArtifacts,
+  scanActiveManifest,
   readPhaseGates,
   readDevState,
   readProjectPulse,
@@ -25,6 +26,7 @@ const {
   discoverRules,
   buildContextPackage,
   evaluateReadiness,
+  detectStaleDevState,
   extractSpecVersion,
   extractLastCheckpoint,
   GATE_NAMES
@@ -47,6 +49,7 @@ async function runPreflight({ args, options = {}, logger }) {
   // --- Gather all data ---
   const ctx = await loadProjectContext(targetDir);
   const artifacts = await scanArtifacts(targetDir, slug);
+  const manifest = await scanActiveManifest(targetDir, slug);
   const phaseGates = await readPhaseGates(targetDir, slug);
   const devState = await readDevState(targetDir);
   const pulse = await readProjectPulse(targetDir);
@@ -56,8 +59,16 @@ async function runPreflight({ args, options = {}, logger }) {
   const testRunnerInfo = await detectTestRunner(targetDir);
   const testRunner = testRunnerInfo ? testRunnerInfo.name : (ctx.data.test_runner || null);
   const rules = agent ? await discoverRules(targetDir, agent) : [];
-  const contextPackage = buildContextPackage(agent || 'dev', slug, classification, artifacts, devState);
-  const readiness = evaluateReadiness(artifacts, phaseGates, classification, agent);
+  const contextPackage = buildContextPackage(agent || 'dev', slug, classification, artifacts, devState, manifest);
+  const readiness = evaluateReadiness(artifacts, phaseGates, classification, agent, devState, slug);
+
+  // Determine active execution artifact (AC-SDLC-24)
+  const activeExecutionArtifact = manifest && manifest.exists && manifest.is_active
+    ? manifest.path
+    : (artifacts.implementation_plan.exists ? artifacts.implementation_plan.path : null);
+
+  // Stale dev-state detection (AC-SDLC-12)
+  const staleDevStateWarning = devState.exists ? detectStaleDevState(devState, slug) : null;
 
   // Determine mode
   const mode = slug
@@ -105,10 +116,20 @@ async function runPreflight({ args, options = {}, logger }) {
       plan: phaseGates.plan || 'pending',
       execution: phaseGates.execution || 'pending'
     },
+    active_execution_artifact: activeExecutionArtifact,
+    manifest: manifest ? {
+      exists: manifest.exists,
+      path: manifest.path || null,
+      status: manifest.status || null,
+      is_active: manifest.is_active || false,
+      next_pending_phase: manifest.next_pending_phase || null
+    } : { exists: false },
     context_package: contextPackage,
     rules,
     readiness: readiness.status,
     readiness_blockers: readiness.blockers,
+    readiness_warnings: readiness.warnings || [],
+    stale_dev_state: staleDevStateWarning || null,
     pulse: {
       last_agent: pulse.last_agent || null,
       last_gate: pulse.last_gate || null,
@@ -165,13 +186,31 @@ async function runPreflight({ args, options = {}, logger }) {
     logger.log(`  ${gateIcon(status)} Gate ${letter} (${name}): ${status}`);
   }
 
-  if (devState.exists && devState.next_step) {
+  if (manifest && manifest.exists) {
+    logger.log('');
+    logger.log('Active execution artifact:');
+    const manifestIcon = manifest.is_active ? '  ✓' : '  ○';
+    logger.log(`${manifestIcon} ${manifest.path} (status: ${manifest.status || 'unknown'})${manifest.is_active ? ' [PRIMARY]' : ' [complete — not active]'}`);
+    if (manifest.is_active && manifest.next_pending_phase) {
+      const p = manifest.next_pending_phase;
+      logger.log(`  → Next pending phase: Phase ${p.phase} — ${p.file} (status: ${p.status})`);
+    }
+    if (!manifest.is_active && artifacts.implementation_plan.exists) {
+      logger.log(`  ✓ ${artifacts.implementation_plan.path || `implementation-plan-${slug}.md`} [primary — manifest complete]`);
+    }
+  }
+
+  if (devState.exists) {
     logger.log('');
     logger.log('Dev state:');
     if (devState.active_feature) logger.log(`  active_feature: ${devState.active_feature}`);
     if (devState.active_phase) logger.log(`  active_phase: ${devState.active_phase}`);
-    logger.log(`  next_step: "${devState.next_step}"`);
+    if (devState.next_step) logger.log(`  next_step: "${devState.next_step}"`);
     if (devState.last_spec_version) logger.log(`  last_spec_version: ${devState.last_spec_version}`);
+    if (devState.status) logger.log(`  status: ${devState.status}`);
+    if (staleDevStateWarning) {
+      logger.log(`  ⚠ STALE: ${staleDevStateWarning}`);
+    }
   }
 
   if (contextPackage.length > 0) {
@@ -196,9 +235,16 @@ async function runPreflight({ args, options = {}, logger }) {
   logger.log('');
   if (readiness.status === 'READY') {
     logger.log(`Readiness: READY — proceed`);
+  } else if (readiness.status === 'READY_WITH_WARNINGS') {
+    logger.log(`Readiness: READY_WITH_WARNINGS — can proceed but review warnings`);
+    for (const w of readiness.warnings || []) logger.log(`  ⚠ ${w}`);
   } else {
     logger.log(`Readiness: BLOCKED`);
     for (const b of readiness.blockers) logger.log(`  ✗ ${b}`);
+    if ((readiness.warnings || []).length > 0) {
+      logger.log('  Warnings:');
+      for (const w of readiness.warnings) logger.log(`    ⚠ ${w}`);
+    }
   }
   logger.log('');
 

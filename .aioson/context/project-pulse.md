@@ -1,7 +1,7 @@
 ---
-updated_at: "2026-04-17T20:00:00-03:00"
+updated_at: "2026-04-24T02:21:31-03:00"
 last_agent: "dev"
-last_gate: "D"
+last_gate: "Gate D: pending final @qa confirmation"
 active_features: 1
 blocked: false
 blocked_reason: null
@@ -15,19 +15,15 @@ blocked_reason: null
 
 ## Active work
 
-| Feature | Phase | Agent | Status | Last checkpoint |
-|---------|-------|-------|--------|-----------------|
-| pentester-agent | hardening | qa | **qa_approved** | Gate D approved; 1615/1615 pass; feature completa |
-| test-coverage | P5 | tester | **done** | P0–P5 complete. 1615/1615 pass. 5 bugs documented, all fixed. |
-| doc-refresh | implementation | dev | **done** | docs/pt/agentes.md atualizado com 28 agentes; AGENTS.md atualizado com @pentester |
+`sdlc-process-upgrade` está com correções pós-revisão concluídas por `@dev`; aguardando confirmação final de Gate D por `@qa`.
 
 ## Recent activity (last 3 sessions)
 
 | Date | Agent | Action | Result |
 |------|-------|--------|--------|
-| 2026-04-17 | dev | Atualizou docs/pt/agentes.md (28 agentes) e AGENTS.md (@pentester) | 1615/1615 pass; doc-refresh completo |
-| 2026-04-17 | qa | QA review of P0–P4 test suite | 3 Medium findings resolved, 2 Low accepted; 1568/1568 pass; QA approved |
-| 2026-04-17 | tester | P4 test coverage: runner queue-store, plan-importer, cli-launcher | +27 tests; 1567/1567 pass; 0 bugs found |
+| 2026-04-24 | dev | Correções pós-revisão de `sdlc-process-upgrade` | `npm test` passou 1681/1681; preflight/gates/artifact validation alinhados |
+| 2026-04-24 | tester | Gap-fill tests for sdlc-process-upgrade | 26 new tests: artifact-validate next_missing/next_agent, workflow-execute gate message, scanActiveManifest phase table, detectStaleDevState |
+| 2026-04-24 | qa | Re-verificação Gate D de `sdlc-process-upgrade` | M-01 a M-04 confirmados; Gate D aprovado; feature fechada |
 
 ## Blockers
 
@@ -35,7 +31,5 @@ None.
 
 ## Next recommended action
 
-- P0–P5 test coverage complete. 1615/1615 pass. 5 bugs documented, all fixed.
-- Pentester-agent feature completa — todas as fases qa_approved, Gate D fechado.
-- Documentacao de agentes atualizada — 28 agentes documentados em docs/pt/agentes.md
-- Next: P6 remaining auxiliary modules or start new feature work.
+- Next: ativar `@qa` para confirmação formal de Gate D.
+- Não reativar `@dev` para os achados já corrigidos; a implementação passou na suíte completa.
