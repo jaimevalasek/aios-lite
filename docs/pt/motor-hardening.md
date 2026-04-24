@@ -350,6 +350,30 @@ Report: .aioson/context/hardening-report.md
 
 ---
 
+## Live sessions com tmux
+
+A partir da v1.7.3+, `live:start` suporta **tmux** para sessões persistentes no terminal:
+
+```bash
+# Iniciar sessão viva com tmux (padrão quando tmux está disponível)
+aioson live:start . --tool=codex --agent=dev --plan=plan.md
+
+# O launcher detecta tmux automaticamente e cria uma sessão nomeada
+# Use --no-tmux para forçar modo inline
+aioson live:start . --tool=codex --agent=dev --no-tmux
+```
+
+O tmux launcher (`src/lib/tmux-launcher.js`) gerencia:
+- Verificação de disponibilidade do tmux
+- Criação de sessão com nome baseado no projeto e agente
+- Anexação automática ou em pane separada
+- Status compacto em ANSI colorido para painéis pequenos
+
+**Por que tmux?**
+- Sessão persiste mesmo se o terminal original fechar
+- Permite acompanhar `live:status` em pane paralelo
+- Facilita handoffs sem perder o contexto do terminal
+
 ## Comandos novos e atualizados
 
 ### Novos comandos

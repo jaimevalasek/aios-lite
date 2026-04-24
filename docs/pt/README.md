@@ -29,6 +29,13 @@ Bem-vindo à documentação em português do AIOSON — um framework leve de age
 | [Spec & Learnings Pipeline](./spec-learnings-pipeline.md) | Sincronizar specs Markdown com o SQLite, exportar learnings para brains e acompanhar progresso de features |
 | [Devlog Pipeline](./devlog-pipeline.md) | Processar devlogs manuais dos agentes, sincronizar artifacts/learnings/verdict com o SQLite e exportar para brains |
 | [Hooks & Session Guard](./hooks-session-guard.md) | Visibilidade automática no dashboard para Claude Code, Antigravity e Codex — instalar hooks, session:guard e diagnóstico |
+| [Governança de Design Docs](./design-docs-governance.md) | Sistema modular de regras duras de código que agentes aplicam automaticamente em toda sessão |
+| [Runner System](./runner-system.md) | Execução persistente em background: filas, daemon e planos por fase |
+| [SDD Automation Scripts](./sdd-automation-scripts.md) | Scripts determinísticos da Regra dos 80%: preflight, gates, classificação e detecção de test runner |
+| [compress:agents](./compress-agents.md) | Reduzir consumo de tokens comprimindo instruções de agentes |
+| [Site Forge](./site-forge.md) | Clonar, reconstruir ou extrair design de qualquer URL |
+| [Profiler System](./profiler-system.md) | Pipeline completo de pesquisa, enriquecimento e forja de perfis cognitivos (Genome 3.0) |
+| [Genome 3.0 Spec](./genome-3.0-spec.md) | Especificação técnica do formato Genome 3.0 com campos DISC, Enneagram, Big Five e MBTI |
 
 ## Documentação em inglês
 

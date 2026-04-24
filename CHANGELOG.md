@@ -4,6 +4,32 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+- **@pentester agent**: adversarial security review agent with structured findings output (`security-findings-{slug}.json`) and Gate D blocking capability for MEDIUM projects.
+- **@discover agent**: system discovery and semantic knowledge cache bootstrap for brownfield projects.
+- **git:guard**: pre-commit guardrail that blocks forbidden files (`node_modules/`, secrets, build artifacts) from being staged or committed. Supports `--install-hook` for persistent protection.
+- **commit:prepare**: automated commit preparation command that collects staged diffs, runs `git:guard`, and generates `commit-prep.json` ready for `@committer`.
+- **compress:agents**: token-reduction command with structural (free) and semantic (`--llm`) modes. Backs up originals to `.original.md` and supports `--restore`.
+- **tmux launcher**: `live:start` now supports tmux for persistent terminal sessions with compact ANSI status bars.
+- **Runner system**: `runner:run`, `runner:queue`, `runner:plan`, and `runner:daemon` commands for persistent background job execution.
+- **Design-docs governance**: modular code governance system with 5 best-practice files (`folder-structure`, `componentization`, `code-reuse`, `naming`, `file-size`) distributed automatically on install and loaded unconditionally by `@dev` and `@deyvin`.
+- **SDLC process upgrade**: gates and handoff protocol enhancements across the workflow engine.
+
+### Changed
+- **i18n architecture**: decoupled interaction language from agent prompts. Agent instruction files are now canonical English only; `conversation_language` in `project.context.md` controls user-facing language. Removed localized agent packs in favor of single canonical source.
+- **Agent manifests**: moved `.manifest.json` files to `.aioson/agents/manifests/` subfolder to reduce clutter.
+- **Core agents refactored**: `@product`, `@sheldon`, `@dev`, `@deyvin`, `@ux-ui`, and `@squad` split into deterministic on-demand modules for better context efficiency.
+- **@committer**: enhanced with terminal checkbox UI, robust prepare fallback, and optimized workflow.
+- **@squad**: enhanced with domain classification gate, investigation handoff, language policy, and package contract restoration.
+- **Installer pipeline**: hardened with pentester agent integration and improved integrity checks.
+
+### Fixed
+- `@dev` pt-BR locale realignment with canonical prompt flow.
+- `@squad` genome bindings and package contract restoration.
+- Legacy process safeguards restored across agents.
+- Safe canonical English agent sources restored after i18n decoupling.
+- Accidentally tracked local directories removed from git tracking.
+
 ## [1.7.3] - 2026-04-13
 ### Fixed
 - `@dev` pt-BR locale pack realigned with the canonical prompt flow, restoring the proper cold-start fallback when `dev-state.md` is already `done` and another feature is still `in_progress` in `features.md`.

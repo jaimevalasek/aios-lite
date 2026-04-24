@@ -223,6 +223,10 @@ Scripts determinísticos que movem verificações de estado, validação de arte
 | `gate:check` | Valida pré-requisitos e artefatos de um phase gate (A/B/C/D); retorna PASS ou BLOCKED | Antes de avançar para o próximo agente |
 | `artifact:validate` | Verifica a cadeia completa de artefatos de uma feature (PRD → spec → plano → conformance) | A qualquer momento para checar completude |
 | `workflow:execute` | Monta e executa o plano de agentes baseado na classificação; aceita `--dry-run` e `--start-from` | Para orquestrar features sem o dashboard |
+| `runner:run` | Executa uma tarefa ou worker diretamente pelo runner | Quando quer executar fora do loop principal de sessão |
+| `runner:queue` | Enfileira tarefas no runner com prioridade e agente designado | Para execução assíncrona ou batch de tarefas |
+| `runner:plan` | Gera plano de execução do runner a partir de uma feature | Antes de iniciar execução por fase |
+| `runner:daemon` | Inicia/para/monitora o daemon do runner para execução 24/7 | Para workers automáticos e execução contínua |
 | `runner:queue:from-plan` | Extrai fases `## Phase N:` do plano e enfileira no runner com prioridades | Antes de iniciar execução por fase com o runner |
 | `learning:auto-promote` | Promove aprendizados de alta frequência para arquivos de regra em `.aioson/rules/` | Após várias sessões — quando quer solidificar padrões em regras |
 
@@ -265,6 +269,13 @@ Três comandos de inteligência de sistema para otimizar tokens, gerar contexto 
 | `agent:audit` | Audita tamanho e tokens de todos os arquivos de agente; detecta seções candidatas a on-demand loading e calcula economia potencial por sessão | Quando quer entender o custo de contexto dos agentes e identificar o que pode ser movido para `.aioson/docs/` (carregamento sob demanda). Veja [Auditoria de Agentes](#39-auditar-agentes-agentaudit) |
 | `brief:gen` | Lê uma fase do plano de implementação + `architecture.md` + `spec.md` e gera um brief 100% autocontido para um worker | Antes de entregar uma fase a um executor de squad — garante que o worker tem tudo que precisa sem buscar contexto adicional. Veja [Geração de Brief](#40-gerar-brief-de-worker-briefgen) |
 | `verify:gate` | Verificação de olhos frescos: compara spec vs artefato entregue sem histórico de conversa; emite `PASS`, `PASS_WITH_NOTES`, `FAIL_WITH_ISSUES` ou `BLOCKED` | Após cada entrega de fase — detecta bugs que o agente gerador não consegue ver por viés de contexto. Veja [Verify Gate](#41-verificar-entrega-verifygate) |
+
+### Git e committer
+
+| Comando | O que faz | Quando usar |
+|---|---|---|
+| `commit:prepare` | Coleta diff staged, roda `git:guard`, gera `commit-prep.json` com tipo, escopo e descrição candidata | Antes de ativar `@committer` — automatiza a preparação e aplica guardrails de segurança |
+| `git:guard` | Verifica stage proibido (`node_modules/`, secrets, build artifacts) e pode instalar pre-commit hook | Antes de qualquer commit; use `--install-hook` para proteção contínua |
 
 ---
 
@@ -1684,6 +1695,65 @@ aioson learning:auto-promote . --threshold=5
 ```
 
 Cria arquivos em `.aioson/rules/` para aprendizados `process` e `quality` com frequência ≥ threshold. Aprendizados `domain` são anotados mas não viram regras.
+
+---
+
+### 54. Preparar commit com `commit:prepare`
+
+```bash
+# Preparar commit do estado atual (staged)
+aioson commit:prepare .
+```
+
+Saída esperada:
+
+```
+Commit Preparation
+──────────────────────────────────────────────────
+Staged files : 3
+Guard status : PASS
+
+Changes:
+  src/components/Button.tsx    (modified)
+  tests/button.test.tsx        (modified)
+  README.md                    (modified)
+
+commit-prep.json written to .aioson/context/commit-prep.json
+```
+
+O `@committer` lerá esse arquivo e gerará a mensagem semântica correta.
+
+Se nada estiver staged:
+
+```
+Guard status : BLOCKED — no staged files
+Nothing to commit. Stage files first with git add.
+```
+
+Se houver arquivos proibidos:
+
+```
+Guard status : BLOCKED — forbidden files detected
+  node_modules/.package-lock.json
+Remove forbidden files from stage before committing.
+```
+
+---
+
+### 55. Verificar stage com `git:guard`
+
+```bash
+# Verificação única
+aioson git:guard .
+
+# Instalar hook de pre-commit para verificação contínua
+aioson git:guard . --install-hook
+```
+
+Regras do guard:
+- Bloqueia stage vazio
+- Bloqueia arquivos em `node_modules/`, `dist/`, `.next/`, `*.db`, secrets
+- Pode instalar hook em `.git/hooks/pre-commit`
 
 ---
 

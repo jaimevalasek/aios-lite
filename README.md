@@ -114,7 +114,15 @@ npx @jaimevalasek/aioson update
           └───────────┼───────────┘
                       ▼
               ┌───────────────┐
+              │ /pentester    │  ← Adversarial security review (MEDIUM)
+              └───────┬───────┘
+                      ▼
+              ┌───────────────┐
               │    /qa        │  ← Review, tests, browser QA
+              └───────┬───────┘
+                      ▼
+              ┌───────────────┐
+              │   /tester     │  ← Systematic test engineering (when needed)
               └───────────────┘
 ```
 
@@ -509,23 +517,31 @@ aioson squad:dashboard              # real-time web monitoring panel
 | Agent | Role | Best for |
 |-------|------|----------|
 | `/setup` | Project onboarding & context | First step on any project |
+| `/product` | Product decisions & PRD | Feature scope, user stories |
+| `/sheldon` | Deep technical reasoning & PRD hardening | Hard engineering problems, spec review |
 | `/analyst` | Domain discovery & entity mapping | Understanding the problem space |
 | `/architect` | Project structure & technical decisions | Architecture, stack choices |
-| `/product` | Product decisions & PRD | Feature scope, user stories |
 | `/ux-ui` | UI/UX design system & component specs | Dashboards, flows, components |
 | `/pm` | Backlog & user stories | Sprint planning, task breakdown |
-| `/deyvin` / `/pair` | Feature implementation | Coding — greenfield or brownfield |
-| `/dev` | Feature implementation (any stack) | Focused dev tasks |
-| `/qa` | Risk-first review & test generation | Quality gates before ship |
 | `/orchestrator` | Session protocol & parallel execution | Multi-agent coordination |
+| `/dev` | Feature implementation (any stack) | Focused dev tasks |
+| `/deyvin` / `/pair` | Pair programming & continuity | Coding — greenfield or brownfield |
+| `/qa` | Risk-first review & test generation | Quality gates before ship |
+| `/tester` | Systematic test engineering | Coverage gaps, legacy code testing |
+| `/pentester` | Adversarial security review | Security gates before release |
 | `/squad` | Parallel agent squads | Large feature sets in parallel |
 | `/genome` | Agent knowledge & learning | Adaptive squad intelligence |
-| `/sheldon` | Deep technical reasoning | Hard engineering problems |
-| `/orache` | Orchestration & routing | Complex multi-step pipelines |
-| `/profiler-researcher` | Research & profiling | External data gathering |
-| `/profiler-enricher` | Profile enrichment | Data augmentation |
-| `/profiler-forge` | Profile generation | Structured output creation |
+| `/committer` | Semantic commit messages | High-quality Git commits |
+| `/cypher` | Plan → structured briefing | Pre-production planning |
+| `/copywriter` | Conversion copy & content | Marketing pages, VSL scripts |
+| `/discover` | System discovery & semantic cache | Brownfield mapping, knowledge bootstrap |
+| `/neo` | Onboarding & next steps | "Where do I start?" guidance |
+| `/orache` | Market research & competitors | External data gathering |
+| `/profiler-researcher` | Persona research & profiling | DNA mental research |
+| `/profiler-enricher` | Profile enrichment | Cognitive analysis |
+| `/profiler-forge` | Profile generation | Genome 3.0 advisor creation |
 | `/site-forge` | Site cloning & design extraction | Clone, harvest, blend, or forge skills from any URL |
+| `/validator` | Deliverable validation | Pre-gate verification |
 
 ---
 
@@ -605,6 +621,28 @@ aioson live:close . --agent=qa --summary="QA complete, shipped"
 
 ---
 
+## AIOSON Store
+
+Package, publish, and distribute squads, genomes, skills, and full systems through the AIOSON Store.
+
+```bash
+# Package and publish your system/boilerplate
+aioson system:package .
+aioson system:publish . --name=my-stack
+
+# Publish squads, genomes, and skills
+aioson squad:publish . --squad=marketing --version=1.0.0
+aioson genome:publish . --slug=fintech --version=1.0.0
+aioson skill:publish . --slug=vue-spa --version=1.0.0
+
+# Install from the Store
+aioson squad:install . --slug=marketing --version=1.0.0
+aioson genome:install . --slug=fintech
+aioson system:install . --slug=laravel-saas
+```
+
+Authentication via `auth:login` and workspace management via `workspace:*` commands are supported for cloud features.
+
 ## Commands
 
 <details>
@@ -613,12 +651,12 @@ aioson live:close . --agent=qa --summary="QA complete, shipped"
 ```bash
 aioson init <project-name> [--lang=en|pt-BR|es|fr] [--tool=codex|claude|gemini|opencode]
 aioson install [path] [--lang=en|pt-BR|es|fr] [--tool=codex|claude|gemini|opencode]
-aioson update [path] [--lang=en|pt-BR|es|fr]
+aioson update [path] [--lang=en|pt-BR|es|fr] [--all]
 aioson info [path] [--json]
 aioson doctor [path] [--fix] [--dry-run] [--json]
 aioson setup:context [path] [--defaults] [--framework=<name>] [--lang=en|pt-BR|es|fr]
 aioson context:validate [path] [--json]
-aioson scan:project [path] [--provider=<name>] [--dry-run] [--json]
+aioson scan:project [path] [--folder=src] [--with-llm] [--provider=<name>] [--dry-run] [--json]
 ```
 
 </details>
@@ -630,6 +668,26 @@ aioson scan:project [path] [--provider=<name>] [--dry-run] [--json]
 aioson agents
 aioson agent:prompt <agent> [--tool=codex|claude|gemini|opencode]
 aioson workflow:plan [path] [--classification=MICRO|SMALL|MEDIUM] [--json]
+aioson workflow:next [path] [--complete] [--auto-heal] [--force]
+aioson workflow:heal [path] --stage=<agent>
+aioson workflow:harden [path] [--dry-run]
+aioson workflow:execute [path] [--dry-run] [--start-from=<agent>]
+```
+
+</details>
+
+<details>
+<summary><strong>SDD automation & gates</strong></summary>
+
+```bash
+aioson preflight [path] [--json]
+aioson classify [path] [--json]
+aioson gate:check [path] --gate=A|B|C|D [--json]
+aioson artifact:validate [path] --feature=<slug> [--json]
+aioson detect:test-runner [path] [--json]
+aioson agent:audit [path] [--json]
+aioson brief:gen [path] --feature=<slug> [--json]
+aioson verify:gate [path] --feature=<slug> [--json]
 ```
 
 </details>
@@ -643,6 +701,21 @@ aioson parallel:assign [path] [--source=auto|prd|architecture|discovery|<file>] 
 aioson parallel:status [path] [--json]
 aioson parallel:doctor [path] [--workers=2..6] [--fix] [--force] [--dry-run] [--json]
 ```
+
+</details>
+
+<details>
+<summary><strong>Live sessions & runtime</strong></summary>
+
+```bash
+aioson live:start [path] --tool=codex|claude|gemini|opencode --agent=<agent> [--plan=<file>] [--no-launch]
+aioson live:handoff [path] --agent=<agent> --to=<next-agent> --reason="..."
+aioson live:status [path] [--watch=<seconds>]
+aioson live:close [path] --agent=<agent> --summary="..."
+aioson runtime:emit [path] --agent=<agent> --type=<event> --summary="..."
+```
+
+`live:start` supports tmux for persistent terminal sessions. Use `--no-launch` to only prepare the tracked envelope without starting the client.
 
 </details>
 
@@ -672,6 +745,58 @@ aioson qa:doctor [path] [--json]
 </details>
 
 <details>
+<summary><strong>Squads</strong></summary>
+
+```bash
+aioson squad:status [path]
+aioson squad:doctor [path] --squad=<slug>
+aioson squad:validate [path] --squad=<slug>
+aioson squad:export [path] --squad=<slug>
+aioson squad:bus [path] --squad=<slug> --sub=post|read|watch|summary|list|clear
+aioson squad:autorun [path] --squad=<slug> --goal="..."
+aioson squad:daemon [path] --squad=<slug> --sub=start|stop|status
+aioson squad:worker [path] --squad=<slug> --sub=list|run
+aioson squad:dashboard [--port=4180] [--squad=<slug>]
+```
+
+</details>
+
+<details>
+<summary><strong>Store & cloud</strong></summary>
+
+```bash
+aioson auth:login --token ...
+aioson auth:status
+aioson workspace:init [path] --name=<slug>
+aioson system:package [path]
+aioson system:publish [path] --name=<slug>
+aioson squad:publish [path] --squad=<slug> [--paid]
+aioson squad:install [path] --slug=<slug>
+aioson genome:publish [path] --slug=<slug>
+aioson genome:install [path] --slug=<slug>
+aioson skill:publish [path] --slug=<slug>
+```
+
+</details>
+
+<details>
+<summary><strong>Context optimization</strong></summary>
+
+```bash
+aioson context:pack [path] [--agent=<agent>] [--goal="..."] [--module=<folder>]
+aioson context:health [path]
+aioson context:trim [path] [--dry-run] [--force]
+aioson context:monitor [path] [--budget=<n>] [--tokens=<n>]
+aioson context:search:index [path]
+aioson context:search [path] --query="..."
+aioson context:cache:save --label=<name>
+aioson context:cache:restore --label=<name>
+aioson compress:agents [path] [--agent=<name>] [--rules] [--dry-run] [--restore]
+```
+
+</details>
+
+<details>
 <summary><strong>i18n & locale</strong></summary>
 
 ```bash
@@ -684,9 +809,23 @@ Built-in locales: `en`, `pt-BR`, `es`, `fr`. Use `--lang` or `AIOS_LITE_LOCALE` 
 </details>
 
 <details>
+<summary><strong>Git & committer</strong></summary>
+
+```bash
+aioson commit:prepare [path] [--json]
+aioson git:guard [path] [--install-hook] [--json]
+```
+
+`commit:prepare` collects staged diffs, runs `git:guard`, and generates a `commit-prep.json` ready for `@committer`.
+`git:guard` blocks commits with forbidden files (`node_modules/`, secrets, etc.) and can install a pre-commit hook.
+
+</details>
+
+<details>
 <summary><strong>Testing & CI</strong></summary>
 
 ```bash
+aioson test:agents [path]
 aioson test:smoke [workspace-path] [--lang=en|pt-BR|es|fr] [--web3=ethereum|solana|cardano] [--profile=standard|mixed|parallel] [--keep] [--json]
 aioson test:package [source-path] [--keep] [--dry-run] [--json]
 ```
@@ -768,6 +907,10 @@ aioson scan:project --json
 - [Agent sharding](docs/pt/agent-sharding.md)
 - [Guia do engenheiro](docs/pt/guia-engineer.md)
 - [Squad Dashboard (PT)](docs/pt/squad-dashboard.md)
+- [SDD automation scripts](docs/pt/sdd-automation-scripts.md)
+- [Motor hardening](docs/pt/motor-hardening.md)
+- [Design-docs governance](docs/pt/design-docs-governance.md)
+- [Runner system](docs/pt/runner-system.md)
 
 ---
 

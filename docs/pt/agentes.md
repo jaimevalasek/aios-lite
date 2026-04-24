@@ -40,6 +40,8 @@ O AIOSON tem agentes oficiais de projeto e também pode criar agentes de squad. 
 @validator           ← valida entregaveis e contratos
 ```
 
+> **Nota sobre estrutura de arquivos (v1.7.3+):** Os manifests dos agentes (arquivos `.manifest.json`) foram movidos para `.aioson/agents/manifests/` para reduzir clutter no diretório de agentes. Os arquivos `.md` de instrução continuam em `.aioson/agents/`. Isso facilita a navegação e separa metadados de prompts.
+
 > Para o fluxo completo de `@squad` e `@genome`, veja também [Squad e Genome](./squad-genome.md).
 > Para criar agentes customizados (my-agents e squad agents), veja [Agentes Customizados](./agentes-customizados.md).
 > Para uma explicação focada no agente de continuidade, veja também [Deyvin](./deyvin.md).
