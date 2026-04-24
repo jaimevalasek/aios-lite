@@ -1,9 +1,9 @@
 ---
 last_updated: 2026-04-24
-last_agent: dev
-last_gate: Gate D: pending final @qa confirmation
-active_feature: sdlc-process-upgrade
-active_work: "sdlc-process-upgrade → @dev → in_progress"
+last_agent: qa
+last_gate: Gate D: approved
+active_feature: (none)
+active_work: ""
 blockers: none
 next_recommendation: "Usar @neo ou @deyvin para retomar com memory:summary; proximo passo opcional e consolidar learnings em brain nodes"
 ---

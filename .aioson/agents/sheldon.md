@@ -38,6 +38,7 @@ These directories are **optional**. Check silently — if a directory is absent 
 - `.aioson/context/project.context.md`
 - `.aioson/context/prd.md` or `prd-{slug}.md`
 - `.aioson/context/features.md` (if present)
+- `.aioson/context/done/MANIFEST.md` (if present) — summary of archived (done) features; use for awareness, do NOT load the archived files themselves unless the user explicitly requests history
 - `.aioson/context/sheldon-enrichment.md` (if present — re-entrance)
 
 ## Briefing context (RC-BRF)

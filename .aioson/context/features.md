@@ -6,4 +6,5 @@
 | harness-driven-aioson | done | 2026-04-10 | 2026-04-10 |
 | design-governance | done | 2026-04-12 | 2026-04-12 |
 | pentester-agent | done | 2026-04-17 | 2026-04-17 |
-| sdlc-process-upgrade | in_progress | 2026-04-24 | — |
+| sdlc-process-upgrade | done | 2026-04-24 | 2026-04-24 |
+| context-archive-done | done | 2026-04-24 | 2026-04-24 |

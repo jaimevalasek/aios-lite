@@ -31,6 +31,7 @@ Bem-vindo à documentação em português do AIOSON — um framework leve de age
 | [Hooks & Session Guard](./hooks-session-guard.md) | Visibilidade automática no dashboard para Claude Code, Antigravity e Codex — instalar hooks, session:guard e diagnóstico |
 | [Governança de Design Docs](./design-docs-governance.md) | Sistema modular de regras duras de código que agentes aplicam automaticamente em toda sessão |
 | [Runner System](./runner-system.md) | Execução persistente em background: filas, daemon e planos por fase |
+| [Feature Archive](./feature-archive.md) | Arquivamento automático de artefatos de features concluídas e manifest de histórico |
 | [SDD Automation Scripts](./sdd-automation-scripts.md) | Scripts determinísticos da Regra dos 80%: preflight, gates, classificação e detecção de test runner |
 | [compress:agents](./compress-agents.md) | Reduzir consumo de tokens comprimindo instruções de agentes |
 | [Site Forge](./site-forge.md) | Clonar, reconstruir ou extrair design de qualquer URL |

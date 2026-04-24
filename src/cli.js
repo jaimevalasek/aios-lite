@@ -160,6 +160,7 @@ const { runDetectTestRunner } = require('./commands/detect-test-runner');
 const { runPulseUpdate } = require('./commands/pulse-update');
 const { runStateSave } = require('./commands/state-save');
 const { runFeatureClose } = require('./commands/feature-close');
+const { runFeatureArchive } = require('./commands/feature-archive');
 const { runGateCheck } = require('./commands/gate-check');
 const { runGateApprove } = require('./commands/gate-approve');
 const { runArtifactValidate } = require('./commands/artifact-validate');
@@ -531,6 +532,8 @@ const JSON_SUPPORTED_COMMANDS = new Set([
   'state-save',
   'feature:close',
   'feature-close',
+  'feature:archive',
+  'feature-archive',
   'gate:check',
   'gate-check',
   'gate:approve',
@@ -1200,6 +1203,8 @@ async function main() {
       result = await runStateSave({ args, options, logger: commandLogger });
     } else if (command === 'feature:close' || command === 'feature-close') {
       result = await runFeatureClose({ args, options, logger: commandLogger });
+    } else if (command === 'feature:archive' || command === 'feature-archive') {
+      result = await runFeatureArchive({ args, options, logger: commandLogger });
     } else if (command === 'gate:check' || command === 'gate-check') {
       result = await runGateCheck({ args, options, logger: commandLogger });
     } else if (command === 'gate:approve' || command === 'gate-approve') {

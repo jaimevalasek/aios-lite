@@ -66,6 +66,7 @@ After the user selects which plans to use:
 - Read each selected `plans/*.md` file fully.
 - Read `project.context.md` for project context.
 - Scan `.aioson/context/` for existing PRDs (`prd*.md`) — load titles/summaries only to avoid duplicating committed work.
+- Also read `.aioson/context/done/MANIFEST.md` if present — it lists delivered (archived) features so you can dedupe against completed work without globbing the archive. Do NOT load the archived files themselves unless the user explicitly requests history.
 
 **2. Enrich**
 

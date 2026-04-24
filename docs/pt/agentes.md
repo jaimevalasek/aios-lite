@@ -573,6 +573,23 @@ Se o usuário pedir para pular o teste, o `@dev` resiste, explica, e só cede ap
 - Testes para achados críticos
 - Relatório de cobertura
 
+**Fechamento de feature (automático):**
+
+Quando o QA é aprovado, o `@qa` roda:
+
+```bash
+aioson feature:close . --feature={slug} --verdict=PASS --residual="..."
+```
+
+Isso faz tudo de uma vez — sem etapas manuais:
+1. Adiciona QA sign-off em `spec-{slug}.md`
+2. Marca a feature como `done` em `features.md`
+3. Limpa `project-pulse.md`
+4. Move todos os artefatos da feature (`prd-`, `spec-`, `requirements-`, etc.) para `.aioson/context/done/{slug}/`
+5. Atualiza `.aioson/context/done/MANIFEST.md`
+
+O root de `.aioson/context/` fica limpo automaticamente. O desenvolvedor não precisa rodar nenhum comando adicional.
+
 > **@qa vs @tester** — O `@qa` é um revisor: lê o que foi implementado, aponta riscos e escreve testes pontuais para achados críticos. O `@tester` é um engenheiro de testes: parte de cobertura zero e constrói uma estratégia sistemática (inventário, mapa de risco, estratégia por camada). Use `@tester` quando a aplicação foi implementada sem testes adequados ou quando `@qa` identificar lacunas em 3+ módulos.
 
 ---

@@ -19,15 +19,13 @@ AIOSON is a Node.js CLI framework for spec-driven development with specialized a
 
 ## Current improvement focus
 
-Feature `sdlc-process-upgrade` is open to correct process-level misalignments found in the development workflow:
+Feature `context-archive-done` is open to keep `.aioson/context/` root clean automatically:
 
-- gate approval ergonomics
-- handoff contract completeness
-- `implementation-plan` ownership
-- precedence between Sheldon manifests and implementation plans
-- Sheldon PRD target detection
-- bootstrap/session/brain memory integration
-- observability for primary workflow agents
+- new CLI command `aioson feature:archive . --feature=<slug>` moves `*-{slug}.{md,yaml,json}` files from the context root into `.aioson/context/done/{slug}/` and maintains `done/MANIFEST.md`
+- `aioson feature:close --verdict=PASS` gets an opt-in `--archive` flag to trigger archival automatically after QA sign-off
+- `@cypher`, `@neo`, `@discover`, `@sheldon` gain awareness of the manifest so historical features stay visible at low token cost
+
+Recently closed (2026-04-24): `sdlc-process-upgrade` — process-level corrections in the development workflow (gate approval ergonomics, handoff contract completeness, implementation-plan ownership, Sheldon PRD target detection, bootstrap/session/brain memory integration, observability for primary workflow agents).
 
 ## Business rules and constraints
 

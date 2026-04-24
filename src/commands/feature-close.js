@@ -15,6 +15,7 @@
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const { contextDir, readFileSafe, parseFrontmatter } = require('../preflight-engine');
+const { runFeatureArchive } = require('./feature-archive');
 
 function nowDate() {
   return new Date().toISOString().slice(0, 10);
@@ -65,17 +66,24 @@ async function updateSpecFile(specPath, verdict, residual, date) {
   return true;
 }
 
+function escapeSlugForRegex(slug) {
+  return slug.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 async function updateFeaturesFile(featuresPath, slug, verdict, date) {
   const content = await readFileSafe(featuresPath);
   if (!content) return false;
 
   const status = verdict === 'PASS' ? 'done' : 'qa_failed';
-
-  // Try to find and update the feature row
-  const updated = content.replace(
-    new RegExp(`(\\|[^|]*${slug}[^|]*\\|[^|]*\\|)[^|]*(\\|)`, 'g'),
-    (match, before, after) => `${before} ${status} (${date}) ${after}`
+  const rowRe = new RegExp(
+    `^(\\|\\s*${escapeSlugForRegex(slug)}\\s*\\|)\\s*[^|]*\\s*\\|\\s*([^|]*)\\s*\\|\\s*([^|]*)\\s*\\|(.*)$`,
+    'm'
   );
+
+  const updated = content.replace(rowRe, (match, slugCol, startedCol, _completedCol, rest) => {
+    const started = startedCol.trim() || date;
+    return `${slugCol} ${status} | ${started} | ${date} |${rest}`;
+  });
 
   if (updated !== content) {
     await fs.writeFile(featuresPath, updated, 'utf8');
@@ -83,8 +91,9 @@ async function updateFeaturesFile(featuresPath, slug, verdict, date) {
   }
 
   // Append if not found
-  const line = `| ${slug} | ${verdict === 'PASS' ? 'done' : 'qa_failed'} | ${date} | QA ${verdict} |`;
-  await fs.appendFile(featuresPath, `\n${line}\n`, 'utf8');
+  const line = `| ${slug} | ${status} | ${date} | ${date} |`;
+  const needsNewline = !content.endsWith('\n');
+  await fs.appendFile(featuresPath, `${needsNewline ? '\n' : ''}${line}\n`, 'utf8');
   return true;
 }
 
@@ -145,13 +154,38 @@ async function runFeatureClose({ args, options = {}, logger }) {
     updates.push('project-pulse.md: updated active work');
   }
 
+  // 4. Auto-archive on PASS (default-on — user never has to remember).
+  // Disable explicitly with --no-archive when needed (e.g. re-running feature:close idempotently).
+  let archive = null;
+  const skipArchive = options['no-archive'] === true || options.archive === false;
+  if (verdict === 'PASS' && !skipArchive) {
+    try {
+      archive = await runFeatureArchive({
+        args: [targetDir],
+        options: { feature: slug, json: true },
+        logger: null
+      });
+      if (archive && archive.ok && archive.moved && archive.moved.length > 0) {
+        updates.push(`archive: moved ${archive.moved.length} file(s) to ${archive.archiveDir}/`);
+        updates.push(`archive: manifest updated at .aioson/context/done/MANIFEST.md`);
+      } else if (archive && archive.ok && archive.noop) {
+        updates.push('archive: nothing to move (already clean)');
+      } else if (archive && !archive.ok) {
+        updates.push(`archive: skipped (${archive.reason || 'unknown'})`);
+      }
+    } catch (err) {
+      updates.push(`archive: failed (${err.message || err})`);
+    }
+  }
+
   const result = {
     ok: true,
     feature: slug,
     verdict,
     date: today,
     residual: residual || notes || null,
-    updates
+    updates,
+    archive
   };
 
   if (options.json) return result;

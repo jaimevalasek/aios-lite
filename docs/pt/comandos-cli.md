@@ -198,7 +198,8 @@ A nova versão da Store permite empacotar, distribuir e instalar não só agente
 | `recovery:generate` | Gera `.aioson/context/recovery-context.md` com objetivo, agente, arquivos modificados e commits recentes | Antes de encerrar uma sessão longa ou ao detectar compactação iminente. Veja [Recuperação de Sessão](./recuperacao-de-sessao.md) |
 | `recovery:show` | Exibe o conteúdo do arquivo de recovery da sessão atual | Quando quer re-injetar o contexto no início de uma nova sessão |
 | `context:health` | Analisa `.aioson/context/`, estima tokens por arquivo, sinaliza arquivos pesados e specs de features já concluídas | Antes de iniciar qualquer sessão longa — dá visibilidade do custo de contexto |
-| `context:trim` | Detecta specs stale (feature `done`) e seções muito longas, arquiva com `--force` | Quando o contexto está crescendo ou há specs de features já entregues |
+| `feature:archive` | Move artefatos de uma feature `done` para `.aioson/context/done/{slug}/` e atualiza o manifest | Arquivamento retroativo de features já entregues ou verificação com `--dry-run` |
+| `context:trim` | *(legado — use `feature:archive`)* | — |
 | `context:monitor` | Exibe barras ASCII com uso de contexto por agente de uma squad; aceita `--budget` + `--tokens` para modo de budget de projeto | Quando quer acompanhar em tempo real o contexto de uma squad ou checar se está perto do limite. Veja [Monitor de Contexto](./monitor-de-contexto.md) |
 | `context:search:index` | Indexa arquivos `.md`, `.txt` e `.json` do projeto em banco FTS5 | Antes de usar `context:search` — normalmente uma vez, depois incrementalmente. Veja [Busca de Contexto](./busca-de-contexto.md) |
 | `context:search` | Busca documentos relevantes no índice por query em linguagem natural | Quando quer encontrar quais arquivos do projeto contêm contexto relevante para uma tarefa |
@@ -219,7 +220,8 @@ Scripts determinísticos que movem verificações de estado, validação de arte
 | `detect:test-runner` | Detecta PHPUnit, Jest, Vitest, Pytest, RSpec, Forge e node:test via arquivos de config | Quando `@dev` ou `@tester` precisa saber como rodar os testes |
 | `pulse:update` | Atualiza `project-pulse.md` com agente, feature, gate e próximo passo | Ao final de cada sessão de agente |
 | `state:save` | Salva ponto de continuação em `dev-state.md` (fase, status, spec-version, histórico) | Durante `@dev` ao fim de cada fase ou antes de encerrar |
-| `feature:close` | Fecha feature com verdict PASS/FAIL: atualiza spec, features.md e project-pulse.md | Após QA sign-off |
+| `feature:close` | Fecha feature com verdict PASS/FAIL: atualiza spec, features.md, project-pulse.md e dispara archivamento automático | Após QA sign-off — chamado pelo `@qa` automaticamente |
+| `feature:archive` | Move artefatos de uma feature `done` para `.aioson/context/done/{slug}/` e atualiza o manifest | Chamado pelo `feature:close` automaticamente; também disponível para retroativo com `--dry-run` e `--restore` |
 | `gate:check` | Valida pré-requisitos e artefatos de um phase gate (A/B/C/D); retorna PASS ou BLOCKED | Antes de avançar para o próximo agente |
 | `artifact:validate` | Verifica a cadeia completa de artefatos de uma feature (PRD → spec → plano → conformance) | A qualquer momento para checar completude |
 | `workflow:execute` | Monta e executa o plano de agentes baseado na classificação; aceita `--dry-run` e `--start-from` | Para orquestrar features sem o dashboard |
@@ -887,26 +889,36 @@ Total context load:                    ~17,625 tokens
 
 ⚠  1 stale spec file(s) (features: done):
    → spec-auth.md (feature: auth is done)
-   Run: aioson context:trim . to archive them
+   Run: aioson feature:archive . --feature=auth to archive it
 ```
 
 Use **antes de começar uma sessão longa** — se `Total context load` estiver acima de 15.000 tokens, considere arquivar specs stale ou criar um contexto escopado.
 
-### 29. Arquivar specs de features já entregues
+### 29. Arquivar artefatos de features já entregues
+
+O arquivamento é **automático** a partir do `feature:close --verdict=PASS` — o `@qa` dispara o comando e todos os artefatos da feature (`prd-`, `spec-`, `requirements-`, `sheldon-enrichment-`, etc.) são movidos para `.aioson/context/done/{slug}/` sem intervenção manual.
+
+Para ver o que seria movido antes de rodar:
 
 ```bash
-# Ver o que seria arquivado (sem mover nada)
-aioson context:trim . --dry-run
-
-# Arquivar de verdade
-aioson context:trim . --force
+aioson feature:archive . --feature=checkout --dry-run
 ```
 
-Os arquivos são movidos para `.aioson/context/archive/` — nunca deletados. Para restaurar:
+Para retroativo em features que já estão como `done` em `features.md`:
 
 ```bash
-mv .aioson/context/archive/spec-auth.md .aioson/context/spec-auth.md
+aioson feature:archive . --feature=user-auth
 ```
+
+Para restaurar uma feature arquivada (e voltar a trabalhar nela):
+
+```bash
+aioson feature:archive . --feature=user-auth --restore
+```
+
+O manifest em `.aioson/context/done/MANIFEST.md` registra todas as features arquivadas com data, contagem de arquivos e resumo da Vision — agentes históricos (`@cypher`, `@neo`, `@discover`, `@sheldon`) leem esse manifest em vez dos arquivos completos.
+
+> Veja a [documentação completa do feature:archive](./feature-archive.md) para detalhes de safety guards, saída JSON e impacto nos agentes.
 
 ### 30. Monitorar budget de tokens durante uma sessão
 
@@ -1645,7 +1657,7 @@ aioson feature:close . \
   --notes="Auth edge case ausente"
 ```
 
-Fecha a feature: atualiza spec (QA sign-off), features.md e project-pulse.md em uma chamada.
+Fecha a feature: atualiza spec (QA sign-off), features.md e project-pulse.md em uma chamada. Em `--verdict=PASS`, dispara `feature:archive` automaticamente — todos os artefatos da feature são movidos para `.aioson/context/done/{slug}/` e o manifest é atualizado sem intervenção manual.
 
 ### 51. Executar workflow completo
 

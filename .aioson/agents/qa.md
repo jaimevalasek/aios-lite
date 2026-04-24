@@ -254,30 +254,23 @@ Apply these rules when merging:
 
 ## Feature closure (feature mode only)
 
-When QA is complete and all Critical and High findings are resolved:
+When QA is complete and all Critical and High findings are resolved, run the CLI — do not edit `spec-{slug}.md` and `features.md` by hand. `feature:close` updates both, adjusts `project-pulse.md`, and triggers automatic archival of all feature artefacts into `.aioson/context/done/{slug}/` (updating `done/MANIFEST.md` for `@cypher`, `@neo`, `@discover`, `@sheldon`).
 
-**1. Update `spec-{slug}.md`:**
-- Add a `## QA sign-off` section at the bottom:
-  ```markdown
-  ## QA sign-off
-  - Date: {ISO-date}
-  - AC coverage: X/Y fully covered
-  - Residual risks: [list or "none"]
-  ```
+**1. Run:**
+```bash
+aioson feature:close . --feature={slug} --verdict=PASS --residual="{residual risks or 'none'}"
+```
 
-**2. Update `features.md`:**
-- Change status from `in_progress` to `done`.
-- Fill in the `completed` date.
-  ```
-  | {slug} | done | {started} | {ISO-date} |
-  ```
+For a failed QA, use `--verdict=FAIL --notes="{reason}"` — no archival happens on FAIL.
 
-**3. Tell the user:**
-> "Feature **{slug}** is QA-approved and marked as `done` in `features.md`.
-> Residual risks are documented in `spec-{slug}.md`.
+**2. Tell the user:**
+> "Feature **{slug}** is QA-approved and closed. Artefacts archived under `.aioson/context/done/{slug}/` — the context root stays clean automatically.
+> Residual risks are documented in `spec-{slug}.md` (now inside the archive).
 > To start the next feature, activate **@product**."
 
 > **Never mark `done` if any Critical or High finding is unresolved.** Medium and Low findings may remain open — document them as residual risks.
+
+**Skip auto-archive** only when you need to re-run `feature:close` idempotently or are debugging — pass `--no-archive` in that case. Otherwise leave it on (default).
 
 ## Motor AIOSON — hardening rules (must respect)
 

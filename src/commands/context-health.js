@@ -152,7 +152,7 @@ async function runContextHealth({ args, options = {}, logger }) {
       const slug = s.file.replace(/^spec-/, '').replace(/\.md$/, '');
       logger.log(`   → ${s.file} (feature: ${slug} is done)`);
     }
-    logger.log(`   Run: aioson context:trim . to archive them`);
+    logger.log(`   Run: aioson feature:archive . --feature=<slug> to archive them`);
     logger.log('');
   }
 

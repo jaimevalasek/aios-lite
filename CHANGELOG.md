@@ -14,6 +14,9 @@ All notable changes to this project will be documented in this file.
 - **Runner system**: `runner:run`, `runner:queue`, `runner:plan`, and `runner:daemon` commands for persistent background job execution.
 - **Design-docs governance**: modular code governance system with 5 best-practice files (`folder-structure`, `componentization`, `code-reuse`, `naming`, `file-size`) distributed automatically on install and loaded unconditionally by `@dev` and `@deyvin`.
 - **SDLC process upgrade**: gates and handoff protocol enhancements across the workflow engine.
+- **Feature closure automation**: `feature:close` now auto-triggers `feature:archive` on `--verdict=PASS`, moving all feature artefacts (`prd-`, `spec-`, `requirements-`, etc.) to `.aioson/context/done/{slug}/` and updating `done/MANIFEST.md`. No manual steps required.
+- **Feature archive command**: `feature:archive` with `--dry-run`, `--restore`, and `--force` for retrospective archival and archive restoration. Replaces the legacy `context:trim` workflow.
+- **Agent awareness of archived features**: `@cypher`, `@discover`, `@neo`, and `@sheldon` now read `.aioson/context/done/MANIFEST.md` to avoid loading full archived files.
 
 ### Changed
 - **i18n architecture**: decoupled interaction language from agent prompts. Agent instruction files are now canonical English only; `conversation_language` in `project.context.md` controls user-facing language. Removed localized agent packs in favor of single canonical source.

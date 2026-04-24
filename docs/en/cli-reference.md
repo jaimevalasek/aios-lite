@@ -313,7 +313,7 @@ Once the project is set up, each new feature follows a shorter sequence — no `
 @product → @analyst → @dev → @qa
 ```
 
-`@product` creates a feature-scoped `prd-{slug}.md` and registers the feature in `features.md`. `@analyst` produces `requirements-{slug}.md` and `spec-{slug}.md`. `@dev` reads the feature spec. `@qa` closes the feature by updating `spec-{slug}.md` with a QA sign-off and marking it `done` in `features.md`.
+`@product` creates a feature-scoped `prd-{slug}.md` and registers the feature in `features.md`. `@analyst` produces `requirements-{slug}.md` and `spec-{slug}.md`. `@dev` reads the feature spec. `@qa` closes the feature by running `feature:close --verdict=PASS`, which updates `spec-{slug}.md` with a QA sign-off, marks it `done` in `features.md`, and automatically archives all feature artefacts to `.aioson/context/done/{slug}/`.
 
 The `SMALL` and MEDIUM outputs include a note reminding you of this sequence.
 
@@ -342,6 +342,61 @@ aioson workflow:next ./my-project --skip=dev
 - `workflow:next` is the canonical command
 - `agent:next` is an alias for compatibility
 - `workflow.config.json` and `workflow.state.json` live under `.aioson/context/`, so normal framework updates preserve them
+
+---
+
+## feature:close
+
+Close a feature after QA sign-off, updating the spec, features registry, and project pulse — and automatically archive all feature artefacts on PASS.
+
+```bash
+aioson feature:close . --feature=checkout --verdict=PASS --residual="none"
+aioson feature:close . --feature=checkout --verdict=FAIL --notes="critical auth bug"
+aioson feature:close . --feature=checkout --verdict=PASS --no-archive
+```
+
+**Options:**
+- `--feature=<slug>` — feature identifier (required).
+- `--verdict=PASS|FAIL` — QA result (required).
+- `--residual="..."` — residual risks or open notes for PASS (optional).
+- `--notes="..."` — failure reason for FAIL (optional).
+- `--no-archive` — skip automatic archival (useful for idempotent re-runs).
+- `--json` — structured JSON output.
+
+**What it does:**
+1. Appends a `## QA sign-off` section to `spec-{slug}.md`.
+2. Updates `features.md` with the new status (`done` or `qa_failed`) and completed date.
+3. Clears active work from `project-pulse.md`.
+4. If `verdict=PASS` and `--no-archive` is not set, calls `feature:archive` automatically to move all artefacts to `.aioson/context/done/{slug}/`.
+
+**When to use:** run by `@qa` automatically when QA is approved. Can also be run manually.
+
+---
+
+## feature:archive
+
+Move feature artefacts to the archive directory and maintain a manifest for lightweight historical lookup.
+
+```bash
+aioson feature:archive . --feature=checkout
+aioson feature:archive . --feature=checkout --dry-run
+aioson feature:archive . --feature=checkout --restore
+aioson feature:archive . --feature=checkout --restore --dry-run
+aioson feature:archive . --feature=checkout --force
+```
+
+**Options:**
+- `--feature=<slug>` — feature identifier (required).
+- `--dry-run` — preview what would be moved or restored without making changes.
+- `--restore` — move artefacts back from `.aioson/context/done/{slug}/` to the context root.
+- `--force` — archive even if the feature is not registered in `features.md` or is still `in_progress`.
+- `--json` — structured JSON output with `moved`, `skipped`, `archiveDir`, and `manifestEntry`.
+
+**What it moves:** any file in the root of `.aioson/context/` whose name contains the feature slug: `prd-{slug}.md`, `spec-{slug}.md`, `requirements-{slug}.md`, `sheldon-enrichment-{slug}.md`, `qa-report-{slug}.md`, `conformance-{slug}.yaml`, etc.
+
+**What it never moves:** global files (`project.context.md`, `project-pulse.md`, `features.md`, `discovery.md`, etc.) and subdirectories (`bootstrap/`, `forensics/`, `parallel/`, `done/`).
+
+**Manifest:** after each archive run, `.aioson/context/done/MANIFEST.md` is updated with a row summarizing the feature. Agents like `@cypher`, `@neo`, `@discover`, and `@sheldon` read this manifest instead of loading full archived files.
 
 ---
 

@@ -785,7 +785,7 @@ aioson skill:publish [path] --slug=<slug>
 ```bash
 aioson context:pack [path] [--agent=<agent>] [--goal="..."] [--module=<folder>]
 aioson context:health [path]
-aioson context:trim [path] [--dry-run] [--force]
+aioson feature:archive [path] --feature=<slug> [--dry-run] [--restore] [--force]
 aioson context:monitor [path] [--budget=<n>] [--tokens=<n>]
 aioson context:search:index [path]
 aioson context:search [path] --query="..."

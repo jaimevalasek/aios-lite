@@ -68,6 +68,7 @@ Check these in order. Stop at the first failure:
 | Spec exists | `.aioson/context/spec.md` | Note presence — used for continuity detection |
 | Dev state | `.aioson/context/dev-state.md` | If present: @dev has an active session. Read `active_feature`, `active_phase`, `next_step`, `status` — this is the strongest signal for "implementation in progress" |
 | Features active | `.aioson/context/features.md` | Note in-progress features |
+| Features archived | `.aioson/context/done/MANIFEST.md` | If present, note delivered features summary — do NOT load the archived files unless the user explicitly requests history |
 | Design doc | `.aioson/context/design-doc*.md` | Note presence |
 | Copy exists | `.aioson/context/copy-*.md` | Only relevant when `project_type=site`. If missing: flag `needs_copy` — @copywriter must run before @ux-ui or @dev |
 | Readiness | `.aioson/context/readiness.md` | If exists, read status |
