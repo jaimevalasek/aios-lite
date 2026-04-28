@@ -35,6 +35,13 @@ module.exports = {
       'aioson test:smoke [workspace-path] [--lang=<bcp47-tag>] [--web3=ethereum|solana|cardano] [--profile=standard|mixed|parallel] [--keep] [--json] [--locale=en]',
     help_test_package:
       'aioson test:package [source-path] [--keep] [--dry-run] [--json] [--locale=en]',
+    help_dossier_init:
+      'aioson dossier:init [path] --slug=<feature-slug> [--classification=MICRO|SMALL|MEDIUM] [--json] [--locale=en]',
+    help_dossier_show:
+      'aioson dossier:show [path] --slug=<feature-slug> [--json] [--locale=en]',
+    dossier_created: 'Dossier created at {path} (classification={classification}).',
+    dossier_already_exists: 'Dossier already exists at {path}. Aborting (atomic init, no --force).',
+    dossier_not_found: 'Dossier not found for slug "{slug}" (expected at {path}).',
     help_workflow_plan:
       'aioson workflow:plan [path] [--classification=MICRO|SMALL|MEDIUM] [--json] [--locale=en]',
     help_workflow_next:

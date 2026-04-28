@@ -161,6 +161,7 @@ const { runPulseUpdate } = require('./commands/pulse-update');
 const { runStateSave } = require('./commands/state-save');
 const { runFeatureClose } = require('./commands/feature-close');
 const { runFeatureArchive } = require('./commands/feature-archive');
+const { runDossierInit, runDossierShow } = require('./commands/dossier');
 const { runGateCheck } = require('./commands/gate-check');
 const { runGateApprove } = require('./commands/gate-approve');
 const { runArtifactValidate } = require('./commands/artifact-validate');
@@ -534,6 +535,10 @@ const JSON_SUPPORTED_COMMANDS = new Set([
   'feature-close',
   'feature:archive',
   'feature-archive',
+  'dossier:init',
+  'dossier-init',
+  'dossier:show',
+  'dossier-show',
   'gate:check',
   'gate-check',
   'gate:approve',
@@ -1205,6 +1210,10 @@ async function main() {
       result = await runFeatureClose({ args, options, logger: commandLogger });
     } else if (command === 'feature:archive' || command === 'feature-archive') {
       result = await runFeatureArchive({ args, options, logger: commandLogger });
+    } else if (command === 'dossier:init' || command === 'dossier-init') {
+      result = await runDossierInit({ args, options, logger: commandLogger });
+    } else if (command === 'dossier:show' || command === 'dossier-show') {
+      result = await runDossierShow({ args, options, logger: commandLogger });
     } else if (command === 'gate:check' || command === 'gate-check') {
       result = await runGateCheck({ args, options, logger: commandLogger });
     } else if (command === 'gate:approve' || command === 'gate-approve') {

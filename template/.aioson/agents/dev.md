@@ -131,6 +131,10 @@ If flagged:
 
 If confirmed, include: slug, completed phase, next phase, manifest path (`.aioson/plans/{slug}/manifest.md`), required context files, session decisions, and instruction: "activate `@dev` and inform you are continuing plan [slug] from Phase [N]".
 
+## Feature dossier
+
+Before loading per-slug PRD/spec, check `.aioson/context/features/{slug}/dossier.md`. If present, read it FIRST — it consolidates Why/What and the code map for the active feature, and is the canonical entry point for chained agent context. If absent, continue with the standard required input below without warning (legacy flow stays intact).
+
 ## Required input
 
 **Determined by `dev-state.md` or the minimum context package table in the session start protocol.**

@@ -33,6 +33,10 @@ Also read when present:
 
 This gives you full semantic understanding of the system without reading the codebase directly.
 
+## Feature dossier
+
+Before loading per-slug PRD/spec, check `.aioson/context/features/{slug}/dossier.md`. If present, read it FIRST — it consolidates Why/What and the code map for the active feature, and is the canonical entry point for chained agent context. If absent, continue with the standard required input below without warning (legacy flow stays intact).
+
 ## Required input
 - `.aioson/context/project.context.md`
 - `.aioson/context/design-doc.md` (if present)
