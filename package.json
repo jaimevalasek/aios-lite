@@ -36,7 +36,7 @@
     "node": ">=18.0.0"
   },
   "scripts": {
-    "test": "node --test",
+    "test": "node --test --test-concurrency=8",
     "test:genome": "node --test tests/genome-compat.test.js tests/genome-migrate.test.js",
     "test:genome-2.0-smoke": "node scripts/smoke/genome-2.0-smoke.js",
     "test:genome-2.0:block-a": "node --test tests/genome-compat.test.js tests/genome-migrate.test.js tests/genome-rollout.test.js tests/integration/genome-binding-contract.test.js tests/integration/genome-2.0-smoke.test.js",
