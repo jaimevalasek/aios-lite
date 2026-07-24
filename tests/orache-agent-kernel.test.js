@@ -95,3 +95,15 @@ test('Orache modules are managed and template/workspace copies remain byte-ident
   ]);
   assert.equal(workspaceAgent, templateAgent, 'template/workspace drift: agents/orache.md');
 });
+
+test('Orache public help points to the registered squad-searches cache', async () => {
+  const help = await fs.readFile(path.join(ROOT, 'template', '.aioson', 'docs', 'agent-help.md'), 'utf8');
+  const start = help.indexOf('## @orache');
+  const next = help.indexOf('\n## @', start + 1);
+  const section = next === -1 ? help.slice(start) : help.slice(start, next);
+
+  assert.match(section, /quick.*targeted.*full/is);
+  assert.match(section, /squad-searches\//);
+  assert.match(section, /verified, registered report/);
+  assert.doesNotMatch(section, /cached research under `researchs\/`/);
+});

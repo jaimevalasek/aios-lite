@@ -75,10 +75,10 @@ Consumed by the `## Help (--help)` section of each agent kernel: a standalone `-
 
 - **What:** deep domain investigation before a squad/product push — real frameworks, anti-patterns, benchmarks, reference voices, vocabulary of the field.
 - **When:** entering an unfamiliar domain, or before `@squad` assembles specialists.
-- **Options:** none — give it the domain/question; it reuses the `researchs/` cache (7-day TTL).
+- **Options:** `quick` (D1/D2/D5), `targeted`, or `full`; it reuses matching registered investigation reports within seven days and may read relevant technical cache entries.
 - **Typical:** `/orache investigate the B2B onboarding-tools market`.
-- **Produces:** a domain dossier + cached research under `researchs/`.
-- **Next:** `@squad`, `@product`, or `@briefing` depending on the goal.
+- **Produces:** a verified, registered report under `squad-searches/` with evidence ledger and concrete squad impacts.
+- **Next:** `@squad`; Analyst/Architect only for an explicitly requested modeling/technical follow-up.
 
 ## @orchestrator
 
