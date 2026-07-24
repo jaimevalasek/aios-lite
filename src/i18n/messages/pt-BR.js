@@ -295,7 +295,7 @@ module.exports = {
     help_runtime_session_status:
       'aioson runtime:session:status [path] --agent=<nome> [--limit=8] [--watch=2] [--json] [--locale=pt-BR]',
     help_runtime_emit:
-      'aioson runtime:emit [path] --agent=<nome> [--type=<evento>] [--summary=<texto>] [--title=<texto>] [--refs=<arquivo[,arquivo2]>] [--plan-step=<id>] [--meta=<json>] [--json] [--locale=pt-BR]',
+      'aioson runtime:emit [path] --agent=<nome> [--type=<evento>] [--summary=<texto>] [--title=<texto>] [--refs=<arquivo[,arquivo2]>] [--used-skills=<id[,id2]>] [--plan-step=<id>] [--meta=<json>] [--json] [--locale=pt-BR]',
     help_live_start:
       'aioson live:start [path] --tool=codex|claude|opencode --agent=<nome> [--tool-bin=<binario>] [--permission-mode=default|yolo] [--tool-args=<args>] [--title=<texto>] [--goal=<texto>] [--plan=<arquivo>] [--session=<chave>] [--message=<texto>] [--attach] [--no-launch] [--tmux] [--json] [--locale=pt-BR]',
     help_live_status:
@@ -317,7 +317,7 @@ module.exports = {
     help_skill_remove:
       'aioson skill:remove [caminho] --slug=<nome> [--json] [--locale=pt-BR]',
     help_skill_audit:
-      'aioson skill:audit [caminho] [--json] [--locale=pt-BR]',
+      'aioson skill:audit [caminho] [--scope=runtime|template|all] [--reachability] [--usage] [--json] [--locale=pt-BR]',
     help_design_hybrid_options:
       'aioson design-hybrid:options [caminho] [--advanced] [--json] [--locale=pt-BR]',
     help_cloud_import_squad:

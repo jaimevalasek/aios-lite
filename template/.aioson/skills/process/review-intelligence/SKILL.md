@@ -26,6 +26,8 @@ Use the profile and review mode returned by `review:prepare`; do not substitute 
 
 1. Establish authority. Read the prepared artifact, available bound authorities, applicable project rules, and relevant project learnings before challenging the work.
 2. Run `aioson review:prepare . --agent=<agent> --feature=<slug> [--artifact=<path>] --json`.
+   - If it returns `terminal: true` with `stop_reason: current_pass_exists`, stop. Do not draft, check, or prepare again for that unchanged artifact generation.
+   - `context_sources` such as the append-only dossier inform the review but do not invalidate a promoted report.
 3. Pass 1 — challenge the present artifact with every prepared lens. Resolve facts from local evidence before asking anyone.
 4. Pass 2 — imagine the proposed result implemented, used, failed, operated, changed, and removed. Look for future-state gaps, empty/error states, unavailable integrations, ownership, rollback, and evolution.
 5. Stop after two passes. Convert unresolved material gaps into findings; do not continue open-ended interrogation.

@@ -14,6 +14,7 @@ const BOOLEAN_FLAGS = new Set([
   'selective',
   'status', 'suggest', 'apply', 'complete',
   'runtime-only', 'template-only', 'inception', 'locales',
+  'reachability', 'usage',
   // Documented switches shared by command-specific help entries.
   'advanced', 'defaults', 'finish', 'headed', 'html',
   'include-archived', 'include-external', 'keep', 'no-backup',

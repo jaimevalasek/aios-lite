@@ -25,3 +25,10 @@ test('genome 2.0 smoke script validates legacy read, v2 write and squad binding'
 
   await fs.rm(workspaceRoot, { recursive: true, force: true });
 });
+
+test('genome 2.0 smoke script cleans its default temporary workspace', async () => {
+  const result = await runGenome20SmokeTest();
+  assert.equal(result.ok, true);
+  assert.equal(result.workspace_retained, false);
+  await assert.rejects(fs.access(result.workspaceRoot), { code: 'ENOENT' });
+});

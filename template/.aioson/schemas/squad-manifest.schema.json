@@ -74,6 +74,16 @@
       ],
       "description": "Primary squad type"
     },
+    "deliveryLane": {
+      "type": "string",
+      "enum": [
+        "quick",
+        "standard",
+        "premium",
+        "regulated"
+      ],
+      "description": "Proportional creation and assurance depth selected in the blueprint"
+    },
     "mission": {
       "type": "string",
       "maxLength": 500

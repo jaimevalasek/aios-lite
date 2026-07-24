@@ -111,29 +111,33 @@ async function resolveArtifact(rootDir, profile, explicitPath) {
 
 async function collectAuthorities(rootDir, profile, artifactPath) {
   const authorities = [];
+  const context = [];
   const missing = [];
+  const missingContext = [];
   const seen = new Set([artifactPath]);
   for (const candidate of profile.authority_candidates) {
     if (seen.has(candidate.path)) continue;
+    const soft = candidate.freshness === 'soft';
     try {
       const hashed = await hashSecureFile(rootDir, candidate.path, { maxBytes: MAX_SOURCE_BYTES });
       if (seen.has(hashed.path)) continue;
       seen.add(hashed.path);
-      authorities.push({
+      const source = {
         kind: candidate.kind,
         path: hashed.path,
         sha256: hashed.sha256,
         bytes: hashed.bytes
-      });
+      };
+      (soft ? context : authorities).push(source);
     } catch (error) {
       if (isMissingFile(error)) {
-        missing.push({ kind: candidate.kind, path: candidate.path });
+        (soft ? missingContext : missing).push({ kind: candidate.kind, path: candidate.path });
         continue;
       }
       throw error;
     }
   }
-  return { authorities, missing };
+  return { authorities, context, missing, missing_context: missingContext };
 }
 
 function buildReportTemplate(packet) {
@@ -268,17 +272,29 @@ async function prepareReview({ rootDir, featureSlug, agent, artifactPath, now = 
   }
 
   const draftPath = draftRelativePath(input.feature_slug, input.agent, packet.packet_id);
+  const latestReport = await latestPromotedReportForPacket(rootDir, packet);
+  const terminal = latestReport?.report?.review_status === 'pass';
   return {
     ok: true,
     operation: 'prepare',
     exitCode: 0,
     created,
+    terminal,
+    ...(terminal ? {
+      stop_reason: 'current_pass_exists',
+      terminal_report_path: latestReport.path,
+      terminal_completed_at: latestReport.report.completed_at
+    } : {}),
     packet_path: packetPath,
     draft_path: draftPath,
     packet,
     missing_authorities: sources.missing,
+    context_sources: sources.context,
+    missing_context: sources.missing_context,
     report_template: buildReportTemplate(packet),
-    next_command: `aioson review:check . --agent=${input.agent} --feature=${input.feature_slug} --report=${draftPath} --json`
+    next_command: terminal
+      ? null
+      : `aioson review:check . --agent=${input.agent} --feature=${input.feature_slug} --report=${draftPath} --json`
   };
 }
 
@@ -359,6 +375,41 @@ function storedAt(record) {
 function newestStoredFirst(left, right) {
   const byStorageTime = storedAt(right) - storedAt(left);
   return byStorageTime || right.path.localeCompare(left.path);
+}
+
+async function latestPromotedReportForPacket(rootDir, packet) {
+  const directories = reviewStorageDirectories(packet.feature_slug);
+  const reportPaths = await listCanonicalJsonFiles(rootDir, directories.reports);
+  const matches = [];
+
+  for (const reportPath of reportPaths) {
+    try {
+      const loaded = await readSecureJson(rootDir, reportPath, { maxBytes: MAX_REPORT_BYTES });
+      const report = loaded.value;
+      const validation = validateReviewReport(report);
+      if (!validation.ok) continue;
+      if (report.feature_slug !== packet.feature_slug
+        || report.agent !== packet.agent
+        || report.packet_id !== packet.packet_id) {
+        continue;
+      }
+      const expectedPath = reportRelativePath(
+        report.feature_slug,
+        report.agent,
+        report.packet_id,
+        reportHashFor(report)
+      );
+      if (expectedPath !== reportPath) continue;
+      if (reportBindingIssue(report, packet)) continue;
+      matches.push({ report, path: reportPath, stored_at_ms: loaded.modified_at_ms });
+    } catch {
+      // Invalid historical reports remain visible through review:status but
+      // never reopen or terminate a newly prepared review generation.
+    }
+  }
+
+  matches.sort(newestStoredFirst);
+  return matches[0] || null;
 }
 
 async function reviewStatus({ rootDir, featureSlug }) {

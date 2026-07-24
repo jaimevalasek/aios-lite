@@ -321,6 +321,7 @@ test('runtime:emit records a standalone event when no live session is active', a
       type: 'milestone',
       summary: 'agent-1 completed lane work',
       refs: '.aioson/context/parallel/agent-1.status.md',
+      'used-skills': 'prompt-sharpener,review-intelligence',
       meta: '{"worker":"agent-1"}',
       json: true
     },
@@ -337,13 +338,15 @@ test('runtime:emit records a standalone event when no live session is active', a
   const { db, runtimeDir } = await openRuntimeDb(dir, { mustExist: true });
   try {
     const run = db.prepare(`
-      SELECT run_key, agent_name, source, status
+      SELECT run_key, agent_name, source, status, used_skills_json
       FROM agent_runs
       WHERE run_key = ?
     `).get(emitted.runKey);
     assert.equal(run.agent_name, '@orchestrator');
     assert.equal(run.source, 'direct');
     assert.equal(run.status, 'completed');
+    assert.deepEqual(JSON.parse(run.used_skills_json), ['prompt-sharpener', 'review-intelligence']);
+    assert.deepEqual(emitted.usedSkills, ['prompt-sharpener', 'review-intelligence']);
 
     const event = db.prepare(`
       SELECT event_type, message, payload_json
@@ -359,6 +362,7 @@ test('runtime:emit records a standalone event when no live session is active', a
     assert.equal(payload.worker, 'agent-1');
     assert.equal(payload.standalone, true);
     assert.deepEqual(payload.refs, ['.aioson/context/parallel/agent-1.status.md']);
+    assert.deepEqual(payload.used_skills, ['prompt-sharpener', 'review-intelligence']);
 
     const sessionRef = await readAgentSession(runtimeDir, '@orchestrator');
     assert.equal(sessionRef, null);

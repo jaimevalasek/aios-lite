@@ -1,0 +1,149 @@
+{
+  "version": 1,
+  "skills": [
+    {
+      "id": "aioson-spec-driven",
+      "path": ".aioson/skills/process/aioson-spec-driven/SKILL.md",
+      "owner_agents": ["product", "sheldon", "planner", "dev", "qa"],
+      "triggers": ["tracked feature specification", "implementation plan", "tracked implementation", "gate D QA"],
+      "load_tier": "phase_required",
+      "mutually_exclusive_group": null,
+      "tests": ["tests/workflow-next.test.js"],
+      "last_used_version": "1.41.0",
+      "status": "active",
+      "replacement": null
+    },
+    {
+      "id": "briefing-expansion-scout",
+      "path": ".aioson/skills/process/briefing-expansion-scout/SKILL.md",
+      "owner_agents": ["briefing", "briefing-refiner"],
+      "triggers": ["rich feature surface", "existing expansion artifact", "explicit request for richer options"],
+      "load_tier": "risk_triggered",
+      "mutually_exclusive_group": null,
+      "tests": ["tests/feature-expansion-skills.test.js"],
+      "last_used_version": "1.41.0",
+      "status": "active",
+      "replacement": null
+    },
+    {
+      "id": "decision-presentation",
+      "path": ".aioson/skills/process/decision-presentation/SKILL.md",
+      "owner_agents": ["product", "planner", "briefing", "briefing-refiner"],
+      "triggers": ["material user decision", "trade-off presentation", "approval choice"],
+      "load_tier": "decision_triggered",
+      "mutually_exclusive_group": null,
+      "tests": ["tests/jargon-leak-doctor.test.js"],
+      "last_used_version": "1.41.0",
+      "status": "active",
+      "replacement": null
+    },
+    {
+      "id": "design-hybrid-forge",
+      "path": ".aioson/skills/process/design-hybrid-forge/SKILL.md",
+      "owner_agents": ["design-hybrid-forge"],
+      "triggers": ["hybrid design skill generation"],
+      "load_tier": "agent_required",
+      "mutually_exclusive_group": null,
+      "tests": ["tests/design-hybrid-options.test.js"],
+      "last_used_version": "1.41.0",
+      "status": "active",
+      "replacement": null
+    },
+    {
+      "id": "product-scope-expansion",
+      "path": ".aioson/skills/process/product-scope-expansion/SKILL.md",
+      "owner_agents": ["product"],
+      "triggers": ["rich product surface", "existing expansion artifact", "explicit request for richer options"],
+      "load_tier": "risk_triggered",
+      "mutually_exclusive_group": null,
+      "tests": ["tests/feature-expansion-skills.test.js"],
+      "last_used_version": "1.41.0",
+      "status": "active",
+      "replacement": null
+    },
+    {
+      "id": "prompt-sharpener",
+      "path": ".aioson/skills/process/prompt-sharpener/SKILL.md",
+      "owner_agents": ["operator"],
+      "triggers": ["prompt audit", "agent or skill improvement", "dead-context reduction"],
+      "load_tier": "manual_operator",
+      "mutually_exclusive_group": null,
+      "tests": ["tests/skill-registry.test.js"],
+      "last_used_version": "1.41.0",
+      "status": "active",
+      "replacement": null
+    },
+    {
+      "id": "prototype-forge",
+      "path": ".aioson/skills/process/prototype-forge/SKILL.md",
+      "owner_agents": ["briefing-refiner"],
+      "triggers": ["approved prototype request", "editable briefing prototype"],
+      "load_tier": "explicit",
+      "mutually_exclusive_group": null,
+      "tests": ["tests/prototype-check.test.js"],
+      "last_used_version": "1.41.0",
+      "status": "active",
+      "replacement": null
+    },
+    {
+      "id": "reference-identity-extract",
+      "path": ".aioson/skills/process/reference-identity-extract/SKILL.md",
+      "owner_agents": ["setup", "briefing-refiner"],
+      "triggers": ["reference URL supplied", "visual identity extraction"],
+      "load_tier": "explicit",
+      "mutually_exclusive_group": null,
+      "tests": ["tests/reference-identity-extract.test.js"],
+      "last_used_version": "1.41.0",
+      "status": "active",
+      "replacement": null
+    },
+    {
+      "id": "review-intelligence",
+      "path": ".aioson/skills/process/review-intelligence/SKILL.md",
+      "owner_agents": ["briefing", "briefing-refiner", "product", "sheldon", "analyst", "architect", "scope-check", "qa"],
+      "triggers": ["concrete feature artifact", "critical or high risk", "cross-cutting ambiguity", "independent review requested"],
+      "load_tier": "risk_triggered",
+      "mutually_exclusive_group": null,
+      "tests": ["tests/review-intelligence-skill.test.js", "tests/review-intelligence-cli.test.js"],
+      "last_used_version": "1.41.0",
+      "status": "active",
+      "replacement": null
+    },
+    {
+      "id": "secure-tdd",
+      "path": ".aioson/skills/process/secure-tdd/SKILL.md",
+      "owner_agents": ["dev"],
+      "triggers": ["authentication", "authorization", "payments", "secrets", "PII", "cryptography", "file upload", "webhook", "untrusted input"],
+      "load_tier": "risk_triggered",
+      "mutually_exclusive_group": null,
+      "tests": ["tests/skill-registry.test.js"],
+      "last_used_version": "1.41.0",
+      "status": "active",
+      "replacement": null
+    },
+    {
+      "id": "sheldon-expansion-audit",
+      "path": ".aioson/skills/process/sheldon-expansion-audit/SKILL.md",
+      "owner_agents": ["sheldon"],
+      "triggers": ["rich PRD surface", "existing expansion artifact", "explicit request for richer options"],
+      "load_tier": "risk_triggered",
+      "mutually_exclusive_group": null,
+      "tests": ["tests/feature-expansion-skills.test.js"],
+      "last_used_version": "1.41.0",
+      "status": "active",
+      "replacement": null
+    },
+    {
+      "id": "simplify",
+      "path": ".aioson/skills/process/simplify/SKILL.md",
+      "owner_agents": [],
+      "triggers": ["legacy explicit invocation only"],
+      "load_tier": "manual_legacy",
+      "mutually_exclusive_group": null,
+      "tests": [],
+      "last_used_version": null,
+      "status": "deprecated",
+      "replacement": "quality:audit plus bounded review-intelligence"
+    }
+  ]
+}

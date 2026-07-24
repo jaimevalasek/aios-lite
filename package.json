@@ -39,11 +39,12 @@
     "test": "node --test",
     "test:genome": "node --test tests/genome-compat.test.js tests/genome-migrate.test.js",
     "test:genome-2.0-smoke": "node scripts/smoke/genome-2.0-smoke.js",
-    "test:genome-2.0:block-a": "node scripts/smoke/genome-2.0-smoke.js && npm run test:genome && npm test && npm run lint",
+    "test:genome-2.0:block-a": "node --test tests/genome-compat.test.js tests/genome-migrate.test.js tests/genome-rollout.test.js tests/integration/genome-binding-contract.test.js tests/integration/genome-2.0-smoke.test.js",
     "test:genome-2.0:rollout": "node scripts/testing/genome-2.0-rollout.js",
-    "lint": "node scripts/check-js.js",
+    "check:syntax": "node scripts/check-js.js",
+    "lint": "npm run check:syntax",
     "sync:agents": "node src/commands/sync-agents-preflight.js && node src/commands/sync-agents-copy.js",
-    "ci": "npm run lint && npm test"
+    "ci": "npm run check:syntax && npm test"
   },
   "dependencies": {
     "ajv": "8.17.1",

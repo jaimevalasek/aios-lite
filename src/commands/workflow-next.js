@@ -18,6 +18,7 @@ const { readAutonomyProtocol, resolveEffectiveMode } = require('../autonomy-poli
 const { readAgentManifest, buildAgentCapabilitySummary } = require('../agent-manifests');
 const { resolveAutopilotSignal } = require('../autopilot-signal');
 const { runMemoryReflectPrepare } = require('./memory-reflect-prepare');
+const { runReviewCycle } = require('./review-cycle');
 const { inspectStagedChanges } = require('../lib/git-commit-guard');
 const { readDecisionCheckpoint } = require('../lib/decision-checkpoint');
 const { emitSecurityRuntimeEvent } = require('../lib/security/runtime-events');
@@ -833,6 +834,68 @@ async function ensureFeatureDossier(targetDir, state) {
   }
 }
 
+function qaReportRelativePath(featureSlug) {
+  return `.aioson/context/qa-report-${featureSlug}.md`;
+}
+
+async function readQaVerdict(targetDir, featureSlug) {
+  if (!featureSlug) return null;
+  const reportPath = path.join(targetDir, qaReportRelativePath(featureSlug));
+  const report = await fs.readFile(reportPath, 'utf8').catch(() => '');
+  if (!report) return null;
+  const raw = parseFrontmatterValue(report, 'verdict')
+    || parseFrontmatterValue(report, 'status')
+    || ((report.match(/(?:\*\*)?verdict(?:\*\*)?\s*:\s*([A-Za-z_-]+)/i) || [])[1]);
+  const normalized = String(raw || '').trim().toLowerCase();
+  if (['pass', 'passed', 'approved'].includes(normalized)) return 'pass';
+  if (['fail', 'failed', 'blocked'].includes(normalized)) return 'fail';
+  return normalized || null;
+}
+
+async function advanceQaDevCycle(targetDir, featureSlug) {
+  return runReviewCycle({
+    args: [targetDir],
+    options: {
+      sub: 'advance',
+      json: true,
+      feature: featureSlug,
+      plan: qaReportRelativePath(featureSlug),
+      source: 'qa',
+      to: 'dev',
+      summary: 'QA verdict FAIL; consolidated correction cycle'
+    },
+    logger: { log() {}, error() {} }
+  });
+}
+
+async function resolveQaDevCycle(targetDir, featureSlug) {
+  return runReviewCycle({
+    args: [targetDir],
+    options: {
+      sub: 'resolve',
+      json: true,
+      feature: featureSlug,
+      source: 'qa',
+      to: 'dev'
+    },
+    logger: { log() {}, error() {} }
+  });
+}
+
+async function resetQaDevCycle(targetDir, featureSlug) {
+  return runReviewCycle({
+    args: [targetDir],
+    options: {
+      sub: 'reset',
+      json: true,
+      feature: featureSlug,
+      source: 'qa',
+      to: 'dev'
+    },
+    logger: { log() {}, error() {} }
+  });
+}
+
 async function finalizeCurrentStage(targetDir, config, state, stageName) {
   const normalizedStage = normalizeAgentName(stageName || state.current || state.next);
   if (!normalizedStage) {
@@ -845,6 +908,43 @@ async function finalizeCurrentStage(targetDir, config, state, stageName) {
       completedStage: normalizedStage,
       alreadyCompleted: true
     };
+  }
+  let qaVerdict = null;
+  if (normalizedStage === 'qa' && state.mode === 'feature' && state.featureSlug) {
+    qaVerdict = await readQaVerdict(targetDir, state.featureSlug);
+    if (qaVerdict === 'fail') {
+      const reviewCycle = await advanceQaDevCycle(targetDir, state.featureSlug);
+      if (!reviewCycle.ok) {
+        throw new Error(`[QA Correction Cycle] Cannot route QA findings: ${reviewCycle.reason || 'unknown error'}.`);
+      }
+      if (reviewCycle.action === 'stop_cycle_limit') {
+        const error = new Error(
+          `[QA Cycle Limit Reached] ${state.featureSlug} exhausted ${reviewCycle.cycle}/${reviewCycle.max_cycles} QA→DEV correction cycle(s). `
+          + 'Stop automatic review and require a human/product decision or an explicit review-cycle reset.'
+        );
+        error.code = 'WORKFLOW_QA_CYCLE_LIMIT';
+        error.reviewCycle = reviewCycle;
+        throw error;
+      }
+      if (reviewCycle.action !== 'invoke_dev') {
+        throw new Error(`[QA Correction Cycle] Unexpected action: ${reviewCycle.action || 'none'}.`);
+      }
+      const completed = (state.completed || [])
+        .map(normalizeAgentName)
+        .filter((stage) => stage && stage !== 'dev' && stage !== 'qa');
+      return {
+        state: buildStatePayload({
+          ...state,
+          completed,
+          current: null,
+          next: 'dev',
+          detour: null
+        }),
+        completedStage: null,
+        attemptedStage: 'qa',
+        correctionCycle: reviewCycle
+      };
+    }
   }
   let auditCodeSummary = null;
 
@@ -1074,6 +1174,12 @@ async function finalizeCurrentStage(targetDir, config, state, stageName) {
     throw new Error(errMsg);
   }
 
+  let correctionCycleResolution = null;
+  if (normalizedStage === 'dev' && state.mode === 'feature' && state.featureSlug) {
+    const resolved = await resolveQaDevCycle(targetDir, state.featureSlug);
+    if (resolved.action === 'invoke_qa') correctionCycleResolution = resolved;
+  }
+
   const completed = Array.from(new Set([...(state.completed || []), normalizedStage]));
   const next = findNextFromSequence(state.sequence, completed, state.skipped || []);
   const nextState = buildStatePayload({
@@ -1090,10 +1196,16 @@ async function finalizeCurrentStage(targetDir, config, state, stageName) {
   // reconcile only healed on the NEXT load — after the backwards activation had
   // already been printed and persisted.
   const reconciled = reconcileWorkflowState(nextState);
+  let correctionCycleReset = null;
+  if (normalizedStage === 'qa' && qaVerdict === 'pass' && state.featureSlug) {
+    correctionCycleReset = await resetQaDevCycle(targetDir, state.featureSlug);
+  }
 
   return {
     state: reconciled.changed ? reconciled.state : nextState,
     completedStage: normalizedStage,
+    ...(correctionCycleResolution ? { correctionCycleResolution } : {}),
+    ...(correctionCycleReset ? { correctionCycleReset } : {}),
     ...(auditCodeSummary ? { auditCode: auditCodeSummary } : {})
   };
 }
@@ -1740,6 +1852,8 @@ async function runWorkflowNext({ args, options, logger, t }) {
   const loaded = await loadOrCreateState(targetDir, options);
   let state = loaded.state;
   let completedStage = null;
+  let reviewCycleTransition = null;
+  let reviewCycleResolution = null;
 
   if (options.complete || options['complete-current']) {
     // F3 (workflow-handoff-integrity v1.9.6) — pending-decisions guard.
@@ -1877,6 +1991,8 @@ async function runWorkflowNext({ args, options, logger, t }) {
     }
     state = finalized.state;
     completedStage = finalized.completedStage;
+    reviewCycleTransition = finalized.correctionCycle || null;
+    reviewCycleResolution = finalized.correctionCycleResolution || null;
     if (finalized.alreadyCompleted) {
       logger.log(`@${completedStage} is already completed; no gates or handoff were repeated.`);
       return {
@@ -1903,25 +2019,27 @@ async function runWorkflowNext({ args, options, logger, t }) {
         idempotent: true
       };
     }
-    await require('../self-healing').incrementRetryCount(targetDir, completedStage, '');
-    const { getRetryCount } = require('../self-healing');
-    const retries = await getRetryCount(targetDir, completedStage);
-    if (retries > 0) {
-      // Reset retry count on successful completion after healing
-      const retriesPath = path.join(targetDir, '.aioson/context/pipeline-retries', `${completedStage}.json`);
-      try { await fs.unlink(retriesPath); } catch { /* ignore */ }
-    }
+    if (!reviewCycleTransition && completedStage) {
+      await require('../self-healing').incrementRetryCount(targetDir, completedStage, '');
+      const { getRetryCount } = require('../self-healing');
+      const retries = await getRetryCount(targetDir, completedStage);
+      if (retries > 0) {
+        // Reset retry count on successful completion after healing
+        const retriesPath = path.join(targetDir, '.aioson/context/pipeline-retries', `${completedStage}.json`);
+        try { await fs.unlink(retriesPath); } catch { /* ignore */ }
+      }
 
-    // ── Living Memory: reflect bootstrap if the completed stage produced
-    //    a relevant diff (routes/models/contracts/volume). Best-effort —
-    //    never fail the workflow on reflection errors.
-    try {
-      await runMemoryReflectPrepare({
-        args: [targetDir],
-        options: { agent: completedStage, json: true },
-        logger: { log: () => {}, error: () => {} }
-      });
-    } catch { /* reflection is advisory; never block the workflow */ }
+      // ── Living Memory: reflect bootstrap if the completed stage produced
+      //    a relevant diff (routes/models/contracts/volume). Best-effort —
+      //    never fail the workflow on reflection errors.
+      try {
+        await runMemoryReflectPrepare({
+          args: [targetDir],
+          options: { agent: completedStage, json: true },
+          logger: { log: () => {}, error: () => {} }
+        });
+      } catch { /* reflection is advisory; never block the workflow */ }
+    }
   }
 
   if (options.skip) {
@@ -1955,6 +2073,17 @@ async function runWorkflowNext({ args, options, logger, t }) {
     options
   );
   state = activation.state;
+
+  if (reviewCycleTransition && activation.agent === 'dev' && activation.prompt) {
+    const cycle = `${reviewCycleTransition.cycle}/${reviewCycleTransition.max_cycles}`;
+    activation.prompt = [
+      `## Bounded QA correction cycle (${cycle})`,
+      `Read \`${reviewCycleTransition.plan}\` and correct only its reproducible implementation findings.`,
+      'Keep product intent unchanged, run focused evidence for the affected paths, then complete DEV normally; the workflow will return to one final QA pass.',
+      '',
+      activation.prompt
+    ].join('\n');
+  }
 
   // ── Living Memory: if a reflect manifest is pending (created above by the
   //    completed agent), prepend a one-line instruction so the next agent
@@ -1992,7 +2121,8 @@ async function runWorkflowNext({ args, options, logger, t }) {
     skipped: state.skipped,
     sequence: state.sequence,
     autonomyMode: activation.effectiveMode || null,
-    verification: activation.verification || null
+    verification: activation.verification || null,
+    reviewCycle: reviewCycleTransition || reviewCycleResolution || null
   };
   await appendWorkflowEvent(targetDir, eventPayload);
   const runtime = await syncWorkflowRuntime(targetDir, {
@@ -2003,7 +2133,7 @@ async function runWorkflowNext({ args, options, logger, t }) {
   });
 
   // Generate session handoff when a stage completes or workflow finishes
-  if (completedStage || !activation.agent) {
+  if (completedStage || reviewCycleTransition || !activation.agent) {
     const handoffData = buildWorkflowHandoff(state, completedStage, activation.agent);
     handoffData.autonomyMode = activation.effectiveMode || null;
     handoffData.protocol = buildWorkflowHandoffProtocol(state, completedStage, activation.agent, {
@@ -2049,7 +2179,8 @@ async function runWorkflowNext({ args, options, logger, t }) {
     effectiveMode: activation.effectiveMode || null,
     verification: activation.verification || null,
     instructionPath: activation.instructionPath,
-    prompt: activation.prompt
+    prompt: activation.prompt,
+    reviewCycle: reviewCycleTransition || reviewCycleResolution || null
   };
 
   logger.log(t('workflow_next.title', {
@@ -2058,6 +2189,9 @@ async function runWorkflowNext({ args, options, logger, t }) {
   }));
   if (completedStage) {
     logger.log(t('workflow_next.completed', { agent: `@${completedStage}` }));
+  }
+  if (reviewCycleTransition) {
+    logger.log(`QA correction cycle ${reviewCycleTransition.cycle}/${reviewCycleTransition.max_cycles}: @qa → @dev`);
   }
   if (state.detour && state.detour.active) {
     logger.log(

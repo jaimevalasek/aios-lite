@@ -135,6 +135,132 @@ test('an approved plan advances to Dev', async () => {
   assert.deepEqual(result.completed, ['product', 'planner']);
 });
 
+test('QA FAIL uses one bounded DEV correction and returns to a final QA pass', async () => {
+  const root = await tmp();
+  await context(root);
+  await active(root);
+  await write(root, '.aioson/context/prd-demo.md', productPrd());
+  await write(root, '.aioson/context/implementation-plan-demo.md', plan());
+  await write(root, 'src/demo.js', 'module.exports = { saved: true };\n');
+  await write(
+    root,
+    'tests/demo.test.js',
+    "const test = require('node:test'); const assert = require('node:assert/strict'); test('AC-demo-01 saves result', () => assert.equal(require('../src/demo').saved, true));\n"
+  );
+  await write(
+    root,
+    '.aioson/context/qa-report-demo.md',
+    '---\nverdict: FAIL\n---\n# QA Report\n\n## Verdict and blocking findings\n\nAC-demo-01 fails on the normal path.\n'
+  );
+  await write(root, '.aioson/context/workflow.state.json', JSON.stringify({
+    version: 1,
+    mode: 'feature',
+    classification: 'SMALL',
+    sequence: ['product', 'planner', 'dev', 'qa'],
+    current: 'qa',
+    next: null,
+    completed: ['product', 'planner', 'dev'],
+    skipped: [],
+    featureSlug: 'demo',
+    detour: null,
+    updatedAt: new Date().toISOString()
+  }));
+
+  const correction = await next(root, { complete: 'qa' });
+  assert.equal(correction.completedStage, null);
+  assert.equal(correction.agent, 'dev');
+  assert.equal(correction.reviewCycle.action, 'invoke_dev');
+  assert.equal(correction.reviewCycle.cycle, 1);
+  assert.deepEqual(correction.completed, ['product', 'planner']);
+  assert.match(correction.prompt, /Bounded QA correction cycle \(1\/1\)/);
+
+  const devComplete = await next(root, { complete: 'dev' });
+  assert.equal(devComplete.completedStage, 'dev');
+  assert.equal(devComplete.agent, 'qa');
+  assert.equal(devComplete.reviewCycle.action, 'invoke_qa');
+  const resolvedCycle = JSON.parse(
+    await fs.readFile(path.join(root, '.aioson/runtime/qa-dev-cycle.json'), 'utf8')
+  );
+  assert.equal(resolvedCycle.status, 'resolved');
+
+  await write(
+    root,
+    '.aioson/context/qa-report-demo.md',
+    `---
+verdict: PASS
+production_entry: node src/demo.js
+---
+# QA Report
+
+## Verdict and blocking findings
+
+PASS — no blocking findings.
+
+## CAP/AC evidence table
+
+| CAP | AC | Result | Evidence |
+|---|---|---|---|
+| CAP-demo-01 | AC-demo-01 | PASS | node --test tests/demo.test.js |
+
+## Commands executed and results
+
+- node --test tests/demo.test.js — PASS
+
+## Production-path smoke
+
+- Entry: node src/demo.js
+- Trigger: normal module entry
+- Result: saved state is observable
+`
+  );
+  const passed = await next(root, { complete: 'qa' });
+  assert.equal(passed.completedStage, 'qa');
+  assert.equal(passed.agent, null);
+  await assert.rejects(
+    fs.access(path.join(root, '.aioson/runtime/qa-dev-cycle.json')),
+    { code: 'ENOENT' }
+  );
+});
+
+test('QA correction limit persists and blocks repeated re-entry', async () => {
+  const root = await tmp();
+  await context(root);
+  await active(root);
+  await write(root, '.aioson/context/prd-demo.md', productPrd());
+  await write(root, '.aioson/context/implementation-plan-demo.md', plan());
+  await write(root, '.aioson/context/qa-report-demo.md', '---\nverdict: FAIL\n---\n# QA Report\n\nBlocking defect.\n');
+  const state = {
+    version: 1,
+    mode: 'feature',
+    classification: 'SMALL',
+    sequence: ['product', 'planner', 'dev', 'qa'],
+    current: 'qa',
+    next: null,
+    completed: ['product', 'planner', 'dev'],
+    skipped: [],
+    featureSlug: 'demo',
+    detour: null,
+    updatedAt: new Date().toISOString()
+  };
+  await write(root, '.aioson/context/workflow.state.json', JSON.stringify(state));
+  await next(root, { complete: 'qa' });
+
+  await write(root, '.aioson/context/workflow.state.json', JSON.stringify(state));
+  await assert.rejects(
+    next(root, { complete: 'qa' }),
+    /QA Cycle Limit Reached/
+  );
+  const exhausted = JSON.parse(
+    await fs.readFile(path.join(root, '.aioson/runtime/qa-dev-cycle.json'), 'utf8')
+  );
+  assert.equal(exhausted.status, 'limit_reached');
+
+  await assert.rejects(
+    next(root, { complete: 'qa' }),
+    /QA Cycle Limit Reached/
+  );
+});
+
 test('a thin PRD does not falsely complete Product', async () => {
   const root = await tmp();
   await context(root);

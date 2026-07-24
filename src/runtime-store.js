@@ -1694,6 +1694,11 @@ function updateRun(db, options) {
     toolName: options.toolName,
     message: String(options.message || options.summary || 'Run updated'),
     payload: options.payload,
+    planStepId: options.planStepId,
+    workerStatus: options.workerStatus,
+    verdict: options.verdict,
+    tokenCount: options.tokenCount,
+    progressPct: options.progressPct,
     createdAt: now
   });
 

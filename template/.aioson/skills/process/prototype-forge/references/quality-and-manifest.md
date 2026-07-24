@@ -1,0 +1,36 @@
+---
+description: Bounded premium polish, inspection evidence, and manifest contract for Prototype Forge
+agents: [briefing-refiner]
+task_types: [prototype-quality, prototype-handoff]
+triggers: [functional prototype complete, prototype manifest]
+---
+
+# Prototype Forge Quality and Manifest
+
+Before UI coding, state internally one visual thesis, two or three anti-goals, and one product-specific signature move. After the functional build:
+
+1. Re-read the existing HTML and perform exactly one surgical polish pass; do not regenerate the artifact for style.
+2. Apply the design skill's swap, squint, signature, token, responsive, contrast, and interaction-state checks.
+3. Inspect DOM/CSS. When browser/screenshot tools exist, inspect at least one mobile and one desktop viewport.
+4. Fix overflow, hierarchy, type rhythm, contrast, unsupported assets, dead controls, and generic composition without losing any Core screen/action/state.
+5. Record only checks actually performed. Never claim screenshot evidence when none ran.
+
+The manifest includes:
+
+- one screen-inventory row per Core object, including management surface
+- `## Core interactions`, one backticked interaction token per line so `aioson prototype:check` can trace it to acceptance criteria
+- selected `design_skill`
+- explicit “mock only — refresh resets, no backend”
+- `draft` or `locked-at: {ref}`
+- `## Visual direction`: thesis, anti-goals, signature move
+- `## Quality evidence`: checks and limitations
+- `## Delegation provenance` only when another model was explicitly used
+
+Final checks:
+
+- Core inventory and interactions match the surface map.
+- Empty and error states are visible.
+- No native dialogs, dead avatar/menu, or external dependencies.
+- Visual system is selected-skill-specific rather than generic.
+- Polish preserved functional completeness.
+- Any remaining management gap is reported as blocking.

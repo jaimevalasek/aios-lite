@@ -2,7 +2,7 @@
 
 > **Loading rule:** Load this reference when writing copy that must fit specific platform constraints. Most often loaded in **Mode 2 (section ads)** or **Mode 6 (campaign package)** when generating multi-platform ad copy. Skip when writing landing pages or VSL scripts (they have no platform-imposed limits).
 
-This is a tactical reference. It tells you the **hard limits** (truncation), the **ideal limits** (engagement), and the **format hooks** (where the eye lands first) per platform. It does not teach copy strategy — for that, load `ads-cpgc.md`, `patterns.md`, or the master genome of your choice.
+This is a tactical reference. It tells you the **hard limits** (truncation), the **ideal limits** (engagement), and the **format hooks** (where the eye lands first) per platform. It does not teach copy strategy — for that, use the active Copywriter campaign module, `patterns.md`, or the selected master genome.
 
 ---
 

@@ -8,6 +8,7 @@ const path = require('node:path');
 
 const { runFeatureClose } = require('../src/commands/feature-close');
 const { activateStage } = require('../src/commands/workflow-next');
+const { cleanupTmpDir } = require('./helpers/sqlite-cleanup');
 
 function makeLogger() {
   const lines = [];
@@ -65,7 +66,7 @@ describe('Phase 3.1 — feature:close dossier guarantee', () => {
       const synthesizedUpdate = result.updates.find((u) => u.startsWith('dossier:'));
       assert.match(synthesizedUpdate, /synthesized from existing artifacts/);
     } finally {
-      await fs.rm(tmp, { recursive: true, force: true });
+      await cleanupTmpDir(tmp);
     }
   });
 
@@ -86,7 +87,7 @@ describe('Phase 3.1 — feature:close dossier guarantee', () => {
       const synthesizedUpdate = result.updates.find((u) => u.startsWith('dossier:'));
       assert.match(synthesizedUpdate, /minimal fallback/);
     } finally {
-      await fs.rm(tmp, { recursive: true, force: true });
+      await cleanupTmpDir(tmp);
     }
   });
 
@@ -111,7 +112,7 @@ describe('Phase 3.1 — feature:close dossier guarantee', () => {
       const synthesizedUpdate = result.updates.find((u) => u.startsWith('dossier:'));
       assert.equal(synthesizedUpdate, undefined, 'no dossier update line when already present');
     } finally {
-      await fs.rm(tmp, { recursive: true, force: true });
+      await cleanupTmpDir(tmp);
     }
   });
 
@@ -131,7 +132,7 @@ describe('Phase 3.1 — feature:close dossier guarantee', () => {
       const exists = await fs.access(dossierPath).then(() => true).catch(() => false);
       assert.ok(exists, 'guarantee must run even on FAIL verdict');
     } finally {
-      await fs.rm(tmp, { recursive: true, force: true });
+      await cleanupTmpDir(tmp);
     }
   });
 });
@@ -158,7 +159,7 @@ describe('Phase 3.2 — workflow:next pre-stage hook (ensureFeatureDossier)', ()
       const existsAfter = await fs.access(dossierPath).then(() => true).catch(() => false);
       assert.ok(existsAfter, 'dossier should exist after activateStage for MEDIUM feature');
     } finally {
-      await fs.rm(tmp, { recursive: true, force: true });
+      await cleanupTmpDir(tmp);
     }
   });
 
@@ -180,7 +181,7 @@ describe('Phase 3.2 — workflow:next pre-stage hook (ensureFeatureDossier)', ()
       const exists = await fs.access(dossierPath).then(() => true).catch(() => false);
       assert.equal(exists, true, 'MICRO should receive the same lightweight context memory');
     } finally {
-      await fs.rm(tmp, { recursive: true, force: true });
+      await cleanupTmpDir(tmp);
     }
   });
 
@@ -205,7 +206,7 @@ describe('Phase 3.2 — workflow:next pre-stage hook (ensureFeatureDossier)', ()
       const after = await fs.readFile(dossierPath, 'utf8');
       assert.equal(after, SENTINEL, 'existing dossier must be untouched');
     } finally {
-      await fs.rm(tmp, { recursive: true, force: true });
+      await cleanupTmpDir(tmp);
     }
   });
 
@@ -222,7 +223,7 @@ describe('Phase 3.2 — workflow:next pre-stage hook (ensureFeatureDossier)', ()
       );
       // No assertion needed — just must not throw
     } finally {
-      await fs.rm(tmp, { recursive: true, force: true });
+      await cleanupTmpDir(tmp);
     }
   });
 
@@ -246,7 +247,7 @@ describe('Phase 3.2 — workflow:next pre-stage hook (ensureFeatureDossier)', ()
       assert.match(dossier, /lightweight workflow context cache/);
       assert.match(dossier, /populated as evidence becomes available/);
     } finally {
-      await fs.rm(tmp, { recursive: true, force: true });
+      await cleanupTmpDir(tmp);
     }
   });
 });

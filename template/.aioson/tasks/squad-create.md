@@ -17,6 +17,7 @@
 ### Step 1 - Read Blueprint
 Read `.aioson/squads/.designs/<slug>.blueprint.json` and validate required fields: slug, name, problem, goal, mode, executors.
 If present, also preserve:
+- `deliveryLane` (`standard` when absent for backward compatibility; force `regulated` for tier-1)
 - `locale_scope`
 - `locale_rationale`
 - `domainClassification`
@@ -85,6 +86,7 @@ Mandatory persistence:
 - `confidence` + `traces` per executor: copy from blueprint into each `executors[]` manifest entry; `squad-analyze` and `squad-validate` read these fields
 - `contribution` + `decisionRights` per executor: persist what repeated work justifies the role and which material decisions it owns
 - `evaluation`: persist source-grounded criteria and at least one held-out case; when genomes are bound, include with/without dimension evidence
+- `deliveryLane`: copy the resolved lane so validation, readiness, and future maintenance use the same assurance contract
 
 ### Step 4 - Generate agents.md (Text Manifest)
 Follow `.aioson/docs/squad/package-contract.md`, section `agents/agents.md`.
@@ -142,6 +144,13 @@ Load `.aioson/docs/squad/genome-bindings.md`. Then, for each executor whose blue
 
 Skip this step only for tier-3 squads whose executors are all `worker` / plain `agent` types with no specialized expertise.
 
+Apply the selected lane proportionally:
+
+- `quick`: reuse and bind an already-valid matching genome only. Do not generate one in the hot path; persist the pending owner, exact command, and `evaluation.deferReason`.
+- `standard`: generate/bind only planned genomes whose expected behavioral contribution is named. Do not create a genome for every role by convention.
+- `premium`: run the full planned generation, materialized binding, source-hash check, and applicable A/B evidence.
+- `regulated`: same as premium, plus mandatory current evidence and no deferred sensitive-domain binding.
+
 ### Step 6 - Generate Orchestrator
 Create `.aioson/squads/<slug>/agents/orquestrador.md` following `.aioson/docs/squad/package-contract.md`, section `Orchestrator prompt`.
 If `uiCapability.mode = executor`, include routing guidance that visual demands go to `@ui-specialist`.
@@ -158,21 +167,28 @@ Save `.aioson/squads/<slug>/squad.md` according to `.aioson/docs/squad/package-c
 Include `locale_scope`, `locale_rationale`, `investigation`, and `sourceDocs` when present.
 
 ### Step 10 - Run Strict Validate And Eval
-Run `aioson squad:validate . --squad=<slug> --strict --json`, then
-`aioson squad:eval . --squad=<slug> --json`. Persistent and regulated squads do
-not become ready without a current PASS. An ephemeral Quick Scan may defer only
-with a concrete `evaluation.deferReason`.
+Always run `aioson squad:validate . --squad=<slug> --strict --json`. Then apply
+the lane:
+
+- `quick`: run one routing/entry-point smoke. Eval may be deferred only with a concrete `evaluation.deferReason`; readiness remains `provisional`.
+- `standard`: run `aioson squad:eval . --squad=<slug> --json` once; all critical held-out criteria must PASS. A non-critical WARN is allowed only with an owner and repair action.
+- `premium`: require a current full eval PASS, including applicable genome A/B evidence.
+- `regulated`: require a current full eval PASS with current/live-required evidence; no defer.
 
 ### Step 11 - Warm-Up Round
-Follow `.aioson/docs/squad/workflow-quality.md`, section `Confirmation, coverage, and warm-up`: show each specialist with problem reading, initial recommendation, main risk, and suggested next step.
+Follow `.aioson/docs/squad/workflow-quality.md`, section `Confirmation, coverage, and warm-up`:
+
+- `quick`: one routing/readiness smoke; no ceremonial per-specialist round.
+- `standard`: one representative end-to-end warm-up covering the orchestrator and participating specialists.
+- `premium|regulated`: full specialist round with problem reading, initial recommendation, main risk, and suggested next step.
 
 ## Output
 - Full package under `.aioson/squads/<slug>/`
 - Updated `CLAUDE.md` and `AGENTS.md`
-- Warm-up round executed
+- Lane-appropriate readiness proof executed
 
 ## Rules
 - Always read the blueprint before generating.
 - Follow `.aioson/docs/squad/package-contract.md` and `.aioson/docs/squad/workflow-quality.md`.
 - Keep the HTML deliverable after each round according to the existing rule.
-- Do not skip warm-up; it is mandatory.
+- Do not skip the proof required by `deliveryLane`; do not inflate Quick into a premium ceremony.

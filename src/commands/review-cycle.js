@@ -237,7 +237,22 @@ async function runAdvance(targetDir, source, target, options = {}) {
   const currentCycle = sameFeature ? Number(existing.cycle || 0) : 0;
 
   if (currentCycle >= maxCycles) {
-    try { await fs.unlink(statePath); } catch { /* absent is fine */ }
+    const now = new Date().toISOString();
+    const exhaustedState = {
+      ...(sameFeature ? existing : {}),
+      slug: feature,
+      source,
+      target,
+      cycle: currentCycle,
+      max_cycles: maxCycles,
+      status: 'limit_reached',
+      started_at: sameFeature && existing.started_at ? existing.started_at : now,
+      updated_at: now,
+      stopped_at: now,
+      last_plan: planPath,
+      last_summary: options.summary ? String(options.summary).trim() : existing?.last_summary || null
+    };
+    await writeJson(statePath, exhaustedState);
     return {
       ok: true,
       action: 'stop_cycle_limit',
@@ -248,7 +263,9 @@ async function runAdvance(targetDir, source, target, options = {}) {
       cycle: currentCycle,
       max_cycles: maxCycles,
       next_agent: null,
-      plan: planPath
+      plan: planPath,
+      state_path: path.relative(targetDir, statePath).replace(/\\/g, '/'),
+      state: exhaustedState
     };
   }
 

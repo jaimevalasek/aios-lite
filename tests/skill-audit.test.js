@@ -28,7 +28,7 @@ describe('skill-audit.js — runSkillAudit', () => {
   it('returns no_files when no skill markdown exists', async () => {
     const result = await runSkillAudit({
       args: [tmpDir],
-      options: { json: true },
+      options: { json: true, scope: 'all' },
       logger: mockLogger
     });
 
@@ -44,7 +44,7 @@ describe('skill-audit.js — runSkillAudit', () => {
 
     const result = await runSkillAudit({
       args: [tmpDir],
-      options: { json: true },
+      options: { json: true, scope: 'all' },
       logger: mockLogger
     });
 
@@ -58,5 +58,73 @@ describe('skill-audit.js — runSkillAudit', () => {
     assert.ok(result.files.some((file) => file.category === 'installed_skill'));
     assert.ok(result.files.some((file) => file.category === 'template_skill'));
     assert.ok(result.files.some((file) => file.file.endsWith('references/deep.md') && file.kind === 'reference'));
+  });
+
+  it('defaults to runtime scope so template mirrors are not double counted', async () => {
+    await writeFileEnsured(path.join(tmpDir, '.aioson', 'skills', 'process', 'alpha', 'SKILL.md'), '# Alpha\n');
+    await writeFileEnsured(path.join(tmpDir, 'template', '.aioson', 'skills', 'process', 'alpha', 'SKILL.md'), '# Alpha mirror\n');
+
+    const result = await runSkillAudit({
+      args: [tmpDir],
+      options: { json: true },
+      logger: mockLogger
+    });
+
+    assert.equal(result.scope, 'runtime');
+    assert.equal(result.totals.files, 1);
+    assert.equal(result.files[0].category, 'builtin_skill');
+  });
+
+  it('reports deterministic process-skill reachability and deprecated skills', async () => {
+    const skillPath = path.join(tmpDir, '.aioson', 'skills', 'process', 'alpha', 'SKILL.md');
+    await writeFileEnsured(skillPath, '---\nname: alpha\n---\n# Alpha\n');
+    await writeFileEnsured(
+      path.join(tmpDir, '.aioson', 'skills', 'process', 'legacy', 'SKILL.md'),
+      '---\nname: legacy\n---\n# Legacy\n'
+    );
+    await writeFileEnsured(
+      path.join(tmpDir, '.aioson', 'skills', 'registry.json'),
+      JSON.stringify({
+        version: 1,
+        skills: [
+          {
+            id: 'alpha',
+            path: '.aioson/skills/process/alpha/SKILL.md',
+            owner_agents: ['dev'],
+            triggers: ['task'],
+            tests: ['tests/alpha.test.js'],
+            load_tier: 'risk_triggered',
+            status: 'active',
+            replacement: null
+          },
+          {
+            id: 'legacy',
+            path: '.aioson/skills/process/legacy/SKILL.md',
+            owner_agents: [],
+            triggers: [],
+            tests: [],
+            load_tier: 'manual_legacy',
+            status: 'deprecated',
+            replacement: 'alpha'
+          }
+        ]
+      })
+    );
+    await writeFileEnsured(
+      path.join(tmpDir, '.aioson', 'agents', 'dev.md'),
+      'Load `.aioson/skills/process/alpha/SKILL.md` for risky work.'
+    );
+
+    const result = await runSkillAudit({
+      args: [tmpDir],
+      options: { json: true, reachability: true, usage: true },
+      logger: mockLogger
+    });
+
+    assert.equal(result.reachability.totals.directly_referenced, 1);
+    assert.equal(result.reachability.totals.deprecated, 1);
+    assert.equal(result.reachability.totals.orphans, 0);
+    assert.equal(result.reachability.unregistered.length, 0);
+    assert.equal(result.usage.available, false);
   });
 });

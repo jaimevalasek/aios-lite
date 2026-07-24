@@ -4,6 +4,7 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const { execFile } = require('node:child_process');
 const { exists, ensureDir } = require('../utils');
+const { resolveSkillCatalog } = require('../skills/registry');
 
 const INSTALLED_SKILLS_DIR = '.aioson/installed-skills';
 const TOOL_TARGETS = [
@@ -502,6 +503,7 @@ async function runSkillList({ args, options = {}, logger, t }) {
   const targetDir = resolveTargetDir(args);
   const skillsDir = path.join(targetDir, INSTALLED_SKILLS_DIR);
   const showAll = options.all !== undefined;
+  const registry = await resolveSkillCatalog(targetDir).catch(() => null);
 
   const installed = [];
 
@@ -605,7 +607,7 @@ async function runSkillList({ args, options = {}, logger, t }) {
   }
 
   if (staticSkills.length > 0) {
-    logger.log(`Static skills (${staticSkills.length}) — loaded by framework match:`);
+    logger.log(`Static skills (${staticSkills.length}) — eligible when the detected framework matches:`);
     for (const s of staticSkills) {
       logger.log(`  ${s.slug}`);
       if (showAll && s.description) logger.log(`    ${s.description.slice(0, 100)}`);
@@ -614,7 +616,7 @@ async function runSkillList({ args, options = {}, logger, t }) {
   }
 
   if (dynamicSkills.length > 0) {
-    logger.log(`Dynamic skills (${dynamicSkills.length}) — loaded by task context:`);
+    logger.log(`Dynamic skills (${dynamicSkills.length}) — eligible when task context matches:`);
     for (const s of dynamicSkills) {
       logger.log(`  ${s.slug}`);
       if (showAll && s.description) logger.log(`    ${s.description.slice(0, 100)}`);
@@ -622,14 +624,31 @@ async function runSkillList({ args, options = {}, logger, t }) {
     logger.log('');
   }
 
-  if (installed.length === 0 && allSource.length === 0) {
-    logger.log('Use `aioson skill:install --slug=<name>` to add a skill.');
-  } else {
-    logger.log('Source skills are loaded automatically by agents — no installation needed.');
-    logger.log('Use --all for full descriptions. Use `aioson skill:install` for third-party skills.');
+  const processSkills = registry
+    ? registry.catalog.filter((skill) => skill.category === 'process' && skill.registry_declared)
+    : [];
+  if (showAll && processSkills.length > 0) {
+    logger.log(`Process skills (${processSkills.length}) — deterministic registry policy:`);
+    for (const skill of processSkills) {
+      const replacement = skill.replacement ? ` -> ${skill.replacement}` : '';
+      logger.log(`  ${skill.id} [${skill.status}; ${skill.load_tier}]${replacement}`);
+    }
+    logger.log('');
   }
 
-  return { ok: true, installed, source: { design: designSkills, static: staticSkills, dynamic: dynamicSkills } };
+  if (installed.length === 0 && allSource.length === 0 && processSkills.length === 0) {
+    logger.log('Use `aioson skill:install --slug=<name>` to add a skill.');
+  } else {
+    logger.log('Source skills require a matching agent/task policy; a runtime load is recorded explicitly.');
+    logger.log('Use --all for registry policy. Use `aioson skill:audit --reachability --usage` for evidence.');
+  }
+
+  return {
+    ok: true,
+    installed,
+    source: { design: designSkills, static: staticSkills, dynamic: dynamicSkills },
+    process: processSkills
+  };
 }
 
 async function runSkillRemove({ args, options = {}, logger, t }) {

@@ -30,6 +30,11 @@
       "type": "string",
       "enum": ["content", "software", "research", "mixed"]
     },
+    "deliveryLane": {
+      "type": "string",
+      "enum": ["quick", "standard", "premium", "regulated"],
+      "description": "Proportional creation and assurance depth. Regulated is mandatory for tier-1 domains; quick requires explicit ephemeral/speed intent."
+    },
     "domain": { "type": "string" },
     "locale_scope": {
       "type": "string",

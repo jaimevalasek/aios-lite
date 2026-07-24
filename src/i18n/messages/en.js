@@ -297,7 +297,7 @@ module.exports = {
     help_runtime_session_status:
       'aioson runtime:session:status [path] --agent=<name> [--limit=8] [--watch=2] [--json] [--locale=en]',
     help_runtime_emit:
-      'aioson runtime:emit [path] --agent=<name> [--type=<event>] [--summary=<text>] [--title=<text>] [--refs=<file[,file2]>] [--plan-step=<id>] [--meta=<json>] [--json] [--locale=en]',
+      'aioson runtime:emit [path] --agent=<name> [--type=<event>] [--summary=<text>] [--title=<text>] [--refs=<file[,file2]>] [--used-skills=<id[,id2]>] [--plan-step=<id>] [--meta=<json>] [--json] [--locale=en]',
     help_live_start:
       'aioson live:start [path] --tool=codex|claude|opencode --agent=<name> [--tool-bin=<binary>] [--permission-mode=default|yolo] [--tool-args=<args>] [--title=<text>] [--goal=<text>] [--plan=<file>] [--session=<key>] [--message=<text>] [--attach] [--no-launch] [--tmux] [--json] [--locale=en]',
     help_live_status:
@@ -321,7 +321,7 @@ module.exports = {
     help_skill_remove:
       'aioson skill:remove [path] --slug=<name> [--json] [--locale=en]',
     help_skill_audit:
-      'aioson skill:audit [path] [--json] [--locale=en]',
+      'aioson skill:audit [path] [--scope=runtime|template|all] [--reachability] [--usage] [--json] [--locale=en]',
     help_design_hybrid_options:
       'aioson design-hybrid:options [path] [--advanced] [--json] [--locale=en]',
     help_cloud_import_squad:

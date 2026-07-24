@@ -1635,6 +1635,9 @@ async function runRuntimeEmit({ args, options = {}, logger, t }) {
   const eventType = String(options.type || 'note').trim() || 'note';
   const now = new Date().toISOString();
   const refs = parseRefs(options.refs);
+  const usedSkills = parseRefs(options['used-skills'] || options.skill)
+    .map((skill) => skill.replace(/^\$/, '').trim())
+    .filter(Boolean);
   const planStep = options['plan-step'] ? String(options['plan-step']).trim() : null;
   const summary = truncateMessage(
     options.summary || options.message || options.title || `${eventType} emitted by ${agentName}`
@@ -1642,6 +1645,7 @@ async function runRuntimeEmit({ args, options = {}, logger, t }) {
   const meta = parseJsonOption(options.meta);
   const payload = meta && typeof meta === 'object' ? { ...meta } : {};
   if (refs.length > 0) payload.refs = refs;
+  if (usedSkills.length > 0) payload.used_skills = usedSkills;
   if (planStep) payload.plan_step = planStep;
 
   let liveHandle;
@@ -1666,6 +1670,7 @@ async function runRuntimeEmit({ args, options = {}, logger, t }) {
       eventType,
       summary,
       payload,
+      usedSkills,
       options,
       now
     });
@@ -1770,20 +1775,37 @@ async function runRuntimeEmit({ args, options = {}, logger, t }) {
     const tokenCount = options['token-count'] != null ? Number(options['token-count']) || null : null;
     const progressPct = options['progress-pct'] != null ? Number(options['progress-pct']) || null : null;
 
-    appendRunEvent(db, {
-      runKey: context.run.run_key,
-      eventType,
-      phase: 'live',
-      status: context.run.status || 'running',
-      message: summary,
-      payload: Object.keys(payload).length > 0 ? payload : null,
-      createdAt: now,
-      planStepId: planStep || null,
-      workerStatus,
-      verdict,
-      tokenCount,
-      progressPct
-    });
+    if (usedSkills.length > 0) {
+      updateRun(db, {
+        runKey: context.run.run_key,
+        status: context.run.status || 'running',
+        usedSkills,
+        eventType,
+        phase: 'live',
+        message: summary,
+        payload: Object.keys(payload).length > 0 ? payload : null,
+        planStepId: planStep || null,
+        workerStatus,
+        verdict,
+        tokenCount,
+        progressPct
+      });
+    } else {
+      appendRunEvent(db, {
+        runKey: context.run.run_key,
+        eventType,
+        phase: 'live',
+        status: context.run.status || 'running',
+        message: summary,
+        payload: Object.keys(payload).length > 0 ? payload : null,
+        createdAt: now,
+        planStepId: planStep || null,
+        workerStatus,
+        verdict,
+        tokenCount,
+        progressPct
+      });
+    }
 
     const eventRecord = createLiveEventRecord(context, {
       ts: now,
@@ -1819,6 +1841,7 @@ async function runRuntimeEmit({ args, options = {}, logger, t }) {
       runKey: context.run.run_key,
       taskKey: currentTaskKey || context.task.task_key,
       currentTask: nextCurrentTask,
+      usedSkills,
       open: true
     };
   } finally {
@@ -1832,6 +1855,7 @@ async function emitStandaloneRuntimeEvent({
   eventType,
   summary,
   payload,
+  usedSkills = [],
   options = {},
   now
 }) {
@@ -1856,6 +1880,7 @@ async function emitStandaloneRuntimeEvent({
       title: options.title ? String(options.title).trim() : `runtime:emit ${agentName}`,
       status: 'completed',
       summary,
+      usedSkills,
       eventType,
       phase: 'direct',
       message: summary,
@@ -1879,6 +1904,7 @@ async function emitStandaloneRuntimeEvent({
       runKey,
       taskKey,
       currentTask: null,
+      usedSkills,
       open: false,
       standalone: true
     };

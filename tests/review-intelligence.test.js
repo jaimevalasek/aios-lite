@@ -159,6 +159,10 @@ test('profile registry preserves the approved agent, profile, mode and default m
     '.aioson/context/scope-check-review-intelligence.md',
     '.aioson/context/implementation-plan-review-intelligence.md'
   ]);
+  for (const agent of REVIEW_AGENTS) {
+    const dossier = resolveProfilePaths(agent, SLUG).authority_candidates.find((item) => item.kind === 'dossier');
+    assert.equal(dossier?.freshness, 'soft', `${agent}: dossier must remain non-invalidating context`);
+  }
 });
 
 // AC-RI-002 AC-RI-014 AC-RI-015

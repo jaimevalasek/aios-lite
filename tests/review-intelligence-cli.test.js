@@ -173,6 +173,56 @@ test('a current pass report is promoted and status selects it without a score', 
   assert.equal(JSON.stringify(status).includes('overall_score'), false);
 });
 
+test('QA dossier is soft context and a current PASS generation is terminal', async (t) => {
+  const root = await makeProject(t);
+  await writeFile(root, `.aioson/context/implementation-plan-${SLUG}.md`, '# Plan\n');
+  await writeFile(root, `.aioson/context/qa-report-${SLUG}.md`, '# QA report\n');
+  await writeFile(root, `.aioson/context/features/${SLUG}/dossier.md`, '# Dossier\n\nInitial context.\n');
+
+  const prepared = await prepareReview({ rootDir: root, featureSlug: SLUG, agent: 'qa' });
+  assert.equal(prepared.terminal, false);
+  assert.equal(prepared.packet.authorities.some((item) => item.kind === 'dossier'), false);
+  assert.equal(prepared.context_sources.some((item) => item.kind === 'dossier'), true);
+
+  const report = {
+    ...prepared.report_template,
+    review_status: 'pass',
+    summary: 'The QA generation is complete and backed by current evidence.',
+    findings: [],
+    completed_at: '2026-07-15T12:00:00.000Z',
+    assurance: Object.fromEntries(
+      Object.entries(prepared.report_template.assurance).map(([axis, value]) => [
+        axis,
+        {
+          ...value,
+          status: 'pass',
+          residual_risk: `${axis} has no material unresolved risk.`
+        }
+      ])
+    )
+  };
+  const draftPath = `.aioson/context/features/${SLUG}/reviews/drafts/qa-pass.json`;
+  await writeJson(root, draftPath, report);
+  const checked = await checkReview({ rootDir: root, featureSlug: SLUG, agent: 'qa', reportPath: draftPath });
+
+  await writeFile(
+    root,
+    `.aioson/context/features/${SLUG}/dossier.md`,
+    '# Dossier\n\nInitial context.\n\nQA verdict: PASS.\n'
+  );
+  const repeated = await prepareReview({ rootDir: root, featureSlug: SLUG, agent: 'qa' });
+  const status = await reviewStatus({ rootDir: root, featureSlug: SLUG });
+
+  assert.equal(repeated.packet.packet_id, prepared.packet.packet_id);
+  assert.equal(repeated.terminal, true);
+  assert.equal(repeated.stop_reason, 'current_pass_exists');
+  assert.equal(repeated.terminal_report_path, checked.report_path);
+  assert.equal(repeated.next_command, null);
+  assert.equal(repeated.context_sources.find((item) => item.kind === 'dossier').bytes > prepared.context_sources.find((item) => item.kind === 'dossier').bytes, true);
+  assert.equal(status.overall_status, 'clear');
+  assert.equal(status.historical_stale_packets, 0);
+});
+
 // SF-review-intelligence-03 SF-review-intelligence-04
 test('check rejects hidden report carriers and status uses promotion order instead of report timestamps', async (t) => {
   const root = await makeProject(t);

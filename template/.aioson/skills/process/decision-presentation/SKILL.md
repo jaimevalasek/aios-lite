@@ -1,128 +1,60 @@
 ---
 name: decision-presentation
-description: Process skill for profile-aware user-facing decisions. Translates framework jargon, enforces a localized recommendation marker on AskUserQuestion, and caps cadence at 1 question/turn when profile=creator. Load before the first user-facing question regardless of profile.
-activation: |
-  You are now running the decision-presentation process. Read `profile` from `.aioson/context/project.context.md`. If `profile=creator` (or absent/auto), enforce strict mode: 1 question per turn via AskUserQuestion with an explicit localized recommendation marker on the first option, plain-language `why`, and a localized pause option always available. If `profile=developer`, allow standard cadence (up to 5 numbered questions per batch, jargon permitted). If `profile=team`, behave as developer + emit `summary-{slug}-executive.md` at agent:done.
+description: Profile-aware contract for necessary user decisions, localized language, and bounded question cadence
+activation: Read profile from project.context.md; creator is the fallback for absent, empty, auto, or legacy beginner.
 ---
 
 # Skill: decision-presentation
 
-> Process skill. Profile-aware UX layer for user-facing decisions.
-> Load this file first. Then lazy-load `references/jargon-map.{en,pt-BR}.yaml` only when about to emit a framework term.
+Load before the first real user-facing decision. Do not load merely to produce an informational response.
 
-## When to use
+## Profile contract
 
-Load this skill before the first user-facing decision in any agent that interacts directly with the user. Mandatory in V1 for: `@neo`, `@setup`, `@product`, `@dev`, `@deyvin`, `@pentester`.
-
-Activation mode is decided by `profile` in `project.context.md`:
-
-| profile | cadence | jargon | recommendation marker |
-|---------|---------|--------|----------------------|
-| `creator` (default) | 1 question per turn | translated via dictionary | mandatory localized marker |
-| `developer` | up to 5 per batch | permitted | optional |
-| `team` | up to 5 per batch | permitted | optional + executive summary at agent:done |
-
-When `profile` is absent, empty, or `auto`, treat as `creator` (safer default).
+| profile | questions | jargon | extras |
+|---|---|---|---|
+| `creator` or absent/empty/`auto`/legacy `beginner` | one per turn | translate | recommended first option and pause option |
+| `developer` | up to five numbered questions per batch | allowed | recommendation optional |
+| `team` | same as developer | allowed | also emit `summary-{slug}-executive.md` at `agent:done` |
 
 ## Core rules
 
-### Rule 1 — AskUserQuestion is mandatory for decisions
+### Rule 1 — Structured decisions in creator mode
 
-When `profile=creator`, never emit free-form open questions to the user. Always use `AskUserQuestion` with 2-4 options. Free-form input is only allowed inside a localized "Other / describe it in your own words" option of an otherwise-structured question.
+Use `AskUserQuestion` with 2–4 options. Do not ask a free-form open question; free-form input is allowed only through the client-provided Other option.
 
-### Rule 2 — Recommendation marker on first option
+### Rule 2 — Recommend first
 
-When `profile=creator`, the first option in every `AskUserQuestion` carries a localized recommendation marker in its label (English fallback: `(Recommended)`) AND a one-sentence `description` explaining the recommendation in plain language. Trade-offs are expressed operationally: "choosing X takes longer but avoids Y".
+The first option has a localized recommendation marker such as `(Recommended)` and a one-sentence plain-language description of why and the operational trade-off.
 
-### Rule 3 — One question per turn (creator mode)
+### Rule 3 — One question per turn
 
-When `profile=creator`, each agent turn emits at most 1 `AskUserQuestion`. Multiple decisions are staged across turns. Reflection of understanding precedes each new decision.
+In creator mode, emit at most one `AskUserQuestion`; stage independent decisions across turns.
 
-### Rule 4 — Jargon translation via dictionary
+### Rule 4 — Translate framework jargon
 
-Before emitting any framework term, lazy-load the jargon-map for `interaction_language` (en or pt-BR; fallback to en). Look up the canonical term and substitute the `translation`. If a term is not in the dictionary, emit it verbatim (no transformation) and consider it a candidate for V2 dictionary coverage.
+Immediately before emitting a framework term in creator mode, load exactly one matching `references/jargon-map.{interaction_language}.yaml`; support `en` and `pt-BR`, fallback to `en`. Replace case-sensitive whole terms only, never substrings. Developer/team may keep jargon; team executive summaries use translations.
 
-When `profile=developer`, jargon is permitted unaltered. When `profile=team`, jargon is permitted in the operator-facing flow but the executive summary uses translations.
+### Rule 5 — Pause remains available
 
-### Rule 5 — Pause option always available
+Include a localized, non-default pause option explaining that work can resume from recorded state.
 
-Every `AskUserQuestion` in creator mode includes a localized pause option. Use "Pause / let me think" in English, or the equivalent in the selected project language, with a same-language description explaining that the user can pause now and resume later from the recorded state.
+### Rule 6 — Five or more alternatives
 
-### Rule 6 — Five-or-more alternatives escape hatch
+Present the three strongest options plus the client-provided Other path. If Other is selected, interpret the answer against the known alternatives without forcing a false match.
 
-`AskUserQuestion` accepts 2-4 options (harness limit). When a decision has 5+ valid alternatives:
+### Rule 7 — No question without a blocked decision
 
-1. Surface the 3 strongest alternatives via `AskUserQuestion` with a localized recommendation marker on the first.
-2. Add a localized free-form option labeled "Other / describe it in your own words" as the last option.
-3. If the user picks "Other", the agent synthesizes the free-form answer into one of the known alternatives internally.
-
-### Rule 7 — No questions without a decision to make
-
-Never emit `AskUserQuestion` (or numbered batches) just because an agent activated. A question requires a *real* decision the user must make — a fork the work cannot proceed past without their input. When an agent loads without a stated task and no active feature requires continuation:
-
-1. Provide a brief informational summary drawn from already-loaded context (active feature, last gate, blockers, next recommendation)
-2. Stop and wait for the user to direct
-
-Fabricated multi-choice questions waste attention, invite arbitrary implementation paths, and corrode trust in the framework.
-
-## Loading order
-
-1. Agent kernel preflight loads this `SKILL.md`.
-2. Agent reads `profile` from `project.context.md`.
-3. When about to emit a framework term, agent lazy-loads `references/jargon-map.{lang}.yaml` (only the file matching `interaction_language` or `conversation_language`).
-4. Translation lookup is case-sensitive with word-boundary matching (regex `\b{term}\b`). Substring matches like "MICRO" inside "MICROservices" do NOT match.
-
-## API surface (V1 — prompt-level only)
-
-V1 exposes no executable functions. The skill is pure prompt-level guidance — the agent reads these rules and adapts behavior. V2 may add imperative helpers (`present_decision(question, options, recommended_index, plain_language_why)`, `translate(term, target_lang, profile)`) if doctor check repeatedly catches violations.
-
-Optional API hook reserved for task-mode override: `force_profile` — an explicit profile override that bypasses the project.context.md value for a single decision. V1 reads this from a per-call argument; V2 may activate task-mode (skill activates per task, not per identity).
+Never ask because an agent activated. A question is justified only by a real fork that prevents safe progress. With no stated task or required continuation, provide a brief evidence-based status/recommendation and stop.
 
 ## Output contract
 
-When this skill is active, every user-facing decision produces:
+A creator-mode decision contains one structured question, 2–4 mutually exclusive options, recommended first option with plain-language why, localized pause, translated jargon, and no second open question. Developer/team mode may batch at most five numbered questions.
 
-- one `AskUserQuestion` (creator mode) or up to 5 batched numbered questions (developer/team mode)
-- a localized recommendation marker on the first option (creator mode; optional for developer/team)
-- jargon translated via dictionary (creator mode) or verbatim (developer/team mode)
-- a localized pause option (creator mode)
-- no free-form open questions outside the escape hatch
+## Loading
 
-## Doctor check integration
+1. Read the effective profile.
+2. Continue without a question when reasonable evidence supports a safe default.
+3. If a blocking decision remains, apply Rules 1–7.
+4. Load one jargon map only when a framework term will be shown.
 
-The doctor check `jargon_leak_detection` (defined in this same feature) verifies adherence in CI:
-
-- scope filter: only events from `[neo, setup, product, dev, deyvin, pentester]`
-- profile filter: only runs when active project has `profile=creator`
-- success threshold: `count=0` jargon leaks in a feature MICRO completa run with `profile=creator`
-
-Skill failure does not break `report.ok` — severity is `warning` (advisory).
-
-## Default profile semantics
-
-| project.context.md value | effective profile |
-|--------------------------|-------------------|
-| `profile: creator` | creator |
-| `profile: developer` | developer |
-| `profile: team` | team |
-| `profile: auto` | creator (safer default) |
-| `profile:` (empty) | creator |
-| missing `profile` field | creator |
-| legacy `profile: beginner` | creator (migrated by installer) |
-
-## Migration note (beginner → creator)
-
-Legacy projects with `profile: beginner` are migrated by `aioson update`:
-
-1. Installer detects `profile: beginner` in `project.context.md` frontmatter.
-2. Rewrites to `profile: creator`.
-3. Emits `runtime:emit --type=migration --level=info` with message: "Profile `beginner` renamed to `creator` to better describe the user. Behavior unchanged. Edit `.aioson/context/project.context.md` to switch to `developer` if desired."
-4. Migration is idempotent — running twice does not double-emit nor reverse.
-
-## What this skill does NOT do
-
-- Does not intercept agent output at runtime (no in-loop guard). Violations are caught after-fact by `jargon_leak_detection`.
-- Does not auto-detect profile via behavioral heuristics (V2).
-- Does not capture full agent transcripts (V2; V1 sees summaries via `agent_events`).
-- Does not activate task-mode override (V1 reserves the API; V2 implements).
-- Does not load for `@analyst`, `@architect`, `@qa`, `@discovery-design-doc`, `@briefing`, `@committer` (V2 follow-up after V1 validates).
+Load `references/compatibility-and-doctor.md` only when diagnosing compliance, migration, task-profile override, or historical V1 behavior.

@@ -17,6 +17,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
 const os = require('node:os');
 const path = require('node:path');
+const { cleanupTmpDir } = require('./helpers/sqlite-cleanup');
 
 const REPO_ROOT = path.resolve(__dirname, '..');
 
@@ -96,7 +97,7 @@ describe('agent-chain-continuity — AC regression bundle', () => {
       );
       assert.match(dossier, /schema_version: "1\.\d+"/);
     } finally {
-      await fs.rm(tmp, { recursive: true, force: true });
+      await cleanupTmpDir(tmp);
     }
   });
 
@@ -114,7 +115,7 @@ describe('agent-chain-continuity — AC regression bundle', () => {
       );
       assert.equal(await dossierExists(tmp, 'acc-02'), true);
     } finally {
-      await fs.rm(tmp, { recursive: true, force: true });
+      await cleanupTmpDir(tmp);
     }
   });
 
@@ -170,7 +171,7 @@ describe('agent-chain-continuity — AC regression bundle', () => {
         process.chdir(cwd);
       }
     } finally {
-      await fs.rm(tmp, { recursive: true, force: true });
+      await cleanupTmpDir(tmp);
     }
   });
 
@@ -211,7 +212,7 @@ describe('agent-chain-continuity — AC regression bundle', () => {
       assert.equal(parsed.artifact_uris[0].path, '.aioson/context/prd-x.md');
       assert.equal(parsed.artifact_uris[0].kind, 'other');
     } finally {
-      await fs.rm(tmp, { recursive: true, force: true });
+      await cleanupTmpDir(tmp);
     }
   });
 
@@ -229,7 +230,7 @@ describe('agent-chain-continuity — AC regression bundle', () => {
       assert.equal(await dossierExists(tmp, 'acc-07'), true);
       assert.ok(result.updates.some((u) => /dossier:.*synthesized from existing artifacts/.test(u)));
     } finally {
-      await fs.rm(tmp, { recursive: true, force: true });
+      await cleanupTmpDir(tmp);
     }
   });
 
@@ -251,7 +252,7 @@ describe('agent-chain-continuity — AC regression bundle', () => {
       assert.match(dossier, /no source artifacts found at close time/);
       assert.ok(result.updates.some((u) => /dossier:.*minimal fallback/.test(u)));
     } finally {
-      await fs.rm(tmp, { recursive: true, force: true });
+      await cleanupTmpDir(tmp);
     }
   });
 
@@ -282,7 +283,7 @@ describe('agent-chain-continuity — AC regression bundle', () => {
         assert.ok(Object.prototype.hasOwnProperty.call(r.data, key), `resume payload must include ${key}`);
       }
     } finally {
-      await fs.rm(tmp, { recursive: true, force: true });
+      await cleanupTmpDir(tmp);
     }
   });
 
@@ -341,7 +342,7 @@ describe('agent-chain-continuity — AC regression bundle', () => {
       assert.equal(violations.length, 1);
       assert.equal(violations[0].agent, 'product');
     } finally {
-      await fs.rm(tmp, { recursive: true, force: true });
+      await cleanupTmpDir(tmp);
     }
   });
 
@@ -359,7 +360,7 @@ describe('agent-chain-continuity — AC regression bundle', () => {
       assert.equal(result.missing_dossier[0].slug, 'acc-15');
       assert.equal(result.missing_dossier[0].classification, 'SMALL');
     } finally {
-      await fs.rm(tmp, { recursive: true, force: true });
+      await cleanupTmpDir(tmp);
     }
   });
 

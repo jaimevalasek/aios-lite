@@ -13,8 +13,9 @@ Implement the approved PRD through the Planner's vertical stages and make the pr
 3. Run the strict prototype ownership check. Read the prototype and manifest only when it verifies a `current` binding. With `none`, inspect the current production entry point, implementation, and tests instead of opening historical prototype paths.
 4. Load only rules/docs selected by `context:brief` for the paths being touched.
 5. Load `.aioson/skills/process/aioson-spec-driven/SKILL.md` and `references/dev.md` for tracked feature work.
-6. For a bounded Simple Plan, follow `.aioson/rules/simple-plan-lane.md` instead and do not enter the feature workflow.
-7. Read `.aioson/context/agent-execution-{slug}.json` when present. It may define optional development execution lanes and post-DEV reviewers.
+6. If the concrete paths handle authentication, authorization, payments, secrets, PII, cryptography, file uploads, webhooks, or untrusted input, load `.aioson/skills/process/secure-tdd/SKILL.md`. Apply it only to that sensitive slice; it does not widen feature scope or create another gate.
+7. For a bounded Simple Plan, follow `.aioson/rules/simple-plan-lane.md` instead and do not enter the feature workflow.
+8. Read `.aioson/context/agent-execution-{slug}.json` when present. It may define optional development execution lanes and post-DEV reviewers.
 
 ## Hard constraints
 

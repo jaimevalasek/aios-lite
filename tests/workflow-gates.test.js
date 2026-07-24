@@ -5,7 +5,13 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const os = require('node:os');
-const { detectStack, runTechnicalGate, formatGateError } = require('../src/workflow-gates');
+const { execFileSync } = require('node:child_process');
+const {
+  detectStack,
+  computeImplementationFingerprint,
+  runTechnicalGate,
+  formatGateError
+} = require('../src/workflow-gates');
 
 async function ensureDir(dir) {
   await fs.mkdir(dir, { recursive: true });
@@ -45,7 +51,17 @@ describe('workflow-gates.js — detectStack', () => {
     const checks = await detectStack(tmpDir);
     assert.ok(checks.some((c) => c.id === 'npm-test'));
     assert.ok(checks.some((c) => c.id === 'npm-lint'));
-    assert.ok(checks.some((c) => c.id === 'npm-test-unit'));
+    assert.ok(!checks.some((c) => c.id === 'npm-test-unit'), 'full test script supersedes unit duplication');
+  });
+
+  it('prefers one comprehensive npm ci script', async () => {
+    const pkg = {
+      name: 'test',
+      scripts: { ci: 'npm run lint && npm test', test: 'node --test', lint: 'eslint .' }
+    };
+    await fs.writeFile(path.join(tmpDir, 'package.json'), JSON.stringify(pkg, null, 2));
+    const checks = await detectStack(tmpDir);
+    assert.deepEqual(checks.map((check) => check.id), ['npm-ci']);
   });
 
   it('skips npm test if script is an echo placeholder', async () => {
@@ -112,13 +128,13 @@ describe('workflow-gates.js — runTechnicalGate', () => {
     assert.ok(result.reason.includes('No detectable stack'));
   });
 
-  it('runs checks for dev stage with Node.js stack', async () => {
+  it('does not rerun Node.js regression checks at dev completion', async () => {
     const pkg = { name: 'test', scripts: { test: 'node --test' } };
     await fs.writeFile(path.join(tmpDir, 'package.json'), JSON.stringify(pkg, null, 2));
     const result = await runTechnicalGate(tmpDir, 'dev');
     assert.equal(result.ok, true);
-    assert.ok(result.results.length > 0);
-    assert.ok(result.results.some((r) => r.check === 'npm-test'));
+    assert.equal(result.results.length, 0);
+    assert.match(result.reason, /No compile gate/);
   });
 
   it('runs checks for qa stage with Node.js stack', async () => {
@@ -127,6 +143,58 @@ describe('workflow-gates.js — runTechnicalGate', () => {
     const result = await runTechnicalGate(tmpDir, 'qa');
     assert.equal(result.ok, true);
     assert.ok(result.results.length > 0);
+    assert.ok(result.results.some((entry) => entry.check === 'npm-test'));
+  });
+
+  it('QA verification failures are blocking', async () => {
+    const pkg = { name: 'test', scripts: { test: 'node -e "process.exit(1)"' } };
+    await fs.writeFile(path.join(tmpDir, 'package.json'), JSON.stringify(pkg, null, 2));
+    const result = await runTechnicalGate(tmpDir, 'qa');
+    assert.equal(result.ok, false);
+    assert.equal(result.blocked, true);
+    assert.deepEqual(result.reasons, ['npm test failed']);
+  });
+
+  it('reuses successful QA evidence for the same implementation fingerprint', async () => {
+    const pkg = {
+      name: 'test',
+      scripts: {
+        test: 'node -e "const fs=require(\'fs\'); const p=\'runs.txt\'; fs.appendFileSync(p, \'run\\\\n\')"'
+      }
+    };
+    await fs.writeFile(path.join(tmpDir, 'package.json'), JSON.stringify(pkg, null, 2));
+    const first = await runTechnicalGate(tmpDir, 'qa', { fingerprint: 'sha256:fixed' });
+    const second = await runTechnicalGate(tmpDir, 'qa', { fingerprint: 'sha256:fixed' });
+    const runs = await fs.readFile(path.join(tmpDir, 'runs.txt'), 'utf8');
+    assert.equal(first.cached, false);
+    assert.equal(second.cached, true);
+    assert.equal(runs.trim().split(/\r?\n/).length, 1);
+  });
+
+  it('fingerprint ignores workflow evidence but changes with implementation files', async () => {
+    await fs.writeFile(path.join(tmpDir, 'package.json'), '{"name":"fingerprint"}\n');
+    await fs.writeFile(path.join(tmpDir, 'index.js'), 'module.exports = 1;\n');
+    execFileSync('git', ['init'], { cwd: tmpDir, stdio: 'ignore' });
+    execFileSync('git', ['add', '.'], { cwd: tmpDir, stdio: 'ignore' });
+    execFileSync(
+      'git',
+      ['-c', 'user.name=AIOSON Test', '-c', 'user.email=test@aioson.local', 'commit', '-m', 'fixture'],
+      { cwd: tmpDir, stdio: 'ignore' }
+    );
+    const checks = [{ id: 'fixture', command: 'node --test' }];
+    const before = computeImplementationFingerprint(tmpDir, checks);
+
+    await ensureDir(path.join(tmpDir, '.aioson', 'runtime'));
+    await ensureDir(path.join(tmpDir, '.aioson', 'context'));
+    await fs.writeFile(path.join(tmpDir, '.aioson', 'runtime', 'technical-evidence.json'), '{}\n');
+    await fs.writeFile(path.join(tmpDir, '.aioson', 'context', 'qa-report-demo.md'), 'PASS\n');
+    const afterEvidence = computeImplementationFingerprint(tmpDir, checks);
+    await fs.writeFile(path.join(tmpDir, 'index.js'), 'module.exports = 2;\n');
+    const afterCode = computeImplementationFingerprint(tmpDir, checks);
+
+    assert.match(before, /^sha256:/);
+    assert.equal(afterEvidence, before);
+    assert.notEqual(afterCode, before);
   });
 
   it('blocks dev stage when TypeScript compilation fails', async () => {
@@ -155,5 +223,7 @@ describe('workflow-gates.js — formatGateError', () => {
     assert.ok(msg.includes('npm test failed'));
     assert.ok(msg.includes('Fix the errors above'));
     assert.ok(msg.includes('--force'));
+    assert.ok(msg.includes('[npm test] npm test'));
+    assert.ok(!msg.includes('$npm test'));
   });
 });

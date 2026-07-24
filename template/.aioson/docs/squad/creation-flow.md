@@ -90,6 +90,19 @@ If readiness is low:
 - ask 1 to 3 short questions, or
 - proceed with explicit assumptions when the user requested autonomy
 
+## Delivery lane
+
+Resolve one lane before deeper module loading and persist it in both blueprint and manifest:
+
+| Lane | Use when | Research | Genome | Assurance |
+|---|---|---|---|---|
+| `quick` | explicit ephemeral/speed-first, non-regulated | cached/short scan or explicit defer | reuse only; queue missing | strict structure + routing smoke; eval defer reason |
+| `standard` | default persistent production squad | targeted by domain tier | only planned, causal bindings | one eval; critical held-out PASS; representative warm-up |
+| `premium` | publication, marketplace, clone/persona fidelity, exhaustive request | full applicable investigation | full planned materialization + A/B | current full PASS + full warm-up |
+| `regulated` | tier-1 regulated | current investigation mandatory | no sensitive binding defer | current/live evidence, full PASS, full warm-up |
+
+Lane selection is causal, not aspirational. Optional richness does not promote Standard to Premium. Speed never downgrades a regulated domain.
+
 ## Investigation default (opt-out)
 
 Ungrounded squads are the #1 cause of shallow executors: with no `sourceDocs` and no investigation, depth blocks get filled from model priors and every role comes out generic. Investigation is therefore **opt-out, not opt-in**:

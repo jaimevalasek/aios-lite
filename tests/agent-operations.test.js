@@ -273,10 +273,19 @@ test('review-cycle:advance uses agentic policy cap and stops at limit', async ()
   assert.equal(third.action, 'stop_cycle_limit');
   assert.equal(third.reason, 'cycle_limit_reached');
 
-  await assert.rejects(
-    fs.access(path.join(dir, '.aioson/runtime/qa-dev-cycle.json')),
-    { code: 'ENOENT' }
+  const exhausted = JSON.parse(
+    await fs.readFile(path.join(dir, '.aioson/runtime/qa-dev-cycle.json'), 'utf8')
   );
+  assert.equal(exhausted.status, 'limit_reached');
+  assert.equal(exhausted.cycle, 2);
+
+  const repeated = await runReviewCycle({
+    args: [dir],
+    options: { sub: 'advance', json: true, feature: 'checkout', plan: '.aioson/plans/checkout/corrections.md' },
+    logger: makeLogger()
+  });
+  assert.equal(repeated.action, 'stop_cycle_limit');
+  assert.equal(repeated.state.status, 'limit_reached');
 });
 
 test('review-cycle uses agent-execution selection and cycle limits before legacy policy', async () => {

@@ -1,0 +1,55 @@
+---
+description: On-demand catalog of AIOSON agents for user education and ambiguous routing
+agents: [neo]
+task_types: [agent-catalog, capability-discovery]
+triggers: [what agents exist, list agents, which agent can, ambiguous route]
+---
+
+# Neo Agent Catalog
+
+Load only when the user asks about available agents or the routing matrix is insufficient.
+
+## Canonical workflow
+
+- `@setup`: initialize or repair project context
+- `@product`: own product scope and PRD
+- `@planner`: turn approved product intent into vertical stages
+- `@dev`: implement and integrate
+- `@qa`: independent Gate D verdict
+
+## Continuity and assurance
+
+- `@deyvin` (`@pair` alias): continuity, debugging, and small validated slices
+- `@tester`: deeper test engineering and coverage
+- `@pentester`: adversarial security review
+- `@validator`: enabled harness/success-contract validation
+- `@scope-check`: explicit scope/conformance check
+
+## Optional decision specialists
+
+- `@sheldon`: PRD challenge and enrichment
+- `@analyst`: domain and business-rule analysis
+- `@architect`: system boundaries and structural decisions
+- `@ux-ui`: interaction and visual-system decisions
+- `@pm`: backlog and release prioritization
+- `@orchestrator`: explicit parallel coordination
+
+## Discovery, content, and operations
+
+- `@briefing`, `@briefing-refiner`: pre-PRD framing and refinement
+- `@orache`: external domain/market research
+- `@discover`: semantic codebase knowledge
+- `@discovery-design-doc`: explicitly requested living design document
+- `@copywriter`: conversion copy
+- `@committer`: semantic commits
+- `@squad`: multi-track squad packages
+- `@genome`: domain knowledge genomes
+- `@forge-run`: compiled workflow harness execution
+
+## Specialized pipelines
+
+- `@profiler-researcher → @profiler-enricher → @profiler-forge`
+- `@design-hybrid-forge`
+- `@site-forge`
+
+Catalog membership does not authorize activation. Neo recommends one agent and stops.

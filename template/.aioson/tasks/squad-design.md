@@ -76,6 +76,15 @@ After classification:
   - `locale_scope`
   - `locale_rationale` when applicable
 
+Resolve and persist one `deliveryLane` before loading deeper creation modules:
+
+- `regulated` — mandatory for `tier-1-regulated`; never downgrade for speed.
+- `premium` — explicit marketplace/publication/high-fidelity request, persona/clone fidelity, or user-requested exhaustive assurance.
+- `standard` — default for a persistent production squad.
+- `quick` — only for an explicitly ephemeral experiment, quick scan, or speed-first request in a non-regulated domain.
+
+The lane controls research/genome/eval/warm-up depth, not package correctness. It may not be inferred as `premium` merely because optional capabilities could be useful.
+
 ### Step 2 - Derive Mental Design Doc
 Before defining executors, consolidate:
 - Problem being solved
@@ -87,6 +96,7 @@ Before defining executors, consolidate:
 - Consumed source docs
 - Applied investigation and how it changes design
 - Squad locale scope
+- Delivery lane and its causal reason
 
 ### Step 2.5 - Domain Decomposition From Sources
 If there are `sourceDocs`, `investigation`, or pasted domain context, **derive the roster from sources; do not guess "3-5 roles"**. Run the four extraction passes and derivation described in `.aioson/docs/squad/creation-flow.md` § "Domain decomposition":
@@ -172,6 +182,7 @@ Before presenting to the user, review the blueprint as if another agent were rea
 - [ ] Each executor has 3-5 concrete focus bullets.
 - [ ] No "TBD", "to define", "as needed", or equivalent placeholder appears in any field.
 - [ ] Squad mission is one sentence explaining what it does and for whom.
+- [ ] `deliveryLane` follows the domain tier and explicit user intent; Quick is not used for regulated or persistent production work.
 
 **Check consistency:**
 - [ ] No contradictions between squad tone/audience and each executor's tone.
@@ -199,6 +210,7 @@ Show the user, in the selected project language:
 - Source decomposition: entities / workflows / stakeholders, when available
 - Defined content blueprints
 - Domain tier and investigation policy
+- Delivery lane and proportional assurance
 - Locale scope
 - Assumptions made
 - Risks identified

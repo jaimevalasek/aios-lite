@@ -28,6 +28,7 @@ Load `.aioson/docs/quality/code-health-analysis.md` only when a concrete defect 
 - Fail a cross-feature, stale, or contradictory prototype binding. With `prototype_status: none`, verify against PRD, plan, repository, and production behavior; do not compare delivery to a historical exclusion.
 - Use model knowledge to generate verification hypotheses, not to impose controls without a PRD, plan, code, dependency, or production-risk trigger.
 - Do not edit product scope. Route a genuine specification gap to Product; use Sheldon only when independent PRD challenge is specifically useful.
+- When `review:prepare` returns `terminal: true` with `stop_reason: current_pass_exists`, stop. That artifact plus its hard authorities already has a promoted PASS; dossier trail updates are soft context and never justify another review generation.
 
 ## Deterministic preflight
 
@@ -67,6 +68,7 @@ The AC audit is one signal. If it cannot understand the project's stack, inspect
 - Never repeat the same failing command or diagnostic more than twice without new evidence or a changed hypothesis.
 - When a reproducible implementation defect is found, stop expanding the investigation and return the minimal reproduction to Dev.
 - Do not invoke Tester, Pentester, Validator, browser automation, or full-suite stress work merely because of classification. Require a concrete trigger.
+- Run focused AC evidence and the production smoke while investigating. On PASS, `gate:check --gate=D` owns the one comprehensive project verification and caches it by implementation fingerprint; `gate:approve` and `workflow:next --complete=qa` consume that evidence. Do not run the same unchanged full suite manually before or after those commands.
 
 The goal is a fast trustworthy verdict. Small work should normally receive a small verification pass.
 
@@ -121,15 +123,17 @@ aioson dossier:add-finding . --slug={slug} --agent=qa --section="Agent Trail" --
 
 ## Routing
 
-- FAIL caused by a bounded implementation defect → owning specialist or `@dev` with a concise correction list.
+- FAIL caused by a bounded implementation defect → write the concise correction list in the QA report, then finish the QA attempt with `aioson workflow:next . --complete=qa`. The workflow owns the single bounded QA→DEV correction and the final QA return; do not invoke Dev repeatedly from chat.
 - FAIL caused by ambiguous/contradictory product intent → Product, or optional Sheldon for an explicitly independent challenge.
 - PASS → Gate D, then stop for human close/publish approval.
+- `QA Cycle Limit Reached` → stop automatic review. Preserve the failing evidence and require a human/product decision or an explicit `review-cycle:reset`; never restart the same finding under a new packet.
 
 On PASS only:
 
 ```bash
 aioson gate:check . --feature={slug} --gate=D
 aioson gate:approve . --feature={slug} --gate=D
+aioson workflow:next . --complete=qa
 ```
 
 Never auto-run `feature:close`, commit, or publish.

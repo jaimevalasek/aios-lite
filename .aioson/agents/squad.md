@@ -75,6 +75,8 @@ Before acting, derive one primary `operation`:
 - `configure-output`
 - `session-run`
 
+For `default-create|design|create`, also resolve `deliveryLane` before loading deep modules: `regulated` for tier-1, `premium` only for explicit high-fidelity/publication needs, `standard` for persistent production by default, and `quick` only for explicit ephemeral/speed-first work. Load research, genome, eval, and warm-up modules to that lane.
+
 Then build `required_modules` using this deterministic map:
 
 | Condition | Required modules |
@@ -133,7 +135,7 @@ If no subcommand is provided, run the default fast path:
 - Persistent squads must ship both `agents/agents.md` and `squad.manifest.json`
 - Persistent squads must register in `CLAUDE.md` and `AGENTS.md`
 - Generated squad executors may be genome-bound; official `.aioson/agents/` files may not
-- Do not skip the warm-up round after creating a persistent squad
+- Do not skip the lane-required readiness proof after creating a squad
 - Every persistent executor must justify repeated contribution; one-off capability gaps use task-bound specialists with a named integration owner
 - Every material decision has an owner; every quality review has an independent reviewer or an explicit exception
 
@@ -185,6 +187,8 @@ aioson squad:eval . --squad=<slug> --json
 ```
 
 Fix every strict validation error before declaring done. Require a current eval PASS for any persistent or regulated squad. An ephemeral Quick Scan may defer only through a concrete `evaluation.deferReason`. Only then register done.
+
+Apply proportional depth: Quick ends provisional after a routing smoke and explicit eval defer reason; Standard runs one eval with critical held-out PASS plus one representative end-to-end warm-up; Premium and Regulated require the full current PASS and specialist warm-up. Regulated can never defer current evidence.
 
 ## Observability
 At session end, register: `aioson agent:done . --agent=squad --summary="Squad <slug>: <N> agents assembled" 2>/dev/null || true`

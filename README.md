@@ -798,10 +798,12 @@ aioson live:start [path] --tool=codex|claude|gemini|opencode --agent=<agent> [--
 aioson live:handoff [path] --agent=<agent> --to=<next-agent> --reason="..."
 aioson live:status [path] [--watch=<seconds>]
 aioson live:close [path] --agent=<agent> --summary="..."
-aioson runtime:emit [path] --agent=<agent> --type=<event> --summary="..."
+aioson runtime:emit [path] --agent=<agent> --type=<event> --summary="..." [--used-skills=<id[,id2]>]
+aioson skill:audit [path] --reachability --usage [--scope=runtime|template|all]
 ```
 
 `live:start` supports tmux for persistent terminal sessions. Use `--no-launch` to only prepare the tracked envelope without starting the client.
+Actual skill loads can be attached to runtime events; `skill:audit` separates declared reachability from observed use and defaults to the runtime tree so template mirrors are not double-counted.
 
 </details>
 

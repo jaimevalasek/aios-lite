@@ -23,7 +23,7 @@ const REVIEW_PROFILES = deepFreeze({
       { kind: 'briefing', path: '.aioson/briefings/{slug}/briefings.md' },
       { kind: 'prd', path: '.aioson/context/prd-{slug}.md' },
       { kind: 'scope-expansion', path: '.aioson/context/features/{slug}/scope-expansion.md' },
-      { kind: 'dossier', path: '.aioson/context/features/{slug}/dossier.md' }
+      { kind: 'dossier', path: '.aioson/context/features/{slug}/dossier.md', freshness: 'soft' }
     ],
     challenge_lenses: ['problem', 'user-value', 'scope', 'assumptions', 'future-state', 'ownership']
   },
@@ -36,7 +36,7 @@ const REVIEW_PROFILES = deepFreeze({
       { kind: 'briefing', path: '.aioson/briefings/{slug}/briefings.md' },
       { kind: 'prd', path: '.aioson/context/prd-{slug}.md' },
       { kind: 'scope-expansion', path: '.aioson/context/features/{slug}/scope-expansion.md' },
-      { kind: 'dossier', path: '.aioson/context/features/{slug}/dossier.md' }
+      { kind: 'dossier', path: '.aioson/context/features/{slug}/dossier.md', freshness: 'soft' }
     ],
     challenge_lenses: ['problem', 'user-value', 'scope', 'assumptions', 'future-state', 'ownership']
   },
@@ -49,7 +49,7 @@ const REVIEW_PROFILES = deepFreeze({
       { kind: 'briefing', path: '.aioson/briefings/{slug}/briefings.md' },
       { kind: 'prd', path: '.aioson/context/prd-{slug}.md' },
       { kind: 'scope-expansion', path: '.aioson/context/features/{slug}/scope-expansion.md' },
-      { kind: 'dossier', path: '.aioson/context/features/{slug}/dossier.md' }
+      { kind: 'dossier', path: '.aioson/context/features/{slug}/dossier.md', freshness: 'soft' }
     ],
     challenge_lenses: ['problem', 'user-value', 'scope', 'assumptions', 'future-state', 'ownership']
   },
@@ -63,7 +63,7 @@ const REVIEW_PROFILES = deepFreeze({
       { kind: 'requirements', path: '.aioson/context/requirements-{slug}.md' },
       { kind: 'spec', path: '.aioson/context/spec-{slug}.md' },
       { kind: 'scope-expansion', path: '.aioson/context/features/{slug}/scope-expansion.md' },
-      { kind: 'dossier', path: '.aioson/context/features/{slug}/dossier.md' }
+      { kind: 'dossier', path: '.aioson/context/features/{slug}/dossier.md', freshness: 'soft' }
     ],
     challenge_lenses: ['coverage', 'ambiguity', 'edge-cases', 'failure-modes', 'ownership', 'verifiability']
   },
@@ -77,7 +77,7 @@ const REVIEW_PROFILES = deepFreeze({
       { kind: 'requirements', path: '.aioson/context/requirements-{slug}.md' },
       { kind: 'spec', path: '.aioson/context/spec-{slug}.md' },
       { kind: 'scope-expansion', path: '.aioson/context/features/{slug}/scope-expansion.md' },
-      { kind: 'dossier', path: '.aioson/context/features/{slug}/dossier.md' }
+      { kind: 'dossier', path: '.aioson/context/features/{slug}/dossier.md', freshness: 'soft' }
     ],
     challenge_lenses: ['coverage', 'ambiguity', 'edge-cases', 'failure-modes', 'ownership', 'verifiability']
   },
@@ -93,7 +93,7 @@ const REVIEW_PROFILES = deepFreeze({
       { kind: 'design-doc', path: '.aioson/context/design-doc-{slug}.md' },
       { kind: 'design-doc', path: '.aioson/context/design-doc.md' },
       { kind: 'structural-rule', path: '.aioson/rules/agent-structural-contract.md' },
-      { kind: 'dossier', path: '.aioson/context/features/{slug}/dossier.md' }
+      { kind: 'dossier', path: '.aioson/context/features/{slug}/dossier.md', freshness: 'soft' }
     ],
     challenge_lenses: ['boundary', 'failure', 'security', 'evolution', 'implementability']
   },
@@ -114,7 +114,7 @@ const REVIEW_PROFILES = deepFreeze({
       { kind: 'qa-report', path: '.aioson/context/qa-report-{slug}.md' },
       { kind: 'security-findings', path: '.aioson/context/security-findings-{slug}.json' },
       { kind: 'harness', path: '.aioson/plans/{slug}/harness-contract.json' },
-      { kind: 'dossier', path: '.aioson/context/features/{slug}/dossier.md' }
+      { kind: 'dossier', path: '.aioson/context/features/{slug}/dossier.md', freshness: 'soft' }
     ],
     challenge_lenses: ['specification-fidelity', 'acceptance-coverage', 'code-health', 'runtime-truth', 'residual-risk']
   },
@@ -132,7 +132,7 @@ const REVIEW_PROFILES = deepFreeze({
       { kind: 'qa-report', path: '.aioson/context/qa-report-{slug}.md' },
       { kind: 'security-findings', path: '.aioson/context/security-findings-{slug}.json' },
       { kind: 'harness', path: '.aioson/plans/{slug}/harness-contract.json' },
-      { kind: 'dossier', path: '.aioson/context/features/{slug}/dossier.md' }
+      { kind: 'dossier', path: '.aioson/context/features/{slug}/dossier.md', freshness: 'soft' }
     ],
     challenge_lenses: ['specification-fidelity', 'acceptance-coverage', 'code-health', 'runtime-truth', 'residual-risk']
   }

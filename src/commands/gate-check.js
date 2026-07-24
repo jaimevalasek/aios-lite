@@ -29,6 +29,7 @@ const {
   GATE_ALIASES
 } = require('../preflight-engine');
 const { readFreshGateCheckpoint } = require('../lib/gate-checkpoint');
+const { runTechnicalGate } = require('../workflow-gates');
 
 const BAR = '━'.repeat(35);
 
@@ -193,6 +194,27 @@ async function checkGate(targetDir, slug, gateLetter) {
     if (!acAudit.ok) {
       missing.push(`AC test audit failed: missing tests for ${acAudit.missing.join(', ')}`);
     }
+
+    // Run the comprehensive suite only after cheap artifact/AC checks pass.
+    // gate:approve and workflow:next consume the same fingerprinted evidence,
+    // so the QA suite executes once per implementation state.
+    if (missing.length === 0) {
+      const technicalGate = await runTechnicalGate(targetDir, 'qa');
+      evidence.push({
+        type: 'technical_gate',
+        ok: technicalGate.ok,
+        cached: technicalGate.cached === true,
+        fingerprint: technicalGate.fingerprint || null,
+        evidence_path: technicalGate.evidence_path || null,
+        completed_at: technicalGate.completed_at || null,
+        results: technicalGate.results || []
+      });
+      if (!technicalGate.ok) {
+        for (const reason of technicalGate.reasons || ['technical verification failed']) {
+          missing.push(`technical gate: ${reason}`);
+        }
+      }
+    }
   }
 
   const allOk = missing.length === 0;
@@ -296,7 +318,7 @@ async function runGateCheck({ args, options = {}, logger }) {
     }
   }
 
-  const qaEvidence = check.evidence.filter((e) => e.type === 'qa_signoff' || e.type === 'checkpoint' || e.type === 'gate_field' || e.type === 'ac_test_audit');
+  const qaEvidence = check.evidence.filter((e) => e.type === 'qa_signoff' || e.type === 'checkpoint' || e.type === 'gate_field' || e.type === 'ac_test_audit' || e.type === 'technical_gate');
   if (qaEvidence.length > 0) {
     for (const q of qaEvidence) {
       const icon = q.ok ? '  ✓' : '  ✗';
@@ -307,6 +329,10 @@ async function runGateCheck({ args, options = {}, logger }) {
         const s = q.summary || {};
         const missing = q.missing && q.missing.length ? ` (missing: ${q.missing.join(', ')})` : '';
         logger.log(`${icon} AC test audit: ${s.covered || 0}/${s.acs_total || 0} covered${missing}`);
+      }
+      if (q.type === 'technical_gate') {
+        const source = q.cached ? 'cached evidence' : 'executed now';
+        logger.log(`${icon} Technical verification: ${source}`);
       }
     }
   }

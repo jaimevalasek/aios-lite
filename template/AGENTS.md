@@ -240,6 +240,18 @@ When to load: only after a concrete feature slug and artifact exist, before the 
 What to load: `SKILL.md` first, then exactly one matching reference: `framing.md`, `specification.md`, `architecture.md`, or `delivery-assurance.md`.
 Compatibility: if the skill or review CLI is unavailable, run the same review manually for at most two passes and preserve the previous workflow behavior.
 
+## Skill registry and usage evidence
+
+`.aioson/skills/registry.json` is the deterministic policy for first-party process skills: owners, triggers, load tier, tests, lifecycle status, and replacement. Category matching makes a skill eligible; it does not prove that an agent loaded it.
+
+Whenever an agent actually loads a skill inside a tracked or live session, record it best-effort:
+
+```bash
+aioson runtime:emit . --agent=<agent> --type=skill_loaded --used-skills=<skill-id> --summary="Loaded <skill-id> for <reason>" 2>/dev/null || true
+```
+
+Telemetry failure is non-blocking. Inspect declared reachability and observed use with `aioson skill:audit . --reachability --usage`.
+
 ## Process skills: feature expansion
 
 Located at:
