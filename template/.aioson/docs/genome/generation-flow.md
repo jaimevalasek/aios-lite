@@ -38,7 +38,7 @@ For modular genomes, `manifest.json.references[]` entries are objects with `id`,
 3. Extract method, decision weights, prohibitions, quality checks, style, and output structure from evidence.
 4. Generate the light routing file (`SKILL.md` or single-file frontmatter) and deep references.
 5. Record dependencies and typed relations (`depends-on`, `complements`, `contradicts`, `overlaps`).
-6. Run `aioson genome:doctor . --genome=<slug> --json` and inspect the result.
+6. Run `aioson genome:doctor .aioson/genomes/<slug> --json` for a modular folder (or pass the exact legacy `.md` path) and inspect the result.
 7. If the genome will bind to a squad, run the application module and require a materialized compilation identity.
 
 ## Enrichment

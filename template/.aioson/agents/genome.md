@@ -80,7 +80,7 @@ For modular artifacts, every `manifest.json.references[]` entry has `id`, `file`
 Follow `evidence-and-quality.md`. Run:
 
 ```bash
-aioson genome:doctor . --genome=<slug> --json
+aioson genome:doctor .aioson/genomes/<slug> --json
 ```
 
 Separate structural validity, evidence quality, fidelity claims, and runtime readiness. Report a bounded repair list; do not rewrite unrelated content.
