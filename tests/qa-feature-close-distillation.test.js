@@ -49,16 +49,27 @@ async function makeProject(slug, classification = 'MEDIUM') {
 
 test('QA-CONCURRENCY-PHASE5: 10 parallel runDistillation on same slug → exactly 1 success + 9 lock_held', async () => {
   const dir = await makeProject('race10');
-  const calls = await Promise.all(
-    Array.from({ length: 10 }, async () => {
-      const { db } = await openRuntimeDb(dir);
-      try {
-        return await runDistillation({ targetDir: dir, slug: 'race10', db });
-      } finally {
-        db.close();
-      }
-    })
+  // Open every handle before the race and pass the already-known
+  // classification. If connection setup or PRD reads happen inside each
+  // contender, a heavily loaded Windows runner can start a late contender
+  // only after the first distillation released its lock; that is sequential
+  // work, not a lock failure. This arrangement makes the overlap deterministic.
+  const handles = await Promise.all(
+    Array.from({ length: 10 }, () => openRuntimeDb(dir))
   );
+  let calls;
+  try {
+    calls = await Promise.all(
+      handles.map(({ db }) => runDistillation({
+        targetDir: dir,
+        slug: 'race10',
+        classification: 'MEDIUM',
+        db
+      }))
+    );
+  } finally {
+    for (const { db } of handles) db.close();
+  }
   const successes = calls.filter((r) => r.ok);
   const lockHeld = calls.filter((r) => !r.ok && r.reason === 'lock_held');
   assert.equal(successes.length, 1, `expected 1 success, got ${successes.length}`);

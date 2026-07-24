@@ -120,7 +120,11 @@ const RULESETS = {
     criteria: [{
       id: 'orache-report',
       files: [ctx.file || `squad-searches/${ctx.slug || 'MISSING'}/investigation.md`],
-      must_match: ['## D1', '## D4', '## D7', '## Impact Analysis', '\\*\\*Source:\\*\\*'],
+      must_match: [
+        '## D1', '## D2', '## D3', '## D4', '## D5', '## D6', '## D7',
+        '## Impact Analysis',
+        '\\*\\*Source:\\*\\*'
+      ],
       must_not_match: [...PLACEHOLDER_PATTERNS, '\\{where discovered\\}']
     }]
   }),

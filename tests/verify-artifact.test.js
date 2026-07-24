@@ -525,6 +525,18 @@ test('kind=orache-report: a missing dimension fails', async () => {
   assert.equal(report.ok, false);
 });
 
+test('kind=orache-report: every intermediate dimension is enforced', async () => {
+  const dir = await tmp();
+  await write(dir, ORACHE_FILE, ORACHE_OK.replace('## D3: Quality Benchmarks', '## Something Else'));
+  const report = await runVerifyArtifact({
+    args: [dir],
+    options: { kind: 'orache-report', file: ORACHE_FILE, json: true, suppressExitCode: true },
+    logger: makeLogger()
+  });
+  assert.equal(report.ok, false);
+  assert.ok(report.issues.some((issue) => issue.includes('## D3')));
+});
+
 // ───────────────────────── identity ruleset (--file) ─────────────────────────
 
 const IDENTITY_OK = [

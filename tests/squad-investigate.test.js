@@ -5,7 +5,13 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
 const os = require('node:os');
 const path = require('node:path');
-const { runSquadInvestigate, scoreCompleteness, countDimensions } = require('../src/commands/squad-investigate');
+const {
+  runSquadInvestigate,
+  scoreCompleteness,
+  countDimensions,
+  extractDeclaredDimensions,
+  parseReportedConfidence
+} = require('../src/commands/squad-investigate');
 const { openRuntimeDb, insertInvestigation, getInvestigation, listInvestigations } = require('../src/runtime-store');
 
 async function makeTempDir() {
@@ -73,6 +79,40 @@ test('scoreCompleteness returns 1.0 for all 7 dimensions', () => {
   const result = scoreCompleteness(content);
   assert.equal(result.covered, 7);
   assert.equal(result.score, 1);
+});
+
+test('declared dimensions keep Quick and Targeted skeletons honest', () => {
+  const content = [
+    '> Mode: quick',
+    '> Dimensions investigated: D1, D2, D5',
+    '',
+    '## D1: Domain Frameworks',
+    'finding',
+    '## D2: Anti-patterns',
+    'finding',
+    '## D3: Quality Benchmarks',
+    'Not investigated in this mode.',
+    '## D4: Reference Voices',
+    'Not investigated in this mode.',
+    '## D5: Domain Vocabulary',
+    'finding',
+    '## D6: Competitive Landscape',
+    'Not investigated in this mode.',
+    '## D7: Structural Patterns',
+    'Not investigated in this mode.'
+  ].join('\n');
+
+  assert.deepEqual(extractDeclaredDimensions(content), ['D1', 'D2', 'D5']);
+  assert.equal(countDimensions(content), 3);
+  assert.deepEqual(scoreCompleteness(content), { covered: 3, total: 7, score: 0.43 });
+});
+
+test('reported evidence confidence supports labels and legacy numeric values', () => {
+  assert.equal(parseReportedConfidence('> Confidence: high — two primary sources'), 0.9);
+  assert.equal(parseReportedConfidence('> Confidence: medium - one corroborated claim'), 0.7);
+  assert.equal(parseReportedConfidence('> Confidence: low'), 0.4);
+  assert.equal(parseReportedConfidence('> Confidence: 0.82'), 0.82);
+  assert.equal(parseReportedConfidence('> Confidence: unknown'), null);
 });
 
 // --- SQLite table creation test ---
@@ -308,6 +348,63 @@ test('squad-investigate register indexes a report file', async () => {
     const row = getInvestigation(db, result.slug);
     assert.equal(row.domain, 'youtube');
     assert.equal(row.dimensions_covered, 5);
+  } finally {
+    db.close();
+  }
+});
+
+test('squad-investigate register stores declared coverage and report confidence', async () => {
+  const dir = await makeTempDir();
+  const reportDir = path.join(dir, 'squad-searches', 'standalone');
+  await fs.mkdir(reportDir, { recursive: true });
+  const reportPath = path.join(reportDir, 'quick-domain-20260724.md');
+  await fs.writeFile(reportPath, [
+    '# Investigation Report: Quick domain',
+    '> Mode: quick',
+    '> Dimensions investigated: D1, D2, D5',
+    '> Confidence: medium — current practitioner evidence',
+    '## D1: Domain Frameworks',
+    'finding',
+    '## D2: Anti-patterns',
+    'finding',
+    '## D3: Quality Benchmarks',
+    'Not investigated in this mode.',
+    '## D4: Reference Voices',
+    'Not investigated in this mode.',
+    '## D5: Domain Vocabulary',
+    'finding',
+    '## D6: Competitive Landscape',
+    'Not investigated in this mode.',
+    '## D7: Structural Patterns',
+    'Not investigated in this mode.',
+    '## Impact Analysis',
+    'impact',
+    '**Source:** https://example.test/source'
+  ].join('\n'));
+
+  await openRuntimeDb(dir).then(({ db }) => db.close());
+  const logger = createCollectLogger();
+  const result = await runSquadInvestigate({
+    args: [dir],
+    options: {
+      sub: 'register',
+      report: path.relative(dir, reportPath),
+      domain: 'quick-domain',
+      mode: 'quick'
+    },
+    logger,
+    t: identity
+  });
+
+  assert.equal(result.registered, true);
+  assert.equal(result.dimensionsCovered, 3);
+  assert.equal(result.confidence, 0.7);
+
+  const { db } = await openRuntimeDb(dir, { mustExist: true });
+  try {
+    const row = getInvestigation(db, result.slug);
+    assert.equal(row.dimensions_covered, 3);
+    assert.equal(row.confidence, 0.7);
   } finally {
     db.close();
   }

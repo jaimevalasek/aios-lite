@@ -12,6 +12,11 @@ const {
 
 const SEARCHES_DIR = 'squad-searches';
 const DIMENSION_HEADERS = ['D1', 'D2', 'D3', 'D4', 'D5', 'D6', 'D7'];
+const CONFIDENCE_LABELS = {
+  high: 0.9,
+  medium: 0.7,
+  low: 0.4
+};
 
 async function pathExists(targetPath) {
   try {
@@ -63,11 +68,54 @@ async function syncInvestigationLinkToSquad(projectDir, squadSlug, row) {
 }
 
 /**
- * Count how many of the 7 investigation dimensions are present in a report.
- * Looks for headers like "## D1:", "## D2:", ..., "## D7:" in the markdown.
+ * New reports declare which dimensions were actually investigated so Quick
+ * and Targeted reports can keep the full D1-D7 skeleton without pretending
+ * they researched every section. Legacy reports fall back to heading counts.
+ */
+function extractDeclaredDimensions(content) {
+  const text = String(content || '');
+  const match = text.match(/^>\s*Dimensions investigated:\s*(.*)$/im);
+  if (!match) return null;
+
+  const dimensions = [];
+  const seen = new Set();
+  for (const token of match[1].toUpperCase().matchAll(/\bD[1-7]\b/g)) {
+    if (!seen.has(token[0])) {
+      seen.add(token[0]);
+      dimensions.push(token[0]);
+    }
+  }
+  return dimensions;
+}
+
+/**
+ * Parse the evidence confidence declared by a report. Numeric confidence is
+ * retained for legacy reports; new reports use honest high/medium/low labels.
+ */
+function parseReportedConfidence(content) {
+  const text = String(content || '');
+  const match = text.match(/^>\s*Confidence:\s*([^\r\n]+)$/im);
+  if (!match) return null;
+
+  const normalized = match[1].trim().toLowerCase();
+  for (const [label, value] of Object.entries(CONFIDENCE_LABELS)) {
+    if (new RegExp(`^${label}\\b`).test(normalized)) return value;
+  }
+
+  const numeric = normalized.match(/^(?:0(?:\.\d+)?|1(?:\.0+)?)\b/);
+  if (!numeric) return null;
+  const value = Number(numeric[0]);
+  return Number.isFinite(value) && value >= 0 && value <= 1 ? value : null;
+}
+
+/**
+ * Count how many of the 7 investigation dimensions were actually researched.
  */
 function countDimensions(content) {
   const text = String(content || '');
+  const declared = extractDeclaredDimensions(text);
+  if (declared) return declared.length;
+
   let count = 0;
   for (const dim of DIMENSION_HEADERS) {
     const pattern = new RegExp(`^##\\s+${dim}[:\\s]`, 'm');
@@ -242,6 +290,13 @@ async function handleRegister(projectDir, reportPath, options, { logger, t }) {
     }
     const content = await fs.readFile(absPath, 'utf8');
     const { covered, total, score } = scoreCompleteness(content);
+    const explicitConfidence = options.confidence === undefined || options.confidence === null || String(options.confidence).trim() === ''
+      ? null
+      : Number(options.confidence);
+    const reportConfidence = parseReportedConfidence(content);
+    const confidence = Number.isFinite(explicitConfidence) && explicitConfidence >= 0 && explicitConfidence <= 1
+      ? explicitConfidence
+      : reportConfidence ?? score;
     const relPath = path.relative(projectDir, absPath);
     const slug = insertInvestigation(db, {
       investigationSlug: options.slug || undefined,
@@ -249,7 +304,7 @@ async function handleRegister(projectDir, reportPath, options, { logger, t }) {
       mode: options.mode || 'full',
       dimensionsCovered: covered,
       totalDimensions: total,
-      confidence: options.confidence ? Number(options.confidence) : score,
+      confidence,
       reportPath: relPath,
       linkedSquadSlug: options.squad || null
     });
@@ -260,7 +315,14 @@ async function handleRegister(projectDir, reportPath, options, { logger, t }) {
       }
     }
     logger.log(t('squad_investigate.registered', { slug, path: relPath }));
-    return { registered: true, slug };
+    return {
+      registered: true,
+      slug,
+      reportPath: relPath,
+      dimensionsCovered: covered,
+      totalDimensions: total,
+      confidence
+    };
   } finally {
     db.close();
   }
@@ -311,4 +373,10 @@ async function runSquadInvestigate({ args = [], options = {}, logger = console, 
   return { error: `Unknown subcommand: ${sub}` };
 }
 
-module.exports = { runSquadInvestigate, scoreCompleteness, countDimensions };
+module.exports = {
+  runSquadInvestigate,
+  scoreCompleteness,
+  countDimensions,
+  extractDeclaredDimensions,
+  parseReportedConfidence
+};
