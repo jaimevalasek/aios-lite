@@ -9,6 +9,7 @@ const { createTranslator } = require('../src/i18n');
 const {
   runPackageTest,
   commandFailureDetail,
+  resolvePackageManagerInvocation,
   parsePackResult,
   resolveTarballFromDir
 } = require('../src/commands/package-e2e');
@@ -25,10 +26,31 @@ test('parsePackResult returns last non-empty line', () => {
   assert.equal(parsePackResult(output), 'aioson-0.1.8.tgz');
 });
 
+test('package E2E resolves npm and npx through Node without a Windows shell', () => {
+  const invocation = resolvePackageManagerInvocation('npx', ['--yes'], {
+    platform: 'win32',
+    execPath: 'C:\\node\\node.exe',
+    env: { npm_execpath: 'C:\\node\\node_modules\\npm\\bin\\npm-cli.js' },
+    fileExists: () => true
+  });
+  assert.deepEqual(invocation, {
+    command: 'C:\\node\\node.exe',
+    args: ['C:\\node\\node_modules\\npm\\bin\\npx-cli.js', '--yes']
+  });
+  assert.deepEqual(
+    resolvePackageManagerInvocation('npm', ['pack'], { platform: 'linux' }),
+    { command: 'npm', args: ['pack'] }
+  );
+});
+
 test('commandFailureDetail returns localized fallback when command output is empty', () => {
   const { t } = createTranslator('pt-BR');
   const detail = commandFailureDetail({ stdout: '', stderr: '' }, t);
   assert.equal(detail, 'erro desconhecido');
+  assert.equal(
+    commandFailureDetail({ stdout: '{"ok":false}', stderr: 'warning' }, t),
+    'warning\n{"ok":false}'
+  );
 });
 
 test('resolveTarballFromDir detects latest tgz in directory', async () => {

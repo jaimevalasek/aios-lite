@@ -33,25 +33,28 @@
     "LICENSE"
   ],
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=20.0.0"
   },
   "scripts": {
     "test": "node --test --test-concurrency=8",
+    "test:boundaries": "node --test tests/agent-execution-adapters.test.js tests/agent-execution-cli.test.js tests/agent-execution-dispatcher.test.js tests/agent-execution-manifest.test.js tests/scripts/release-readiness.test.js tests/skill-audit.test.js tests/squad-eval.test.js tests/squad-manifest-validator.test.js tests/store-system.test.js tests/web-security.test.js",
     "test:genome": "node --test tests/genome-compat.test.js tests/genome-migrate.test.js",
     "test:genome-2.0-smoke": "node scripts/smoke/genome-2.0-smoke.js",
-    "test:genome-2.0:block-a": "node --test tests/genome-compat.test.js tests/genome-migrate.test.js tests/genome-rollout.test.js tests/integration/genome-binding-contract.test.js tests/integration/genome-2.0-smoke.test.js",
+    "test:genome-2.0:block-a": "node scripts/smoke/genome-2.0-smoke.js && npm run test:genome && npm test && npm run lint",
     "test:genome-2.0:rollout": "node scripts/testing/genome-2.0-rollout.js",
     "check:syntax": "node scripts/check-js.js",
     "lint": "npm run check:syntax",
     "sync:agents": "node src/commands/sync-agents-preflight.js && node src/commands/sync-agents-copy.js",
-    "ci": "npm run check:syntax && npm test"
+    "ci": "npm run check:syntax && npm test",
+    "verify:release:quick": "node scripts/testing/release-readiness.js",
+    "verify:release": "node scripts/testing/release-readiness.js --full"
   },
   "dependencies": {
-    "ajv": "8.17.1",
-    "archiver": "^7.0.1",
+    "ajv": "8.20.0",
+    "archiver": "8.0.0",
     "better-sqlite3": "^12.6.2",
     "ignore": "^7.0.5",
-    "javascript-obfuscator": "^5.4.3",
-    "terser": "^5.48.0"
+    "terser": "^5.48.0",
+    "undici": "6.28.0"
   }
 }

@@ -5,7 +5,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
 const os = require('node:os');
 const path = require('node:path');
-const { defaults, initManifest, loadManifest } = require('../src/agent-execution/manifest');
+const { defaults, initManifest, loadManifest, manifestPath } = require('../src/agent-execution/manifest');
 const { validateManifest } = require('../src/agent-execution/schema');
 
 // AC-AED-01 AC-AED-02 AC-AED-03 AC-AED-13 AC-AED-15
@@ -113,4 +113,22 @@ test('missing manifest reports legacy compatibility instead of invalid config', 
   assert.equal(loaded.ok, true);
   assert.equal(loaded.exists, false);
   assert.equal(loaded.legacy, true);
+});
+
+test('feature slugs are validated before any agent execution path is resolved or created', async () => {
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'aed-feature-slug-'));
+  const outside = path.resolve(dir, '..', 'escaped.json');
+
+  assert.throws(
+    () => manifestPath(dir, '../../../../escaped'),
+    (error) => error.code === 'invalid_feature_slug'
+  );
+  await assert.rejects(
+    initManifest(dir, '../../../../escaped', 'codex'),
+    (error) => error.code === 'invalid_feature_slug'
+  );
+  await assert.rejects(
+    fs.access(outside),
+    (error) => error.code === 'ENOENT'
+  );
 });

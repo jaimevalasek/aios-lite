@@ -50,14 +50,17 @@ function createResearchProvider(options = {}) {
           const endpoint = new URL(providerEndpoint);
           endpoint.searchParams.set('q', query);
           endpoint.searchParams.set('limit', String(limit));
-          const response = await fetchImpl(endpoint, {
+          const response = await fetchPage(endpoint.toString(), {
+            fetch: fetchImpl,
+            safeRemote: true,
             headers: { accept: 'application/json' },
-            signal: AbortSignal.timeout(Number(discoverOptions.timeoutMs || 10000))
+            timeoutMs: Number(discoverOptions.timeoutMs || 10000),
+            maxHtmlChars: Number(discoverOptions.maxResponseBytes || 500000)
           });
           if (!response.ok) {
-            return { available: false, source: 'provider-endpoint', reason: `provider_http_${response.status}`, candidates: [] };
+            return { available: false, source: 'provider-endpoint', reason: `provider_http_${response.statusCode}`, candidates: [] };
           }
-          const payload = await response.json();
+          const payload = JSON.parse(response.html);
           return {
             available: true,
             source: 'provider-endpoint',

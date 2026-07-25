@@ -11,7 +11,7 @@
 [![npm version](https://img.shields.io/npm/v/@jaimevalasek/aioson?color=6c47ff&style=flat-square)](https://www.npmjs.com/package/@jaimevalasek/aioson)
 [![npm downloads](https://img.shields.io/npm/dm/@jaimevalasek/aioson?style=flat-square&color=6c47ff)](https://www.npmjs.com/package/@jaimevalasek/aioson)
 [![License: AGPL-3.0](https://img.shields.io/badge/license-AGPL--3.0-blue?style=flat-square)](LICENSE)
-[![Node.js ≥18](https://img.shields.io/badge/node-%E2%89%A518.0.0-brightgreen?style=flat-square)](https://nodejs.org)
+[![Node.js ≥20](https://img.shields.io/badge/node-%E2%89%A520.0.0-brightgreen?style=flat-square)](https://nodejs.org)
 
 [![Claude Code](https://img.shields.io/badge/Claude_Code-supported-6c47ff?style=flat-square)](https://claude.ai/code)
 [![Codex CLI](https://img.shields.io/badge/Codex_CLI-supported-black?style=flat-square)](https://github.com/openai/codex)
@@ -639,7 +639,7 @@ aioson workflow:plan --classification=SMALL
 
 | Requirement | Version | Notes |
 |-------------|---------|-------|
-| Node.js | ≥ 18.0.0 | Required by the CLI |
+| Node.js | ≥ 20.0.0 | Required by the CLI and current native dependencies |
 | An AI CLI tool | — | Claude Code, Codex CLI, Gemini CLI, or OpenCode |
 
 **Optional — by feature**

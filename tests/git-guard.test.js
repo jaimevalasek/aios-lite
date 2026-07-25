@@ -18,6 +18,15 @@ async function makeRepo() {
   return dir;
 }
 
+async function removeRepo(dir) {
+  await fs.rm(dir, {
+    recursive: true,
+    force: true,
+    maxRetries: 8,
+    retryDelay: 75
+  });
+}
+
 async function writeFile(dir, relPath, content) {
   const target = path.join(dir, relPath);
   await fs.mkdir(path.dirname(target), { recursive: true });
@@ -937,7 +946,7 @@ test('git:guard --install-hook creates a managed pre-commit hook', async () => {
     assert.equal(hookContent.includes('# aioson-git-guard-hook'), true);
   } finally {
     process.exitCode = 0;
-    await fs.rm(dir, { recursive: true, force: true });
+    await removeRepo(dir);
   }
 });
 
@@ -969,7 +978,7 @@ test('git:guard hook installation preserves and restores a pre-existing hook wit
     assert.equal(await fs.readFile(hookPath, 'utf8'), '#!/bin/sh\necho legacy-hook\n');
   } finally {
     process.exitCode = 0;
-    await fs.rm(dir, { recursive: true, force: true });
+    await removeRepo(dir);
   }
 });
 

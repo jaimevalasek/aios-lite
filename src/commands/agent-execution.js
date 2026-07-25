@@ -3,6 +3,7 @@ const path=require('node:path');
 const {initManifest,loadManifest,resolveAgentExecution,resolveDevelopmentLaneExecution}=require('../agent-execution/manifest');
 const {dispatch,readState}=require('../agent-execution/dispatcher');
 const {openRuntimeDb,getExecutionSnapshot,listExecutionEvents}=require('../runtime-store');
+const {validateFeatureSlug}=require('../verification/path-policy');
 async function resolveAllAgents(manifest,catalogLoader){
  const entries=await Promise.all(Object.keys(manifest.agents).map(async id=>[id,await resolveAgentExecution(manifest,id,{}, {catalogLoader})]));
  return Object.fromEntries(entries);
@@ -16,8 +17,11 @@ function resolutionErrors(resolutions,prefix='agents'){
  return Object.entries(resolutions).filter(([,value])=>!value.ok).map(([id,value])=>({path:`$.${prefix}.${id}.model`,message:value.reason,candidates:value.candidates||[],supported:value.supported||[]}));
 }
 async function runAgentExecution({args,options={},logger,catalogLoader}){
- const projectDir=path.resolve(process.cwd(),args[0]||'.'); const sub=options.sub||'show'; const feature=String(options.feature||options.slug||'').trim();
- if(!feature)return {ok:false,reason:'feature_required',message:'Use --feature=<slug>'};
+ const projectDir=path.resolve(process.cwd(),args[0]||'.'); const sub=options.sub||'show'; const featureInput=String(options.feature||options.slug||'').trim();
+ if(!featureInput)return {ok:false,reason:'feature_required',message:'Use --feature=<slug>'};
+ const featureValidation=validateFeatureSlug(featureInput);
+ if(!featureValidation.ok)return{ok:false,reason:'invalid_feature_slug',feature:featureInput,message:'--feature must be a lowercase kebab-case slug'};
+ const feature=featureValidation.feature_slug;
  if(sub==='init'){const created=await initManifest(projectDir,feature,String(options.host||'codex')); const result={ok:true,feature,path:path.relative(projectDir,created.path),digest:created.digest,manifest:created.manifest,created:created.created,unchanged:created.unchanged,availability:'validated_at_dispatch'}; if(!options.json)logger.log(`${result.created?'Agent execution manifest created':'Existing agent execution manifest preserved unchanged'}: ${result.path}\nValidate: aioson agent:execution:validate . --feature=${feature}`); return result;}
  const loaded=await loadManifest(projectDir,feature);
  if(sub==='validate'){

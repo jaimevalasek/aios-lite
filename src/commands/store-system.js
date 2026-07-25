@@ -13,17 +13,10 @@ function getTerser() {
   return _terser;
 }
 
-let _obfuscator = null;
-function getObfuscator() {
-  if (!_obfuscator) _obfuscator = require('javascript-obfuscator');
-  return _obfuscator;
-}
-
-// Ofusca JS compilado no publish --build (minify + string-array encoding +
-// mangling). Funcionalidade do framework — o app não configura nada. Conservador
-// (renameGlobals/controlFlowFlattening/selfDefending OFF) pra não quebrar runtime
-// Node (require/exports, prisma) nem bundles de frontend. Falha num arquivo →
-// devolve o compilado original (não derruba o publish).
+// Protege JS compilado no publish --build com minificação e mangling conservador.
+// Evita dependências de ofuscação que ampliam a superfície de supply chain e não
+// renomeia símbolos de top level para preservar require/exports e bundles.
+// Falha num arquivo → devolve o compilado original (não derruba o publish).
 // Detecta JS já minificado (bundle de frontend tipo vite/webpack): linhas muito
 // longas e poucas quebras. Não vale re-ofuscar — incha o pacote, pode quebrar o
 // React e o ganho é baixo (já está minificado). O alvo de valor é o backend (tsc,
@@ -34,35 +27,25 @@ function looksMinified(code) {
   return code.length > 30000 && avgLineLen > 200;
 }
 
-function obfuscateJs(code) {
+async function obfuscateJs(code) {
   if (looksMinified(code)) return code; // já minificado → mantém como está
   try {
-    return getObfuscator()
-      .obfuscate(code, {
-        compact: true,
-        controlFlowFlattening: false,
-        deadCodeInjection: false,
-        stringArray: true,
-        stringArrayEncoding: ['base64'],
-        stringArrayThreshold: 0.75,
-        identifierNamesGenerator: 'hexadecimal',
-        renameGlobals: false,
-        selfDefending: false,
-        debugProtection: false,
-        disableConsoleOutput: false,
-        sourceMap: false,
-      })
-      .getObfuscatedCode();
+    const result = await getTerser().minify(code, {
+      compress: false,
+      mangle: true,
+      toplevel: false,
+      format: {
+        comments: false
+      }
+    });
+    return result.code || code;
   } catch {
     return code;
   }
 }
 
 async function createZipBuffer(files) {
-  // archiver fica fixado em ^7 (CJS, API chamável `archiver('zip', opts)`). A v8
-  // virou ESM e trocou a API por classes nomeadas (sem função default) — o que
-  // quebrava com "archiver is not a function" no Node 23. Ver package.json.
-  const archiver = require('archiver');
+  const { ZipArchive } = await import('archiver');
   const { PassThrough } = require('stream');
   return new Promise((resolve, reject) => {
     const chunks = [];
@@ -71,7 +54,7 @@ async function createZipBuffer(files) {
     stream.on('end', () => resolve(Buffer.concat(chunks)));
     stream.on('error', reject);
 
-    const archive = archiver('zip', { zlib: { level: 9 } });
+    const archive = new ZipArchive({ zlib: { level: 9 } });
     archive.on('error', reject);
     archive.pipe(stream);
 
@@ -334,7 +317,7 @@ async function collectSystemFiles(dir, { buildMode = false } = {}) {
         (ext === '.js' || ext === '.mjs' || ext === '.cjs') &&
         !RUNTIME_CONFIG_RE.test(entryName) // não ofuscar config lida pelo vite
       ) {
-        content = obfuscateJs(content);
+        content = await obfuscateJs(content);
       }
       files[relPath] = content;
     } catch {
@@ -768,4 +751,13 @@ async function runSystemInstall({ args, options, logger, t }) {
   return { ok: true, slug, path: pkgDir, manifest: response.manifest };
 }
 
-module.exports = { collectSystemFiles, runSystemPackage, runSystemPublish, runSystemList, runSystemInstall };
+module.exports = {
+  looksMinified,
+  obfuscateJs,
+  createZipBuffer,
+  collectSystemFiles,
+  runSystemPackage,
+  runSystemPublish,
+  runSystemList,
+  runSystemInstall
+};

@@ -56,17 +56,6 @@ async function seedRootArtifacts(slug = 'feature-x') {
 }
 
 describe('feature:archive — dossier dir extension (AC-F1-08)', () => {
-  beforeEach(async () => {
-    prevCwd = process.cwd();
-    root = await fs.mkdtemp(path.join(os.tmpdir(), 'aioson-archive-dossier-'));
-    await fs.mkdir(path.join(root, '.aioson', 'context'), { recursive: true });
-    process.chdir(root);
-  });
-  afterEach(async () => {
-    process.chdir(prevCwd);
-    await fs.rm(root, { recursive: true, force: true, maxRetries: 3, retryDelay: 25 });
-  });
-
   it('moves features/{slug}/ → done/{slug}/dossier/', async () => {
     await seedFeaturesMd('done');
     await seedRootArtifacts();

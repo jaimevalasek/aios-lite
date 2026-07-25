@@ -197,6 +197,26 @@ describe('workflow-gates.js — runTechnicalGate', () => {
     assert.notEqual(afterCode, before);
   });
 
+  it('fingerprint fails safe instead of reading oversized untracked files into memory', async () => {
+    await fs.writeFile(path.join(tmpDir, 'package.json'), '{"name":"fingerprint-limits"}\n');
+    execFileSync('git', ['init'], { cwd: tmpDir, stdio: 'ignore' });
+    execFileSync('git', ['add', 'package.json'], { cwd: tmpDir, stdio: 'ignore' });
+    execFileSync(
+      'git',
+      ['-c', 'user.name=AIOSON Test', '-c', 'user.email=test@aioson.local', 'commit', '-m', 'fixture'],
+      { cwd: tmpDir, stdio: 'ignore' }
+    );
+    await fs.writeFile(path.join(tmpDir, 'large-untracked.bin'), Buffer.alloc(32, 1));
+
+    const fingerprint = computeImplementationFingerprint(
+      tmpDir,
+      [{ id: 'fixture', command: 'node --test' }],
+      { maxFileBytes: 16, maxTotalBytes: 64 }
+    );
+
+    assert.equal(fingerprint, null);
+  });
+
   it('blocks dev stage when TypeScript compilation fails', async () => {
     await fs.writeFile(path.join(tmpDir, 'tsconfig.json'), '{"compilerOptions": {}}');
     // Create a TS file with syntax error to make tsc fail

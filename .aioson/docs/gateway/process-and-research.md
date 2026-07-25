@@ -33,6 +33,11 @@ Product, Sheldon, Planner, Dev, and QA load `.aioson/skills/process/aioson-spec-
 | `review-intelligence` | concrete slug + artifact before existing gate | `SKILL.md` + exactly one of framing/specification/architecture/delivery-assurance |
 | expansion scout/scope/audit | rich surface, prior expansion, or explicit richer options | applicable one skill + `.aioson/docs/feature-expansion-taxonomy.md` |
 
+For a prompt, agent kernel, skill router, or other instruction-heavy artifact
+audit, load `.aioson/skills/process/prompt-sharpener/SKILL.md` when its trigger
+matches. Load its diagnostics reference only for a multi-prompt audit or adoption
+assessment.
+
 Review intelligence adds no gate. Stop after two passes. If its skill/CLI is unavailable, run the equivalent review manually and preserve existing workflow behavior.
 
 ## Skill registry and usage evidence

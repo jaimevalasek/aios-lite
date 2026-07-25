@@ -16,7 +16,7 @@ O `@discover` resolve isso. Ele roda uma vez (ou quando você quiser atualizar),
 
 ## Pré-requisitos
 
-- Node.js 18+ instalado
+- Node.js 20+ instalado
 - Projeto existente com código (qualquer stack)
 - Claude Code (ou outro cliente AI suportado)
 - AIOSON ainda não instalado no projeto

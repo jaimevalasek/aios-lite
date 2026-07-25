@@ -19,6 +19,8 @@ const { ensureDir } = require('./utils');
 const MAX_OUTPUT_LINES = 60;
 const EVIDENCE_RELATIVE_PATH = '.aioson/runtime/technical-evidence.json';
 const MAX_EVIDENCE_ENTRIES = 20;
+const MAX_FINGERPRINT_FILE_BYTES = 16 * 1024 * 1024;
+const MAX_FINGERPRINT_TOTAL_BYTES = 64 * 1024 * 1024;
 
 async function detectStack(targetDir) {
   const checks = [];
@@ -116,8 +118,14 @@ function hashParts(parts) {
   return hash.digest('hex');
 }
 
-function computeImplementationFingerprint(targetDir, checks) {
+function computeImplementationFingerprint(targetDir, checks, limits = {}) {
   try {
+    const normalizeLimit = (value, fallback) => {
+      const parsed = Number(value);
+      return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : fallback;
+    };
+    const maxFileBytes = normalizeLimit(limits.maxFileBytes, MAX_FINGERPRINT_FILE_BYTES);
+    const maxTotalBytes = normalizeLimit(limits.maxTotalBytes, MAX_FINGERPRINT_TOTAL_BYTES);
     const implementationPathspec = [
       '.',
       ':(exclude).aioson/runtime/**',
@@ -149,19 +157,51 @@ function computeImplementationFingerprint(targetDir, checks) {
       timeout: 30000,
       stdio: ['ignore', 'pipe', 'ignore']
     });
-    const parts = [head, diff, JSON.stringify(checks.map((check) => [check.id, check.command]))];
+    const hash = crypto.createHash('sha256');
+    const update = (part) => {
+      hash.update(Buffer.isBuffer(part) ? part : Buffer.from(String(part)));
+      hash.update('\0');
+    };
+    update(head);
+    update(diff);
+    update(JSON.stringify(checks.map((check) => [check.id, check.command])));
+    let totalBytes = 0;
     for (const relativePath of untrackedRaw.split('\0').filter(Boolean).sort()) {
       const absolute = path.resolve(repoRoot, relativePath);
       const insideRepo = path.relative(repoRoot, absolute);
       if (insideRepo.startsWith('..') || path.isAbsolute(insideRepo)) continue;
-      parts.push(relativePath);
+      update(relativePath);
       try {
-        parts.push(fsSync.readFileSync(absolute));
+        const stat = fsSync.lstatSync(absolute);
+        if (stat.isSymbolicLink()) {
+          update(`<symlink:${fsSync.readlinkSync(absolute)}>`);
+          continue;
+        }
+        if (!stat.isFile()) {
+          update('<non-regular>');
+          continue;
+        }
+        if (stat.size > maxFileBytes || totalBytes + stat.size > maxTotalBytes) {
+          return null;
+        }
+        totalBytes += stat.size;
+        const handle = fsSync.openSync(absolute, 'r');
+        try {
+          const buffer = Buffer.allocUnsafe(Math.min(64 * 1024, Math.max(1, stat.size)));
+          let bytesRead;
+          do {
+            bytesRead = fsSync.readSync(handle, buffer, 0, buffer.length, null);
+            if (bytesRead > 0) hash.update(buffer.subarray(0, bytesRead));
+          } while (bytesRead > 0);
+          hash.update('\0');
+        } finally {
+          fsSync.closeSync(handle);
+        }
       } catch {
-        parts.push('<unreadable>');
+        update('<unreadable>');
       }
     }
-    return `sha256:${hashParts(parts)}`;
+    return `sha256:${hash.digest('hex')}`;
   } catch {
     return null;
   }
@@ -317,6 +357,8 @@ function formatGateError(gateResult) {
 }
 
 module.exports = {
+  MAX_FINGERPRINT_FILE_BYTES,
+  MAX_FINGERPRINT_TOTAL_BYTES,
   EVIDENCE_RELATIVE_PATH,
   detectStack,
   computeImplementationFingerprint,

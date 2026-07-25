@@ -8,6 +8,7 @@ const path = require('node:path');
 
 const {
   buildAgenticPolicy,
+  quoteCliArg,
   runWorkflowExecute,
   EXECUTION_STATE_RELATIVE_PATH
 } = require('../src/commands/workflow-execute');
@@ -375,7 +376,7 @@ test('workflow:execute: dry-run does not create workflow state or execution chec
   );
 });
 
-test('workflow:execute: resume command quotes user-controlled arguments', async () => {
+test('workflow:execute rejects a command-shaped feature slug before resume state is built', async () => {
   const tmpDir = await makeTmpDir();
   const result = await runWorkflowExecute({
     args: [tmpDir],
@@ -389,10 +390,10 @@ test('workflow:execute: resume command quotes user-controlled arguments', async 
     logger: makeLogger()
   });
 
-  assert.equal(result.ok, true);
-  assert.match(result.resume_command, /--feature='poc;echo AIOSON_POC'/);
-  assert.doesNotMatch(result.resume_command, /--feature=poc;echo/);
-  assert.match(result.resume_command, /--tool='codex'/);
+  assert.equal(result.ok, false);
+  assert.equal(result.reason, 'invalid_feature_slug');
+  assert.equal(result.resume_command, undefined);
+  assert.equal(quoteCliArg("codex'; echo AIOSON_POC"), "'codex'\\''; echo AIOSON_POC'");
 });
 
 test('workflow:execute: dry-run human output mentions plan', async () => {

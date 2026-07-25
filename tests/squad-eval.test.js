@@ -8,6 +8,7 @@ const path = require('node:path');
 const { spawn } = require('node:child_process');
 const { runSquadEval } = require('../src/commands/squad-eval');
 const { runSquadValidate } = require('../src/commands/squad-validate');
+const { verifyEvalReportIntegrity } = require('../src/squad/eval-verifier');
 
 const quiet = { log() {}, error() {} };
 
@@ -130,6 +131,32 @@ async function createFixture(overrides = {}) {
     },
     ...overrides
   };
+  if (Array.isArray(manifest.evaluation?.heldOutCases)) {
+    manifest.evaluation.heldOutCases = manifest.evaluation.heldOutCases.map((testCase) => {
+      const normalized = {
+        deterministic: true,
+        scorer: { worker: 'independent-scorer' },
+        ...testCase
+      };
+      if (normalized.scorer === false) delete normalized.scorer;
+      return normalized;
+    });
+  }
+  const compiledBindings = [
+    ...(manifest.genomeBindings?.squad || []),
+    ...Object.values(manifest.genomeBindings?.executors || {}).flat()
+  ].filter((binding) => binding.status === 'compiled');
+  if (compiledBindings.length > 0) {
+    await fs.appendFile(path.join(squadDir, 'agents', 'orquestrador.md'), [
+      '',
+      '<!-- AIOSON:GENOME-COMPILED:BEGIN -->',
+      '## Compiled genome method',
+      `Compilation IDs: ${compiledBindings.map((binding) => binding.compilationId).join(', ')}`,
+      '- Apply the compiled evidence discipline.',
+      '<!-- AIOSON:GENOME-COMPILED:END -->',
+      ''
+    ].join('\n'));
+  }
   await fs.writeFile(
     path.join(squadDir, 'squad.manifest.json'),
     `${JSON.stringify(manifest, null, 2)}\n`
@@ -139,6 +166,19 @@ async function createFixture(overrides = {}) {
     'candidate-eval',
     "'use strict';\nprocess.stdout.write(JSON.stringify({ dimensions: { grounding: 0.95, completeness: 0.9 } }));\n"
   );
+  await writeWorker(squadDir, 'independent-scorer', [
+    "'use strict';",
+    'const input = JSON.parse(process.argv[2]);',
+    'const baseline = input.baseline_output?.dimensions || input.baseline_output?.scores || {};',
+    'const candidate = input.candidate_output?.dimensions || input.candidate_output?.scores || {};',
+    'const names = new Set([...Object.keys(input.declared_dimensions || {}), ...Object.keys(baseline), ...Object.keys(candidate)]);',
+    'const dimensions = Object.fromEntries([...names].map((name) => [name, {',
+    '  baseline: baseline[name],',
+    '  candidate: candidate[name],',
+    "  evidence: 'independent fixture scorer'",
+    '}]));',
+    'process.stdout.write(JSON.stringify({ dimensions }));'
+  ].join('\n'));
   return { projectDir, slug, squadDir, manifest };
 }
 
@@ -164,6 +204,20 @@ test('AC-premium-15 eval persists a schema-valid reproducible PASS report', asyn
     logger: quiet
   });
   assert.equal(strict.valid, true, strict.errors.join('\n'));
+
+  const tampered = structuredClone(report);
+  tampered.generated_at = new Date(Date.now() + 86_400_000).toISOString();
+  const integrity = await verifyEvalReportIntegrity(
+    fixture.projectDir,
+    fixture.slug,
+    fixture.manifest,
+    tampered
+  );
+  assert.equal(integrity.valid, false);
+  assert.equal(
+    integrity.errors.some((error) => error.includes('evidence hash')),
+    true
+  );
 });
 
 test('AC-premium-11 A/B regression remains a critical dimension failure', async () => {
@@ -203,7 +257,7 @@ test('AC-premium-11 A/B regression remains a critical dimension failure', async 
   await writeWorker(fixture.squadDir, 'ab-regression', [
     "'use strict';",
     'const input = JSON.parse(process.argv[2]);',
-    'const dimensions = input._aioson_eval.genome_enabled',
+    'const dimensions = input._aioson_eval.genome_effects_present',
     '  ? { grounding: 0.7, style: 0.95 }',
     '  : { grounding: 0.9, style: 0.7 };',
     'process.stdout.write(JSON.stringify({ dimensions }));'
@@ -253,7 +307,7 @@ test('AC-premium-11 held-out A/B can execute real baseline and compiled-candidat
   await writeWorker(fixture.squadDir, 'controlled-ab', [
     "'use strict';",
     'const input = JSON.parse(process.argv[2]);',
-    'const dimensions = input._aioson_eval.genome_enabled',
+    'const dimensions = input._aioson_eval.genome_effects_present',
     '  ? { grounding: 0.93, completeness: 0.9 }',
     '  : { grounding: 0.6, completeness: 0.82 };',
     'process.stdout.write(JSON.stringify({ dimensions, control: input._aioson_eval }));'
@@ -268,12 +322,20 @@ test('AC-premium-11 held-out A/B can execute real baseline and compiled-candidat
   assert.equal(result.genomeComparison.status, 'pass');
   const report = JSON.parse(await fs.readFile(path.join(fixture.projectDir, result.latest), 'utf8'));
   const heldOut = report.held_out.cases[0];
-  assert.equal(heldOut.executions.length, 2);
+  assert.equal(heldOut.executions.length, 3);
   assert.equal(heldOut.executions.every((execution) => execution.ok), true);
   assert.equal(heldOut.ab_controlled, true);
-  assert.equal(heldOut.executions[0].worker, heldOut.executions[1].worker);
-  assert.equal(heldOut.executions[0].genome_enabled, false);
-  assert.equal(heldOut.executions[1].genome_enabled, true);
+  const baseline = heldOut.executions.find((execution) => execution.label === 'baseline');
+  const candidate = heldOut.executions.find((execution) => execution.label === 'candidate');
+  assert.equal(baseline.worker, candidate.worker);
+  assert.equal(baseline.genome_enabled, false);
+  assert.equal(candidate.genome_enabled, true);
+  assert.equal(candidate.genome_effects_present, true);
+  assert.notEqual(
+    baseline.genome_context_hash,
+    candidate.genome_context_hash
+  );
+  assert.equal(heldOut.scorer_independent, true);
   assert.equal(heldOut.dimensions.find((dimension) => dimension.name === 'grounding').delta, 0.33);
 });
 
@@ -304,7 +366,133 @@ test('AC-premium-16 manifest-authored static scores cannot self-certify held-out
     logger: quiet
   });
   assert.equal(result.ok, false);
+  assert.equal(result.verdict, 'FAIL');
+});
+
+test('worker self-reported scores stay UNVERIFIED without an independent scorer', async () => {
+  const fixture = await createFixture({
+    evaluation: {
+      contractVersion: '1.0.0',
+      criteria: [{
+        id: 'grounding-1',
+        kind: 'grounding',
+        statement: 'Require grounded claims',
+        source: 'manifest.goal',
+        executor: 'orquestrador',
+        expectedTerms: ['unsupported claims']
+      }],
+      heldOutCases: [{
+        id: 'self-reported-only',
+        task: 'Do not trust the producer as its own evaluator',
+        worker: 'candidate-eval',
+        scorer: false,
+        dimensions: {
+          grounding: { threshold: 0.8, critical: true },
+          completeness: { threshold: 0.8 }
+        }
+      }]
+    }
+  });
+  const result = await runSquadEval({
+    args: [fixture.projectDir],
+    options: { squad: fixture.slug, json: true },
+    logger: quiet
+  });
+  const report = JSON.parse(await fs.readFile(path.join(fixture.projectDir, result.latest), 'utf8'));
+
+  assert.equal(result.ok, false);
   assert.equal(result.verdict, 'UNVERIFIED');
+  assert.equal(report.held_out.cases[0].scorer_independent, false);
+  assert.equal(
+    report.held_out.cases[0].dimensions.some((dimension) => (
+      dimension.name === 'independent-evaluation'
+      && dimension.status === 'unverified'
+      && dimension.critical === true
+    )),
+    true
+  );
+});
+
+test('an independent scorer cannot PASS without explaining every numeric dimension', async () => {
+  const fixture = await createFixture();
+  await writeWorker(
+    fixture.squadDir,
+    'independent-scorer',
+    [
+      "'use strict';",
+      'const input = JSON.parse(process.argv[2]);',
+      'const candidate = input.candidate_output?.dimensions || {};',
+      'process.stdout.write(JSON.stringify({ dimensions: {',
+      '  grounding: { candidate: candidate.grounding },',
+      '  completeness: { candidate: candidate.completeness }',
+      '} }));'
+    ].join('\n')
+  );
+
+  const result = await runSquadEval({
+    args: [fixture.projectDir],
+    options: { squad: fixture.slug, json: true },
+    logger: quiet
+  });
+  const report = JSON.parse(await fs.readFile(path.join(fixture.projectDir, result.latest), 'utf8'));
+  const heldOut = report.held_out.cases[0];
+
+  assert.equal(result.ok, false);
+  assert.equal(result.verdict, 'UNVERIFIED');
+  assert.equal(heldOut.scorer_independent, true);
+  assert.equal(heldOut.scorer_evidence_complete, false);
+  assert.equal(
+    heldOut.dimensions.some((dimension) => (
+      dimension.name === 'scorer-evidence'
+      && dimension.status === 'unverified'
+      && dimension.critical === true
+    )),
+    true
+  );
+});
+
+test('declared critical dimensions cannot disappear from worker output and still PASS', async () => {
+  const fixture = await createFixture({
+    evaluation: {
+      contractVersion: '1.0.0',
+      criteria: [{
+        id: 'grounding-1',
+        kind: 'grounding',
+        statement: 'Require grounded claims',
+        source: 'manifest.goal',
+        executor: 'orquestrador',
+        expectedTerms: ['unsupported claims']
+      }],
+      heldOutCases: [{
+        id: 'missing-critical-dimension',
+        task: 'Return every declared evaluation dimension',
+        worker: 'omits-critical',
+        dimensions: {
+          grounding: { threshold: 0.9, critical: true },
+          style: { threshold: 0.8 }
+        }
+      }]
+    }
+  });
+  await writeWorker(
+    fixture.squadDir,
+    'omits-critical',
+    "'use strict';\nprocess.stdout.write(JSON.stringify({ dimensions: { style: 1 } }));\n"
+  );
+
+  const result = await runSquadEval({
+    args: [fixture.projectDir],
+    options: { squad: fixture.slug, json: true },
+    logger: quiet
+  });
+  const report = JSON.parse(await fs.readFile(path.join(fixture.projectDir, result.latest), 'utf8'));
+  const grounding = report.held_out.cases[0].dimensions.find((item) => item.name === 'grounding');
+
+  assert.equal(result.ok, false);
+  assert.equal(result.verdict, 'FAIL');
+  assert.equal(grounding.status, 'fail');
+  assert.equal(grounding.candidate, null);
+  assert.equal(report.critical_failures > 0, true);
 });
 
 test('AC-premium-11 genome A/B rejects different worker inputs as an uncontrolled comparison', async () => {

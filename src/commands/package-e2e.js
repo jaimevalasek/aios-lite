@@ -1,6 +1,7 @@
 'use strict';
 
 const fs = require('node:fs/promises');
+const { existsSync } = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { spawn } = require('node:child_process');
@@ -13,16 +14,44 @@ function toArg(value) {
 function commandFailureDetail(result, t) {
   const stderr = String((result && result.stderr) || '').trim();
   const stdout = String((result && result.stdout) || '').trim();
-  return stderr || stdout || t('package_test.error_unknown_detail');
+  return [stderr, stdout].filter(Boolean).join('\n') || t('package_test.error_unknown_detail');
+}
+
+function resolvePackageManagerInvocation(command, args, options = {}) {
+  const platform = options.platform || process.platform;
+  const execPath = options.execPath || process.execPath;
+  const env = options.env || process.env;
+  const fileExists = options.fileExists || existsSync;
+  if (platform !== 'win32' || !['npm', 'npx'].includes(command)) {
+    return { command, args };
+  }
+
+  const cliName = command === 'npm' ? 'npm-cli.js' : 'npx-cli.js';
+  const npmExecPath = String(env.npm_execpath || '');
+  const candidates = [
+    command === 'npm' ? npmExecPath : npmExecPath.replace(/npm-cli\.js$/i, 'npx-cli.js'),
+    path.join(path.dirname(execPath), 'node_modules', 'npm', 'bin', cliName)
+  ].filter(Boolean);
+  const cliPath = candidates.find((candidate) => fileExists(candidate));
+  if (!cliPath) {
+    throw new Error(`Unable to locate ${cliName} for a shell-free Windows execution.`);
+  }
+  return {
+    command: execPath,
+    args: [cliPath, ...args]
+  };
 }
 
 async function runCommand(cmd, args, options = {}) {
   const cwd = options.cwd || process.cwd();
   const env = { ...process.env, ...(options.env || {}) };
+  const invocation = resolvePackageManagerInvocation(cmd, args.map((arg) => toArg(arg)), { env });
   return new Promise((resolve, reject) => {
-    const child = spawn(cmd, args.map((arg) => toArg(arg)), {
+    const child = spawn(invocation.command, invocation.args, {
       cwd,
-      env
+      env,
+      shell: false,
+      windowsHide: true
     });
 
     let stdout = '';
@@ -268,6 +297,7 @@ module.exports = {
   runPackageTest,
   runCommand,
   commandFailureDetail,
+  resolvePackageManagerInvocation,
   parsePackResult,
   resolveTarballFromDir
 };

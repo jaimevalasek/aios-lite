@@ -40,36 +40,58 @@ contained project file. The report records the resolved source hash.
 
 Each held-out case describes an unseen task plus either artifact assertions or
 an executable worker. Manifest-authored numeric scores are threshold metadata,
-not proof, and can never self-certify a `PASS`. A worker returns
-`{"dimensions": {"<name>": 0..1}}`; artifact-only cases must declare deterministic
-`expectedContains` / `expectedNotContains` assertions. Preserve every dimension.
-Mark safety, grounding, or other blocking dimensions `critical`.
+not proof, and can never self-certify a `PASS`. Numeric evaluation requires a
+separate scorer worker: the producer returns its output, while the scorer returns
+baseline/candidate values and a non-empty explanation for every dimension.
+Artifact-only cases must declare deterministic `expectedContains` /
+`expectedNotContains` assertions. Preserve every declared dimension and mark
+safety, grounding, or other blocking dimensions `critical`.
 
 ```json
 {
   "id": "held-out-1",
   "task": "Create an unseen recommendation",
-  "worker": "held-out-evaluator",
+  "baselineRun": { "worker": "recommendation-producer" },
+  "candidateRun": { "worker": "recommendation-producer" },
+  "scorer": { "worker": "recommendation-scorer" },
+  "deterministic": true,
+  "seed": "held-out-1-v1",
   "dimensions": {
     "grounding": {
       "threshold": 0.8,
-      "critical": true,
-      "evidence": "score returned by the held-out worker"
+      "critical": true
     }
   }
 }
 ```
+
+The scorer must be a different content-bound worker from both producers and
+must return, for example,
+`{"dimensions":{"grounding":{"baseline":0.7,"candidate":0.9,"evidence":"citations matched the fixture"}}}`.
+A producer's self-reported score, a scorer without per-dimension evidence, or a
+case without explicit `deterministic: true` remains `UNVERIFIED`.
 
 ## Genome A/B
 
 When a genome is bound, run the same unseen task with identical worker inputs
 through the same worker twice:
 `baselineRun` with genomes disabled and `candidateRun` with the compiled binding
-enabled. AIOSON injects the controlled `_aioson_eval` envelope; changing workers
-is not an A/B comparison and fails the control. The gate reports delta per
-dimension. Any regression fails that dimension; improvement in style cannot hide
-a grounding or safety regression. A binding without compiled effect or without
-controlled A/B evidence remains failed/unverified.
+enabled. The baseline context is the executor prompt with AIOSON's compiled
+Genome block removed; the candidate context contains the actual materialized
+block. AIOSON hashes both contexts and injects the controlled `_aioson_eval`
+envelope; a changed worker/input, equal context hashes, or a candidate without a
+compiled effect is not an A/B comparison. The gate reports delta per dimension.
+Any regression fails that dimension; improvement in style cannot hide a
+grounding or safety regression.
+
+## Report integrity
+
+`latest.json` is not trusted because it matches the schema. Validation
+recomputes the manifest/source inventory, criterion evidence, worker source and
+output hashes, scorer results, Genome contexts, section verdicts, and dimension
+summary. `reproduction.engine_hash` binds the evaluator implementation and
+`reproduction.evidence_hash` binds the canonical report evidence. A fabricated
+or stale `PASS` is rejected even when its JSON is structurally valid.
 
 ## Verdict contract
 

@@ -6,6 +6,7 @@ const fs = require('node:fs/promises');
 const os = require('node:os');
 const path = require('node:path');
 const { runSquadPlaybook } = require('../src/commands/squad-playbook');
+const { evaluateSquad } = require('../src/squad/eval-engine');
 
 async function makeTempDir() {
   return fs.mkdtemp(path.join(os.tmpdir(), 'aioson-playbook-'));
@@ -16,34 +17,54 @@ function collectLogger() {
   return { lines, log: (l) => lines.push(String(l)), error: (l) => lines.push(String(l)) };
 }
 
-function validEvalReport({ squad, verdict = 'PASS', criticalFailures = 0, heldOutStatus = 'pass' }) {
-  return {
-    schemaVersion: '1.0.0',
-    squad,
-    generated_at: new Date(Date.now() + 1000).toISOString(),
-    verdict,
-    inputs: {
-      manifest_hash: 'a'.repeat(64),
-      source_hash: 'b'.repeat(64),
-      sources: []
-    },
-    precheck: { status: 'pass', strict: true, errors: [], warnings: [] },
-    source_rubric: { status: 'pass', criteria: [] },
-    held_out: { status: heldOutStatus, cases: [{ id: 'new-held-out' }] },
-    genome_comparison: {
-      status: 'not-applicable',
-      bindings: [],
-      dimensions: [],
-      reason: 'no genome binding declared'
-    },
-    dimensions: {},
-    critical_failures: criticalFailures,
-    reproduction: {
-      command: `aioson squad:eval . --squad=${squad} --json`,
-      deterministic: true,
-      contract: '1.0.0'
+async function writeBoundEvalReport(dir, squad, { heldOutPass = true } = {}) {
+  const squadDir = path.join(dir, '.aioson', 'squads', squad);
+  const sourceRel = `.aioson/squads/${squad}/source.md`;
+  const artifactRel = `.aioson/squads/${squad}/held-out.md`;
+  const manifest = {
+    slug: squad,
+    goal: 'Require source-grounded proof',
+    sourceDocs: [sourceRel],
+    evaluation: {
+      criteria: [{
+        id: 'grounding-source',
+        kind: 'grounding',
+        statement: 'Grounding is present in the source artifact',
+        source: 'manifest.goal',
+        artifact: sourceRel,
+        expectedTerms: ['source-grounded'],
+        critical: true
+      }],
+      heldOutCases: [{
+        id: 'new-held-out',
+        task: 'Prove a later unseen correction',
+        artifact: artifactRel,
+        expectedContains: ['approved evidence'],
+        deterministic: true,
+        seed: 'playbook-promotion-v1'
+      }]
     }
   };
+  await fs.mkdir(path.join(squadDir, 'evals'), { recursive: true });
+  await fs.writeFile(
+    path.join(squadDir, 'squad.manifest.json'),
+    `${JSON.stringify(manifest, null, 2)}\n`
+  );
+  await fs.writeFile(path.join(dir, ...sourceRel.split('/')), 'source-grounded proof\n');
+  await fs.writeFile(
+    path.join(dir, ...artifactRel.split('/')),
+    heldOutPass ? 'approved evidence\n' : 'rejected evidence\n'
+  );
+  const report = await evaluateSquad({
+    projectDir: dir,
+    slug: squad,
+    manifest,
+    precheck: { valid: true, errors: [], warnings: [] },
+    now: new Date(Date.now() + 1000).toISOString()
+  });
+  const reportPath = path.join(squadDir, 'evals', 'latest.json');
+  await fs.writeFile(reportPath, `${JSON.stringify(report, null, 2)}\n`);
+  return { report, reportPath };
 }
 
 test('AC-premium-18 capture writes a candidate and default list does not activate it', async () => {
@@ -199,10 +220,7 @@ test('AC-premium-18 promotes only with a later held-out PASS and preserves origi
     },
     logger
   });
-  const evalDir = path.join(dir, '.aioson', 'squads', 'quality-squad', 'evals');
-  await fs.mkdir(evalDir, { recursive: true });
-  const reportPath = path.join(evalDir, 'latest.json');
-  await fs.writeFile(reportPath, JSON.stringify(validEvalReport({ squad: 'quality-squad' })));
+  const { reportPath } = await writeBoundEvalReport(dir, 'quality-squad');
 
   const promoted = await runSquadPlaybook({
     args: ['promote'],
@@ -217,6 +235,7 @@ test('AC-premium-18 promotes only with a later held-out PASS and preserves origi
   assert.equal(promoted.ok, true);
   assert.equal(promoted.promoted.status, 'promoted');
   assert.equal(promoted.promoted.promotionEvidence.origin, 'quality-squad/claim-4');
+  assert.match(promoted.promoted.promotionEvidence.evidenceHash, /^[a-f0-9]{64}$/);
   const list = await runSquadPlaybook({ args: ['list'], options: { dir, json: true }, logger });
   assert.equal(list.entries.length, 1);
 });
@@ -229,15 +248,11 @@ test('AC-premium-18 refuses promotion from failed held-out evidence', async () =
     options: { dir, rule: 'r', lesson: 'l', from: 'squad-s/c', json: true },
     logger
   });
-  const evalDir = path.join(dir, '.aioson', 'squads', 'squad-s', 'evals');
-  await fs.mkdir(evalDir, { recursive: true });
-  const reportPath = path.join(evalDir, 'latest.json');
-  await fs.writeFile(reportPath, JSON.stringify(validEvalReport({
-    squad: 'squad-s',
-    verdict: 'FAIL',
-    criticalFailures: 1,
-    heldOutStatus: 'fail'
-  })));
+  const { reportPath } = await writeBoundEvalReport(
+    dir,
+    'squad-s',
+    { heldOutPass: false }
+  );
   const refused = await runSquadPlaybook({
     args: ['promote'],
     options: {
@@ -271,7 +286,8 @@ test('playbook promotion rejects malformed or wrong-squad eval evidence', async 
   });
   assert.equal(malformed.error, 'invalid_eval_report');
 
-  await fs.writeFile(reportPath, JSON.stringify(validEvalReport({ squad: 'other-squad' })));
+  const other = await writeBoundEvalReport(dir, 'other-squad');
+  await fs.writeFile(reportPath, await fs.readFile(other.reportPath, 'utf8'));
   const mismatch = await runSquadPlaybook({
     args: ['promote'],
     options: { dir, id: captured.captured.id, squad: 's', json: true },

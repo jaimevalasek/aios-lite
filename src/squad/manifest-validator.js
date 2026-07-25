@@ -5,6 +5,8 @@ const path = require('node:path');
 const Ajv = require('ajv');
 const { createHash } = require('node:crypto');
 const { validateEvidencePack } = require('./evidence-pack');
+const { verifyEvalReportIntegrity } = require('./eval-verifier');
+const { isContainedPath, resolveRealContainedPath } = require('./path-containment');
 
 const SCHEMA_RELATIVE_PATH = path.join('.aioson', 'schemas', 'squad-manifest.schema.json');
 const SHIPPED_SCHEMA_PATH = path.resolve(
@@ -16,12 +18,6 @@ const SHIPPED_SCHEMA_PATH = path.resolve(
   'schemas',
   'squad-manifest.schema.json'
 );
-
-function isContainedPath(rootDir, candidatePath) {
-  const root = path.resolve(rootDir);
-  const candidate = path.resolve(candidatePath);
-  return candidate === root || candidate.startsWith(`${root}${path.sep}`);
-}
 
 function stableJson(value) {
   if (Array.isArray(value)) return `[${value.map(stableJson).join(',')}]`;
@@ -49,7 +45,8 @@ async function pathExists(targetPath) {
 async function resolveManifestSchemaPath(projectDir) {
   const workspaceSchema = path.resolve(projectDir, SCHEMA_RELATIVE_PATH);
   if (isContainedPath(projectDir, workspaceSchema) && await pathExists(workspaceSchema)) {
-    return workspaceSchema;
+    const realSchema = await resolveRealContainedPath(projectDir, workspaceSchema);
+    if (realSchema) return realSchema;
   }
   return SHIPPED_SCHEMA_PATH;
 }
@@ -150,7 +147,11 @@ async function findCurrentEvidencePack(projectDir, slug, freshness = {}) {
   if (!isContainedPath(path.resolve(projectDir, '.aioson', 'squads'), evidenceRoot)) {
     return { current: false, reason: 'Evidence Pack path escapes squads root', pack: null };
   }
-  const files = await collectJsonFiles(evidenceRoot);
+  const realEvidenceRoot = await resolveRealContainedPath(projectDir, evidenceRoot);
+  if (!realEvidenceRoot) {
+    return { current: false, reason: 'Evidence Pack path is missing or resolves outside project root', pack: null };
+  }
+  const files = await collectJsonFiles(realEvidenceRoot);
   const packs = [];
   for (const file of files.filter((candidate) => candidate.includes(`${path.sep}evidence${path.sep}`))) {
     const pack = await readJsonSafe(file);
@@ -204,12 +205,24 @@ async function validatePremiumManifest(projectDir, slug, manifest, options = {})
     const target = path.resolve(projectDir, normalizePath(executor.file));
     if (!isContainedPath(agentsRoot, target)) {
       errors.push(`Premium executor "${executor.slug}" escapes squad agents directory: ${executor.file}`);
+      continue;
+    }
+    if (await pathExists(target)) {
+      const realAgentsRoot = await resolveRealContainedPath(squadRoot, agentsRoot);
+      const realTarget = await resolveRealContainedPath(projectDir, target);
+      if (!realAgentsRoot || !realTarget || !isContainedPath(realAgentsRoot, realTarget)) {
+        errors.push(`Premium executor "${executor.slug}" resolves outside squad agents directory: ${executor.file}`);
+      }
     }
   }
   for (const sourceDoc of manifest.sourceDocs || []) {
     const target = path.resolve(projectDir, normalizePath(sourceDoc));
     if (!isContainedPath(projectDir, target)) {
       errors.push(`sourceDocs path escapes project: ${sourceDoc}`);
+      continue;
+    }
+    if (await pathExists(target) && !await resolveRealContainedPath(projectDir, target)) {
+      errors.push(`sourceDocs path resolves outside project: ${sourceDoc}`);
     }
   }
 
@@ -307,6 +320,15 @@ async function validatePremiumManifest(projectDir, slug, manifest, options = {})
     if (!latest) {
       errors.push('Persistent/regulatory premium squad requires a current eval report');
     } else {
+      const reportIntegrity = await verifyEvalReportIntegrity(
+        projectDir,
+        slug,
+        manifest,
+        latest
+      );
+      if (!reportIntegrity.valid) {
+        errors.push(`Latest eval report is invalid: ${reportIntegrity.errors.join('; ')}`);
+      }
       const maxAgeDays = Number(evaluation?.maxAgeDays || 30);
       const ageMs = Date.now() - Date.parse(latest.generated_at);
       if (!Number.isFinite(ageMs) || ageMs < 0 || ageMs > maxAgeDays * 86_400_000) {

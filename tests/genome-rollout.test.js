@@ -3,6 +3,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const path = require('node:path');
+const packageJson = require('../package.json');
 const {
   BLOCKS,
   DEFAULT_DASHBOARD_ROOT,
@@ -40,4 +41,16 @@ test('buildRolloutPlan supports single block selection and skip-dashboard', () =
   assert.deepEqual(blockC.map((item) => item.key), ['C']);
   assert.deepEqual(skipped.map((item) => item.key), ['A']);
   assert.equal(BLOCKS.C.repo, 'dashboard');
+});
+
+test('Genome 2.0 block A retains smoke, focused genome, full regression, and lint gates', () => {
+  assert.deepEqual(
+    packageJson.scripts['test:genome-2.0:block-a'].split(/\s*&&\s*/),
+    [
+      'node scripts/smoke/genome-2.0-smoke.js',
+      'npm run test:genome',
+      'npm test',
+      'npm run lint'
+    ]
+  );
 });

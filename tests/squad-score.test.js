@@ -220,6 +220,15 @@ async function makeTempDir() {
   return fs.mkdtemp(path.join(os.tmpdir(), 'aioson-score-'));
 }
 
+async function removeTempDir(tmpDir) {
+  await fs.rm(tmpDir, {
+    recursive: true,
+    force: true,
+    maxRetries: 8,
+    retryDelay: 75
+  });
+}
+
 test('runSquadScore returns error when no slug provided', async () => {
   const logs = [];
   const result = await runSquadScore({
@@ -242,7 +251,7 @@ test('runSquadScore returns error when manifest not found', async () => {
     });
     assert.equal(result.valid, false);
   } finally {
-    await fs.rm(tmpDir, { recursive: true });
+    await removeTempDir(tmpDir);
   }
 });
 
@@ -283,7 +292,7 @@ test('runSquadScore scores a valid manifest and returns grade', async () => {
     assert.ok(result.dimensions.potencial);
     assert.ok(Array.isArray(result.quickWins));
   } finally {
-    await fs.rm(tmpDir, { recursive: true });
+    await removeTempDir(tmpDir);
   }
 });
 
@@ -325,7 +334,7 @@ test('runSquadScore gives high score to a complete manifest', async () => {
     // With investigation dir, all scoring criteria met, expect high score
     assert.ok(result.total >= 70, `Expected score >= 70, got ${result.total}`);
   } finally {
-    await fs.rm(tmpDir, { recursive: true });
+    await removeTempDir(tmpDir);
   }
 });
 
@@ -397,6 +406,6 @@ test('AC-premium-17 critical eval failure caps the score instead of being averag
     assert.equal(result.total, 49);
     assert.equal(result.assurance.caps.some((cap) => cap.reason === 'critical-eval-failure'), true);
   } finally {
-    await fs.rm(tmpDir, { recursive: true });
+    await removeTempDir(tmpDir);
   }
 });

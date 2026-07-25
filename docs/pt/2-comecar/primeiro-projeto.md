@@ -10,7 +10,7 @@ Vamos construir um **mini-app de TODO** usando o ciclo SMALL. Você verá cada a
 
 ## Pré-requisitos
 
-- **Node.js 18+** instalado
+- **Node.js 20+** instalado
 - Um cliente AI configurado: **Claude Code**, **Codex CLI** ou **OpenCode**. Os exemplos aqui usam Claude Code; é trivial trocar.
 - Um terminal aberto
 

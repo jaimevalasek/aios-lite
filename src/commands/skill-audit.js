@@ -18,6 +18,11 @@ const RUNTIME_ROOTS = [
 const TEMPLATE_ROOT = { rel: 'template/.aioson/skills', category: 'template_skill' };
 const REACHABILITY_ROOTS = ['.aioson/agents', '.aioson/tasks', '.aioson/docs', 'src'];
 const REACHABILITY_EXTENSIONS = new Set(['.md', '.js', '.json', '.yaml', '.yml']);
+const INVENTORY_SOURCES = new Set([
+  'src/constants.js',
+  'src/commands/skill-audit.js',
+  'src/skills/registry.js'
+]);
 
 function estimateTokens(chars) {
   return Math.ceil(chars / CHARS_PER_TOKEN);
@@ -187,30 +192,112 @@ function hasSkillReference(content, skill) {
     || new RegExp(`\\b(?:load|use|using|activate|invoke|skill)\\b[^\\n]{0,80}(?:\\\`${escapedId}\\\`|${escapedId})`, 'i').test(content);
 }
 
+function classifyReachabilitySource(relativePath) {
+  const normalized = String(relativePath || '').replace(/\\/g, '/');
+  if (['AGENTS.md', 'CLAUDE.md', 'OPENCODE.md'].includes(normalized)) return 'runtime_route';
+  if (normalized.startsWith('.aioson/agents/') || normalized.startsWith('.aioson/tasks/')) {
+    return 'runtime_route';
+  }
+  if (normalized.startsWith('.aioson/docs/gateway/')) {
+    return /(?:^|\/)legacy-[^/]+$/i.test(normalized) ? 'legacy_reference' : 'runtime_route';
+  }
+  if (INVENTORY_SOURCES.has(normalized)) return 'inventory_reference';
+  if (normalized.startsWith('src/')) return 'runtime_route';
+  if (normalized.startsWith('.aioson/docs/')) {
+    return /(?:^|\/)legacy-[^/]+$/i.test(normalized)
+      || normalized.includes('/legacy-')
+      ? 'legacy_reference'
+      : 'contextual_reference';
+  }
+  return 'contextual_reference';
+}
+
+function referencedRuntimeDocuments(content) {
+  const documents = [];
+  for (const line of String(content || '').split(/\r?\n/)) {
+    if (/\b(?:never|do not|don't|must not|non-executable|history only|not use|avoid)\b/i.test(line)) {
+      continue;
+    }
+    for (const match of line.matchAll(/\.aioson\/docs\/[A-Za-z0-9._/-]+\.md/g)) {
+      documents.push(match[0]);
+    }
+  }
+  return documents;
+}
+
+function resolveRoutedSources(sources) {
+  const byPath = new Map(sources.map((source) => [source.path, source]));
+  const routedBy = new Map();
+  const queue = [];
+
+  for (const source of sources) {
+    if (source.kind !== 'runtime_route') continue;
+    routedBy.set(source.path, null);
+    queue.push(source.path);
+  }
+
+  while (queue.length > 0) {
+    const sourcePath = queue.shift();
+    const source = byPath.get(sourcePath);
+    if (!source) continue;
+
+    for (const targetPath of referencedRuntimeDocuments(source.content)) {
+      const target = byPath.get(targetPath);
+      if (!target || target.kind === 'legacy_reference' || routedBy.has(targetPath)) continue;
+      routedBy.set(targetPath, sourcePath);
+      queue.push(targetPath);
+    }
+  }
+
+  return sources.map((source) => ({
+    ...source,
+    runtime_reachable: routedBy.has(source.path),
+    routed_via: routedBy.get(source.path) || null
+  }));
+}
+
 async function analyzeReachability(projectDir, usage) {
   const resolved = await resolveSkillCatalog(projectDir);
   const sourceFiles = await collectReachabilitySources(projectDir);
-  const sources = await Promise.all(sourceFiles.map(async (filePath) => ({
+  const scannedSources = await Promise.all(sourceFiles.map(async (filePath) => ({
     path: normalizeRel(projectDir, filePath),
-    content: await fs.readFile(filePath, 'utf8').catch(() => '')
+    content: await fs.readFile(filePath, 'utf8').catch(() => ''),
+    kind: classifyReachabilitySource(normalizeRel(projectDir, filePath))
   })));
+  const sources = resolveRoutedSources(scannedSources);
 
   const skills = resolved.catalog.map((skill) => {
-    const references = sources
-      .filter((source) => hasSkillReference(source.content, skill))
+    const matchedReferences = sources
+      .filter((source) => hasSkillReference(source.content, skill));
+    const references = matchedReferences.map((source) => source.path);
+    const directReferences = matchedReferences
+      .filter((source) => source.runtime_reachable)
       .map((source) => source.path);
+    const contextualReferences = matchedReferences
+      .filter((source) => !source.runtime_reachable)
+      .map((source) => ({ path: source.path, kind: source.kind }));
+    const directRoutes = matchedReferences
+      .filter((source) => source.runtime_reachable)
+      .map((source) => ({
+        path: source.path,
+        routed_via: source.routed_via
+      }));
     const observed = usage.skills[skill.id] || { count: 0, last_observed_at: null, actors: [], sources: [] };
     let reachability;
     if (skill.status === 'deprecated') reachability = 'deprecated';
     else if (observed.count > 0) reachability = 'runtime_observed';
-    else if (references.length > 0) reachability = 'direct_reference';
+    else if (directReferences.length > 0) reachability = 'direct_reference';
     else if (skill.owner_agents.length > 0) reachability = 'declared_owner_only';
+    else if (contextualReferences.length > 0) reachability = 'contextual_reference';
     else if (['static', 'dynamic', 'design', 'design-system', 'premium-visual-design', 'squad', 'installed'].includes(skill.category)) {
       reachability = 'catalog_match_only';
     } else reachability = 'orphan';
     return {
       ...skill,
       references,
+      direct_references: directReferences,
+      direct_routes: directRoutes,
+      contextual_references: contextualReferences,
       runtime_usage: observed,
       reachability,
       tested: skill.tests.length > 0
@@ -235,12 +322,27 @@ async function analyzeReachability(projectDir, usage) {
       runtime_observed: skills.filter((skill) => skill.reachability === 'runtime_observed').length,
       directly_referenced: skills.filter((skill) => skill.reachability === 'direct_reference').length,
       declared_only: skills.filter((skill) => skill.reachability === 'declared_owner_only').length,
-      contextual_only: skills.filter((skill) => skill.reachability === 'catalog_match_only').length,
+      contextual_only: skills.filter((skill) => (
+        skill.reachability === 'contextual_reference'
+        || skill.reachability === 'catalog_match_only'
+      )).length,
       deprecated: skills.filter((skill) => skill.reachability === 'deprecated').length,
       orphans: skills.filter((skill) => skill.reachability === 'orphan').length,
       unregistered: unregistered.length
     },
     unregistered,
+    weak_process_skills: skills
+      .filter((skill) => (
+        skill.category === 'process'
+        && skill.status !== 'deprecated'
+        && !['runtime_observed', 'direct_reference'].includes(skill.reachability)
+      ))
+      .map((skill) => ({
+        id: skill.id,
+        reachability: skill.reachability,
+        owner_agents: skill.owner_agents,
+        references: skill.contextual_references
+      })),
     skills
   };
 }
@@ -319,7 +421,7 @@ async function runSkillAudit({ args, options = {}, logger }) {
       + `   Unregistered process skills: ${reachability.totals.unregistered}`
     );
     for (const skill of reachability.skills.filter((entry) =>
-      ['declared_owner_only', 'deprecated', 'orphan'].includes(entry.reachability))) {
+      ['declared_owner_only', 'contextual_reference', 'deprecated', 'orphan'].includes(entry.reachability))) {
       const suffix = skill.replacement ? ` -> ${skill.replacement}` : '';
       logger.log(`  ${skill.id}: ${skill.reachability}${suffix}`);
     }
@@ -334,6 +436,9 @@ async function runSkillAudit({ args, options = {}, logger }) {
 module.exports = {
   parseUsedSkills,
   readUsage,
+  classifyReachabilitySource,
+  referencedRuntimeDocuments,
+  resolveRoutedSources,
   analyzeReachability,
   runSkillAudit
 };

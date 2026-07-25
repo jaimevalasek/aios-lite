@@ -27,6 +27,6 @@ jobs:
       - name: Lint and test
         run: npm run ci
 
-      - name: Verify npm package contents
-        run: npm pack --dry-run
+      - name: Verify release boundaries
+        run: npm run verify:release:quick
 

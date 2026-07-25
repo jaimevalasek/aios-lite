@@ -10,7 +10,7 @@ No additional installation required. It ships with aioson.
 
 - aioson installed globally (`npm install -g @jaimevalasek/aioson`)
 - At least one squad created in the project (`aioson squad:scaffold . --slug=<slug>`)
-- Node.js ≥ 18 (already required by aioson)
+- Node.js ≥ 20 (already required by aioson)
 - A modern browser (Chrome, Firefox, Safari, Edge)
 
 ---

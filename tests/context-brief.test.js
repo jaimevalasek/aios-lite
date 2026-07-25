@@ -7,6 +7,7 @@ const os = require('node:os');
 const path = require('node:path');
 const { buildContextBrief, classifyLoads } = require('../src/context-brief');
 const { runContextBrief } = require('../src/commands/context-brief');
+const { cleanupTmpDir } = require('./helpers/sqlite-cleanup');
 
 async function makeTmpDir() {
   return fs.mkdtemp(path.join(os.tmpdir(), 'aioson-context-brief-'));
@@ -214,7 +215,7 @@ test('context:brief recall surfaces historical files that select cannot see', as
     const noRecall = await buildContextBrief(dir, briefOptions);
     assert.deepEqual(noRecall.related, []); // off by default
   } finally {
-    await fs.rm(dir, { recursive: true, force: true });
+    await cleanupTmpDir(dir);
   }
 });
 

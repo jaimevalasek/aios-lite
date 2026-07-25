@@ -227,6 +227,25 @@ test('design governance docs are copied on install and preserved on update', asy
   assert.equal(updateResult.skipped.some(s => s.path === governanceRel && s.reason === 'project-local'), true);
 });
 
+test('init mode creates every required project-local governance document', async () => {
+  const dir = await makeTempDir();
+  const result = await installTemplate(dir, { mode: 'init', overwrite: true });
+  const requiredProjectLocalFiles = [
+    '.aioson/context/design-doc.md',
+    '.aioson/design-docs/code-reuse.md',
+    '.aioson/design-docs/componentization.md',
+    '.aioson/design-docs/file-size.md',
+    '.aioson/design-docs/folder-structure.md',
+    '.aioson/design-docs/naming.md'
+  ];
+
+  for (const rel of requiredProjectLocalFiles) {
+    assert.equal(await fileExists(path.join(dir, rel)), true, `${rel} must exist after init`);
+    assert.equal(result.copied.includes(rel), true, `${rel} must be reported as copied`);
+    assert.equal(result.skipped.some((entry) => entry.path === rel), false, `${rel} must not be skipped`);
+  }
+});
+
 test('git-guard.json custom entries are preserved on update (baseline entries are merged in)', async () => {
   const dir = await makeTempDir();
   await installTemplate(dir, { mode: 'install' });

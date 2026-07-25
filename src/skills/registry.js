@@ -177,22 +177,21 @@ async function resolveSkillCatalog(projectDir) {
     loadSkillRegistry(projectDir)
   ]);
   const byPath = new Map(loaded.registry.skills.map((entry) => [normalizePath(entry.path), entry]));
-  const byId = new Map(loaded.registry.skills.map((entry) => [normalizeId(entry.id), entry]));
   const catalog = discovered.map((skill) => {
-    const override = byPath.get(skill.path) || byId.get(skill.id);
+    const override = byPath.get(skill.path);
     if (!override) return skill;
     return {
       ...skill,
       ...override,
       id: normalizeId(override.id || skill.id),
-      path: normalizePath(override.path || skill.path),
+      path: skill.path,
       owner_agents: Array.isArray(override.owner_agents) ? override.owner_agents : [],
       triggers: Array.isArray(override.triggers) ? override.triggers : [],
       tests: Array.isArray(override.tests) ? override.tests : [],
       registry_declared: true
     };
   });
-  const discoveredPaths = new Set(catalog.map((skill) => skill.path));
+  const discoveredPaths = new Set(discovered.map((skill) => skill.path));
   for (const entry of loaded.registry.skills) {
     const skillPath = normalizePath(entry.path);
     if (!discoveredPaths.has(skillPath)) {

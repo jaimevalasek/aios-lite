@@ -10,7 +10,7 @@ We're going to build a **mini TODO app** using the MICRO-depth canonical cycle. 
 
 ## Prerequisites
 
-- **Node.js 18+** installed
+- **Node.js 20+** installed
 - An AI client configured: **Claude Code**, **Codex CLI**, or **OpenCode**. Examples here use Claude Code; switching is trivial.
 - A terminal open
 

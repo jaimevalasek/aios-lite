@@ -3,6 +3,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
+const os = require('node:os');
 const path = require('node:path');
 const {
   loadSkillRegistry,
@@ -43,4 +44,44 @@ test('secure-tdd is risk-triggered by Dev and simplify has an explicit replaceme
   assert.match(dev, /skills\/process\/secure-tdd\/SKILL\.md/);
   assert.equal(simplify.status, 'deprecated');
   assert.equal(Boolean(simplify.replacement), true);
+});
+
+test('registry path typos are reported and cannot replace a discovered skill path by matching ID', async () => {
+  const projectDir = await fs.mkdtemp(path.join(os.tmpdir(), 'aioson-skill-registry-'));
+  try {
+    const skillDir = path.join(projectDir, '.aioson', 'skills', 'process', 'demo-skill');
+    const registryPath = path.join(projectDir, '.aioson', 'skills', 'registry.json');
+    await fs.mkdir(skillDir, { recursive: true });
+    await fs.writeFile(
+      path.join(skillDir, 'SKILL.md'),
+      '---\nname: demo-skill\ndescription: Fixture\n---\n'
+    );
+    await fs.writeFile(registryPath, JSON.stringify({
+      version: 1,
+      skills: [{
+        id: 'demo-skill',
+        path: '.aioson/skills/process/typo/SKILL.md',
+        owner_agents: ['dev'],
+        triggers: ['fixture'],
+        tests: ['tests/fixture.test.js'],
+        status: 'active'
+      }]
+    }));
+
+    const resolved = await resolveSkillCatalog(projectDir);
+    const skill = resolved.catalog.find((entry) => entry.id === 'demo-skill');
+    assert.equal(skill.path, '.aioson/skills/process/demo-skill/SKILL.md');
+    assert.equal(skill.registry_declared, false);
+    assert.ok(resolved.registry.issues.some((issue) => (
+      issue.reason === 'registered_path_missing'
+      && issue.path === '.aioson/skills/process/typo/SKILL.md'
+    )));
+  } finally {
+    await fs.rm(projectDir, {
+      recursive: true,
+      force: true,
+      maxRetries: 5,
+      retryDelay: 50
+    });
+  }
 });

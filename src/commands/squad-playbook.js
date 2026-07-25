@@ -14,6 +14,7 @@ const path = require('node:path');
 const { createHash } = require('node:crypto');
 const { isContainedPath } = require('../squad/manifest-validator');
 const { validateEvalReport } = require('../squad/eval-contract');
+const { verifyEvalReportIntegrity } = require('../squad/eval-verifier');
 const { isValidSlug } = require('../dossier/schema');
 
 function playbookPath(projectDir) {
@@ -173,6 +174,35 @@ async function runSquadPlaybook({ args = [], options = {}, logger = console } = 
         actual: report.squad || null
       };
     }
+    if (!isValidSlug(String(report.squad || ''))) {
+      return { ok: false, error: 'invalid_eval_report', details: ['Invalid report squad identity'] };
+    }
+    let manifest;
+    try {
+      manifest = JSON.parse(await fs.readFile(
+        path.join(projectDir, '.aioson', 'squads', report.squad, 'squad.manifest.json'),
+        'utf8'
+      ));
+    } catch {
+      return {
+        ok: false,
+        error: 'invalid_eval_report',
+        details: ['The evaluated squad manifest is missing']
+      };
+    }
+    const integrity = await verifyEvalReportIntegrity(
+      projectDir,
+      report.squad,
+      manifest,
+      report
+    );
+    if (!integrity.valid) {
+      return {
+        ok: false,
+        error: 'invalid_eval_report',
+        details: integrity.errors
+      };
+    }
     const candidateTime = Date.parse(entry.capturedAt || entry.candidateAt || 0);
     const evalTime = Date.parse(report.generated_at || 0);
     const heldOutPass = report.held_out?.status === 'pass'
@@ -199,6 +229,9 @@ async function runSquadPlaybook({ args = [], options = {}, logger = console } = 
       squad: report.squad || null,
       generatedAt: report.generated_at,
       manifestHash: report.inputs?.manifest_hash || null,
+      engineHash: report.reproduction?.engine_hash || null,
+      evidenceHash: report.reproduction?.evidence_hash || null,
+      runId: report.reproduction?.run_id || null,
       origin: entry.from || null
     };
     await savePlaybook(file, data);

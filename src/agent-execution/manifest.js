@@ -7,9 +7,21 @@ const { AGENTS, validateManifest } = require('./schema');
 const { capabilities } = require('./capabilities');
 const { loadModelCatalog } = require('./model-catalog');
 const { resolveModel, validateReasoningEffort } = require('./model-resolver');
+const { validateFeatureSlug } = require('../verification/path-policy');
+
+function assertFeatureSlug(feature) {
+  const validation = validateFeatureSlug(feature);
+  if (!validation.ok) {
+    const error = new TypeError(`Invalid agent execution feature slug: ${JSON.stringify(feature)}`);
+    error.code = validation.reason;
+    throw error;
+  }
+  return validation.feature_slug;
+}
 
 function manifestPath(projectDir, feature) {
-  return path.join(projectDir, '.aioson', 'context', `agent-execution-${feature}.json`);
+  const safeFeature = assertFeatureSlug(feature);
+  return path.join(projectDir, '.aioson', 'context', `agent-execution-${safeFeature}.json`);
 }
 
 function executionEntry(feature, id, host, { enabled = true, lane = false } = {}) {
@@ -32,6 +44,7 @@ function executionEntry(feature, id, host, { enabled = true, lane = false } = {}
 }
 
 function defaults(feature, host = 'codex', { cycleLimits } = {}) {
+  feature = assertFeatureSlug(feature);
   const agents = {};
   for (const id of AGENTS) {
     agents[id] = executionEntry(feature, id, host, {
@@ -191,6 +204,7 @@ async function resolveDevelopmentLaneExecution(manifest, lane, overrides = {}, o
 }
 
 module.exports = {
+  assertFeatureSlug,
   defaults,
   digest,
   initManifest,

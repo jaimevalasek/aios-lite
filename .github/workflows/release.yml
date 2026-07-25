@@ -24,5 +24,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Lint and test
-        run: npm run ci
+      - name: Run complete release readiness gate
+        env:
+          AIOSON_PREPUBLISH: 'true'
+        run: npm run verify:release

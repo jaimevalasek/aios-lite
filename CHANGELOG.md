@@ -4,6 +4,34 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+- **Premium squad intelligence** — squad manifests now support canonical AJV validation, live Evidence Packs, source-grounded rubrics, held-out A/B evaluation, compiled genome bindings, explicit decision rights, and reproducible readiness reports.
+- **Skill reachability and usage audit** — the process-skill registry exposes ownership, triggers, tests, deprecation, static reachability, runtime observations, and context-budget debt without making optional skills mandatory workflow hops.
+- **Operational release-readiness gate** — one script now enforces Git/package boundaries, production dependency audit, exact tarball inventory and local-module closure, the complete CI suite, pre-publish smoke checks, and an isolated install exercise; CI, tag validation, and release-label workflows share the same guard.
+
+### Changed
+- Briefing, Orache, Setup, Profiler, and global agent gateways were modularized into compact routing kernels with detailed contracts loaded on demand.
+- Agent production and review use the canonical Product → optional Sheldon → Planner → DEV → QA chain, bounded QA correction, cached technical evidence, and runtime skill-usage telemetry.
+- Node's full test runner is capped at eight concurrent workers, while Genome 2.0 Block A again preserves smoke, focused genome, full regression, and lint coverage.
+- Premium held-out scoring now requires a separate content-bound scorer with per-dimension explanations, explicit deterministic/seed contracts, and real compiled-Genome baseline/candidate contexts.
+- Production dependencies move to AJV 8.20, Archiver 8, and Undici 6.28; the vulnerable JavaScript-obfuscator chain is replaced by the existing conservative Terser boundary, and the documented runtime floor is aligned to Node.js 20.
+
+### Fixed
+- Premium readiness validates `evals/latest.json` semantically as well as structurally: manifest/source/worker/output/engine/evidence hashes, scorer results, verdicts, and Genome contexts are recomputed, fabricated or stale PASS reports are rejected, and playbook promotion accepts only the same verified evidence.
+- Schemas, executor files, source documents, evaluation inputs, feature slugs, and workflow execution paths fail closed on traversal, symlink/junction escapes, or command-shaped identifiers.
+- Safe remote research rejects private/special IPv4 and IPv6 forms, malformed DNS answers, and private redirects; connections are pinned to the validated address set and response streams stop at a hard byte budget.
+- Agent execution aborts delegated work and its process tree after lease ownership is lost, avoids overwriting a replacement lease, fences state writes with an owner-aware mutex, and interrupts capacity backoff immediately.
+- Technical-evidence fingerprints fail safe when untracked files exceed bounded per-file or total byte budgets and hash symlink identity without reading external targets.
+- Skill registry entries bind only to their declared discovered path, so an ID match can no longer hide `registered_path_missing`.
+- Skill reachability follows explicitly routed on-demand modules transitively while excluding inventories, historical docs, and negative “do not load” references from executable usage evidence.
+- Fresh `aioson init` scaffolds now create the project-local design baseline that `doctor` requires; update mode still preserves customized or intentionally removed governance documents.
+- Concurrent filesystem regressions use a single archive-fixture lifecycle and retry transient Windows directory contention for hook and squad-score cleanup instead of intermittently failing with stale directories or `ENOTEMPTY`.
+
+### Validation
+- Full regression: 3,975 tests, 3,974 passing, zero failures, and one skip; syntax checks cover 471 JavaScript files.
+- The full release-readiness gate passes with a zero-vulnerability production audit, 25/25 pre-publish smoke checks, a 1,268-file tarball with complete local-module closure, and an isolated `npx` install whose `doctor` passes and configures five MCP servers.
+- Runtime skill audit reports zero registry issues, orphans, unregistered skills, declared-only skills, or weak process-skill routes; inception config/template parity and `git diff --check` are clean.
+
 ## [1.41.0] - 2026-07-23
 
 ### Added

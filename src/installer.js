@@ -413,9 +413,11 @@ async function installTemplate(targetDir, options = {}) {
     }
 
     // Project-local files are never overwritten from template.
-    // On fresh install they are created once; on any subsequent operation they are preserved
-    // even if the file was manually deleted.
-    if (PROJECT_LOCAL_FILES.has(rel) && (destExists || mode !== 'install')) {
+    // Both `install` (existing-project onboarding/repair) and `init` (new-project
+    // scaffold) may create a missing local file. Update keeps the historical
+    // project decision, including an intentional deletion.
+    const createsProjectLocalFiles = mode === 'install' || mode === 'init';
+    if (PROJECT_LOCAL_FILES.has(rel) && (destExists || !createsProjectLocalFiles)) {
       skipped.push({ path: rel, reason: 'project-local' });
       continue;
     }

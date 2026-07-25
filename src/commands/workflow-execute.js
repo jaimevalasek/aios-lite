@@ -38,6 +38,7 @@ const {
   collectWritePathConflicts,
   extractStatusWritePathItems
 } = require('../parallel-workspace');
+const { validateFeatureSlug } = require('../verification/path-policy');
 
 const BAR = '━'.repeat(45);
 const EXECUTION_STATE_RELATIVE_PATH = '.aioson/context/workflow-execute.json';
@@ -807,6 +808,16 @@ async function runWorkflowExecute({ args, options = {}, logger }) {
     logger.log('--feature=<slug> is required.');
     return { ok: false };
   }
+  const featureValidation = validateFeatureSlug(slug);
+  if (!featureValidation.ok) {
+    const failure = {
+      ok: false,
+      reason: featureValidation.reason,
+      feature: slug
+    };
+    if (!options.json) logger.error(`Invalid feature slug: ${slug}`);
+    return failure;
+  }
 
   let classification = options.classification ? String(options.classification).toUpperCase() : null;
   if (!classification) classification = await detectClassification(targetDir, slug);
@@ -1146,6 +1157,7 @@ module.exports = {
   EXECUTION_STATE_RELATIVE_PATH,
   buildAgenticPolicy,
   buildExecutionPlan,
+  quoteCliArg,
   seedFeatureWorkflowState,
   runWorkflowExecute
 };

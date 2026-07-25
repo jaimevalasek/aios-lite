@@ -5,6 +5,7 @@ const net = require('node:net');
 
 const DEFAULT_TIMEOUT_MS = 10000;
 const DEFAULT_MAX_HTML_CHARS = 500000;
+const ABSOLUTE_MAX_HTML_BYTES = 2000000;
 const DEFAULT_USER_AGENT = 'AIOSON-Web/1.0 (+https://aioson.dev)';
 
 function ensureValidUrl(input) {
@@ -15,37 +16,128 @@ function ensureValidUrl(input) {
   }
 }
 
-function isPrivateIpAddress(address) {
-  const normalized = String(address || '').toLowerCase();
-  const family = net.isIP(normalized);
-  if (family === 4) {
-    const octets = normalized.split('.').map(Number);
-    return octets[0] === 0
-      || octets[0] === 10
-      || octets[0] === 127
-      || (octets[0] === 169 && octets[1] === 254)
-      || (octets[0] === 172 && octets[1] >= 16 && octets[1] <= 31)
-      || (octets[0] === 192 && octets[1] === 168)
-      || (octets[0] === 100 && octets[1] >= 64 && octets[1] <= 127)
-      || octets[0] >= 224;
-  }
-  if (family === 6) {
-    return normalized === '::'
-      || normalized === '::1'
-      || normalized.startsWith('fc')
-      || normalized.startsWith('fd')
-      || normalized.startsWith('fe8')
-      || normalized.startsWith('fe9')
-      || normalized.startsWith('fea')
-      || normalized.startsWith('feb')
-      || normalized.startsWith('::ffff:127.')
-      || normalized.startsWith('::ffff:10.')
-      || normalized.startsWith('::ffff:192.168.');
-  }
-  return false;
+function normalizeIpLiteral(address) {
+  return String(address || '')
+    .trim()
+    .toLowerCase()
+    .replace(/^\[|\]$/g, '')
+    .replace(/%[^%]+$/, '');
 }
 
-async function assertSafeRemoteUrl(input, options = {}) {
+function parseIpv4(address) {
+  const normalized = normalizeIpLiteral(address);
+  if (net.isIP(normalized) !== 4) return null;
+  return normalized.split('.').map(Number);
+}
+
+function ipv4InRange(octets, base, bits) {
+  const value = (
+    ((octets[0] << 24) >>> 0)
+    + (octets[1] << 16)
+    + (octets[2] << 8)
+    + octets[3]
+  ) >>> 0;
+  const target = (
+    ((base[0] << 24) >>> 0)
+    + (base[1] << 16)
+    + (base[2] << 8)
+    + base[3]
+  ) >>> 0;
+  const mask = bits === 0 ? 0 : (0xffffffff << (32 - bits)) >>> 0;
+  return (value & mask) === (target & mask);
+}
+
+function isNonPublicIpv4(octets) {
+  const ranges = [
+    [[0, 0, 0, 0], 8],
+    [[10, 0, 0, 0], 8],
+    [[100, 64, 0, 0], 10],
+    [[127, 0, 0, 0], 8],
+    [[169, 254, 0, 0], 16],
+    [[172, 16, 0, 0], 12],
+    [[192, 0, 0, 0], 24],
+    [[192, 0, 2, 0], 24],
+    [[192, 88, 99, 0], 24],
+    [[192, 168, 0, 0], 16],
+    [[198, 18, 0, 0], 15],
+    [[198, 51, 100, 0], 24],
+    [[203, 0, 113, 0], 24],
+    [[224, 0, 0, 0], 4],
+    [[240, 0, 0, 0], 4]
+  ];
+  return ranges.some(([base, bits]) => ipv4InRange(octets, base, bits));
+}
+
+function parseIpv6(address) {
+  let normalized = normalizeIpLiteral(address);
+  if (net.isIP(normalized) !== 6) return null;
+  if (normalized.includes('.')) {
+    const lastColon = normalized.lastIndexOf(':');
+    const ipv4 = parseIpv4(normalized.slice(lastColon + 1));
+    if (!ipv4) return null;
+    normalized = `${normalized.slice(0, lastColon)}:${((ipv4[0] << 8) | ipv4[1]).toString(16)}:${((ipv4[2] << 8) | ipv4[3]).toString(16)}`;
+  }
+  const halves = normalized.split('::');
+  if (halves.length > 2) return null;
+  const left = halves[0] ? halves[0].split(':') : [];
+  const right = halves[1] ? halves[1].split(':') : [];
+  const missing = 8 - left.length - right.length;
+  if (missing < 0 || halves.length === 1 && missing !== 0) return null;
+  const groups = [
+    ...left,
+    ...Array.from({ length: missing }, () => '0'),
+    ...right
+  ].map((group) => Number.parseInt(group || '0', 16));
+  if (groups.length !== 8 || groups.some((group) => !Number.isInteger(group) || group < 0 || group > 0xffff)) {
+    return null;
+  }
+  return groups.flatMap((group) => [group >> 8, group & 0xff]);
+}
+
+function ipv6InRange(bytes, prefix, bits) {
+  const fullBytes = Math.floor(bits / 8);
+  const remaining = bits % 8;
+  for (let index = 0; index < fullBytes; index++) {
+    if (bytes[index] !== prefix[index]) return false;
+  }
+  if (remaining === 0) return true;
+  const mask = (0xff << (8 - remaining)) & 0xff;
+  return (bytes[fullBytes] & mask) === (prefix[fullBytes] & mask);
+}
+
+function isPrivateIpAddress(address) {
+  const normalized = normalizeIpLiteral(address);
+  const ipv4 = parseIpv4(normalized);
+  if (ipv4) return isNonPublicIpv4(ipv4);
+  const ipv6 = parseIpv6(normalized);
+  if (!ipv6) return false;
+
+  const mappedIpv4 = ipv6.slice(0, 10).every((byte) => byte === 0)
+    && ipv6[10] === 0xff
+    && ipv6[11] === 0xff;
+  const compatibleIpv4 = ipv6.slice(0, 12).every((byte) => byte === 0);
+  if (mappedIpv4 || compatibleIpv4) {
+    return isNonPublicIpv4(ipv6.slice(12));
+  }
+
+  const blocked = [
+    [[0x01, 0x00, 0, 0, 0, 0, 0, 0], 64],
+    [[0x00, 0x64, 0xff, 0x9b, 0, 0, 0, 0], 96],
+    [[0xfc, 0, 0, 0, 0, 0, 0, 0], 7],
+    [[0xfe, 0x80, 0, 0, 0, 0, 0, 0], 10],
+    [[0xff, 0, 0, 0, 0, 0, 0, 0], 8],
+    [[0x20, 0x01, 0, 0, 0, 0, 0, 0], 32],
+    [[0x20, 0x01, 0x00, 0x02, 0, 0, 0, 0], 48],
+    [[0x20, 0x01, 0x00, 0x10, 0, 0, 0, 0], 28],
+    [[0x20, 0x01, 0x00, 0x20, 0, 0, 0, 0], 28],
+    [[0x20, 0x01, 0x0d, 0xb8, 0, 0, 0, 0], 32],
+    [[0x20, 0x02, 0, 0, 0, 0, 0, 0], 16],
+    [[0x3f, 0xff, 0, 0, 0, 0, 0, 0], 20]
+  ];
+  return blocked.some(([prefix, bits]) => ipv6InRange(ipv6, prefix, bits));
+}
+
+async function resolveSafeRemoteUrl(input, options = {}) {
   const url = ensureValidUrl(input);
   if (!['http:', 'https:'].includes(url.protocol)) {
     throw new Error(`Unsafe remote URL scheme: ${url.protocol}`);
@@ -53,23 +145,119 @@ async function assertSafeRemoteUrl(input, options = {}) {
   if (url.username || url.password) {
     throw new Error('Remote URLs with embedded credentials are not allowed');
   }
-  const hostname = url.hostname.toLowerCase().replace(/\.$/, '');
+  const hostname = normalizeIpLiteral(url.hostname).replace(/\.$/, '');
   if (hostname === 'localhost' || hostname.endsWith('.localhost') || hostname.endsWith('.local')) {
     throw new Error(`Private remote host is not allowed: ${hostname}`);
   }
   if (net.isIP(hostname)) {
     if (isPrivateIpAddress(hostname)) throw new Error(`Private remote address is not allowed: ${hostname}`);
-    return url;
+    return {
+      url,
+      hostname,
+      addresses: [{ address: hostname, family: net.isIP(hostname) }]
+    };
   }
   const lookup = options.lookup || dns.lookup;
   const addresses = await lookup(hostname, { all: true, verbatim: true });
   if (!Array.isArray(addresses) || addresses.length === 0) {
     throw new Error(`Remote host did not resolve: ${hostname}`);
   }
-  if (addresses.some((entry) => isPrivateIpAddress(entry.address))) {
+  const normalizedAddresses = addresses.map((entry) => {
+    const address = normalizeIpLiteral(entry?.address);
+    const family = net.isIP(address);
+    if (!family) throw new Error(`Remote host returned a non-IP DNS result: ${hostname}`);
+    if (entry?.family && Number(entry.family) !== family) {
+      throw new Error(`Remote host returned an inconsistent DNS family: ${hostname}`);
+    }
+    return { address, family };
+  });
+  if (normalizedAddresses.some((entry) => isPrivateIpAddress(entry.address))) {
     throw new Error(`Remote host resolves to a private address: ${hostname}`);
   }
-  return url;
+  return {
+    url,
+    hostname,
+    addresses: normalizedAddresses
+  };
+}
+
+async function assertSafeRemoteUrl(input, options = {}) {
+  return (await resolveSafeRemoteUrl(input, options)).url;
+}
+
+function createPinnedDispatcher(resolution) {
+  const { Agent } = require('undici');
+  const addresses = resolution.addresses;
+  let cursor = 0;
+  return new Agent({
+    connect: {
+      lookup(_hostname, lookupOptions, callback) {
+        const family = Number(lookupOptions?.family || 0);
+        const eligible = family
+          ? addresses.filter((entry) => entry.family === family)
+          : addresses;
+        if (eligible.length === 0) {
+          const error = new Error(`Validated remote host has no IPv${family} address`);
+          error.code = 'ENOTFOUND';
+          callback(error);
+          return;
+        }
+        if (lookupOptions?.all) {
+          callback(null, eligible.map((entry) => ({ ...entry })));
+          return;
+        }
+        const selected = eligible[cursor % eligible.length];
+        cursor += 1;
+        callback(null, selected.address, selected.family);
+      }
+    }
+  });
+}
+
+async function closeDispatcher(dispatcher) {
+  if (!dispatcher || typeof dispatcher.close !== 'function') return;
+  await dispatcher.close().catch(() => {});
+}
+
+async function readResponseTextBounded(response, maxBytes) {
+  const limit = Math.max(1, Math.min(Number(maxBytes) || DEFAULT_MAX_HTML_CHARS, ABSOLUTE_MAX_HTML_BYTES));
+  if (response.body && typeof response.body.getReader === 'function') {
+    const reader = response.body.getReader();
+    const chunks = [];
+    let total = 0;
+    let truncated = false;
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const chunk = Buffer.from(value);
+        const remaining = limit - total;
+        if (chunk.length > remaining) {
+          if (remaining > 0) chunks.push(chunk.subarray(0, remaining));
+          total = limit;
+          truncated = true;
+          await reader.cancel('response byte limit reached').catch(() => {});
+          break;
+        }
+        chunks.push(chunk);
+        total += chunk.length;
+      }
+    } finally {
+      reader.releaseLock?.();
+    }
+    return {
+      text: Buffer.concat(chunks, total).toString('utf8'),
+      truncated,
+      bytes: total
+    };
+  }
+  const text = await response.text();
+  const buffer = Buffer.from(text, 'utf8');
+  return {
+    text: buffer.subarray(0, limit).toString('utf8'),
+    truncated: buffer.length > limit,
+    bytes: Math.min(buffer.length, limit)
+  };
 }
 
 function normalizeUrl(input) {
@@ -212,7 +400,10 @@ function extractLinks(html, pageUrl, options = {}) {
 
 async function fetchPage(url, options = {}) {
   const timeoutMs = Number(options.timeoutMs) > 0 ? Number(options.timeoutMs) : DEFAULT_TIMEOUT_MS;
-  const maxHtmlChars = Number(options.maxHtmlChars) > 0 ? Number(options.maxHtmlChars) : DEFAULT_MAX_HTML_CHARS;
+  const maxHtmlBytes = Math.min(
+    Number(options.maxHtmlChars) > 0 ? Number(options.maxHtmlChars) : DEFAULT_MAX_HTML_CHARS,
+    ABSOLUTE_MAX_HTML_BYTES
+  );
   const headers = {
     'user-agent': options.userAgent || DEFAULT_USER_AGENT,
     'accept': 'text/html,application/xhtml+xml,text/plain;q=0.9,*/*;q=0.8',
@@ -224,35 +415,57 @@ async function fetchPage(url, options = {}) {
   const maxRedirects = Math.min(Math.max(Number(options.maxRedirects || 5), 0), 10);
   let currentUrl = String(url);
   let response;
+  let responseDispatcher = null;
   for (let redirectCount = 0; redirectCount <= maxRedirects; redirectCount++) {
+    let dispatcher = null;
     if (safeRemote) {
-      await assertSafeRemoteUrl(currentUrl, { lookup: options.lookup });
+      const resolution = await resolveSafeRemoteUrl(currentUrl, { lookup: options.lookup });
+      dispatcher = typeof options.dispatcherFactory === 'function'
+        ? await options.dispatcherFactory(resolution)
+        : createPinnedDispatcher(resolution);
     }
-    response = await fetchImpl(currentUrl, {
-      method: 'GET',
-      headers,
-      redirect: safeRemote ? 'manual' : 'follow',
-      signal: AbortSignal.timeout(timeoutMs)
-    });
+    try {
+      response = await fetchImpl(currentUrl, {
+        method: 'GET',
+        headers,
+        redirect: safeRemote ? 'manual' : 'follow',
+        signal: AbortSignal.timeout(timeoutMs),
+        ...(dispatcher ? { dispatcher } : {})
+      });
+    } catch (error) {
+      await closeDispatcher(dispatcher);
+      throw error;
+    }
+    responseDispatcher = dispatcher;
     if (!safeRemote || response.status < 300 || response.status >= 400) break;
     const location = response.headers.get('location');
     if (!location) break;
+    if (response.body && typeof response.body.cancel === 'function') {
+      await response.body.cancel().catch(() => {});
+    }
+    await closeDispatcher(responseDispatcher);
+    responseDispatcher = null;
     if (redirectCount === maxRedirects) throw new Error(`Too many redirects for ${url}`);
     currentUrl = new URL(location, currentUrl).toString();
   }
 
-  const finalUrl = normalizeUrl(response.url || url);
+  const finalUrl = normalizeUrl(response.url || currentUrl);
   const contentType = response.headers.get('content-type') || '';
-  const rawText = await response.text();
-  const html = rawText.length > maxHtmlChars ? rawText.slice(0, maxHtmlChars) : rawText;
+  let bounded;
+  try {
+    bounded = await readResponseTextBounded(response, maxHtmlBytes);
+  } finally {
+    await closeDispatcher(responseDispatcher);
+  }
 
   return {
     ok: response.ok,
     url: finalUrl,
     statusCode: response.status,
     contentType,
-    html,
-    truncated: rawText.length > html.length
+    html: bounded.text,
+    truncated: bounded.truncated,
+    bytes: bounded.bytes
   };
 }
 
@@ -348,6 +561,7 @@ async function mapWebsite(url, options = {}) {
 module.exports = {
   DEFAULT_TIMEOUT_MS,
   DEFAULT_MAX_HTML_CHARS,
+  ABSOLUTE_MAX_HTML_BYTES,
   DEFAULT_USER_AGENT,
   normalizeUrl,
   extractLinks,
@@ -357,5 +571,8 @@ module.exports = {
   scrapePage,
   mapWebsite,
   isPrivateIpAddress,
-  assertSafeRemoteUrl
+  resolveSafeRemoteUrl,
+  assertSafeRemoteUrl,
+  createPinnedDispatcher,
+  readResponseTextBounded
 };

@@ -367,6 +367,25 @@
               "candidateRun": {
                 "$ref": "#/definitions/evalWorkerRun"
               },
+              "scorer": {
+                "$ref": "#/definitions/evalWorkerRun"
+              },
+              "deterministic": {
+                "type": "boolean"
+              },
+              "seed": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
               "expectedContains": {
                 "type": "array",
                 "items": {
