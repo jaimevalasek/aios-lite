@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.42.0] - 2026-07-25
+
 ### Added
 - **Premium squad intelligence** — squad manifests now support canonical AJV validation, live Evidence Packs, source-grounded rubrics, held-out A/B evaluation, compiled genome bindings, explicit decision rights, and reproducible readiness reports.
 - **Skill reachability and usage audit** — the process-skill registry exposes ownership, triggers, tests, deprecation, static reachability, runtime observations, and context-budget debt without making optional skills mandatory workflow hops.
