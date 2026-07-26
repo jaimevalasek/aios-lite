@@ -8,6 +8,8 @@ source: "Living Memory reflection — premium-squad-intelligence QA PASS — @qa
 
 ## What the system already has
 
+- [workflow-reliable-delivery · 2026-07-26] `chore(release): prepare v1.43.0` synchronized package, lockfile, project context, documentation, changelog, and full release-readiness evidence for the tagged release.
+
 - [workflow-reliable-delivery · 2026-07-26] `feat(workflow): enforce reliable delivery` committed source traceability, owned prototype binding, hash-bound Sheldon approval, stronger workflow/QA continuity gates, and local-only temporary `mappings/`.
 
 - [premium-squad-intelligence · 2026-07-25] `feat(squads): harden premium squad intelligence` committed source- and held-out-evidence binding, containment and safe-research hardening, stricter workflow inputs, release-readiness checks, dependency updates, and documentation.

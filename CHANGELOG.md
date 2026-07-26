@@ -4,6 +4,27 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.43.0] - 2026-07-26
+
+### Added
+- **Hash-bound Sheldon review** — every feature route now requires a current Sheldon approval tied to the active PRD before Planner or implementation may proceed.
+- **Feature continuity mappings** — agents may preserve compact, noncanonical cross-compaction context in local-only `mappings/{slug}/continuity.md` without turning it into scope, evidence, or a workflow gate.
+- **Source and prototype traceability** — briefing source packs, promise maps, owned prototype manifests, PRD capabilities, acceptance criteria, implementation phases, and QA evidence are reconciled across the delivery chain.
+
+### Changed
+- The canonical feature workflow is Product → Sheldon → Planner → DEV → QA for MICRO, SMALL, and MEDIUM classifications, with legacy states safely normalized to the mandatory review.
+- Briefing Refiner owns approved visual prototypes for rich surfaces, while Product, Sheldon, Planner, DEV, and QA verify the same feature-bound source and prototype authorities.
+- Handoff contracts, completeness checks, workflow recovery, agent manifests, templates, and bilingual documentation now use the strengthened delivery model consistently.
+
+### Fixed
+- Stale, missing, mismatched, or manually asserted Sheldon approvals can no longer bypass planning and implementation gates.
+- Malformed source inventories, silently dropped promises, stale prototype bindings, incomplete CAP/AC evidence, and weak QA command evidence fail closed with an actionable owner.
+- Temporary `mappings/` content is ignored both in this repository and by the installer policy applied to new and updated AIOSON projects.
+
+### Validation
+- Full regression: 3,984 tests passing, zero failures, and one skip; syntax checks cover 472 JavaScript files.
+- The full release-readiness gate passes with a zero-vulnerability production audit, 25/25 operational smoke checks, a 1,271-file package with complete local-module closure, and an isolated install whose `doctor` passes and configures five MCP servers.
+
 ## [1.42.0] - 2026-07-25
 
 ### Added
