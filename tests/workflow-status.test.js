@@ -290,9 +290,8 @@ test('workflow:status reconciles stale active stages before building the suggest
     '# Features\n\n| slug | status | started | completed |\n|------|--------|---------|-----------|\n| secure-by-default | in_progress | 2026-04-28 | — |\n'
   );
   await writeFileEnsured(path.join(dir, '.aioson/context/prd-secure-by-default.md'), '# PRD\n');
-  await writeFileEnsured(
-    path.join(dir, '.aioson/context/workflow.state.json'),
-    JSON.stringify({
+  const statePath = path.join(dir, '.aioson/context/workflow.state.json');
+  const staleState = JSON.stringify({
       version: 1,
       mode: 'feature',
       classification: 'MEDIUM',
@@ -304,8 +303,8 @@ test('workflow:status reconciles stale active stages before building the suggest
       featureSlug: 'secure-by-default',
       detour: null,
       updatedAt: new Date().toISOString()
-    }, null, 2)
-  );
+    }, null, 2);
+  await writeFileEnsured(statePath, staleState);
 
   const result = await runWorkflowStatus({
     args: [dir],
@@ -320,4 +319,99 @@ test('workflow:status reconciles stale active stages before building the suggest
   assert.equal(result.suggestion.action, 'workflow_complete');
   assert.equal(result.suggestion.reason, 'The workflow has no pending stage.');
   assert.deepEqual(result.state.skipped, ['pentester']);
+  assert.equal(result.stateNeedsRepair, true);
+  assert.equal(result.stateRepaired, false);
+  assert.equal(await fs.readFile(statePath, 'utf8'), staleState);
+});
+
+test('workflow:status previews missing state without creating workflow.state.json', async () => {
+  const dir = await makeTempDir();
+  await writeProjectContext(dir, 'SMALL');
+  const statePath = path.join(dir, '.aioson/context/workflow.state.json');
+
+  const result = await runWorkflowStatus({
+    args: [dir],
+    options: { tool: 'codex' },
+    logger: createQuietLogger(),
+    t: (key) => key
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.stateCreated, true);
+  assert.equal(result.stateNeedsRepair, false);
+  assert.equal(result.stateInitializationAvailable, true);
+  await assert.rejects(fs.access(statePath), { code: 'ENOENT' });
+});
+
+test('workflow:status --repair explicitly persists the reconciled state', async () => {
+  const dir = await makeTempDir();
+  await writeProjectContext(dir, 'SMALL');
+  const statePath = path.join(dir, '.aioson/context/workflow.state.json');
+
+  const result = await runWorkflowStatus({
+    args: [dir],
+    options: { tool: 'codex', repair: true },
+    logger: createQuietLogger(),
+    t: (key) => key
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.stateCreated, true);
+  assert.equal(result.stateNeedsRepair, false);
+  assert.equal(result.stateRepaired, false);
+  assert.equal(result.stateInitialized, true);
+  assert.deepEqual(JSON.parse(await fs.readFile(statePath, 'utf8')), result.state);
+});
+
+test('workflow:status hides a terminal handoff when the reconciled state has an active stage', async () => {
+  const dir = await makeTempDir();
+  await seedFeatureWorkflow(dir, { gatePlanApproved: true });
+  await writeFileEnsured(
+    path.join(dir, '.aioson/context/last-handoff.json'),
+    JSON.stringify({
+      workflow_mode: 'feature',
+      feature_slug: 'protocol-contracts',
+      last_agent: '@qa',
+      next_agent: null,
+      what_was_done: 'Workflow completed'
+    }, null, 2)
+  );
+
+  const result = await runWorkflowStatus({
+    args: [dir],
+    options: { tool: 'codex' },
+    logger: createQuietLogger(),
+    t: (key) => key
+  });
+
+  assert.equal(result.activeStage, 'dev');
+  assert.equal(result.handoff, null);
+});
+
+test('workflow:status inventories only installed squads and counts modular genomes', async () => {
+  const dir = await makeTempDir();
+  await writeProjectContext(dir, 'SMALL');
+  await writeFileEnsured(
+    path.join(dir, '.aioson/squads/editorial/squad.manifest.json'),
+    JSON.stringify({ name: 'Editorial', status: 'active' })
+  );
+  await writeFileEnsured(path.join(dir, '.aioson/squads/editorial/agents/writer.md'), '# Writer\n');
+  await writeFileEnsured(path.join(dir, '.aioson/squads/.artisan/README.md'), '# Reserved\n');
+  await writeFileEnsured(path.join(dir, '.aioson/squads/incomplete/README.md'), '# Not installed\n');
+  await writeFileEnsured(path.join(dir, '.aioson/genomes/INDEX.md'), '# Catalog\n');
+  await writeFileEnsured(path.join(dir, '.aioson/genomes/legacy.md'), '# Legacy\n');
+  await writeFileEnsured(
+    path.join(dir, '.aioson/genomes/modular/manifest.json'),
+    JSON.stringify({ genome: 'modular', references: [] })
+  );
+
+  const result = await runWorkflowStatus({
+    args: [dir],
+    options: { tool: 'codex' },
+    logger: createQuietLogger(),
+    t: (key) => key
+  });
+
+  assert.deepEqual(result.squads, [{ slug: 'editorial', agentCount: 1, status: 'active' }]);
+  assert.equal(result.genomeCount, 2);
 });

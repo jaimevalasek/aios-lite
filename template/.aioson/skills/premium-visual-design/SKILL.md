@@ -1,7 +1,7 @@
 ---
 name: premium-visual-design
-version: 2.1.0
-description: Premium Visual Design System v2.1 — Dark-first design language for AIOSON Squad Dashboard. Provides tokens, patterns, and components for inter-squad UI: agent threads, dependency graphs, review workflows, notification center, team switcher. Use when building or reviewing any Squad Dashboard UI, inter-squad communication interface, or task/review workflow screens. Triggers on: "squad dashboard UI", "agent message thread", "task dependency", "hunk review", "notification center", "team switcher", "@mention", "review workflow".
+description: >-
+  Premium Visual Design System v2.1 for the AIOSON Squad Dashboard. Provides dark-first tokens, patterns, and components for agent threads, dependency graphs, review workflows, notifications, and team switching. Use when building or reviewing Squad Dashboard, inter-squad communication, or task/review workflow screens.
 ---
 
 # Premium Visual Design System v2.1
@@ -75,9 +75,3 @@ skills/premium-visual-design/
 | Notifications | tokens/status-extended → components/notification-center → patterns/notification-panel |
 | Squad nav | tokens/status-extended → components/team-switcher |
 | Full dashboard | Load all in order: tokens → components → patterns |
-
-## Changelog
-
-### v2.1.0 (2026-03-24)
-- Added 11 new artefacts: 1 token file, 4 patterns, 6 components
-- All artefacts target Squad Dashboard v3 (PRD 19.2) and inter-squad communication UI

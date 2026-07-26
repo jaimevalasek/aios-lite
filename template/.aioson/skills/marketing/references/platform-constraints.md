@@ -6,16 +6,6 @@ This is a tactical reference. It tells you the **hard limits** (truncation), the
 
 ---
 
-## Why constraints matter
-
-A 200-character Facebook headline gets truncated to "...". Truncated copy = wasted impression.
-A Google Search ad with a 35-char headline gets rejected by the platform.
-A LinkedIn intro that breaks at character 151 is the difference between "click to expand" and silent scroll-past.
-
-**Rule:** if the copy doesn't fit, it doesn't ship. Rewrite tighter.
-
----
-
 ## Facebook / Instagram (Meta Ads)
 
 ### Feed ad
@@ -304,21 +294,6 @@ When NOT to keep consistent:
 - **Length** — mobile-first platforms get tighter copy
 - **Format conventions** — LinkedIn is professional, TikTok is casual native — adapt without breaking voice
 - **Hashtag/keyword strategy** — platform-specific
-
----
-
-## Combining with genomes
-
-| Master genome | Platform fit |
-|---|---|
-| Schwartz (foundational) | Universal — governs awareness/sophistication on every platform |
-| Halbert (direct mail) | Best on long-form: email body, sales pages, LinkedIn long-posts. Poor fit for Twitter/TikTok |
-| Kennedy (No B.S.) | Email, LinkedIn, podcast ad reads. Premium positioning needs space — not Twitter |
-| Brunson (storytelling) | Reels/TikTok hooks, YouTube ad opens, email subject lines. Long-form on YouTube |
-| Georgi (RMBC) | Long sales letters, YouTube VSLs, Facebook ad sets with mechanism teaser |
-| Ladeira (BR mainstream) | Reels, TikTok, Instagram, Stories — daily-system content |
-| Ícaro (Brazilian intellectual) | Twitter threads, LinkedIn posts, long captions on Instagram |
-| Diogo Gomes (Brazilian periphery) | Facebook ads, YouTube ads, VSLs — high-volume aggressive direct response |
 
 ---
 

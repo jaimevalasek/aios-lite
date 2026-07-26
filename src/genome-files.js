@@ -241,10 +241,18 @@ async function listGenomes(projectRoot) {
   const genomeDir = getGenomeDir(projectRoot);
   try {
     const entries = await fs.readdir(genomeDir, { withFileTypes: true });
-    return entries
-      .filter((entry) => entry.isFile() && entry.name.endsWith('.md') && !entry.name.endsWith('.meta.json'))
-      .map((entry) => entry.name.slice(0, -3))
-      .sort();
+    const slugs = new Set(
+      entries
+        .filter((entry) => entry.isFile() && entry.name.endsWith('.md') && !entry.name.endsWith('.meta.json'))
+        .map((entry) => entry.name.slice(0, -3))
+        .filter((slug) => slug.toLowerCase() !== 'index')
+    );
+    for (const entry of entries) {
+      if (!entry.isDirectory() || entry.name.startsWith('.')) continue;
+      // eslint-disable-next-line no-await-in-loop
+      if (await exists(path.join(genomeDir, entry.name, 'manifest.json'))) slugs.add(entry.name);
+    }
+    return [...slugs].sort();
   } catch (error) {
     if (error && error.code === 'ENOENT') return [];
     throw error;

@@ -1,6 +1,6 @@
 ---
 name: product-scope-expansion
-description: "Product process skill for controlled scope expansion and operational completeness before writing or updating a PRD. Use in @product when a feature has a rich surface, when a briefing expansion scout exists, when the user asks for a more complete MVP, or when the product implies workspaces, boards, cards, pipelines, operational CRUD, admin/management surfaces, or Trello/CRM/Kanban-like behavior without turning the feature into an oversized V2."
+description: "Product process skill for controlled scope expansion and operational completeness before a PRD. Use in @product when a feature has a rich surface, when a briefing expansion scout exists, when the user asks for a more complete MVP, or when the product implies workspaces, boards, cards, pipelines, operational CRUD, admin/management surfaces, or Trello/CRM/Kanban-like behavior without turning the feature into an oversized V2."
 ---
 
 # Product Scope Expansion

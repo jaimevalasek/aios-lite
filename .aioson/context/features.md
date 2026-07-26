@@ -34,5 +34,4 @@
 | agent-execution-telemetry-bridge | done | 2026-07-10 | 2026-07-10 |
 | agent-execution-model-resolution | done | 2026-07-11 | 2026-07-11 |
 | review-intelligence | done | 2026-07-15 | 2026-07-16 |
-| agent-execution-model-resolution | done | 2026-07-11 | 2026-07-11 |
-| premium-squad-intelligence | in_progress | 2026-07-23 | — |
+| premium-squad-intelligence | done | 2026-07-23 | 2026-07-26 |

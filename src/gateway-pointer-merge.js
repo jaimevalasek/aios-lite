@@ -14,7 +14,7 @@ const { exists, copyFileWithDir, toRelativeSafe } = require('./utils');
 
 const MARKER_BEGIN = '<!-- AIOSON:BEGIN -->';
 const MARKER_END = '<!-- AIOSON:END -->';
-const BLOCK_NOTICE = '> Managed by AIOSON — edits inside this block will be overwritten on `aioson update`. Put project-specific rules above or below this block.';
+const BLOCK_NOTICE = '> AIOSON-managed: `aioson update` replaces this block. Keep project rules outside it.';
 
 const GATEWAY_POINTER_FILES = new Set([
   'CLAUDE.md',

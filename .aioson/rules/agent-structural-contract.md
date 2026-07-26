@@ -15,9 +15,9 @@ paths: [.aioson/agents/**, template/.aioson/agents/**, .aioson/squads/**]
 
 Every AIOSON agent file (`template/.aioson/agents/*.md`) must comply with this structural contract. Violations are caught by `@qa` during Gate D and by `@sheldon` during enrichment reviews.
 
-## 1. Language boundary (mandatory, line 3)
+## 1. Language boundary (mandatory, activation header)
 
-Every agent MUST start with:
+Every agent MUST declare its language boundary near the activation header and before `## Mission`. The canonical form is:
 
 ```markdown
 > **LANGUAGE BOUNDARY:** Agent instructions are canonical in English. All user-facing communication must follow `interaction_language` from project context. If it is absent, fall back to `conversation_language`.
@@ -32,7 +32,8 @@ Every agent that interacts with the user MUST have these sections (order may var
 | `## Mission` | What the agent does in 1-2 lines | All agents |
 | `## Required input` | What files must be read before acting | All agents |
 | `## Hard constraints` | Non-negotiable rules | All agents |
-| Observability block | `agent:done` + `pulse:update` at session end | All agents |
+| Observability block | `agent:done` at session end | All executing agents except pure routers and aliases |
+| Project pulse | `pulse:update` at session end | Agents that own and mutate project or feature state |
 
 Agents in the canonical feature workflow additionally MUST have:
 
@@ -48,24 +49,19 @@ At session end, commands MUST appear in this exact order. Missing steps are acce
 ```
 1. gate:approve     (if this agent owns a gate — planner=C, qa=D)
 2. op:capture       (if user confirmed decisions — product, sheldon, planner)
-3. pulse:update     (ALL agents — automated project-pulse update)
-4. agent:done       (ALL agents — ALWAYS LAST)
+3. pulse:update     (when the agent owns project or feature state)
+4. agent:done       (all executing agents except pure routers/aliases — ALWAYS LAST)
 ```
 
-`runtime:emit` milestones happen DURING the session at strategic moments, NOT in the session-end block. Each agent should emit at least 2 milestones during execution.
+`runtime:emit` milestones happen DURING the session at strategic moments, NOT in the session-end block. Canonical core workflow agents emit at least two milestones. Other agents emit milestones only when their work has meaningful runtime phases; read-only, routing, alias, and bounded specialist prompts have no quota.
 
 ### Milestone timing per agent
 
 | Agent | Milestone 1 (emit during work) | Milestone 2 (emit during work) |
 |---|---|---|
-| @briefing | Briefing draft written | Briefing approved |
 | @product | PRD written | Feature registered in `.aioson/context/features.md` |
 | @sheldon | Sizing decided | Enrichment applied |
 | @planner | Repository path mapped | Vertical plan approved |
-| @analyst | Requirements written | Spec skeleton created |
-| @architect | Architecture decided | Gate B check |
-| @pm | Named priority question identified | Recommendation returned |
-| @orchestrator | Execution lanes justified | Ownership and merge order resolved |
 | @dev | Slice started | Slice landed |
 | @qa | Review started | Verdict decided |
 

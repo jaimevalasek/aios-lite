@@ -735,6 +735,7 @@ async function detectUnsubstantiatedCompletions(targetDir, completedStages, logg
 
 async function loadOrCreateState(targetDir, options = {}) {
   const statePath = path.join(targetDir, STATE_RELATIVE_PATH);
+  const shouldPersist = options.persist !== false;
   let existing = await readJsonIfExists(statePath);
 
   // Mode/feature-transition guard: if the persisted state no longer matches
@@ -803,10 +804,16 @@ async function loadOrCreateState(targetDir, options = {}) {
     const merged = mergeInferredCompletedStages(reconciled.state, inferredCompleted);
     const finalReconciled = merged.changed ? reconcileWorkflowState(merged.state) : reconciled;
     const changed = upgradedStateChanged || reconciled.changed || merged.changed || finalReconciled.changed;
-    if (changed) {
+    if (changed && shouldPersist) {
       await writeJson(statePath, finalReconciled.state);
     }
-    return { statePath, state: finalReconciled.state, created: false };
+    return {
+      statePath,
+      state: finalReconciled.state,
+      created: false,
+      changed,
+      persisted: changed && shouldPersist
+    };
   }
 
   const context = await validateProjectContextFile(targetDir);
@@ -859,8 +866,14 @@ async function loadOrCreateState(targetDir, options = {}) {
     detour: null
   });
 
-  await writeJson(statePath, state);
-  return { statePath, state, created: true };
+  if (shouldPersist) await writeJson(statePath, state);
+  return {
+    statePath,
+    state,
+    created: true,
+    changed: true,
+    persisted: shouldPersist
+  };
 }
 
 async function persistState(targetDir, nextState) {

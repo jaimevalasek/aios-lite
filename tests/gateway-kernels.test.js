@@ -6,6 +6,7 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 
 const { MANAGED_FILES } = require('../src/constants');
+const { buildBlock } = require('../src/gateway-pointer-merge');
 
 const ROOT = path.resolve(__dirname, '..');
 const TEMPLATE = path.join(ROOT, 'template');
@@ -22,9 +23,13 @@ async function read(relativePath) {
 }
 
 test('auto-loaded AIOSON gateways stay below the hard activation budget', async () => {
-  for (const relativePath of ['template/AGENTS.md', 'AGENTS.md', 'template/CLAUDE.md', 'CLAUDE.md']) {
+  for (const relativePath of ['AGENTS.md', 'CLAUDE.md', 'OPENCODE.md']) {
     const content = await read(relativePath);
     assert.ok(content.length < 4000, `${relativePath} is ${content.length} chars`);
+  }
+  for (const relativePath of ['template/AGENTS.md', 'template/CLAUDE.md', 'template/OPENCODE.md']) {
+    const installed = buildBlock(await read(relativePath));
+    assert.ok(installed.length < 4000, `installed ${relativePath} is ${installed.length} chars`);
   }
 });
 

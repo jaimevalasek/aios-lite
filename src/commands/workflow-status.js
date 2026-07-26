@@ -9,6 +9,7 @@ const { runtimeStoreExists, openRuntimeDb, listPipelines } = require('../runtime
 const { readAutonomyProtocol, resolveEffectiveMode } = require('../autonomy-policy');
 const { readAgentManifest, buildAgentCapabilitySummary } = require('../agent-manifests');
 const { validateHandoffContract } = require('../handoff-contract');
+const { listGenomes } = require('../genome-files');
 const { loadOrCreateState } = require('./workflow-next');
 
 const STATE_RELATIVE_PATH = '.aioson/context/workflow.state.json';
@@ -21,8 +22,9 @@ async function scanSquads(targetDir) {
     const entries = await fs.readdir(squadsDir, { withFileTypes: true });
     const squads = [];
     for (const entry of entries) {
-      if (!entry.isDirectory()) continue;
+      if (!entry.isDirectory() || entry.name.startsWith('.')) continue;
       const manifestPath = path.join(squadsDir, entry.name, 'squad.manifest.json');
+      if (!(await exists(manifestPath))) continue;
       const agentsDir = path.join(squadsDir, entry.name, 'agents');
       let agentCount = 0;
       try {
@@ -32,13 +34,13 @@ async function scanSquads(targetDir) {
         agentCount = 0;
       }
 
-      let status = 'active';
+      let status = 'invalid';
       try {
         const raw = await fs.readFile(manifestPath, 'utf8');
         const manifest = JSON.parse(raw);
         status = manifest.status || 'active';
       } catch {
-        status = 'active';
+        status = 'invalid';
       }
 
       squads.push({ slug: entry.name, agentCount, status });
@@ -50,11 +52,8 @@ async function scanSquads(targetDir) {
 }
 
 async function scanGenomes(targetDir) {
-  const genomesDir = path.join(targetDir, '.aioson/genomes');
-  if (!(await exists(genomesDir))) return 0;
   try {
-    const entries = await fs.readdir(genomesDir);
-    return entries.filter((file) => file.endsWith('.md') || file.endsWith('.json')).length;
+    return (await listGenomes(targetDir)).length;
   } catch {
     return 0;
   }
@@ -299,9 +298,12 @@ function handoffMatchesState(handoff, state) {
 
   const stateFeature = state.featureSlug || null;
   const handoffFeature = handoff.feature_slug || null;
-  if (stateFeature || handoffFeature) return stateFeature === handoffFeature;
+  if ((stateFeature || handoffFeature) && stateFeature !== handoffFeature) return false;
 
-  return true;
+  const focusStage = getFocusStage(state);
+  if (!focusStage || !Object.prototype.hasOwnProperty.call(handoff, 'next_agent')) return true;
+  const handoffNext = String(handoff.next_agent || '').trim().replace(/^@/, '').toLowerCase();
+  return handoffNext === String(focusStage).trim().replace(/^@/, '').toLowerCase();
 }
 
 async function runWorkflowStatus({ args, options, logger, t }) {
@@ -310,10 +312,21 @@ async function runWorkflowStatus({ args, options, logger, t }) {
 
   let state = null;
   let stateCreated = false;
+  let stateNeedsRepair = false;
+  let stateRepaired = false;
+  let stateInitializationAvailable = false;
+  let stateInitialized = false;
   try {
-    const loaded = await loadOrCreateState(targetDir, options);
+    const loaded = await loadOrCreateState(targetDir, {
+      ...options,
+      persist: Boolean(options.repair)
+    });
     state = loaded.state;
     stateCreated = loaded.created;
+    stateInitializationAvailable = Boolean(loaded.created && !loaded.persisted);
+    stateInitialized = Boolean(loaded.created && loaded.persisted);
+    stateNeedsRepair = Boolean(!loaded.created && loaded.changed && !loaded.persisted);
+    stateRepaired = Boolean(!loaded.created && loaded.changed && loaded.persisted);
   } catch {
     const statePath = path.join(targetDir, STATE_RELATIVE_PATH);
     try {
@@ -339,7 +352,8 @@ async function runWorkflowStatus({ args, options, logger, t }) {
   const rawHandoffProtocol = await readHandoffProtocol(targetDir);
   const handoffProtocol = handoffMatchesState({
     workflow_mode: rawHandoffProtocol && rawHandoffProtocol.workflow_mode,
-    feature_slug: rawHandoffProtocol && rawHandoffProtocol.feature_slug
+    feature_slug: rawHandoffProtocol && rawHandoffProtocol.feature_slug,
+    next_agent: rawHandoffProtocol && rawHandoffProtocol.to && rawHandoffProtocol.to.agent_id
   }, state)
     ? rawHandoffProtocol
     : null;
@@ -390,7 +404,10 @@ async function runWorkflowStatus({ args, options, logger, t }) {
     logger.log(`Project: ${projectName} (${classification})`);
     logger.log(`Mode: ${mode}${featureSlug ? ` — feature: ${featureSlug}` : ''}`);
     logger.log(`Tool: ${String(tool).toLowerCase()}`);
-    if (stateCreated) logger.log('State: initialized from current artifacts');
+    if (stateInitialized) logger.log('State: initialized from current artifacts');
+    else if (stateRepaired) logger.log('State: repaired from current artifacts');
+    else if (stateNeedsRepair) logger.log('State: repair available with --repair (status remained read-only)');
+    else if (stateInitializationAvailable) logger.log('State: previewed from current artifacts (not persisted)');
     logger.log('');
 
     if (state && state.sequence) {
@@ -505,6 +522,10 @@ async function runWorkflowStatus({ args, options, logger, t }) {
     tool: String(tool).toLowerCase(),
     state,
     stateCreated,
+    stateNeedsRepair,
+    stateRepaired,
+    stateInitializationAvailable,
+    stateInitialized,
     activeStage: focusStage,
     queuedNextStage,
     effectiveMode,

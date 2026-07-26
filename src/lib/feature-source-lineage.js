@@ -1,0 +1,297 @@
+'use strict';
+
+const fs = require('node:fs/promises');
+const fsNative = require('node:fs');
+const crypto = require('node:crypto');
+const path = require('node:path');
+const { resolveInsideRoot } = require('../verification/path-policy');
+const {
+  AC_ID_RE,
+  CAP_ID_RE,
+  PROM_ID_EXACT_RE,
+  SOURCE_ID_EXACT_RE,
+  SCOPE_DECISIONS,
+  cleanCell,
+  extractIds,
+  extractSection,
+  finding,
+  foldDiacritics,
+  isPlaceholder,
+  mapColumns,
+  missingSection,
+  normalizeDecision,
+  normalizeLabel,
+  parseFirstMarkdownTable,
+  parseSurfacesOverride
+} = require('./feature-completeness-format');
+
+async function sha256File(filePath) {
+  const hash = crypto.createHash('sha256');
+  const stream = fsNative.createReadStream(filePath);
+  for await (const chunk of stream) hash.update(chunk);
+  return hash.digest('hex');
+}
+
+function normalizeSha256(value) {
+  return cleanCell(value).toLowerCase().replace(/^sha256:/, '');
+}
+
+function extractPhysicalSourcePlans(briefing) {
+  return [...new Set(
+    parseSurfacesOverride(briefing, 'source_plans')
+      .map((item) => cleanCell(item).replace(/\\/g, '/'))
+      .filter((item) => item.startsWith('plans/'))
+  )];
+}
+
+async function collectFeatureSourceFiles(targetDir, slug) {
+  const root = resolveInsideRoot(targetDir, `plans/${slug}`);
+  if (!root.ok) return [];
+  const collected = [];
+  async function walk(absoluteDir, relativeDir) {
+    const entries = await fs.readdir(absoluteDir, { withFileTypes: true }).catch(() => []);
+    for (const entry of entries) {
+      const relativePath = `${relativeDir}/${entry.name}`.replace(/\\/g, '/');
+      if (entry.isDirectory()) {
+        await walk(path.join(absoluteDir, entry.name), relativePath);
+      } else if (entry.isFile()) {
+        collected.push(relativePath);
+      }
+    }
+  }
+  await walk(root.path, `plans/${slug}`);
+  return collected.sort();
+}
+
+async function validateSourceLineage({
+  targetDir,
+  slug,
+  briefing,
+  prd,
+  productMap,
+  acceptance
+}) {
+  const briefingArtifact = `.aioson/briefings/${slug}/briefings.md`;
+  const prdArtifact = `.aioson/context/prd-${slug}.md`;
+  if (!String(briefing || '').trim()) {
+    return {
+      applicable: false,
+      findings: [],
+      inventory: [],
+      promises: [],
+      coverage: []
+    };
+  }
+
+  const findings = [];
+  const inventory = [];
+  const inventorySection = extractSection(briefing, ['Source Inventory', 'Inventario de Fontes']);
+  const physicalPlans = [...new Set([
+    ...extractPhysicalSourcePlans(briefing),
+    ...await collectFeatureSourceFiles(targetDir, slug)
+  ])];
+  const knownSources = new Set();
+
+  if (physicalPlans.length > 0 && !inventorySection) {
+    findings.push(missingSection('product', 'source_inventory_missing', 'Source Inventory in the briefing', briefingArtifact));
+  } else if (inventorySection) {
+    const table = parseFirstMarkdownTable(inventorySection);
+    if (!table) {
+      findings.push(finding('product', 'source_inventory_invalid', 'Source Inventory must contain a Markdown table', briefingArtifact));
+    } else {
+      const columns = mapColumns(table, {
+        source: ['SRC', 'Source', 'Source ID', 'Fonte', 'ID da fonte'],
+        path: ['Path', 'File', 'Caminho', 'Arquivo'],
+        fingerprint: ['Fingerprint', 'SHA-256', 'SHA256', 'Hash'],
+        purpose: ['Purpose', 'Use', 'Proposito', 'Finalidade', 'Uso']
+      });
+      if (columns.missing.length > 0) {
+        findings.push(finding('product', 'source_inventory_columns', `Source Inventory missing column(s): ${columns.missing.join(', ')}`, briefingArtifact));
+      } else {
+        for (const [index, row] of table.rows.entries()) {
+          const source = cleanCell(row[columns.indexes.source]);
+          const sourcePath = cleanCell(row[columns.indexes.path]).replace(/\\/g, '/');
+          const fingerprint = normalizeSha256(row[columns.indexes.fingerprint]);
+          const purpose = cleanCell(row[columns.indexes.purpose]);
+          const rowNumber = index + 1;
+          if (!SOURCE_ID_EXACT_RE.test(source)) {
+            findings.push(finding('product', 'source_id_invalid', `Source Inventory row ${rowNumber} must use a stable SRC-* ID`, briefingArtifact));
+          }
+          const sourceKey = source.toLowerCase();
+          if (knownSources.has(sourceKey)) {
+            findings.push(finding('product', 'source_id_duplicate', `duplicate source ID: ${source}`, briefingArtifact));
+          }
+          knownSources.add(sourceKey);
+          if (!sourcePath.startsWith('plans/')) {
+            findings.push(finding('product', 'source_path_invalid', `${source || `row ${rowNumber}`} must point inside root plans/`, briefingArtifact));
+          }
+          if (!/^[a-f0-9]{64}$/.test(fingerprint)) {
+            findings.push(finding('product', 'source_fingerprint_invalid', `${source || `row ${rowNumber}`} must record a SHA-256 fingerprint`, briefingArtifact));
+          }
+          if (isPlaceholder(purpose)) {
+            findings.push(finding('product', 'source_purpose_missing', `${source || `row ${rowNumber}`} must state how the source was used`, briefingArtifact));
+          }
+
+          const safe = resolveInsideRoot(targetDir, sourcePath);
+          if (!safe.ok || !sourcePath.startsWith('plans/')) {
+            findings.push(finding('product', 'source_path_unsafe', `${source || `row ${rowNumber}`} source path is outside the permitted plans/ input area`, briefingArtifact));
+          } else {
+            try {
+              const current = await sha256File(safe.path);
+              if (fingerprint && current !== fingerprint) {
+                findings.push(finding('product', 'source_fingerprint_stale', `${source} changed after the briefing snapshot: ${sourcePath}`, briefingArtifact));
+              }
+            } catch {
+              findings.push(finding('product', 'source_file_missing', `${source} source file is missing: ${sourcePath}`, briefingArtifact));
+            }
+          }
+          inventory.push({ source, path: sourcePath, fingerprint, purpose });
+        }
+      }
+    }
+  }
+
+  const inventoryPaths = new Set(inventory.map((item) => item.path.toLowerCase()));
+  for (const sourcePath of physicalPlans) {
+    if (!inventoryPaths.has(sourcePath.toLowerCase())) {
+      findings.push(finding('product', 'source_plan_not_in_inventory', `source_plans entry is absent from Source Inventory: ${sourcePath}`, briefingArtifact));
+    }
+  }
+
+  const promises = [];
+  const promiseSection = extractSection(briefing, ['Source Promise Map', 'Mapa de Promessas das Fontes']);
+  if (!promiseSection) {
+    findings.push(missingSection('product', 'source_promise_map_missing', 'Source Promise Map in the briefing', briefingArtifact));
+  } else {
+    const table = parseFirstMarkdownTable(promiseSection);
+    if (!table) {
+      findings.push(finding('product', 'source_promise_map_invalid', 'Source Promise Map must contain a Markdown table', briefingArtifact));
+    } else {
+      const columns = mapColumns(table, {
+        promise: ['Promise', 'PROM', 'Promise ID', 'Promessa', 'ID da promessa'],
+        source: ['Source', 'SRC', 'Fonte'],
+        intent: ['Approved intent', 'Intent', 'Intencao aprovada', 'Intencao'],
+        state: ['State', 'Decision', 'Estado', 'Decisao']
+      });
+      if (columns.missing.length > 0) {
+        findings.push(finding('product', 'source_promise_map_columns', `Source Promise Map missing column(s): ${columns.missing.join(', ')}`, briefingArtifact));
+      } else {
+        const seen = new Set();
+        for (const [index, row] of table.rows.entries()) {
+          const promise = cleanCell(row[columns.indexes.promise]);
+          const sources = String(row[columns.indexes.source] || '').match(/\bSRC(?:-[A-Za-z0-9]+)+\b/g) || [];
+          const sourceText = cleanCell(row[columns.indexes.source]);
+          const intent = cleanCell(row[columns.indexes.intent]);
+          const state = normalizeDecision(row[columns.indexes.state]);
+          const rowNumber = index + 1;
+          if (!PROM_ID_EXACT_RE.test(promise)) {
+            findings.push(finding('product', 'source_promise_id_invalid', `Source Promise Map row ${rowNumber} must use one stable PROM-* ID`, briefingArtifact));
+          }
+          const key = promise.toLowerCase();
+          if (seen.has(key)) findings.push(finding('product', 'source_promise_id_duplicate', `duplicate promise ID: ${promise}`, briefingArtifact));
+          seen.add(key);
+          if (sources.length === 0 && !/(conversation|conversational|user statement|conversa|declaracao do usuario|web|research|pesquisa)/i.test(sourceText)) {
+            findings.push(finding('product', 'source_promise_source_missing', `${promise || `row ${rowNumber}`} must cite SRC-* or an explicit conversational/research source`, briefingArtifact));
+          }
+          for (const source of sources) {
+            if (!knownSources.has(source.toLowerCase())) {
+              findings.push(finding('product', 'source_promise_source_unknown', `${promise || `row ${rowNumber}`} references undeclared source: ${source}`, briefingArtifact));
+            }
+          }
+          if (isPlaceholder(intent)) findings.push(finding('product', 'source_promise_intent_missing', `${promise || `row ${rowNumber}`} has no approved intent`, briefingArtifact));
+          if (!SCOPE_DECISIONS.has(state)) {
+            findings.push(finding('product', 'source_promise_state_invalid', `${promise || `row ${rowNumber}`} state must be required, deferred, or not_applicable`, briefingArtifact));
+          }
+          promises.push({ promise, sources, intent, state });
+        }
+      }
+    }
+  }
+  if (promises.filter((item) => item.state === 'required').length === 0) {
+    findings.push(finding('product', 'source_required_promise_missing', 'An approved briefing must preserve at least one required PROM-*', briefingArtifact));
+  }
+
+  const coverage = [];
+  const coverageSection = extractSection(prd, ['Source Coverage', 'Cobertura das Fontes']);
+  if (!coverageSection) {
+    findings.push(missingSection('product', 'source_coverage_missing', 'Source Coverage in the PRD', prdArtifact));
+  } else {
+    const table = parseFirstMarkdownTable(coverageSection);
+    if (!table) {
+      findings.push(finding('product', 'source_coverage_invalid', 'Source Coverage must contain a Markdown table', prdArtifact));
+    } else {
+      const columns = mapColumns(table, {
+        promise: ['Promise', 'PROM', 'Promessa'],
+        decision: ['Product decision', 'Decision', 'Decisao do produto', 'Decisao'],
+        trace: ['CAP / AC', 'CAP/AC', 'Trace', 'Rastreio'],
+        rationale: ['Evidence / rationale', 'Rationale', 'Evidence', 'Evidencia / justificativa', 'Justificativa']
+      });
+      if (columns.missing.length > 0) {
+        findings.push(finding('product', 'source_coverage_columns', `Source Coverage missing column(s): ${columns.missing.join(', ')}`, prdArtifact));
+      } else {
+        const knownPromises = new Set(promises.map((item) => item.promise.toLowerCase()));
+        const promiseById = new Map(promises.map((item) => [item.promise.toLowerCase(), item]));
+        const knownCaps = new Set(productMap.allCaps.map((item) => item.toLowerCase()));
+        const knownAcs = new Set(acceptance.rows.map((item) => item.ac.toLowerCase()));
+        const seen = new Set();
+        for (const [index, row] of table.rows.entries()) {
+          const promise = cleanCell(row[columns.indexes.promise]);
+          const decisionRaw = normalizeLabel(row[columns.indexes.decision]);
+          const decision = ['required', 'already-satisfied', 'deferred', 'rejected', 'not-applicable'].includes(decisionRaw)
+            ? decisionRaw
+            : '';
+          const trace = cleanCell(row[columns.indexes.trace]);
+          const caps = extractIds(trace, CAP_ID_RE);
+          const acs = extractIds(trace, AC_ID_RE);
+          const rationale = cleanCell(row[columns.indexes.rationale]);
+          const rowNumber = index + 1;
+          if (!PROM_ID_EXACT_RE.test(promise)) {
+            findings.push(finding('product', 'source_coverage_promise_invalid', `Source Coverage row ${rowNumber} must cite one PROM-*`, prdArtifact));
+          }
+          const key = promise.toLowerCase();
+          if (!knownPromises.has(key)) findings.push(finding('product', 'source_coverage_promise_unknown', `Source Coverage references unknown promise: ${promise}`, prdArtifact));
+          if (seen.has(key)) findings.push(finding('product', 'source_coverage_promise_duplicate', `Source Coverage duplicates promise: ${promise}`, prdArtifact));
+          seen.add(key);
+          if (!decision) findings.push(finding('product', 'source_coverage_decision_invalid', `${promise || `row ${rowNumber}`} decision must be required, already_satisfied, deferred, rejected, or not_applicable`, prdArtifact));
+          if (['required', 'already-satisfied'].includes(decision)) {
+            if (caps.length === 0 || acs.length === 0) {
+              findings.push(finding('product', 'source_coverage_trace_missing', `${promise || `row ${rowNumber}`} must trace to at least one CAP-* and AC-*`, prdArtifact));
+            }
+            for (const cap of caps) {
+              if (!knownCaps.has(cap.toLowerCase())) findings.push(finding('product', 'source_coverage_cap_unknown', `${promise} references undeclared capability: ${cap}`, prdArtifact));
+            }
+            for (const ac of acs) {
+              if (!knownAcs.has(ac.toLowerCase())) findings.push(finding('product', 'source_coverage_ac_unknown', `${promise} references undeclared acceptance criterion: ${ac}`, prdArtifact));
+            }
+          }
+          const originalPromise = promiseById.get(key);
+          if (
+            originalPromise?.state === 'required'
+            && ['deferred', 'rejected', 'not-applicable'].includes(decision)
+            && !/(user[- ]approved|approved by (?:the )?user|user decision|usuario aprovou|aprovado pelo usuario|decisao do usuario)/i.test(foldDiacritics(rationale))
+          ) {
+            findings.push(finding(
+              'product',
+              'source_required_promise_downgraded_without_user_approval',
+              `${promise} was required in the approved briefing; a non-required Product decision must cite explicit user approval`,
+              prdArtifact
+            ));
+          }
+          if (isPlaceholder(rationale)) findings.push(finding('product', 'source_coverage_rationale_missing', `${promise || `row ${rowNumber}`} requires evidence or rationale`, prdArtifact));
+          coverage.push({ promise, decision, caps, acs, rationale });
+        }
+        for (const promise of promises) {
+          if (!seen.has(promise.promise.toLowerCase())) {
+            findings.push(finding('product', 'source_promise_dropped', `${promise.promise} from the approved briefing is absent from the PRD Source Coverage`, prdArtifact));
+          }
+        }
+      }
+    }
+  }
+
+  return { applicable: true, findings, inventory, promises, coverage };
+}
+
+module.exports = {
+  validateSourceLineage
+};

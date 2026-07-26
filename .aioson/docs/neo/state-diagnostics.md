@@ -62,6 +62,7 @@ Summarize only non-zero actionable buckets from `hygiene:scan`:
 - pending Neural Chain noises
 - completed features pending archive
 - stale state
+- stale runtime sessions/runs
 - on-demand review artifacts
 - orphan slug artifacts
 

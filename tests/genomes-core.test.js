@@ -161,6 +161,21 @@ test('writeGenome persists markdown and meta files together', async () => {
   assert.equal(meta.compat.synthesizedFromLegacy, false);
 });
 
+test('listGenomes includes modular folders and excludes catalog markdown', async () => {
+  const dir = await makeTempDir();
+  const genomesDir = path.join(dir, '.aioson', 'genomes');
+  await fs.mkdir(path.join(genomesDir, 'modular-copy'), { recursive: true });
+  await fs.writeFile(path.join(genomesDir, 'INDEX.md'), '# Catalog\n', 'utf8');
+  await fs.writeFile(path.join(genomesDir, 'legacy.md'), '# Legacy\n', 'utf8');
+  await fs.writeFile(
+    path.join(genomesDir, 'modular-copy', 'manifest.json'),
+    JSON.stringify({ genome: 'modular-copy', references: [] }),
+    'utf8'
+  );
+
+  assert.deepEqual(await listGenomes(dir), ['legacy', 'modular-copy']);
+});
+
 test('writeGenome persists genome v3 persona metadata', async () => {
   const dir = await makeTempDir();
   const genome = createGenomeV3Fixture();

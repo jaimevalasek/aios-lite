@@ -5,6 +5,7 @@ const path = require('node:path');
 const { readNoiseFileAndRecompute } = require('../neural-chain-noise-file');
 const { contextDir, readFileSafe } = require('../preflight-engine');
 const { runFeatureArchive, runFeatureSweep } = require('./feature-archive');
+const { scanRuntimeRecoveryCandidates } = require('../runtime-recovery-scan');
 
 const REVIEW_PREFIXES = new Set(['qa-report', 'security-findings']);
 const GLOBAL_REVIEW_SLUGS = new Set(['project', 'test-coverage']);
@@ -69,16 +70,25 @@ async function readJsonSafe(filePath) {
 async function readFeatureRegistry(ctxDir) {
   const content = await readFileSafe(path.join(ctxDir, 'features.md'));
   const bySlug = new Map();
-  if (!content) return bySlug;
+  const duplicates = [];
+  if (!content) return { bySlug, duplicates };
 
   for (const line of content.split(/\r?\n/)) {
     const match = line.match(/^\|\s*([a-z][a-z0-9-]*)\s*\|\s*([a-z_ -]+)\s*\|/i);
     if (!match) continue;
     const slug = match[1].trim().toLowerCase();
     if (slug === 'slug') continue;
+    if (bySlug.has(slug)) {
+      duplicates.push({
+        path: '.aioson/context/features.md',
+        slug,
+        reason: `features.md contains more than one row for ${slug}`,
+        suggested_action: 'keep one canonical row with the current status and dates'
+      });
+    }
     bySlug.set(slug, { slug, status: match[2].trim().toLowerCase() });
   }
-  return bySlug;
+  return { bySlug, duplicates };
 }
 
 async function readArchivedSlugs(ctxDir) {
@@ -251,6 +261,22 @@ async function scanPendingChainNoises(ctxDir) {
   return items;
 }
 
+async function scanStaleRuntimeSessions(targetDir, olderThan = '24h') {
+  const scan = await scanRuntimeRecoveryCandidates(targetDir, { olderThan });
+  return scan.recovered.map((item) => ({
+    path: item.source === 'session_file' && item.sessionFile
+      ? path.relative(targetDir, item.sessionFile).replace(/\\/g, '/')
+      : `.aioson/runtime/aios.sqlite#${item.runKey || item.taskKey || 'runtime'}`,
+    source: item.source,
+    agent: item.agent,
+    run_key: item.runKey,
+    task_key: item.taskKey,
+    started_at: item.startedAt,
+    reason: `runtime ${item.source} remained active beyond ${olderThan}`,
+    suggested_command: `aioson agent:recover . --older-than=${olderThan}`
+  }));
+}
+
 function summarizeSecurityFindings(data) {
   if (!data || typeof data !== 'object') {
     return {
@@ -396,19 +422,26 @@ async function runHygieneScan({ args = [], options = {}, logger }) {
     return out;
   }
 
-  const featureRegistry = await readFeatureRegistry(ctxDir);
+  const featureRegistryResult = await readFeatureRegistry(ctxDir);
+  const featureRegistry = featureRegistryResult.bySlug;
   const archivedSlugs = await readArchivedSlugs(ctxDir);
   const retainedPaths = await readRetainedArtifactPaths(ctxDir);
   const doneFeaturesPendingArchive = await scanDoneFeaturesPendingArchive(targetDir);
   const pendingArchiveSlugs = new Set(doneFeaturesPendingArchive.map((item) => item.slug));
   const staleStateFiles = await scanStaleDevState(ctxDir, featureRegistry);
   const pendingChainNoises = await scanPendingChainNoises(ctxDir);
+  const staleRuntimeSessions = await scanStaleRuntimeSessions(
+    targetDir,
+    options['older-than'] || options.olderThan || '24h'
+  );
   const { reviewArtifacts, orphanSlugArtifacts } = await scanRootArtifacts(
     ctxDir, featureRegistry, archivedSlugs, pendingArchiveSlugs, retainedPaths
   );
 
   const buckets = {
     pending_chain_noises: pendingChainNoises,
+    stale_runtime_sessions: staleRuntimeSessions,
+    duplicate_feature_rows: featureRegistryResult.duplicates,
     done_features_pending_archive: doneFeaturesPendingArchive,
     stale_state_files: staleStateFiles,
     on_demand_review_artifacts: reviewArtifacts,

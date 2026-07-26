@@ -6,6 +6,7 @@ const { spawnSync } = require('node:child_process');
 const fs = require('node:fs/promises');
 const os = require('node:os');
 const path = require('node:path');
+const Database = require('better-sqlite3');
 
 const { classifyArtifactName, runHygieneScan } = require('../src/commands/hygiene-scan');
 
@@ -95,6 +96,29 @@ test('hygiene:scan reports stale dev-state when implementation is complete', asy
   }
 });
 
+test('hygiene:scan reports duplicate feature registry rows', async () => {
+  const dir = await makeProject();
+  try {
+    await write(dir, '.aioson/context/features.md', [
+      '| slug | status | started | completed |',
+      '| duplicated | in_progress | 2026-06-01 | — |',
+      '| duplicated | done | 2026-06-01 | 2026-06-02 |',
+      ''
+    ].join('\n'));
+
+    const result = await runHygieneScan({
+      args: [dir],
+      options: { json: true },
+      logger: silentLogger()
+    });
+
+    assert.equal(result.buckets.duplicate_feature_rows.length, 1);
+    assert.equal(result.buckets.duplicate_feature_rows[0].slug, 'duplicated');
+  } finally {
+    await fs.rm(dir, RM);
+  }
+});
+
 test('hygiene:scan reports pending neural-chain noise files', async () => {
   const dir = await makeProject();
   try {
@@ -128,6 +152,96 @@ test('hygiene:scan reports pending neural-chain noise files', async () => {
     assert.equal(noise.pending_count, 1);
     assert.equal(noise.resolved_count, 1);
     assert.equal(noise.items[0].target_path, 'src/cli.js');
+  } finally {
+    await fs.rm(dir, RM);
+  }
+});
+
+test('hygiene:scan reports stale session files without creating a runtime database', async () => {
+  const dir = await makeProject();
+  try {
+    await write(dir, '.aioson/context/features.md', '| slug | status | started | completed |\n');
+    await write(
+      dir,
+      '.aioson/runtime/.sessions/dev.json',
+      JSON.stringify({
+        finished: false,
+        startedAt: '2026-01-01T00:00:00.000Z',
+        runKey: 'run-stale',
+        taskKey: 'task-stale'
+      })
+    );
+
+    const result = await runHygieneScan({
+      args: [dir],
+      options: { json: true, 'older-than': '24h' },
+      logger: silentLogger()
+    });
+
+    assert.equal(result.buckets.stale_runtime_sessions.length, 1);
+    assert.equal(result.buckets.stale_runtime_sessions[0].source, 'session_file');
+    assert.equal(result.buckets.stale_runtime_sessions[0].run_key, 'run-stale');
+    await assert.rejects(fs.access(path.join(dir, '.aioson/runtime/aios.sqlite')), { code: 'ENOENT' });
+  } finally {
+    await fs.rm(dir, RM);
+  }
+});
+
+test('hygiene:scan reads stale runtime rows without changing their status', async () => {
+  const dir = await makeProject();
+  const dbPath = path.join(dir, '.aioson/runtime/aios.sqlite');
+  try {
+    await write(dir, '.aioson/context/features.md', '| slug | status | started | completed |\n');
+    await fs.mkdir(path.dirname(dbPath), { recursive: true });
+    const db = new Database(dbPath);
+    db.exec(`
+      CREATE TABLE agent_runs (
+        run_key TEXT PRIMARY KEY,
+        task_key TEXT,
+        agent_name TEXT,
+        source TEXT,
+        status TEXT,
+        started_at TEXT,
+        updated_at TEXT
+      );
+      CREATE TABLE tasks (
+        task_key TEXT PRIMARY KEY,
+        created_by TEXT,
+        session_key TEXT,
+        status TEXT,
+        created_at TEXT,
+        updated_at TEXT
+      );
+    `);
+    db.prepare(`
+      INSERT INTO agent_runs
+        (run_key, task_key, agent_name, source, status, started_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      'run-orphan',
+      null,
+      '@dev',
+      'direct',
+      'running',
+      '2026-01-01T00:00:00.000Z',
+      '2026-01-01T00:00:00.000Z'
+    );
+    db.close();
+
+    const result = await runHygieneScan({
+      args: [dir],
+      options: { json: true, 'older-than': '24h' },
+      logger: silentLogger()
+    });
+
+    assert.equal(result.buckets.stale_runtime_sessions.length, 1);
+    assert.equal(result.buckets.stale_runtime_sessions[0].source, 'orphaned_run');
+    const verify = new Database(dbPath, { readonly: true });
+    assert.equal(
+      verify.prepare('SELECT status FROM agent_runs WHERE run_key = ?').get('run-orphan').status,
+      'running'
+    );
+    verify.close();
   } finally {
     await fs.rm(dir, RM);
   }

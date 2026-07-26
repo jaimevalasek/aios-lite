@@ -9,34 +9,11 @@ description: >-
 This is a specialized operational design skill.
 It is not the default for every dashboard.
 
-## Package structure
-
-```text
-.aioson/skills/design/premium-command-center-ui/
-  SKILL.md
-  references/
-    visual-system.md
-    patterns.md
-    operations.md
-    validation.md
-```
-
 ## Activation rules
 
 - Apply this package only when `design_skill: premium-command-center-ui` is selected.
 - Do not load it in parallel with `cognitive-ui`, `interface-design`, or any other design skill.
 - Use it when the product genuinely needs a premium operational shell, not merely a dark dashboard.
-
-## Responsibility boundary
-
-This skill defines:
-- dark premium operational tone
-- tri-rail composition rules
-- density discipline
-- grouped operational cards and contextual rails
-- quality bar for command surfaces
-
-This skill does not decide framework, component library, or delivery format.
 
 ## Loading guide
 
@@ -69,15 +46,4 @@ Before delivery:
 - Fix overlap, clipped text, illegible contrast, missing states, unsupported font loading, missing assets, raw palette drift, and generic template composition before presenting.
 - Do not add isolated blurred-circle background decorations. If a reference suggests that pattern, reinterpret it as a subtle full-bleed ambient field or remove it.
 
-Use this package for:
-- command centers
-- control towers
-- orchestration software
-- activity-heavy internal operating surfaces
-- premium dark operational products
-
-Do not use it for:
-- landing pages
-- editorial or calm consumer products
-- simple CRUD screens that should stay neutral
-- generic SaaS dashboards without command-center pressure
+Use it for command centers, control towers, orchestration software, and activity-heavy operational products. Do not use it for editorial/consumer pages, neutral CRUD, landing pages, or generic dashboards.

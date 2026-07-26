@@ -28,14 +28,14 @@ contracts active: 3,877 tests, 3,876 passed, 0 failed, and 1 expected skip.
 
 ## CAP/AC evidence table
 
-| CAP | ACs | Independent evidence | QA status |
+| CAP | AC | Evidence | Result |
 |---|---|---|---|
-| CAP-premium-evidence | AC-premium-01..04 | Live/closed-world policy, SSRF defenses, explicit claim-source mapping, zero-claim refusal, 6h/24h strict freshness, and mismatch rejection | PASS |
-| CAP-premium-composition | AC-premium-05..07 | Multilingual decomposition, ownership/review rights, Agent Teams routing, and truthful legacy specialist execution/refusal | PASS |
-| CAP-premium-genome | AC-premium-08..11 | Binding lifecycle, real prompt/checklist materialization, inactive cleanup, and controlled same-worker/same-input A/B | PASS |
-| CAP-premium-runtime-truth | AC-premium-12..13 | Missing/empty/timed-out workers never complete; all retry attempts survive and escalation is never timestamped as completion | PASS |
-| CAP-premium-assurance | AC-premium-14..18 | Canonical schema, strict validator, executable eval, static-score refusal, score caps, and schema-gated atomic playbook learning | PASS |
-| CAP-premium-compatibility | AC-premium-19..20 | Legacy/v2 genome reads, template parity, install/i18n coverage, canonical slug containment, lint, and full regression CI | PASS |
+| CAP-premium-evidence | AC-premium-01, AC-premium-02, AC-premium-03, AC-premium-04 | Live/closed-world policy, SSRF defenses, explicit claim-source mapping, zero-claim refusal, 6h/24h strict freshness, and mismatch rejection | PASS |
+| CAP-premium-composition | AC-premium-05, AC-premium-06, AC-premium-07 | Multilingual decomposition, ownership/review rights, Agent Teams routing, and truthful legacy specialist execution/refusal | PASS |
+| CAP-premium-genome | AC-premium-08, AC-premium-09, AC-premium-10, AC-premium-11 | Binding lifecycle, real prompt/checklist materialization, inactive cleanup, and controlled same-worker/same-input A/B | PASS |
+| CAP-premium-runtime-truth | AC-premium-12, AC-premium-13 | Missing/empty/timed-out workers never complete; all retry attempts survive and escalation is never timestamped as completion | PASS |
+| CAP-premium-assurance | AC-premium-14, AC-premium-15, AC-premium-16, AC-premium-17, AC-premium-18 | Canonical schema, strict validator, executable eval, static-score refusal, score caps, and schema-gated atomic playbook learning | PASS |
+| CAP-premium-compatibility | AC-premium-19, AC-premium-20 | Legacy/v2 genome reads, template parity, install/i18n coverage, canonical slug containment, lint, and full regression CI | PASS |
 
 ## Commands executed and results
 
@@ -50,6 +50,12 @@ contracts active: 3,877 tests, 3,876 passed, 0 failed, and 1 expected skip.
 - `git diff --check` — no whitespace errors; Windows line-ending warnings only.
 
 ## Production-path smoke
+
+- **Entry:** `node bin/aioson.js squad:eval . --squad=<slug> --json`.
+- **Trigger:** Invoke strict squad evaluation for a canonical installed squad.
+- **Real boundary:** CLI dispatches into manifest validation, contained file reads, real held-out workers, genome compiler effects, and the runtime/evidence store.
+- **State change:** A schema-valid evaluation report and evidence hashes are atomically persisted; failed or escalated work never receives completion state.
+- **Visible result:** JSON exposes source criteria, held-out cases, genome comparison, critical failures, deterministic reproduction data, and the final verdict.
 
 - Entry point: `node bin/aioson.js`.
 - `squad:eval`: registered CLI command, canonical slug checked before I/O, strict

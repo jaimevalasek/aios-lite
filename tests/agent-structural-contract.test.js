@@ -134,20 +134,36 @@ test('structural contract §2: every agent declares ## Hard constraints (except 
   assert.deepEqual(missing, [], `agents missing ## Hard constraints:\n${missing.join('\n')}`);
 });
 
-// §1 — every agent declares the LANGUAGE BOUNDARY rule. Most use the canonical
-// line-3 blockquote; a few use a `## Language boundary` section or sit after an
-// `⚡ ACTIVATED` banner. Placement varies; the declaration must always be present.
-test('structural contract §1: every agent declares the language boundary', () => {
-  const missing = [];
+// §1 — every agent declares the language boundary in its activation header,
+// before substantive mission instructions begin.
+test('structural contract §1: every agent declares the language boundary before Mission', () => {
+  const violations = [];
 
   for (const file of agentFiles()) {
     const content = fs.readFileSync(path.join(AGENTS_DIR, file), 'utf8');
-    if (!/language boundary/i.test(content)) {
-      missing.push(file);
+    const boundary = content.search(/language boundary/i);
+    const mission = content.search(/^## Mission\s*$/mi);
+    if (boundary === -1 || (mission !== -1 && boundary > mission)) {
+      violations.push(file);
     }
   }
 
-  assert.deepEqual(missing, [], `agents missing the language-boundary declaration:\n${missing.join('\n')}`);
+  assert.deepEqual(violations, [], `agents with a late/missing language boundary:\n${violations.join('\n')}`);
+});
+
+test('structural contract §3: canonical core agents emit pulse and at least two milestones', () => {
+  const CORE = ['product.md', 'sheldon.md', 'planner.md', 'dev.md', 'qa.md'];
+  const violations = [];
+
+  for (const file of CORE) {
+    const content = fs.readFileSync(path.join(AGENTS_DIR, file), 'utf8');
+    const milestones = (content.match(/aioson runtime:emit/g) || []).length;
+    if (!/aioson pulse:update/.test(content) || milestones < 2) {
+      violations.push(`${file}: pulse=${/aioson pulse:update/.test(content)}, milestones=${milestones}`);
+    }
+  }
+
+  assert.deepEqual(violations, [], `core observability violations:\n${violations.join('\n')}`);
 });
 
 // §3 — at session end, agent:done is ALWAYS last. gate:approve / op:capture /

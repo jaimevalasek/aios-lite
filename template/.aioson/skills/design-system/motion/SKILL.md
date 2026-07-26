@@ -1,197 +1,57 @@
 ---
 name: design-motion
-description: Animation and motion patterns for the Cognitive Core design system — entrance animations, hover effects, loading states, scroll reveals, theme transitions, and micro-interactions. Load foundations first. Use when building pages that need animation polish, especially landing pages, frontpages, and interactive dashboards.
+description: Cognitive Core motion patterns for entrances, hover/focus feedback, loading states, scroll reveals, theme transitions, and micro-interactions. Load foundations first. Use when animation materially improves a landing page, frontpage, dashboard, or product interaction.
 ---
 
-# Motion — Animation System
+# Motion System
 
-Requires: `foundations/SKILL.md` loaded first.
+Load `../foundations/SKILL.md` first. Motion must explain change, preserve continuity, or provide feedback. Dashboards use short functional transitions; marketing surfaces may use more expressive but bounded sequences.
 
-Motion in Cognitive Core is **purposeful and restrained**. Dashboards use minimal motion (fast transitions, no flashy animations). Landing pages and frontpages use more dramatic entrances and scroll effects.
+## Timing contract
 
-**Note:** CSS keyframes and transition values below are universal. Implementation examples (event handlers, observers) are illustrative — adapt to whatever framework the agent targets.
+- Micro feedback: 100–180ms.
+- Component state change: 160–240ms.
+- Panel/dialog entrance: 200–320ms.
+- Page/hero sequence: 300–600ms with small stagger.
+- Use ease-out for entrances, ease-in for exits, and ease-in-out for reversible movement.
+- Animate opacity and transforms where possible. Avoid layout-thrashing properties.
 
-## Principles
+## Patterns
 
-1. **Functional first** — Every animation communicates state change or hierarchy
-2. **Fast transitions** — UI state changes: 150ms. Theme changes: 250ms. Entrances: 400-600ms.
-3. **Ease curves** — Default: `ease`. Entrances: `cubic-bezier(0.16, 1, 0.3, 1)` (smooth decelerate)
-4. **No bounce, no elastic** — This is a command center, not a toy
+- **Page entrance:** reveal the focal region, then supporting groups. Cap staggered items; do not animate every row.
+- **Hero entrance:** introduce headline, proof, and primary action in reading order. Keep content visible without animation.
+- **Dialog/drawer:** pair opacity with small scale/translation; focus moves only after the surface is ready.
+- **Hover/focus:** use a slight border, color, shadow, or 1–2px transform. Focus must remain more explicit than hover.
+- **Loading:** skeleton for known structure, spinner for bounded action, progress for measurable work, and textual status for long operations.
+- **Count/progress:** animate only when the change matters; preserve the final value in accessible text.
+- **Theme transition:** transition tokenized color/background/border/shadow properties; disable transitions during initial theme hydration.
+- **Scroll reveal:** use one `IntersectionObserver`, reveal once by default, and keep ordering semantic.
 
-## CSS Keyframes
-
-Include these in your `<style>` block:
-
-```css
-@keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-@keyframes fadeInDown {
-  from { opacity: 0; transform: translateY(-12px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-@keyframes slideInLeft {
-  from { opacity: 0; transform: translateX(-20px); }
-  to { opacity: 1; transform: translateX(0); }
-}
-@keyframes slideInRight {
-  from { opacity: 0; transform: translateX(20px); }
-  to { opacity: 1; transform: translateX(0); }
-}
-@keyframes scaleIn {
-  from { opacity: 0; transform: scale(0.95); }
-  to { opacity: 1; transform: scale(1); }
-}
-@keyframes pulseGlow {
-  0%, 100% { box-shadow: 0 0 20px var(--accent-glow); }
-  50% { box-shadow: var(--shadow-glow-strong); }
-}
-@keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
-}
-@keyframes progressFill {
-  from { width: 0%; }
-}
-@keyframes countUp {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-```
-
-## Entrance Patterns
-
-### Page Load Sequence (staggered)
-
-Apply to dashboard elements in this order, using `animation-delay`:
-
-```
-Top bar:      fadeInDown    0ms     300ms duration
-Stats row:    fadeInUp      100ms   400ms duration (each card +80ms delay)
-Tab bar:      fadeIn        250ms   300ms
-Sidebar:      slideInLeft   200ms   400ms
-Content:      fadeInUp      350ms   500ms (each card in grid +60ms stagger)
-```
-
-**Stagger formula:** For each item at index `i`, apply `animation-delay: base + (i × step)ms`. Typical values: base = 350ms, step = 60ms.
+## Reduced-motion contract
 
 ```css
-/* Example: stagger cards in a grid */
-.card:nth-child(1) { animation-delay: 350ms; }
-.card:nth-child(2) { animation-delay: 410ms; }
-.card:nth-child(3) { animation-delay: 470ms; }
-/* ... pattern: 350 + (n × 60) */
-```
-
-### Landing Page Hero Entrance
-
-```
-Mono label:    fadeInUp    0ms      500ms
-Heading:       fadeInUp    150ms    600ms
-Subtitle:      fadeInUp    300ms    500ms
-CTA buttons:   fadeInUp    450ms    500ms
-```
-
-### Modal Entrance
-
-```css
-.modal-backdrop { animation: fadeIn 200ms ease both; }
-.modal-content { animation: scaleIn 300ms cubic-bezier(0.16, 1, 0.3, 1) both; }
-```
-
-## Hover Effects
-
-### Card Hover (default for all cards)
-```css
-.card {
-  transition: border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
-}
-.card:hover {
-  border-color: var(--border-medium);
-  box-shadow: var(--shadow-glow);
-  transform: translateY(-2px);
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 ```
 
-### Button Hover
-Primary: darken background. Secondary: accent border + accent text.
-```
-transition: background 150ms ease, color 150ms ease, border-color 150ms ease;
-```
+Do not rely on animation to disclose information. Under reduced motion, render the same final state and preserve all feedback text.
 
-### Link Hover
-```
-color: var(--text-accent) → var(--accent-hover)
-transition: color 150ms ease
-```
+## Implementation rules
 
-### Tab Hover
-Non-active tab: `background: var(--bg-elevated)`, `border-radius: var(--radius-md) var(--radius-md) 0 0`
+- Maintain one owner for each animation; avoid overlapping CSS and JavaScript control.
+- Cancel timers/frames/observers on teardown.
+- Do not delay primary interaction for entrance sequences.
+- Keep transformed elements from creating accidental stacking or clipping bugs.
+- Pause continuous animation offscreen and in hidden tabs.
+- Use stable dimensions for skeletons/media to prevent layout shift.
+- Test rapid repeated input, interrupted transitions, and navigation during animation.
 
-### Sidebar Item Hover
-`background: var(--bg-elevated)`, `color: var(--text-primary)`
+## Done gate
 
-## Loading States
-
-### Skeleton Loading (shimmer)
-```css
-.skeleton {
-  background: linear-gradient(90deg, var(--bg-elevated) 25%, var(--bg-overlay) 50%, var(--bg-elevated) 75%);
-  background-size: 200% 100%;
-  animation: shimmer 1.5s ease-in-out infinite;
-  border-radius: var(--radius-md);
-}
-/* Apply with specific height/width per placeholder element */
-```
-
-### Pulse Glow (for Mode Panel when "active")
-```css
-animation: pulseGlow 3s ease-in-out infinite;
-```
-
-### Progress Bar Animation
-When progress bars first appear:
-```css
-animation: progressFill 800ms cubic-bezier(0.16, 1, 0.3, 1) both;
-```
-
-### Stat Number Count-up
-```css
-animation: countUp 600ms cubic-bezier(0.16, 1, 0.3, 1) both;
-```
-
-## Theme Transition
-
-When toggling dark/light:
-```css
-transition: var(--transition-theme);
-/* = background 250ms ease, color 250ms ease, border-color 250ms ease, box-shadow 250ms ease */
-```
-
-Apply to ALL themed containers.
-
-## Scroll-Triggered Animations (Landing Pages)
-
-Use IntersectionObserver (or framework equivalent) to trigger entrance animations when elements scroll into view.
-
-**Behavior spec:**
-- Observe each section/card with `threshold: 0.15`
-- On intersect: transition from `opacity: 0; transform: translateY(24px)` to `opacity: 1; transform: translateY(0)`
-- Duration: `600ms`, curve: `cubic-bezier(0.16, 1, 0.3, 1)`
-- Stagger delay per item: `+80ms`
-- Fire once — disconnect observer after triggering
-
-## When to Use What
-
-| Context | Motion Level | Techniques |
-|---|---|---|
-| Dashboard | Minimal | Card hover, tab switch, theme transition, progress bar fill |
-| Landing page | Moderate | Staggered entrances, scroll reveals, hero sequence, card hovers |
-| Frontpage | Moderate | Hero entrance, scroll reveals, CTA glow pulse |
-| Modal/Detail | Light | scaleIn entrance, fadeIn backdrop |
-| Loading state | Ambient | Skeleton shimmer, pulse glow |
+Reject motion that is decorative noise, blocks input, causes layout shift, repeats on every scroll, ignores reduced-motion, hides focus, delays state confirmation, consumes excessive CPU/GPU, or leaves an interrupted component between states.

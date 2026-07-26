@@ -7,23 +7,6 @@ description: Cognitive Core Design System — a modular visual identity system f
 
 A modular visual identity system. Agents read THIS file first, then load only the sub-modules needed for the task.
 
-## Architecture
-
-```
-skills/design/
-├── SKILL.md                 ← YOU ARE HERE (router)
-├── foundations/
-│   └── SKILL.md             ← Colors, typography, spacing, themes, CSS variables
-├── components/
-│   └── SKILL.md             ← Cards, tables, sidebars, forms, modals, stats, badges
-├── patterns/
-│   └── SKILL.md             ← Page-level layouts: dashboard, settings, auth, list-detail, frontpage
-├── motion/
-│   └── SKILL.md             ← Animations: entrances, hovers, loading, transitions
-└── dashboards/
-    └── SKILL.md             ← Dashboard presets: control center, analytics, ops cockpit
-```
-
 ## How Agents Use This System
 
 ### Step 1: Read this file (you're doing it)
@@ -73,18 +56,9 @@ Toggle the attribute value to switch themes. The mechanism (state, JS toggle, se
 
 Default to **dark** for dashboards/admin. Default to **light** for frontpages/institutional. Always include a theme toggle.
 
-## Technology Boundary
+## Technology boundary
 
-This skill controls **visual identity only** — colors, typography, spacing, layout structure, component anatomy, and motion behavior. It does NOT dictate:
-
-- Output format (HTML, JSX, Vue, Blade, Svelte, etc.)
-- Framework or library choice
-- Build tooling or bundling
-- File structure or splitting strategy
-
-The agent building the interface decides all technology concerns. This skill provides the **what it should look like**, the agent decides the **how to build it**.
-
-Code examples in sub-modules use inline style objects for clarity. Treat them as **design specifications**, not copy-paste code. Adapt the property names and syntax to whatever technology the agent is targeting.
+This skill controls visual identity, not framework, build tooling, or file layout. Treat sub-module examples as design specifications and adapt them to the active stack.
 
 ## Required Assets (all technologies)
 

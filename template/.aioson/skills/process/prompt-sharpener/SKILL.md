@@ -9,16 +9,6 @@ Make the instruction create behavior, not just describe work.
 
 The goal is not brevity. The goal is leverage: fewer passive lists, more operational pressure, clearer evidence rules, and sharper stopping conditions.
 
-## Core Move
-
-Turn this:
-
-> "Review the plan and identify issues."
-
-Into this:
-
-> "Hold the plan against the user's stated intent until every mismatch is approved, patched, or routed back to the owner. If the answer is in the code, inspect the code instead of asking."
-
 ## Workflow
 
 1. Identify the job the prompt must force.
