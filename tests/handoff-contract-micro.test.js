@@ -6,6 +6,10 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const os = require('node:os');
 const { validateHandoffContract } = require('../src/handoff-contract');
+const {
+  approveAndSealSheldonReview,
+  qaExecutionReport
+} = require('./helpers/feature-evidence');
 
 async function write(root, rel, content) {
   const file = path.join(root, rel);
@@ -18,7 +22,7 @@ function state(slug = 'tiny-fix') {
     mode: 'feature',
     featureSlug: slug,
     classification: 'MICRO',
-    sequence: ['product', 'planner', 'dev', 'qa']
+    sequence: ['product', 'sheldon', 'planner', 'dev', 'qa']
   };
 }
 
@@ -60,6 +64,7 @@ describe('handoff-contract — MICRO uses the same compact feature contract', ()
     await write(root, '.aioson/context/project-pulse.md', '# Pulse\n');
     await write(root, '.aioson/context/dev-state.md', '# Dev State\n');
     await write(root, '.aioson/context/prd-tiny-fix.md', prd);
+    await approveAndSealSheldonReview(root, 'tiny-fix');
   });
 
   afterEach(async () => fs.rm(root, { recursive: true, force: true }));
@@ -83,13 +88,19 @@ describe('handoff-contract — MICRO uses the same compact feature contract', ()
     await write(root, '.aioson/context/implementation-plan-tiny-fix.md', plan);
     await write(root, 'src/tiny.js', 'module.exports = true;\n');
     await write(root, 'tests/tiny.test.js', "const test=require('node:test'); const assert=require('node:assert/strict'); test('AC-tiny-01',()=>assert.ok(true));\n");
-    await write(root, '.aioson/context/qa-report-tiny-fix.md', '---\nverdict: PASS\n---\n# QA\n');
+    await write(root, '.aioson/context/qa-report-tiny-fix.md', qaExecutionReport({
+      slug: 'tiny-fix',
+      cap: 'CAP-tiny-01',
+      ac: 'AC-tiny-01',
+      command: 'node --test tests/tiny.test.js',
+      entry: 'node src/tiny.js'
+    }));
     const result = await validateHandoffContract(root, state(), 'qa');
     assert.equal(result.ok, true, JSON.stringify(result.missing));
     assert.equal(result.missing.some((item) => /security-findings/i.test(item)), false);
   });
 
-  it('does not require Sheldon in the MICRO canonical sequence', async () => {
+  it('requires the same current Sheldon review in the MICRO canonical sequence', async () => {
     await write(root, '.aioson/context/implementation-plan-tiny-fix.md', plan);
     const result = await validateHandoffContract(root, state(), 'planner', { structuralOnly: true });
     assert.equal(result.ok, true, JSON.stringify(result.missing));

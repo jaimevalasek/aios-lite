@@ -41,7 +41,7 @@ test('gateway kernels route progressively while preserving mandatory invariants'
       '.aioson/docs/gateway/agent-routing.md',
       '.aioson/docs/gateway/workflow-runtime.md',
       '.aioson/docs/gateway/process-and-research.md',
-      'Product → Planner → DEV → QA',
+      'Product → Sheldon → Planner → DEV → QA',
       'current activation explicitly includes `--auto`',
       'explicit `--step` disables Autopilot for that activation',
       'never auto-runs `feature:close`/publish'
@@ -87,10 +87,10 @@ test('routed modules retain lane budgets, workflow gates, skill evidence, and re
 
   assert.match(routing, /5 behavior files, 8 total paths, and 2 existing modules/);
   assert.match(routing, /Deyvin may act directly only for existing known context/i);
-  assert.match(workflow, /Product → optional Sheldon → Planner → Dev → QA/);
+  assert.match(workflow, /Product → Sheldon → Planner → Dev → QA/);
   assert.match(workflow, /QA FAIL allows one bounded Dev correction and one final independent QA pass/);
   assert.match(workflow, /Runtime telemetry belongs to the gateway/);
-  assert.match(process, /CAP → current-system fit → AC → implementation delta/);
+  assert.match(process, /PROM → Product decision → CAP → current-system fit → AC → implementation delta/);
   assert.match(process, /skill:audit \. --reachability --usage/);
   assert.match(process, /Absence of observed telemetry is not by itself proof that a skill is abandoned/);
   assert.match(process, /Orache is the explicit domain-intelligence exception/);

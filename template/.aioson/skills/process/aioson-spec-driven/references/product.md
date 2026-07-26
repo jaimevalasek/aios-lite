@@ -3,14 +3,15 @@
 ## Product owns
 
 - One PRD with explicit scope, exclusions, user flows, feature-owned prototype status (`current` or `none`), stable `CAP-*` outcomes, repository-backed `## Current System Fit`, and observable `AC-*` rows.
-- `product_scope: approved`, `prd_ready: approved`, and `sheldon_review: not_requested` in frontmatter.
+- Complete `PROM-*` source coverage when the briefing contains a source promise map.
+- `product_scope: approved`, `prd_ready: approved`, and `sheldon_review: pending` in frontmatter.
 - No implementation design or plan.
 
-Only `.aioson/briefings/{slug}/prototype.html` with a manifest owned by `{slug}` may be `current`. Another feature's prototype remains historical after closure. Resolve a routine mismatch to `prototype: null` / `prototype_status: none`, name the exclusion in the PRD and chat, and inspect the repository instead of asking for confirmation.
+Only `.aioson/briefings/{slug}/prototype.html` with an approved manifest owned by `{slug}` may be `current`. Another feature's prototype remains historical after closure. For genuinely nonvisual work, resolve a routine mismatch to `prototype: null` / `prototype_status: none`, name the exclusion in the PRD and chat, and inspect the repository instead of asking for confirmation.
 
-## Optional independent enrichment
+## Mandatory independent enrichment
 
-Product normally hands the PRD directly to Planner. Route to Sheldon only when the user requests an independent challenge or a concrete contradiction/risk cannot be safely resolved by Product. Sheldon edits this same PRD, may repair `AC-*` rows, and marks `sheldon_review: approved`; it creates no parallel specification pack.
+Product always hands the feature PRD to Sheldon. Sheldon edits this same PRD, may repair `CAP-*`/`AC-*` and source coverage rows, marks `sheldon_review: approved`, and promotes one current hash-bound PASS; it creates no parallel specification pack.
 
 ## Stop conditions
 
@@ -18,4 +19,4 @@ Stop only for a decision that materially changes product behavior, scope, cost, 
 
 ## Handoff
 
-Any implementation-ready feature PRD → `@planner`. Already-specified bounded technical work uses the separate Simple Plan lane instead of pretending to be a MICRO feature.
+Any Product-ready feature PRD → `@sheldon`; only a current Sheldon-approved PRD proceeds to `@planner`. Already-specified bounded technical work uses the separate Simple Plan lane instead of pretending to be a MICRO feature.

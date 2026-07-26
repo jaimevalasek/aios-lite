@@ -6,7 +6,7 @@
 MEDIUM aumenta a profundidade. Não cria uma cadeia diferente:
 
 ```text
-[@briefing → @briefing-refiner] → @product → [@sheldon] → @planner → @dev → @qa
+[fontes → @briefing → @briefing-refiner → aprovação] → @product → @sheldon → @planner → @dev → @qa
 ```
 
 ## 1. Enquadre o produto
@@ -33,7 +33,7 @@ Você > @product
            prd_ready: approved
 ```
 
-## 3. Sheldon é uma revisão opcional
+## 3. Sheldon é a revisão independente obrigatória
 
 Para billing, multi-tenancy ou integrações sensíveis, Sheldon pode revisar o mesmo PRD:
 
@@ -119,6 +119,6 @@ Pesquisas, dossiê e pareceres permanecem auxiliares e não bloqueantes.
 ## Veja também
 
 - [Decisões iniciais](../2-comecar/decisoes-iniciais.md)
-- [Feature completa com Sheldon opcional](./feature-completa-com-sheldon.md)
+- [Feature completa com revisão obrigatória do Sheldon](./feature-completa-com-sheldon.md)
 - [Execução de agentes](../5-referencia/agent-execution.md)
 - [Secure by Default](../5-referencia/secure-by-default.md)

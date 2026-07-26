@@ -1,4 +1,4 @@
-# Recipe: Full feature with optional `@sheldon` enrichment
+# Recipe: Full feature with mandatory `@sheldon` review
 
 > **Who this is for:** tracked features that need a PRD, an executable plan, implementation, and a final delivery verdict.
 > **What you'll have at the end:** one PRD, one implementation plan, integrated code, and one QA verdict, all traceable on disk.
@@ -9,7 +9,7 @@
 
 ```text
 optional @briefing → optional @briefing-refiner → @product
-→ optional @sheldon → @planner → @dev → @qa
+→ @sheldon → @planner → @dev → @qa
 ```
 
 The route is the same for MICRO, SMALL, and MEDIUM. Classification changes how deeply each stage investigates risk, how large the implementation budget is, and how broad QA should be. It does not add specification agents or security reviewers to the default chain.
@@ -195,7 +195,7 @@ A dossier, prototype, consultant report, test inventory, security findings, or h
 | Problem | Response |
 |---|---|
 | Product decisions remain open | Resolve them in `@product`; do not ask Planner or DEV to invent product policy |
-| The PRD needs critical enrichment | Run optional `@sheldon`, then keep the result in the same PRD |
+| The PRD is approved by Product | Run mandatory `@sheldon`, independently review it, then seal the same PRD |
 | Planner finds a material unresolved boundary | Request the relevant consultant, feed the decision back into the PRD/plan, then resume |
 | A development host/model is unavailable | Pause or use a manifest-declared fallback; never silently run it in the current client |
 | QA finds a reproducible defect | Return the smallest correction packet to DEV, then re-check only affected evidence plus required regression |

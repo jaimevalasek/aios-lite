@@ -303,9 +303,9 @@ Notes:
 
 **Canonical sequence at every classification:**
 
-`@setup → @product → @planner → @dev → @qa`
+`@setup → @product → @sheldon → @planner → @dev → @qa`
 
-Briefing and Briefing Refiner may precede Product; Sheldon may enrich the PRD between Product and Planner. These steps are optional and need-driven.
+Briefing and Briefing Refiner precede Product when raw sources need framing; visual scope must leave an approved owned prototype. Sheldon always enriches and hash-bind approves the PRD between Product and Planner.
 
 Consultants (`@analyst`, `@architect`, `@pm`, `@ux-ui`, `@scope-check`, `@discovery-design-doc`, `@orchestrator`) are explicitly requested and never inserted by classification. Tester, Pentester, and Validator are disabled by default.
 
@@ -313,9 +313,9 @@ Consultants (`@analyst`, `@architect`, `@pm`, `@ux-ui`, `@scope-check`, `@discov
 
 Once the project is set up, each new feature follows a shorter sequence — no `@setup` required:
 
-`/aioson:agent:product → optional @sheldon → @planner → @dev → @qa`
+`/aioson:agent:product → @sheldon → @planner → @dev → @qa`
 
-`@product` creates the single feature-scoped `prd-{slug}.md`. Optional `@sheldon` enriches that same PRD. `@planner` creates the single `implementation-plan-{slug}.md`. `@dev` implements and integrates the plan. `@qa` performs a proportional bounded review and writes `qa-report-{slug}.md`. Close/archive remains a separate human-authorized action.
+`@product` creates the single feature-scoped `prd-{slug}.md`. Mandatory `@sheldon` independently reviews that same PRD and seals a current hash-bound PASS. `@planner` creates the single `implementation-plan-{slug}.md`. `@dev` implements and integrates the plan. `@qa` proves every required CAP/AC through the normal production path and writes `qa-report-{slug}.md`. Close/archive remains a separate human-authorized action.
 
 The `SMALL` and `MEDIUM` outputs include a note reminding you of this sequence.
 
@@ -347,7 +347,7 @@ aioson workflow:next ./my-project --skip=dev
 
 ### workflow:execute --seed (full-feature autopilot)
 
-`aioson workflow:execute . --feature=<slug> --seed --tool=<tool>` seeds the agentic scheme (`.aioson/context/workflow-execute.json` with `agentic_policy.enabled: true`) without advancing a stage. Product, optional Sheldon, or Planner may seed the canonical chain described in [Autopilot handoff](./autopilot-handoff.md). Add `--step` to seed it disarmed. A stale `workflow.state.json` left by a closed/abandoned feature is discarded and reseeded automatically; a genuinely different active feature returns `different_active_feature`.
+`aioson workflow:execute . --feature=<slug> --seed --tool=<tool>` seeds the agentic scheme (`.aioson/context/workflow-execute.json` with `agentic_policy.enabled: true`) without advancing a stage. Product, Sheldon, or Planner may seed the canonical chain described in [Autopilot handoff](./autopilot-handoff.md). Add `--step` to seed it disarmed. A stale `workflow.state.json` left by a closed/abandoned feature is discarded and reseeded automatically; a genuinely different active feature returns `different_active_feature`.
 
 ---
 

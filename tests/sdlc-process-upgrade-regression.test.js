@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * Regression coverage for the streamlined Product → Planner → Dev → QA
+ * Regression coverage for the streamlined Product → Sheldon → Planner → Dev → QA
  * contract. Legacy requirements/spec/architecture/PM ownership assertions
  * intentionally do not belong here.
  */
@@ -21,6 +21,7 @@ const {
   buildContextPackage,
   parseFrontmatter
 } = require('../src/preflight-engine');
+const { approveAndSealSheldonReview } = require('./helpers/feature-evidence');
 
 async function tmp() { return fs.mkdtemp(path.join(os.tmpdir(), 'aioson-streamlined-sdlc-')); }
 async function write(root, rel, content) {
@@ -96,7 +97,7 @@ test('Gate B approval writes prd_ready to the same Product PRD', async () => {
   const result = await runGateApprove({ args: [root], options: { json: true, feature: 'demo', gate: 'B' }, logger });
   assert.equal(result.ok, true);
   assert.equal(result.field_written, 'prd_ready');
-  assert.equal(result.next_agent, '@planner');
+  assert.equal(result.next_agent, '@sheldon');
   assert.match(await fs.readFile(path.join(root, result.artifact_file), 'utf8'), /prd_ready: approved/);
 });
 
@@ -122,6 +123,11 @@ test('Gate C rejects a draft plan and points to Planner', async () => {
 test('Gate C approval writes approved status to the one Planner artifact', async () => {
   const root = await tmp();
   await seed(root);
+  await write(root, '.aioson/context/prd-demo.md', prd({
+    productScope: 'approved',
+    prdReady: 'approved'
+  }));
+  await approveAndSealSheldonReview(root);
   const result = await runGateApprove({ args: [root], options: { json: true, feature: 'demo', gate: 'C' }, logger });
   assert.equal(result.ok, true);
   assert.equal(result.field_written, 'status');
@@ -135,7 +141,7 @@ test('stale dev-state detection preserves feature continuity safeguards', () => 
   assert.equal(detectStaleDevState({ exists: true, active_feature: 'demo', status: 'in_progress' }, 'demo'), null);
 });
 
-test('optional Sheldon readiness needs a PRD but no enrichment artifact', () => {
+test('Sheldon activation readiness needs a PRD but no separate enrichment artifact', () => {
   const base = {
     project_context: { exists: true },
     prd: { exists: false },
@@ -170,17 +176,18 @@ test('Dev context treats Planner plan as PRIMARY and old manifests as optional c
   assert.ok(pkg.some((item) => /manifest\.md \[legacy optional context\]/.test(item)));
 });
 
-test('Product prompt registers feature state and hands directly to Planner', async () => {
+test('Product prompt registers feature state and hands to mandatory Sheldon', async () => {
   const content = await fs.readFile(path.join(process.cwd(), '.aioson/agents/product.md'), 'utf8');
   assert.match(content, /Always register.*features\.md/i);
-  assert.match(content, /Next agent: @planner/);
-  assert.match(content, /Sheldon review: optional/);
+  assert.match(content, /Next agent: @sheldon/);
+  assert.match(content, /Sheldon review: pending/);
 });
 
-test('Sheldon is optional PRD-only enrichment and does not depend on spec.md', async () => {
+test('Sheldon is mandatory PRD-only review and does not depend on spec.md', async () => {
   const content = await fs.readFile(path.join(process.cwd(), '.aioson/agents/sheldon.md'), 'utf8');
-  assert.match(content, /Optionally challenge/);
+  assert.match(content, /Independently challenge every tracked feature PRD/);
   assert.match(content, /Edit the existing PRD in place/);
+  assert.match(content, /bounded hash-bound review/i);
   assert.doesNotMatch(content, /spec\.md.*done indicator/i);
 });
 

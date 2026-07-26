@@ -69,8 +69,8 @@ If confidence is low, ask the clarification and wait. If no route is valid becau
 
 ## Routing principles
 
-- Canonical feature chain: `@product → @planner → @dev → @qa`; depth changes with classification, not the chain.
-- Sheldon and other specialists are optional, evidence-triggered detours.
+- Canonical feature chain: `@product → @sheldon → @planner → @dev → @qa`; depth changes with classification, not the chain.
+- Sheldon is the mandatory pre-Planner PRD reviewer; other specialists are optional, evidence-triggered detours.
 - An active implementation normally returns to `@deyvin` for continuity or `@dev` for a new planned batch.
 - Current QA PASS is terminal for Gate D; do not invent another review cycle.
 - Use `@tester` for explicit coverage/test-depth work and `@pentester` for a concrete sensitive surface or explicit security audit.

@@ -27,7 +27,7 @@
         ┌──────────────────────────────────────┐
         │         DEVELOPMENT CORE             │
         │                                      │
-        │  Product → optional Sheldon          │
+        │  Product → Sheldon                   │
         │          → Planner → Dev → QA        │
         │                                      │
         │  Explicit consultants:               │
@@ -74,7 +74,7 @@
 
 After one-time setup, every tracked feature uses:
 
-`optional @briefing → optional @briefing-refiner → @product → optional @sheldon → @planner → @dev → @qa`
+`optional raw-source @briefing → @briefing-refiner → user approval → @product → @sheldon → @planner → @dev → @qa`
 
 > **The authorities stay stable at every classification.** Product owns one PRD, Planner owns one implementation plan, DEV owns implementation and final integration, and QA owns one final verdict. MICRO, SMALL, and MEDIUM change depth, risk coverage, and work budget—not the stage chain. Other specialists are explicitly requested consultants or reviewers.
 
@@ -124,27 +124,27 @@ After one-time setup, every tracked feature uses:
 They **don't talk to each other directly**. They talk **through disk artifacts**. This is the heart of the architecture.
 
 ```
-┌─────────────┐ writes ┌────────────────┐ reads ┌─────────────┐
-│  @product   ├───────▶│ prd-{slug}.md  ├──────▶│  @planner   │
-└─────────────┘        └────────────────┘       └──────┬──────┘
-                                                     │ writes
-                                                     ▼
-                                      ┌───────────────────────────────┐
-                                      │ implementation-plan-{slug}.md │
-                                      └──────────────┬────────────────┘
-                                                     │ reads
-                                                     ▼
-                                              ┌─────────────┐
-                                              │    @dev     │
-                                              └──────┬──────┘
-                                                     │ code + evidence
-                                                     ▼
-                                              ┌─────────────┐
-                                              │     @qa     │
-                                              └─────────────┘
+┌─────────────┐ writes ┌────────────────┐ reviews + seals ┌─────────────┐
+│  @product   ├───────▶│ prd-{slug}.md  │◀────────────────│  @sheldon  │
+└─────────────┘        └───────┬────────┘                 └─────────────┘
+                              │ current hash-bound PASS
+                              ▼
+                       ┌─────────────┐ writes ┌───────────────────────────────┐
+                       │  @planner   ├───────▶│ implementation-plan-{slug}.md │
+                       └─────────────┘        └──────────────┬────────────────┘
+                                                           │ reads
+                                                           ▼
+                                                    ┌─────────────┐
+                                                    │    @dev     │
+                                                    └──────┬──────┘
+                                                           │ code + evidence
+                                                           ▼
+                                                    ┌─────────────┐
+                                                    │     @qa     │
+                                                    └─────────────┘
 ```
 
-**Advantage:** if a session drops, the next agent only needs to read the artifacts. No conversational memory is lost.
+**Advantage:** durable artifacts survive session loss and compaction. Conversational details can still be summarized or lose salience, so `mappings/{slug}/continuity.md` may preserve temporary continuity before compaction. That file is never scope, approval, a gate, or QA evidence.
 
 ---
 
@@ -205,11 +205,11 @@ You > @product
 @product > Let's start a feature. What's it called? What's the problem?
 You > "checkout-stripe", complete order with card payment.
 @product > [...several questions...] PRD created at context/prd-checkout-stripe.md.
-@product > Next: optional @sheldon enrichment, or @planner if the PRD is ready.
+@product > Next: mandatory @sheldon independent review before @planner.
 
 ─── Session 2 (next day) ───
 You > @neo
-@neo > You stopped at @product. The PRD has two material gaps; optional @sheldon is useful.
+@neo > You stopped at @product. The mandatory @sheldon review found two material gaps before Planner.
 You > @sheldon
 @sheldon > Reading the PRD + codebase... Detected 2 gaps: no idempotency policy on Stripe webhook,
            no AC for payment failure retry. Researching Stripe docs...

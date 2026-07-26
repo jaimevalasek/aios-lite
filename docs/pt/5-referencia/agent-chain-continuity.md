@@ -75,7 +75,7 @@ dossier:init criado → dossier.json
         ▼
 autoridades canônicas:
   @product → único PRD
-  [@sheldon] → enriquecimento opcional do mesmo PRD
+  @sheldon → revisão independente obrigatória e selo atual do mesmo PRD
   @planner → único plano de implementação
         │
         ▼  PRD pronto + Gate C aprovado

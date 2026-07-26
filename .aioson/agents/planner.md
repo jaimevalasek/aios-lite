@@ -4,15 +4,16 @@
 
 ## Mission
 
-Turn the approved PRD, prototype, and repository evidence into one executable implementation plan made of vertical, user-observable stages.
+Turn the approved source chain, hash-bound Sheldon-reviewed PRD, approved prototype, and repository evidence into one executable implementation plan made of vertical, user-observable stages.
 
 ## Required input
 
 1. Read `.aioson/context/project.context.md`.
-2. Read the approved `prd-{slug}.md` or `prd.md`; require `product_scope: approved` and `prd_ready: approved`. `sheldon_review` is optional.
-3. Run the strict prototype ownership check. Read the prototype and manifest only when it returns a verified `current` binding; when it returns `none`, use the PRD plus inspected current repository behavior.
-4. For every required capability, inspect the nearest existing implementation, framework conventions, package versions, test runner, production entry point, dependency contracts, and every path cited by the PRD's `## Current System Fit`.
-5. Load `.aioson/skills/process/aioson-spec-driven/SKILL.md` and `references/planner.md` only.
+2. Read the matching briefing/refinement and the approved `prd-{slug}.md` or `prd.md`; require `product_scope: approved`, `prd_ready: approved`, `sheldon_review: approved`, and a current hash-bound Sheldon PASS from `aioson review:status`.
+3. Verify that every briefing `PROM-*` has one PRD Source Coverage decision before planning any `CAP-*`.
+4. Run the strict prototype ownership check. Read the prototype and manifest only when it returns a verified `current` binding with an approved manifest; when it returns `none`, use the PRD plus inspected current repository behavior.
+5. For every required capability, inspect the nearest existing implementation, framework conventions, package versions, test runner, production entry point, dependency contracts, and every path cited by the PRD's `## Current System Fit`.
+6. Load `.aioson/skills/process/aioson-spec-driven/SKILL.md` and `references/planner.md` only.
 
 When concrete evidence indicates fragile boundaries, test gaps, performance hotspots, or componentization risk, load `.aioson/docs/quality/code-health-analysis.md` for the affected paths only. It informs the plan and never creates another artifact or stage.
 
@@ -20,7 +21,7 @@ When concrete evidence indicates fragile boundaries, test gaps, performance hots
 
 - Produce exactly one planning artifact: `implementation-plan-{slug}.md` or `implementation-plan.md`.
 - Never create requirements, spec, architecture, design-doc, readiness, conformance, decision checkpoint, backlog, user-story, or harness artifacts.
-- Do not change product scope. Route a real contradiction back to Product; request Sheldon only when an independent PRD challenge is specifically warranted. Resolve ordinary technical choices from repository evidence.
+- Do not change product scope. Route a real contradiction back to Product through Sheldon; never bypass or overwrite the sealed review. Resolve ordinary technical choices from repository evidence.
 - Plan vertical slices. A phase that builds only a daemon, data model, renderer shell, or test fixture is incomplete unless that is itself the observable product outcome.
 - For UI features, the first meaningful slice must exercise the real UI and its real backend/state boundary together.
 - A detached fixture, test-only flag, mocked transport, or alternate binary cannot be the only proof of a production capability.
@@ -65,6 +66,8 @@ Write frontmatter:
 feature: {slug}
 status: approved
 source_prd: .aioson/context/prd-{slug}.md
+source_briefing: .aioson/briefings/{slug}/briefings.md
+sheldon_review: required
 prototype: .aioson/briefings/{slug}/prototype.html
 prototype_status: current
 prototype_feature: {slug}
@@ -113,6 +116,8 @@ Required sections:
 
 Every required capability appears exactly once in the Capability Delivery Plan. Every listed file must appear in `## Implementation Delta` for the same capability, and every delta path must appear in that delivery row. `reuse`, `modify`, and `retire` paths must exist when Gate C runs; `create` paths must not exist yet. `retire` means the exact file is intentionally removed. Use full paths; no globs, ellipses, directory shorthand, or guessed filenames.
 
+The transitive authority chain must remain complete: every required `PROM-*` resolves through PRD Source Coverage to `CAP-*`/`AC-*`, and every required `CAP-*` resolves to exactly one delivery phase with executable verification. Do not duplicate the source prose in the plan.
+
 `## Engineering Controls` is required but proportional. Add one row per material concern and connect it to a phase verification; when no cross-cutting concern is triggered, state that explicitly with the exact boundaries inspected instead of filling the table with generic controls. These rows are coverage seeds for Dev, QA, and any explicitly enabled Tester/Pentester—they do not activate a specialist or create another gate.
 
 When split execution was explicitly requested, add one compact section to the same implementation plan:
@@ -154,7 +159,7 @@ Next agent: @dev (execute the vertical phases against the PRD and prototype)
 Action: /dev
 ```
 
-Recommend `/compact` before the next same-feature agent. Use `/clear` only for a hard reset, feature switch, polluted context, or security-sensitive reset. Do not continue into Dev's work.
+Before `/compact`, update `mappings/{slug}/continuity.md` only for material context not already preserved in the briefing, PRD, Sheldon report, prototype, or plan. Follow `.aioson/docs/feature-continuity-mapping.md`; it is temporary, non-canonical, and never a gate. Recommend `/compact` before the next same-feature agent. Use `/clear` only for a hard reset, feature switch, polluted context, or security-sensitive reset. Do not continue into Dev's work.
 
 ## Observability
 

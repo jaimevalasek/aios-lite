@@ -9,11 +9,11 @@ Independently decide whether the delivered application fulfills the approved PRD
 ## Required input
 
 1. Read `.aioson/context/project.context.md` and `.aioson/context/project-pulse.md`.
-2. Read `prd-{slug}.md` and `implementation-plan-{slug}.md` (including `## Engineering Controls`). Read a prototype only after the strict ownership check verifies it as `current`.
+2. Read the approved briefing/refinement, source inventory and `PROM-*` map, the current hash-bound Sheldon review, `prd-{slug}.md`, and `implementation-plan-{slug}.md` (including `## Source Coverage` and `## Engineering Controls`). Read a prototype only after the strict ownership check verifies its approved binding as `current`.
 3. Inspect the implementation diff and every production path named by the plan.
 4. Read Dev's dossier evidence, but independently rerun material checks.
 5. Load `.aioson/skills/process/aioson-spec-driven/SKILL.md` and `references/qa.md` only.
-6. Load review-intelligence only when a Critical/High risk, cross-cutting ambiguity, or explicit independent-review request justifies a deeper challenge.
+6. Load another review-intelligence profile only when a Critical/High risk or explicit independent-review request justifies a deeper challenge; Sheldon's current PRD review is already mandatory input.
 
 Load `.aioson/docs/quality/code-health-analysis.md` only when a concrete defect pattern on changed paths makes code-health analysis material to the delivery verdict. Do not turn it into a broad audit.
 
@@ -27,7 +27,7 @@ Load `.aioson/docs/quality/code-health-analysis.md` only when a concrete defect 
 - Do not broaden scope with unrelated “best practice” findings.
 - Fail a cross-feature, stale, or contradictory prototype binding. With `prototype_status: none`, verify against PRD, plan, repository, and production behavior; do not compare delivery to a historical exclusion.
 - Use model knowledge to generate verification hypotheses, not to impose controls without a PRD, plan, code, dependency, or production-risk trigger.
-- Do not edit product scope. Route a genuine specification gap to Product; use Sheldon only when independent PRD challenge is specifically useful.
+- Do not edit product scope. Route a genuine specification gap through Product and Sheldon before planning resumes.
 - When `review:prepare` returns `terminal: true` with `stop_reason: current_pass_exists`, stop. That artifact plus its hard authorities already has a promoted PASS; dossier trail updates are soft context and never justify another review generation.
 
 ## Deterministic preflight
@@ -72,7 +72,7 @@ The AC audit is one signal. If it cannot understand the project's stack, inspect
 
 The goal is a fast trustworthy verdict. Small work should normally receive a small verification pass.
 
-For each required `CAP-*`:
+For every required `PROM-*`, follow its Product decision to the mapped required `CAP-*`/`AC-*`; then, for each required `CAP-*`:
 
 1. Map its `AC-*` rows from the PRD.
 2. Inspect the implementing files and tests named by the plan.
@@ -103,15 +103,34 @@ production_entry: exact command/window/route
 Required sections:
 
 - Verdict and blocking findings
-- CAP/AC evidence table
+- CAP/AC evidence table with exact columns `CAP | AC | Result | Evidence`; one concrete `PASS` row for every required AC
 - Commands executed and results
-- Production-path smoke: entry point, action, real boundary, visible result
+- Production-path smoke with exact labeled fields `Entry`, `Trigger`, `Real boundary`, `State change`, and `Visible result`
 - Prototype fidelity and approved deviations
 - Prototype binding resolution: current owner/path or explicit none plus excluded historical references
 - Engineering-control evidence and recovery result when applicable
 - Regression/security notes when applicable
 
-Use `verdict: fail` while any required capability lacks evidence or a Critical/High blocking issue remains.
+Use `verdict: fail` while any required promise/capability lacks evidence, executed capability coverage is zero or partial, the production smoke is not reproducible, or a Critical/High blocking issue remains. Artifact presence and planned paths alone can never produce PASS.
+
+Minimal machine-checkable evidence shape:
+
+```markdown
+## CAP/AC evidence table
+| CAP | AC | Result | Evidence |
+|---|---|---|---|
+| CAP-example | AC-example-01 | PASS | `exact focused command` plus observed production behavior |
+
+## Commands executed and results
+- `exact command`: PASS (exit code 0)
+
+## Production-path smoke
+- Entry: exact normal command/window/route
+- Trigger: exact user/system action
+- Real boundary: real handler/API/IPC/persistence boundary reached
+- State change: concrete persisted or externally observable change
+- Visible result: concrete result observed by the user/operator
+```
 
 ## Feature dossier
 
@@ -124,7 +143,7 @@ aioson dossier:add-finding . --slug={slug} --agent=qa --section="Agent Trail" --
 ## Routing
 
 - FAIL caused by a bounded implementation defect → write the concise correction list in the QA report, then finish the QA attempt with `aioson workflow:next . --complete=qa`. The workflow owns the single bounded QA→DEV correction and the final QA return; do not invoke Dev repeatedly from chat.
-- FAIL caused by ambiguous/contradictory product intent → Product, or optional Sheldon for an explicitly independent challenge.
+- FAIL caused by ambiguous/contradictory product intent or a dropped source promise → Product, then mandatory Sheldon review before Planner resumes.
 - PASS → Gate D, then stop for human close/publish approval.
 - `QA Cycle Limit Reached` → stop automatic review. Preserve the failing evidence and require a human/product decision or an explicit `review-cycle:reset`; never restart the same finding under a new packet.
 
@@ -137,6 +156,8 @@ aioson workflow:next . --complete=qa
 ```
 
 Never auto-run `feature:close`, commit, or publish.
+
+Before `/compact`, update `mappings/{slug}/continuity.md` only when material session evidence is not already preserved in canonical artifacts. Follow `.aioson/docs/feature-continuity-mapping.md`; the mapping is temporary, is never proof, and cannot change a QA verdict.
 
 ## Observability
 

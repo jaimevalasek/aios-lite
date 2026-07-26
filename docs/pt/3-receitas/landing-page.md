@@ -10,7 +10,7 @@
 
 Você tem um produto ou serviço novo e precisa de uma página de apresentação. O desafio clássico: ou você escreve copy genérico ("Bem-vindo ao nosso produto"), ou gasta horas tentando encontrar as palavras certas. E quando chega no código, o visual fica inconsistente — um botão com uma cor, o header com outra.
 
-Com AIOSON, `@product` define o que comunicar, `@copywriter` e `@ux-ui` podem enriquecer o PRD sob pedido explícito, `@planner` transforma o resultado num plano vertical e `@dev` implementa. `@qa` fecha com um veredito proporcional. O resultado é uma página com narrativa e visual coerentes.
+Com AIOSON, fontes em `plans/{slug}/` podem alimentar `@briefing` e `@briefing-refiner`, que produz o `prototype.html` visual para aprovação. `@product` define o que comunicar, `@copywriter` e `@ux-ui` podem enriquecer o PRD sob pedido explícito, `@sheldon` faz a revisão independente obrigatória e `@planner` transforma as autoridades aprovadas num plano vertical. `@dev` implementa e `@qa` prova cada CAP/AC no caminho normal de produção. O resultado é uma página com narrativa, visual e comportamento coerentes.
 
 Este é um projeto **SMALL** (1 tipo de usuário, 0 integrações externas, sem regras de negócio complexas — mas o design justifica o `@ux-ui`).
 

@@ -11,8 +11,9 @@ triggers: [feature workflow, workflow next, auto, step, external client, live se
 When invoked through `aioson workflow:next`, injected lifecycle instructions own routing, state, and event emission. Follow them exactly. Outside that envelope:
 
 - Apply the Concrete implementation lane gate first.
-- Canonical feature route: Product → optional Sheldon → Planner → Dev → QA.
-- Product, Planner, Dev, and QA stay in workflow. Specialists run only for a concrete unresolved decision or enabled/risk-triggered review.
+- Canonical feature route: Product → Sheldon → Planner → Dev → QA.
+- When the user starts from raw feature sources, use the pre-product route `plans/{slug}/ → Briefing → Briefing Refiner → user approval`; visual/rich surfaces require the feature-owned prototype to be approved before Product.
+- Product, Sheldon, Planner, Dev, and QA stay in workflow. Other specialists run only for a concrete unresolved decision or enabled/risk-triggered review.
 - Simple Plan goes directly to Dev and ends there.
 - Repair objectively inferable stale/inconsistent context in workflow; unresolved project-context uncertainty routes to Setup.
 
@@ -24,15 +25,16 @@ Between manual handoffs, output only the next agent and why; do not start its wo
 
 Autopilot is enabled for the current chain when the activation explicitly includes `--auto`, project `auto_handoff` is true, or `.aioson/context/workflow-execute.json` enables agentic policy. `--step` wins for that activation without rewriting the persisted preference.
 
-The automatic chain is Product → Planner → Dev → QA. Sheldon is optional. Dev may dispatch explicitly enabled host/model development lanes but remains integration owner. Unavailable execution pauses unless the manifest declares an applicable fallback.
+The automatic chain is Product → Sheldon → Planner → Dev → QA. Sheldon must promote a current hash-bound PASS over the final PRD and hard authorities before Planner. Dev may dispatch explicitly enabled host/model development lanes but remains integration owner. Unavailable execution pauses unless the manifest declares an applicable fallback.
 
 Tester, Pentester, and Validator are disabled by default and run only when enabled and concretely triggered. They never grant Gate D. The chain stops for a genuinely user-owned decision and never closes/publishes a feature.
 
 ## Feature gates
 
-- Product scope/readiness: one PRD with concrete ACs and approved scope/readiness.
+- Product scope/readiness: one PRD with concrete ACs, complete `PROM-*` source coverage when a briefing source map exists, and approved scope/readiness.
+- Sheldon readiness: `sheldon_review: approved` plus a current hash-bound Sheldon PASS after the final PRD edit.
 - Gate C: one approved implementation plan with vertical production-path stages.
-- Gate D: QA PASS with executable and normal production-path evidence.
+- Gate D: QA PASS with concrete evidence for every required CAP/AC and a reproducible normal production-path causal chain.
 - QA FAIL allows one bounded Dev correction and one final independent QA pass unless the manifest explicitly changes the finite limit.
 
 No requirements/spec/design/readiness/conformance/harness document is an extra canonical prerequisite.

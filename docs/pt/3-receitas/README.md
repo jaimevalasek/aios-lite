@@ -8,7 +8,7 @@ Estas três trilhas mostram **como features chegam ao desenvolvimento** no AIOSO
 
 | Trilha | Quando usar | Agentes-chave |
 |---|---|---|
-| **[Feature completa com @sheldon](./feature-completa-com-sheldon.md)** | Você tem uma direção de produto e quer a rota canônica | `@product → [@sheldon] → @planner → @dev → @qa` |
+| **[Feature completa com revisão do @sheldon](./feature-completa-com-sheldon.md)** | Você tem uma direção de produto e quer a rota canônica | `@product → @sheldon → @planner → @dev → @qa` |
 | [Da ideia ao PRD via @briefing](./da-ideia-ao-prd-via-briefing.md) | Sua ideia ainda é vaga, várias anotações soltas | `[@briefing → @briefing-refiner] → @product` |
 | [Plans externos para @product](./plans-externos-para-product.md) | Você já planejou em outro chat (ChatGPT, Claude.io Web) | @product (lê `/plans/`) |
 

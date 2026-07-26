@@ -128,6 +128,10 @@ describe('handoff-protocol artifact_uris v2 — coercion', () => {
     assert.ok(ARTIFACT_KINDS.includes('spec'));
     assert.ok(ARTIFACT_KINDS.includes('research'));
     assert.ok(ARTIFACT_KINDS.includes('other'));
+    assert.ok(ARTIFACT_KINDS.includes('briefing'));
+    assert.ok(ARTIFACT_KINDS.includes('prototype'));
+    assert.ok(ARTIFACT_KINDS.includes('qa_report'));
+    assert.ok(ARTIFACT_KINDS.includes('mapping'));
     assert.ok(Object.isFrozen(ARTIFACT_KINDS));
   });
 });
@@ -168,6 +172,8 @@ describe('handoff-protocol artifact_uris v2 — writers always emit v2', () => {
     const b = buildWorkflowHandoffProtocol(state, 'dev', 'qa', { artifactUris: 'nope' });
     assert.deepEqual(a.artifact_uris, []);
     assert.deepEqual(b.artifact_uris, []);
+    assert.equal(a.validation.handoff_contract_ok, false);
+    assert.equal(a.validation.technical_gate_ok, false);
   });
 });
 

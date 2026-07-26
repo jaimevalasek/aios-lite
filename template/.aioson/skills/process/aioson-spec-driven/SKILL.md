@@ -9,7 +9,7 @@ Use for substantive feature definition, planning, implementation, or QA. Do not 
 ## Canonical route
 
 ```text
-optional briefing/refinement → product → planner → dev → qa
+optional raw sources/briefing/refinement/approval → product → sheldon → planner → dev → qa
 ```
 
 The route has three canonical artifacts:
@@ -23,15 +23,15 @@ Project mode uses the same bare names without `{slug}` where applicable. Code an
 ## Classification depth
 
 - **Simple Plan (outside feature workflow):** already-specified bounded technical work may go directly to Dev with proportionate verification.
-- **MICRO:** one bounded product capability; the same Product → Planner → Dev → QA route with a terse PRD and plan.
+- **MICRO:** one bounded product capability; the same Product → Sheldon → Planner → Dev → QA route with a terse PRD and plan.
 - **SMALL:** multiple related capabilities or one new boundary; the same route with broader file/AC coverage.
 - **MEDIUM:** broader or riskier impact; the same route with more constraints, checkpoints, and risk-focused evidence.
 
-Sheldon, Analyst, Architect, PM, UX/UI, Discovery Design Doc, Scope Check, Orchestrator, Tester, Pentester, and Validator are opt-in specialists available at every classification. Invoke one only for a named unresolved decision, explicit request, or triggered verification need. Merge its conclusion into the PRD, plan, implementation, or QA report; do not create a second canonical chain. The feature dossier is a lightweight non-blocking context cache.
+Sheldon is the mandatory independent specification review before Planner. Analyst, Architect, PM, UX/UI, Discovery Design Doc, Scope Check, Orchestrator, Tester, Pentester, and Validator are opt-in specialists available at every classification. Invoke one only for a named unresolved decision, explicit request, or triggered verification need. Merge its conclusion into the PRD, plan, implementation, or QA report; do not create a second canonical chain. The feature dossier and continuity mapping are lightweight non-blocking context caches.
 
 ## Non-negotiable trace
 
-`CAP → current-system fit → AC → implementation delta → vertical phase → exact files → executable check → production-path evidence`
+`source fingerprint → PROM → Product decision → CAP → current-system fit → AC → implementation delta → vertical phase → exact files → executable check → production-path evidence`
 
 This trace replaces the former `CAP → lens → REQ → AC → design → plan → harness` document chain.
 
@@ -47,7 +47,7 @@ This trace replaces the former `CAP → lens → REQ → AC → design → plan 
 Load exactly one role reference:
 
 - `references/product.md`
-- `references/sheldon.md` — only when the optional Sheldon detour is active
+- `references/sheldon.md`
 - `references/planner.md`
 - `references/dev.md`
 - `references/qa.md`

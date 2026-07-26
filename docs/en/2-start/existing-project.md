@@ -126,7 +126,7 @@ This step is **optional for small projects**, but critical in medium and large c
 
 ## Step 5 — Optional: ask `@analyst` a concrete domain question
 
-The semantic cache is already available to Product, Planner, DEV, and QA. Use Analyst only when a specific brownfield question needs a dedicated investigation; it is not a prerequisite for MEDIUM features.
+The semantic cache is already available to Product, Sheldon, Planner, DEV, and QA. Use Analyst only when a specific brownfield question needs a dedicated investigation; it is not a prerequisite for MEDIUM features.
 
 ```
 You > @analyst
@@ -156,10 +156,10 @@ You > "order-cancellation" — allow canceling an order within 1 hour
 @product > Acceptance criteria?
 You > [...]
 
-@product > PRD saved to prd-order-cancellation.md. Next: @planner.
+@product > PRD saved to prd-order-cancellation.md. Next: @sheldon for the mandatory independent review.
 ```
 
-From there, the canonical flow applies at MEDIUM depth: `@product → optional @sheldon → @planner → @dev → @qa`. Product owns one PRD, Planner owns one implementation plan, and QA writes one verdict. Analyst, Architect, Discovery Design Doc, PM, UX/UI, and Scope Check can enrich those artifacts when explicitly requested, but they do not become stages. See [Full feature with optional @sheldon](../3-recipes/full-feature-with-sheldon.md) for the walkthrough.
+From there, the canonical flow applies at MEDIUM depth: `@product → @sheldon → @planner → @dev → @qa`. Product owns one PRD, Sheldon independently reviews and seals it, Planner owns one implementation plan, and QA writes one evidence-backed verdict. Analyst, Architect, Discovery Design Doc, PM, UX/UI, and Scope Check can enrich those artifacts when explicitly requested, but they do not become stages. See [Full feature with mandatory @sheldon review](../3-recipes/full-feature-with-sheldon.md) for the walkthrough.
 
 ---
 

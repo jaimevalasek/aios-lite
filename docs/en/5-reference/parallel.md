@@ -1,6 +1,6 @@
 # Parallel Orchestration Guide
 
-> **Current workflow context:** these commands are an opt-in legacy orchestration surface. `@orchestrator` is not a default MEDIUM stage or specification authority. The canonical route is Product → optional Sheldon → Planner → DEV → QA.
+> **Current workflow context:** these commands are an opt-in legacy orchestration surface. `@orchestrator` is not a default MEDIUM stage or specification authority. The canonical route is Product → Sheldon → Planner → DEV → QA.
 
 Use `parallel:init` only when you explicitly choose this orchestration surface. For normal implementation delegation, DEV uses generic `development_lanes` with per-lane host, model, prompt, and `write_paths`, runs them sequentially in the shared worktree, and remains the integration owner.
 

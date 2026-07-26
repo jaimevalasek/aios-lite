@@ -70,6 +70,7 @@ const GITIGNORE_POLICY_LINES = [
   '.claude/settings.local.json',
   '*:Zone.Identifier',
   '# AIOSON — shared agent scratch caches (local-only)',
+  'mappings/',
   'researchs/',
   'squad-searches/'
 ];

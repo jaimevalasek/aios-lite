@@ -6,7 +6,7 @@
 
 ```text
 optional Briefing → optional Briefing Refiner → Product
-→ optional Sheldon → Planner → DEV → QA
+→ Sheldon → Planner → DEV → QA
 ```
 
 MICRO, SMALL, and MEDIUM never add this agent automatically.
@@ -62,5 +62,5 @@ The agent never advances the workflow by itself.
 ## See also
 
 - [From idea to PRD via Briefing](../3-recipes/from-idea-to-prd-via-briefing.md)
-- [Full feature with optional Sheldon](../3-recipes/full-feature-with-sheldon.md)
+- [Full feature with mandatory Sheldon review](../3-recipes/full-feature-with-sheldon.md)
 - [Agents index](./README.md)

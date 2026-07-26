@@ -6,12 +6,12 @@
 
 - `.aioson/context/project.context.md`
 - `.aioson/context/prd-{slug}.md` (or project-level `prd.md`)
-- `product_scope: approved` and `prd_ready: approved`; `sheldon_review` is optional
+- `product_scope: approved`, `prd_ready: approved`, `sheldon_review: approved`, and a current hash-bound Sheldon PASS
 - the approved prototype only when `prototype:check --strict` verifies the active feature owner; with `prototype_status: none`, the current repository behavior is the baseline
 - the PRD's repository-backed `## Current System Fit`
 - nearest implementation patterns in the codebase
 
-If observable behavior is missing or contradictory, return to Product; request an optional Sheldon challenge only when independent review is concretely warranted. Never substitute another or closed feature's prototype. Do not invent `requirements`, `spec`, `architecture`, `design-doc`, `readiness`, `conformance`, or harness documents as substitutes.
+If observable behavior is missing or contradictory, return to Product and require a renewed Sheldon review before planning resumes. Never substitute another or closed feature's prototype. Do not invent `requirements`, `spec`, `architecture`, `design-doc`, `readiness`, `conformance`, or harness documents as substitutes.
 
 ## Output
 

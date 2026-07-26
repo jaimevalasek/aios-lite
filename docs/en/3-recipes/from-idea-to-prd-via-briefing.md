@@ -29,7 +29,7 @@ aioson briefing:approve
        ↓
    @product   →  prd-{slug}.md
        ↓
- (optional) @sheldon  →  enriches the same PRD in place
+ @sheldon             →  independently reviews and seals the same PRD in place
        ↓
    @planner  →  implementation-plan-{slug}.md
        ↓
@@ -130,7 +130,7 @@ You > push-notifications
             Out of scope: email notifications (briefing flagged for phase 2).
 
             PRD created: .aioson/context/prd-push-notifications.md
-            Next: optional @sheldon enrichment, or @planner if the PRD is ready.
+            Next: mandatory @sheldon independent review before @planner.
 ```
 
 ---

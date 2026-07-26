@@ -54,7 +54,7 @@
       "q": 5,
       "v": "BEST_PRACTICE",
       "s": "Planner must inspect the real repository, production entry point, nearest patterns, package versions, and tests before naming implementation paths. Discovery is an activity, not a mandatory document or agent hop; Architect is optional for one unresolved technical boundary.",
-      "p": "@product PRD → @planner inspects repository and writes one vertical plan → @dev implements → @qa reviews\nOptional @architect answers one named boundary question and returns to Planner or Dev",
+      "p": "@product PRD → @sheldon independently reviews and seals it → @planner inspects repository and writes one vertical plan → @dev implements → @qa reviews\nOptional @architect answers one named boundary question and returns to Planner or Dev",
       "src": "AIOSON compact Product→Planner→Dev→QA workflow",
       "date": "2026-05-07",
       "not": "generating discovery.md and architecture.md by default — parallel abstractions drift away from the PRD and repository",

@@ -12,7 +12,7 @@ triggers: [auto_handoff, autopilot, workflow execute, agentic policy]
 Autopilot advances this deterministic route:
 
 ```text
-product → planner → dev [optional declared execution lanes → DEV integration] → qa
+product → sheldon → planner → dev [optional declared execution lanes → DEV integration] → qa
 ```
 
 `--auto` enables Autopilot for the current direct/tracked activation even when the project default is off. `--step` disables it for the current activation and wins if both flags are present. Neither flag rewrites the persisted project/feature preference, and neither authorizes the human `feature:close`/publish gate.
@@ -31,8 +31,8 @@ Tester and Pentester are allowed to implement a correction when their own contra
 
 ## Required handoff state
 
-- Product: PRD has concrete capabilities/ACs, a repository-backed `## Current System Fit`, `product_scope: approved`, and `prd_ready: approved`.
-- Sheldon, when explicitly inserted: the same PRD has `sheldon_review: approved`.
+- Product: PRD has complete source-promise coverage when source intake exists, concrete capabilities/ACs, a repository-backed `## Current System Fit`, `product_scope: approved`, and `prd_ready: approved`.
+- Sheldon: the same final PRD has `sheldon_review: approved` and a current hash-bound promoted PASS over the PRD plus briefing/prototype hard authorities.
 - Planner: implementation plan has a repository-backed `## Implementation Delta`, evidence-triggered `## Engineering Controls` assigned to phases with verification/recovery where applicable, `status: approved`, and Gate C passes.
 - Dev: required phases and engineering controls implemented with focused tests and production-path evidence.
 - QA: `qa-report-{slug}.md` contains the independent verdict, including revalidation of any specialist correction.
@@ -41,7 +41,7 @@ No stage may synthesize missing requirements/spec/design/readiness/conformance/c
 
 Current-system fit and implementation-delta decisions are not new human gates. When repository evidence, compatibility, correctness, or an existing convention determines the recommended choice, the active agent writes it and Autopilot continues. Pause only when the alternatives materially change product behavior, scope, cost, data, security, or risk.
 
-Prototype ownership follows the same rule. An exact active-feature path plus matching manifest owner is `current`; a missing, cross-feature, or closed-feature candidate becomes `none` with an explicit historical exclusion, and the repository becomes the baseline. Agents state that resolution in chat and continue without a confirmation prompt. Pause only when the user explicitly wants a non-owned historical prototype to become new product authority, because that requires a new feature-owned artifact and may change scope.
+Prototype ownership follows the same rule. An exact active-feature path plus matching approved manifest owner is `current`; a missing, cross-feature, draft, or closed-feature candidate cannot bind the PRD, and the repository becomes the baseline only for genuinely nonvisual work recorded as `none`. Agents state that resolution in chat and continue without a confirmation prompt. Pause when visual scope lacks an approved owned prototype or the user wants a non-owned historical prototype to become new product authority.
 
 The same rule applies to bounded Tester/Pentester corrections: `review-cycle:advance` and configured cycle limits control execution, not routine confirmation prompts.
 
@@ -57,4 +57,4 @@ Stop immediately for:
 
 Autopilot never runs `feature:close`, commit, publish, deploy, or release without explicit human approval.
 
-The lightweight dossier may be updated throughout the route as a non-blocking context cache. Sheldon is an optional PRD enrichment step. Analyst, Architect, Discovery Design Doc, and PM remain opt-in compatibility consultants; they produce bounded advice and are never injected into the canonical chain by classification.
+The lightweight dossier and `mappings/{slug}/continuity.md` may be updated as non-blocking context caches; neither is scope, evidence, or a gate. Sheldon is mandatory PRD enrichment and approval. Analyst, Architect, Discovery Design Doc, and PM remain opt-in compatibility consultants; they produce bounded advice and are never injected into the canonical chain by classification.

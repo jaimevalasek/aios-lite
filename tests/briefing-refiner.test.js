@@ -56,7 +56,13 @@ Original solution.
 async function makeProject() {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'aioson-briefing-refiner-'));
   await fs.mkdir(path.join(dir, '.aioson', 'briefings', 'idea-one'), { recursive: true });
+  await fs.mkdir(path.join(dir, '.aioson', 'briefings', 'idea-two'), { recursive: true });
   await fs.writeFile(path.join(dir, '.aioson', 'briefings', 'idea-one', 'briefings.md'), BRIEFING, 'utf8');
+  await fs.writeFile(
+    path.join(dir, '.aioson', 'briefings', 'idea-two', 'briefings.md'),
+    '---\nprototype: not_applicable\n---\n\n# Nonvisual briefing\n',
+    'utf8'
+  );
   await writeBriefingRegistry(dir, {
     updated_at: '2026-06-08',
     briefings: [
@@ -171,6 +177,57 @@ test('briefing approve and unapprove still round-trip through shared registry', 
   entry = registry.briefings.find((item) => item.slug === 'idea-two');
   assert.equal(entry.status, 'draft');
   assert.equal(entry.approved_at, null);
+});
+
+test('briefing approval freezes an owned prototype and unapproval returns it to draft', async () => {
+  const dir = await makeProject();
+  const logger = { log() {}, error() {} };
+  const briefingDir = path.join(dir, '.aioson', 'briefings', 'idea-two');
+  await fs.writeFile(path.join(briefingDir, 'briefings.md'), '# Visual briefing\n', 'utf8');
+  await fs.writeFile(path.join(briefingDir, 'prototype.html'), '<button>Save</button>\n', 'utf8');
+  await fs.writeFile(
+    path.join(briefingDir, 'prototype-manifest.md'),
+    '---\nfeature: idea-two\nstatus: draft\napproved_at: null\n---\n\n# Prototype\n',
+    'utf8'
+  );
+
+  assert.equal((await runBriefingApprove({
+    args: [dir],
+    options: { slug: 'idea-two' },
+    logger
+  })).ok, true);
+  let manifest = await fs.readFile(path.join(briefingDir, 'prototype-manifest.md'), 'utf8');
+  assert.match(manifest, /^status: approved$/m);
+  assert.doesNotMatch(manifest, /^approved_at: null$/m);
+
+  assert.equal((await runBriefingUnapprove({
+    args: [dir],
+    options: { slug: 'idea-two' },
+    logger
+  })).ok, true);
+  manifest = await fs.readFile(path.join(briefingDir, 'prototype-manifest.md'), 'utf8');
+  assert.match(manifest, /^status: draft$/m);
+  assert.match(manifest, /^approved_at: null$/m);
+});
+
+test('briefing approval blocks an unresolved visual/prototype decision', async () => {
+  const dir = await makeProject();
+  const logger = { log() {}, error() {} };
+  await fs.writeFile(
+    path.join(dir, '.aioson', 'briefings', 'idea-two', 'briefings.md'),
+    '# Briefing without prototype resolution\n',
+    'utf8'
+  );
+  const result = await runBriefingApprove({
+    args: [dir],
+    options: { slug: 'idea-two' },
+    logger
+  });
+  assert.deepEqual(result, {
+    ok: false,
+    error: 'prototype_resolution_missing',
+    slug: 'idea-two'
+  });
 });
 
 test('briefing:unapprove refuses an approved briefing that already generated a PRD', async () => {

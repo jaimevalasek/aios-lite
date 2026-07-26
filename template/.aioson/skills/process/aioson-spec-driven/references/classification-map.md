@@ -3,7 +3,7 @@
 Classification controls depth, not agent count.
 
 - **Simple Plan:** an already-specified bounded technical outcome outside the feature workflow; direct Dev with proportionate verification.
-- **MICRO:** one bounded product capability; Product → Planner → Dev → QA with terse artifacts and narrow verification.
+- **MICRO:** one bounded product capability; Product → Sheldon → Planner → Dev → QA with terse artifacts and narrow verification.
 - **SMALL:** multiple related capabilities or one new boundary; the same route with broader AC/file coverage and a relevant regression pass.
 - **MEDIUM:** broader/riskier capabilities or integrations; the same route with deeper constraints, checkpoints, and risk-focused evidence.
 

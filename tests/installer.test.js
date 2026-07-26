@@ -141,6 +141,7 @@ test('installTemplate writes Forge metadata and gitignore entry', async () => {
   assert.equal(gitignore.includes('.aioson/runtime/'), true);
   assert.equal(gitignore.includes('.aioson/cloud-imports/'), true);
   assert.equal(gitignore.includes('.aioson/mcp/servers.local.json'), true);
+  assert.equal(gitignore.includes('mappings/'), true);
 });
 
 test('installTemplate appends keep rules for shared AIOS files even when project already ignores broad folders', async () => {

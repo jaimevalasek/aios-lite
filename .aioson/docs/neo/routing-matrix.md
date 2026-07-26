@@ -16,14 +16,15 @@ Choose the minimum owner whose contract matches the current evidence.
 | Missing or invalid project context | `@setup` |
 | Concrete bounded outcome passes Simple Plan gate | `@dev` in Simple Plan mode |
 | New or materially unresolved product scope | `@product` |
-| Product-ready PRD, no approved implementation plan | `@planner` |
+| Product-ready PRD without a current hash-bound Sheldon PASS | `@sheldon` |
+| Sheldon-approved PRD, no approved implementation plan | `@planner` |
 | Approved plan, implementation not started | `@dev` |
 | `dev-state.md` says `in_progress` | `@deyvin` for continuity or `@dev` for a new planned batch |
 | Implementation complete, no current QA verdict | `@qa` |
 | Current QA FAIL with bounded findings | `@dev`; machine-owned QA cycle controls the retry budget |
 | Current QA PASS with production-path evidence | Gate D complete; ask about close/new work without re-reviewing |
 
-Classification changes artifact and evidence depth, not the `product → planner → dev → qa` chain.
+Classification changes artifact and evidence depth, not the `product → sheldon → planner → dev → qa` chain.
 
 ## Direct intent routes
 
@@ -57,7 +58,7 @@ Classification changes artifact and evidence depth, not the `product → planner
 - Route from current intent and evidence, never from the last agent message alone.
 - Product scope is not missing for a qualifying Simple Plan.
 - New buttons, links, fields, menu items, or windows do not automatically require Product when placement and behavior are already specified.
-- Sheldon is PRD enrichment, not code archaeology, debugging, or a mandatory gate.
+- Sheldon is the mandatory independent PRD review before Planner, not code archaeology or debugging.
 - Tester, Pentester, and Validator run only when explicitly enabled or directly requested; classification alone is not a trigger.
 - Use `@scope-check` only for an explicitly requested intent-versus-plan or post-fix conformance check.
 - Use `@qa` for independent delivery verdict, not as an infinite refinement loop.

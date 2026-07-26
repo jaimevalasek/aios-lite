@@ -31,10 +31,10 @@ Soma de três fatores (cada um vale 0, 1 ou 2 pontos):
 A rota rastreada é a mesma nos três níveis:
 
 ```text
-[@briefing → @briefing-refiner] → @product → [@sheldon] → @planner → @dev → @qa
+[fontes → @briefing → @briefing-refiner → aprovação] → @product → @sheldon → @planner → @dev → @qa
 ```
 
-Briefing e Briefing Refiner são opcionais quando a direção já está clara. Sheldon é um enriquecimento opcional do mesmo PRD. A classificação regula profundidade, orçamento de arquivos, cobertura de risco e quantidade de evidência — não cria outra cadeia de agentes.
+Briefing e Briefing Refiner são opcionais quando a direção já está clara; quando o Briefing é iniciado, Refiner e aprovação fecham essa entrada. Sheldon é a revisão independente obrigatória do mesmo PRD. A classificação regula profundidade, orçamento de arquivos, cobertura de risco e quantidade de evidência — não cria outra cadeia de agentes.
 
 #### MICRO
 

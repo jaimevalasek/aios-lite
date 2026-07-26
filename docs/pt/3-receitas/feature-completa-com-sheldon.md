@@ -1,11 +1,11 @@
-# Receita: Feature completa com Sheldon opcional
+# Receita: Feature completa com revisão obrigatória do Sheldon
 
 > **Para quem é:** quem quer acompanhar uma feature rastreada do PRD ao veredito QA.
 
 ## A rota canônica
 
 ```text
-[@briefing → @briefing-refiner] → @product → [@sheldon] → @planner → @dev → @qa
+[fontes → @briefing → @briefing-refiner → aprovação] → @product → @sheldon → @planner → @dev → @qa
 ```
 
 As etapas entre colchetes são opcionais. MICRO, SMALL e MEDIUM percorrem a mesma rota; a classificação muda detalhe, orçamento e cobertura de risco.

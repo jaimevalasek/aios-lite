@@ -9,7 +9,7 @@
 A rota rastreada permanece:
 
 ```text
-[@briefing → @briefing-refiner] → @product → [@sheldon] → @planner → @dev → @qa
+[fontes → @briefing → @briefing-refiner → aprovação] → @product → @sheldon → @planner → @dev → @qa
 ```
 
 Use Orchestrator quando o próprio objetivo é coordenação: decompor uma investigação, sincronizar especialistas explicitamente solicitados ou acompanhar uma sessão com várias dependências.

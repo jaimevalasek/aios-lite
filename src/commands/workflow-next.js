@@ -43,6 +43,8 @@ const {
   FEATURE_WORKFLOW_BY_CLASSIFICATION,
   copyWorkflowMap
 } = require('../workflow-profile');
+const { reviewStatus } = require('../review-intelligence/engine');
+const { validateCurrentSheldonReview } = require('../lib/sheldon-review');
 
 const STATE_RELATIVE_PATH = '.aioson/context/workflow.state.json';
 const CONFIG_RELATIVE_PATH = '.aioson/context/workflow.config.json';
@@ -56,9 +58,8 @@ const DEFAULT_FEATURE_WORKFLOW_BY_CLASSIFICATION = copyWorkflowMap(
 // Stages eligible for autopilot handoff — the FULL feature chain (see
 // .aioson/docs/autopilot-handoff.md). Activation = auto_handoff: true in
 // project.context.md OR the seeded scheme (resolveAutopilotSignal). Two segments:
-//   1. PRD → plan → dev chain: @product writes the implementation-ready PRD
-//      and @planner turns it into executable vertical stages. @sheldon and all
-//      other specialists are explicit/evidence-triggered detours only.
+//   1. PRD → independent Sheldon review → plan → dev chain. Other specialists
+//      remain explicit/evidence-triggered detours.
 //   2. post-dev review cycle: @dev → initial @qa → enabled @tester/@pentester
 //      (when their @qa triggers fire) → final @qa → enabled @validator → STOPS
 //      before feature:close (human gate).
@@ -81,17 +82,29 @@ function normalizeClassification(value, fallback = 'MICRO') {
   return fallback;
 }
 
+function ensureSheldonBeforePlanner(sequence) {
+  const normalized = (Array.isArray(sequence) ? sequence : [])
+    .map(normalizeAgentName)
+    .filter(Boolean);
+  const productIndex = normalized.indexOf('product');
+  const plannerIndex = normalized.indexOf('planner');
+  if (productIndex === -1 || plannerIndex === -1 || plannerIndex < productIndex) return normalized;
+  const withoutSheldon = normalized.filter((stage) => stage !== 'sheldon');
+  withoutSheldon.splice(withoutSheldon.indexOf('planner'), 0, 'sheldon');
+  return withoutSheldon;
+}
+
 function buildDefaultWorkflowConfig() {
   return {
     version: 1,
     project: {
-      MICRO: ['setup', 'product', 'planner', 'dev', 'qa'],
-      SMALL: ['setup', 'product', 'planner', 'dev', 'qa'],
-      MEDIUM: ['setup', 'product', 'planner', 'dev', 'qa']
+      MICRO: ['setup', 'product', 'sheldon', 'planner', 'dev', 'qa'],
+      SMALL: ['setup', 'product', 'sheldon', 'planner', 'dev', 'qa'],
+      MEDIUM: ['setup', 'product', 'sheldon', 'planner', 'dev', 'qa']
     },
     feature: DEFAULT_FEATURE_WORKFLOW_BY_CLASSIFICATION,
     rules: {
-      required: ['dev'],
+      required: ['sheldon', 'dev'],
       allowDetours: true
     }
   };
@@ -159,6 +172,72 @@ async function readJsonIfExists(filePath) {
 async function writeJson(filePath, payload) {
   await ensureDir(path.dirname(filePath));
   await fs.writeFile(filePath, `${JSON.stringify(payload, null, 2)}\n`, 'utf8');
+}
+
+async function collectHandoffArtifactUris(targetDir, state, completedStage, technicalGate = null) {
+  const slug = state.featureSlug;
+  const addedAt = new Date().toISOString();
+  const candidate = (relativePath, kind) => ({
+    path: relativePath,
+    kind,
+    agent: completedStage,
+    added_at: addedAt
+  });
+  const candidates = [];
+
+  if (slug) {
+    const prd = `.aioson/context/prd-${slug}.md`;
+    const briefing = `.aioson/briefings/${slug}/briefings.md`;
+    const prototype = `.aioson/briefings/${slug}/prototype.html`;
+    const prototypeManifest = `.aioson/briefings/${slug}/prototype-manifest.md`;
+    const plan = `.aioson/context/implementation-plan-${slug}.md`;
+    const dossier = `.aioson/context/features/${slug}/dossier.md`;
+    const mapping = `mappings/${slug}/continuity.md`;
+
+    if (completedStage === 'product' || completedStage === 'sheldon') {
+      candidates.push(
+        candidate(prd, 'prd'),
+        candidate(briefing, 'briefing'),
+        candidate(prototype, 'prototype'),
+        candidate(prototypeManifest, 'manifest')
+      );
+      if (completedStage === 'sheldon') {
+        try {
+          const status = await reviewStatus({ rootDir: targetDir, featureSlug: slug });
+          const sheldon = (status.agents || []).find((item) => item.agent === 'sheldon');
+          if (sheldon?.report_path) candidates.push(candidate(sheldon.report_path, 'evidence'));
+        } catch {
+          // The handoff contract owns the blocking review check.
+        }
+      }
+    } else if (completedStage === 'planner') {
+      candidates.push(candidate(prd, 'prd'), candidate(plan, 'plan'));
+    } else if (completedStage === 'dev') {
+      candidates.push(
+        candidate(plan, 'plan'),
+        candidate('.aioson/context/dev-state.md', 'evidence'),
+        candidate(dossier, 'dossier')
+      );
+    } else if (completedStage === 'qa') {
+      candidates.push(candidate(`.aioson/context/qa-report-${slug}.md`, 'qa_report'));
+      if (technicalGate?.evidence_path) {
+        candidates.push(candidate(technicalGate.evidence_path, 'evidence'));
+      }
+    }
+    candidates.push(candidate(mapping, 'mapping'));
+  } else if (completedStage === 'setup') {
+    candidates.push(candidate('.aioson/context/project.context.md', 'other'));
+  } else if (completedStage === 'product') {
+    candidates.push(candidate('.aioson/context/prd.md', 'prd'));
+  } else if (completedStage === 'planner') {
+    candidates.push(candidate('.aioson/context/implementation-plan.md', 'plan'));
+  }
+
+  const present = [];
+  for (const item of candidates) {
+    if (await exists(path.join(targetDir, item.path))) present.push(item);
+  }
+  return present;
 }
 
 async function appendJsonLine(filePath, payload) {
@@ -233,6 +312,15 @@ async function readWorkflowConfig(targetDir) {
       ...(userConfig.rules || {})
     }
   };
+  for (const classification of ['MICRO', 'SMALL', 'MEDIUM']) {
+    merged.project[classification] = ensureSheldonBeforePlanner(merged.project[classification]);
+    merged.feature[classification] = ensureSheldonBeforePlanner(merged.feature[classification]);
+  }
+  merged.rules.required = Array.from(new Set([
+    ...((Array.isArray(merged.rules.required) ? merged.rules.required : []).map(normalizeAgentName)),
+    'sheldon',
+    'dev'
+  ]));
 
   return { configPath, config: merged, exists: true };
 }
@@ -365,10 +453,17 @@ async function validateStageArtifacts(targetDir, state, stage) {
   }
 
   if (stage === 'sheldon') {
-    // Sheldon enriches the PRD in place. The marker proves that the optional
-    // detour ran; no enrichment/spec package is created.
+    // Sheldon enriches the PRD in place; tracked features also require the
+    // current hash-bound review, not only the editable frontmatter marker.
     const prdPath = slug ? path.join(base, `prd-${slug}.md`) : path.join(base, 'prd.md');
-    return (await exists(prdPath)) && (await hasApprovedFrontmatter(prdPath, 'sheldon_review'));
+    if (!(await exists(prdPath)) || !(await hasApprovedFrontmatter(prdPath, 'sheldon_review'))) {
+      return false;
+    }
+    if (state.mode === 'feature' && slug) {
+      const review = await validateCurrentSheldonReview(targetDir, slug, prdPath);
+      return review.ok;
+    }
+    return true;
   }
 
   if (stage === 'orchestrator') {
@@ -658,6 +753,44 @@ async function loadOrCreateState(targetDir, options = {}) {
   }
 
   if (existing && typeof existing === 'object' && Array.isArray(existing.sequence)) {
+    const currentSequence = existing.sequence.map(normalizeAgentName);
+    const upgradedSequence = ensureSheldonBeforePlanner(currentSequence);
+    let upgradedStateChanged = false;
+    if (JSON.stringify(upgradedSequence) !== JSON.stringify(currentSequence)) {
+      existing.sequence = upgradedSequence;
+      existing.skipped = (existing.skipped || []).filter((stage) => normalizeAgentName(stage) !== 'sheldon');
+      upgradedStateChanged = true;
+    }
+
+    if (existing.featureSlug) {
+      const sheldonIndex = upgradedSequence.indexOf('sheldon');
+      const currentIndex = upgradedSequence.indexOf(normalizeAgentName(existing.current));
+      const nextIndex = upgradedSequence.indexOf(normalizeAgentName(existing.next));
+      const completed = (existing.completed || []).map(normalizeAgentName);
+      const skipped = (existing.skipped || []).map(normalizeAgentName);
+      const progressedPastSheldon = sheldonIndex !== -1 && (
+        completed.some((stage) => upgradedSequence.indexOf(stage) >= sheldonIndex)
+        || skipped.includes('sheldon')
+        || currentIndex > sheldonIndex
+        || nextIndex > sheldonIndex
+      );
+      if (progressedPastSheldon) {
+        const prdPath = path.join(targetDir, '.aioson/context', `prd-${existing.featureSlug}.md`);
+        const currentReview = await validateCurrentSheldonReview(
+          targetDir,
+          existing.featureSlug,
+          prdPath
+        );
+        if (!currentReview.ok) {
+          const downstream = new Set(upgradedSequence.slice(sheldonIndex));
+          existing.completed = completed.filter((stage) => !downstream.has(stage));
+          existing.skipped = skipped.filter((stage) => !downstream.has(stage));
+          existing.current = null;
+          existing.next = 'sheldon';
+          upgradedStateChanged = true;
+        }
+      }
+    }
     // SF-project-18: warn-on-mismatch only, never refuse — preserves
     // backwards-compat with environments that lack runtime telemetry.
     if (Array.isArray(existing.completed) && existing.completed.length > 0 && options.logger) {
@@ -669,7 +802,7 @@ async function loadOrCreateState(targetDir, options = {}) {
       : await inferCompletedStages(targetDir, reconciled.state);
     const merged = mergeInferredCompletedStages(reconciled.state, inferredCompleted);
     const finalReconciled = merged.changed ? reconcileWorkflowState(merged.state) : reconciled;
-    const changed = reconciled.changed || merged.changed || finalReconciled.changed;
+    const changed = upgradedStateChanged || reconciled.changed || merged.changed || finalReconciled.changed;
     if (changed) {
       await writeJson(statePath, finalReconciled.state);
     }
@@ -1204,6 +1337,8 @@ async function finalizeCurrentStage(targetDir, config, state, stageName) {
   return {
     state: reconciled.changed ? reconciled.state : nextState,
     completedStage: normalizedStage,
+    handoffContractOk: contractCheck.ok,
+    technicalGate: techGate,
     ...(correctionCycleResolution ? { correctionCycleResolution } : {}),
     ...(correctionCycleReset ? { correctionCycleReset } : {}),
     ...(auditCodeSummary ? { auditCode: auditCodeSummary } : {})
@@ -1249,6 +1384,11 @@ function applySkip(config, state, target) {
   const toSkip = state.sequence.slice(currentIndex, targetIndex);
   if (toSkip.some((agent) => normalizeAgentName(agent) === 'dev')) {
     throw new Error('Cannot skip @dev because it is mandatory.');
+  }
+  const required = new Set((config.rules?.required || []).map(normalizeAgentName));
+  const skippedRequired = toSkip.find((agent) => required.has(normalizeAgentName(agent)));
+  if (skippedRequired) {
+    throw new Error(`Cannot skip @${normalizeAgentName(skippedRequired)} because it is mandatory.`);
   }
 
   const skipped = Array.from(new Set([...(state.skipped || []), ...toSkip]));
@@ -1854,6 +1994,7 @@ async function runWorkflowNext({ args, options, logger, t }) {
   let completedStage = null;
   let reviewCycleTransition = null;
   let reviewCycleResolution = null;
+  let completionEvidence = null;
 
   if (options.complete || options['complete-current']) {
     // F3 (workflow-handoff-integrity v1.9.6) — pending-decisions guard.
@@ -1991,6 +2132,7 @@ async function runWorkflowNext({ args, options, logger, t }) {
     }
     state = finalized.state;
     completedStage = finalized.completedStage;
+    completionEvidence = finalized;
     reviewCycleTransition = finalized.correctionCycle || null;
     reviewCycleResolution = finalized.correctionCycleResolution || null;
     if (finalized.alreadyCompleted) {
@@ -2136,23 +2278,28 @@ async function runWorkflowNext({ args, options, logger, t }) {
   if (completedStage || reviewCycleTransition || !activation.agent) {
     const handoffData = buildWorkflowHandoff(state, completedStage, activation.agent);
     handoffData.autonomyMode = activation.effectiveMode || null;
+    const artifactUris = completedStage
+      ? await collectHandoffArtifactUris(
+          targetDir,
+          state,
+          completedStage,
+          completionEvidence?.technicalGate || null
+        )
+      : [];
     handoffData.protocol = buildWorkflowHandoffProtocol(state, completedStage, activation.agent, {
       autonomyMode: activation.effectiveMode || null,
-      handoffContractOk: true,
-      technicalGateOk: true,
-      artifactUris: []
+      handoffContractOk: completionEvidence?.handoffContractOk === true,
+      technicalGateOk: completionEvidence?.technicalGate?.ok === true,
+      artifactUris
     });
     const handoffValidation = await validateHandoffProtocol(targetDir, handoffData.protocol);
     if (!handoffValidation.ok) {
-      // SF-project-17: the validator currently returns errors for soft
-      // conditions (missing manifest, unknown capability) that occur during
-      // normal bootstrap. Treating them as blockers would break the workflow
-      // for any agent whose manifest has not been committed yet. Until the
-      // validator is refactored to separate warnings from hard contract
-      // violations, this caller emits a warning and continues — see
-      // SF-project-17 dev_session_note.
-      logErrorLine('Handoff protocol warning:');
-      for (const err of handoffValidation.errors) logErrorLine(`  - ${err}`);
+      if (completedStage) {
+        throw new Error(
+          `[Handoff Protocol BLOCKED]\n${handoffValidation.errors.map((item) => `  - ${item}`).join('\n')}`
+        );
+      }
+      for (const err of handoffValidation.errors) logErrorLine(`Handoff protocol pending: ${err}`);
     }
     await writeHandoff(targetDir, handoffData);
   }

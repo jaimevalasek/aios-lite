@@ -1,0 +1,54 @@
+{
+  "agent_id": "sheldon",
+  "version": "1.0",
+  "display_name": "Sheldon",
+  "capabilities": [
+    {
+      "id": "review_product_scope",
+      "category": "verify",
+      "description": "Independently challenge and enrich the PRD against raw sources, briefing, approved prototype, repository evidence, and source-promise coverage before planning.",
+      "inputs": [
+        {
+          "type": "artifact",
+          "path_pattern": ".aioson/context/prd-{slug}.md",
+          "required": true
+        },
+        {
+          "type": "artifact",
+          "path_pattern": ".aioson/briefings/{slug}/briefings.md",
+          "required": false
+        },
+        {
+          "type": "artifact",
+          "path_pattern": ".aioson/briefings/{slug}/prototype.html",
+          "required": false
+        },
+        {
+          "type": "artifact",
+          "path_pattern": ".aioson/briefings/{slug}/prototype-manifest.md",
+          "required": false
+        }
+      ],
+      "outputs": [
+        {
+          "type": "artifact",
+          "path_pattern": ".aioson/context/prd-{slug}.md"
+        },
+        {
+          "type": "artifact",
+          "path_pattern": ".aioson/context/reviews/{slug}/reports/sheldon-*.json"
+        }
+      ]
+    }
+  ],
+  "autonomy_modes": [
+    "guarded"
+  ],
+  "default_mode": "guarded",
+  "supported_tools": [
+    "codex",
+    "claude",
+    "opencode"
+  ],
+  "risk_profile": "medium"
+}

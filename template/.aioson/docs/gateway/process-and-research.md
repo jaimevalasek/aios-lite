@@ -10,16 +10,16 @@ triggers: [PRD, implementation plan, QA, process skill, research cache, web sear
 
 Canonical feature artifacts:
 
-- `prd-{slug}.md`: Product-owned specification authority, optionally enriched in place by Sheldon.
+- `prd-{slug}.md`: Product-owned specification authority, independently enriched and hash-bound approved in place by Sheldon.
 - `implementation-plan-{slug}.md`: Planner-owned vertical executable stages.
 - `qa-report-{slug}.md`: independent delivery verdict.
 - `.aioson/context/project-pulse.md`: short crash-recovery heartbeat updated at agent completion.
 
-MICRO, SMALL, and MEDIUM use the same Product → Planner → Dev → QA route; classification controls depth/budgets, not extra documents.
+MICRO, SMALL, and MEDIUM use the same Product → Sheldon → Planner → Dev → QA route; classification controls depth/budgets, not extra documents. Briefing and Briefing Refiner are pre-product intake when raw sources need framing, not classification-driven extra stages.
 
 For tracked features, load `.aioson/docs/feature-completeness-contract.md` and close:
 
-`CAP → current-system fit → AC → implementation delta → vertical phase → exact files → executable check → production-path evidence`.
+`source file fingerprint → PROM → Product decision → CAP → current-system fit → AC → implementation delta → vertical phase → exact files → executable check → production-path evidence`.
 
 Product, Sheldon, Planner, Dev, and QA load `.aioson/skills/process/aioson-spec-driven/SKILL.md` plus only their role reference at phase start. Optional specialists load it only for a concrete detour. Bare Deyvin activation-only recovery does not.
 
@@ -38,7 +38,7 @@ audit, load `.aioson/skills/process/prompt-sharpener/SKILL.md` when its trigger
 matches. Load its diagnostics reference only for a multi-prompt audit or adoption
 assessment.
 
-Review intelligence adds no gate. Stop after two passes. If its skill/CLI is unavailable, run the equivalent review manually and preserve existing workflow behavior.
+Review intelligence normally adds no gate. The canonical Sheldon specification review is the one exception: it is the mandatory hash-bound pre-Planner approval and stops after at most two passes. If its skill/CLI is unavailable, run the equivalent review manually but do not claim a machine-current review.
 
 ## Skill registry and usage evidence
 

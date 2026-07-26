@@ -20,6 +20,7 @@ const { buildPathGuardBlock } = require('../src/path-guard');
 const { openRuntimeDb } = require('../src/runtime-store');
 const { CANONICAL_LENSES } = require('../src/lib/feature-completeness');
 const { runHarnessCheck } = require('../src/commands/harness-check');
+const { qaExecutionReport } = require('./helpers/feature-evidence');
 
 describe('workflow engine hardening', () => {
   let tmpDir;
@@ -302,6 +303,16 @@ describe('workflow engine hardening', () => {
       path.join(dir, '.aioson', 'context', 'spec-feat.md'),
       '---\ngate_execution: approved\n---\n## QA Sign-off\n\n**Verdict:** PASS\n'
     );
+    await fs.writeFile(
+      path.join(dir, '.aioson', 'context', 'qa-report-feat.md'),
+      qaExecutionReport({
+        slug: 'feat',
+        cap: 'CAP-feat-verify',
+        ac: 'AC-feat-01',
+        command: 'node --test tests/feat.test.js',
+        entry: 'node --test tests/feat.test.js'
+      })
+    );
     const check = await validateHandoffContract(
       dir,
       { mode: 'feature', featureSlug: 'feat', classification: 'SMALL', sequence: ['qa'] },
@@ -393,6 +404,16 @@ describe('workflow engine hardening', () => {
     await fs.writeFile(
       path.join(dir, '.aioson', 'context', 'spec-feat.md'),
       '---\ngate_execution: approved\n---\n## QA Sign-off\n\n**Verdict:** PASS\n'
+    );
+    await fs.writeFile(
+      path.join(dir, '.aioson', 'context', 'qa-report-feat.md'),
+      qaExecutionReport({
+        slug: 'feat',
+        cap: 'CAP-feat-verify',
+        ac: 'AC-feat-01',
+        command: 'node --test tests/feat.test.js',
+        entry: 'node --test tests/feat.test.js'
+      })
     );
     const ledgerDir = path.join(dir, '.aioson', 'context', 'features', 'feat');
     await fs.mkdir(ledgerDir, { recursive: true });
@@ -510,7 +531,7 @@ describe('workflow engine hardening', () => {
 classification: MEDIUM
 product_scope: approved
 prd_ready: approved
-sheldon_review: not_requested
+sheldon_review: approved
 ---
 # PRD
 ## Feature Capability Map
@@ -531,12 +552,21 @@ status: approved
 |---|---|---|---|
 | CAP-feat-01 | 1 | src/feat.js, tests/feat.test.js | node --test |
 `);
-    await fs.writeFile(path.join(dir, '.aioson', 'context', 'qa-report-feat.md'), '---\nverdict: PASS\n---\n# QA\n');
+    await fs.writeFile(
+      path.join(dir, '.aioson', 'context', 'qa-report-feat.md'),
+      qaExecutionReport({
+        slug: 'feat',
+        cap: 'CAP-feat-01',
+        ac: 'AC-feat-01',
+        command: 'node --test tests/feat.test.js',
+        entry: 'node src/feat.js'
+      })
+    );
     await fs.writeFile(path.join(dir, 'src', 'feat.js'), 'module.exports = true;\n');
     await fs.writeFile(path.join(dir, 'tests', 'feat.test.js'), "const test=require('node:test'); const assert=require('node:assert/strict'); test('AC-feat-01',()=>assert.ok(true));\n");
     const check = await validateHandoffContract(
       dir,
-      { mode: 'feature', featureSlug: 'feat', classification: 'MEDIUM', sequence: ['product', 'planner', 'dev', 'qa'] },
+      { mode: 'feature', featureSlug: 'feat', classification: 'MEDIUM', sequence: ['product', 'sheldon', 'planner', 'dev', 'qa'] },
       'qa'
     );
     assert.equal(check.ok, true, JSON.stringify(check.missing));

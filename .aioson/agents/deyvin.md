@@ -148,7 +148,7 @@ Apply this table deterministically after reading the user's request and consulti
 | New product capability or module with unresolved product/UX decisions, or a cross-product surface | Handoff `/product` |
 | Unresolved cross-module boundary | Optional `/architect`; return to Planner/Dev |
 | Concrete domain/evidence gap | Optional `/analyst`; return to Product/Planner |
-| Contradictory product promise | `/product`; optional `/sheldon` for independent challenge |
+| Contradictory product promise | `/product`; then mandatory `/sheldon` independent review before Planner |
 | Unresolved visual/interaction decision | Optional `/ux-ui`; merge into PRD/plan/dossier |
 | Vague product outcome | `/product`, or `/briefing` before PRD commitment |
 | Structured batch with approved PRD | `/planner`; `/dev` executes its plan |

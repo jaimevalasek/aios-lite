@@ -679,9 +679,9 @@ module.exports = {
     note_micro_scope:
       'Mantén el alcance de implementacion minimo y evita agentes opcionales.',
     note_product_optional:
-      'Para trabajo tecnico acotado y ya especificado, usa Simple Plan; las features MICRO rastreadas usan Product → Planner → Dev → QA.',
+      'Para trabajo tecnico acotado y ya especificado, usa Simple Plan; las features MICRO rastreadas usan Product → Sheldon → Planner → Dev → QA.',
     note_feature_flow:
-      'Flujo para nueva feature (tras la configuracion inicial): @product → @planner → @dev → @qa. Sheldon es opcional. Un PRD, un plan y un veredicto de QA.'
+      'Flujo para nueva feature (tras la configuracion inicial): @product → @sheldon → @planner → @dev → @qa. Sheldon realiza la revision independiente obligatoria del PRD. Un PRD, un plan y un veredicto de QA.'
   },
   parallel_init: {
     context_missing:

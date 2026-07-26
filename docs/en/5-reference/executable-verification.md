@@ -10,7 +10,7 @@
 
 ## The idea in one paragraph
 
-AIOSON's canonical authorities are one PRD, one implementation plan, and one QA verdict. The executable-verification commands are optional evidence that can make selected criteria deterministic or compile an explicitly configured harness workflow. They do not create mandatory specification artifacts or workflow gates. The default route remains Product → optional Sheldon → Planner → DEV → QA at every classification. Scope Check and Validator are opt-in specialists.
+AIOSON's canonical authorities are one Sheldon-reviewed PRD, one implementation plan, and one QA verdict. The executable-verification commands are optional evidence that can make selected criteria deterministic or compile an explicitly configured harness workflow. They do not create mandatory specification artifacts or workflow gates. The default route remains Product → Sheldon → Planner → DEV → QA at every classification. Scope Check and Validator are opt-in specialists.
 
 The theme ships in five phases.
 
@@ -115,7 +115,7 @@ The Wave column is what Phase 5 compiles into `parallel()` blocks.
 
 ## Phase 5 (v1.28.0) — Lane B: `forge:compile` + `@forge-run`
 
-Lane B is an **opt-in, additive** compiled-harness path. Classification does not activate it. It applies only when the user deliberately maintains the optional contract and Wave metadata; the canonical Product → Planner → DEV → QA route remains authoritative.
+Lane B is an **opt-in, additive** compiled-harness path. Classification does not activate it. It applies only when the user deliberately maintains the optional contract and Wave metadata; the canonical Product → Sheldon → Planner → DEV → QA route remains authoritative.
 
 ```bash
 # Compile the feature into a forge-run.workflow.js
@@ -143,7 +143,7 @@ See [`forge:compile`](./cli-reference.md#forgecompile) in the CLI reference and 
 ## How the phases fit together
 
 ```text
-Product ► optional Sheldon ► Planner ► DEV ► QA
+Product ► Sheldon ► Planner ► DEV ► QA
                               │
                               ├► harness:check when the approved plan enables it
                               ├► spec:analyze when explicitly planned/requested

@@ -20,7 +20,7 @@ Imagine you want to build a house.
 
 - **Briefing** listens to your raw idea (the "napkin sketch") and hands back a structured briefing — with risks and open questions — *before* it becomes a project.
 - **Product** understands what you want to build and why — and writes the PRD.
-- **Sheldon** optionally enriches Product's PRD in place before planning.
+- **Sheldon** independently enriches and hash-bind approves Product's PRD in place before planning.
 - **Planner** turns the approved PRD into one vertical implementation plan.
 - **Analyst** discovers what already exists in the codebase and what's missing when explicitly requested.
 - **Architect** resolves a named technical boundary or decision when explicitly requested.
@@ -86,7 +86,7 @@ Agents are *prompts*, not plugins. They live in `.md` files and your AI client r
 - **You want to explore an idea freely** in 5 minutes. AIOSON asks for setup first.
 - **You won't open the project again.** The value is precisely in repeated sessions.
 
-For these cases, AIOSON applies the same Product → Planner → DEV → QA chain at **MICRO** depth, or uses the separate Simple Plan lane for an already-specified bounded technical outcome. If even that does not fit, do not force it.
+For these cases, AIOSON applies the same Product → Sheldon → Planner → DEV → QA chain at **MICRO** depth, or uses the separate Simple Plan lane for an already-specified bounded technical outcome. If even that does not fit, do not force it.
 
 ## Next step
 

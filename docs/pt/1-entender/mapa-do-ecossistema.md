@@ -71,7 +71,7 @@
 
 A ordem é a mesma em MICRO, SMALL e MEDIUM:
 
-`@setup → [@briefing → @briefing-refiner] → @product → [@sheldon] → @planner → @dev → @qa`
+`@setup → [fontes → @briefing → @briefing-refiner → aprovação] → @product → @sheldon → @planner → @dev → @qa`
 
 Briefing/Refiner e Sheldon são opcionais. A classificação muda profundidade e orçamento. Especialistas entram somente por pedido explícito ou necessidade nomeada.
 
@@ -207,7 +207,7 @@ Você > @product
 @product > Vamos começar uma feature. Como ela se chama? Qual o problema?
 Você > "checkout-stripe", finalizar pedido com cartão.
 @product > [...várias perguntas...] PRD criado em context/prd-checkout-stripe.md.
-@product > Próximo: @sheldon para enriquecimento opcional, ou @planner.
+@product > Próximo: @sheldon para revisão independente obrigatória antes do @planner.
 
 ─── Sessão 2 (no dia seguinte) ───
 Você > @neo

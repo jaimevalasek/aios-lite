@@ -12,7 +12,7 @@ triggers: [streamlined workflow, lean lane, workflow.config.json, fewer agents, 
 The canonical SMALL/MEDIUM route is:
 
 ```text
-optional briefing/refinement → product → planner → dev → qa
+optional raw sources/briefing/refinement/approval → product → sheldon → planner → dev → qa
 ```
 
 It deliberately contains one PRD, one implementation plan, and one QA verdict. Classification changes depth inside those artifacts; it does not add default agents or documents.
@@ -21,28 +21,28 @@ It deliberately contains one PRD, one implementation plan, and one QA verdict. C
 {
   "version": 1,
   "feature": {
-    "MICRO": ["product", "planner", "dev", "qa"],
-    "SMALL": ["product", "planner", "dev", "qa"],
-    "MEDIUM": ["product", "planner", "dev", "qa"]
+    "MICRO": ["product", "sheldon", "planner", "dev", "qa"],
+    "SMALL": ["product", "sheldon", "planner", "dev", "qa"],
+    "MEDIUM": ["product", "sheldon", "planner", "dev", "qa"]
   },
   "project": {
-    "MICRO": ["setup", "product", "planner", "dev", "qa"],
-    "SMALL": ["setup", "product", "planner", "dev", "qa"],
-    "MEDIUM": ["setup", "product", "planner", "dev", "qa"]
+    "MICRO": ["setup", "product", "sheldon", "planner", "dev", "qa"],
+    "SMALL": ["setup", "product", "sheldon", "planner", "dev", "qa"],
+    "MEDIUM": ["setup", "product", "sheldon", "planner", "dev", "qa"]
   },
-  "rules": { "required": ["dev"], "allowDetours": true }
+  "rules": { "required": ["sheldon", "dev"], "allowDetours": true }
 }
 ```
 
 ## Role boundaries
 
 - Product creates an implementation-ready PRD with capabilities, current-system fit, and acceptance criteria.
-- Sheldon may challenge and enrich that same PRD in place when requested or when a concrete contradiction warrants independent review.
+- Sheldon must challenge and enrich that same PRD in place and promote a current hash-bound PASS before Planner.
 - Planner inspects the repository, records the per-path implementation delta, and writes vertical executable phases with evidence-triggered engineering controls.
 - Dev implements and integrates those phases and controls through the production path.
 - QA independently proves the real application behavior and revalidates any bounded specialist-authored correction.
 
-Sheldon, Analyst, Architect, PM, UX/UI, Discovery Design Doc, Scope Check, Orchestrator, Tester, Pentester, and Validator remain available to every classification as opt-in detours. Use one for a named uncertainty or triggered review, then merge the conclusion into a canonical artifact. Tester/Pentester may apply only their bounded, evidence-backed corrections and must return final acceptance to QA. The lightweight feature dossier is a non-blocking context cache, not a fourth deliverable.
+Analyst, Architect, PM, UX/UI, Discovery Design Doc, Scope Check, Orchestrator, Tester, Pentester, and Validator remain available to every classification as opt-in detours. Use one for a named uncertainty or triggered review, then merge the conclusion into a canonical artifact. Tester/Pentester may apply only their bounded, evidence-backed corrections and must return final acceptance to QA. The lightweight feature dossier and continuity mapping are non-blocking context caches, not extra deliverables.
 
 ## Compatibility
 

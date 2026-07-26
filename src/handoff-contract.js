@@ -16,6 +16,7 @@ const {
   findingsThroughStage
 } = require('./lib/feature-completeness');
 const { isCanonicalPlannerState } = require('./workflow-profile');
+const { validateCurrentSheldonReview } = require('./lib/sheldon-review');
 
 // Contract definitions per agent stage
 const CONTRACTS = {
@@ -335,8 +336,9 @@ async function validateHandoffContract(targetDir, state, stageName, options = {}
       classification,
       force: isCanonicalPlannerState(state) && ['product', 'sheldon', 'planner', 'dev', 'qa'].includes(stageName),
       preImplementation: stageName === 'planner',
-      includeExecution: (stageName === 'dev' || stageName === 'qa') && !options.structuralOnly,
-      includeExecutionStructure: (stageName === 'dev' || stageName === 'qa') && options.structuralOnly
+      includeExecution: stageName === 'qa' && !options.structuralOnly,
+      includeExecutionStructure: stageName === 'dev'
+        || (stageName === 'qa' && options.structuralOnly)
     });
     if (completeness.applicable) {
       let completenessStage = {
@@ -379,6 +381,14 @@ async function validateHandoffContract(targetDir, state, stageName, options = {}
     if (String(review || '').toLowerCase() !== 'approved') {
       missing.push('PRD sheldon_review must be approved before planning');
     }
+    if (state.featureSlug) {
+      const currentReview = await validateCurrentSheldonReview(
+        targetDir,
+        state.featureSlug,
+        prdPath
+      );
+      if (!currentReview.ok) missing.push(`Sheldon review: ${currentReview.message}`);
+    }
   }
 
   if (stageName === 'product' && isCanonicalPlannerState(state)) {
@@ -409,7 +419,15 @@ async function validateHandoffContract(targetDir, state, stageName, options = {}
     const prdReady = prd ? parseFrontmatterValue(prd, 'prd_ready') : null;
     if (String(productScope || '').toLowerCase() !== 'approved'
       || String(prdReady || '').toLowerCase() !== 'approved') {
-      missing.push('PRD product_scope and prd_ready must be approved before development; Sheldon review is optional');
+      missing.push('PRD product_scope and prd_ready must be approved before development');
+    }
+    if (state.featureSlug) {
+      const currentReview = await validateCurrentSheldonReview(
+        targetDir,
+        state.featureSlug,
+        prdPath
+      );
+      if (!currentReview.ok) missing.push(`Sheldon review: ${currentReview.message}`);
     }
     const planPath = path.join(
       targetDir,

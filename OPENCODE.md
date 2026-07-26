@@ -60,4 +60,6 @@ Read `.aioson/learnings/INDEX.md` if it exists. Each line is a project gotcha or
 
 ## Rule
 Do not duplicate rules outside `.aioson/`.
+
+The canonical feature chain is `product → sheldon → planner → dev → qa`. Raw feature sources enter through `plans/{slug}/`, then `briefing → briefing-refiner → user approval`; an approved feature-owned prototype is binding for visual surfaces. Before feature compaction, use `mappings/{slug}/continuity.md` only as temporary noncanonical continuity according to `.aioson/docs/feature-continuity-mapping.md`.
 <!-- AIOSON:END -->

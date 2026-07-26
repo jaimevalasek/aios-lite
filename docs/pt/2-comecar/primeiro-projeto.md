@@ -276,7 +276,7 @@ Daqui a três meses, alguém (você ou outra IA) pode abrir esse projeto e enten
 
 ## E quando eu quiser uma feature nova?
 
-Volte para o passo 4. Toda feature rastreada segue `[@briefing → @briefing-refiner] → @product → [@sheldon] → @planner → @dev → @qa`; MICRO, SMALL e MEDIUM mudam a profundidade, não a cadeia. O `@setup` não precisa rodar de novo (já tem o contexto).
+Volte para o passo 4. Toda feature rastreada segue `[fontes → @briefing → @briefing-refiner → aprovação] → @product → @sheldon → @planner → @dev → @qa`; MICRO, SMALL e MEDIUM mudam a profundidade, não a cadeia. O `@setup` não precisa rodar de novo (já tem o contexto).
 
 Se você se perder no meio, lembre:
 

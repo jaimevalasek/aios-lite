@@ -59,7 +59,7 @@ Specify → Research → Requirements → Design → Tasks → Execute → State
 O SDD escala a profundidade, não o número de documentos nem a cadeia:
 
 ```text
-[@briefing → @briefing-refiner] → @product → [@sheldon] → @planner → @dev → @qa
+[fontes → @briefing → @briefing-refiner → aprovação] → @product → @sheldon → @planner → @dev → @qa
 ```
 
 - Briefing e Briefing Refiner são enquadramento opcional antes do PRD.
@@ -76,7 +76,7 @@ O SDD escala a profundidade, não o número de documentos nem a cadeia:
 | Fase | MICRO | SMALL | MEDIUM |
 |---|---|---|---|
 | Specify (PRD) | obrigatória | obrigatória | obrigatória |
-| Enriquecimento Sheldon | opcional | opcional | opcional |
+| Revisão independente Sheldon | obrigatória | obrigatória | obrigatória |
 | Plano do Planner | curto | vertical completo | vertical completo, com riscos e integrações nomeados |
 | Execute (`@dev`) | orçamento reduzido | orçamento padrão | orçamento ampliado; faixas DEV se declaradas |
 | QA | ACs alterados + smoke | todos os ACs + regressão focada + smoke | negativos/integrações profundos nos riscos nomeados |

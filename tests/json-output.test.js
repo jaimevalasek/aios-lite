@@ -7,6 +7,7 @@ const os = require('node:os');
 const path = require('node:path');
 const { spawn } = require('node:child_process');
 const { execFileSync } = require('node:child_process');
+const { approveAndSealSheldonReview } = require('./helpers/feature-evidence');
 
 async function makeTempDir() {
   return fs.mkdtemp(path.join(os.tmpdir(), 'aioson-json-cli-'));
@@ -290,6 +291,7 @@ test('workflow:next --suggest --json returns a deterministic next command', asyn
     'utf8'
   );
   await fs.writeFile(path.join(dir, '.aioson/context/prd-protocol-contracts.md'), productReadyPrd('protocol-contracts'), 'utf8');
+  await approveAndSealSheldonReview(dir, 'protocol-contracts');
   await fs.writeFile(path.join(dir, '.aioson/context/implementation-plan-protocol-contracts.md'), approvedPlan('protocol-contracts'), 'utf8');
   await fs.writeFile(path.join(dir, '.aioson/context/project-pulse.md'), '# Pulse\n', 'utf8');
   await fs.writeFile(path.join(dir, '.aioson/context/dev-state.md'), '# Dev State\n', 'utf8');
@@ -299,10 +301,10 @@ test('workflow:next --suggest --json returns a deterministic next command', asyn
       version: 1,
       mode: 'feature',
       classification: 'SMALL',
-      sequence: ['product', 'planner', 'dev', 'qa'],
+      sequence: ['product', 'sheldon', 'planner', 'dev', 'qa'],
       current: 'dev',
       next: 'qa',
-      completed: ['product', 'planner'],
+      completed: ['product', 'sheldon', 'planner'],
       skipped: [],
       featureSlug: 'protocol-contracts',
       detour: null,
@@ -723,7 +725,7 @@ test('workflow:plan --json returns workflow payload', async () => {
   assert.equal(parsed.ok, true);
   assert.equal(parsed.classification, 'SMALL');
   assert.equal(Array.isArray(parsed.commands), true);
-  assert.deepEqual(parsed.commands, ['@setup', '@product', '@planner', '@dev', '@qa']);
+  assert.deepEqual(parsed.commands, ['@setup', '@product', '@sheldon', '@planner', '@dev', '@qa']);
 });
 
 test('parallel:init --json returns structured parallel workspace payload', async () => {

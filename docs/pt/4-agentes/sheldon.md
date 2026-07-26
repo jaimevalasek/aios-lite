@@ -1,4 +1,4 @@
-# @sheldon — Enriquecimento opcional do PRD
+# @sheldon — Revisão independente obrigatória do PRD
 
 > **Para quem é:** quem já tem um PRD e quer uma revisão crítica antes do plano de implementação.
 
@@ -54,4 +54,4 @@ Isso inclui corrigir um protótipo legado ligado por engano: Sheldon valida stat
 
 - [Ficha do @product](./product.md)
 - [Ficha do @planner](./planner.md)
-- [Feature completa com Sheldon opcional](../3-receitas/feature-completa-com-sheldon.md)
+- [Feature completa com revisão obrigatória do Sheldon](../3-receitas/feature-completa-com-sheldon.md)

@@ -12,7 +12,7 @@
 |---|---|
 | [loop-guardrails.md](./loop-guardrails.md) | Contrato verificável para o self:loop: scope guard, budget, human gates, criteria evaluation (v1.22.0) |
 | [harness-retro.md](./harness-retro.md) | Minerar o histórico de falhas de uma feature sem LLM — dossiê retrospectivo + harness:preview (v1.23.0) |
-| [autopilot-handoff.md](./autopilot-handoff.md) | Autopilot canônico: Product → Sheldon opcional → Planner → DEV → QA; especialistas opt-in e fechamento humano |
+| [autopilot-handoff.md](./autopilot-handoff.md) | Autopilot canônico: Product → Sheldon → Planner → DEV → QA; revisão Sheldon obrigatória, especialistas opt-in e fechamento humano |
 | [feature-dossier.md](./feature-dossier.md) | Dossier de feature: ponto único de verdade (spec, plano, histórico, status) |
 | [agent-chain-continuity.md](./agent-chain-continuity.md) | Sistema de continuidade entre sessões — Fases 1–8 (dev-resume, drift detection, handoff v2) |
 | [sdd-framework.md](./sdd-framework.md) | Spec-Driven Development: Constitution, project-pulse, skill aioson-spec-driven, MICRO/SMALL/MEDIUM |

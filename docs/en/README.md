@@ -23,7 +23,7 @@ This is the entry door to the English documentation. It is not an alphabetical i
 ### I want a recipe ready for my case
 
 **Canonical trail — how features reach delivery:**
-1. **[Full feature with optional @sheldon enrichment](./3-recipes/full-feature-with-sheldon.md)** — `@product → optional @sheldon → @planner → @dev → @qa`
+1. **[Full feature with mandatory @sheldon review](./3-recipes/full-feature-with-sheldon.md)** — `@product → @sheldon → @planner → @dev → @qa`
 2. [From idea to PRD via @briefing](./3-recipes/from-idea-to-prd-via-briefing.md) — when the idea is still vague
 3. [Continuity between sessions](./3-recipes/continuity-between-sessions.md) — feature dossier, dev-resume, drift detection
 

@@ -7,6 +7,7 @@ const os = require('node:os');
 const path = require('node:path');
 
 const { runWorkflowStatus } = require('../src/commands/workflow-status');
+const { approveAndSealSheldonReview } = require('./helpers/feature-evidence');
 
 async function makeTempDir() {
   return fs.mkdtemp(path.join(os.tmpdir(), 'aioson-workflow-status-'));
@@ -59,6 +60,7 @@ async function seedFeatureWorkflow(dir, { gatePlanApproved = false } = {}) {
     path.join(dir, '.aioson/context/prd-protocol-contracts.md'),
     `---\nclassification: SMALL\nproduct_scope: approved\nprd_ready: approved\n---\n# Feature PRD\n\n## Feature Capability Map\n\n| CAP | Promised outcome | Actor / trigger | Scope decision | Rationale |\n|---|---|---|---|---|\n| CAP-protocol-01 | Protocol behavior is delivered | User starts the app | required | Core promise |\n\n## Acceptance Criteria\n\n| AC | CAP | Observable behavior | Evidence |\n|---|---|---|---|\n| AC-protocol-01 | CAP-protocol-01 | Protocol behavior works | focused test |\n`
   );
+  await approveAndSealSheldonReview(dir, 'protocol-contracts');
   if (gatePlanApproved) {
     await writeFileEnsured(
       path.join(dir, '.aioson/context/implementation-plan-protocol-contracts.md'),
@@ -75,10 +77,10 @@ async function seedFeatureWorkflow(dir, { gatePlanApproved = false } = {}) {
       version: 1,
       mode: 'feature',
       classification: 'SMALL',
-      sequence: ['product', 'planner', 'dev', 'qa'],
+      sequence: ['product', 'sheldon', 'planner', 'dev', 'qa'],
       current: 'dev',
       next: 'qa',
-      completed: ['product', 'planner'],
+      completed: ['product', 'sheldon', 'planner'],
       skipped: [],
       featureSlug: 'protocol-contracts',
       detour: null,

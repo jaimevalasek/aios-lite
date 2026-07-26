@@ -11,7 +11,7 @@ Um manifesto novo habilita somente:
 
 `tester`, `pentester`, `validator` e todas as faixas de desenvolvimento começam desligados. A classificação MICRO/SMALL/MEDIUM nunca os habilita.
 
-A rota canônica continua Product → Planner → DEV → QA. Faixas opcionais rodam dentro do DEV; revisores opcionais só podem rodar depois do QA quando estiverem explicitamente habilitados e tiverem um gatilho concreto.
+A rota canônica continua Product → Sheldon → Planner → DEV → QA. Faixas opcionais rodam dentro do DEV; revisores opcionais só podem rodar depois do QA quando estiverem explicitamente habilitados e tiverem um gatilho concreto.
 
 ## Comandos
 

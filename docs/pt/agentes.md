@@ -60,7 +60,7 @@ Quando o projeto ja existe e voce roda `scan:project`, o handoff correto agora e
 scan:project -> @analyst -> @scope-check -> @dev (ou @architect quando o full-merged opt-in do SMALL estiver ativo)
 ```
 
-> Fluxo atual: `[@briefing -> @briefing-refiner] -> @product -> [@sheldon] -> @planner -> @dev -> @qa`. MICRO, SMALL e MEDIUM mudam profundidade, não a cadeia. `@analyst`, `@architect`, `@pm`, `@orchestrator` e outros especialistas entram somente sob pedido explícito.
+> Fluxo atual: `[fontes em plans/{slug} -> @briefing -> @briefing-refiner -> aprovação] -> @product -> @sheldon -> @planner -> @dev -> @qa`. MICRO, SMALL e MEDIUM mudam profundidade, não a cadeia. `@analyst`, `@architect`, `@pm`, `@orchestrator` e outros especialistas entram somente sob pedido explícito.
 
 Regras do fluxo:
 - os artefatos locais do scan (`scan-index.md`, `scan-folders.md`, `scan-<pasta>.md`, `scan-aioson.md`) servem como mapas brutos do codigo
@@ -976,9 +976,9 @@ Duração típica: minutos a horas. Sem análise, sem arquitetura formal.
 
 ### MICRO, SMALL e MEDIUM — mesma rota
 ```
-@setup → [@briefing → @briefing-refiner] → @product → [@sheldon] → @planner → @dev → @qa
+@setup → [fontes → @briefing → @briefing-refiner → aprovação] → @product → @sheldon → @planner → @dev → @qa
 ```
-A classificação muda detalhe, orçamento e cobertura de risco. Sheldon é enriquecimento opcional do mesmo PRD. Tester, Pentester e Validator são opt-in e nunca entram apenas pela classificação.
+A classificação muda detalhe, orçamento e cobertura de risco. Sheldon é a revisão independente obrigatória do mesmo PRD antes do Planner. Tester, Pentester e Validator são opt-in e nunca entram apenas pela classificação.
 > `[@tester]` — opcional, recomendado quando a cobertura de testes for insuficiente após `@dev`.
 
 ---

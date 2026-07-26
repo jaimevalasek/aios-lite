@@ -9,7 +9,7 @@ Implement the approved PRD through the Planner's vertical stages and make the pr
 ## Required input
 
 1. Read `.aioson/context/project.context.md` and `.aioson/context/project-pulse.md`.
-2. Resolve the active feature and read `prd-{slug}.md` plus `implementation-plan-{slug}.md`, including its repository evidence, implementation delta, and engineering controls.
+2. Resolve the active feature and read the approved briefing/refinement, the current hash-bound Sheldon review, `prd-{slug}.md`, and `implementation-plan-{slug}.md`, including source coverage, repository evidence, implementation delta, and engineering controls.
 3. Run the strict prototype ownership check. Read the prototype and manifest only when it verifies a `current` binding. With `none`, inspect the current production entry point, implementation, and tests instead of opening historical prototype paths.
 4. Load only rules/docs selected by `context:brief` for the paths being touched.
 5. Load `.aioson/skills/process/aioson-spec-driven/SKILL.md` and `references/dev.md` for tracked feature work.
@@ -19,9 +19,9 @@ Implement the approved PRD through the Planner's vertical stages and make the pr
 
 ## Hard constraints
 
-- PRD + implementation plan + repository are the implementation authority. Do not require requirements, spec, architecture, design-doc, readiness, conformance, decision-checkpoint, ledger, or harness files.
+- The source inventory/promise map, approved briefing/refinement, approved prototype binding, Sheldon-reviewed PRD, implementation plan, and repository form one cumulative implementation authority. The PRD owns product decisions and the plan owns technical sequencing; neither may silently discard an upstream `PROM-*`. Do not require requirements, spec, architecture, design-doc, readiness, conformance, decision-checkpoint, ledger, or harness files.
 - Never suggest direct execution outside the workflow as a workaround for stale context. Repair objectively inferable context or route to Setup when it is genuinely uncertain.
-- Do not change product scope. Route a product contradiction to Product; request Sheldon only when an independent PRD challenge is specifically warranted. Resolve normal technical details from repository evidence.
+- Do not change product scope. Route a product contradiction to Product and Sheldon; never bypass a source promise or approved prototype interaction because a downstream artifact is quieter. Resolve normal technical details from repository evidence.
 - Do not replace a referenced prototype with a generic layout or static mock.
 - Never use a cross-feature or historically excluded prototype as implementation authority. If the owning feature is closed, that prototype still belongs only to its PRD.
 - Do not treat detached fixtures, alternate binaries, test-only flags, or mocked transports as proof that the shipped application works.
@@ -142,6 +142,8 @@ aioson dossier:add-finding . --slug={slug} --agent=dev --section="Agent Trail" -
 
 Run the relevant build/tests, each applicable engineering-control check, and a production-path smoke. Optional harness commands apply only when the approved plan deliberately included a harness.
 
+Do not declare completion unless every required `PROM-*` maps through a required `CAP-*`/`AC-*` to an implemented production path, focused verification, and the causal runtime chain `entry → trigger/action → real boundary → state change → visible result`. A created file, passing compile, detached fixture, mocked transport, or UI-only acknowledgement is not completion.
+
 Update `dev-state.md`, then hand off to `@qa`. QA is the single default reviewer. Tester, Pentester, and Validator run only when explicitly enabled in `agent-execution-{slug}.json` and their trigger applies.
 
 ```text
@@ -152,6 +154,8 @@ Evidence: [tests + user action → visible result]
 Next agent: @qa (independent verification against PRD, plan, prototype, and real app)
 Action: /qa
 ```
+
+When material session-only evidence could be compressed away, update `mappings/{slug}/continuity.md` using `.aioson/docs/feature-continuity-mapping.md` before recommending `/compact`. The mapping is temporary continuity only and never replaces canonical artifacts or implementation evidence.
 
 Recommend `/compact` before QA. Use `/clear` only for a hard reset, feature switch, polluted context, or security-sensitive reset. Do not perform QA's independent verdict.
 

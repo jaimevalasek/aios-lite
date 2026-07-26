@@ -60,9 +60,12 @@ const REVIEW_PROFILES = deepFreeze({
     authority_candidates: [
       { kind: 'project-context', path: '.aioson/context/project.context.md' },
       { kind: 'prd', path: '.aioson/context/prd-{slug}.md' },
-      { kind: 'requirements', path: '.aioson/context/requirements-{slug}.md' },
-      { kind: 'spec', path: '.aioson/context/spec-{slug}.md' },
+      { kind: 'briefing', path: '.aioson/briefings/{slug}/briefings.md' },
+      { kind: 'briefing-refinement', path: '.aioson/briefings/{slug}/refinement-report.md' },
+      { kind: 'prototype', path: '.aioson/briefings/{slug}/prototype.html' },
+      { kind: 'prototype-manifest', path: '.aioson/briefings/{slug}/prototype-manifest.md' },
       { kind: 'scope-expansion', path: '.aioson/context/features/{slug}/scope-expansion.md' },
+      { kind: 'continuity-mapping', path: 'mappings/{slug}/continuity.md', freshness: 'soft' },
       { kind: 'dossier', path: '.aioson/context/features/{slug}/dossier.md', freshness: 'soft' }
     ],
     challenge_lenses: ['coverage', 'ambiguity', 'edge-cases', 'failure-modes', 'ownership', 'verifiability']

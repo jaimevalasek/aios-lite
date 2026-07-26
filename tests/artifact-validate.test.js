@@ -6,6 +6,7 @@ const fs = require('node:fs/promises');
 const os = require('node:os');
 const path = require('node:path');
 const { runArtifactValidate } = require('../src/commands/artifact-validate');
+const { approveAndSealSheldonReview } = require('./helpers/feature-evidence');
 
 async function tmp() { return fs.mkdtemp(path.join(os.tmpdir(), 'aioson-artifact-val-')); }
 async function write(root, rel, body) {
@@ -16,7 +17,7 @@ async function write(root, rel, body) {
 const logger = { log() {}, error() {} };
 
 function prd({ productScope = 'approved', prdReady = 'approved' } = {}) {
-  return `---\nclassification: SMALL\nproduct_scope: ${productScope}\nprd_ready: ${prdReady}\nsheldon_review: not_requested\n---\n# Demo\n\n## Feature Capability Map\n\n| CAP | Promised outcome | Actor / trigger | Scope decision | Rationale |\n|---|---|---|---|---|\n| CAP-demo-01 | User sees saved result | User submits valid input | required | Core promise |\n\n## Acceptance Criteria\n\n| AC | CAP | Observable behavior | Evidence |\n|---|---|---|---|\n| AC-demo-01 | CAP-demo-01 | Saved result appears in the real app | automated integration test |\n`;
+  return `---\nclassification: SMALL\nproduct_scope: ${productScope}\nprd_ready: ${prdReady}\nsheldon_review: pending\n---\n# Demo\n\n## Feature Capability Map\n\n| CAP | Promised outcome | Actor / trigger | Scope decision | Rationale |\n|---|---|---|---|---|\n| CAP-demo-01 | User sees saved result | User submits valid input | required | Core promise |\n\n## Acceptance Criteria\n\n| AC | CAP | Observable behavior | Evidence |\n|---|---|---|---|\n| AC-demo-01 | CAP-demo-01 | Saved result appears in the real app | automated integration test |\n`;
 }
 
 function plan(status = 'approved') {
@@ -26,6 +27,7 @@ function plan(status = 'approved') {
 async function seed(root, { productScope = 'approved', prdReady = 'approved', status = 'approved' } = {}) {
   await write(root, '.aioson/context/project.context.md', '---\nclassification: SMALL\n---\n');
   await write(root, '.aioson/context/prd-demo.md', prd({ productScope, prdReady }));
+  await approveAndSealSheldonReview(root);
   await write(root, '.aioson/context/implementation-plan-demo.md', plan(status));
 }
 
@@ -42,6 +44,7 @@ test('artifact:validate exposes only the streamlined canonical chain', async () 
   assert.deepEqual(result.chain.map((item) => item.name), [
     'project.context.md',
     'prd-demo.md',
+    'sheldon-review',
     'implementation-plan-demo.md',
     'qa-report-demo.md'
   ]);
@@ -61,6 +64,7 @@ test('artifact:validate routes a missing plan to Planner', async () => {
   const root = await tmp();
   await write(root, '.aioson/context/project.context.md', '---\nclassification: MEDIUM\n---\n');
   await write(root, '.aioson/context/prd-demo.md', prd());
+  await approveAndSealSheldonReview(root);
   const result = await runArtifactValidate({ args: [root], options: { json: true, feature: 'demo' }, logger });
   assert.equal(result.next_missing, 'implementation-plan-demo.md');
   assert.match(result.next_agent, /@planner/);
@@ -70,6 +74,7 @@ test('artifact:validate rejects a thin PRD without creating legacy document obli
   const root = await tmp();
   await write(root, '.aioson/context/project.context.md', '---\nclassification: SMALL\n---\n');
   await write(root, '.aioson/context/prd-demo.md', '---\nproduct_scope: approved\nprd_ready: approved\n---\n# Thin PRD\n');
+  await approveAndSealSheldonReview(root);
   await write(root, '.aioson/context/implementation-plan-demo.md', plan());
   const result = await runArtifactValidate({ args: [root], options: { json: true, feature: 'demo' }, logger });
   assert.equal(result.ok, false);

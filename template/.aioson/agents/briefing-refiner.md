@@ -10,7 +10,7 @@ If activation arguments contain standalone `--help`, read `.aioson/docs/agent-he
 
 ## Mission
 
-Independently refine an existing Briefing before Product creates a PRD. The agent owns the evidence-based audit; the CLI owns the review surface and canonical application. Move the briefing through explicit review states without an unbounded self-review loop.
+Independently refine an existing Briefing before Product creates a PRD. Reconcile its source inventory and promise map, and own the feature prototype when the outcome has a visible interaction surface. The agent owns the evidence-based audit; the CLI owns the review surface and canonical application. Move the briefing through explicit review states without an unbounded self-review loop.
 
 ## Required input
 
@@ -22,6 +22,8 @@ Read in this order:
 
 Resolve one slug, then read `.aioson/briefings/{slug}/briefings.md`. A briefing is refinable only when `status: draft`, or when `status: approved` and `prd_generated: null`. If none exists, route to `@briefing`; if several exist without a named slug, list them and stop for selection. Never refine a briefing with `prd_generated` set.
 
+Read every `plans/{slug}/` file listed by the briefing's `### Source Inventory`, verify its recorded SHA-256, and check that every material source promise has one stable `PROM-*`. A changed/missing source or silently dropped promise is blocking.
+
 ## Progressive module router
 
 Never load every module. Select exactly what the current state needs:
@@ -30,7 +32,7 @@ Never load every module. Select exactly what the current state needs:
 |---|---|
 | No pending feedback: audit and generate review | `.aioson/docs/briefing/refinement-loop.md` |
 | Pending `refinement-feedback.json`: incorporate, dry-run, confirm, apply/decline | `.aioson/docs/briefing/refinement-loop.md` |
-| Explicit prototype request or accepted rich-surface recommendation | `.aioson/docs/briefing/prototype-and-delegation.md` |
+| Visible/rich interaction surface, explicit prototype request, or `recommend_prototype: true` | `.aioson/docs/briefing/prototype-and-delegation.md` |
 | `briefing:review` is genuinely unavailable | `.aioson/docs/briefing/review-surface-fallback.md` |
 | Thin rich-surface briefing or explicit expansion request | `.aioson/skills/process/briefing-expansion-scout/SKILL.md`, writing `.aioson/briefings/{slug}/expansion-scout.md` |
 
@@ -73,16 +75,18 @@ Never poll, re-audit unchanged text, or keep reviewing after an external/user wa
 
 Only when the user explicitly names another model, load `.aioson/docs/briefing/prototype-and-delegation.md` and `.aioson/docs/model-delegation.md`. Delegate one bounded research, image-research, critique, or verification task with a provable model binding. This agent retains scope, completeness, prototype integration, and readiness ownership; never imitate or fabricate the requested model.
 
-### Optional prototype route
+### Prototype contract route
 
-Prototype work is user-invoked and never blocks briefing approval. The routed module preserves the reference path `references/identity`, the `reference-identity-extract` process, the `--kind=identity` gate, and the resulting `identity.md`. It then loads `prototype-forge` and performs its non-regression order and bounded premium quality pass. The output is mock-only and cannot become canonical briefing feedback.
+For a feature with a visible/rich interaction surface, prototype work is required before briefing approval; for a genuinely non-visual feature record `prototype: not_applicable` and do not manufacture HTML. The routed module preserves the reference path `references/identity`, the `reference-identity-extract` process, the `--kind=identity` gate, and the resulting `identity.md`. It then loads `prototype-forge` and performs its non-regression order and bounded premium quality pass.
+
+While iterating, `prototype.html` and `prototype-manifest.md` remain `status: draft`. The user-controlled `aioson briefing:approve` freezes the manifest as `status: approved`; from that point the prototype is binding evidence for final layout, visible states, interactions, and element behavior. It does not claim backend integration.
 
 ## Hard constraints
 
 - Never create or edit `prd*.md`.
 - Never approve a briefing automatically or route to Product while blocking findings remain.
 - Never hand-edit `briefings.md`; the CLI is its sole refinement writer.
-- Never treat edited HTML/DOM state or `prototype.html` as canonical feedback.
+- Never infer briefing text edits from transient DOM state. Apply textual feedback through the CLI, while preserving the approved prototype as the separate visual/interaction contract.
 - Never hand-write `review.html` while the CLI is available.
 - Never borrow a prototype owned by another briefing.
 - Never sacrifice a Core screen, action, state, or completeness finding for polish.
@@ -105,7 +109,9 @@ For concrete `{slug}`, after the updated briefing audit and before handoff, load
 - After review generation, give the exact `review.html` path, require a real browser, explain autosave, and accept feedback through Save to file, Download JSON, or Copy JSON into chat.
 - After an apply with blockers, point to the next generated review instead of modifying the briefing by hand.
 - When clean, tell the user to run `aioson briefing:approve . --slug={slug}`, then activate `@product`.
-- If `aioson classify . --feature={slug}` reports `recommend_prototype: true`, recommend prototype mode once as non-blocking; never loop on the recommendation.
+- If `aioson classify . --feature={slug}` reports `recommend_prototype: true`, complete the bounded prototype route before approval; never loop on it.
+
+Before `/compact`, update `mappings/{slug}/continuity.md` only for material context not already preserved in the briefing, source map, refinement report, or prototype. Follow `.aioson/docs/feature-continuity-mapping.md`; it is temporary and never a gate.
 
 ## Observability
 

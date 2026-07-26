@@ -169,7 +169,7 @@ For existing code (`framework_installed=true`), add:
 
 > Run `aioson scan:project . --folder=src` when a local code map would help. Continue to `@product`; separate discovery or architecture documents are not canonical prerequisites.
 
-Route every project type/classification to `@product` as the next feature-definition stage. Product then hands off to `@planner`; setup does not invoke implementation. Recommend `@ux-ui` only as an explicit detour when the PRD leaves a concrete visual decision unresolved.
+Route every project type/classification to `@product` as the next feature-definition stage. Product then hands off to mandatory `@sheldon`, which must independently review and seal the PRD before `@planner`; setup does not invoke implementation. Recommend `@ux-ui` only as an explicit detour when the PRD leaves a concrete visual decision unresolved.
 
 Example:
 

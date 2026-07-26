@@ -4,7 +4,7 @@
 > Cada agente tem sua ficha — clique no nome para detalhes.
 > `@pair` é alias de `@deyvin` e não possui ficha separada.
 
-> **As colunas "Quando invocar" descrevem capacidades, não a ordem obrigatória.** A rota de feature é `[@briefing → @briefing-refiner] → @product → [@sheldon] → @planner → @dev → @qa`. Os colchetes indicam etapas opcionais. MICRO, SMALL e MEDIUM mudam profundidade e orçamento, não a cadeia. Especialistas entram somente sob pedido explícito ou por uma necessidade nomeada. Veja [Autopilot Handoff](../5-referencia/autopilot-handoff.md).
+> **As colunas "Quando invocar" descrevem capacidades, não a ordem obrigatória.** A rota de feature é `[fontes → @briefing → @briefing-refiner → aprovação] → @product → @sheldon → @planner → @dev → @qa`. O bloco entre colchetes é opcional; quando iniciado, precisa ser concluído e aprovado. MICRO, SMALL e MEDIUM mudam profundidade e orçamento, não a cadeia. Especialistas entram somente sob pedido explícito ou por uma necessidade nomeada. Veja [Autopilot Handoff](../5-referencia/autopilot-handoff.md).
 
 ---
 
@@ -18,7 +18,7 @@
 | [@architect](./architect.md) | Decide stack, estrutura, integração técnica | Consultoria explícita para uma decisão arquitetural aberta | registro da decisão ou parecer |
 | [@ux-ui](./ux-ui.md) | Design system e specs de componentes | Detour opt-in para specs UI-heavy | `design-doc.md`, `discovery.md` |
 | [@pm](./pm.md) | Consultoria de backlog e priorização | Sob pedido explícito; não substitui `@planner` | parecer ou backlog consultivo |
-| [@sheldon](./sheldon.md) | Enriquece e revisa criticamente o PRD em vigor | Opcional após `@product` | o mesmo `prd-{slug}.md`, enriquecido |
+| [@sheldon](./sheldon.md) | Revisa criticamente e sela o PRD em vigor | Obrigatório após `@product` e antes de `@planner` | o mesmo `prd-{slug}.md` + PASS atual vinculado ao hash |
 | [@planner](./planner.md) | Transforma o PRD aprovado em etapas verticais executáveis | Sempre antes de implementação significativa | `implementation-plan-{slug}.md` |
 | [@orchestrator](./orchestrator.md) | Coordena uma sessão ou especialistas quando solicitado | Somente sob pedido explícito | coordenação e handoffs |
 | [@dev](./dev.md) | Implementa e integra a feature | Após o plano aprovado | código + `dev-state.md` |

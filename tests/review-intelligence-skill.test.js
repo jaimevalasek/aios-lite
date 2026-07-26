@@ -123,7 +123,7 @@ test('profile registry points to the four packaged references', async () => {
   }
 });
 
-test('explicit briefing hooks remain bounded while feature delivery review is conditional', async () => {
+test('explicit briefing hooks remain bounded while Sheldon owns mandatory delivery review', async () => {
   assert.deepEqual(Object.keys(HOOKS), ['briefing', 'briefing-refiner']);
 
   for (const [agent, contract] of Object.entries(HOOKS)) {
@@ -149,7 +149,10 @@ test('explicit briefing hooks remain bounded while feature delivery review is co
     assert.ok((content.match(/## Review intelligence checkpoint/g) || []).length <= 1, `${agent}: duplicate review hook`);
   }
   const qa = await readAt(TEMPLATE_ROOT, 'agents/qa.md');
-  assert.match(qa, /Load review-intelligence only when/);
+  assert.match(qa, /Load another review-intelligence profile only when/);
+  const sheldon = await readAt(TEMPLATE_ROOT, 'agents/sheldon.md');
+  assert.match(sheldon, /review-intelligence\/SKILL\.md/);
+  assert.match(sheldon, /references\/specification\.md/);
 });
 
 test('template and workspace copies are byte-identical after sync', async () => {

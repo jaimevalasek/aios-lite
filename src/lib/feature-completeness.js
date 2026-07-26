@@ -1,6 +1,8 @@
 'use strict';
 
 const fs = require('node:fs/promises');
+const fsNative = require('node:fs');
+const crypto = require('node:crypto');
 const path = require('node:path');
 const {
   scanArtifacts,
@@ -15,12 +17,16 @@ const {
   validateEngineeringControls
 } = require('./feature-repository-fit');
 const { validatePrototypeBinding } = require('./prototype-binding');
+const { resolveInsideRoot } = require('../verification/path-policy');
 
 const REQ_ID_RE = /\bREQ(?:-[A-Za-z0-9]+)+\b/g;
 const AC_ID_RE = /\bAC(?:-[A-Za-z0-9]+)+\b/g;
 const CAP_ID_RE = /\bCAP(?:-[A-Za-z0-9]+)+\b/g;
+const PROM_ID_RE = /\bPROM(?:-[A-Za-z0-9]+)+\b/g;
 const CAP_ID_EXACT_RE = /^CAP(?:-[A-Za-z0-9]+)+$/i;
 const AC_ID_EXACT_RE = /^AC(?:-[A-Za-z0-9]+)+$/i;
+const PROM_ID_EXACT_RE = /^PROM(?:-[A-Za-z0-9]+)+$/i;
+const SOURCE_ID_EXACT_RE = /^SRC(?:-[A-Za-z0-9]+)+$/i;
 
 const CANONICAL_LENSES = Object.freeze([
   'primary-outcome',
@@ -341,6 +347,273 @@ function finding(stage, check, message, artifact) {
 
 function missingSection(stage, check, heading, artifact) {
   return finding(stage, check, `feature completeness requires ## ${heading}`, artifact);
+}
+
+async function sha256File(filePath) {
+  const hash = crypto.createHash('sha256');
+  const stream = fsNative.createReadStream(filePath);
+  for await (const chunk of stream) hash.update(chunk);
+  return hash.digest('hex');
+}
+
+function normalizeSha256(value) {
+  return cleanCell(value).toLowerCase().replace(/^sha256:/, '');
+}
+
+function extractPhysicalSourcePlans(briefing) {
+  return [...new Set(
+    parseSurfacesOverride(briefing, 'source_plans')
+      .map((item) => cleanCell(item).replace(/\\/g, '/'))
+      .filter((item) => item.startsWith('plans/'))
+  )];
+}
+
+async function collectFeatureSourceFiles(targetDir, slug) {
+  const root = resolveInsideRoot(targetDir, `plans/${slug}`);
+  if (!root.ok) return [];
+  const collected = [];
+  async function walk(absoluteDir, relativeDir) {
+    const entries = await fs.readdir(absoluteDir, { withFileTypes: true }).catch(() => []);
+    for (const entry of entries) {
+      const relativePath = `${relativeDir}/${entry.name}`.replace(/\\/g, '/');
+      if (entry.isDirectory()) {
+        await walk(path.join(absoluteDir, entry.name), relativePath);
+      } else if (entry.isFile()) {
+        collected.push(relativePath);
+      }
+    }
+  }
+  await walk(root.path, `plans/${slug}`);
+  return collected.sort();
+}
+
+async function validateSourceLineage({
+  targetDir,
+  slug,
+  briefing,
+  prd,
+  productMap,
+  acceptance
+}) {
+  const briefingArtifact = `.aioson/briefings/${slug}/briefings.md`;
+  const prdArtifact = `.aioson/context/prd-${slug}.md`;
+  if (!String(briefing || '').trim()) {
+    return {
+      applicable: false,
+      findings: [],
+      inventory: [],
+      promises: [],
+      coverage: []
+    };
+  }
+
+  const findings = [];
+  const inventory = [];
+  const inventorySection = extractSection(briefing, ['Source Inventory', 'Inventario de Fontes']);
+  const physicalPlans = [...new Set([
+    ...extractPhysicalSourcePlans(briefing),
+    ...await collectFeatureSourceFiles(targetDir, slug)
+  ])];
+  const knownSources = new Set();
+
+  if (physicalPlans.length > 0 && !inventorySection) {
+    findings.push(missingSection('product', 'source_inventory_missing', 'Source Inventory in the briefing', briefingArtifact));
+  } else if (inventorySection) {
+    const table = parseFirstMarkdownTable(inventorySection);
+    if (!table) {
+      findings.push(finding('product', 'source_inventory_invalid', 'Source Inventory must contain a Markdown table', briefingArtifact));
+    } else {
+      const columns = mapColumns(table, {
+        source: ['SRC', 'Source', 'Source ID', 'Fonte', 'ID da fonte'],
+        path: ['Path', 'File', 'Caminho', 'Arquivo'],
+        fingerprint: ['Fingerprint', 'SHA-256', 'SHA256', 'Hash'],
+        purpose: ['Purpose', 'Use', 'Proposito', 'Finalidade', 'Uso']
+      });
+      if (columns.missing.length > 0) {
+        findings.push(finding('product', 'source_inventory_columns', `Source Inventory missing column(s): ${columns.missing.join(', ')}`, briefingArtifact));
+      } else {
+        for (const [index, row] of table.rows.entries()) {
+          const source = cleanCell(row[columns.indexes.source]);
+          const sourcePath = cleanCell(row[columns.indexes.path]).replace(/\\/g, '/');
+          const fingerprint = normalizeSha256(row[columns.indexes.fingerprint]);
+          const purpose = cleanCell(row[columns.indexes.purpose]);
+          const rowNumber = index + 1;
+          if (!SOURCE_ID_EXACT_RE.test(source)) {
+            findings.push(finding('product', 'source_id_invalid', `Source Inventory row ${rowNumber} must use a stable SRC-* ID`, briefingArtifact));
+          }
+          const sourceKey = source.toLowerCase();
+          if (knownSources.has(sourceKey)) {
+            findings.push(finding('product', 'source_id_duplicate', `duplicate source ID: ${source}`, briefingArtifact));
+          }
+          knownSources.add(sourceKey);
+          if (!sourcePath.startsWith('plans/')) {
+            findings.push(finding('product', 'source_path_invalid', `${source || `row ${rowNumber}`} must point inside root plans/`, briefingArtifact));
+          }
+          if (!/^[a-f0-9]{64}$/.test(fingerprint)) {
+            findings.push(finding('product', 'source_fingerprint_invalid', `${source || `row ${rowNumber}`} must record a SHA-256 fingerprint`, briefingArtifact));
+          }
+          if (isPlaceholder(purpose)) {
+            findings.push(finding('product', 'source_purpose_missing', `${source || `row ${rowNumber}`} must state how the source was used`, briefingArtifact));
+          }
+
+          const safe = resolveInsideRoot(targetDir, sourcePath);
+          if (!safe.ok || !sourcePath.startsWith('plans/')) {
+            findings.push(finding('product', 'source_path_unsafe', `${source || `row ${rowNumber}`} source path is outside the permitted plans/ input area`, briefingArtifact));
+          } else {
+            try {
+              const current = await sha256File(safe.path);
+              if (fingerprint && current !== fingerprint) {
+                findings.push(finding('product', 'source_fingerprint_stale', `${source} changed after the briefing snapshot: ${sourcePath}`, briefingArtifact));
+              }
+            } catch {
+              findings.push(finding('product', 'source_file_missing', `${source} source file is missing: ${sourcePath}`, briefingArtifact));
+            }
+          }
+          inventory.push({ source, path: sourcePath, fingerprint, purpose });
+        }
+      }
+    }
+  }
+
+  const inventoryPaths = new Set(inventory.map((item) => item.path.toLowerCase()));
+  for (const sourcePath of physicalPlans) {
+    if (!inventoryPaths.has(sourcePath.toLowerCase())) {
+      findings.push(finding('product', 'source_plan_not_in_inventory', `source_plans entry is absent from Source Inventory: ${sourcePath}`, briefingArtifact));
+    }
+  }
+
+  const promises = [];
+  const promiseSection = extractSection(briefing, ['Source Promise Map', 'Mapa de Promessas das Fontes']);
+  if (!promiseSection) {
+    findings.push(missingSection('product', 'source_promise_map_missing', 'Source Promise Map in the briefing', briefingArtifact));
+  } else {
+    const table = parseFirstMarkdownTable(promiseSection);
+    if (!table) {
+      findings.push(finding('product', 'source_promise_map_invalid', 'Source Promise Map must contain a Markdown table', briefingArtifact));
+    } else {
+      const columns = mapColumns(table, {
+        promise: ['Promise', 'PROM', 'Promise ID', 'Promessa', 'ID da promessa'],
+        source: ['Source', 'SRC', 'Fonte'],
+        intent: ['Approved intent', 'Intent', 'Intencao aprovada', 'Intencao'],
+        state: ['State', 'Decision', 'Estado', 'Decisao']
+      });
+      if (columns.missing.length > 0) {
+        findings.push(finding('product', 'source_promise_map_columns', `Source Promise Map missing column(s): ${columns.missing.join(', ')}`, briefingArtifact));
+      } else {
+        const seen = new Set();
+        for (const [index, row] of table.rows.entries()) {
+          const promise = cleanCell(row[columns.indexes.promise]);
+          const sources = String(row[columns.indexes.source] || '').match(/\bSRC(?:-[A-Za-z0-9]+)+\b/g) || [];
+          const sourceText = cleanCell(row[columns.indexes.source]);
+          const intent = cleanCell(row[columns.indexes.intent]);
+          const state = normalizeDecision(row[columns.indexes.state]);
+          const rowNumber = index + 1;
+          if (!PROM_ID_EXACT_RE.test(promise)) {
+            findings.push(finding('product', 'source_promise_id_invalid', `Source Promise Map row ${rowNumber} must use one stable PROM-* ID`, briefingArtifact));
+          }
+          const key = promise.toLowerCase();
+          if (seen.has(key)) findings.push(finding('product', 'source_promise_id_duplicate', `duplicate promise ID: ${promise}`, briefingArtifact));
+          seen.add(key);
+          if (sources.length === 0 && !/(conversation|conversational|user statement|conversa|declaracao do usuario|web|research|pesquisa)/i.test(sourceText)) {
+            findings.push(finding('product', 'source_promise_source_missing', `${promise || `row ${rowNumber}`} must cite SRC-* or an explicit conversational/research source`, briefingArtifact));
+          }
+          for (const source of sources) {
+            if (!knownSources.has(source.toLowerCase())) {
+              findings.push(finding('product', 'source_promise_source_unknown', `${promise || `row ${rowNumber}`} references undeclared source: ${source}`, briefingArtifact));
+            }
+          }
+          if (isPlaceholder(intent)) findings.push(finding('product', 'source_promise_intent_missing', `${promise || `row ${rowNumber}`} has no approved intent`, briefingArtifact));
+          if (!SCOPE_DECISIONS.has(state)) {
+            findings.push(finding('product', 'source_promise_state_invalid', `${promise || `row ${rowNumber}`} state must be required, deferred, or not_applicable`, briefingArtifact));
+          }
+          promises.push({ promise, sources, intent, state });
+        }
+      }
+    }
+  }
+  if (promises.filter((item) => item.state === 'required').length === 0) {
+    findings.push(finding('product', 'source_required_promise_missing', 'An approved briefing must preserve at least one required PROM-*', briefingArtifact));
+  }
+
+  const coverage = [];
+  const coverageSection = extractSection(prd, ['Source Coverage', 'Cobertura das Fontes']);
+  if (!coverageSection) {
+    findings.push(missingSection('product', 'source_coverage_missing', 'Source Coverage in the PRD', prdArtifact));
+  } else {
+    const table = parseFirstMarkdownTable(coverageSection);
+    if (!table) {
+      findings.push(finding('product', 'source_coverage_invalid', 'Source Coverage must contain a Markdown table', prdArtifact));
+    } else {
+      const columns = mapColumns(table, {
+        promise: ['Promise', 'PROM', 'Promessa'],
+        decision: ['Product decision', 'Decision', 'Decisao do produto', 'Decisao'],
+        trace: ['CAP / AC', 'CAP/AC', 'Trace', 'Rastreio'],
+        rationale: ['Evidence / rationale', 'Rationale', 'Evidence', 'Evidencia / justificativa', 'Justificativa']
+      });
+      if (columns.missing.length > 0) {
+        findings.push(finding('product', 'source_coverage_columns', `Source Coverage missing column(s): ${columns.missing.join(', ')}`, prdArtifact));
+      } else {
+        const knownPromises = new Set(promises.map((item) => item.promise.toLowerCase()));
+        const promiseById = new Map(promises.map((item) => [item.promise.toLowerCase(), item]));
+        const knownCaps = new Set(productMap.allCaps.map((item) => item.toLowerCase()));
+        const knownAcs = new Set(acceptance.rows.map((item) => item.ac.toLowerCase()));
+        const seen = new Set();
+        for (const [index, row] of table.rows.entries()) {
+          const promise = cleanCell(row[columns.indexes.promise]);
+          const decisionRaw = normalizeLabel(row[columns.indexes.decision]);
+          const decision = ['required', 'already-satisfied', 'deferred', 'rejected', 'not-applicable'].includes(decisionRaw)
+            ? decisionRaw
+            : '';
+          const trace = cleanCell(row[columns.indexes.trace]);
+          const caps = extractIds(trace, CAP_ID_RE);
+          const acs = extractIds(trace, AC_ID_RE);
+          const rationale = cleanCell(row[columns.indexes.rationale]);
+          const rowNumber = index + 1;
+          if (!PROM_ID_EXACT_RE.test(promise)) {
+            findings.push(finding('product', 'source_coverage_promise_invalid', `Source Coverage row ${rowNumber} must cite one PROM-*`, prdArtifact));
+          }
+          const key = promise.toLowerCase();
+          if (!knownPromises.has(key)) findings.push(finding('product', 'source_coverage_promise_unknown', `Source Coverage references unknown promise: ${promise}`, prdArtifact));
+          if (seen.has(key)) findings.push(finding('product', 'source_coverage_promise_duplicate', `Source Coverage duplicates promise: ${promise}`, prdArtifact));
+          seen.add(key);
+          if (!decision) findings.push(finding('product', 'source_coverage_decision_invalid', `${promise || `row ${rowNumber}`} decision must be required, already_satisfied, deferred, rejected, or not_applicable`, prdArtifact));
+          if (['required', 'already-satisfied'].includes(decision)) {
+            if (caps.length === 0 || acs.length === 0) {
+              findings.push(finding('product', 'source_coverage_trace_missing', `${promise || `row ${rowNumber}`} must trace to at least one CAP-* and AC-*`, prdArtifact));
+            }
+            for (const cap of caps) {
+              if (!knownCaps.has(cap.toLowerCase())) findings.push(finding('product', 'source_coverage_cap_unknown', `${promise} references undeclared capability: ${cap}`, prdArtifact));
+            }
+            for (const ac of acs) {
+              if (!knownAcs.has(ac.toLowerCase())) findings.push(finding('product', 'source_coverage_ac_unknown', `${promise} references undeclared acceptance criterion: ${ac}`, prdArtifact));
+            }
+          }
+          const originalPromise = promiseById.get(key);
+          if (
+            originalPromise?.state === 'required'
+            && ['deferred', 'rejected', 'not-applicable'].includes(decision)
+            && !/(user[- ]approved|approved by (?:the )?user|user decision|usuario aprovou|aprovado pelo usuario|decisao do usuario)/i.test(foldDiacritics(rationale))
+          ) {
+            findings.push(finding(
+              'product',
+              'source_required_promise_downgraded_without_user_approval',
+              `${promise} was required in the approved briefing; a non-required Product decision must cite explicit user approval`,
+              prdArtifact
+            ));
+          }
+          if (isPlaceholder(rationale)) findings.push(finding('product', 'source_coverage_rationale_missing', `${promise || `row ${rowNumber}`} requires evidence or rationale`, prdArtifact));
+          coverage.push({ promise, decision, caps, acs, rationale });
+        }
+        for (const promise of promises) {
+          if (!seen.has(promise.promise.toLowerCase())) {
+            findings.push(finding('product', 'source_promise_dropped', `${promise.promise} from the approved briefing is absent from the PRD Source Coverage`, prdArtifact));
+          }
+        }
+      }
+    }
+  }
+
+  return { applicable: true, findings, inventory, promises, coverage };
 }
 
 function validateProductCapabilityMap(content, artifact) {
@@ -876,60 +1149,163 @@ async function validateDeliveryPaths(targetDir, productMap, delivery, artifact, 
   return { findings, plannedPathsByCap };
 }
 
-async function validateExecutionEvidence(targetDir, slug, productMap, requirementsMatrix, delivery) {
-  const artifact = `.aioson/context/features/${slug}/implementation-ledger.md`;
-  const deliveryPaths = await validateDeliveryPaths(targetDir, productMap, delivery, artifact);
+function labeledSmokeField(section, aliases) {
+  const escaped = aliases.map((item) => item.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
+  const match = String(section || '').match(
+    new RegExp(`^[-*]\\s*(?:\\*\\*)?(?:${escaped})(?:\\*\\*)?\\s*:\\s*(.+?)\\s*$`, 'im')
+  );
+  return match ? cleanCell(match[1]) : '';
+}
+
+function genericEvidence(value) {
+  const normalized = normalizeLabel(value);
+  return !normalized
+    || /^(pass|passed|done|works|working|ok|green|tests-passed|testes-passaram|all-tests-pass)$/.test(normalized)
+    || /^tests?-\d+-(?:pass|passed)$/.test(normalized);
+}
+
+async function validateExecutionEvidence(
+  targetDir,
+  slug,
+  productMap,
+  requirementsMatrix,
+  delivery,
+  qaReport,
+  implementationDelta = { rows: [] }
+) {
+  const artifact = `.aioson/context/qa-report-${slug}.md`;
+  const deliveryPaths = await validateDeliveryPaths(
+    targetDir,
+    productMap,
+    delivery,
+    artifact,
+    implementationDelta
+  );
   const findings = [...deliveryPaths.findings];
-  const { plannedPathsByCap } = deliveryPaths;
+  const coveredCaps = [];
+  const evidenceByCap = new Map();
 
-  const ledgerResult = await checkLedger(targetDir, slug);
-  if (!ledgerResult.ok) {
-    findings.push(finding('execution', 'implementation_ledger_not_ready', `implementation ledger is not ready: ${ledgerResult.reason || 'invalid or incomplete ledger'}`, artifact));
-    return { findings, ledger: null, coveredCaps: [] };
-  }
-
-  const ledger = ledgerResult.ledger;
-  const claims = Array.isArray(ledger.claims) ? ledger.claims : [];
-  const blockingGaps = (Array.isArray(ledger.known_gaps) ? ledger.known_gaps : [])
-    .filter((gap) => gap && gap.blocks === true);
-  if (blockingGaps.length > 0) {
+  if (!String(qaReport || '').trim()) {
+    findings.push(finding('execution', 'qa_execution_evidence_missing', `QA report is missing: ${artifact}`, artifact));
     findings.push(finding(
       'execution',
-      'implementation_ledger_blocking_gaps',
-      `implementation ledger has unresolved blocking gap(s): ${blockingGaps.map((gap) => gap.id || gap.gap || '(unnamed)').join(', ')}`,
+      'executed_capability_coverage_incomplete',
+      `executed capabilities 0/${productMap.requiredCaps.length}; zero or partial execution can never pass Gate D`,
+      artifact
+    ));
+    return { findings, ledger: null, coveredCaps };
+  }
+
+  const evidenceSection = extractSection(qaReport, [
+    'CAP/AC evidence table',
+    'Capability acceptance evidence',
+    'Evidencias CAP/AC'
+  ]);
+  if (!evidenceSection) {
+    findings.push(missingSection('execution', 'qa_capability_evidence_missing', 'CAP/AC evidence table in the QA report', artifact));
+  } else {
+    const table = parseFirstMarkdownTable(evidenceSection);
+    if (!table) {
+      findings.push(finding('execution', 'qa_capability_evidence_invalid', 'QA CAP/AC evidence must contain a Markdown table', artifact));
+    } else {
+      const columns = mapColumns(table, {
+        cap: ['CAP', 'Capability', 'Capacidade'],
+        ac: ['AC', 'Acceptance criterion', 'Criterio de aceite'],
+        result: ['Result', 'Verdict', 'Resultado', 'Veredito'],
+        evidence: ['Evidence', 'Proof', 'Evidencia', 'Prova']
+      });
+      if (columns.missing.length > 0) {
+        findings.push(finding('execution', 'qa_capability_evidence_columns', `QA CAP/AC evidence missing column(s): ${columns.missing.join(', ')}`, artifact));
+      } else {
+        for (const row of table.rows) {
+          const caps = extractIds(row[columns.indexes.cap], CAP_ID_RE);
+          const acs = extractIds(row[columns.indexes.ac], AC_ID_RE);
+          const result = normalizeLabel(row[columns.indexes.result]);
+          const evidence = cleanCell(row[columns.indexes.evidence]);
+          const passed = result === 'pass' || result === 'passed';
+          for (const cap of caps) {
+            const key = cap.toLowerCase();
+            if (!evidenceByCap.has(key)) evidenceByCap.set(key, new Map());
+            for (const ac of acs) {
+              evidenceByCap.get(key).set(ac.toLowerCase(), {
+                passed,
+                evidence,
+                concrete: !genericEvidence(evidence)
+              });
+            }
+          }
+        }
+      }
+    }
+  }
+
+  for (const cap of productMap.requiredCaps) {
+    const requiredAcs = requirementsMatrix.capToAcs[cap.toLowerCase()] || [];
+    const capEvidence = evidenceByCap.get(cap.toLowerCase()) || new Map();
+    const missingAcs = requiredAcs.filter((ac) => {
+      const row = capEvidence.get(ac.toLowerCase());
+      return !row || !row.passed || !row.concrete;
+    });
+    if (requiredAcs.length === 0 || missingAcs.length > 0) {
+      findings.push(finding(
+        'execution',
+        'capability_runtime_evidence_missing',
+        `${cap} lacks concrete QA PASS evidence for: ${missingAcs.length > 0 ? missingAcs.join(', ') : 'its acceptance criteria'}`,
+        artifact
+      ));
+    } else {
+      coveredCaps.push(cap);
+    }
+  }
+
+  const commandsSection = extractSection(qaReport, [
+    'Commands executed and results',
+    'Comandos executados e resultados'
+  ]);
+  if (!commandsSection
+    || !/\b(?:npm|node|npx|pnpm|yarn|bun|cargo|pytest|python|go|dotnet|make)\b/i.test(commandsSection)
+    || !/\b(?:PASS|PASSED|exit(?: code)?\s*[:=]?\s*0|success|sucesso)\b/i.test(commandsSection)) {
+    findings.push(finding(
+      'execution',
+      'qa_executed_command_evidence_missing',
+      'QA must record at least one exact executed command and a successful result/exit code',
       artifact
     ));
   }
-  const coveredCaps = [];
-  for (const cap of productMap.requiredCaps) {
-    const capClaims = claims.filter((claim) => claimCapabilities(claim)
-      .some((value) => value.toLowerCase() === cap.toLowerCase()));
-    const implementedClaims = capClaims.filter((claim) => claim.status === 'implemented');
-    if (implementedClaims.length === 0) {
-      findings.push(finding('execution', 'capability_implementation_claim_missing', `${cap} has no implemented ledger claim`, artifact));
-      continue;
-    }
-    const hasExistingFileEvidence = (await Promise.all(implementedClaims.flatMap((claim) =>
-      (Array.isArray(claim.evidence) ? claim.evidence : [])
-        .filter((evidence) => evidence && evidence.path)
-        .map((evidence) => pathExistsInsideRoot(targetDir, evidence.path))))).some(Boolean);
-    if (!hasExistingFileEvidence) {
-      findings.push(finding('execution', 'capability_file_evidence_missing', `${cap} has no existing implementation evidence path`, artifact));
-    }
-    const harnessEvidence = await verifiedHarnessEvidence(
-      targetDir,
-      slug,
-      cap,
-      requirementsMatrix.capToAcs[cap.toLowerCase()] || [],
-      plannedPathsByCap.get(cap.toLowerCase()) || []
-    );
-    if (!harnessEvidence.ok) {
-      findings.push(finding('execution', 'capability_verification_evidence_missing', `${cap} has no fresh passed harness criterion (${harnessEvidence.reason})`, artifact));
-    }
-    if (hasExistingFileEvidence && harnessEvidence.ok) coveredCaps.push(cap);
+
+  const smokeSection = extractSection(qaReport, [
+    'Production-path smoke',
+    'Smoke do caminho de producao'
+  ]);
+  const smokeFields = {
+    entry: labeledSmokeField(smokeSection, ['Entry', 'Production entry', 'Entrada']),
+    trigger: labeledSmokeField(smokeSection, ['Trigger', 'Action', 'Gatilho', 'Acao']),
+    boundary: labeledSmokeField(smokeSection, ['Real boundary', 'Boundary', 'Fronteira real', 'Fronteira']),
+    state: labeledSmokeField(smokeSection, ['State change', 'Persistent state', 'Mudanca de estado', 'Estado alterado']),
+    visible: labeledSmokeField(smokeSection, ['Visible result', 'Observable result', 'Resultado visivel', 'Resultado observavel'])
+  };
+  const missingSmoke = Object.entries(smokeFields)
+    .filter(([, value]) => isPlaceholder(value) || genericEvidence(value))
+    .map(([key]) => key);
+  if (!smokeSection || missingSmoke.length > 0) {
+    findings.push(finding(
+      'execution',
+      'production_path_smoke_not_reproducible',
+      `Production-path smoke must record concrete entry, trigger, real boundary, state change, and visible result${missingSmoke.length > 0 ? ` (missing: ${missingSmoke.join(', ')})` : ''}`,
+      artifact
+    ));
   }
 
-  return { findings, ledger, coveredCaps };
+  if (coveredCaps.length !== productMap.requiredCaps.length) {
+    findings.push(finding(
+      'execution',
+      'executed_capability_coverage_incomplete',
+      `executed capabilities ${coveredCaps.length}/${productMap.requiredCaps.length}; zero or partial execution can never pass Gate D`,
+      artifact
+    ));
+  }
+
+  return { findings, ledger: null, coveredCaps };
 }
 
 function hasMeaningfulFeaturePromise(inputs) {
@@ -964,6 +1340,9 @@ async function readFeatureInputs(targetDir, slug, artifacts) {
     designDoc: artifacts.design_doc.content || '',
     readiness: artifacts.readiness?.content || '',
     plan: artifacts.implementation_plan.content || '',
+    qaReport: artifacts.qa_report?.content || '',
+    briefing: await readFileSafe(path.join(briefingRoot, 'briefings.md')),
+    refinementReport: await readFileSafe(path.join(briefingRoot, 'refinement-report.md')),
     scopeExpansion: await readFileSafe(path.join(targetDir, '.aioson', 'context', 'features', slug, 'scope-expansion.md')),
     expansionAudit: await readFileSafe(path.join(targetDir, '.aioson', 'context', 'features', slug, 'expansion-audit.md')),
     expansionScout: await readFileSafe(path.join(briefingRoot, 'expansion-scout.md')),
@@ -1078,6 +1457,7 @@ async function analyzeFeatureCompleteness(targetDir, slug, options = {}) {
 
   const stageFindings = { product: [], specification: [], plan: [], execution: [] };
   let productMap = { findings: [], rows: [], requiredCaps: [], allCaps: [] };
+  let sourceLineage = { applicable: false, findings: [], inventory: [], promises: [], coverage: [] };
   let currentSystemFit = { findings: [], rows: [] };
   let acceptance = { findings: [], rows: [], capToAcs: {} };
   let delivery = { findings: [], rows: [] };
@@ -1120,6 +1500,14 @@ async function analyzeFeatureCompleteness(targetDir, slug, options = {}) {
       strict: explicitlyRequired
     });
     acceptance = validatePrdAcceptanceCriteria(inputs.prd, artifacts.prd.path || `prd-${slug}.md`, productMap);
+    sourceLineage = await validateSourceLineage({
+      targetDir,
+      slug,
+      briefing: inputs.briefing,
+      prd: inputs.prd,
+      productMap,
+      acceptance
+    });
     delivery = validateDeliveryPlan(inputs.plan, artifacts.implementation_plan.path || `implementation-plan-${slug}.md`, productMap);
     engineeringControls = validateEngineeringControls({
       content: inputs.plan,
@@ -1142,6 +1530,7 @@ async function analyzeFeatureCompleteness(targetDir, slug, options = {}) {
 
     stageFindings.product.push(
       ...productMap.findings,
+      ...sourceLineage.findings,
       ...currentSystemFit.findings,
       ...prototypeBinding.issues.map((item) => finding(
         'product',
@@ -1153,14 +1542,15 @@ async function analyzeFeatureCompleteness(targetDir, slug, options = {}) {
     stageFindings.specification.push(...acceptance.findings);
     stageFindings.plan.push(...delivery.findings, ...engineeringControls.findings, ...implementationDelta.findings);
     if (options.includeExecution && delivery.findings.length === 0) {
-      const structural = await validateDeliveryPaths(
+      execution = await validateExecutionEvidence(
         targetDir,
+        slug,
         productMap,
+        { rows: acceptance.rows, capToAcs: acceptance.capToAcs },
         delivery,
-        `.aioson/context/implementation-plan-${slug}.md`,
+        inputs.qaReport,
         implementationDelta
       );
-      execution = { findings: structural.findings, ledger: null, coveredCaps: [] };
       stageFindings.execution.push(...execution.findings);
     } else if (options.includeExecutionStructure && delivery.findings.length === 0) {
       const structural = await validateDeliveryPaths(
@@ -1191,6 +1581,7 @@ async function analyzeFeatureCompleteness(targetDir, slug, options = {}) {
     stage_findings: stageFindings,
     findings,
     product_map: productMap,
+    source_lineage: sourceLineage,
     current_system_fit: currentSystemFit,
     prototype_binding: prototypeBinding,
     acceptance_criteria: acceptance,
@@ -1204,6 +1595,8 @@ async function analyzeFeatureCompleteness(targetDir, slug, options = {}) {
     baseline: { reqs: [], acs: acceptance.rows.map((row) => row.ac).filter(Boolean) },
     summary: {
       promised_capabilities: productMap.rows.length,
+      source_promises: sourceLineage.promises.length,
+      source_promises_covered: sourceLineage.coverage.length,
       required_capabilities: productMap.requiredCaps.length,
       current_system_fit_rows: currentSystemFit.rows.length,
       prototype_binding: prototypeBinding.status,

@@ -17,6 +17,7 @@ const {
   detectClassification
 } = require('../preflight-engine');
 const { analyzeFeatureCompleteness } = require('../lib/feature-completeness');
+const { validateCurrentSheldonReview } = require('../lib/sheldon-review');
 
 const BAR = '━'.repeat(45);
 
@@ -36,6 +37,9 @@ async function runArtifactValidate({ args, options = {}, logger }) {
   const productScope = String(artifacts.prd.frontmatter?.product_scope || '').toLowerCase();
   const prdReadyStatus = String(artifacts.prd.frontmatter?.prd_ready || '').toLowerCase();
   const prdReady = artifacts.prd.exists && productScope === 'approved' && prdReadyStatus === 'approved';
+  const sheldonReview = artifacts.prd.exists
+    ? await validateCurrentSheldonReview(targetDir, slug, path.join(targetDir, artifacts.prd.path))
+    : { ok: false, reason: 'prd_missing', message: 'PRD is missing.' };
 
   // Implementation plan status
   const planStatus = artifacts.implementation_plan.exists
@@ -59,6 +63,15 @@ async function runArtifactValidate({ args, options = {}, logger }) {
         : null,
       required: true,
       indent: 0
+    },
+    {
+      name: 'sheldon-review',
+      exists: sheldonReview.ok,
+      detail: sheldonReview.ok
+        ? `hash-bound PASS: ${sheldonReview.report_path}`
+        : sheldonReview.message,
+      required: true,
+      indent: 1
     },
     {
       name: `implementation-plan-${slug}.md`,
@@ -87,6 +100,7 @@ async function runArtifactValidate({ args, options = {}, logger }) {
   const ARTIFACT_OWNER_MAP = {
     'project.context.md': { agent: '@setup', reason: 'setup not complete' },
     [`prd-${slug}.md`]: { agent: '@product', reason: 'PRD not produced yet' },
+    'sheldon-review': { agent: '@sheldon', reason: 'independent PRD review is missing or stale' },
     [`implementation-plan-${slug}.md`]: { agent: '@planner', reason: 'implementation plan not produced yet' }
   };
 

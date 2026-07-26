@@ -26,4 +26,4 @@ QA still owns the delivery verdict from PRD + plan + implementation + focused te
 
 If context becomes noisy, compact around the PRD, current plan phase, selected project knowledge, changed paths, and concrete evidence. Do not create another summary artifact merely to reduce context.
 
-The harness remains optional and bounded by the plan. A failing planned harness criterion may block that planned phase; absence of a harness never blocks the normal Product → Planner → Dev → QA route.
+The harness remains optional and bounded by the plan. A failing planned harness criterion may block that planned phase; absence of a harness never blocks the normal Product → Sheldon → Planner → Dev → QA route.

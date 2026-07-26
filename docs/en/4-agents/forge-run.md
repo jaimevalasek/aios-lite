@@ -9,7 +9,7 @@ It is not a canonical feature stage and classification never invokes it automati
 The normal route remains:
 
 ```text
-Product → optional Sheldon → Planner → DEV → QA
+Product → Sheldon → Planner → DEV → QA
 ```
 
 Generic `development_lanes` are the supported way for DEV to use different host/model combinations for bounded implementation scopes. Those lanes run sequentially in the shared worktree and return to DEV for final integration.

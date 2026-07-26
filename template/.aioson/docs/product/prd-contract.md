@@ -1,5 +1,5 @@
 ---
-description: "Single-authority PRD contract for the streamlined Product → Planner workflow, with optional Sheldon enrichment."
+description: "Single-authority PRD contract for Product → Sheldon → Planner with source-promise coverage and approved prototype binding."
 agents: [product, sheldon]
 modes: [executing]
 task_types: [prd-writing, prd-finalization, output-contract]
@@ -14,7 +14,7 @@ triggers: [writing PRD, updating PRD, PRD contract, current system fit, output p
 - Project: `.aioson/context/prd.md`
 - Feature: `.aioson/context/prd-{slug}.md`
 
-This file is the single product/specification authority. Product must make it ready for planning; Sheldon may challenge and enrich it in place.
+This file is the single product/specification authority. Product makes it review-ready; Sheldon must challenge, enrich, and hash-bind approve it in place before Planner.
 
 ## Frontmatter
 
@@ -25,7 +25,7 @@ classification: SMALL
 feature_completeness: required
 product_scope: approved
 prd_ready: approved
-sheldon_review: not_requested
+sheldon_review: pending
 prototype: .aioson/briefings/{slug}/prototype.html
 prototype_status: current
 prototype_feature: {slug}
@@ -40,13 +40,14 @@ prototype_status: none
 prototype_feature: null
 ```
 
-If Sheldon is explicitly invoked, it records `sheldon_review: approved` after the independent enrichment. Planner never requires that optional marker.
+After the final PRD edit, Sheldon records `sheldon_review: approved` and promotes a current hash-bound PASS. Planner requires both; any later PRD or hard-authority edit invalidates the review.
 
 ## Required structure
 
 - Vision
 - Problem and users
 - `## Feature Capability Map`
+- `## Source Coverage` when the approved briefing contains `PROM-*`
 - `## Current System Fit`
 - MVP scope
 - Out of scope
@@ -64,6 +65,16 @@ Capability map:
 |---|---|---|---|---|
 | CAP-{slug}-main | observable outcome | actor/trigger | required | concrete reason |
 ```
+
+Source coverage:
+
+```markdown
+| Promise | Product decision | CAP / AC | Evidence or rationale |
+|---|---|---|---|
+| PROM-{slug}-01 | required | CAP-{slug}-main / AC-{slug}-01 | preserved from SRC-001 |
+```
+
+Every briefing promise appears exactly once. Required or already-satisfied promises map to known CAP/AC IDs; deferred, rejected, or not-applicable promises record a concrete rationale.
 
 Current-system fit:
 
@@ -87,7 +98,7 @@ Acceptance criteria:
 
 Resolve prototype ownership before using it:
 
-- Only `.aioson/briefings/{slug}/prototype.html` plus a manifest declaring `feature: {slug}` can bind `prd-{slug}.md`.
+- Only `.aioson/briefings/{slug}/prototype.html` plus an approved manifest declaring `feature: {slug}` can bind `prd-{slug}.md`.
 - A prototype under another slug remains owned by that feature after closure. Record it only as an excluded historical reference; never infer it is current because search found it.
 - When no owned prototype exists, write `prototype: null`, `prototype_status: none`, and a `## Prototype contract` with `status: none`.
 - If the user explicitly wants an old experience to govern the new feature, first create or re-synchronize a new feature-owned prototype under the active slug. Never cross-link the old folder.
@@ -105,6 +116,6 @@ With `current`, the prototype is binding source evidence for layout, interaction
 
 ## Routing
 
-- MICRO/SMALL/MEDIUM feature → `@planner`, then `@dev` and `@qa`.
+- MICRO/SMALL/MEDIUM feature → `@sheldon`, then `@planner`, `@dev`, and `@qa`.
 - A bounded already-specified technical outcome may use the separate Simple Plan lane directly with `@dev`.
-- Sheldon and other specialists are opt-in for one concrete unresolved decision, explicit review, or triggered risk in any classification.
+- Other specialists remain opt-in for one concrete unresolved decision, explicit review, or triggered risk.

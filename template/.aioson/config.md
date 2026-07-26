@@ -7,15 +7,15 @@
 - For `project_type=site` and `project_type=web_app`, visual system choice is explicit workflow data. Record it in `design_skill` or leave it blank on purpose; never auto-pick a design skill silently.
 
 ## Project sizes
-- MICRO: `@setup -> @product -> @planner -> @dev -> @qa` (terse artifacts and narrow review)
-- SMALL: `@setup -> @product -> @planner -> @dev -> @qa`
-- MEDIUM: `@setup -> @product -> @planner -> @dev -> @qa`
+- MICRO: `@setup -> @product -> @sheldon -> @planner -> @dev -> @qa` (terse artifacts and narrow review)
+- SMALL: `@setup -> @product -> @sheldon -> @planner -> @dev -> @qa`
+- MEDIUM: `@setup -> @product -> @sheldon -> @planner -> @dev -> @qa`
 
 MICRO, SMALL, and MEDIUM use the same feature agents and the same three-artifact contract. Classification controls budgets and depth inside the PRD, plan, implementation, tests, and runtime evidence; it does not add or remove document-producing hops. An already-specified bounded technical task uses the separate Simple Plan lane.
 
-Canonical artifacts are exactly: one PRD from `@product` (optionally enriched in place by `@sheldon`), one `implementation-plan-{slug}.md` from `@planner`, and one `qa-report-{slug}.md` from `@qa`. Briefing and briefing refinement are optional inputs before Product. Requirements/spec/design/readiness/conformance/harness documents are never canonical prerequisites.
+Canonical artifacts are exactly: one PRD from `@product`, mandatorily reviewed/enriched in place by `@sheldon`, one `implementation-plan-{slug}.md` from `@planner`, and one `qa-report-{slug}.md` from `@qa`. Raw source packs under `plans/{slug}/`, Briefing, Briefing Refiner, and an approved owned prototype are cumulative pre-product inputs when used. Requirements/spec/design/readiness/conformance/harness documents are never canonical prerequisites.
 
-The lightweight feature dossier, selected project knowledge, and all specialists are intelligence available to every classification. `@sheldon`, `@analyst`, `@architect`, `@pm`, `@discovery-design-doc`, `@scope-check`, `@ux-ui`, and `@orchestrator` remain opt-in for a concrete unresolved question. `@tester`, `@pentester`, and `@validator` run only when the approved plan, the risk surface, QA findings, or the user explicitly trigger them. None is a classification-driven gate. The normal runtime smoke uses the real application and real production path; a separate harness is optional.
+The lightweight feature dossier, selected project knowledge, and all specialists are intelligence available to every classification. `@sheldon` is the mandatory pre-Planner PRD reviewer. `@analyst`, `@architect`, `@pm`, `@discovery-design-doc`, `@scope-check`, `@ux-ui`, and `@orchestrator` remain opt-in for a concrete unresolved question. `@tester`, `@pentester`, and `@validator` run only when the approved plan, the risk surface, QA findings, or the user explicitly trigger them. None is a classification-driven gate. The normal runtime smoke uses the real application and real production path; a separate harness is optional.
 
 Optional alignment checkpoints:
 - After `@dev`: `@scope-check --scope-mode=post-dev` when the implementation changed planned behavior, touched unexpected files, or skipped approved scope.
@@ -69,7 +69,7 @@ Optional testing fields:
 - `test_runner` (for example `pest`, `jest`, `vitest`, `pytest`, `rspec`, `foundry`)
 
 Optional workflow fields:
-- `auto_handoff` (boolean, default `false`) — when `true`, the canonical feature chain advances `@product -> @planner -> @dev -> @qa` until a real human decision or failed gate stops it. Sheldon and other specialists run only through an explicit evidence-based detour. Protocol and stop conditions: `.aioson/docs/autopilot-handoff.md`.
+- `auto_handoff` (boolean, default `false`) — when `true`, the canonical feature chain advances `@product -> @sheldon -> @planner -> @dev -> @qa` until a real human decision or failed gate stops it. Other specialists run only through an explicit evidence-based detour. Protocol and stop conditions: `.aioson/docs/autopilot-handoff.md`.
 
 Allowed `project_type` values:
 - `web_app`
@@ -321,6 +321,8 @@ When a workflow stage completes or an agent finishes via `runtime-log --finish`,
 Agents can read this file on activation to resume work without losing context between sessions.
 
 ## Context compaction template
+
+For an active feature, first update `mappings/{slug}/continuity.md` when material session-only context could otherwise be compressed away. Follow `.aioson/docs/feature-continuity-mapping.md`: the file is temporary, noncanonical, and can never replace raw sources under `plans/{slug}/`, approved feature artifacts, implementation, or verification evidence.
 
 When approaching context threshold, any agent can write a structured checkpoint to
 `.aioson/context/last-handoff.json` before compacting:

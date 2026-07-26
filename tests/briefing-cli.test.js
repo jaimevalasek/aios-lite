@@ -45,6 +45,13 @@ test('briefing:approve dispatches through the CLI and approves a draft registry 
       }
     ]
   });
+  const briefingDir = path.join(projectDir, '.aioson', 'briefings', 'cli-dispatch');
+  await fs.mkdir(briefingDir, { recursive: true });
+  await fs.writeFile(
+    path.join(briefingDir, 'briefings.md'),
+    '---\nprototype: not_applicable\n---\n\n# CLI dispatch\n',
+    'utf8'
+  );
 
   const cli = await runCli([
     'briefing:approve',

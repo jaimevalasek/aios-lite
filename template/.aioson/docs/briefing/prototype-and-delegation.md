@@ -1,5 +1,5 @@
 ---
-description: Optional Briefing Refiner prototype route, reference identity extraction, and explicit-model delegation
+description: Briefing Refiner prototype route, reference identity extraction, and explicit-model delegation
 agents: [briefing-refiner]
 task_types: [briefing-prototype, visual-refinement, explicit-model-delegation]
 triggers: [prototype requested, rich-surface prototype accepted, user names another model]
@@ -7,7 +7,7 @@ triggers: [prototype requested, rich-surface prototype accepted, user names anot
 
 # Briefing Prototype and Delegation
 
-Load only after the user requests prototype mode, accepts a non-blocking rich-surface recommendation, or explicitly names another model for a bounded supporting task.
+Load for every visible or interaction-bearing feature, or when the user explicitly names another model for a bounded supporting task. A genuinely non-visual feature may record `prototype: not_applicable` with evidence instead.
 
 ## Explicit model delegation
 
@@ -26,7 +26,7 @@ aioson delegation:plan . --explicit-model-request --host=<current-host> --provid
 
 ## Prototype trigger and inputs
 
-Prototype mode is appropriate for workspaces, boards/cards, pipelines, CRM/Kanban, dashboards, admin/management, repeated CRUD, builders/editors, and other interaction-heavy surfaces. It is optional and never blocks approval.
+Prototype mode is required for workspaces, boards/cards, pipelines, CRM/Kanban, dashboards, admin/management, repeated CRUD, builders/editors, and other visible or interaction-heavy surfaces. Approval blocks until the active-feature prototype exists and its owned manifest can be frozen as `status: approved`; only a genuinely non-visual feature may use an explicit `not_applicable` decision.
 
 Read the briefing and its operational surface from `solution-options.md` or `expansion-scout.md`, falling back to `.aioson/docs/feature-expansion-taxonomy.md`.
 
@@ -59,8 +59,8 @@ If the user named another model for reference research or critique, finish expli
 .aioson/briefings/{slug}/prototype-manifest.md
 ```
 
-The manifest declares `feature: {slug}` and `status: draft`. Never reuse another briefing's manifest/prototype.
+The manifest declares `feature: {slug}` and `status: draft` during refinement. Never reuse another briefing's manifest/prototype. The user-controlled `aioson briefing:approve` command changes it to `status: approved`; only then may Product and downstream agents treat it as binding.
 4. Verify owner/path directly because no PRD exists. Product later runs `aioson prototype:check . --feature={slug} --strict`.
-5. Give the exact paths and state that the prototype is mock-only, refresh may reset state, there is no backend, and status remains draft until Product freezes and re-syncs scope.
+5. Give the exact paths and state that the prototype models the final visual/interaction contract but does not prove backend integration: mock-only behavior is design evidence, never implementation proof, and refresh may reset mock state. Status remains draft until the user approves the briefing, then Product must preserve or explicitly document deviations from the approved binding.
 
 Prototype work never edits `briefings.md`, never becomes canonical feedback, and never trades away a Core screen/action/state for visual polish.

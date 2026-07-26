@@ -10,6 +10,11 @@
       "inputs": [
         {
           "type": "artifact",
+          "path_pattern": ".aioson/briefings/{slug}/briefings.md",
+          "required": false
+        },
+        {
+          "type": "artifact",
           "path_pattern": ".aioson/context/prd-{slug}.md",
           "required": true
         },
@@ -17,6 +22,16 @@
           "type": "artifact",
           "path_pattern": ".aioson/context/implementation-plan-{slug}.md",
           "required": true
+        },
+        {
+          "type": "artifact",
+          "path_pattern": ".aioson/context/reviews/{slug}/reports/sheldon-*.json",
+          "required": true
+        },
+        {
+          "type": "artifact",
+          "path_pattern": ".aioson/briefings/{slug}/prototype.html",
+          "required": false
         },
         {
           "type": "artifact",

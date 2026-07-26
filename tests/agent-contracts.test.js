@@ -170,18 +170,31 @@ test('Tester and Pentester implement only bounded corrections and return accepta
   assert.equal(Object.hasOwn(pentesterManifest, 'workflow_insertion'), false);
 });
 
-test('MICRO, SMALL, and MEDIUM share the same streamlined route with optional Sheldon', async () => {
+test('MICRO, SMALL, and MEDIUM share the same streamlined route with mandatory Sheldon', async () => {
   const [agents, config, skill] = await Promise.all([
     read('AGENTS.md'),
     read('.aioson/config.md'),
     read('.aioson/skills/process/aioson-spec-driven/SKILL.md')
   ]);
   for (const content of [agents, config, skill]) {
-    assert.match(content, /product.*planner.*dev.*qa/is);
+    assert.match(content, /product.*sheldon.*planner.*dev.*qa/is);
   }
   assert.match(config, /classification controls budgets and depth/i);
   assert.match(config, /opt-in|optional/i);
-  assert.match(config, /Sheldon.*opt-in|Sheldon.*optional/i);
+  assert.match(config, /Sheldon.*mandatory/i);
+});
+
+test('feature agents preserve compaction continuity without promoting mappings to authority', async () => {
+  const agents = ['briefing', 'briefing-refiner', 'product', 'sheldon', 'planner', 'dev', 'qa'];
+  for (const agent of agents) {
+    const content = await read(`.aioson/agents/${agent}.md`);
+    assert.match(content, /mappings\/\{slug\}\/continuity\.md/, `${agent} lacks the continuity mapping rule`);
+    assert.match(content, /temporary|non-canonical|noncanonical/i, `${agent} does not mark the mapping temporary`);
+    assert.match(content, /never (?:a gate|proof|replaces)|never.*gate|cannot change/i, `${agent} may promote the mapping to authority`);
+  }
+  const mapping = await read('.aioson/docs/feature-continuity-mapping.md');
+  assert.match(mapping, /never replaces or overrides/i);
+  assert.match(mapping, /never creates scope, grants approval, satisfies a workflow gate, or proves implementation/i);
 });
 
 test('QA is a bounded reviewer and never deepens work merely by classification', async () => {
@@ -216,13 +229,19 @@ test('observability is best-effort and agent:done stays last', async () => {
   }
 });
 
-test('help and manifests expose Planner as a first-class agent', async () => {
-  const [help, manifest, devManifest] = await Promise.all([
+test('help and manifests expose Planner and the physical Sheldon review contract', async () => {
+  const [help, manifest, sheldonManifest, devManifest, qaManifest] = await Promise.all([
     read('.aioson/docs/agent-help.md'),
     read('.aioson/agents/manifests/planner.manifest.json'),
-    read('.aioson/agents/manifests/dev.manifest.json')
+    read('.aioson/agents/manifests/sheldon.manifest.json'),
+    read('.aioson/agents/manifests/dev.manifest.json'),
+    read('.aioson/agents/manifests/qa.manifest.json')
   ]);
   assert.match(help, /## @planner/);
   assert.equal(JSON.parse(manifest).agent_id, 'planner');
   assert.ok(JSON.parse(devManifest).capabilities.some((capability) => JSON.stringify(capability).includes('implementation-plan-{slug}.md')));
+  for (const raw of [manifest, sheldonManifest, devManifest, qaManifest]) {
+    assert.match(raw, /\.aioson\/context\/reviews\/\{slug\}\/reports\/sheldon-\*\.json/);
+    assert.doesNotMatch(raw, /reviews\/\{slug\}\/sheldon\/\*\.md/);
+  }
 });

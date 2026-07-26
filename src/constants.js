@@ -108,6 +108,7 @@ const MANAGED_FILES = [
   '.aioson/docs/deyvin/pair-execution.md',
   '.aioson/docs/deyvin/runtime-handoffs.md',
   '.aioson/docs/deyvin/debugging-escalation.md',
+  '.aioson/docs/feature-continuity-mapping.md',
   '.aioson/docs/handoff-persistence.md',
   '.aioson/docs/integrations/dashboard-app-form-publish-mapping.md',
   '.aioson/docs/play/README.md',
@@ -591,7 +592,7 @@ const AGENT_DEFINITIONS = [
       '.aioson/context/prd.md or .aioson/context/prd-{slug}.md',
       '.aioson/briefings/{slug}/prototype.html + prototype-manifest.md (when present)'
     ],
-    output: 'optional in-place PRD enrichment, marked sheldon_review: approved when requested'
+    output: 'mandatory independent in-place PRD review, sealed by sheldon_review: approved and a current hash-bound PASS'
   },
   {
     id: 'planner',

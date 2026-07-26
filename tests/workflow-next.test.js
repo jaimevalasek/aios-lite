@@ -14,6 +14,10 @@ const {
   runWorkflowNext,
   applySkip
 } = require('../src/commands/workflow-next');
+const {
+  approveAndSealSheldonReview,
+  qaExecutionReport
+} = require('./helpers/feature-evidence');
 
 async function tmp() { return fs.mkdtemp(path.join(os.tmpdir(), 'aioson-workflow-next-')); }
 async function write(root, rel, body) {
@@ -46,7 +50,7 @@ async function active(root, slug = 'demo') {
 | ${slug} | in_progress | 2026-07-22 | |
 `);
 }
-function productPrd({ review = 'not_requested', readiness = 'approved', acceptance = true, classification = 'SMALL' } = {}) {
+function productPrd({ review = 'pending', readiness = 'approved', acceptance = true, classification = 'SMALL' } = {}) {
   return `---\nclassification: ${classification}\nproduct_scope: approved\nprd_ready: ${readiness}\nsheldon_review: ${review}\n---\n# Demo\n\n## Feature Capability Map\n\n| CAP | Promised outcome | Actor / trigger | Scope decision | Rationale |\n|---|---|---|---|---|\n| CAP-demo-01 | User sees a saved result | User submits | required | Core promise |\n${acceptance ? `\n## Acceptance Criteria\n\n| AC | CAP | Observable behavior | Evidence |\n|---|---|---|---|\n| AC-demo-01 | CAP-demo-01 | Saved result appears | integration test |\n` : ''}`;
 }
 function plan() {
@@ -58,7 +62,7 @@ async function next(root, options = {}) {
 
 test('default SMALL and MEDIUM feature routes are identical and streamlined', () => {
   const config = buildDefaultWorkflowConfig();
-  const expected = ['product', 'planner', 'dev', 'qa'];
+  const expected = ['product', 'sheldon', 'planner', 'dev', 'qa'];
   assert.deepEqual(config.feature.MICRO, expected);
   assert.deepEqual(config.feature.SMALL, expected);
   assert.deepEqual(config.feature.MEDIUM, expected);
@@ -90,27 +94,27 @@ test('workflow activation applies direct --auto and --step overrides', async () 
   assert.doesNotMatch(stepResult.prompt, /autopilot handoff is active/i);
 });
 
-test('a Product-ready PRD advances directly to Planner', async () => {
+test('a Product-ready PRD advances to mandatory Sheldon review', async () => {
   const root = await tmp();
   await context(root);
   await active(root);
   await write(root, '.aioson/context/prd-demo.md', productPrd());
   const result = await next(root);
-  assert.equal(result.agent, 'planner');
+  assert.equal(result.agent, 'sheldon');
   assert.deepEqual(result.completed, ['product']);
 });
 
-test('MEDIUM uses the same Product-to-Planner handoff without legacy artifacts', async () => {
+test('MEDIUM uses the same Product-to-Sheldon handoff without legacy artifacts', async () => {
   const root = await tmp();
   await context(root, 'MEDIUM');
   await active(root);
   await write(root, '.aioson/context/prd-demo.md', productPrd({ classification: 'MEDIUM' }));
   const result = await next(root);
-  assert.equal(result.agent, 'planner');
+  assert.equal(result.agent, 'sheldon');
   assert.deepEqual(result.completed, ['product']);
 });
 
-test('Sheldon remains available as an explicit custom detour', async () => {
+test('Sheldon remains mandatory when explicitly present in custom configuration', async () => {
   const root = await tmp();
   await context(root);
   await active(root);
@@ -129,10 +133,11 @@ test('an approved plan advances to Dev', async () => {
   await context(root);
   await active(root);
   await write(root, '.aioson/context/prd-demo.md', productPrd());
+  await approveAndSealSheldonReview(root);
   await write(root, '.aioson/context/implementation-plan-demo.md', plan());
   const result = await next(root);
   assert.equal(result.agent, 'dev');
-  assert.deepEqual(result.completed, ['product', 'planner']);
+  assert.deepEqual(result.completed, ['product', 'sheldon', 'planner']);
 });
 
 test('QA FAIL uses one bounded DEV correction and returns to a final QA pass', async () => {
@@ -140,6 +145,7 @@ test('QA FAIL uses one bounded DEV correction and returns to a final QA pass', a
   await context(root);
   await active(root);
   await write(root, '.aioson/context/prd-demo.md', productPrd());
+  await approveAndSealSheldonReview(root);
   await write(root, '.aioson/context/implementation-plan-demo.md', plan());
   await write(root, 'src/demo.js', 'module.exports = { saved: true };\n');
   await write(
@@ -156,10 +162,10 @@ test('QA FAIL uses one bounded DEV correction and returns to a final QA pass', a
     version: 1,
     mode: 'feature',
     classification: 'SMALL',
-    sequence: ['product', 'planner', 'dev', 'qa'],
+    sequence: ['product', 'sheldon', 'planner', 'dev', 'qa'],
     current: 'qa',
     next: null,
-    completed: ['product', 'planner', 'dev'],
+    completed: ['product', 'sheldon', 'planner', 'dev'],
     skipped: [],
     featureSlug: 'demo',
     detour: null,
@@ -171,7 +177,7 @@ test('QA FAIL uses one bounded DEV correction and returns to a final QA pass', a
   assert.equal(correction.agent, 'dev');
   assert.equal(correction.reviewCycle.action, 'invoke_dev');
   assert.equal(correction.reviewCycle.cycle, 1);
-  assert.deepEqual(correction.completed, ['product', 'planner']);
+  assert.deepEqual(correction.completed, ['product', 'sheldon', 'planner']);
   assert.match(correction.prompt, /Bounded QA correction cycle \(1\/1\)/);
 
   const devComplete = await next(root, { complete: 'dev' });
@@ -183,36 +189,10 @@ test('QA FAIL uses one bounded DEV correction and returns to a final QA pass', a
   );
   assert.equal(resolvedCycle.status, 'resolved');
 
-  await write(
-    root,
-    '.aioson/context/qa-report-demo.md',
-    `---
-verdict: PASS
-production_entry: node src/demo.js
----
-# QA Report
-
-## Verdict and blocking findings
-
-PASS — no blocking findings.
-
-## CAP/AC evidence table
-
-| CAP | AC | Result | Evidence |
-|---|---|---|---|
-| CAP-demo-01 | AC-demo-01 | PASS | node --test tests/demo.test.js |
-
-## Commands executed and results
-
-- node --test tests/demo.test.js — PASS
-
-## Production-path smoke
-
-- Entry: node src/demo.js
-- Trigger: normal module entry
-- Result: saved state is observable
-`
-  );
+  await write(root, '.aioson/context/qa-report-demo.md', qaExecutionReport({
+    command: 'node --test tests/demo.test.js',
+    entry: 'node src/demo.js'
+  }));
   const passed = await next(root, { complete: 'qa' });
   assert.equal(passed.completedStage, 'qa');
   assert.equal(passed.agent, null);
@@ -227,16 +207,17 @@ test('QA correction limit persists and blocks repeated re-entry', async () => {
   await context(root);
   await active(root);
   await write(root, '.aioson/context/prd-demo.md', productPrd());
+  await approveAndSealSheldonReview(root);
   await write(root, '.aioson/context/implementation-plan-demo.md', plan());
   await write(root, '.aioson/context/qa-report-demo.md', '---\nverdict: FAIL\n---\n# QA Report\n\nBlocking defect.\n');
   const state = {
     version: 1,
     mode: 'feature',
     classification: 'SMALL',
-    sequence: ['product', 'planner', 'dev', 'qa'],
+    sequence: ['product', 'sheldon', 'planner', 'dev', 'qa'],
     current: 'qa',
     next: null,
-    completed: ['product', 'planner', 'dev'],
+    completed: ['product', 'sheldon', 'planner', 'dev'],
     skipped: [],
     featureSlug: 'demo',
     detour: null,
@@ -276,9 +257,36 @@ test('loadOrCreateState persists the canonical sequence', async () => {
   await context(root);
   await active(root);
   const loaded = await loadOrCreateState(root);
-  assert.deepEqual(loaded.state.sequence, ['product', 'planner', 'dev', 'qa']);
+  assert.deepEqual(loaded.state.sequence, ['product', 'sheldon', 'planner', 'dev', 'qa']);
   const persisted = JSON.parse(await fs.readFile(path.join(root, '.aioson/context/workflow.state.json'), 'utf8'));
   assert.deepEqual(persisted.sequence, loaded.state.sequence);
+});
+
+test('legacy feature state rewinds to Sheldon when no current hash-bound review exists', async () => {
+  const root = await tmp();
+  await context(root);
+  await active(root);
+  await write(root, '.aioson/context/prd-demo.md', productPrd({ review: 'approved' }));
+  await write(root, '.aioson/context/workflow.state.json', JSON.stringify({
+    version: 1,
+    mode: 'feature',
+    classification: 'SMALL',
+    sequence: ['product', 'planner', 'dev', 'qa'],
+    current: 'dev',
+    next: 'dev',
+    completed: ['product', 'planner'],
+    skipped: [],
+    featureSlug: 'demo',
+    detour: null,
+    updatedAt: new Date().toISOString()
+  }));
+
+  const loaded = await loadOrCreateState(root);
+  assert.deepEqual(loaded.state.sequence, ['product', 'sheldon', 'planner', 'dev', 'qa']);
+  assert.deepEqual(loaded.state.completed, ['product']);
+  assert.deepEqual(loaded.state.skipped, []);
+  assert.equal(loaded.state.current, null);
+  assert.equal(loaded.state.next, 'sheldon');
 });
 
 test('custom workflow configuration remains an explicit opt-in escape hatch', async () => {
@@ -289,7 +297,7 @@ test('custom workflow configuration remains an explicit opt-in escape hatch', as
   }));
   const loaded = await readWorkflowConfig(root);
   assert.equal(loaded.exists, true);
-  assert.deepEqual(loaded.config.feature.SMALL, ['product', 'architect', 'planner', 'dev', 'qa']);
+  assert.deepEqual(loaded.config.feature.SMALL, ['product', 'architect', 'sheldon', 'planner', 'dev', 'qa']);
 });
 
 test('workflow skip cannot bypass Dev', () => {
@@ -299,6 +307,15 @@ test('workflow skip cannot bypass Dev', () => {
     current: 'planner', next: 'dev', completed: ['product'], skipped: [], featureSlug: 'demo', detour: null
   };
   assert.throws(() => applySkip(config, state, 'qa'));
+});
+
+test('workflow skip cannot bypass Sheldon', () => {
+  const config = buildDefaultWorkflowConfig();
+  const state = {
+    mode: 'feature', classification: 'SMALL', sequence: [...config.feature.SMALL],
+    current: 'product', next: 'sheldon', completed: ['product'], skipped: [], featureSlug: 'demo', detour: null
+  };
+  assert.throws(() => applySkip(config, state, 'planner'), /sheldon.*mandatory/i);
 });
 
 test('features parser ignores separators and returns active rows', () => {

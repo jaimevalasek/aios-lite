@@ -42,7 +42,7 @@ const GATE_TARGETS = {
 
 const GATE_NEXT_AGENTS = {
   A: { agent: '@product', action: '/product', why: 'Product scope exists — Product can finish observable acceptance criteria and PRD readiness' },
-  B: { agent: '@planner', action: '/planner', why: 'Product marked the PRD implementation-ready — planning can proceed' },
+  B: { agent: '@sheldon', action: '/sheldon', why: 'Product marked the PRD implementation-ready — independent review must seal it before planning' },
   C: { agent: '@dev', action: '/dev', why: 'Implementation plan approved — development can proceed' },
   D: { agent: 'feature complete', action: 'mark feature done in features.md', why: 'Gate D (execution) approved — feature is complete' }
 };

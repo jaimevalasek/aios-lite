@@ -17,6 +17,11 @@ const ARTIFACT_KINDS = Object.freeze([
   'requirements',
   'spec',
   'plan',
+  'briefing',
+  'prototype',
+  'qa_report',
+  'evidence',
+  'mapping',
   'dossier',
   'code',
   'test',
@@ -269,6 +274,8 @@ function mapStageToCapability(stageName) {
   const map = {
     setup: 'initialize_project_context',
     product: 'define_product_scope',
+    sheldon: 'review_product_scope',
+    planner: 'plan_feature_delivery',
     analyst: 'analyze_requirements',
     'scope-check': 'check_scope_alignment',
     architect: 'design_architecture',
@@ -310,8 +317,8 @@ function buildWorkflowHandoffProtocol(state, completedStage, nextAgent, options 
     gate_status: options.gateStatus && typeof options.gateStatus === 'object' ? options.gateStatus : {},
     autonomy_mode: options.autonomyMode || null,
     validation: {
-      handoff_contract_ok: options.handoffContractOk !== false,
-      technical_gate_ok: options.technicalGateOk !== false,
+      handoff_contract_ok: options.handoffContractOk === true,
+      technical_gate_ok: options.technicalGateOk === true,
       validated_at: new Date().toISOString()
     }
   };
@@ -341,8 +348,8 @@ function buildBasicHandoffProtocol(payload) {
     gate_status: {},
     autonomy_mode: payload.autonomyMode || null,
     validation: {
-      handoff_contract_ok: true,
-      technical_gate_ok: true,
+      handoff_contract_ok: payload.handoffContractOk === true,
+      technical_gate_ok: payload.technicalGateOk === true,
       validated_at: new Date().toISOString()
     }
   };

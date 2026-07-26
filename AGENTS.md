@@ -34,7 +34,9 @@ Watch for authorization, exclusion, correction, and repeated confirmation signal
 
 ## Workflow kernel
 
-`aioson workflow:next` owns routing/state when active. Otherwise the canonical feature chain is Product → Planner → DEV → QA; Sheldon is optional and specialists are evidence-triggered or explicitly requested. Between handoffs output only the next agent and why.
+`workflow:next` owns active routing. Otherwise: Product → Sheldon → Planner → DEV → QA. Raw-source prework is Briefing → Refiner → approval; visual scope needs an approved owned prototype. Other specialists need evidence. Between handoffs give only the next agent and why.
+
+Before compaction, `mappings/{slug}/continuity.md` may hold temporary nongating context.
 
 Autopilot applies when the current activation explicitly includes `--auto`, persisted `auto_handoff` is true, or seeded agentic policy enables it. An explicit `--step` disables Autopilot for that activation. It pauses for genuine user decisions and never auto-runs `feature:close`/publish.
 

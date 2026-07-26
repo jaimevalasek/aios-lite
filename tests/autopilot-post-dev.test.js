@@ -92,7 +92,7 @@ test('exceção de autopilot injetada descreve a cadeia full-feature, não o mod
     autoHandoff: true
   });
   assert.doesNotMatch(prompt, /stops before the first `@dev`/, 'texto antigo (parada pré-dev) removido');
-  assert.match(prompt, /canonical chain is `@product → @planner → @dev → @qa`/, 'texto novo descreve a cadeia canônica');
+  assert.match(prompt, /canonical chain is `@product → @sheldon → @planner → @dev → @qa`/, 'texto novo descreve a cadeia canônica');
   assert.match(prompt, /only when enabled and triggered/, 'especialistas continuam proporcionais');
   assert.match(prompt, /NEVER auto-run `feature:close`/, 'gate humano preservado');
 });

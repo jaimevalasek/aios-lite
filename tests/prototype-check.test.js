@@ -44,7 +44,7 @@ prototype_feature: ${SLUG}
 ## MVP scope
 Stuff.
 `;
-const MANIFEST = `---\nfeature: ${SLUG}\nstatus: draft\n---\n\n# Prototype manifest\n\n## Core interactions\n- \`add card\` — adds a card to a list\n- \`create board\` — creates a board\n- \`archive workspace\` — archives a workspace\n`;
+const MANIFEST = `---\nfeature: ${SLUG}\nstatus: approved\n---\n\n# Prototype manifest\n\n## Core interactions\n- \`add card\` — adds a card to a list\n- \`create board\` — creates a board\n- \`archive workspace\` — archives a workspace\n`;
 
 function prdWithAcceptance(criteria) {
   return `${PRD_WITH_REF}\n## Acceptance Criteria\n${criteria}\n`;
@@ -202,6 +202,22 @@ AC-01: add card.
   const r = await run(dir, { strict: true });
   assert.equal(r.ok, false);
   assert.equal(r.reason, 'manifest_feature_missing');
+});
+
+test('prototype:check — strict rejects a draft manifest before human briefing approval', async () => {
+  const dir = await makeTmpDir();
+  await writeFile(dir, `.aioson/context/prd-${SLUG}.md`, prdWithAcceptance(
+    'AC-01: add card persists and re-renders.\nAC-02: create board seeds default lists.\nAC-03: archive workspace hides it.'
+  ));
+  await writeFile(dir, `.aioson/briefings/${SLUG}/prototype.html`, '<html></html>');
+  await writeFile(
+    dir,
+    `.aioson/briefings/${SLUG}/prototype-manifest.md`,
+    MANIFEST.replace('status: approved', 'status: draft')
+  );
+  const r = await run(dir, { strict: true });
+  assert.equal(r.ok, false);
+  assert.equal(r.reason, 'prototype_manifest_not_approved');
 });
 
 test('prototype:check — strict rejects a current binding without a PRD owner', async () => {

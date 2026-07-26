@@ -15,7 +15,7 @@ Consumed by the `## Help (--help)` section of each agent kernel: a standalone `-
 - **Options:** `--auto` (autopilot through implementation and review, stopping before the human `feature:close` gate), `--step` (manual handoffs for this activation). Without a token, follows the feature scheme/project default.
 - **Typical:** `/product --auto build email notifications`, `/product redesign checkout`.
 - **Produces:** one `prd-{slug}.md` product authority with explicit feature-owned prototype status (`current`/`none`) plus the `features.md` index row.
-- **Next:** `@planner` for every feature classification; optional `@sheldon` only for requested/concrete independent enrichment; `@copywriter` for a site-specific content detour.
+- **Next:** `@sheldon` for mandatory independent enrichment and hash-bound approval before Planner; `@copywriter` remains a site-specific content detour.
 
 ## @briefing
 
@@ -118,8 +118,8 @@ Consumed by the `## Help (--help)` section of each agent kernel: a standalone `-
 
 ## @sheldon
 
-- **What:** optionally challenges and enriches the Product PRD in place without creating a parallel specification pack.
-- **When:** the user asks for independent enrichment or Product/Planner identifies a concrete contradiction or material risk.
+- **What:** independently challenges and enriches every feature PRD in place against sources, briefing, approved prototype, repository evidence, and promise coverage without creating a parallel specification pack.
+- **When:** after Product and before Planner in every MICRO/SMALL/MEDIUM feature.
 - **Options:** none at activation — it edits the existing PRD and never creates a parallel spec pack.
 - **Typical:** `/sheldon continue feature quick-filters`.
 - **Produces:** the same `prd-{slug}.md` with `sheldon_review: approved` and stable `CAP-*`/`AC-*` trace.
@@ -128,7 +128,7 @@ Consumed by the `## Help (--help)` section of each agent kernel: a standalone `-
 ## @planner
 
 - **What:** converts the Product-ready PRD and prototype into executable vertical implementation stages.
-- **When:** every MICRO/SMALL/MEDIUM feature after `@product`, or after an optional Sheldon enrichment.
+- **When:** every MICRO/SMALL/MEDIUM feature after the mandatory current Sheldon PASS.
 - **Options:** none; unresolved product behavior returns to Product, while a truly specialist decision may trigger one bounded detour.
 - **Typical:** `/planner plan feature quick-filters`.
 - **Produces:** one `implementation-plan-{slug}.md` with exact paths, dependencies, checks, and early production-path proof.

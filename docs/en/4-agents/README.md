@@ -10,7 +10,7 @@ Cards are being translated progressively. Until a card is available here, the PT
 
 ```text
 optional @briefing → optional @briefing-refiner → @product
-→ optional @sheldon → @planner → @dev → @qa
+→ @sheldon → @planner → @dev → @qa
 ```
 
 MICRO, SMALL, and MEDIUM change depth, risk coverage, and work budget—not the stage chain. Product owns one PRD, Planner owns one implementation plan, and QA owns one final verdict. `@sheldon` may enrich the PRD in place. Agents such as `@analyst`, `@architect`, `@pm`, `@ux-ui`, `@scope-check`, and `@discovery-design-doc` are explicitly requested consultants whose evidence may enrich canonical artifacts without becoming gates.

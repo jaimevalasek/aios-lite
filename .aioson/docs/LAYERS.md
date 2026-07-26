@@ -33,11 +33,11 @@ Only three feature artifacts are canonical and blocking:
 
 | Authority | Artifact | Owner |
 |---|---|---|
-| Product promise and acceptance behavior | `prd-{slug}.md` | Product; optional Sheldon edits in place |
+| Product promise and acceptance behavior | `prd-{slug}.md` | Product; mandatory Sheldon review/enrichment in place |
 | Executable vertical delivery sequence | `implementation-plan-{slug}.md` | Planner |
 | Independent delivery verdict | `qa-report-{slug}.md` | QA |
 
-The prototype and briefing are source evidence. `.aioson/context/features/{slug}/dossier.md` is lightweight, best-effort context memory shared across every classification. It may record decisions, code paths, specialist advice, and evidence, but it never becomes a gate or a substitute for the three authorities above.
+Raw files under `plans/{slug}/`, the briefing/refinement, and an approved feature-owned prototype are cumulative source evidence. `.aioson/context/features/{slug}/dossier.md` and `mappings/{slug}/continuity.md` are lightweight, best-effort context memory. They may record pointers, decisions, code paths, specialist advice, and evidence, but never become a gate or a substitute for canonical authorities.
 
 ## Decision guide
 
@@ -50,6 +50,7 @@ The prototype and briefing are source evidence. `.aioson/context/features/{slug}
 | Reusable domain/integration knowledge | `docs/` |
 | Stable structural convention | `design-docs/` |
 | Proven gotcha or recipe | `learnings/` |
-| Temporary feature context, specialist conclusion, code map | dossier |
+| Temporary cross-compaction continuity | `mappings/{slug}/continuity.md` |
+| Long-lived best-effort feature context, specialist conclusion, code map | dossier |
 
 Do not create requirements, spec, architecture, discovery, design-doc, readiness, conformance, validation, or harness artifacts merely to make a feature appear thorough. A specialist answers one named question and returns the conclusion to Product, Planner, Dev, QA, or the dossier. A harness is valid only when the approved implementation plan deliberately chooses one.

@@ -1,5 +1,5 @@
 ---
-description: "Streamlined closure from PRD capabilities to production-path evidence without parallel specification documents."
+description: "Streamlined closure from fingerprinted source promises through PRD capabilities to production-path evidence without parallel specification documents."
 agents: [briefing, briefing-refiner, product, sheldon, planner, dev, qa, tester, pentester, validator]
 modes: [planning, executing]
 task_types: [feature-framing, prd-writing, implementation-plan, implementation, verification]
@@ -14,12 +14,12 @@ Completeness means every approved promise is implemented and proven. It does not
 Canonical trace:
 
 ```text
-CAP → current-system fit → AC → implementation delta → vertical phase → exact files → executable check → production-path evidence
+source fingerprint → PROM → Product decision → CAP → current-system fit → AC → implementation delta → vertical phase → exact files → executable check → production-path evidence
 ```
 
 Canonical artifacts:
 
-1. `prd-{slug}.md` — Product writes scope, capabilities, acceptance criteria, and implementation readiness; Sheldon may enrich it in place.
+1. `prd-{slug}.md` — Product writes source coverage, scope, capabilities, acceptance criteria, and implementation readiness; Sheldon must independently enrich and hash-bind approve it in place.
 2. `implementation-plan-{slug}.md` — Planner maps capabilities to executable vertical phases.
 3. `qa-report-{slug}.md` — QA records the independent verdict.
 
@@ -37,6 +37,8 @@ Add a behavior or constraint only when the causal chain is explicit:
 - Speculative: discard it.
 
 ## PRD capability map
+
+When Briefing used a feature-owned source pack, its `### Source Inventory` records every `plans/{slug}/` file and current SHA-256; `### Source Promise Map` gives every material promise a stable `PROM-*`. The PRD contains `## Source Coverage`, preserving each promise exactly once as required/already-satisfied with CAP/AC trace, or deferred/rejected/not-applicable with rationale and explicit user approval for any downgrade of an approved required promise.
 
 ```markdown
 ## Feature Capability Map
@@ -101,7 +103,7 @@ The plan also contains `## Engineering Controls`. Planner uses model knowledge t
 QA verifies from promises outward:
 
 - focused stack-native tests cite AC IDs;
-- planned implementation files exist;
+- planned implementation files exist, but their presence alone is never execution proof;
 - the normal application launches;
 - the real trigger crosses the real boundary;
 - state changes and the promised result is visible;
@@ -109,8 +111,8 @@ QA verifies from promises outward:
 
 Detached fixtures, alternate binaries, test-only flags, mock-only screens, status strings, artifact count, and test count are never sufficient production evidence.
 
-Prototype evidence is feature-scoped: `prd-{slug}.md`, `.aioson/briefings/{slug}/prototype.html`, its manifest `feature: {slug}`, and `prototype_feature: {slug}` must agree. A path owned by another or closed feature is a Product-stage completeness error even when the file exists. With no owned prototype, repository-backed current behavior replaces prototype fidelity as the baseline; historical paths remain non-binding.
+Prototype evidence is feature-scoped: `prd-{slug}.md`, `.aioson/briefings/{slug}/prototype.html`, its manifest `feature: {slug}` plus `status: approved`, and `prototype_feature: {slug}` must agree. A path owned by another or closed feature is a Product-stage completeness error even when the file exists. With no owned prototype, repository-backed current behavior replaces prototype fidelity as the baseline; historical paths remain non-binding.
 
-The lightweight dossier is contextual memory, not a canonical deliverable or gate. Specialist evidence (Pentester, Tester, Validator, harness) is available in every classification but risk-triggered, plan-triggered, or explicitly requested—never classification-triggered.
+The lightweight dossier and `mappings/{slug}/continuity.md` are contextual memory, not canonical deliverables or gates. Specialist evidence (Pentester, Tester, Validator, harness) is available in every classification but risk-triggered, plan-triggered, or explicitly requested—never classification-triggered.
 
 When enabled and triggered, Tester/Pentester may implement a bounded, contract-preserving correction with persisted evidence, exact allowed paths, a finite review cycle, and targeted regression proof. QA independently revalidates the change and remains the only Gate D owner. Broader or ambiguous corrections return once to Dev/Product rather than creating an unbounded specialist loop.

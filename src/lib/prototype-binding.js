@@ -46,6 +46,14 @@ function parseManifestFeature(manifest) {
   return parseContractField(manifest, 'feature');
 }
 
+function parseManifestStatus(manifest) {
+  const frontmatter = parseFrontmatter(String(manifest || ''));
+  const frontmatterStatus = scalar(frontmatter.status);
+  if (frontmatterStatus) return frontmatterStatus.toLowerCase();
+  const contractStatus = parseContractField(manifest, 'status');
+  return contractStatus ? contractStatus.toLowerCase() : null;
+}
+
 function issue(reason, message, field = null) {
   return { reason, message, ...(field ? { field } : {}) };
 }
@@ -81,7 +89,8 @@ async function validatePrototypeBinding({
     feature_owned_paths: false,
     prototype_exists: false,
     manifest_exists: false,
-    manifest_feature_matches: false
+    manifest_feature_matches: false,
+    manifest_status_approved: false
   };
 
   const hasPrototypeField = Object.prototype.hasOwnProperty.call(frontmatter, 'prototype');
@@ -361,6 +370,7 @@ async function validatePrototypeBinding({
 
   let manifest = null;
   let manifestFeature = null;
+  let manifestStatus = null;
   if (manifestSafe.ok && checks.feature_owned_paths) {
     manifest = await readFileSafe(manifestSafe.path);
     checks.manifest_exists = manifest !== null;
@@ -372,6 +382,7 @@ async function validatePrototypeBinding({
       ));
     } else {
       manifestFeature = parseManifestFeature(manifest);
+      manifestStatus = parseManifestStatus(manifest);
       if (!manifestFeature) {
         const missingOwner = issue(
           'manifest_feature_missing',
@@ -389,6 +400,14 @@ async function validatePrototypeBinding({
       } else {
         checks.manifest_feature_matches = true;
       }
+      checks.manifest_status_approved = manifestStatus === 'approved';
+      if (strict && !checks.manifest_status_approved) {
+        issues.push(issue(
+          'prototype_manifest_not_approved',
+          `Prototype manifest \`${sectionManifest}\` must declare \`status: approved\` after human briefing approval.`,
+          'status'
+        ));
+      }
     }
   }
 
@@ -403,6 +422,7 @@ async function validatePrototypeBinding({
     manifest: normalizedManifest || null,
     ...(includeManifestContent ? { manifest_content: manifest } : {}),
     manifest_feature: manifestFeature,
+    manifest_status: manifestStatus,
     checks,
     issues,
     warnings,
@@ -421,5 +441,6 @@ module.exports = {
   prototypeContractSection,
   parseContractField,
   parseManifestFeature,
+  parseManifestStatus,
   validatePrototypeBinding
 };

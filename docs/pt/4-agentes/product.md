@@ -33,21 +33,15 @@ MICRO, SMALL e MEDIUM mudam o detalhe do PRD, não o próximo estágio canônico
 
 Se a tarefa já é um resultado técnico delimitado, reutiliza fronteiras existentes e cabe no orçamento de Simple Plan, `@dev` pode tratar diretamente sem abrir uma feature rastreada.
 
-## Sheldon é opcional
+## Sheldon é a revisão obrigatória antes do Planner
 
-Depois de aprovar o PRD, você pode:
-
-```text
-@product → @planner
-```
-
-ou pedir uma revisão crítica:
+Depois de aprovar o PRD, a rota obrigatória é:
 
 ```text
 @product → @sheldon → @planner
 ```
 
-Sheldon enriquece o mesmo PRD. Não cria outro requirements/spec/plano.
+Sheldon reabre as fontes, desafia lacunas em até duas passagens e sela o mesmo PRD com uma revisão PASS vinculada ao hash atual. Não cria outro requirements/spec/plano.
 
 ## Autopilot
 

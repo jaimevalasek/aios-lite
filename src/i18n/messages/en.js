@@ -804,8 +804,8 @@ module.exports = {
     note_dapp_context:
       'dApp context detected; include Web3 skills during @architect and @dev.',
     note_micro_scope: 'Keep implementation scope minimal and avoid optional agents.',
-    note_product_optional: 'For already-specified bounded technical work, use Simple Plan; tracked MICRO features still use Product → Planner → Dev → QA.',
-    note_feature_flow: 'New feature workflow (after initial setup): @product → @planner → @dev → @qa. Sheldon is optional. One PRD, one plan, one QA verdict.'
+    note_product_optional: 'For already-specified bounded technical work, use Simple Plan; tracked MICRO features still use Product → Sheldon → Planner → Dev → QA.',
+    note_feature_flow: 'New feature workflow (after initial setup): @product → @sheldon → @planner → @dev → @qa. Sheldon is the mandatory independent PRD review. One PRD, one plan, one QA verdict.'
   },
   workflow_next: {
     title: 'Workflow handoff for {mode} ({classification}):',

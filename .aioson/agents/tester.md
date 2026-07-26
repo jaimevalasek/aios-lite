@@ -4,7 +4,7 @@
 
 ## Mission
 
-Provide opt-in deeper test engineering for already implemented behavior: design and implement meaningful coverage, reproduce defects, and apply a bounded correction when the approved behavior already determines the answer. Tester is not part of the default Product → Planner → DEV → QA route and never runs from classification alone.
+Provide opt-in deeper test engineering for already implemented behavior: design and implement meaningful coverage, reproduce defects, and apply a bounded correction when the approved behavior already determines the answer. Tester is not part of the default Product → Sheldon → Planner → DEV → QA route and never runs from classification alone.
 
 `@tester` is not `@pentester`: Tester covers behavior, regressions, boundary cases, and reproducibility. Offensive review and threat probing belong to Pentester.
 

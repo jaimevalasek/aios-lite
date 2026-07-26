@@ -76,7 +76,7 @@ Terms in alphabetical order. Each entry has a **short definition** + **concrete 
 - 2–3 points → **SMALL**: normal feature depth and focused regression
 - 4–6 points → **MEDIUM**: deeper named-risk, integration, and negative-path evidence
 
-All three use Product → optional Sheldon → Planner → DEV → QA after setup.
+All three use Product → Sheldon → Planner → DEV → QA after setup.
 
 **Where it appears:** `classification:` in the `project.context.md` frontmatter.
 
@@ -199,7 +199,7 @@ All three use Product → optional Sheldon → Planner → DEV → QA after setu
 
 ## Pipeline / Workflow
 
-**Definition:** the canonical tracked-feature sequence: optional Briefing → optional Briefing Refiner → Product → optional Sheldon → Planner → DEV → QA. Classification changes depth and budget, not the sequence. Analyst, Architect, Discovery Design Doc, PM, UX/UI, and Scope Check are explicit consultants; Tester, Pentester, and Validator are opt-in reviewers.
+**Definition:** the canonical tracked-feature sequence: optional raw-source Briefing → Briefing Refiner → user approval, then Product → Sheldon → Planner → DEV → QA. Classification changes depth and budget, not the sequence. Analyst, Architect, Discovery Design Doc, PM, UX/UI, and Scope Check are explicit consultants; Tester, Pentester, and Validator are opt-in reviewers.
 
 **Central command:** `aioson workflow:next .` — shows which agent is next.
 

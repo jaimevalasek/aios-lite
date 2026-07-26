@@ -259,7 +259,7 @@ Two terminals, running in parallel:
 
 ```bash
 # Terminal 1 — canonical feature flow
-/aioson:agent:setup → @product → optional @sheldon → @planner → @dev
+/aioson:agent:setup → @product → @sheldon → @planner → @dev
 
 # Terminal 2 — browser QA (while app is running)
 aioson qa:init --url=http://localhost:3000

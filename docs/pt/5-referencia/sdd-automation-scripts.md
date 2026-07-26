@@ -66,7 +66,7 @@ Detecta a classificação da feature (MICRO / SMALL / MEDIUM) automaticamente a 
 - **2–3:** SMALL — mesma rota, profundidade padrão
 - **4–6:** MEDIUM — mesma rota, mais detalhe nos riscos e integrações
 
-Rota: `[@briefing → @briefing-refiner] → @product → [@sheldon] → @planner → @dev → @qa`.
+Rota: `[fontes → @briefing → @briefing-refiner → aprovação] → @product → @sheldon → @planner → @dev → @qa`.
 
 **Flags:**
 
@@ -316,33 +316,30 @@ aioson gate:check . --feature=checkout --gate=C --json
 aioson artifact:validate [path] --feature=<slug> [--json]
 ```
 
-Valida a cadeia completa de artefatos de uma feature. Verifica a existência de cada arquivo esperado e reporta o que está presente, ausente ou opcional.
+Valida a cadeia canônica de uma feature e a integridade de conteúdo. Além da presença, exige PRD aprovado, revisão Sheldon PASS atual vinculada ao hash e seções determinísticas de completude.
 
 **Cadeia verificada:**
 
 ```
 project.context.md
   → prd-<slug>.md
-    → sheldon-<slug>.md (opcional para MICRO)
-      → requirements-<slug>.md
-        → spec-<slug>.md
-          → architecture.md
-            → implementation-plan-<slug>.md
-              → conformance-<slug>.yaml (somente MEDIUM)
+    → sheldon-review (obrigatória e vinculada ao hash atual do PRD)
+      → implementation-plan-<slug>.md
+        → qa-report-<slug>.md (opcional enquanto a implementação ainda não chegou ao QA)
 ```
 
 **Saída:**
 
 ```json
 {
-  "ok": true,
+  "ok": false,
   "feature": "checkout",
   "classification": "SMALL",
-  "present": ["project.context.md", "prd-checkout.md", "spec-checkout.md"],
-  "missing": ["implementation-plan-checkout.md"],
-  "optional_missing": ["sheldon-checkout.md"],
-  "chain_complete": false,
-  "next_missing": "implementation-plan-checkout.md"
+  "missing_required": ["sheldon-review", "implementation-plan-checkout.md"],
+  "missing_optional": ["qa-report-checkout.md"],
+  "next_missing": "sheldon-review",
+  "next_agent": "@sheldon (independent PRD review is missing or stale)",
+  "integrity": "INVALID"
 }
 ```
 

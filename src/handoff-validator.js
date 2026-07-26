@@ -1,6 +1,22 @@
 'use strict';
 
+const fs = require('node:fs/promises');
+const path = require('node:path');
 const { readAgentManifest, canAgentPerform } = require('./agent-manifests');
+
+const CANONICAL_COMPLETION_AGENTS = new Set(['product', 'sheldon', 'planner', 'dev', 'qa']);
+
+async function artifactExists(targetDir, relativePath) {
+  const absolute = path.resolve(targetDir, String(relativePath || ''));
+  const relative = path.relative(targetDir, absolute);
+  if (!relative || relative.startsWith('..') || path.isAbsolute(relative)) return false;
+  try {
+    const stat = await fs.stat(absolute);
+    return stat.isFile() || stat.isDirectory();
+  } catch {
+    return false;
+  }
+}
 
 async function validateHandoffProtocol(targetDir, protocol) {
   const errors = [];
@@ -13,7 +29,7 @@ async function validateHandoffProtocol(targetDir, protocol) {
     ? String(protocol.to.capability_required).trim()
     : '';
 
-  if (protocol.to && typeof protocol.to === 'object' && !toAgentId) {
+  if (protocol.to && typeof protocol.to === 'object' && !toAgentId && requiredCapability) {
     errors.push('Missing to.agent_id in handoff protocol');
   }
 
@@ -30,8 +46,36 @@ async function validateHandoffProtocol(targetDir, protocol) {
     ? protocol.validation
     : {};
 
-  if (validation.handoff_contract_ok === false) {
+  const fromAgentId = protocol.from && protocol.from.agent_id
+    ? String(protocol.from.agent_id).trim().replace(/^@/, '').toLowerCase()
+    : '';
+  const completedCanonicalFeatureStage = protocol.workflow_mode === 'feature'
+    && CANONICAL_COMPLETION_AGENTS.has(fromAgentId);
+
+  if (completedCanonicalFeatureStage && validation.handoff_contract_ok !== true) {
+    errors.push('Handoff contract validation was not positively verified');
+  } else if (validation.handoff_contract_ok === false) {
     errors.push('Handoff contract validation failed');
+  }
+
+  if (completedCanonicalFeatureStage && validation.technical_gate_ok !== true) {
+    errors.push('Technical gate was not positively verified');
+  } else if (validation.technical_gate_ok === false) {
+    errors.push('Technical gate validation failed');
+  }
+
+  if (completedCanonicalFeatureStage) {
+    const artifacts = Array.isArray(protocol.artifact_uris) ? protocol.artifact_uris : [];
+    if (artifacts.length === 0) {
+      errors.push('Completed feature handoff must include at least one artifact or evidence URI');
+    } else {
+      for (const item of artifacts) {
+        const artifactPath = item && typeof item === 'object' ? item.path : item;
+        if (!(await artifactExists(targetDir, artifactPath))) {
+          errors.push(`Handoff artifact does not exist inside the project: ${artifactPath || '(missing path)'}`);
+        }
+      }
+    }
   }
 
   return {

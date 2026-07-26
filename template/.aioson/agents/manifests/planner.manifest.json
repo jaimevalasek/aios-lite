@@ -10,7 +10,17 @@
       "inputs": [
         {
           "type": "artifact",
+          "path_pattern": ".aioson/briefings/{slug}/briefings.md",
+          "required": false
+        },
+        {
+          "type": "artifact",
           "path_pattern": ".aioson/context/prd-{slug}.md",
+          "required": true
+        },
+        {
+          "type": "artifact",
+          "path_pattern": ".aioson/context/reviews/{slug}/reports/sheldon-*.json",
           "required": true
         },
         {

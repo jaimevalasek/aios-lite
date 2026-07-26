@@ -5,10 +5,10 @@ Autopilot removes mechanical handoff confirmations while preserving genuine user
 ## Canonical route
 
 ```text
-[optional Briefing → optional Briefing Refiner] → Product → optional Sheldon → Planner → DEV → QA → human close
+[optional raw-source Briefing → Briefing Refiner → user approval] → Product → Sheldon → Planner → DEV → QA → human close
 ```
 
-Briefing and Briefing Refiner are optional when the user already has an approved product direction. Sheldon is optional PRD enrichment. Analyst, Architect, Discovery Design Doc, PM, Scope Check, and UX/UI remain callable consultants, but classification does not insert them into the route and they do not create mandatory artifact packages.
+Briefing and Briefing Refiner are pre-product intake when raw sources need framing. Sheldon is the mandatory independent hash-bound PRD review. Analyst, Architect, Discovery Design Doc, PM, Scope Check, and UX/UI remain callable consultants, but classification does not insert them into the route and they do not create mandatory artifact packages.
 
 MICRO, SMALL, and MEDIUM use the same route. Classification changes depth, risk coverage, and implementation budget—not the number of specification agents.
 

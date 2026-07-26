@@ -86,6 +86,65 @@ function promptCheckboxDeselect(items, promptText) {
   });
 }
 
+function updateFlatFrontmatterField(content, field, value) {
+  const match = String(content || '').match(/^(---\r?\n)([\s\S]*?)(\r?\n---)/);
+  if (!match) return `---\n${field}: ${value}\n---\n\n${content}`;
+  const lines = match[2].split(/\r?\n/);
+  let found = false;
+  const updated = lines.map((line) => {
+    const index = line.indexOf(':');
+    if (index === -1 || line.slice(0, index).trim() !== field) return line;
+    found = true;
+    return `${field}: ${value}`;
+  });
+  if (!found) updated.push(`${field}: ${value}`);
+  return `${match[1]}${updated.join('\n')}${match[3]}${content.slice(match[0].length)}`;
+}
+
+function readFlatFrontmatterField(content, field) {
+  const match = String(content || '').match(/^---\r?\n([\s\S]*?)\r?\n---/);
+  if (!match) return null;
+  for (const line of match[1].split(/\r?\n/)) {
+    const index = line.indexOf(':');
+    if (index === -1 || line.slice(0, index).trim() !== field) continue;
+    return line.slice(index + 1).trim().replace(/^["']|["']$/g, '');
+  }
+  return null;
+}
+
+async function prepareApprovedPrototypeManifest(projectDir, slug, briefingContent = '') {
+  const root = resolveBriefingPath(projectDir, slug);
+  const prototypePath = path.join(root, 'prototype.html');
+  const manifestPath = path.join(root, 'prototype-manifest.md');
+  try {
+    await fsp.access(prototypePath);
+  } catch {
+    const explicitlyNonVisual = /^(?:prototype|prototype_status):\s*(?:not_applicable|not-applicable|none)\s*$/im.test(briefingContent)
+      || /##\s+Prototype contract[\s\S]*?\bstatus:\s*(?:not_applicable|not-applicable|none)\b/i.test(briefingContent);
+    return explicitlyNonVisual
+      ? { ok: true, applicable: false, nonVisual: true }
+      : { ok: false, error: 'prototype_resolution_missing', prototypePath };
+  }
+
+  let manifest;
+  try {
+    manifest = await fsp.readFile(manifestPath, 'utf8');
+  } catch {
+    return { ok: false, error: 'prototype_manifest_missing', manifestPath };
+  }
+  const owner = readFlatFrontmatterField(manifest, 'feature');
+  if (String(owner || '').toLowerCase() !== String(slug).toLowerCase()) {
+    return { ok: false, error: 'prototype_manifest_owner_mismatch', owner, manifestPath };
+  }
+  const status = String(readFlatFrontmatterField(manifest, 'status') || '').toLowerCase();
+  if (!['draft', 'approved'].includes(status)) {
+    return { ok: false, error: 'prototype_manifest_status_invalid', status, manifestPath };
+  }
+  let updated = updateFlatFrontmatterField(manifest, 'status', 'approved');
+  updated = updateFlatFrontmatterField(updated, 'approved_at', new Date().toISOString());
+  return { ok: true, applicable: true, manifestPath, updated };
+}
+
 // ─── briefing:approve ─────────────────────────────────────────────────────────
 
 async function runBriefingApprove({ args, options = {}, logger }) {
@@ -137,6 +196,19 @@ async function runBriefingApprove({ args, options = {}, logger }) {
 
   // ── Approve ────────────────────────────────────────────────────────────────
   const today = new Date().toISOString().slice(0, 10);
+  const briefingContent = await fsp.readFile(
+    resolveBriefingPath(projectDir, target.slug, 'briefings.md'),
+    'utf8'
+  ).catch(() => '');
+  const prototypeApproval = await prepareApprovedPrototypeManifest(
+    projectDir,
+    target.slug,
+    briefingContent
+  );
+  if (!prototypeApproval.ok) {
+    logger.error(`Não foi possível aprovar o protótipo de "${target.slug}": ${prototypeApproval.error}.`);
+    return { ok: false, error: prototypeApproval.error, slug: target.slug };
+  }
 
   const briefingEntry = data.briefings.find((b) => b.slug === target.slug);
   briefingEntry.status = 'approved';
@@ -144,8 +216,14 @@ async function runBriefingApprove({ args, options = {}, logger }) {
   data.updated_at = today;
 
   await writeBriefingRegistry(projectDir, data);
+  if (prototypeApproval.applicable) {
+    await fsp.writeFile(prototypeApproval.manifestPath, prototypeApproval.updated, 'utf8');
+  }
 
   logger.log(`✓ Briefing "${target.slug}" aprovado.`);
+  if (prototypeApproval.applicable) {
+    logger.log('  prototype.html congelado como contrato visual/interacional aprovado.');
+  }
   logger.log('  Ative @product para gerar o PRD — ele detectará o briefing aprovado automaticamente.');
 
   return { ok: true, approved: target.slug };
@@ -215,6 +293,15 @@ async function runBriefingUnapprove({ args, options = {}, logger }) {
     const entry = data.briefings.find((b) => b.slug === target.slug);
     entry.status = 'draft';
     entry.approved_at = null;
+    const manifestPath = resolveBriefingPath(projectDir, target.slug, 'prototype-manifest.md');
+    try {
+      const manifest = await fsp.readFile(manifestPath, 'utf8');
+      let updated = updateFlatFrontmatterField(manifest, 'status', 'draft');
+      updated = updateFlatFrontmatterField(updated, 'approved_at', 'null');
+      await fsp.writeFile(manifestPath, updated, 'utf8');
+    } catch {
+      // A briefing without a prototype has no manifest to return to draft.
+    }
   }
   data.updated_at = today;
 

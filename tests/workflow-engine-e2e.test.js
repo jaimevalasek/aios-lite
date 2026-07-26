@@ -10,6 +10,10 @@ const {
   runWorkflowNext,
   loadOrCreateState
 } = require('../src/commands/workflow-next');
+const {
+  approveAndSealSheldonReview,
+  qaExecutionReport
+} = require('./helpers/feature-evidence');
 
 describe('workflow engine hardening — end-to-end', () => {
   let tmpDir;
@@ -41,8 +45,9 @@ describe('workflow engine hardening — end-to-end', () => {
     );
     await fs.writeFile(
       path.join(dir, '.aioson', 'context', 'prd-test-feature.md'),
-      `---\nclassification: SMALL\nproduct_scope: approved\nprd_ready: approved\nsheldon_review: not_requested\n---\n# PRD\n\n## Feature Capability Map\n\n| CAP | Promised outcome | Actor / trigger | Scope decision | Rationale |\n|---|---|---|---|---|\n| CAP-test-01 | Type-safe behavior is delivered | User starts the app | required | Core promise |\n\n## Acceptance Criteria\n\n| AC | CAP | Observable behavior | Evidence |\n|---|---|---|---|\n| AC-test-01 | CAP-test-01 | App compiles through the normal project command | focused test |\n`
+      `---\nclassification: SMALL\nproduct_scope: approved\nprd_ready: approved\nsheldon_review: pending\n---\n# PRD\n\n## Feature Capability Map\n\n| CAP | Promised outcome | Actor / trigger | Scope decision | Rationale |\n|---|---|---|---|---|\n| CAP-test-01 | Type-safe behavior is delivered | User starts the app | required | Core promise |\n\n## Acceptance Criteria\n\n| AC | CAP | Observable behavior | Evidence |\n|---|---|---|---|\n| AC-test-01 | CAP-test-01 | App compiles through the normal project command | focused test |\n`
     );
+    await approveAndSealSheldonReview(dir, 'test-feature');
     await fs.writeFile(
       path.join(dir, '.aioson', 'context', 'implementation-plan-test-feature.md'),
       `---\nstatus: approved\n---\n# Implementation Plan\n\n## Capability Delivery Plan\n\n| CAP | Phase | Files | Verification |\n|---|---|---|---|\n| CAP-test-01 | 1 | src/index.ts, tests/index.test.js | npm test and npx tsc --noEmit |\n`
@@ -66,10 +71,10 @@ describe('workflow engine hardening — end-to-end', () => {
       version: 1,
       mode: 'feature',
       classification: 'SMALL',
-      sequence: ['product', 'planner', 'dev', 'qa'],
+      sequence: ['product', 'sheldon', 'planner', 'dev', 'qa'],
       current: 'dev',
       next: 'qa',
-      completed: ['product', 'planner'],
+      completed: ['product', 'sheldon', 'planner'],
       skipped: [],
       featureSlug: 'test-feature',
       detour: null,
@@ -100,10 +105,10 @@ describe('workflow engine hardening — end-to-end', () => {
       version: 1,
       mode: 'feature',
       classification: 'SMALL',
-      sequence: ['product', 'planner', 'dev', 'qa'],
+      sequence: ['product', 'sheldon', 'planner', 'dev', 'qa'],
       current: 'dev',
       next: 'qa',
-      completed: ['product', 'planner'],
+      completed: ['product', 'sheldon', 'planner'],
       skipped: [],
       featureSlug: 'test-feature',
       detour: null,
@@ -160,7 +165,13 @@ describe('workflow engine hardening — end-to-end', () => {
     // Step 6: add the independent QA verdict so Gate D passes
     await fs.writeFile(
       path.join(dir, '.aioson', 'context', 'qa-report-test-feature.md'),
-      `---\nverdict: PASS\n---\n# QA Report\n\n- AC-test-01: PASS\n- Normal-entry smoke: PASS\n`
+      qaExecutionReport({
+        slug: 'test-feature',
+        cap: 'CAP-test-01',
+        ac: 'AC-test-01',
+        command: 'npm test',
+        entry: 'npx tsc --noEmit'
+      })
     );
 
     const qaComplete = await runWorkflowNext({

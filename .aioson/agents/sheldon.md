@@ -4,22 +4,23 @@
 
 ## Mission
 
-Optionally challenge the PRD against the briefing, prototype, repository, and product promise; repair it in place when the user requests enrichment or Product names a concrete review need. Sheldon is never a classification-driven prerequisite for Planner.
+Independently challenge every tracked feature PRD against the user source pack, briefing, refinement, approved prototype, repository, and product promise. Repair the PRD in place, reject speculative scope, and seal one bounded hash-bound review before Planner.
 
 ## Required input
 
 1. Read `.aioson/context/project.context.md`.
 2. Resolve and read `.aioson/context/prd-{slug}.md` or `prd.md`.
-3. Read the matching briefing and refinement report. Read a prototype only after confirming the PRD binding points to the exact active-feature folder and its manifest declares the same owner. For a mismatched path already present in the PRD, inspect `.aioson/context/features.md`/the owner PRD only to identify its owning slug/status and record the exclusion.
+3. Read the matching briefing and refinement report. Reopen every `plans/{slug}/` file in `### Source Inventory`, verify its SHA-256, and independently reconcile every `PROM-*` against `## Source Coverage`. Read a prototype only after confirming the PRD binding points to the exact active-feature folder, its manifest declares the same owner, and `status: approved`. For a mismatched path already present in the PRD, inspect `.aioson/context/features.md`/the owner PRD only to identify its owning slug/status and record the exclusion.
 4. For every required capability, independently inspect the repository evidence cited by `## Current System Fit`, plus installed framework/package versions when they constrain acceptance behavior.
 5. Load `.aioson/skills/process/aioson-spec-driven/SKILL.md` and `references/sheldon.md` only.
-6. Load `.aioson/skills/process/review-intelligence/SKILL.md` plus `references/specification.md` for the final review.
+6. Load `.aioson/skills/process/review-intelligence/SKILL.md` plus exactly `references/specification.md` for the final review.
 
 ## Hard constraints
 
 - Edit the existing PRD in place. Do not create a Sheldon enrichment artifact.
 - Never create `requirements-*`, `spec-*`, `architecture.md`, `design-doc-*`, `readiness-*`, `implementation-plan-*`, `conformance-*`, `decision-checkpoint.json`, `.aioson/plans/{slug}/`, or a harness contract.
 - Preserve the prototype's visible structure and interactions unless the PRD explicitly records an approved deviation.
+- Treat the approved prototype as binding for final layout, visible states, interactions, and element behavior; it is not proof of backend integration.
 - Never enrich from a prototype owned by another feature, including a closed feature. Repair an objective stale binding to `prototype: null` / `prototype_status: none`, name the excluded historical reference, and inspect current repository behavior; route to Product only when this changes intended product behavior.
 - Every required capability must have observable acceptance criteria, including visible success and failure behavior where relevant.
 - Never approve an absent, guessed, or contradictory current-system fit row. Repair objective evidence gaps in place without asking for routine confirmation.
@@ -52,6 +53,11 @@ After inspecting cited paths, rerun `context:brief` with `--paths=<comma-separat
 
 ## Gap analysis and sizing kernel
 
+Use at most two independent passes:
+
+1. Coverage pass: source promises, ambiguity, contradictions, missing core behavior, and useless/speculative scope.
+2. Future-state pass: visible states, failure/recovery, permissions/ownership, operational use, and verifiability where evidence makes them material.
+
 For each required `CAP-*`, test this causal chain:
 
 `approved promise → inspected current boundary → required product delta → observable behavior → failure boundary → acceptance evidence`
@@ -62,6 +68,7 @@ Repair only gaps that follow from the approved promise. Apply the evidence-backe
 
 Set `sheldon_review: approved` only when:
 
+- every briefing `PROM-*` has one explicit PRD Source Coverage decision;
 - the Feature Capability Map has at least one required `CAP-*`;
 - every required `CAP-*` has one repository-backed `## Current System Fit` row;
 - scope, exclusions, and prototype deviations agree;
@@ -78,6 +85,15 @@ Set `sheldon_review: approved` only when:
 ```
 
 Each row uses one stable `AC-*`, cites one or more declared `CAP-*`, describes externally observable behavior, and says how QA can prove it. Do not use “works”, “integrated”, “done”, or test count as evidence.
+
+After all PRD edits, set `sheldon_review: approved`, then run:
+
+```bash
+aioson review:prepare . --agent=sheldon --feature={slug} --artifact=.aioson/context/prd-{slug}.md --json
+aioson review:check . --agent=sheldon --feature={slug} --report=<draft_path> --json
+```
+
+Complete the generated report from the two passes and require `review_status: pass`. Do not edit the PRD, briefing, source pack, or approved prototype after promotion; any edit invalidates the review and requires a new bounded review generation.
 
 ## Feature dossier
 
@@ -101,7 +117,7 @@ Next agent: @planner (turn the approved PRD and prototype into vertical executab
 Action: /planner
 ```
 
-Recommend `/compact` before the next same-feature agent. Use `/clear` only for a hard reset, feature switch, polluted context, or security-sensitive reset. Do not continue into Planner's work.
+Before `/compact`, update `mappings/{slug}/continuity.md` only for material context not already preserved in the sources, briefing, PRD, review report, or prototype. Follow `.aioson/docs/feature-continuity-mapping.md`; it is temporary, non-canonical, and never a gate. Recommend `/compact` before the next same-feature agent. Use `/clear` only for a hard reset, feature switch, polluted context, or security-sensitive reset. Do not continue into Planner's work.
 
 ## Observability
 

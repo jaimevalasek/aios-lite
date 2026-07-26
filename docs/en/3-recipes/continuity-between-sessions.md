@@ -26,7 +26,7 @@ The **Feature Dossier** (agent-chain continuity system, implemented in 8 phases 
 
 ## How a dossier is created
 
-The dossier is initialized automatically when you start a feature via the normal workflow (`@product` → `@planner` → `@dev`). You can also create it manually:
+The dossier is initialized automatically when you start a feature via the normal workflow (`@product` → `@sheldon` → `@planner` → `@dev`). You can also create it manually:
 
 ```bash
 npx @jaimevalasek/aioson dossier:init --slug=checkout-stripe

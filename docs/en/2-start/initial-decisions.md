@@ -32,7 +32,7 @@ After one-time setup, every tracked feature uses the same stage chain:
 
 ```text
 optional @briefing → optional @briefing-refiner → @product
-→ optional @sheldon → @planner → @dev → @qa
+→ @sheldon → @planner → @dev → @qa
 ```
 
 Classification changes the detail of the PRD and plan, the implementation budget, and the risk-proportional QA review. It does not insert Analyst, Architect, Orchestrator, Pentester, or other specialists into the default route.
@@ -67,7 +67,7 @@ Classification changes the detail of the PRD and plan, the implementation budget
 #### MEDIUM — the deepest version of the canonical chain
 
 - For: products with multiple user types, several integrations, complex rules.
-- The stage chain stays Product → optional Sheldon → Planner → DEV → QA.
+- The stage chain stays Product → Sheldon → Planner → DEV → QA.
 - The PRD and plan carry deeper integration, negative-path, operational, and security evidence for named risks.
 - DEV may use explicitly configured development lanes, then remains responsible for final integration.
 - Tester, Pentester, and Validator remain disabled by default and run only when explicitly enabled and triggered.

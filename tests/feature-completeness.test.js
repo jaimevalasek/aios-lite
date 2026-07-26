@@ -5,11 +5,13 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
 const os = require('node:os');
 const path = require('node:path');
+const crypto = require('node:crypto');
 const {
   analyzeFeatureCompleteness,
   findingsThroughStage,
   parseFirstMarkdownTable
 } = require('../src/lib/feature-completeness');
+const { qaExecutionReport } = require('./helpers/feature-evidence');
 
 async function tmp() { return fs.mkdtemp(path.join(os.tmpdir(), 'aioson-feature-completeness-')); }
 async function write(root, rel, body) {
@@ -214,7 +216,7 @@ test('Capability Delivery Plan cannot contain a path absent from Implementation 
   assert.ok(result.stage_findings.plan.some((item) => item.check === 'capability_delivery_path_unclassified'));
 });
 
-test('execution verifies that every planned path exists without a ledger or harness', async () => {
+test('execution requires real QA evidence in addition to every planned path', async () => {
   const root = await tmp();
   await seed(root);
   let result = await analyzeFeatureCompleteness(root, 'demo', { includeExecution: true });
@@ -223,6 +225,10 @@ test('execution verifies that every planned path exists without a ledger or harn
   await write(root, 'src/demo.js', 'module.exports = true;\n');
   await write(root, 'tests/demo.test.js', 'module.exports = true;\n');
   result = await analyzeFeatureCompleteness(root, 'demo', { includeExecution: true });
+  assert.equal(result.ok, false);
+  assert.ok(result.stage_findings.execution.some((item) => item.check === 'executed_capability_coverage_incomplete'));
+  await write(root, '.aioson/context/qa-report-demo.md', qaExecutionReport());
+  result = await analyzeFeatureCompleteness(root, 'demo', { includeExecution: true });
   assert.equal(result.ok, true);
 });
 
@@ -230,6 +236,7 @@ test('execution expects retire paths to disappear after existing at Gate C', asy
   const root = await tmp();
   await seed(root, { files: 'src/legacy.js', action: 'retire' });
   await write(root, 'src/legacy.js', 'module.exports = true;\n');
+  await write(root, '.aioson/context/qa-report-demo.md', qaExecutionReport());
 
   let result = await analyzeFeatureCompleteness(root, 'demo', { preImplementation: true });
   assert.equal(findingsThroughStage(result, 'plan').length, 0);
@@ -240,6 +247,86 @@ test('execution expects retire paths to disappear after existing at Gate C', asy
   await fs.rm(path.join(root, 'src/legacy.js'));
   result = await analyzeFeatureCompleteness(root, 'demo', { includeExecution: true });
   assert.equal(result.ok, true);
+});
+
+test('source lineage preserves every feature source and promise into PRD CAP/AC coverage', async () => {
+  const root = await tmp();
+  const sourcePath = 'plans/demo/user notes.md';
+  const sourceContent = 'The user must be able to save the result through the real application.\n';
+  const fingerprint = crypto.createHash('sha256').update(sourceContent).digest('hex');
+  await write(root, sourcePath, sourceContent);
+  await write(root, '.aioson/context/project.context.md', '---\nclassification: SMALL\n---\n');
+  await write(root, '.aioson/briefings/demo/briefings.md', `---
+source_plans:
+  - "${sourcePath}"
+prototype: not_applicable
+---
+
+# Briefing
+
+### Source Inventory
+
+| SRC | Path | Fingerprint | Purpose |
+|---|---|---|---|
+| SRC-001 | ${sourcePath} | sha256:${fingerprint} | Preserve the user's required save outcome |
+
+### Source Promise Map
+
+| Promise | Source | Approved intent | State |
+|---|---|---|---|
+| PROM-demo-01 | SRC-001 | Save the result through the real application | required |
+`);
+  await write(root, '.aioson/context/prd-demo.md', `${prd()}
+
+## Source Coverage
+
+| Promise | Product decision | CAP / AC | Evidence / rationale |
+|---|---|---|---|
+| PROM-demo-01 | required | CAP-demo-01 / AC-demo-01 | Preserved from SRC-001 in the production outcome |
+`);
+  await write(root, '.aioson/context/implementation-plan-demo.md', plan());
+
+  const result = await analyzeFeatureCompleteness(root, 'demo');
+  assert.equal(result.ok, true, JSON.stringify(result.findings));
+  assert.equal(result.summary.source_promises, 1);
+});
+
+test('source lineage blocks a dropped promise and a stale source fingerprint', async () => {
+  const root = await tmp();
+  const sourcePath = 'plans/demo/request.md';
+  const sourceContent = 'Required save behavior.\n';
+  const fingerprint = crypto.createHash('sha256').update(sourceContent).digest('hex');
+  await write(root, sourcePath, sourceContent);
+  await write(root, '.aioson/context/project.context.md', '---\nclassification: SMALL\n---\n');
+  await write(root, '.aioson/briefings/demo/briefings.md', `---
+source_plans: ["${sourcePath}"]
+prototype: not_applicable
+---
+
+### Source Inventory
+| SRC | Path | Fingerprint | Purpose |
+|---|---|---|---|
+| SRC-001 | ${sourcePath} | ${fingerprint} | Required product source |
+
+### Source Promise Map
+| Promise | Source | Approved intent | State |
+|---|---|---|---|
+| PROM-demo-01 | SRC-001 | Save behavior | required |
+`);
+  await write(root, '.aioson/context/prd-demo.md', `${prd()}
+
+## Source Coverage
+| Promise | Product decision | CAP / AC | Evidence / rationale |
+|---|---|---|---|
+`);
+  await write(root, '.aioson/context/implementation-plan-demo.md', plan());
+
+  let result = await analyzeFeatureCompleteness(root, 'demo');
+  assert.ok(result.stage_findings.product.some((item) => item.check === 'source_promise_dropped'));
+
+  await write(root, sourcePath, 'Changed after briefing approval.\n');
+  result = await analyzeFeatureCompleteness(root, 'demo');
+  assert.ok(result.stage_findings.product.some((item) => item.check === 'source_fingerprint_stale'));
 });
 
 test('MICRO without a formal contract remains lightweight', async () => {

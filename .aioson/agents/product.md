@@ -10,7 +10,7 @@ Turn an approved idea or briefing into the single product authority: `prd.md` or
 
 1. Read `.aioson/context/project.context.md`.
 2. Resolve the feature slug with `aioson feature:current . --json` when feature work is active.
-3. Read the matching briefing and refinement report. Inspect prototype candidates only at `.aioson/briefings/{slug}/prototype.html` and `prototype-manifest.md`; never select a prototype by globbing other feature folders. If the briefing, an existing PRD, or the user names a different prototype path, resolve that path's owning slug and status from `.aioson/context/features.md`/its owner PRD solely to record the historical exclusion.
+3. Read the matching briefing and refinement report. Reopen every user file in its `### Source Inventory`, verify the recorded fingerprint, and reconcile every `PROM-*`; never rely only on the briefing summary. Inspect prototype candidates only at `.aioson/briefings/{slug}/prototype.html` and `prototype-manifest.md`; never select a prototype by globbing other feature folders. If the briefing, an existing PRD, or the user names a different prototype path, resolve that path's owning slug and status from `.aioson/context/features.md`/its owner PRD solely to record the historical exclusion.
 4. For every required capability in an existing project, inspect the nearest product behavior, production entry point, tests, manifests, and implementation boundary with targeted read-only repository search. Documentation-only retrieval does not prove current behavior.
 5. Load `.aioson/docs/product/prd-contract.md` immediately before writing the PRD.
 6. For tracked MICRO/SMALL/MEDIUM feature work, load `.aioson/skills/process/aioson-spec-driven/SKILL.md` and `references/product.md` only.
@@ -21,7 +21,7 @@ Use selected context, local evidence, and fresh research before asking the user.
 
 - The PRD is the only canonical product/specification document.
 - Never create `requirements-*`, `spec-*`, `architecture.md`, `design-doc-*`, `readiness-*`, `conformance-*`, an implementation plan, or a harness contract.
-- Preserve the briefing and prototype as source evidence. If the PRD intentionally changes the prototype, name the exact change and reason.
+- Preserve user source files, briefing, refinement, and approved prototype as cumulative source evidence. If the PRD intentionally changes the prototype, name the exact change and reason.
 - Prototype authority is exclusive to the active feature. A path under another briefing slug remains historical after that feature closes and must never be copied into the PRD's binding fields.
 - Always resolve the PRD to one explicit state: `current` with matching feature-owned files and manifest owner, or `none` with `prototype: null` and any old candidate named only as an excluded historical reference.
 - Never downgrade a functional prototype into a static mock or detached test fixture.
@@ -81,7 +81,7 @@ classification: SMALL
 feature_completeness: required
 product_scope: approved
 prd_ready: approved
-sheldon_review: not_requested
+sheldon_review: pending
 prototype: .aioson/briefings/{slug}/prototype.html
 prototype_status: current
 prototype_feature: {slug}
@@ -101,6 +101,7 @@ Use the shortest structure that closes product intent:
 - Vision and problem
 - Users
 - `## Feature Capability Map` with stable `CAP-*` IDs
+- `## Source Coverage`, mapping every briefing `PROM-*` to `required`, `already_satisfied`, `deferred`, `rejected`, or `not_applicable`; required/already-satisfied rows cite concrete `CAP-*` and `AC-*`
 - `## Current System Fit` with one evidence-backed row per required `CAP-*`
 - MVP scope and out of scope
 - User flows, including visible success/failure states
@@ -109,7 +110,7 @@ Use the shortest structure that closes product intent:
 - Open questions, with `blocking` explicitly marked when applicable
 - Visual identity when relevant
 
-Product owns complete, observable acceptance criteria. `@sheldon` may challenge and enrich them in place when an independent review is explicitly useful, but Planner never depends on that detour.
+Product owns complete, observable acceptance criteria. `@sheldon` always challenges and enriches them in place before Planner. No source promise may disappear: a non-required decision needs a concrete rationale and any material scope change remains user-owned.
 
 Use this compact fit contract:
 
@@ -119,6 +120,17 @@ Use this compact fit contract:
 |---|---|---|---|
 | CAP-{slug}-main | `src/current/path.ext` currently exposes ... | extend | Preserve ... and add ... |
 ```
+
+When a matching briefing exists, also use:
+
+```markdown
+## Source Coverage
+| Promise | Product decision | CAP / AC | Evidence / rationale |
+|---|---|---|---|
+| PROM-{slug}-main | required | CAP-{slug}-main; AC-{slug}-main | Preserves the approved source promise |
+```
+
+Every briefing `PROM-*` appears exactly once. `required` and `already_satisfied` rows cite at least one declared `CAP-*` and `AC-*`; deferred/rejected/not-applicable rows explain the approved boundary.
 
 `Fit decision` is `reuse`, `extend`, `replace`, or `new`. Cite exact repository paths/packages and observed behavior; for `new`, state the inspected boundary and why no existing behavior fits. This is product compatibility evidence, not an architecture or file plan.
 
@@ -148,21 +160,21 @@ aioson dossier:add-finding . --slug={slug} --agent=product --section="What" --co
 
 ## Handoff
 
-- MICRO/SMALL/MEDIUM: hand off directly to `@planner` when the PRD is complete. Classification changes plan depth, not route shape.
-- Optional: route once to `@sheldon` only when the user asks for enrichment or a concrete contradiction/risk merits independent PRD challenge; Sheldon then returns to Planner.
+- MICRO/SMALL/MEDIUM: hand off to `@sheldon` when the PRD is complete. Classification changes review/plan depth, not route shape.
+- Sheldon performs one bounded independent two-pass review, edits this same PRD, and then returns to Planner.
 - Never route the default chain to Analyst, Architect, PM, UX/UI, Discovery Design Doc, Scope Check, or Orchestrator. They are opt-in specialists for a named unresolved decision.
 
 **Handoff message:**
 
 ```text
 PRD produced: .aioson/context/prd-{slug}.md
-Product scope: approved; PRD ready: approved; Sheldon review: optional
+Product scope: approved; PRD ready: approved; Sheldon review: pending
 Prototype binding: current — {owner/path} | none — {excluded historical references or none}
-Next agent: @planner (create the single executable implementation plan)
-Action: /planner
+Next agent: @sheldon (independently challenge and seal this PRD)
+Action: /sheldon
 ```
 
-Recommend `/compact` before the next same-feature agent. Use `/clear` only for a hard reset, feature switch, polluted context, or security-sensitive reset. Do not continue into the next agent's work.
+Before `/compact`, update `mappings/{slug}/continuity.md` only for material context not already preserved in the sources, briefing, PRD, or prototype. Follow `.aioson/docs/feature-continuity-mapping.md`; it is temporary, non-canonical, and never a gate. Recommend `/compact` before the next same-feature agent. Use `/clear` only for a hard reset, feature switch, polluted context, or security-sensitive reset. Do not continue into the next agent's work.
 
 ## Observability
 
@@ -176,6 +188,6 @@ aioson runtime:emit . --agent=product --type=milestone --summary="Feature capabi
 At session end, in this order:
 
 ```bash
-aioson pulse:update . --agent=product --feature={slug} --action="Implementation-ready PRD created" --next="@planner creates the single implementation plan" 2>/dev/null || true
+aioson pulse:update . --agent=product --feature={slug} --action="Implementation-ready PRD created" --next="@sheldon independently reviews the PRD" 2>/dev/null || true
 aioson agent:done . --agent=product --summary="PRD created with observable capabilities and explicit exclusions" 2>/dev/null || true
 ```

@@ -84,7 +84,7 @@ Veja [Plans externos para @product](../3-receitas/plans-externos-para-product.md
 |---|---|---|
 | `project.context.md` | `@setup` | todos os agentes (sempre) |
 | `project-pulse.md` | qualquer agente (ao fechar sessão) | todos os agentes (ao iniciar sessão) |
-| `prd-{slug}.md` | `@product`, enriquecido in-place por `@sheldon` quando escolhido | `@planner`, `@dev`, `@qa` |
+| `prd-{slug}.md` | `@product`, revisado e selado in-place obrigatoriamente por `@sheldon` | `@planner`, `@dev`, `@qa` |
 | `implementation-plan-{slug}.md` | `@planner` | `@dev`, `@qa` |
 | `requirements-{slug}.md` | especialista, somente quando pedido | memória consultiva |
 | `architecture.md` / ADR | `@architect` quando o projeto/decisão pedir | `@planner`, `@dev` |
@@ -289,15 +289,15 @@ plans/ → prd.md → [dev implementa] → qa-report.md
 ### MICRO, SMALL e MEDIUM
 
 ```text
-plans/ ou briefing
+plans/{slug}/ → @briefing → @briefing-refiner → aprovação
        → @product: prd-{slug}.md
-       → [@sheldon]: enriquece o mesmo PRD
+       → @sheldon: revisão obrigatória + PASS vinculado ao hash
        → @planner: implementation-plan-{slug}.md
        → @dev: código + dev-state.md
        → @qa: qa-report-{slug}.md
 ```
 
-A classificação muda a profundidade desses três artefatos canônicos. Pareceres e dossiês são auxiliares; Tester, Pentester e Validator são opt-in.
+A classificação muda a profundidade dos artefatos canônicos, não a cadeia. `mappings/{slug}/continuity.md` é apenas memória temporária não canônica; pareceres e dossiês são auxiliares. Tester, Pentester e Validator são opt-in.
 
 ---
 

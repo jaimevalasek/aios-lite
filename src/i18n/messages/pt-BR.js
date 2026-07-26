@@ -779,9 +779,9 @@ module.exports = {
     note_micro_scope:
       'Mantenha o escopo de implementacao minimo e evite agentes opcionais.',
     note_product_optional:
-      'Para trabalho tecnico pequeno e ja especificado, use Simple Plan; features MICRO rastreadas ainda usam Product → Planner → Dev → QA.',
+      'Para trabalho tecnico pequeno e ja especificado, use Simple Plan; features MICRO rastreadas ainda usam Product → Sheldon → Planner → Dev → QA.',
     note_feature_flow:
-      'Fluxo para nova feature (apos configuracao inicial): @product → @planner → @dev → @qa. Sheldon e opcional. Um PRD, um plano e um veredito de QA.'
+      'Fluxo para nova feature (apos configuracao inicial): @product → @sheldon → @planner → @dev → @qa. Sheldon faz a revisao independente obrigatoria do PRD. Um PRD, um plano e um veredito de QA.'
   },
   workflow_next: {
     title: 'Handoff do workflow para {mode} ({classification}):',

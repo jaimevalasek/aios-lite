@@ -4,7 +4,7 @@
 > **Execution time:** 30–45 min.
 > **What you'll have at the end:** a simple web app (a to-do list) with a spec, code, tests, and a dossier — all traceable on disk.
 
-We're going to build a **mini TODO app** using the MICRO-depth canonical cycle. You'll see Product, Planner, DEV, and QA each own one durable artifact or outcome.
+We're going to build a **mini TODO app** using the MICRO-depth canonical cycle. You'll see Product, Sheldon, Planner, DEV, and QA each own one durable artifact or outcome.
 
 ---
 
@@ -131,7 +131,7 @@ You > Create a task with text. Mark as completed. List pending and completed sep
 
 @product > [...details...] PRD saved to
         .aioson/context/prd-task-list.md
-@product > Scope approved. Next: @planner.
+@product > Scope approved. Next: @sheldon for the mandatory independent review.
 ```
 
 ```bash
@@ -158,7 +158,7 @@ You > @planner
 @planner > Plan approved. Next: @dev.
 ```
 
-> **Why no Sheldon here?** The PRD is already concrete. Sheldon is an optional PRD enrichment pass, not a classification-based gate. Article VI ("Simplicity Over Ceremony") keeps this MICRO feature lean.
+> **Why Sheldon still runs here:** even a concrete MICRO PRD receives the bounded independent hash-bound review before Planner. Simplicity changes review depth, not the required coverage check.
 
 ---
 
@@ -259,7 +259,7 @@ Three months from now, someone (you or another AI) can open this project and und
 
 ## What if I want a new feature?
 
-Go back to step 4. `@product` creates the PRD → optional `@sheldon` enriches it → `@planner` creates the plan → `@dev` implements → `@qa` reviews. `@setup` doesn't need to run again (context is already there).
+Go back to step 4. `@product` creates the PRD → `@sheldon` independently reviews and seals it → `@planner` creates the plan → `@dev` implements → `@qa` proves the result. `@setup` doesn't need to run again (context is already there).
 
 If you get lost in the middle:
 

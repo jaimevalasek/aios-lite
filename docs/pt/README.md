@@ -22,7 +22,7 @@ Esta é a porta de entrada da documentação em português. Não é um índice a
 ### Quero uma receita pronta para o meu caso
 
 **Trilhas canônicas — como features chegam ao dev:**
-1. **[Feature completa com @sheldon](./3-receitas/feature-completa-com-sheldon.md)** — a rota única `@product → [@sheldon] → @planner → @dev → @qa`
+1. **[Feature completa com revisão obrigatória do @sheldon](./3-receitas/feature-completa-com-sheldon.md)** — a rota única `@product → @sheldon → @planner → @dev → @qa`
 2. [Da ideia ao PRD via @briefing](./3-receitas/da-ideia-ao-prd-via-briefing.md) — quando a ideia ainda é vaga; `@briefing-refiner` pode revisar antes de `@product`
 3. [Plans externos para @product](./3-receitas/plans-externos-para-product.md) — quando você planejou em ChatGPT/Claude.io e quer trazer
 

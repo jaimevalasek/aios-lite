@@ -126,7 +126,7 @@ Você > push-notifications
             Fora do escopo: notificações por email (briefing sinalizou para fase 2).
 
             PRD criado: .aioson/context/prd-push-notifications.md
-            Próximo: @sheldon para enriquecimento opcional, ou @planner.
+            Próximo: @sheldon para revisão independente obrigatória antes do @planner.
 ```
 
 ---
@@ -238,7 +238,7 @@ plans/                              ← seus rascunhos (intocados)
 ## Próximos passos
 
 - [Plans externos para @product](./plans-externos-para-product.md) — como usar ChatGPT/Claude.ai como fonte para `plans/`
-- [Feature completa com @sheldon](./feature-completa-com-sheldon.md) — quando o PRD está pronto para enriquecimento opcional e planejamento
+- [Feature completa com @sheldon](./feature-completa-com-sheldon.md) — quando o PRD está pronto para revisão independente obrigatória e planejamento
 - [@briefing — ficha](../4-agentes/briefing.md) — referência técnica do agente
 - [@briefing-refiner — ficha](../4-agentes/briefing-refiner.md) — loop de revisão/refino do briefing antes do PRD
 - [@product — ficha](../4-agentes/product.md) — referência técnica do agente

@@ -30,6 +30,7 @@ const {
 } = require('../preflight-engine');
 const { readFreshGateCheckpoint } = require('../lib/gate-checkpoint');
 const { runTechnicalGate } = require('../workflow-gates');
+const { validateCurrentSheldonReview } = require('../lib/sheldon-review');
 
 const BAR = '━'.repeat(35);
 
@@ -94,6 +95,20 @@ async function checkGate(targetDir, slug, gateLetter) {
     for (const item of completenessFindings) {
       missing.push(`feature completeness [${item.check}]: ${item.message}`);
     }
+  }
+  if (gateLetter === 'C') {
+    const sheldonReview = await validateCurrentSheldonReview(
+      targetDir,
+      slug,
+      path.join(dir, `prd-${slug}.md`)
+    );
+    evidence.push({
+      type: 'sheldon_review',
+      ok: sheldonReview.ok,
+      report_path: sheldonReview.report_path || null,
+      reason: sheldonReview.reason || null
+    });
+    if (!sheldonReview.ok) missing.push(`Sheldon review: ${sheldonReview.message}`);
   }
 
   // Check prerequisites
@@ -224,7 +239,7 @@ async function checkGate(targetDir, slug, gateLetter) {
   if (result === 'PASS') {
     const nextAgents = {
       A: '@product',
-      B: '@planner',
+      B: '@sheldon',
       C: '@dev',
       D: 'feature complete'
     };
