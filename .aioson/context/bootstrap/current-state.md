@@ -1,6 +1,6 @@
 ---
 updated_at: 2026-07-26
-generated_at: 2026-07-27T03:35:00Z
+generated_at: 2026-07-27T16:39:15Z
 source: feature-close-briefing-review-decision-room
 ---
 
@@ -9,7 +9,8 @@ source: feature-close-briefing-review-decision-room
 ## What the system already has
 
 
-- [briefing-review-decision-room · 2026-07-27] The briefing review production path now emits a self-contained guided Decision Room with native single/multiple choice cards, recommendation and trade-off context, safe Markdown read/edit mode, final decision summary, local draft recovery, responsive 390px layout, and save/download/copy fallbacks. Schema 1.2 remains compatible with 1.0/1.1; only applied decisions bound to the exact archived feedback, round and hashes become authority for Product, Sheldon, Planner, DEV and QA. The bounded QA→DEV correction passed strict AC coverage 10/10; final QA, delivery assurance, Gate D and the full CI suite all passed. The feature closed and its evidence was archived on 2026-07-27.
+- [briefing-review-decision-room · 2026-07-27] The briefing review production path now emits a self-contained guided Decision Room with native single/multiple choice cards, recommendation and trade-off context, safe Markdown read/edit mode, final decision summary, local draft recovery, responsive 390px layout, and save/download/copy fallbacks. Schema 1.2 remains compatible with 1.0/1.1; only an applied decision bound to its exact archived feedback round and matching briefing/result hashes can become authority for Product, Sheldon, Planner, DEV and QA. Pending, stale, malformed or unarchived feedback remains nonbinding. The bounded QA→DEV correction passed strict AC coverage 10/10; final QA, delivery assurance, Gate D and the full CI suite all passed. The feature closed and its evidence was archived on 2026-07-27.
+- [workflow-integrity-hardening · 2026-07-26] Workflow, recovery, hygiene, and inventory diagnostics now preserve read-only status semantics by default, reconcile stale runtime state without incidental writes, quarantine stale runtime artifacts from active routing, extract feature-completeness and squad-evaluation responsibilities into bounded modules, compact gateway/design skill payloads, and archive completed feature evidence consistently. Verification and agent structural contracts were updated with the new boundaries.
 - [workflow-reliable-delivery · 2026-07-26] `chore(release): prepare v1.43.0` synchronized package, lockfile, project context, documentation, changelog, and full release-readiness evidence for the tagged release.
 - [workflow-reliable-delivery · 2026-07-26] `feat(workflow): enforce reliable delivery` committed source traceability, owned prototype binding, hash-bound Sheldon approval, stronger workflow/QA continuity gates, and local-only temporary `mappings/`.
 - [premium-squad-intelligence · 2026-07-25] `feat(squads): harden premium squad intelligence` committed source- and held-out-evidence binding, containment and safe-research hardening, stricter workflow inputs, release-readiness checks, dependency updates, and documentation.

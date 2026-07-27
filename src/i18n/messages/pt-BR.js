@@ -35,6 +35,8 @@ module.exports = {
       'aioson briefing:review [caminho] [--slug=<slug>] [--findings=<caminho>] [--force] [--json] [--locale=pt-BR]',
     help_briefing_apply_feedback:
       'aioson briefing:apply-feedback [caminho] [--slug=<slug>] [--feedback=<caminho>] [--confirm|--declined] [--allow-stale] [--json] [--locale=pt-BR]',
+    help_briefing_migrate_lineage:
+      'aioson briefing:migrate-lineage [caminho] --slug=<slug> [--dry-run|--write] [--json] [--locale=pt-BR]',
     help_context_validate: 'aioson context:validate [path] [--json] [--locale=pt-BR]',
     help_context_pack:
       'aioson context:pack [path] [--agent=<agente>] [--goal=<texto>] [--module=<modulo-ou-pasta>] [--max-files=8] [--json] [--locale=pt-BR]',
@@ -346,6 +348,12 @@ module.exports = {
     publish_squad_done: 'Squad {slug}@{version} publicado no cloud.',
     publish_genome_dry_run: 'Dry run: genome {slug}@{version} pronto para publish cloud.',
     publish_genome_done: 'Genome {slug}@{version} publicado no cloud.'
+  },
+  briefing_lineage_migration: {
+    preview: 'A migração de linhagem de "{slug}" está pronta ({sources} fonte(s), {promises} promessa(s)). Nenhum arquivo foi alterado.',
+    migrated: 'Migração de linhagem concluída para "{slug}". Relatório de auditoria: {report}.',
+    already_canonical: 'O briefing "{slug}" já usa o esquema canônico de linhagem.',
+    error: 'Falha na migração de linhagem ({code}): {message}'
   },
   init: {
     usage_error:

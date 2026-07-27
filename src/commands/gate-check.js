@@ -28,7 +28,7 @@ const {
   GATE_NAMES,
   GATE_ALIASES
 } = require('../preflight-engine');
-const { readFreshGateCheckpoint } = require('../lib/gate-checkpoint');
+const { resolveGateCBaseline } = require('../lib/gate-checkpoint');
 const { runTechnicalGate } = require('../workflow-gates');
 const { validateCurrentSheldonReview } = require('../lib/sheldon-review');
 
@@ -66,9 +66,9 @@ async function checkGate(targetDir, slug, gateLetter) {
   const gateStatus = gates[gateName] || 'pending';
   const prerequisites = GATE_PREREQUISITES[gateLetter] || [];
   const planPath = path.join(dir, `implementation-plan-${slug}.md`);
-  const gateCCheckpoint = gateLetter === 'C'
-    ? await readFreshGateCheckpoint(targetDir, 'C', slug, planPath)
-    : { exists: false };
+  const gateCBaseline = gateLetter === 'C'
+    ? await resolveGateCBaseline(targetDir, slug, planPath)
+    : null;
 
   const evidence = [];
   const missing = [];
@@ -79,7 +79,8 @@ async function checkGate(targetDir, slug, gateLetter) {
     // Planner writes `status: approved` before the first Gate C check, so the
     // durable checkpoint — fresh relative to the plan — is the transition to
     // execution semantics. A later plan edit invalidates that checkpoint.
-    preImplementation: gateLetter === 'C' && !gateCCheckpoint.exists,
+    preImplementation: gateLetter === 'C' && gateCBaseline.pre_implementation,
+    implementationBaseline: gateCBaseline,
     includeExecution: gateLetter === 'D'
   });
   if (completeness.applicable) {
@@ -97,6 +98,19 @@ async function checkGate(targetDir, slug, gateLetter) {
     }
   }
   if (gateLetter === 'C') {
+    evidence.push({
+      type: 'gate_c_baseline',
+      ok: !gateCBaseline.blocking,
+      mode: gateCBaseline.mode,
+      cause: gateCBaseline.cause,
+      owner: gateCBaseline.owner,
+      recovery: gateCBaseline.recovery || null,
+      plan_sha256: gateCBaseline.plan_sha256 || null,
+      plan_mtime: gateCBaseline.plan_mtime || null
+    });
+    if (gateCBaseline.blocking) {
+      missing.push(`Gate C recovery [${gateCBaseline.cause}]: ${gateCBaseline.recommendation}`);
+    }
     const sheldonReview = await validateCurrentSheldonReview(
       targetDir,
       slug,
@@ -251,7 +265,35 @@ async function checkGate(targetDir, slug, gateLetter) {
       C: `activate @planner to produce and approve implementation-plan-${slug}.md`,
       D: `activate @qa for final verification; if QA passes, run: aioson gate:approve . --feature=${slug} --gate=D`
     };
-    recommendation = `BLOCKED — ${fixAgents[gateLetter] || 'resolve missing items'}`;
+    if (gateLetter === 'C') {
+      const completenessFindings = evidence
+        .filter((item) => item.type === 'feature_completeness')
+        .flatMap((item) => item.findings || []);
+      const sheldon = evidence.find((item) => item.type === 'sheldon_review');
+      const planArtifact = evidence.find(
+        (item) => item.type === 'artifact'
+          && item.file === `implementation-plan-${slug}.md`
+      );
+      const hasPlanArtifactDefect = !planArtifact?.ok;
+      const hasPlanContentDefect = completenessFindings.some(
+        (item) => item.stage === 'plan' && !item.check.startsWith('source_')
+      );
+      if (completenessFindings.some((item) => item.check.startsWith('source_'))) {
+        recommendation = `BLOCKED — run aioson briefing:migrate-lineage . --slug=${slug}, then revalidate`;
+      } else if (hasPlanArtifactDefect) {
+        recommendation = `BLOCKED — ${fixAgents.C}`;
+      } else if (gateCBaseline && gateCBaseline.blocking) {
+        recommendation = `BLOCKED — ${gateCBaseline.recommendation}`;
+      } else if (hasPlanContentDefect) {
+        recommendation = `BLOCKED — ${fixAgents.C}`;
+      } else if (sheldon && !sheldon.ok) {
+        recommendation = 'BLOCKED — activate @sheldon to produce a current hash-bound PASS';
+      } else {
+        recommendation = `BLOCKED — ${fixAgents.C}`;
+      }
+    } else {
+      recommendation = `BLOCKED — ${fixAgents[gateLetter] || 'resolve missing items'}`;
+    }
   }
 
   return {

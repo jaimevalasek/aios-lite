@@ -16,6 +16,10 @@ const {
 const { validatePrototypeBinding } = require('./prototype-binding');
 const { validateSourceLineage } = require('./feature-source-lineage');
 const {
+  findBriefing,
+  readBriefingRegistry
+} = require('./briefing-refiner/briefing-registry');
+const {
   REQ_ID_RE,
   AC_ID_RE,
   CAP_ID_RE,
@@ -800,6 +804,9 @@ async function analyzeFeatureCompleteness(targetDir, slug, options = {}) {
   );
   const formal = ['MICRO', 'SMALL', 'MEDIUM'].includes(classification);
   const meaningfulPromise = hasMeaningfulFeaturePromise(inputs);
+  const briefingRegistryEntry = await readBriefingRegistry(targetDir)
+    .then((registry) => findBriefing(registry, slug))
+    .catch(() => null);
   const applicable = Boolean(options.force
     || explicitlyRequired
     || contractPresent
@@ -857,7 +864,11 @@ async function analyzeFeatureCompleteness(targetDir, slug, options = {}) {
       briefing: inputs.briefing,
       prd: inputs.prd,
       productMap,
-      acceptance
+      acceptance,
+      lifecycle: {
+        registry_entry: briefingRegistryEntry,
+        prd_exists: Boolean(artifacts.prd.exists)
+      }
     });
     delivery = validateDeliveryPlan(inputs.plan, artifacts.implementation_plan.path || `implementation-plan-${slug}.md`, productMap);
     engineeringControls = validateEngineeringControls({
@@ -917,6 +928,27 @@ async function analyzeFeatureCompleteness(targetDir, slug, options = {}) {
   }
 
   const findings = Object.values(stageFindings).flat();
+  const ownership = findings.map((item) => {
+    let owner = item.stage === 'execution'
+      ? 'dev'
+      : item.stage === 'plan'
+        ? 'planner'
+        : item.stage === 'specification'
+          ? 'sheldon'
+          : 'product';
+    let action = `resolve ${item.check}`;
+    if (item.check.startsWith('source_')) {
+      owner = 'briefing-lineage-migration';
+      action = `run briefing:migrate-lineage for ${slug} or repair its canonical source evidence`;
+    } else if (
+      item.check.startsWith('implementation_delta_')
+      && options.implementationBaseline?.blocking
+    ) {
+      owner = options.implementationBaseline.owner;
+      action = options.implementationBaseline.recommendation;
+    }
+    return { check: item.check, stage: item.stage, owner, action };
+  });
   return {
     ok: findings.length === 0,
     feature: slug,
@@ -931,6 +963,8 @@ async function analyzeFeatureCompleteness(targetDir, slug, options = {}) {
     operational_surfaces: operationalSurfaces,
     stage_findings: stageFindings,
     findings,
+    ownership,
+    implementation_baseline: options.implementationBaseline || null,
     product_map: productMap,
     source_lineage: sourceLineage,
     current_system_fit: currentSystemFit,

@@ -326,6 +326,28 @@ test('artifact and authority changes are stale until reprepare creates a current
   assert.equal(recovered.historical_stale_packets, 1);
 });
 
+// AC-lineage-013
+test('stale-only agent generations remain historical when another agent has a current PASS', async (t) => {
+  const root = await makeProject(t);
+  await prepareReview({ rootDir: root, featureSlug: SLUG, agent: 'product' });
+
+  await writeFile(root, `.aioson/context/prd-${SLUG}.md`, '# PRD changed\n');
+  const sheldon = await prepareReview({ rootDir: root, featureSlug: SLUG, agent: 'sheldon' });
+  const draftPath = `.aioson/context/features/${SLUG}/reviews/drafts/sheldon-pass.json`;
+  await writeJson(root, draftPath, passReport(sheldon));
+  await checkReview({ rootDir: root, featureSlug: SLUG, agent: 'sheldon', reportPath: draftPath });
+
+  const status = await reviewStatus({ rootDir: root, featureSlug: SLUG });
+  assert.equal(status.ok, true);
+  assert.equal(status.exitCode, 0);
+  assert.equal(status.overall_status, 'clear');
+  assert.equal(status.agents.length, 1);
+  assert.equal(status.agents[0].agent, 'sheldon');
+  assert.equal(status.agents[0].review_status, 'pass');
+  assert.equal(status.historical_stale_packets, 1);
+  assert.deepEqual(status.issues, undefined);
+});
+
 // AC-RI-017
 test('status is empty and non-blocking when no review storage exists', async (t) => {
   const root = await makeProject(t);

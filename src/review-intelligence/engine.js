@@ -469,8 +469,10 @@ async function reviewStatus({ rootDir, featureSlug }) {
       currentPackets.set(record.packet.agent, record);
     }
   }
-  for (const agent of new Set(packets.map((record) => record.packet.agent))) {
-    if (!currentPackets.has(agent)) issues.push({ agent, reason: 'no_current_packet' });
+  if (currentPackets.size === 0) {
+    for (const agent of new Set(packets.map((record) => record.packet.agent))) {
+      issues.push({ agent, reason: 'no_current_packet' });
+    }
   }
 
   const agents = [];

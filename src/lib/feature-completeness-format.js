@@ -99,6 +99,18 @@ const LEVERAGE_ALIASES = Object.freeze({
   'n-a': 'not_applicable'
 });
 
+const COVERAGE_DECISION_ALIASES = Object.freeze({
+  required: 'required',
+  'already-satisfied': 'already_satisfied',
+  already_satisfied: 'already_satisfied',
+  'already satisfied': 'already_satisfied',
+  deferred: 'deferred',
+  rejected: 'rejected',
+  'not-applicable': 'not_applicable',
+  not_applicable: 'not_applicable',
+  'not applicable': 'not_applicable'
+});
+
 const LENS_ALIASES = Object.freeze({
   'resultado-principal': 'primary-outcome',
   'interacao-do-usuario': 'user-interaction',
@@ -178,6 +190,13 @@ function normalizeDecision(value) {
 function normalizeLeverageDecision(value) {
   const raw = cleanCell(value).toLowerCase();
   return LEVERAGE_ALIASES[raw] || LEVERAGE_ALIASES[normalizeLabel(raw)] || normalizeLabel(raw);
+}
+
+function normalizeCoverageDecision(value) {
+  const raw = cleanCell(value).toLowerCase();
+  return COVERAGE_DECISION_ALIASES[raw]
+    || COVERAGE_DECISION_ALIASES[normalizeLabel(raw)]
+    || '';
 }
 
 function normalizeLens(value) {
@@ -346,6 +365,7 @@ module.exports = {
   extractIds,
   normalizeDecision,
   normalizeLeverageDecision,
+  normalizeCoverageDecision,
   normalizeLens,
   normalizeOperationalConcern,
   parseSurfacesOverride,

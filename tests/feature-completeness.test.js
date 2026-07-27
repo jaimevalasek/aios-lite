@@ -11,6 +11,7 @@ const {
   findingsThroughStage,
   parseFirstMarkdownTable
 } = require('../src/lib/feature-completeness');
+const { normalizeCoverageDecision } = require('../src/lib/feature-completeness-format');
 const { qaExecutionReport } = require('./helpers/feature-evidence');
 
 async function tmp() { return fs.mkdtemp(path.join(os.tmpdir(), 'aioson-feature-completeness-')); }
@@ -327,6 +328,72 @@ prototype: not_applicable
   await write(root, sourcePath, 'Changed after briefing approval.\n');
   result = await analyzeFeatureCompleteness(root, 'demo');
   assert.ok(result.stage_findings.product.some((item) => item.check === 'source_fingerprint_stale'));
+});
+
+// AC-lineage-009 AC-lineage-010
+test('source prework is required before Product and becomes historical after complete PRD absorption', async () => {
+  const root = await tmp();
+  const sourcePath = 'plans/demo/request.md';
+  const sourceContent = 'Required save behavior.\n';
+  const fingerprint = crypto.createHash('sha256').update(sourceContent).digest('hex');
+  await write(root, sourcePath, sourceContent);
+  await write(root, '.aioson/context/project.context.md', '---\nclassification: SMALL\n---\n');
+  await write(root, '.aioson/briefings/demo/briefings.md', `---
+source_plans: ["${sourcePath}"]
+---
+
+### Source Inventory
+| Source | Path | Fingerprint | Purpose |
+|---|---|---|---|
+| SRC-001 | ${sourcePath} | sha256:${fingerprint} | Required product source |
+
+### Source Promise Map
+| Promise | Source | Approved intent | State |
+|---|---|---|---|
+| PROM-demo-01 | SRC-001 | Save behavior | required |
+`);
+  await write(root, '.aioson/context/prd-demo.md', `${prd()}
+
+## Source Coverage
+| Promise | Product decision | CAP / AC | Evidence / rationale |
+|---|---|---|---|
+| PROM-demo-01 | required | CAP-demo-01 / AC-demo-01 | Preserved from SRC-001 |
+`);
+  await write(root, '.aioson/context/implementation-plan-demo.md', plan());
+
+  await fs.rm(path.join(root, sourcePath));
+  let result = await analyzeFeatureCompleteness(root, 'demo');
+  assert.equal(result.source_lineage.lifecycle.stage, 'pre_product');
+  assert.ok(result.stage_findings.product.some((item) => item.check === 'source_file_missing'));
+
+  await write(root, '.aioson/briefings/config.md', `---
+updated_at: 2026-07-27
+briefings:
+  - slug: demo
+    status: approved
+    source_plans: ["${sourcePath}"]
+    created_at: "2026-07-26"
+    approved_at: "2026-07-27"
+    prd_generated: "prd-demo.md"
+---
+`);
+  result = await analyzeFeatureCompleteness(root, 'demo');
+  assert.equal(result.source_lineage.lifecycle.stage, 'post_prd_absorbed');
+  assert.equal(result.stage_findings.product.some((item) => item.check === 'source_file_missing'), false);
+
+  await write(root, sourcePath, 'Changed after canonical absorption.\n');
+  result = await analyzeFeatureCompleteness(root, 'demo');
+  assert.ok(result.stage_findings.product.some((item) => item.check === 'source_fingerprint_stale'));
+});
+
+// AC-lineage-011
+test('Source Coverage decision aliases share one canonical internal value', () => {
+  for (const alias of ['not_applicable', 'not-applicable', 'not applicable']) {
+    assert.equal(normalizeCoverageDecision(alias), 'not_applicable');
+  }
+  for (const alias of ['already_satisfied', 'already-satisfied', 'already satisfied']) {
+    assert.equal(normalizeCoverageDecision(alias), 'already_satisfied');
+  }
 });
 
 test('MICRO without a formal contract remains lightweight', async () => {

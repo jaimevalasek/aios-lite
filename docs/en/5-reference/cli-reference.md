@@ -321,6 +321,29 @@ The `SMALL` and `MEDIUM` outputs include a note reminding you of this sequence.
 
 ---
 
+## briefing:migrate-lineage
+
+Preview or migrate a registered legacy briefing to the canonical `Source Inventory` and `Source Promise Map` schemas.
+
+```bash
+aioson briefing:migrate-lineage . --slug=legacy-feature
+aioson briefing:migrate-lineage . --slug=legacy-feature --dry-run --json
+aioson briefing:migrate-lineage . --slug=legacy-feature --write
+```
+
+- Preview is the default and changes no files; `--dry-run` makes that intent explicit.
+- `--write` is mutually exclusive with `--dry-run`. It uses the analyzed briefing hash as a compare-and-swap precondition.
+- Draft, approved, and approved-with-generated-PRD registry entries are supported.
+- Only lineage sections in `briefings.md` are rewritten. Registry, PRD, implementation plan, prototype, and historical review files remain unchanged.
+- Real source-pack files under `plans/` receive canonical IDs and SHA-256 fingerprints. Research, code, URLs, conversations, and unavailable post-PRD prework remain complementary non-canonical evidence.
+- Successful writes create a content-addressed backup and immutable JSON audit report under `.aioson/briefings/{slug}/lineage-migration/`.
+- Repeating `--write` on a canonical briefing changes no bytes and creates no new backup or report.
+- Invalid/traversing slugs, real-path escapes, ambiguous promises, incomplete generated-PRD coverage, concurrent edits, and conflicting write flags fail before destructive mutation.
+
+Run the relevant `review:prepare` flow only for agents listed in `affected_reviews`, then rerun the normal artifact/gate validation.
+
+---
+
 ## workflow:next
 
 Advance the active workflow, complete the current stage, trigger a controlled detour, or skip ahead until `@dev`.

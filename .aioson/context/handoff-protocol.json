@@ -1,10 +1,10 @@
 {
   "version": "1.0",
-  "protocol_id": "hnd-qa-end-1785122223367",
-  "created_at": "2026-07-27T03:17:03.367Z",
+  "protocol_id": "hnd-qa-end-1785170787120",
+  "created_at": "2026-07-27T16:46:27.120Z",
   "workflow_mode": "feature",
   "classification": "MEDIUM",
-  "feature_slug": "briefing-review-decision-room",
+  "feature_slug": "briefing-lineage-migration",
   "from": {
     "agent_id": "qa",
     "capability_transferred": "verify_feature"
@@ -18,16 +18,16 @@
   ],
   "artifact_uris": [
     {
-      "path": ".aioson/context/qa-report-briefing-review-decision-room.md",
+      "path": ".aioson/context/qa-report-briefing-lineage-migration.md",
       "kind": "qa_report",
       "agent": "qa",
-      "added_at": "2026-07-27T03:17:03.366Z"
+      "added_at": "2026-07-27T16:46:27.120Z"
     },
     {
       "path": ".aioson/runtime/technical-evidence.json",
       "kind": "evidence",
       "agent": "qa",
-      "added_at": "2026-07-27T03:17:03.366Z"
+      "added_at": "2026-07-27T16:46:27.120Z"
     }
   ],
   "gate_status": {},
@@ -35,6 +35,6 @@
   "validation": {
     "handoff_contract_ok": true,
     "technical_gate_ok": true,
-    "validated_at": "2026-07-27T03:17:03.367Z"
+    "validated_at": "2026-07-27T16:46:27.121Z"
   }
 }

@@ -38,7 +38,7 @@ const {
   analyzeFeatureCompleteness,
   findingsThroughStage
 } = require('../lib/feature-completeness');
-const { readFreshGateCheckpoint } = require('../lib/gate-checkpoint');
+const { resolveGateCBaseline } = require('../lib/gate-checkpoint');
 
 const BAR = '━'.repeat(55);
 
@@ -70,14 +70,13 @@ async function runPreflight({ args, options = {}, logger }) {
   const designDocs = agent ? await discoverDesignDocs(targetDir, agent) : [];
   const contextPackage = buildContextPackage(agent || 'dev', slug, classification, artifacts, devState, manifest);
   let readiness = evaluateReadiness(artifacts, phaseGates, classification, agent, devState, slug);
-  const gateCCheckpoint = slug && artifacts.implementation_plan.exists
-    ? await readFreshGateCheckpoint(
+  const gateCBaseline = slug && artifacts.implementation_plan.exists
+    ? await resolveGateCBaseline(
       targetDir,
-      'C',
       slug,
       path.join(contextDir(targetDir), `implementation-plan-${slug}.md`)
     )
-    : { exists: false };
+    : { mode: 'pre_implementation', pre_implementation: true, blocking: false };
   let completeness = null;
   if (slug && (agent === 'dev' || agent === 'qa')) {
     completeness = await analyzeFeatureCompleteness(targetDir, slug, {
@@ -86,7 +85,8 @@ async function runPreflight({ args, options = {}, logger }) {
       // A fresh Gate C checkpoint proves the plan baseline was validated before
       // implementation. The plan's own status is insufficient because Planner
       // writes `approved` before the first gate check.
-      preImplementation: agent === 'dev' && !gateCCheckpoint.exists,
+      preImplementation: agent === 'dev' && gateCBaseline.pre_implementation,
+      implementationBaseline: gateCBaseline,
       includeExecution: agent === 'qa'
     });
     if (completeness.applicable) {
@@ -104,6 +104,16 @@ async function runPreflight({ args, options = {}, logger }) {
           warnings: readiness.warnings || []
         };
       }
+    }
+    if (agent === 'dev' && gateCBaseline.blocking) {
+      readiness = {
+        status: 'BLOCKED',
+        blockers: [
+          ...(readiness.blockers || []),
+          `Gate C recovery [${gateCBaseline.cause}]: ${gateCBaseline.recommendation}`
+        ],
+        warnings: readiness.warnings || []
+      };
     }
   }
 
@@ -194,6 +204,7 @@ async function runPreflight({ args, options = {}, logger }) {
       ok: completeness.ok,
       summary: completeness.summary
     } : null,
+    gate_c_baseline: slug ? gateCBaseline : null,
     stale_dev_state: staleDevStateWarning || null,
     pulse: {
       last_agent: pulse.last_agent || null,

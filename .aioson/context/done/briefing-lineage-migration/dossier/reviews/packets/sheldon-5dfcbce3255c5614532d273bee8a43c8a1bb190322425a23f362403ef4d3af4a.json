@@ -1,0 +1,32 @@
+{
+  "packet_id": "sha256:5dfcbce3255c5614532d273bee8a43c8a1bb190322425a23f362403ef4d3af4a",
+  "schema_version": "review-packet/v1",
+  "feature_slug": "briefing-lineage-migration",
+  "agent": "sheldon",
+  "profile": "specification",
+  "review_mode": "independent_review",
+  "artifact": {
+    "path": ".aioson/context/prd-briefing-lineage-migration.md",
+    "sha256": "eaedb765494e75bda091f9beee4c912c5eb24acd6204b4de0aedd742bdbcf5c5",
+    "bytes": 21389
+  },
+  "authorities": [
+    {
+      "kind": "project-context",
+      "path": ".aioson/context/project.context.md",
+      "sha256": "98053ab593a242ead05839223ca5ada4c7d559352b8e6d6645dbbdb87ff5953a",
+      "bytes": 2879
+    }
+  ],
+  "reference_path": ".aioson/skills/process/review-intelligence/references/specification.md",
+  "challenge_lenses": [
+    "coverage",
+    "ambiguity",
+    "edge-cases",
+    "failure-modes",
+    "ownership",
+    "verifiability"
+  ],
+  "max_passes": 2,
+  "prepared_at": "2026-07-27T03:56:39.838Z"
+}

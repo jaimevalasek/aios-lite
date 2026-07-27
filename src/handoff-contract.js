@@ -17,6 +17,7 @@ const {
 } = require('./lib/feature-completeness');
 const { isCanonicalPlannerState } = require('./workflow-profile');
 const { validateCurrentSheldonReview } = require('./lib/sheldon-review');
+const { resolveGateCBaseline } = require('./lib/gate-checkpoint');
 
 // Contract definitions per agent stage
 const CONTRACTS = {
@@ -332,10 +333,16 @@ async function validateHandoffContract(targetDir, state, stageName, options = {}
 
   let completeness = null;
   if (state.featureSlug) {
+    const gateCBaseline = await resolveGateCBaseline(
+      targetDir,
+      state.featureSlug,
+      path.join(targetDir, '.aioson', 'context', `implementation-plan-${state.featureSlug}.md`)
+    );
     completeness = await analyzeFeatureCompleteness(targetDir, state.featureSlug, {
       classification,
       force: isCanonicalPlannerState(state) && ['product', 'sheldon', 'planner', 'dev', 'qa'].includes(stageName),
-      preImplementation: stageName === 'planner',
+      preImplementation: stageName === 'planner' && gateCBaseline.pre_implementation,
+      implementationBaseline: gateCBaseline,
       includeExecution: stageName === 'qa' && !options.structuralOnly,
       includeExecutionStructure: stageName === 'dev'
         || (stageName === 'qa' && options.structuralOnly)
@@ -358,6 +365,9 @@ async function validateHandoffContract(targetDir, state, stageName, options = {}
           `feature completeness [${item.stage}/${item.check}]: ${item.message}`
         ));
       }
+    }
+    if (stageName === 'planner' && gateCBaseline.blocking) {
+      missing.push(`Gate C recovery [${gateCBaseline.cause}]: ${gateCBaseline.recommendation}`);
     }
   }
 

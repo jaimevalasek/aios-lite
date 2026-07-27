@@ -1,0 +1,17 @@
+{
+  "schema_version": "review-report/v1",
+  "packet_id": "sha256:5dfcbce3255c5614532d273bee8a43c8a1bb190322425a23f362403ef4d3af4a",
+  "feature_slug": "briefing-lineage-migration",
+  "agent": "sheldon",
+  "profile": "specification",
+  "review_mode": "independent_review",
+  "artifact": {
+    "path": ".aioson/context/prd-briefing-lineage-migration.md",
+    "sha256": "eaedb765494e75bda091f9beee4c912c5eb24acd6204b4de0aedd742bdbcf5c5"
+  },
+  "passes_completed": 2,
+  "review_status": "pass",
+  "summary": "A revisão independente fechou a contradição de fontes ausentes por lifecycle, o confinamento real e concorrência da migração, a recuperação de checkpoint Gate C best-effort e a consistência entre consumidores. As 6 capacidades possuem encaixe comprovado e 20 critérios observáveis, sem decisão de produto bloqueante.",
+  "findings": [],
+  "completed_at": "2026-07-27T03:58:00.000Z"
+}

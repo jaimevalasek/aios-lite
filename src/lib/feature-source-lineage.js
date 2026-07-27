@@ -4,7 +4,10 @@ const fs = require('node:fs/promises');
 const fsNative = require('node:fs');
 const crypto = require('node:crypto');
 const path = require('node:path');
-const { resolveInsideRoot } = require('../verification/path-policy');
+const {
+  resolveExistingInsideRoot,
+  resolveInsideRoot
+} = require('../verification/path-policy');
 const {
   AC_ID_RE,
   CAP_ID_RE,
@@ -20,6 +23,7 @@ const {
   mapColumns,
   missingSection,
   normalizeDecision,
+  normalizeCoverageDecision,
   normalizeLabel,
   parseFirstMarkdownTable,
   parseSurfacesOverride
@@ -45,7 +49,7 @@ function extractPhysicalSourcePlans(briefing) {
 }
 
 async function collectFeatureSourceFiles(targetDir, slug) {
-  const root = resolveInsideRoot(targetDir, `plans/${slug}`);
+  const root = await resolveExistingInsideRoot(targetDir, `plans/${slug}`);
   if (!root.ok) return [];
   const collected = [];
   async function walk(absoluteDir, relativeDir) {
@@ -59,7 +63,7 @@ async function collectFeatureSourceFiles(targetDir, slug) {
       }
     }
   }
-  await walk(root.path, `plans/${slug}`);
+  await walk(root.real_path, `plans/${slug}`);
   return collected.sort();
 }
 
@@ -69,7 +73,8 @@ async function validateSourceLineage({
   briefing,
   prd,
   productMap,
-  acceptance
+  acceptance,
+  lifecycle = {}
 }) {
   const briefingArtifact = `.aioson/briefings/${slug}/briefings.md`;
   const prdArtifact = `.aioson/context/prd-${slug}.md`;
@@ -91,6 +96,7 @@ async function validateSourceLineage({
     ...await collectFeatureSourceFiles(targetDir, slug)
   ])];
   const knownSources = new Set();
+  const missingInventorySources = [];
 
   if (physicalPlans.length > 0 && !inventorySection) {
     findings.push(missingSection('product', 'source_inventory_missing', 'Source Inventory in the briefing', briefingArtifact));
@@ -132,31 +138,41 @@ async function validateSourceLineage({
             findings.push(finding('product', 'source_purpose_missing', `${source || `row ${rowNumber}`} must state how the source was used`, briefingArtifact));
           }
 
-          const safe = resolveInsideRoot(targetDir, sourcePath);
-          if (!safe.ok || !sourcePath.startsWith('plans/')) {
+          const lexical = resolveInsideRoot(targetDir, sourcePath);
+          const safe = lexical.ok && sourcePath.startsWith('plans/')
+            ? await resolveExistingInsideRoot(targetDir, sourcePath)
+            : { ok: false, reason: 'path_outside_root' };
+          if (
+            !lexical.ok
+            || !sourcePath.startsWith('plans/')
+            || (!safe.ok && safe.reason !== 'path_missing')
+          ) {
             findings.push(finding('product', 'source_path_unsafe', `${source || `row ${rowNumber}`} source path is outside the permitted plans/ input area`, briefingArtifact));
+          } else if (!safe.ok) {
+            missingInventorySources.push({ source, sourcePath });
           } else {
             try {
-              const current = await sha256File(safe.path);
+              const current = await sha256File(safe.real_path);
               if (fingerprint && current !== fingerprint) {
                 findings.push(finding('product', 'source_fingerprint_stale', `${source} changed after the briefing snapshot: ${sourcePath}`, briefingArtifact));
               }
             } catch {
-              findings.push(finding('product', 'source_file_missing', `${source} source file is missing: ${sourcePath}`, briefingArtifact));
+              missingInventorySources.push({ source, sourcePath });
             }
           }
-          inventory.push({ source, path: sourcePath, fingerprint, purpose });
+          inventory.push({
+            source,
+            path: sourcePath,
+            fingerprint,
+            purpose,
+            file_status: safe.ok ? 'present' : 'missing'
+          });
         }
       }
     }
   }
 
   const inventoryPaths = new Set(inventory.map((item) => item.path.toLowerCase()));
-  for (const sourcePath of physicalPlans) {
-    if (!inventoryPaths.has(sourcePath.toLowerCase())) {
-      findings.push(finding('product', 'source_plan_not_in_inventory', `source_plans entry is absent from Source Inventory: ${sourcePath}`, briefingArtifact));
-    }
-  }
 
   const promises = [];
   const promiseSection = extractSection(briefing, ['Source Promise Map', 'Mapa de Promessas das Fontes']);
@@ -212,6 +228,7 @@ async function validateSourceLineage({
   }
 
   const coverage = [];
+  const validCoveragePromises = new Set();
   const coverageSection = extractSection(prd, ['Source Coverage', 'Cobertura das Fontes']);
   if (!coverageSection) {
     findings.push(missingSection('product', 'source_coverage_missing', 'Source Coverage in the PRD', prdArtifact));
@@ -236,10 +253,7 @@ async function validateSourceLineage({
         const seen = new Set();
         for (const [index, row] of table.rows.entries()) {
           const promise = cleanCell(row[columns.indexes.promise]);
-          const decisionRaw = normalizeLabel(row[columns.indexes.decision]);
-          const decision = ['required', 'already-satisfied', 'deferred', 'rejected', 'not-applicable'].includes(decisionRaw)
-            ? decisionRaw
-            : '';
+          const decision = normalizeCoverageDecision(row[columns.indexes.decision]);
           const trace = cleanCell(row[columns.indexes.trace]);
           const caps = extractIds(trace, CAP_ID_RE);
           const acs = extractIds(trace, AC_ID_RE);
@@ -253,7 +267,7 @@ async function validateSourceLineage({
           if (seen.has(key)) findings.push(finding('product', 'source_coverage_promise_duplicate', `Source Coverage duplicates promise: ${promise}`, prdArtifact));
           seen.add(key);
           if (!decision) findings.push(finding('product', 'source_coverage_decision_invalid', `${promise || `row ${rowNumber}`} decision must be required, already_satisfied, deferred, rejected, or not_applicable`, prdArtifact));
-          if (['required', 'already-satisfied'].includes(decision)) {
+          if (['required', 'already_satisfied'].includes(decision)) {
             if (caps.length === 0 || acs.length === 0) {
               findings.push(finding('product', 'source_coverage_trace_missing', `${promise || `row ${rowNumber}`} must trace to at least one CAP-* and AC-*`, prdArtifact));
             }
@@ -267,7 +281,7 @@ async function validateSourceLineage({
           const originalPromise = promiseById.get(key);
           if (
             originalPromise?.state === 'required'
-            && ['deferred', 'rejected', 'not-applicable'].includes(decision)
+            && ['deferred', 'rejected', 'not_applicable'].includes(decision)
             && !/(user[- ]approved|approved by (?:the )?user|user decision|usuario aprovou|aprovado pelo usuario|decisao do usuario)/i.test(foldDiacritics(rationale))
           ) {
             findings.push(finding(
@@ -278,6 +292,14 @@ async function validateSourceLineage({
             ));
           }
           if (isPlaceholder(rationale)) findings.push(finding('product', 'source_coverage_rationale_missing', `${promise || `row ${rowNumber}`} requires evidence or rationale`, prdArtifact));
+          if (
+            PROM_ID_EXACT_RE.test(promise)
+            && knownPromises.has(key)
+            && !seen.has(`invalid:${key}`)
+            && decision
+          ) {
+            validCoveragePromises.add(key);
+          }
           coverage.push({ promise, decision, caps, acs, rationale });
         }
         for (const promise of promises) {
@@ -289,7 +311,58 @@ async function validateSourceLineage({
     }
   }
 
-  return { applicable: true, findings, inventory, promises, coverage };
+  const registryEntry = lifecycle.registry_entry || null;
+  const generatedPrd = Boolean(registryEntry && registryEntry.prd_generated);
+  const lifecycleContradictory = Boolean(
+    (generatedPrd && registryEntry.status === 'draft')
+    || (generatedPrd && (!lifecycle.prd_exists || !String(prd || '').trim()))
+  );
+  const coverageComplete = promises.length > 0
+    && promises.every((item) => validCoveragePromises.has(item.promise.toLowerCase()));
+  const absorbed = Boolean(
+    generatedPrd
+    && !lifecycleContradictory
+    && coverageComplete
+  );
+  const lifecycleStage = lifecycleContradictory
+    ? 'contradictory'
+    : absorbed
+      ? 'post_prd_absorbed'
+      : 'pre_product';
+
+  if (lifecycleContradictory || (generatedPrd && !coverageComplete)) {
+    findings.push(finding(
+      'product',
+      'source_lifecycle_contradictory',
+      'Briefing registry and generated PRD do not prove complete canonical source absorption',
+      briefingArtifact
+    ));
+  }
+  if (!absorbed) {
+    for (const item of missingInventorySources) {
+      findings.push(finding('product', 'source_file_missing', `${item.source} source file is missing: ${item.sourcePath}`, briefingArtifact));
+    }
+  }
+  for (const sourcePath of physicalPlans) {
+    if (inventoryPaths.has(sourcePath.toLowerCase())) continue;
+    const present = await resolveExistingInsideRoot(targetDir, sourcePath);
+    if (absorbed && present.reason === 'path_missing') continue;
+    findings.push(finding('product', 'source_plan_not_in_inventory', `source_plans entry is absent from Source Inventory: ${sourcePath}`, briefingArtifact));
+  }
+
+  return {
+    applicable: true,
+    findings,
+    inventory,
+    promises,
+    coverage,
+    lifecycle: {
+      stage: lifecycleStage,
+      absorbed,
+      registry_status: registryEntry ? registryEntry.status : null,
+      prd_generated: registryEntry ? registryEntry.prd_generated : null
+    }
+  };
 }
 
 module.exports = {

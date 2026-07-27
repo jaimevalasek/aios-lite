@@ -1,0 +1,17 @@
+{
+  "schema_version": "review-report/v1",
+  "packet_id": "sha256:87dfa602525cc9c6059bf21273b5c4f112b1bfa0c09ceb18702b67efe6022095",
+  "feature_slug": "briefing-lineage-migration",
+  "agent": "product",
+  "profile": "framing",
+  "review_mode": "self_review",
+  "artifact": {
+    "path": ".aioson/context/prd-briefing-lineage-migration.md",
+    "sha256": "c7829f87b1365e538f58f22a940e07b8b7bc3f8fd7b01564c0fa0e614e20a55c"
+  },
+  "passes_completed": 2,
+  "review_status": "pass",
+  "summary": "O PRD separa o incidente da solução, preserva o menor escopo coerente e fecha lifecycle, falhas, recuperação, ownership, evolução e critérios observáveis sem introduzir decisão material pendente.",
+  "findings": [],
+  "completed_at": "2026-07-27T03:48:00.000Z"
+}

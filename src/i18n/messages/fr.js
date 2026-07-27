@@ -35,6 +35,8 @@ module.exports = {
       'aioson briefing:review [chemin] [--slug=<slug>] [--findings=<chemin>] [--force] [--json] [--locale=fr]',
     help_briefing_apply_feedback:
       'aioson briefing:apply-feedback [chemin] [--slug=<slug>] [--feedback=<chemin>] [--confirm|--declined] [--allow-stale] [--json] [--locale=fr]',
+    help_briefing_migrate_lineage:
+      'aioson briefing:migrate-lineage [chemin] --slug=<slug> [--dry-run|--write] [--json] [--locale=fr]',
     help_context_validate: 'aioson context:validate [path] [--json] [--locale=fr]',
     help_context_pack:
       'aioson context:pack [path] [--agent=<agent>] [--goal=<texte>] [--module=<module-ou-dossier>] [--max-files=8] [--json] [--locale=fr]',
@@ -246,6 +248,12 @@ module.exports = {
     unknown_command: 'Commande inconnue : {command}',
     unknown_command_line: '{message}\n',
     error_prefix: 'Erreur : {message}'
+  },
+  briefing_lineage_migration: {
+    preview: 'La migration de traçabilité de « {slug} » est prête ({sources} source(s), {promises} promesse(s)). Aucun fichier modifié.',
+    migrated: 'Migration de traçabilité terminée pour « {slug} ». Rapport d’audit : {report}.',
+    already_canonical: 'Le briefing « {slug} » utilise déjà le schéma canonique de traçabilité.',
+    error: 'Échec de la migration de traçabilité ({code}) : {message}'
   },
   init: {
     usage_error:

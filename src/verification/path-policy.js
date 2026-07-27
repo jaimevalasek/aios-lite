@@ -1,5 +1,6 @@
 'use strict';
 
+const fs = require('node:fs/promises');
 const path = require('node:path');
 
 const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -50,6 +51,35 @@ function resolveInsideRoot(rootDir, inputPath) {
   };
 }
 
+async function resolveExistingInsideRoot(rootDir, inputPath) {
+  const lexical = resolveInsideRoot(rootDir, inputPath);
+  if (!lexical.ok) return lexical;
+
+  try {
+    const [rootRealPath, candidateRealPath] = await Promise.all([
+      fs.realpath(path.resolve(rootDir)),
+      fs.realpath(lexical.path)
+    ]);
+    if (!isInsideRoot(rootRealPath, candidateRealPath)) {
+      return {
+        ok: false,
+        reason: 'path_outside_root',
+        path: String(inputPath)
+      };
+    }
+    return {
+      ...lexical,
+      real_path: candidateRealPath
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      reason: error && error.code === 'ENOENT' ? 'path_missing' : 'path_unresolvable',
+      path: String(inputPath)
+    };
+  }
+}
+
 function relativeFromRoot(rootDir, absolutePath) {
   return toPosixPath(path.relative(path.resolve(rootDir), path.resolve(absolutePath)));
 }
@@ -66,6 +96,7 @@ module.exports = {
   validateFeatureSlug,
   resolveProjectRoot,
   resolveInsideRoot,
+  resolveExistingInsideRoot,
   relativeFromRoot,
   featureContextDir,
   verificationRunsDir,

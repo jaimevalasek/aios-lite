@@ -263,6 +263,27 @@ A nova versão da Store permite empacotar, distribuir e instalar não só agente
 
 Scripts determinísticos que movem verificações de estado, validação de artefatos e gate checks para fora do contexto LLM, economizando entre 4.800–8.800 tokens por feature. Veja [SDD Automation Scripts](./sdd-automation-scripts.md).
 
+#### `briefing:migrate-lineage`
+
+Inspeciona ou migra um briefing legado registrado para os esquemas canônicos de `Source Inventory` e `Source Promise Map`.
+
+```bash
+aioson briefing:migrate-lineage . --slug=feature-legada
+aioson briefing:migrate-lineage . --slug=feature-legada --dry-run --json
+aioson briefing:migrate-lineage . --slug=feature-legada --write
+```
+
+- O preview é o padrão e não altera arquivos; `--dry-run` torna essa intenção explícita.
+- `--write` não pode ser combinado com `--dry-run` e usa o hash analisado como precondição contra edição concorrente.
+- Aceita briefings `draft`, `approved` e `approved` com PRD já gerado.
+- Reescreve somente as seções de linhagem de `briefings.md`; registry, PRD, plano, protótipo e histórico de reviews permanecem intactos.
+- Somente arquivos reais e confinados sob `plans/` recebem `SRC-*` e SHA-256. Pesquisa, código, URLs, conversa e prework pós-PRD indisponível permanecem evidência complementar não canônica.
+- Uma escrita bem-sucedida cria backup endereçado por conteúdo e relatório JSON imutável em `.aioson/briefings/{slug}/lineage-migration/`.
+- Repetir `--write` em briefing canônico não altera bytes nem cria novos artefatos.
+- Slug inválido/traversal, escape por caminho real, promessa ambígua, cobertura incompleta no PRD, edição concorrente e flags conflitantes falham antes de mutação destrutiva.
+
+Reprepare somente os agentes listados em `affected_reviews` e depois execute novamente a validação normal de artefatos/gates.
+
 | Comando | O que faz | Quando usar |
 |---|---|---|
 | `preflight` | Coleta modo, classificação, framework, test runner, artefatos, gates e prontidão em uma chamada | No início de qualquer sessão de agente |

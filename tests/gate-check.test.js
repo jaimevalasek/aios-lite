@@ -8,6 +8,7 @@ const path = require('node:path');
 const { runGateCheck } = require('../src/commands/gate-check');
 const { runGateApprove } = require('../src/commands/gate-approve');
 const { runPreflight } = require('../src/commands/preflight');
+const { runArtifactValidate } = require('../src/commands/artifact-validate');
 const {
   approveAndSealSheldonReview,
   qaExecutionReport
@@ -71,20 +72,90 @@ test('Gate C requires one complete implementation plan for SMALL and MEDIUM', as
   assert.match(result.recommendation, /@dev/);
 });
 
-test('Gate C validates create paths before approval but accepts them during DEV resume', async () => {
+// AC-lineage-014
+test('Gate C routes review and lineage failures to their causal owners', async () => {
+  const reviewRoot = await tmp();
+  await seed(reviewRoot, { status: 'approved' });
+  await fs.appendFile(path.join(reviewRoot, '.aioson/context/prd-demo.md'), '\n<!-- changed after review -->\n');
+  const staleReview = await runGateCheck({
+    args: [reviewRoot],
+    options: { json: true, feature: 'demo', gate: 'C' },
+    logger
+  });
+  assert.equal(staleReview.result, 'BLOCKED');
+  assert.match(staleReview.recommendation, /@sheldon/);
+
+  const lineageRoot = await tmp();
+  await seed(lineageRoot, { status: 'approved' });
+  const prdPath = path.join(lineageRoot, '.aioson/context/prd-demo.md');
+  await fs.appendFile(prdPath, `
+
+## Source Coverage
+| Promise | Product decision | CAP / AC | Evidence / rationale |
+|---|---|---|---|
+| PROM-demo-01 | required | CAP-demo-01 / AC-demo-01 | Preserved |
+`);
+  await approveAndSealSheldonReview(lineageRoot);
+  await write(lineageRoot, '.aioson/briefings/demo/briefings.md', `---
+source_plans: ["plans/demo/missing.md"]
+---
+
+### Source Inventory
+| Source | Path | Fingerprint | Purpose |
+|---|---|---|---|
+| SRC-demo-01 | plans/demo/missing.md | sha256:${'a'.repeat(64)} | Required source |
+
+### Source Promise Map
+| Promise | Source | Approved intent | State |
+|---|---|---|---|
+| PROM-demo-01 | SRC-demo-01 | Saved result | required |
+`);
+  const missingSource = await runGateCheck({
+    args: [lineageRoot],
+    options: { json: true, feature: 'demo', gate: 'C' },
+    logger
+  });
+  assert.equal(missingSource.result, 'BLOCKED');
+  assert.match(missingSource.recommendation, /briefing:migrate-lineage/);
+});
+
+// AC-lineage-018
+test('Gate C recovers a missing legacy checkpoint from post-plan path evidence and rejects a newer plan', async () => {
   const root = await tmp();
   await seed(root, { status: 'approved' });
 
   await write(root, 'src/demo.js', 'module.exports = () => true;\n');
+  const planPath = path.join(root, '.aioson/context/implementation-plan-demo.md');
+  const sourcePath = path.join(root, 'src/demo.js');
+  const oldTime = new Date('2026-07-27T10:00:00.000Z');
+  const newTime = new Date('2026-07-27T10:01:00.000Z');
+  await fs.utimes(planPath, oldTime, oldTime);
+  await fs.utimes(sourcePath, newTime, newTime);
   let result = await runGateCheck({
     args: [root],
     options: { json: true, feature: 'demo', gate: 'C' },
     logger
   });
-  assert.equal(result.result, 'BLOCKED');
-  assert.ok(result.missing.some((item) => item.includes('implementation_delta_create_path_exists')));
+  assert.equal(result.result, 'PASS');
+  assert.equal(
+    result.evidence.find((item) => item.type === 'gate_c_baseline').mode,
+    'recovered_execution'
+  );
+  const recoveredPreflight = await runPreflight({
+    args: [root],
+    options: { json: true, agent: 'dev', feature: 'demo' },
+    logger
+  });
+  const recoveredArtifact = await runArtifactValidate({
+    args: [root],
+    options: { json: true, feature: 'demo' },
+    logger
+  });
+  assert.equal(recoveredPreflight.gate_c_baseline.mode, 'recovered_execution');
+  assert.equal(recoveredPreflight.readiness, 'READY');
+  assert.equal(recoveredArtifact.gate_c_baseline.mode, 'recovered_execution');
+  assert.equal(recoveredArtifact.integrity, 'VALID');
 
-  await fs.unlink(path.join(root, 'src/demo.js'));
   const approved = await runGateApprove({
     args: [root],
     options: { json: true, feature: 'demo', gate: 'C', agent: 'planner' },
@@ -93,7 +164,6 @@ test('Gate C validates create paths before approval but accepts them during DEV 
   assert.equal(approved.ok, true);
   assert.equal(approved.checkpoint_written, true);
 
-  await write(root, 'src/demo.js', 'module.exports = () => true;\n');
   await write(root, 'tests/demo.test.js', "const test=require('node:test'); test('AC-demo-01',()=>{});\n");
   result = await runGateCheck({
     args: [root],
@@ -123,7 +193,8 @@ test('Gate C validates create paths before approval but accepts them during DEV 
     logger
   });
   assert.equal(result.result, 'BLOCKED');
-  assert.ok(result.missing.some((item) => item.includes('implementation_delta_create_path_exists')));
+  assert.ok(result.missing.some((item) => item.includes('gate_c_recovery_plan_newer_than_execution')));
+  assert.match(result.recommendation, /revalidate implementation-plan-demo\.md/);
 });
 
 test('Gate D requires plan approval, QA PASS, real files, and AC-linked assertions', async () => {

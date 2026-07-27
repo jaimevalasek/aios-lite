@@ -18,6 +18,7 @@ const {
 } = require('../preflight-engine');
 const { analyzeFeatureCompleteness } = require('../lib/feature-completeness');
 const { validateCurrentSheldonReview } = require('../lib/sheldon-review');
+const { resolveGateCBaseline } = require('../lib/gate-checkpoint');
 
 const BAR = '━'.repeat(45);
 
@@ -33,7 +34,19 @@ async function runArtifactValidate({ args, options = {}, logger }) {
 
   const artifacts = await scanArtifacts(targetDir, slug);
   const classification = await detectClassification(targetDir, slug);
-  const completeness = await analyzeFeatureCompleteness(targetDir, slug, { artifacts, classification });
+  const gateCBaseline = artifacts.implementation_plan.exists
+    ? await resolveGateCBaseline(
+      targetDir,
+      slug,
+      path.join(targetDir, '.aioson', 'context', `implementation-plan-${slug}.md`)
+    )
+    : { mode: 'pre_implementation', pre_implementation: true, blocking: false };
+  const completeness = await analyzeFeatureCompleteness(targetDir, slug, {
+    artifacts,
+    classification,
+    preImplementation: gateCBaseline.pre_implementation,
+    implementationBaseline: gateCBaseline
+  });
   const productScope = String(artifacts.prd.frontmatter?.product_scope || '').toLowerCase();
   const prdReadyStatus = String(artifacts.prd.frontmatter?.prd_ready || '').toLowerCase();
   const prdReady = artifacts.prd.exists && productScope === 'approved' && prdReadyStatus === 'approved';
@@ -93,7 +106,16 @@ async function runArtifactValidate({ args, options = {}, logger }) {
   const missing = chain.filter((c) => c.required && !c.exists);
   const missingOptional = chain.filter((c) => !c.required && !c.exists);
 
-  const contentFindings = completeness.applicable ? completeness.findings : [];
+  const contentFindings = completeness.applicable ? [...completeness.findings] : [];
+  if (gateCBaseline.blocking) {
+    contentFindings.push({
+      severity: 'error',
+      stage: 'plan',
+      check: gateCBaseline.cause,
+      message: gateCBaseline.recommendation,
+      artifacts: [artifacts.implementation_plan.path]
+    });
+  }
   const valid = missing.length === 0 && contentFindings.length === 0;
 
   // Determine next_missing and next_agent (AC-SDLC-22)
@@ -143,6 +165,7 @@ async function runArtifactValidate({ args, options = {}, logger }) {
       findings: contentFindings,
       summary: completeness.summary
     },
+    gate_c_baseline: gateCBaseline,
     next_missing: nextMissing,
     next_agent: nextAgent,
     integrity: valid ? 'VALID' : 'INVALID'

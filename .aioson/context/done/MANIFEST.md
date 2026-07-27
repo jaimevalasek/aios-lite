@@ -6,6 +6,7 @@
 | slug | completed | files | summary |
 |------|-----------|-------|---------|
 | briefing-review-decision-room | 2026-07-27 | 4 | Turn the local Briefing Refiner review from a document-heavy technical editor into a guided decision room. The operator should understand what needs a decision, |
+| briefing-lineage-migration | 2026-07-27 | 3 | Projetos criados antes do contrato atual de linhagem devem voltar a ser |
 | premium-squad-intelligence | 2026-07-26 | 3 | Fazer o AIOSON criar e operar squads realmente especializadas: composição proporcional à tarefa, pesquisa atual e auditável quando o resultado depende do mundo |
 | review-intelligence | 2026-07-16 | 12 | Fazer os agentes do AIOSON criarem soluções mais completas e confiáveis ao pressionarem suas próprias propostas contra evidências, cenários adversos e critérios |
 | agent-execution-model-resolution | 2026-07-11 | 11 | Tornar a seleção de modelo dos subagentes tolerante a nomes humanos e pequenos desvios de ID, sem perder a previsibilidade, a segurança e a auditabilidade do Ag |

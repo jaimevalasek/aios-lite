@@ -35,6 +35,8 @@ module.exports = {
       'aioson briefing:review [ruta] [--slug=<slug>] [--findings=<ruta>] [--force] [--json] [--locale=es]',
     help_briefing_apply_feedback:
       'aioson briefing:apply-feedback [ruta] [--slug=<slug>] [--feedback=<ruta>] [--confirm|--declined] [--allow-stale] [--json] [--locale=es]',
+    help_briefing_migrate_lineage:
+      'aioson briefing:migrate-lineage [ruta] --slug=<slug> [--dry-run|--write] [--json] [--locale=es]',
     help_context_validate: 'aioson context:validate [path] [--json] [--locale=es]',
     help_context_pack:
       'aioson context:pack [path] [--agent=<agente>] [--goal=<texto>] [--module=<modulo-o-carpeta>] [--max-files=8] [--json] [--locale=es]',
@@ -246,6 +248,12 @@ module.exports = {
     unknown_command: 'Comando desconocido: {command}',
     unknown_command_line: '{message}\n',
     error_prefix: 'Error: {message}'
+  },
+  briefing_lineage_migration: {
+    preview: 'La migración de linaje de "{slug}" está lista ({sources} fuente(s), {promises} promesa(s)). No se modificó ningún archivo.',
+    migrated: 'Migración de linaje completada para "{slug}". Informe de auditoría: {report}.',
+    already_canonical: 'El briefing "{slug}" ya usa el esquema canónico de linaje.',
+    error: 'Falló la migración de linaje ({code}): {message}'
   },
   init: {
     usage_error:

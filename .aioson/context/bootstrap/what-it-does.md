@@ -1,6 +1,6 @@
 ---
 generated_by: product
-generated_at: 2026-07-27T03:35:00Z
+generated_at: 2026-07-27T16:39:15Z
 confidence: high
 ---
 
@@ -16,6 +16,7 @@ AIOSON is a Node.js CLI framework for spec-driven development with specialized a
 - Provides deterministic CLI helpers such as `preflight`, `gate:check`, `artifact:validate`, `workflow:next`, `workflow:execute`, `pulse:update`, `agent:done`, `verify:gate` and runtime/live session commands.
 - Exposes the complete briefing lifecycle in localized CLI help: `briefing:approve`, `briefing:unapprove`, `briefing:review`, and `briefing:apply-feedback`.
 - Generates a self-contained Decision Room local, guiada por cartões de escolha nativos, leitura Markdown segura, resumo final e fallback de salvamento; schema 1.2 preserves v1.0/v1.1 compatibility and binds only applied, hash-matched review decisions to downstream Product-to-QA work.
+- Keeps briefing-review authority fail-closed: only the exact archived applied-feedback round with matching briefing and result hashes can add accepted decisions or source references to downstream work; pending, stale, malformed, or unarchived feedback remains nonbinding.
 - Adds bounded review intelligence to eight solution-shaping and assurance agents through role-specific evidence-first lenses, immutable review packets/reports, and additive `review:prepare`, `review:check`, and `review:status` CLI commands.
 - Makes commit preparation context-aware and self-stageable: `git:guard` distinguishes localization copy, non-literal interpolation and independently synthetic fixtures from real credentials; fixture-like names alone do not bypass scanning, realistic secrets remain blocking even under `tests/`, scoped path + detector-rule exceptions remain auditable, and `commit-prep.json` records `guarded`, `headless`, or explicitly trusted warning decisions.
 - Maintains runtime telemetry in .aioson/runtime/aios.sqlite.
@@ -29,6 +30,7 @@ AIOSON is a Node.js CLI framework for spec-driven development with specialized a
 - Supports paused feature lifecycle semantics so parked features remain visible without blocking new workflow routing.
 - Measures prompt/context cost with scoped `agent:audit` modes (runtime, template, inception) and a standalone `skill:audit` command.
 - Reports advisory context drift through `context:health` warnings while preserving non-failing health output for review workflows.
+- Keeps workflow status, recovery, hygiene, and inventory inspection read-only by default, reconciles stale state without incidental persistence, quarantines stale runtime artifacts from active routing, and separates feature-completeness, source-lineage, runtime-recovery, and squad-evaluation logic into bounded modules with focused regression coverage.
 
 ## Current improvement focus
 

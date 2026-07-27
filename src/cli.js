@@ -242,6 +242,7 @@ const { runSkillPublish, runSkillInstallStore, runSkillListRemote } = require('.
 const { runSquadPublish, runSquadInstall, runSquadGrant, runSquadList } = require('./commands/store-squad');
 const { runSystemPackage, runSystemPublish, runSystemList, runSystemInstall } = require('./commands/store-system');
 const { runBriefingApprove, runBriefingUnapprove, runBriefingReview, runBriefingApplyFeedback } = require('./commands/briefing');
+const { runBriefingMigrateLineage } = require('./commands/briefing-migrate-lineage');
 const { runCompressAgents } = require('./commands/compress-agents');
 
 const JSON_SUPPORTED_COMMANDS = new Set([
@@ -358,6 +359,8 @@ const JSON_SUPPORTED_COMMANDS = new Set([
   'briefing-review',
   'briefing:apply-feedback',
   'briefing-apply-feedback',
+  'briefing:migrate-lineage',
+  'briefing-migrate-lineage',
   'review:feature',
   'review-feature',
   'review:prepare',
@@ -928,6 +931,7 @@ function printHelp(t, logger) {
   logHelpLine(t, logger, 'cli.help_briefing_unapprove');
   logHelpLine(t, logger, 'cli.help_briefing_review');
   logHelpLine(t, logger, 'cli.help_briefing_apply_feedback');
+  logHelpLine(t, logger, 'cli.help_briefing_migrate_lineage');
   logHelpLine(t, logger, 'cli.help_context_validate');
   logHelpLine(t, logger, 'cli.help_context_pack');
   logHelpLine(t, logger, 'cli.help_context_search');
@@ -1885,6 +1889,8 @@ async function main() {
       result = await runBriefingReview({ args, options, logger: commandLogger });
     } else if (command === 'briefing:apply-feedback' || command === 'briefing-apply-feedback') {
       result = await runBriefingApplyFeedback({ args, options, logger: commandLogger });
+    } else if (command === 'briefing:migrate-lineage' || command === 'briefing-migrate-lineage') {
+      result = await runBriefingMigrateLineage({ args, options, logger: commandLogger, t });
     } else {
       const message = t('cli.unknown_command', { command });
       if (jsonMode) {

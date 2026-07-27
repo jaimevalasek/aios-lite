@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "session_ended_at": "2026-07-27T03:17:03.368Z",
+  "session_ended_at": "2026-07-27T16:46:27.124Z",
   "last_agent": "@qa",
   "last_stage": "qa",
   "what_was_done": "Stage @qa completed.",
@@ -10,47 +10,47 @@
   "context_files_updated": [],
   "workflow_mode": "feature",
   "classification": "MEDIUM",
-  "feature_slug": "briefing-review-decision-room",
+  "feature_slug": "briefing-lineage-migration",
   "optional_handoffs": [
     {
       "agent": "@scope-check",
       "mode": "post-fix",
-      "command": "aioson workflow:next . --agent=scope-check --scope-mode=post-fix --feature=briefing-review-decision-room",
+      "command": "aioson workflow:next . --agent=scope-check --scope-mode=post-fix --feature=briefing-lineage-migration",
       "reason": "Optional post-fix check: use only when verification or security corrections changed behavior or product scope."
     }
   ],
   "decision_rationale": [
     {
       "agent": "unknown",
-      "decision": "json-test-1785121947421",
+      "decision": "json-test-1785170648344",
       "alternatives_considered": null,
       "rationale": "q",
       "confidence": "confirmed"
     },
     {
       "agent": "dev",
-      "decision": "manual-promote-1785121947489",
+      "decision": "manual-promote-1785170648391",
       "alternatives_considered": null,
       "rationale": "q",
       "confidence": "confirmed"
     },
     {
       "agent": "unknown",
-      "decision": "telemetry-1785121947640",
+      "decision": "telemetry-1785170648493",
       "alternatives_considered": null,
       "rationale": "q",
       "confidence": "confirmed"
     },
     {
       "agent": "dev",
-      "decision": "conf2x-1785121948143",
+      "decision": "conf2x-1785170648875",
       "alternatives_considered": null,
       "rationale": "q1",
       "confidence": "confirmed"
     },
     {
       "agent": "dev",
-      "decision": "conf2x-1785121948143",
+      "decision": "conf2x-1785170648875",
       "alternatives_considered": null,
       "rationale": "q2",
       "confidence": "confirmed"

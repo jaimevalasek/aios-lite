@@ -34,6 +34,8 @@ module.exports = {
       'aioson briefing:review [path] [--slug=<slug>] [--findings=<path>] [--force] [--json] [--locale=en]',
     help_briefing_apply_feedback:
       'aioson briefing:apply-feedback [path] [--slug=<slug>] [--feedback=<path>] [--confirm|--declined] [--allow-stale] [--json] [--locale=en]',
+    help_briefing_migrate_lineage:
+      'aioson briefing:migrate-lineage [path] --slug=<slug> [--dry-run|--write] [--json] [--locale=en]',
     help_context_validate: 'aioson context:validate [path] [--json] [--locale=en]',
     help_context_pack:
       'aioson context:pack [path] [--agent=<agent>] [--goal=<text>] [--module=<module-or-folder>] [--max-files=8] [--json] [--locale=en]',
@@ -382,6 +384,12 @@ module.exports = {
     publish_squad_done: 'Published squad {slug}@{version} to the cloud.',
     publish_genome_dry_run: 'Dry run: genome {slug}@{version} ready for cloud publish.',
     publish_genome_done: 'Published genome {slug}@{version} to the cloud.'
+  },
+  briefing_lineage_migration: {
+    preview: 'Lineage migration for "{slug}" is ready ({sources} source(s), {promises} promise(s)). No files changed.',
+    migrated: 'Lineage migration completed for "{slug}". Audit report: {report}.',
+    already_canonical: 'Briefing "{slug}" already uses the canonical lineage schema.',
+    error: 'Lineage migration failed ({code}): {message}'
   },
   init: {
     usage_error:

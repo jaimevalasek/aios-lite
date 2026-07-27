@@ -51,7 +51,8 @@ test('help exposes briefing lifecycle commands in every supported locale', async
     'briefing:approve',
     'briefing:unapprove',
     'briefing:review',
-    'briefing:apply-feedback'
+    'briefing:apply-feedback',
+    'briefing:migrate-lineage'
   ];
 
   for (const locale of ['en', 'pt-BR', 'es', 'fr']) {

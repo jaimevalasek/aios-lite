@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.44.0] - 2026-07-27
+
+### Added
+- **Briefing lineage migration** — the new `briefing:migrate-lineage` command canonicalizes approved briefing sources, preserves their evidence trail, and reports safe dry-run/write outcomes.
+
+### Changed
+- Feature completeness, gate checks, preflight, handoff recovery, validation messages, and CLI reference documentation now recognize the lineage migration lifecycle and its explicit ownership boundaries.
+
+### Fixed
+- Source lifecycle drift, stale review material, unsafe paths, concurrent writes, and incomplete CAP/AC evidence are rejected or recovered deterministically without mutating unrelated project state.
+
+### Validation
+- QA evidence covers all 20 acceptance criteria, focused migration coverage, the normal CLI production path, and the full CI suite.
+
 ## [1.43.0] - 2026-07-26
 
 ### Added
