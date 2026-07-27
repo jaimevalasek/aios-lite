@@ -41,6 +41,31 @@ test('the canonical chain has one PRD, one plan, and one QA report', async () =>
   assert.match(qa, /qa-report-\{slug\}\.md/);
 });
 
+test('AC-BRDR-07 AC-BRDR-08: approved briefing review authority is fail-closed across Product, Sheldon, Planner, Dev, and QA', async () => {
+  const authority = await read('.aioson/docs/briefing/review-authority.md');
+  assert.ok(MANAGED_FILES.includes('.aioson/docs/briefing/review-authority.md'));
+  for (const token of [
+    'Status: applied',
+    'Approved review authority: binding',
+    'refinement-feedback.applied-round*.json',
+    'single',
+    'multiple',
+    'nonbinding'
+  ]) {
+    assert.ok(authority.includes(token), `review authority contract missing ${token}`);
+  }
+
+  for (const name of ['product', 'sheldon', 'planner', 'dev', 'qa']) {
+    const templatePrompt = await read(`.aioson/agents/${name}.md`);
+    const workspacePrompt = await fs.readFile(path.join(ROOT, '.aioson', 'agents', `${name}.md`), 'utf8');
+    assert.match(templatePrompt, /\.aioson\/docs\/briefing\/review-authority\.md/);
+    assert.match(templatePrompt, /exact applied feedback archive/i);
+    assert.match(templatePrompt, /pending.*rejected.*deferred/is);
+    assert.match(templatePrompt, /nonbinding|as authority|infer implementation work/i);
+    assert.equal(workspacePrompt, templatePrompt, `${name} template/workspace review authority drift`);
+  }
+});
+
 test('Planner creates vertical production-path stages from CAP and AC trace', async () => {
   const planner = await read('.aioson/agents/planner.md');
   for (const token of ['Capability Delivery Plan', 'Engineering Controls', 'CAP-*', 'AC-*', 'production entry point', 'real UI', 'exact repository-relative paths']) {

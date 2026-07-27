@@ -20,17 +20,42 @@ Use when `refinement-feedback.json` is absent or the user explicitly requests re
 ```json
 [
   {
+    "id": "F1",
     "section_id": "problem",
-    "category": "gap",
+    "category": "pending-decision",
     "severity": "high",
     "blocking": true,
-    "text": "<specific evidence-backed problem>",
-    "recommendation": "<concrete correction>"
+    "text": "<specific evidence-backed decision>",
+    "question": "<plain-language question>",
+    "selection_mode": "single",
+    "options": [
+      {
+        "id": "recommended-path",
+        "label": "<short visible label>",
+        "description": "<what this choice means>",
+        "impact": "<concrete trade-off>",
+        "recommended": true,
+        "evidence_refs": ["<repository or research path>"]
+      },
+      {
+        "id": "alternative-path",
+        "label": "<short visible label>",
+        "description": "<what this choice means>",
+        "impact": "<concrete trade-off>",
+        "recommended": false,
+        "evidence_refs": []
+      }
+    ],
+    "selected_option_ids": [],
+    "rationale": "",
+    "evidence_refs": []
   }
 ]
 ```
 
 Allowed categories: `ambiguity`, `redundancy`, `gap`, `risk`, `pending-decision`, `scope-suggestion`. Allowed severities: `low`, `medium`, `high`. Use `blocking: true` only when Product cannot responsibly write the PRD without resolution. `section_id` is the section-title kebab case.
+
+Material choices use two to four legitimate alternatives. Use `single` for mutually exclusive paths and `multiple` only for independent compatible choices. Labels, descriptions and impacts must explain real differences; never add fake alternatives to make the card look complete. A finding with no real choice may keep the legacy `recommendation` shape and receives visible accept/change/defer actions.
 
 For existing-system fit, include observed behavior and exact repository paths in `text`. Routine evidence-backed corrections belong in `recommendation`, not in a new user question.
 
@@ -69,6 +94,8 @@ aioson briefing:apply-feedback . --slug={slug} --confirm --json
 ```
 
 The CLI applies structured JSON, preserves mandatory sections, reverts `approved` to `draft` when needed, archives round inputs, and records `next_action`.
+
+After confirmed apply, read `.aioson/docs/briefing/review-authority.md`. Only valid accepted selections (or a valid legacy accepted recommendation) from the exact applied archive become downstream authority; pending, rejected, deferred, merely recommended, malformed or stale material remains nonbinding.
 6. On decline:
 
 ```bash

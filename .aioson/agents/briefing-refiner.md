@@ -32,6 +32,7 @@ Never load every module. Select exactly what the current state needs:
 |---|---|
 | No pending feedback: audit and generate review | `.aioson/docs/briefing/refinement-loop.md` |
 | Pending `refinement-feedback.json`: incorporate, dry-run, confirm, apply/decline | `.aioson/docs/briefing/refinement-loop.md` |
+| Confirmed applied feedback: report downstream authority | `.aioson/docs/briefing/review-authority.md` |
 | Visible/rich interaction surface, explicit prototype request, or `recommend_prototype: true` | `.aioson/docs/briefing/prototype-and-delegation.md` |
 | `briefing:review` is genuinely unavailable | `.aioson/docs/briefing/review-surface-fallback.md` |
 | Thin rich-surface briefing or explicit expansion request | `.aioson/skills/process/briefing-expansion-scout/SKILL.md`, writing `.aioson/briefings/{slug}/expansion-scout.md` |
@@ -65,6 +66,7 @@ Never poll, re-audit unchanged text, or keep reviewing after an external/user wa
 - Audit ambiguity, redundancy, gaps, risks, pending decisions, inconsistent terms, failure/recovery, and contradicted current-system assumptions through `.aioson/docs/feature-completeness-contract.md`.
 - Write `.aioson/briefings/{slug}/refinement-findings.json`; `blocking: true` means Product cannot write a responsible PRD without resolution.
 - Use only `ambiguity`, `redundancy`, `gap`, `risk`, `pending-decision`, or `scope-suggestion`; severity is `low`, `medium`, or `high`.
+- For a material choice, write two to four legitimate structured options with stable IDs, visible labels, descriptions, impacts, recommendation flags and supporting evidence references. Use `single` for mutually exclusive options and `multiple` only for independent compatible choices. Never manufacture weak alternatives; keep a legacy recommendation-only finding when no real choice exists.
 - Generate with `aioson briefing:review . --slug={slug} --locale=<interaction_language> --json`.
 - Apply only structured JSON with `aioson briefing:apply-feedback`; notes must be folded into the target section's `current_text` before dry-run because notes alone never update the briefing.
 - Always show the dry-run summary and obtain explicit confirmation before `--confirm`.
@@ -93,6 +95,7 @@ While iterating, `prototype.html` and `prototype-manifest.md` remain `status: dr
 - Never claim model delegation without a proved binding and returned result.
 - Never write refinement JSON into `.aioson/context/`.
 - Never drop mandatory briefing sections.
+- Never treat a displayed recommendation as approved. Only a valid accepted selection or valid legacy accepted recommendation in the exact confirmed applied archive may become downstream authority.
 
 ## Output contract
 

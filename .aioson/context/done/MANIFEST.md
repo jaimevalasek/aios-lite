@@ -5,7 +5,8 @@
 
 | slug | completed | files | summary |
 |------|-----------|-------|---------|
-| premium-squad-intelligence | 2026-07-26 | 3 | Fazer o AIOSON criar e operar squads realmente especializadas: composição proporcional à tarefa, pesquisa atual e auditável quando o resultado depende do mundo  |
+| briefing-review-decision-room | 2026-07-27 | 4 | Turn the local Briefing Refiner review from a document-heavy technical editor into a guided decision room. The operator should understand what needs a decision, |
+| premium-squad-intelligence | 2026-07-26 | 3 | Fazer o AIOSON criar e operar squads realmente especializadas: composição proporcional à tarefa, pesquisa atual e auditável quando o resultado depende do mundo |
 | review-intelligence | 2026-07-16 | 12 | Fazer os agentes do AIOSON criarem soluções mais completas e confiáveis ao pressionarem suas próprias propostas contra evidências, cenários adversos e critérios |
 | agent-execution-model-resolution | 2026-07-11 | 11 | Tornar a seleção de modelo dos subagentes tolerante a nomes humanos e pequenos desvios de ID, sem perder a previsibilidade, a segurança e a auditabilidade do Ag |
 | agent-execution-dispatcher | 2026-07-10 | 13 | Transformar o plano de uma feature em um pipeline executável e portátil, no qual cada agente usa o host, o modelo e o modo escolhidos pelo usuário sem depender |

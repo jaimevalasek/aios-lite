@@ -1,0 +1,37 @@
+{
+  "packet_id": "sha256:2b9d30684aa5eadb2957b48366ccbb8a19cce827ca9d6671749a08558776e041",
+  "schema_version": "review-packet/v1",
+  "feature_slug": "briefing-review-decision-room",
+  "agent": "qa",
+  "profile": "delivery-assurance",
+  "review_mode": "independent_review",
+  "artifact": {
+    "path": ".aioson/context/qa-report-briefing-review-decision-room.md",
+    "sha256": "f16163b210fbd4948491f6c1c189e8987c91f6d7d1b8b0d564499e7ec7749f1f",
+    "bytes": 6995
+  },
+  "authorities": [
+    {
+      "kind": "prd",
+      "path": ".aioson/context/prd-briefing-review-decision-room.md",
+      "sha256": "80264510a764bc01ae6117505aec2b7b65c729708e9bc8280ca16bdccf5c713a",
+      "bytes": 14877
+    },
+    {
+      "kind": "implementation-plan",
+      "path": ".aioson/context/implementation-plan-briefing-review-decision-room.md",
+      "sha256": "dd7f6414c217a337a68166d31d1177aea6c0cb9f9170b941bebe5fe20b2828f1",
+      "bytes": 13602
+    }
+  ],
+  "reference_path": ".aioson/skills/process/review-intelligence/references/delivery-assurance.md",
+  "challenge_lenses": [
+    "specification-fidelity",
+    "acceptance-coverage",
+    "code-health",
+    "runtime-truth",
+    "residual-risk"
+  ],
+  "max_passes": 2,
+  "prepared_at": "2026-07-27T03:09:19.287Z"
+}

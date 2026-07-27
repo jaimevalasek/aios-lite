@@ -15,7 +15,14 @@ const {
   writeBriefingRegistry
 } = require('../src/lib/briefing-refiner/briefing-registry');
 const { hashText, parseBriefingSections, serializeBriefingSections } = require('../src/lib/briefing-refiner/briefing-sections');
-const { buildInitialFeedback, validateFeedback, validateFindingsInput } = require('../src/lib/briefing-refiner/feedback-schema');
+const {
+  buildInitialFeedback,
+  collectApprovedReviewDecisions,
+  DECISION_LIMITS,
+  validateFeedback,
+  validateFindingsInput
+} = require('../src/lib/briefing-refiner/feedback-schema');
+const { renderSafeMarkdown } = require('../src/lib/briefing-refiner/safe-markdown');
 const { assertSafeSlug, resolveBriefingPath } = require('../src/lib/briefing-refiner/briefing-paths');
 const { writeReviewArtifacts } = require('../src/lib/briefing-refiner/review-html');
 const { applyConfirmedFeedback, applyDeclinedFeedback } = require('../src/lib/briefing-refiner/apply-feedback');
@@ -488,7 +495,41 @@ const FINDINGS = [
   { section_id: 'risks', category: 'risk', severity: 'medium', text: 'Provider swap needs a versioned shape' }
 ];
 
-test('schema v1.1 carries findings and round; validateFindingsInput is strict', () => {
+const STRUCTURED_FINDINGS = [
+  {
+    id: 'F-choice',
+    section_id: 'problem',
+    category: 'pending-decision',
+    severity: 'high',
+    blocking: true,
+    text: 'Choose the review flow',
+    question: 'How should material decisions be reviewed?',
+    selection_mode: 'single',
+    options: [
+      {
+        id: 'guided',
+        label: 'Guided decisions',
+        description: 'Review one material choice at a time.',
+        impact: 'Fastest path with explicit authority.',
+        recommended: true,
+        evidence_refs: ['researchs/open-design-briefing-refiner-2026/summary.md']
+      },
+      {
+        id: 'document',
+        label: 'Document only',
+        description: 'Keep the current long-form editor.',
+        impact: 'Lowest change but weak comparison.',
+        recommended: false,
+        evidence_refs: []
+      }
+    ],
+    selected_option_ids: [],
+    rationale: '',
+    evidence_refs: ['.aioson/context/prd-briefing-review-decision-room.md']
+  }
+];
+
+test('schema v1.2 carries findings and round while legacy v1.0/v1.1 stays valid', () => {
   const parsed = parseBriefingSections(BRIEFING, '.aioson/briefings/idea-one/briefings.md');
   const feedback = buildInitialFeedback({
     slug: 'idea-one',
@@ -498,7 +539,7 @@ test('schema v1.1 carries findings and round; validateFindingsInput is strict', 
     findings: FINDINGS,
     round: 2
   });
-  assert.equal(feedback.schema_version, '1.1');
+  assert.equal(feedback.schema_version, '1.2');
   assert.equal(feedback.round, 2);
   assert.equal(feedback.findings.length, 2);
   assert.equal(feedback.findings[0].id, 'F1');
@@ -509,6 +550,19 @@ test('schema v1.1 carries findings and round; validateFindingsInput is strict', 
   const legacy = { ...feedback, schema_version: '1.0' };
   delete legacy.findings;
   assert.equal(validateFeedback(legacy, { slug: 'idea-one', currentSourceHash: parsed.source_hash }).ok, true);
+  const v11 = { ...feedback, schema_version: '1.1', findings: feedback.findings.map((finding) => {
+    const {
+      question,
+      selection_mode,
+      options,
+      selected_option_ids,
+      rationale,
+      evidence_refs,
+      ...legacyFinding
+    } = finding;
+    return legacyFinding;
+  }) };
+  assert.equal(validateFeedback(v11, { slug: 'idea-one', currentSourceHash: parsed.source_hash }).ok, true);
 
   // strict input validation for the agent-supplied findings file
   const sectionIds = parsed.sections.map((section) => section.id);
@@ -518,7 +572,80 @@ test('schema v1.1 carries findings and round; validateFindingsInput is strict', 
   assert.equal(validateFindingsInput([{ section_id: 'problem', category: 'gap', text: '' }], { sectionIds }).ok, false);
 });
 
-test('review.html carries findings UI, filters, autosave, and the save fallback chain', async () => {
+test('AC-BRDR-05: structured choices enforce limits, unique ids, and accepted cardinality', () => {
+  const parsed = parseBriefingSections(BRIEFING, '.aioson/briefings/idea-one/briefings.md');
+  const sectionIds = parsed.sections.map((section) => section.id);
+  assert.equal(validateFindingsInput(STRUCTURED_FINDINGS, { sectionIds }).ok, true);
+
+  const overflow = structuredClone(STRUCTURED_FINDINGS);
+  overflow[0].options[0].label = 'x'.repeat(DECISION_LIMITS.label + 1);
+  assert.match(validateFindingsInput(overflow, { sectionIds }).errors.join('\n'), /exceeds 120 characters/);
+
+  const duplicate = structuredClone(STRUCTURED_FINDINGS);
+  duplicate[0].options[1].id = 'guided';
+  assert.match(validateFindingsInput(duplicate, { sectionIds }).errors.join('\n'), /duplicate id/);
+
+  const wrongType = structuredClone(STRUCTURED_FINDINGS);
+  wrongType[0].rationale = ['not text'];
+  assert.match(validateFindingsInput(wrongType, { sectionIds }).errors.join('\n'), /rationale must be a string/);
+
+  const feedback = buildInitialFeedback({
+    slug: 'idea-one',
+    sourcePath: '.aioson/briefings/idea-one/briefings.md',
+    sourceHash: parsed.source_hash,
+    sections: parsed.sections,
+    findings: STRUCTURED_FINDINGS
+  });
+  feedback.findings[0].status = 'accepted';
+  assert.match(
+    validateFeedback(feedback, { slug: 'idea-one', currentSourceHash: parsed.source_hash }).errors.join('\n'),
+    /requires exactly one selected option/
+  );
+  feedback.findings[0].selected_option_ids = ['unknown'];
+  assert.match(
+    validateFeedback(feedback, { slug: 'idea-one', currentSourceHash: parsed.source_hash }).errors.join('\n'),
+    /unknown option/
+  );
+  feedback.findings[0].selected_option_ids = ['guided'];
+  assert.equal(validateFeedback(feedback, { slug: 'idea-one', currentSourceHash: parsed.source_hash }).ok, true);
+});
+
+test('AC-BRDR-06: only valid accepted selections or legacy recommendations become authority', () => {
+  const structured = structuredClone(STRUCTURED_FINDINGS[0]);
+  structured.status = 'accepted';
+  structured.selected_option_ids = ['guided'];
+  structured.rationale = 'It makes approval explicit.';
+  const legacyApproved = {
+    id: 'F-legacy',
+    section_id: 'risks',
+    category: 'risk',
+    severity: 'medium',
+    status: 'accepted',
+    text: 'Name the compatibility rule',
+    recommendation: 'Preserve schema 1.0 and 1.1'
+  };
+  const ignored = [
+    { ...legacyApproved, id: 'F-pending', status: 'pending' },
+    { ...legacyApproved, id: 'F-rejected', status: 'rejected' },
+    { ...legacyApproved, id: 'F-empty', recommendation: '' }
+  ];
+  const approved = collectApprovedReviewDecisions([structured, legacyApproved, ...ignored]);
+  assert.deepEqual(approved.map((decision) => decision.id), ['F-choice', 'F-legacy']);
+  assert.equal(approved[0].selected_options[0].id, 'guided');
+  assert.equal(approved[0].rationale, 'It makes approval explicit.');
+  assert.equal(approved[1].kind, 'legacy_recommendation');
+});
+
+test('AC-BRDR-03 AC-BRDR-09: safe Markdown renders the supported subset and keeps HTML inert', () => {
+  const rendered = renderSafeMarkdown('# Title\n\n- **Choice**\n\n| A | B |\n|---|---|\n| 1 | 2 |\n\n<script>alert(1)</script>');
+  assert.match(rendered, /<h1>Title<\/h1>/);
+  assert.match(rendered, /<ul><li><strong>Choice<\/strong><\/li><\/ul>/);
+  assert.match(rendered, /<table>/);
+  assert.doesNotMatch(rendered, /<script>/);
+  assert.match(rendered, /&lt;script&gt;alert\(1\)&lt;\/script&gt;/);
+});
+
+test('AC-BRDR-03 AC-BRDR-04 AC-BRDR-09 AC-BRDR-10: review HTML preserves reading, editing, restore, accessibility, and save fallbacks', async () => {
   const dir = await makeProject();
   const parsed = parseBriefingSections(BRIEFING, '.aioson/briefings/idea-one/briefings.md');
   await writeReviewArtifacts(dir, {
@@ -532,7 +659,7 @@ test('review.html carries findings UI, filters, autosave, and the save fallback 
   });
   const html = await fs.readFile(path.join(dir, '.aioson/briefings/idea-one/review.html'), 'utf8');
 
-  assert.equal(html.includes('aioson:review schema=1.1'), true);
+  assert.equal(html.includes('aioson:review schema=1.2'), true);
   assert.equal(html.includes(`source_hash=${parsed.source_hash}`), true);
   // export fallback chain: download + copy always present, FSA degrades to download
   assert.equal(html.includes('id="download"'), true);
@@ -547,10 +674,55 @@ test('review.html carries findings UI, filters, autosave, and the save fallback 
   assert.equal(html.includes('data-finding="F1"'), true);
   assert.equal(html.includes('data-cat="pending-decision"'), true);
   assert.equal(html.includes("getElementById('filters').addEventListener"), true);
+  assert.equal(html.includes('data-view-target="decisions"'), true);
+  assert.equal(html.includes('data-view-target="document"'), true);
+  assert.equal(html.includes('data-view-target="summary"'), true);
+  assert.equal(html.includes('data-set-f-status="accepted"'), true);
+  assert.equal(html.includes('<select data-role="f-status">'), false);
+  assert.equal(html.includes('data-edit-section'), true);
+  assert.match(html, /class="reader markdown-body" data-role="reader"/);
+  assert.match(html, /class="editor" data-role="editor" contenteditable="plaintext-only"[^>]+hidden/);
+  assert.match(html, /reader\.innerHTML = renderSafeMarkdown\(text\)/);
   // localized surface
+  assert.equal(html.includes('Sala de Decisões do Briefing'), true);
   assert.equal(html.includes('Baixar JSON'), true);
+  assert.match(html, /input:focus-visible \+ \.option-control/);
+  assert.match(html, /@media \(max-width: 520px\)/);
   // fully self-contained
   assert.equal(/\bsrc=["']https?:|<link[^>]+href=["']https?:/.test(html), false);
+});
+
+test('AC-BRDR-01 AC-BRDR-02: structured findings render guided native single and multiple choices', async () => {
+  const dir = await makeProject();
+  const parsed = parseBriefingSections(BRIEFING, '.aioson/briefings/idea-one/briefings.md');
+  const findings = structuredClone(STRUCTURED_FINDINGS);
+  findings.push({
+    ...structuredClone(STRUCTURED_FINDINGS[0]),
+    id: 'F-multiple',
+    question: 'Which supporting contexts should be included?',
+    selection_mode: 'multiple'
+  });
+  await writeReviewArtifacts(dir, {
+    slug: 'idea-one',
+    sourceMarkdown: BRIEFING,
+    sections: parsed.sections,
+    sourceHash: parsed.source_hash,
+    findings,
+    locale: 'pt-BR'
+  });
+  const html = await fs.readFile(path.join(dir, '.aioson/briefings/idea-one/review.html'), 'utf8');
+  assert.match(html, /type="radio" name="choice-F-choice" value="guided"/);
+  assert.match(html, /type="checkbox" name="choice-F-multiple" value="guided"/);
+  assert.match(html, /class="badge badge-recommended">Recomendado/);
+  assert.match(html, /data-role="f-rationale"/);
+  assert.match(html, /selected_option_ids = selectedOptionIds/);
+  assert.match(html, /restoreDraft/);
+  assert.match(html, /renderSafeMarkdown/);
+  assert.match(html, /@media \(max-width: 920px\)/);
+  assert.doesNotMatch(html, /\bsrc=["']https?:|<link[^>]+href=["']https?:/);
+  const inlineScript = html.match(/<script>([\s\S]+)<\/script>/);
+  assert.ok(inlineScript, 'generated review must include its self-contained runtime');
+  assert.doesNotThrow(() => new Function(inlineScript[1]), 'generated review runtime must parse');
 });
 
 test('briefing:review generates artifacts from findings and protects pending feedback', async () => {
@@ -650,7 +822,12 @@ test('briefing:apply-feedback dry-runs, applies with --confirm, archives, and ke
   assert.equal(applied.nextAction, 'approve_briefing');
   assert.equal(applied.archived, '.aioson/briefings/idea-one/refinement-feedback.applied-round1.json');
   const markdown = await fs.readFile(path.join(dir, '.aioson/briefings/idea-one/briefings.md'), 'utf8');
+  const appliedReport = await fs.readFile(path.join(dir, '.aioson/briefings/idea-one/refinement-report.md'), 'utf8');
   assert.equal(markdown.includes('Refined problem via CLI.'), true);
+  assert.match(appliedReport, /Feedback: \.aioson\/briefings\/idea-one\/refinement-feedback\.applied-round1\.json/);
+  assert.match(appliedReport, /Approved review authority: binding/);
+  assert.match(appliedReport, /F1 \[legacy_recommendation\].*Adopt a measurable smoke scenario/);
+  assert.doesNotMatch(appliedReport, /F2 \[(?:structured_selection|legacy_recommendation)\]/);
   await assert.rejects(fs.access(feedbackPath));
   await assert.rejects(fs.access(path.join(dir, '.aioson/briefings/idea-one/refinement-findings.json')));
   await fs.access(path.join(dir, '.aioson/briefings/idea-one/refinement-findings.applied-round1.json'));
@@ -660,6 +837,39 @@ test('briefing:apply-feedback dry-runs, applies with --confirm, archives, and ke
   assert.equal(next.ok, true);
   assert.equal(next.round, 2);
   assert.equal(next.findings, 0);
+});
+
+test('AC-BRDR-06: confirmed structured selection is recorded with rationale, evidence, hashes, and exact archive', async () => {
+  const dir = await makeProject();
+  const logger = { log() {}, error() {} };
+  await fs.writeFile(
+    path.join(dir, '.aioson/briefings/idea-one/refinement-findings.json'),
+    JSON.stringify(STRUCTURED_FINDINGS),
+    'utf8'
+  );
+  await runBriefingReview({ args: [dir], options: { slug: 'idea-one' }, logger });
+  const feedbackPath = path.join(dir, '.aioson/briefings/idea-one/refinement-feedback.json');
+  const feedback = JSON.parse(await fs.readFile(feedbackPath, 'utf8'));
+  feedback.export_method = 'download';
+  feedback.findings[0].status = 'accepted';
+  feedback.findings[0].selected_option_ids = ['guided'];
+  feedback.findings[0].rationale = 'Explicit approval is easier to audit.';
+  await fs.writeFile(feedbackPath, JSON.stringify(feedback, null, 2), 'utf8');
+
+  const applied = await runBriefingApplyFeedback({
+    args: [dir],
+    options: { slug: 'idea-one', confirm: true },
+    logger
+  });
+  assert.equal(applied.ok, true);
+  assert.equal(applied.archived, '.aioson/briefings/idea-one/refinement-feedback.applied-round1.json');
+  const report = await fs.readFile(path.join(dir, '.aioson/briefings/idea-one/refinement-report.md'), 'utf8');
+  assert.match(report, /Approved review authority: binding/);
+  assert.match(report, /F-choice \[structured_selection\] problem: guided — Guided decisions/);
+  assert.match(report, /rationale: Explicit approval is easier to audit\./);
+  assert.match(report, /researchs\/open-design-briefing-refiner-2026\/summary\.md/);
+  assert.match(report, /Source hash: [a-f0-9]{64}/);
+  assert.match(report, /Applied hash: [a-f0-9]{64}/);
 });
 
 test('briefing:apply-feedback treats a pending blocking finding as a blocker', async () => {

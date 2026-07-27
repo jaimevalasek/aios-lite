@@ -11,9 +11,10 @@ Independently challenge every tracked feature PRD against the user source pack, 
 1. Read `.aioson/context/project.context.md`.
 2. Resolve and read `.aioson/context/prd-{slug}.md` or `prd.md`.
 3. Read the matching briefing and refinement report. Reopen every `plans/{slug}/` file in `### Source Inventory`, verify its SHA-256, and independently reconcile every `PROM-*` against `## Source Coverage`. Read a prototype only after confirming the PRD binding points to the exact active-feature folder, its manifest declares the same owner, and `status: approved`. For a mismatched path already present in the PRD, inspect `.aioson/context/features.md`/the owner PRD only to identify its owning slug/status and record the exclusion.
-4. For every required capability, independently inspect the repository evidence cited by `## Current System Fit`, plus installed framework/package versions when they constrain acceptance behavior.
-5. Load `.aioson/skills/process/aioson-spec-driven/SKILL.md` and `references/sheldon.md` only.
-6. Load `.aioson/skills/process/review-intelligence/SKILL.md` plus exactly `references/specification.md` for the final review.
+4. When a refinement report exists, load `.aioson/docs/briefing/review-authority.md`, reopen its exact applied feedback archive, and independently verify round, hashes, selection cardinality and Product's accepted-decision/source mapping.
+5. For every required capability, independently inspect the repository evidence cited by `## Current System Fit`, plus installed framework/package versions when they constrain acceptance behavior.
+6. Load `.aioson/skills/process/aioson-spec-driven/SKILL.md` and `references/sheldon.md` only.
+7. Load `.aioson/skills/process/review-intelligence/SKILL.md` plus exactly `references/specification.md` for the final review.
 
 ## Hard constraints
 
@@ -23,6 +24,7 @@ Independently challenge every tracked feature PRD against the user source pack, 
 - Treat the approved prototype as binding for final layout, visible states, interactions, and element behavior; it is not proof of backend integration.
 - Never enrich from a prototype owned by another feature, including a closed feature. Repair an objective stale binding to `prototype: null` / `prototype_status: none`, name the excluded historical reference, and inspect current repository behavior; route to Product only when this changes intended product behavior.
 - Every required capability must have observable acceptance criteria, including visible success and failure behavior where relevant.
+- Reject pending, rejected, deferred, declined, malformed, stale, unarchived or merely recommended review material as authority even when it appears in the same artifact as an accepted decision.
 - Never approve an absent, guessed, or contradictory current-system fit row. Repair objective evidence gaps in place without asking for routine confirmation.
 - A backend-only command does not prove a UI capability. A mock-only screen does not prove an integrated capability.
 - Do not invent architecture. Technical findings that constrain behavior belong as concise constraints in the PRD; implementation choices belong to Planner/Dev.

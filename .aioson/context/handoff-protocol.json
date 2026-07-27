@@ -1,10 +1,10 @@
 {
   "version": "1.0",
-  "protocol_id": "hnd-qa-end-1784867452080",
-  "created_at": "2026-07-24T04:30:52.080Z",
+  "protocol_id": "hnd-qa-end-1785122223367",
+  "created_at": "2026-07-27T03:17:03.367Z",
   "workflow_mode": "feature",
   "classification": "MEDIUM",
-  "feature_slug": "premium-squad-intelligence",
+  "feature_slug": "briefing-review-decision-room",
   "from": {
     "agent_id": "qa",
     "capability_transferred": "verify_feature"
@@ -16,12 +16,25 @@
   "capabilities_transferred": [
     "verify_feature"
   ],
-  "artifact_uris": [],
+  "artifact_uris": [
+    {
+      "path": ".aioson/context/qa-report-briefing-review-decision-room.md",
+      "kind": "qa_report",
+      "agent": "qa",
+      "added_at": "2026-07-27T03:17:03.366Z"
+    },
+    {
+      "path": ".aioson/runtime/technical-evidence.json",
+      "kind": "evidence",
+      "agent": "qa",
+      "added_at": "2026-07-27T03:17:03.366Z"
+    }
+  ],
   "gate_status": {},
   "autonomy_mode": null,
   "validation": {
     "handoff_contract_ok": true,
     "technical_gate_ok": true,
-    "validated_at": "2026-07-24T04:30:52.080Z"
+    "validated_at": "2026-07-27T03:17:03.367Z"
   }
 }

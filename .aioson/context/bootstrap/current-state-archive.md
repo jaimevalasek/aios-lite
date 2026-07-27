@@ -1,6 +1,6 @@
 ---
 generated_by: memory-trim
-updated_at: "2026-07-26"
+updated_at: "2026-07-27"
 ---
 
 # Current State — Archive
@@ -9,6 +9,9 @@ updated_at: "2026-07-26"
 > Searchable (`memory:search` / grep); never loaded at agent activation. Append-only — never deleted.
 
 ## Archived capabilities
+
+- [context-loading · 2026-06-19] `fix(context): sharpen agent context loading` makes `context:guard` respect explicit `guard: true` rule opt-ins, keeps `context:brief` hard constraints scoped to governing docs, aligns agent prompts with `must_load`/`related` semantics, and adds regression coverage for the corrected retrieval behavior.
+- [context-search-isolation · 2026-06-19] `context-search` now isolates the global FTS cache by `project_dir + rel_path` (schema v3), so different projects with the same `.aioson/rules/*.md` path no longer overwrite or leak recall; `context-search` also reuses the canonical `context-selector` glob matcher for `paths` routing and has regressions for cross-project collisions plus nested `src/**/*.js` globs.
 
 - [hooks-install-agent-safety · 2026-06-19] `hooks:install`/`hooks:uninstall` now normalize hook agent names to known agent ids or strict kebab-case custom ids before command generation, reject shell-control payloads with `invalid_agent_name`, and shell-quote generated Claude/Antigravity/Codex hook command arguments. This fixes pentester finding `SF-context-intelligence-01`; QA should re-verify `.aioson/context/security-findings-context-intelligence.json` before final closure.
 - [context-guard · 2026-06-18] `aioson context:guard [path] --tool=claude` is the first slice of the operational retrieval loop: a harness extension point (Claude Code PreToolUse hook) feeds the pending tool event on stdin, the guard derives the query from the diff/artifact (never from a model-emitted keyword list), runs `buildContextBrief`, and injects the matched project-rule constraints as advisory `additionalContext` BEFORE the write. Harness-agnostic core (`src/context-guard.js`) + `--tool=claude` adapter (`src/commands/context-guard.js`); salience gate (rule matched by triggers/entities/aliases/task_types, not a broad path glob) prevents injection fatigue, tunable `GUARD_GATE` constant; enforcement is advisory/inject (block-until-correct is a later flag). i18n `cli.help_context_guard` (4 locales); 5 new tests (tests/context-guard.test.js); E2E validated via stdin (migration creating a `workspace` table -> injects the rule that the DB table is `project`). Exit 0 always (advisory; never blocks the host harness).

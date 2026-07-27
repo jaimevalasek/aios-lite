@@ -39,6 +39,12 @@ function summarizeSkippedChanges(feedback) {
   return [...sectionChanges, ...decisionChanges];
 }
 
+async function writeRefinementReport(projectDir, slug, reportData) {
+  const report = buildRefinementReport(reportData);
+  await fs.writeFile(resolveBriefingPath(projectDir, slug, 'refinement-report.md'), report, 'utf8');
+  return report;
+}
+
 // Declining never writes to briefings.md, so a stale source hash is irrelevant
 // to safety — validating it would only dead-end the user whose briefing moved
 // on. Hence allowStale defaults to TRUE here (and only here).
@@ -53,7 +59,7 @@ async function applyDeclinedFeedback(projectDir, slug, feedback, { allowStale = 
 
   const skippedChanges = summarizeSkippedChanges(feedback);
   const unresolvedComments = (feedback.comments || []).filter((comment) => !comment.resolved);
-  const report = buildRefinementReport({
+  const reportData = {
     briefing_slug: slug,
     source_briefing_path: `.aioson/briefings/${slug}/briefings.md`,
     feedback_path: `.aioson/briefings/${slug}/refinement-feedback.json`,
@@ -67,11 +73,10 @@ async function applyDeclinedFeedback(projectDir, slug, feedback, { allowStale = 
     blocking_items: feedback.blocking_items || [],
     findings: feedback.findings || [],
     next_action: 'rerun_review'
-  });
+  };
+  await writeRefinementReport(projectDir, slug, reportData);
 
-  await fs.writeFile(resolveBriefingPath(projectDir, slug, 'refinement-report.md'), report, 'utf8');
-
-  return { ok: true, skippedChanges, nextAction: 'rerun_review', appliedHash: currentSourceHash };
+  return { ok: true, skippedChanges, nextAction: 'rerun_review', appliedHash: currentSourceHash, reportData };
 }
 
 async function applyConfirmedFeedback(projectDir, slug, feedback, { confirmed = false, allowStale = false } = {}) {
@@ -125,7 +130,7 @@ async function applyConfirmedFeedback(projectDir, slug, feedback, { confirmed = 
 
   const unresolvedComments = (feedback.comments || []).filter((comment) => !comment.resolved);
   const nextAction = hasBlockers ? 'resolve_blockers' : 'approve_briefing';
-  const report = buildRefinementReport({
+  const reportData = {
     briefing_slug: slug,
     source_briefing_path: `.aioson/briefings/${slug}/briefings.md`,
     feedback_path: `.aioson/briefings/${slug}/refinement-feedback.json`,
@@ -139,10 +144,18 @@ async function applyConfirmedFeedback(projectDir, slug, feedback, { confirmed = 
     blocking_items: feedback.blocking_items || [],
     findings: feedback.findings || [],
     next_action: nextAction
-  });
-  await fs.writeFile(resolveBriefingPath(projectDir, slug, 'refinement-report.md'), report, 'utf8');
+  };
+  await writeRefinementReport(projectDir, slug, reportData);
 
-  return { ok: true, appliedChanges, nextAction, appliedHash, returnedToDraft, pendingBlockingFindings: pendingBlockingFindings.length };
+  return {
+    ok: true,
+    appliedChanges,
+    nextAction,
+    appliedHash,
+    returnedToDraft,
+    pendingBlockingFindings: pendingBlockingFindings.length,
+    reportData
+  };
 }
 
-module.exports = { applyConfirmedFeedback, applyDeclinedFeedback };
+module.exports = { applyConfirmedFeedback, applyDeclinedFeedback, writeRefinementReport };

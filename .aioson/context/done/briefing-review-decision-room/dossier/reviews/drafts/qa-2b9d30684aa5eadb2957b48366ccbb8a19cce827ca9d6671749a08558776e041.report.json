@@ -1,0 +1,116 @@
+{
+  "schema_version": "review-report/v1",
+  "packet_id": "sha256:2b9d30684aa5eadb2957b48366ccbb8a19cce827ca9d6671749a08558776e041",
+  "feature_slug": "briefing-review-decision-room",
+  "agent": "qa",
+  "profile": "delivery-assurance",
+  "review_mode": "independent_review",
+  "artifact": {
+    "path": ".aioson/context/qa-report-briefing-review-decision-room.md",
+    "sha256": "f16163b210fbd4948491f6c1c189e8987c91f6d7d1b8b0d564499e7ec7749f1f"
+  },
+  "passes_completed": 2,
+  "review_status": "pass",
+  "summary": "Two-pass delivery assurance found no unresolved gap: five capabilities and ten ACs trace to focused assertions, a real CLI/browser/apply smoke, exact archive/hash authority, responsive fallback behavior, and synchronized Product-to-QA contracts.",
+  "findings": [],
+  "completed_at": "2026-07-27T03:09:45.000Z",
+  "assurance": {
+    "specification_fidelity": {
+      "status": "pass",
+      "evidence": [
+        {
+          "type": "artifact",
+          "path": ".aioson/context/prd-briefing-review-decision-room.md",
+          "detail": "The five required CAPs and ten ACs define the approved guided review, authority, compatibility and fallback behavior."
+        },
+        {
+          "type": "artifact",
+          "path": ".aioson/context/qa-report-briefing-review-decision-room.md",
+          "detail": "Every CAP/AC row is tied to a focused assertion and observable normal-path behavior."
+        }
+      ],
+      "residual_risk": "No product-scope deviation or prototype contradiction remains."
+    },
+    "acceptance_coverage": {
+      "status": "pass",
+      "evidence": [
+        {
+          "type": "command",
+          "command": "node bin/aioson.js ac:test-audit . --feature=briefing-review-decision-room --strict --json",
+          "status": "passed",
+          "detail": "10 of 10 acceptance criteria covered; zero missing and zero weak after the bounded correction."
+        },
+        {
+          "type": "command",
+          "command": "node --test tests/briefing-refiner.test.js tests/agent-contracts.test.js tests/agent-structural-contract.test.js tests/rules-lint.test.js",
+          "status": "passed",
+          "detail": "63 of 63 focused, agent-contract, structural and selector tests passed."
+        }
+      ],
+      "residual_risk": "No acceptance criterion lacks assertion-bearing evidence."
+    },
+    "code_health": {
+      "status": "pass",
+      "evidence": [
+        {
+          "type": "command",
+          "command": "npm run check:syntax",
+          "status": "passed",
+          "detail": "477 JavaScript files passed syntax checks."
+        },
+        {
+          "type": "command",
+          "command": "git diff --check",
+          "status": "passed",
+          "detail": "No whitespace error; only expected Windows line-ending notices."
+        },
+        {
+          "type": "artifact",
+          "path": "src/lib/briefing-refiner/safe-markdown.js",
+          "detail": "The escape-first Markdown boundary was split from the already-large HTML generator and is independently tested."
+        }
+      ],
+      "residual_risk": "The self-contained UI generator remains intentionally large but cohesive; unrelated responsibilities were not added."
+    },
+    "runtime_truth": {
+      "status": "pass",
+      "evidence": [
+        {
+          "type": "command",
+          "command": "node bin/aioson.js briefing:review <temp-project> --slug=qa-smoke --json",
+          "status": "passed",
+          "detail": "The normal CLI generated review.html, schema 1.2 feedback and a nonbinding pending report."
+        },
+        {
+          "type": "command",
+          "command": "Headless Edge CDP smoke at 390x844",
+          "status": "passed",
+          "detail": "Native choices, edit round-trip, local draft, summary and fallback worked with no page overflow."
+        },
+        {
+          "type": "command",
+          "command": "node bin/aioson.js briefing:apply-feedback <temp-project> --slug=qa-smoke --confirm --json",
+          "status": "passed",
+          "detail": "The exact round-1 archive and stable binding report contain selections, rationale, sources and matching hashes."
+        }
+      ],
+      "residual_risk": "No detached fixture substitutes for the normal briefing CLI and local-browser path."
+    },
+    "residual_risk": {
+      "status": "pass",
+      "evidence": [
+        {
+          "type": "artifact",
+          "path": ".aioson/docs/briefing/review-authority.md",
+          "detail": "Pending, rejected, deferred, stale, unarchived and recommendation-only material remains explicitly nonbinding."
+        },
+        {
+          "type": "artifact",
+          "path": ".aioson/context/qa-report-briefing-review-decision-room.md",
+          "detail": "Compatibility, malformed input, unavailable browser APIs, inert evidence and recovery paths are recorded."
+        }
+      ],
+      "residual_risk": "No open blocker remains; Gate D still owns the comprehensive repository verification before approval."
+    }
+  }
+}

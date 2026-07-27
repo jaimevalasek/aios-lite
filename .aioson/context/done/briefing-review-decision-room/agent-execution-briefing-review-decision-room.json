@@ -1,0 +1,102 @@
+{
+  "version": 1,
+  "feature": "briefing-review-decision-room",
+  "host": "codex",
+  "generated_at": "2026-07-27T02:06:41.388Z",
+  "agents": {
+    "dev": {
+      "enabled": true,
+      "host": "codex",
+      "mode": "external",
+      "model": "configured-default",
+      "reasoning_effort": "medium",
+      "writable_roots": [],
+      "fallbacks": [],
+      "report": ".aioson/context/reports/briefing-review-decision-room/{run_id}/dev.json"
+    },
+    "qa": {
+      "enabled": true,
+      "host": "codex",
+      "mode": "external",
+      "model": "configured-default",
+      "reasoning_effort": "medium",
+      "writable_roots": [],
+      "fallbacks": [],
+      "report": ".aioson/context/reports/briefing-review-decision-room/{run_id}/qa.json"
+    },
+    "tester": {
+      "enabled": false,
+      "host": "codex",
+      "mode": "external",
+      "model": "configured-default",
+      "reasoning_effort": "medium",
+      "writable_roots": [],
+      "fallbacks": [],
+      "report": ".aioson/context/reports/briefing-review-decision-room/{run_id}/tester.json"
+    },
+    "pentester": {
+      "enabled": false,
+      "host": "codex",
+      "mode": "external",
+      "model": "configured-default",
+      "reasoning_effort": "medium",
+      "writable_roots": [],
+      "fallbacks": [],
+      "report": ".aioson/context/reports/briefing-review-decision-room/{run_id}/pentester.json"
+    },
+    "validator": {
+      "enabled": false,
+      "host": "codex",
+      "mode": "external",
+      "model": "configured-default",
+      "reasoning_effort": "medium",
+      "writable_roots": [],
+      "fallbacks": [],
+      "report": ".aioson/context/reports/briefing-review-decision-room/{run_id}/validator.json"
+    }
+  },
+  "development_lanes": {
+    "strategy": "single",
+    "integration_owner": "dev",
+    "lanes": {
+      "backend": {
+        "enabled": false,
+        "host": "codex",
+        "mode": "external",
+        "model": "configured-default",
+        "reasoning_effort": "medium",
+        "writable_roots": [],
+        "prompt": ".aioson/context/execution-prompts/briefing-review-decision-room/backend.md",
+        "write_paths": [],
+        "fallbacks": [],
+        "report": ".aioson/context/reports/briefing-review-decision-room/{run_id}/dev-backend.json"
+      },
+      "frontend": {
+        "enabled": false,
+        "host": "codex",
+        "mode": "external",
+        "model": "configured-default",
+        "reasoning_effort": "medium",
+        "writable_roots": [],
+        "prompt": ".aioson/context/execution-prompts/briefing-review-decision-room/frontend.md",
+        "write_paths": [],
+        "fallbacks": [],
+        "report": ".aioson/context/reports/briefing-review-decision-room/{run_id}/dev-frontend.json"
+      }
+    }
+  },
+  "capacity_policy": {
+    "strategy": "pause",
+    "max_attempts": 1,
+    "backoff_ms": 0
+  },
+  "cycle_limits": {
+    "dev_qa": 1,
+    "tester": 1,
+    "pentester": 1
+  },
+  "reporting": {
+    "format": "json",
+    "markdown": true
+  }
+}

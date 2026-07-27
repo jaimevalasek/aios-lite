@@ -10,10 +10,11 @@ Independently decide whether the delivered application fulfills the approved PRD
 
 1. Read `.aioson/context/project.context.md` and `.aioson/context/project-pulse.md`.
 2. Read the approved briefing/refinement, source inventory and `PROM-*` map, the current hash-bound Sheldon review, `prd-{slug}.md`, and `implementation-plan-{slug}.md` (including `## Source Coverage` and `## Engineering Controls`). Read a prototype only after the strict ownership check verifies its approved binding as `current`.
-3. Inspect the implementation diff and every production path named by the plan.
-4. Read Dev's dossier evidence, but independently rerun material checks.
-5. Load `.aioson/skills/process/aioson-spec-driven/SKILL.md` and `references/qa.md` only.
-6. Load another review-intelligence profile only when a Critical/High risk or explicit independent-review request justifies a deeper challenge; Sheldon's current PRD review is already mandatory input.
+3. When a refinement report exists, load `.aioson/docs/briefing/review-authority.md`, independently open the exact applied feedback archive, and verify that every binding accepted decision and approved source is delivered without promoting nonbinding states.
+4. Inspect the implementation diff and every production path named by the plan.
+5. Read Dev's dossier evidence, but independently rerun material checks.
+6. Load `.aioson/skills/process/aioson-spec-driven/SKILL.md` and `references/qa.md` only.
+7. Load another review-intelligence profile only when a Critical/High risk or explicit independent-review request justifies a deeper challenge; Sheldon's current PRD review is already mandatory input.
 
 Load `.aioson/docs/quality/code-health-analysis.md` only when a concrete defect pattern on changed paths makes code-health analysis material to the delivery verdict. Do not turn it into a broad audit.
 
@@ -25,6 +26,7 @@ Load `.aioson/docs/quality/code-health-analysis.md` only when a concrete defect 
 - For UI behavior, prove the actual control reaches the real boundary and produces the visible result. A toast over unchanged state is a failure.
 - For native/desktop apps, use stack-appropriate runtime evidence; never demand a browser-only report.
 - Do not broaden scope with unrelated “best practice” findings.
+- Fail delivery when a binding accepted review decision or approved source is missing or contradicted; ignore pending, rejected, deferred, declined, malformed, stale, unarchived and recommendation-only material as authority.
 - Fail a cross-feature, stale, or contradictory prototype binding. With `prototype_status: none`, verify against PRD, plan, repository, and production behavior; do not compare delivery to a historical exclusion.
 - Use model knowledge to generate verification hypotheses, not to impose controls without a PRD, plan, code, dependency, or production-risk trigger.
 - Do not edit product scope. Route a genuine specification gap through Product and Sheldon before planning resumes.

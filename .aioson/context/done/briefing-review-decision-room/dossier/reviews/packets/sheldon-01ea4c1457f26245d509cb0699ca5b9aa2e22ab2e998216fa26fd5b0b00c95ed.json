@@ -1,0 +1,38 @@
+{
+  "packet_id": "sha256:01ea4c1457f26245d509cb0699ca5b9aa2e22ab2e998216fa26fd5b0b00c95ed",
+  "schema_version": "review-packet/v1",
+  "feature_slug": "briefing-review-decision-room",
+  "agent": "sheldon",
+  "profile": "specification",
+  "review_mode": "independent_review",
+  "artifact": {
+    "path": ".aioson/context/prd-briefing-review-decision-room.md",
+    "sha256": "80264510a764bc01ae6117505aec2b7b65c729708e9bc8280ca16bdccf5c713a",
+    "bytes": 14877
+  },
+  "authorities": [
+    {
+      "kind": "project-context",
+      "path": ".aioson/context/project.context.md",
+      "sha256": "98053ab593a242ead05839223ca5ada4c7d559352b8e6d6645dbbdb87ff5953a",
+      "bytes": 2879
+    },
+    {
+      "kind": "scope-expansion",
+      "path": ".aioson/context/features/briefing-review-decision-room/scope-expansion.md",
+      "sha256": "3acdd102a917a6760e99dab42d31f4950488e06b1749af84c9657df2edddf10f",
+      "bytes": 4686
+    }
+  ],
+  "reference_path": ".aioson/skills/process/review-intelligence/references/specification.md",
+  "challenge_lenses": [
+    "coverage",
+    "ambiguity",
+    "edge-cases",
+    "failure-modes",
+    "ownership",
+    "verifiability"
+  ],
+  "max_passes": 2,
+  "prepared_at": "2026-07-27T02:16:44.867Z"
+}

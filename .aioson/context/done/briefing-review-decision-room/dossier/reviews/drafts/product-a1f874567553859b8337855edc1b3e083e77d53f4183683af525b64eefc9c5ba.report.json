@@ -1,0 +1,17 @@
+{
+  "schema_version": "review-report/v1",
+  "packet_id": "sha256:a1f874567553859b8337855edc1b3e083e77d53f4183683af525b64eefc9c5ba",
+  "feature_slug": "briefing-review-decision-room",
+  "agent": "product",
+  "profile": "framing",
+  "review_mode": "self_review",
+  "artifact": {
+    "path": ".aioson/context/prd-briefing-review-decision-room.md",
+    "sha256": "80264510a764bc01ae6117505aec2b7b65c729708e9bc8280ca16bdccf5c713a"
+  },
+  "passes_completed": 2,
+  "review_status": "pass",
+  "summary": "Sheldon's fail-closed authority clarification preserves the approved problem, user value, SMALL scope and exclusions while making downstream ownership executable.",
+  "findings": [],
+  "completed_at": "2026-07-27T02:18:05.000Z"
+}

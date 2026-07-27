@@ -70,6 +70,7 @@ const MANAGED_FILES = [
   '.aioson/docs/briefing/activation-and-intake.md',
   '.aioson/docs/briefing/exploration-and-artifacts.md',
   '.aioson/docs/briefing/refinement-loop.md',
+  '.aioson/docs/briefing/review-authority.md',
   '.aioson/docs/briefing/prototype-and-delegation.md',
   '.aioson/docs/briefing/review-surface-fallback.md',
   '.aioson/docs/briefing/legacy-agent-contract.md',

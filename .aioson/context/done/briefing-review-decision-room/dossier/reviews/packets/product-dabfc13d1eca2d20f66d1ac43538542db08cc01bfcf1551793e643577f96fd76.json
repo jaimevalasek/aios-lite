@@ -1,0 +1,38 @@
+{
+  "packet_id": "sha256:dabfc13d1eca2d20f66d1ac43538542db08cc01bfcf1551793e643577f96fd76",
+  "schema_version": "review-packet/v1",
+  "feature_slug": "briefing-review-decision-room",
+  "agent": "product",
+  "profile": "framing",
+  "review_mode": "self_review",
+  "artifact": {
+    "path": ".aioson/context/prd-briefing-review-decision-room.md",
+    "sha256": "a71728bfcab76728de9530aa4e12434d7ed931407683ce6c21ac25ac03417357",
+    "bytes": 12887
+  },
+  "authorities": [
+    {
+      "kind": "project-context",
+      "path": ".aioson/context/project.context.md",
+      "sha256": "98053ab593a242ead05839223ca5ada4c7d559352b8e6d6645dbbdb87ff5953a",
+      "bytes": 2879
+    },
+    {
+      "kind": "scope-expansion",
+      "path": ".aioson/context/features/briefing-review-decision-room/scope-expansion.md",
+      "sha256": "3acdd102a917a6760e99dab42d31f4950488e06b1749af84c9657df2edddf10f",
+      "bytes": 4686
+    }
+  ],
+  "reference_path": ".aioson/skills/process/review-intelligence/references/framing.md",
+  "challenge_lenses": [
+    "problem",
+    "user-value",
+    "scope",
+    "assumptions",
+    "future-state",
+    "ownership"
+  ],
+  "max_passes": 2,
+  "prepared_at": "2026-07-27T02:11:38.020Z"
+}

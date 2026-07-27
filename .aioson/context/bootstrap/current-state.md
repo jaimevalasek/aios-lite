@@ -1,7 +1,7 @@
 ---
-updated_at: "2026-07-24T01:33:00-03:00"
-generated_at: "2026-07-24T01:34:00-03:00"
-source: "Living Memory reflection — premium-squad-intelligence QA PASS — @qa 2026-07-24"
+updated_at: 2026-07-26
+generated_at: 2026-07-27T03:35:00Z
+source: feature-close-briefing-review-decision-room
 ---
 
 # Current State
@@ -9,6 +9,7 @@ source: "Living Memory reflection — premium-squad-intelligence QA PASS — @qa
 ## What the system already has
 
 
+- [briefing-review-decision-room · 2026-07-27] The briefing review production path now emits a self-contained guided Decision Room with native single/multiple choice cards, recommendation and trade-off context, safe Markdown read/edit mode, final decision summary, local draft recovery, responsive 390px layout, and save/download/copy fallbacks. Schema 1.2 remains compatible with 1.0/1.1; only applied decisions bound to the exact archived feedback, round and hashes become authority for Product, Sheldon, Planner, DEV and QA. The bounded QA→DEV correction passed strict AC coverage 10/10; final QA, delivery assurance, Gate D and the full CI suite all passed. The feature closed and its evidence was archived on 2026-07-27.
 - [workflow-reliable-delivery · 2026-07-26] `chore(release): prepare v1.43.0` synchronized package, lockfile, project context, documentation, changelog, and full release-readiness evidence for the tagged release.
 - [workflow-reliable-delivery · 2026-07-26] `feat(workflow): enforce reliable delivery` committed source traceability, owned prototype binding, hash-bound Sheldon approval, stronger workflow/QA continuity gates, and local-only temporary `mappings/`.
 - [premium-squad-intelligence · 2026-07-25] `feat(squads): harden premium squad intelligence` committed source- and held-out-evidence binding, containment and safe-research hardening, stricter workflow inputs, release-readiness checks, dependency updates, and documentation.
@@ -32,8 +33,6 @@ source: "Living Memory reflection — premium-squad-intelligence QA PASS — @qa
 - [release-v1.30.0 · 2026-06-22] `chore(release): prepare v1.30.0` bumps package/context metadata to 1.30.0, documents context-intelligence and Gate D proof hardening, commits the fixed context-intelligence security findings artifact, and hardens empty archive-dir cleanup during `feature:archive --restore`.
 - [hygiene-scan-neo-orchestration · 2026-06-19] `aioson hygiene:scan . --json` is a read-only operational cleanup diagnostic that reports pending Neural Chain noises, done features pending archive, stale `dev-state.md`, on-demand review artifacts, and orphan slug artifacts with suggested actions; `@neo` now runs/surfaces that scan and asks before any cleanup decision instead of embedding archival intelligence in the prompt. Verification: `node --test tests/hygiene-scan.test.js`, `node scripts/check-js.js`, `npm test`.
 - [sdd-proof-gates · 2026-06-19] Gate D now has deterministic AC→test proof via `aioson ac:test-audit . --feature=<slug>`: declared `AC-*` IDs from PRD/requirements/conformance must appear in tests or executable harness criteria; `gate:check D` and QA handoff block missing evidence. `harness:check --strict`, `spec:analyze --strict`, schema-valid Sheldon harness docs, `sheldon-validation` artifact visibility, and `sdd:benchmark` provide reproducible SDD quality measurement.
-- [context-loading · 2026-06-19] `fix(context): sharpen agent context loading` makes `context:guard` respect explicit `guard: true` rule opt-ins, keeps `context:brief` hard constraints scoped to governing docs, aligns agent prompts with `must_load`/`related` semantics, and adds regression coverage for the corrected retrieval behavior.
-- [context-search-isolation · 2026-06-19] `context-search` now isolates the global FTS cache by `project_dir + rel_path` (schema v3), so different projects with the same `.aioson/rules/*.md` path no longer overwrite or leak recall; `context-search` also reuses the canonical `context-selector` glob matcher for `paths` routing and has regressions for cross-project collisions plus nested `src/**/*.js` globs.
 
 ## What the system does not have yet
 

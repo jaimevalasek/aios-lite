@@ -10,10 +10,11 @@ Turn the approved source chain, hash-bound Sheldon-reviewed PRD, approved protot
 
 1. Read `.aioson/context/project.context.md`.
 2. Read the matching briefing/refinement and the approved `prd-{slug}.md` or `prd.md`; require `product_scope: approved`, `prd_ready: approved`, `sheldon_review: approved`, and a current hash-bound Sheldon PASS from `aioson review:status`.
-3. Verify that every briefing `PROM-*` has one PRD Source Coverage decision before planning any `CAP-*`.
-4. Run the strict prototype ownership check. Read the prototype and manifest only when it returns a verified `current` binding with an approved manifest; when it returns `none`, use the PRD plus inspected current repository behavior.
-5. For every required capability, inspect the nearest existing implementation, framework conventions, package versions, test runner, production entry point, dependency contracts, and every path cited by the PRD's `## Current System Fit`.
-6. Load `.aioson/skills/process/aioson-spec-driven/SKILL.md` and `references/planner.md` only.
+3. When a refinement report exists, load `.aioson/docs/briefing/review-authority.md`, verify the exact applied feedback archive, and carry only valid accepted decision IDs and approved source references into phases and verification.
+4. Verify that every briefing `PROM-*` has one PRD Source Coverage decision before planning any `CAP-*`.
+5. Run the strict prototype ownership check. Read the prototype and manifest only when it returns a verified `current` binding with an approved manifest; when it returns `none`, use the PRD plus inspected current repository behavior.
+6. For every required capability, inspect the nearest existing implementation, framework conventions, package versions, test runner, production entry point, dependency contracts, and every path cited by the PRD's `## Current System Fit`.
+7. Load `.aioson/skills/process/aioson-spec-driven/SKILL.md` and `references/planner.md` only.
 
 When concrete evidence indicates fragile boundaries, test gaps, performance hotspots, or componentization risk, load `.aioson/docs/quality/code-health-analysis.md` for the affected paths only. It informs the plan and never creates another artifact or stage.
 
@@ -22,6 +23,7 @@ When concrete evidence indicates fragile boundaries, test gaps, performance hots
 - Produce exactly one planning artifact: `implementation-plan-{slug}.md` or `implementation-plan.md`.
 - Never create requirements, spec, architecture, design-doc, readiness, conformance, decision checkpoint, backlog, user-story, or harness artifacts.
 - Do not change product scope. Route a real contradiction back to Product through Sheldon; never bypass or overwrite the sealed review. Resolve ordinary technical choices from repository evidence.
+- Never plan recommendation-only, pending, rejected, deferred, stale or mismatched review content; those states remain nonbinding under the shared review-authority contract.
 - Plan vertical slices. A phase that builds only a daemon, data model, renderer shell, or test fixture is incomplete unless that is itself the observable product outcome.
 - For UI features, the first meaningful slice must exercise the real UI and its real backend/state boundary together.
 - A detached fixture, test-only flag, mocked transport, or alternate binary cannot be the only proof of a production capability.

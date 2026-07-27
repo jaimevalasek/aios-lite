@@ -1,6 +1,6 @@
 ---
 generated_by: product
-generated_at: "2026-07-16T01:35:00-03:00"
+generated_at: 2026-07-27T03:35:00Z
 confidence: high
 ---
 
@@ -15,6 +15,7 @@ AIOSON is a Node.js CLI framework for spec-driven development with specialized a
 - Supports SDD flows with PRDs, requirements, specs, architecture, implementation plans and QA reports.
 - Provides deterministic CLI helpers such as `preflight`, `gate:check`, `artifact:validate`, `workflow:next`, `workflow:execute`, `pulse:update`, `agent:done`, `verify:gate` and runtime/live session commands.
 - Exposes the complete briefing lifecycle in localized CLI help: `briefing:approve`, `briefing:unapprove`, `briefing:review`, and `briefing:apply-feedback`.
+- Generates a self-contained Decision Room local, guiada por cartões de escolha nativos, leitura Markdown segura, resumo final e fallback de salvamento; schema 1.2 preserves v1.0/v1.1 compatibility and binds only applied, hash-matched review decisions to downstream Product-to-QA work.
 - Adds bounded review intelligence to eight solution-shaping and assurance agents through role-specific evidence-first lenses, immutable review packets/reports, and additive `review:prepare`, `review:check`, and `review:status` CLI commands.
 - Makes commit preparation context-aware and self-stageable: `git:guard` distinguishes localization copy, non-literal interpolation and independently synthetic fixtures from real credentials; fixture-like names alone do not bypass scanning, realistic secrets remain blocking even under `tests/`, scoped path + detector-rule exceptions remain auditable, and `commit-prep.json` records `guarded`, `headless`, or explicitly trusted warning decisions.
 - Maintains runtime telemetry in .aioson/runtime/aios.sqlite.
@@ -30,6 +31,8 @@ AIOSON is a Node.js CLI framework for spec-driven development with specialized a
 - Reports advisory context drift through `context:health` warnings while preserving non-failing health output for review workflows.
 
 ## Current improvement focus
+
+- Recently closed (2026-07-27): `briefing-review-decision-room` (MEDIUM) delivers the guided Decision Room, schema 1.2 structured choices, safe Markdown, legacy compatibility, exact archive/hash reports, and fail-closed Product-to-QA authority. Gate D and full CI passed with 5/5 capabilities and 10/10 ACs. Archived artifacts: `.aioson/context/done/briefing-review-decision-room/`.
 
 Recently closed (2026-07-16): `review-intelligence` (MEDIUM) adds a shared evidence-first challenge loop, role-specific review lenses, bounded self-review, explicit owner routing, immutable review packets/reports, and additive `review:prepare`/`review:check`/`review:status` CLI automation. The security-remediation cycle hardened prompt-injection boundaries and report/storage integrity; Gate D passed with harness 10/10, 24/24 ACs and full regression at 3,767 pass / 0 fail / 1 skip. Archived artifacts: `.aioson/context/done/review-intelligence/`.
 

@@ -24,10 +24,19 @@ const {
   writeBriefingRegistry
 } = require('../lib/briefing-refiner/briefing-registry');
 const { hashText, parseBriefingSections } = require('../lib/briefing-refiner/briefing-sections');
-const { assertFeedbackPath, validateFeedback, validateFindingsInput } = require('../lib/briefing-refiner/feedback-schema');
+const {
+  assertFeedbackPath,
+  collectApprovedReviewDecisions,
+  validateFeedback,
+  validateFindingsInput
+} = require('../lib/briefing-refiner/feedback-schema');
 const { resolveBriefingPath } = require('../lib/briefing-refiner/briefing-paths');
 const { writeReviewArtifacts } = require('../lib/briefing-refiner/review-html');
-const { applyConfirmedFeedback, applyDeclinedFeedback } = require('../lib/briefing-refiner/apply-feedback');
+const {
+  applyConfirmedFeedback,
+  applyDeclinedFeedback,
+  writeRefinementReport
+} = require('../lib/briefing-refiner/apply-feedback');
 
 // ─── Interactive prompt helpers ───────────────────────────────────────────────
 
@@ -515,6 +524,10 @@ function summarizeFeedback(feedback) {
     comments: (feedback.comments || []).length,
     findings_total: findings.length,
     findings_by_status: findingsByStatus,
+    approved_review_decisions: collectApprovedReviewDecisions(findings).map((decision) => ({
+      id: decision.id,
+      selected_option_ids: decision.selected_options.map((option) => option.id)
+    })),
     pending_blocking_findings: findings.filter((f) => f.blocking && f.status === 'pending').map((f) => f.id),
     blocking_items: (feedback.blocking_items || []).length
   };
@@ -569,6 +582,10 @@ async function runBriefingApplyFeedback({ args, options = {}, logger }) {
         result.archived = `.aioson/briefings/${slug}/${archiveName}`;
       } catch { /* archive is best-effort */ }
     }
+    if (result.reportData && result.archived) {
+      result.reportData.feedback_path = result.archived;
+      await writeRefinementReport(projectDir, slug, result.reportData);
+    }
     logger.log(`✓ Feedback declined for "${slug}" — briefings.md unchanged, ${result.skippedChanges.length} change(s) recorded as skipped.`);
     return { ...result, slug, mode: 'declined' };
   }
@@ -593,6 +610,7 @@ async function runBriefingApplyFeedback({ args, options = {}, logger }) {
     logger.log(`  changed sections: ${summary.changed_sections.map((c) => c.id).join(', ') || 'none'}`);
     logger.log(`  blocked sections: ${summary.blocked_sections.join(', ') || 'none'}`);
     logger.log(`  findings: ${summary.findings_total} (${Object.entries(summary.findings_by_status).map(([k, v]) => `${k}: ${v}`).join(', ') || '-'})`);
+    logger.log(`  approved review decisions: ${summary.approved_review_decisions.map((decision) => `${decision.id}=${decision.selected_option_ids.join('+')}`).join(', ') || 'none'}`);
     logger.log(`  pending blocking findings: ${summary.pending_blocking_findings.join(', ') || 'none'}`);
     for (const warning of validation.warnings) logger.log(`  warning: ${warning}`);
     logger.log('Re-run with --confirm to apply.');
@@ -630,6 +648,10 @@ async function runBriefingApplyFeedback({ args, options = {}, logger }) {
         resolveBriefingPath(projectDir, slug, `refinement-findings.applied-round${round}.json`)
       );
     } catch { /* no findings file, or archive failed — best-effort */ }
+  }
+  if (result.reportData && result.archived) {
+    result.reportData.feedback_path = result.archived;
+    await writeRefinementReport(projectDir, slug, result.reportData);
   }
 
   logger.log(`✓ Applied ${result.appliedChanges.length} change(s) to "${slug}".`);

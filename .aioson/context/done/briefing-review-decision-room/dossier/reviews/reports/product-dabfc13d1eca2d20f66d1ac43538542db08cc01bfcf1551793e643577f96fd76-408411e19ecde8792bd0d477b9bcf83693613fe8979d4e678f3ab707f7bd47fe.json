@@ -1,0 +1,17 @@
+{
+  "schema_version": "review-report/v1",
+  "packet_id": "sha256:dabfc13d1eca2d20f66d1ac43538542db08cc01bfcf1551793e643577f96fd76",
+  "feature_slug": "briefing-review-decision-room",
+  "agent": "product",
+  "profile": "framing",
+  "review_mode": "self_review",
+  "artifact": {
+    "path": ".aioson/context/prd-briefing-review-decision-room.md",
+    "sha256": "a71728bfcab76728de9530aa4e12434d7ed931407683ce6c21ac25ac03417357"
+  },
+  "passes_completed": 2,
+  "review_status": "pass",
+  "summary": "The PRD separates the document baseline from the decision-centered outcome, keeps the existing offline persistence contract, defines legacy and empty/error behavior, and makes explicit operator approval the only path by which a selection or cited source becomes downstream authority. Optional live collaboration, external design runtimes and unrelated visual variants remain outside the bounded SMALL scope.",
+  "findings": [],
+  "completed_at": "2026-07-26T23:11:57.791-03:00"
+}

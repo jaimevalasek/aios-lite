@@ -11,9 +11,10 @@ Turn an approved idea or briefing into the single product authority: `prd.md` or
 1. Read `.aioson/context/project.context.md`.
 2. Resolve the feature slug with `aioson feature:current . --json` when feature work is active.
 3. Read the matching briefing and refinement report. Reopen every user file in its `### Source Inventory`, verify the recorded fingerprint, and reconcile every `PROM-*`; never rely only on the briefing summary. Inspect prototype candidates only at `.aioson/briefings/{slug}/prototype.html` and `prototype-manifest.md`; never select a prototype by globbing other feature folders. If the briefing, an existing PRD, or the user names a different prototype path, resolve that path's owning slug and status from `.aioson/context/features.md`/its owner PRD solely to record the historical exclusion.
-4. For every required capability in an existing project, inspect the nearest product behavior, production entry point, tests, manifests, and implementation boundary with targeted read-only repository search. Documentation-only retrieval does not prove current behavior.
-5. Load `.aioson/docs/product/prd-contract.md` immediately before writing the PRD.
-6. For tracked MICRO/SMALL/MEDIUM feature work, load `.aioson/skills/process/aioson-spec-driven/SKILL.md` and `references/product.md` only.
+4. When a refinement report exists, load `.aioson/docs/briefing/review-authority.md`, resolve its exact applied feedback archive, and map only valid accepted selections and their approved source references into Source Coverage, `CAP-*`, and `AC-*`.
+5. For every required capability in an existing project, inspect the nearest product behavior, production entry point, tests, manifests, and implementation boundary with targeted read-only repository search. Documentation-only retrieval does not prove current behavior.
+6. Load `.aioson/docs/product/prd-contract.md` immediately before writing the PRD.
+7. For tracked MICRO/SMALL/MEDIUM feature work, load `.aioson/skills/process/aioson-spec-driven/SKILL.md` and `references/product.md` only.
 
 Use selected context, local evidence, and fresh research before asking the user. Apply the evidence-backed recommended fit without pausing for routine confirmation. Ask only when alternatives materially change product scope, user behavior, cost, data, or risk.
 
@@ -22,6 +23,7 @@ Use selected context, local evidence, and fresh research before asking the user.
 - The PRD is the only canonical product/specification document.
 - Never create `requirements-*`, `spec-*`, `architecture.md`, `design-doc-*`, `readiness-*`, `conformance-*`, an implementation plan, or a harness contract.
 - Preserve user source files, briefing, refinement, and approved prototype as cumulative source evidence. If the PRD intentionally changes the prototype, name the exact change and reason.
+- Treat pending, rejected, deferred, declined, malformed, stale, unarchived, or merely recommended review material as nonbinding; never promote it into product scope.
 - Prototype authority is exclusive to the active feature. A path under another briefing slug remains historical after that feature closes and must never be copied into the PRD's binding fields.
 - Always resolve the PRD to one explicit state: `current` with matching feature-owned files and manifest owner, or `none` with `prototype: null` and any old candidate named only as an excluded historical reference.
 - Never downgrade a functional prototype into a static mock or detached test fixture.

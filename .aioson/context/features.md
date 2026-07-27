@@ -35,3 +35,4 @@
 | agent-execution-model-resolution | done | 2026-07-11 | 2026-07-11 |
 | review-intelligence | done | 2026-07-15 | 2026-07-16 |
 | premium-squad-intelligence | done | 2026-07-23 | 2026-07-26 |
+| briefing-review-decision-room | done | 2026-07-26 | 2026-07-27 |
