@@ -108,7 +108,7 @@ test('workflow:status reports effective autonomy mode and pending gate for activ
   assert.equal(result.contractCheck.ok, false);
   assert.equal(result.suggestion.action, 'resolve_gate_c');
   assert.equal(result.suggestion.agent, 'planner');
-  assert.equal(result.suggestion.command, 'aioson workflow:next . --agent=planner --tool=codex');
+  assert.equal(result.suggestion.command, 'aioson workflow:next . --expect-feature=protocol-contracts --agent=planner --tool=codex');
 });
 
 test('workflow:status --suggest recommends completion when the handoff contract is ready', async () => {
@@ -124,7 +124,7 @@ test('workflow:status --suggest recommends completion when the handoff contract 
 
   assert.equal(result.ok, true);
   assert.equal(result.suggestion.action, 'complete_stage');
-  assert.equal(result.suggestion.command, 'aioson workflow:next . --complete=dev --auto-heal --tool=codex');
+  assert.equal(result.suggestion.command, 'aioson workflow:next . --expect-feature=protocol-contracts --complete=dev --auto-heal --tool=codex');
   assert.equal(result.contractCheck.ok, true);
   assert.deepEqual(result.pendingGates, []);
 });

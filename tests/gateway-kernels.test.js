@@ -91,7 +91,12 @@ test('routed modules retain lane budgets, workflow gates, skill evidence, and re
   ]);
 
   assert.match(routing, /5 behavior files, 8 total paths, and 2 existing modules/);
+  assert.match(routing, /Persisted workflow state is evidence about prior work, not proof that the current request belongs to it/);
+  assert.match(routing, /workflow:next --expect-feature=<active-slug>/);
+  assert.match(routing, /unrelated bounded implementation[\s\S]*Dev Simple Plan without calling `workflow:next`/);
   assert.match(routing, /Deyvin may act directly only for existing known context/i);
+  assert.match(workflow, /current request has been bound to the active feature/);
+  assert.match(workflow, /workflow:next --expect-feature=<slug>/);
   assert.match(workflow, /Product → Sheldon → Planner → Dev → QA/);
   assert.match(workflow, /QA FAIL allows one bounded Dev correction and one final independent QA pass/);
   assert.match(workflow, /Runtime telemetry belongs to the gateway/);
@@ -99,4 +104,17 @@ test('routed modules retain lane budgets, workflow gates, skill evidence, and re
   assert.match(process, /skill:audit \. --reachability --usage/);
   assert.match(process, /Absence of observed telemetry is not by itself proof that a skill is abandoned/);
   assert.match(process, /Orache is the explicit domain-intelligence exception/);
+});
+
+test('every host gateway binds the current request before workflow state can own routing', async () => {
+  for (const relativePath of [
+    'template/AGENTS.md',
+    'template/CLAUDE.md',
+    'template/OPENCODE.md'
+  ]) {
+    const content = await read(relativePath);
+    assert.match(content, /workflow:next` owns routing only after the current request is confirmed/);
+    assert.match(content, /Preserve unrelated workflow state; Simple Plan goes directly to (?:Dev|DEV)/);
+    assert.match(content, /--expect-feature=<slug>/);
+  }
 });

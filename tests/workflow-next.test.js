@@ -114,6 +114,130 @@ test('MEDIUM uses the same Product-to-Sheldon handoff without legacy artifacts',
   assert.deepEqual(result.completed, ['product']);
 });
 
+test('unrelated expected feature aborts before routing and preserves active workflow state', async () => {
+  const root = await tmp();
+  await context(root, 'MEDIUM');
+  await active(root, 'play-service-distribution');
+  await write(
+    root,
+    '.aioson/context/prd-play-service-distribution.md',
+    productPrd({ classification: 'MEDIUM' })
+  );
+  const state = {
+    version: 1,
+    mode: 'feature',
+    classification: 'MEDIUM',
+    sequence: ['product', 'sheldon', 'planner', 'dev', 'qa'],
+    current: 'sheldon',
+    next: 'sheldon',
+    completed: ['product'],
+    skipped: [],
+    featureSlug: 'play-service-distribution',
+    detour: null,
+    updatedAt: '2026-07-27T21:23:07.697Z'
+  };
+  const statePath = '.aioson/context/workflow.state.json';
+  await write(root, statePath, `${JSON.stringify(state, null, 2)}\n`);
+  const before = await fs.readFile(path.join(root, statePath), 'utf8');
+
+  await assert.rejects(
+    next(root, { 'expect-feature': 'draft-maintenance-harnesses' }),
+    (error) => {
+      assert.equal(error.code, 'WORKFLOW_FEATURE_MISMATCH');
+      assert.equal(error.expectedFeature, 'draft-maintenance-harnesses');
+      assert.equal(error.activeFeature, 'play-service-distribution');
+      assert.match(error.message, /Simple Plan without workflow:next/);
+      return true;
+    }
+  );
+
+  const after = await fs.readFile(path.join(root, statePath), 'utf8');
+  assert.equal(after, before);
+  await assert.rejects(
+    fs.access(path.join(root, '.aioson/context/workflow.events.jsonl')),
+    { code: 'ENOENT' }
+  );
+  await assert.rejects(
+    fs.access(path.join(root, '.aioson/context/last-handoff.json')),
+    { code: 'ENOENT' }
+  );
+});
+
+test('matching expected feature preserves normal workflow continuation', async () => {
+  const root = await tmp();
+  await context(root, 'MEDIUM');
+  await active(root, 'play-service-distribution');
+  await write(
+    root,
+    '.aioson/context/prd-play-service-distribution.md',
+    productPrd({ classification: 'MEDIUM' })
+  );
+
+  const result = await next(root, { 'expect-feature': 'play-service-distribution' });
+  assert.equal(result.agent, 'sheldon');
+  assert.equal(result.featureSlug, 'play-service-distribution');
+  assert.deepEqual(result.completed, ['product']);
+});
+
+test('project-mode expectation continues when no feature workflow is active', async () => {
+  const root = await tmp();
+  await context(root, 'SMALL');
+
+  const result = await next(root, { 'expect-feature': 'none' });
+  assert.equal(result.mode, 'project');
+  assert.equal(result.featureSlug, null);
+  assert.equal(result.agent, 'product');
+});
+
+test('feature mismatch is checked before a legacy workflow state can be reconciled', async () => {
+  const root = await tmp();
+  await context(root, 'MEDIUM');
+  await active(root, 'play-service-distribution');
+  const legacyState = {
+    version: 1,
+    mode: 'feature',
+    classification: 'MEDIUM',
+    sequence: ['product', 'planner', 'dev', 'qa'],
+    current: 'planner',
+    next: 'planner',
+    completed: ['product'],
+    skipped: [],
+    featureSlug: 'play-service-distribution',
+    detour: null,
+    updatedAt: '2026-07-27T21:23:07.697Z'
+  };
+  const statePath = '.aioson/context/workflow.state.json';
+  const original = `${JSON.stringify(legacyState, null, 2)}\n`;
+  await write(root, statePath, original);
+
+  await assert.rejects(
+    next(root, { 'expect-feature': 'draft-maintenance-harnesses' }),
+    { code: 'WORKFLOW_FEATURE_MISMATCH' }
+  );
+
+  assert.equal(await fs.readFile(path.join(root, statePath), 'utf8'), original);
+});
+
+test('workflow activation warns when project routing templates lag behind the CLI', async () => {
+  const root = await tmp();
+  await context(root);
+  await active(root);
+  await write(root, '.aioson/install.json', '{"template_version":"1.38.0"}\n');
+  const warnings = [];
+
+  const result = await runWorkflowNext({
+    args: [root],
+    options: { tool: 'codex', 'expect-feature': 'demo' },
+    logger: { log() {}, error() {}, warn(message) { warnings.push(message); } },
+    t
+  });
+
+  assert.equal(result.agent, 'product');
+  assert.equal(result.templateVersion.status, 'outdated');
+  assert.equal(warnings.length, 1);
+  assert.match(warnings[0], /aioson update \./);
+});
+
 test('Sheldon remains mandatory when explicitly present in custom configuration', async () => {
   const root = await tmp();
   await context(root);

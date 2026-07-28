@@ -39,6 +39,7 @@ const {
   findingsThroughStage
 } = require('../lib/feature-completeness');
 const { resolveGateCBaseline } = require('../lib/gate-checkpoint');
+const { inspectTemplateVersion } = require('../template-version-status');
 
 const BAR = '━'.repeat(55);
 
@@ -61,6 +62,7 @@ async function runPreflight({ args, options = {}, logger }) {
   const phaseGates = await readPhaseGates(targetDir, slug);
   const devState = await readDevState(targetDir);
   const pulse = await readProjectPulse(targetDir);
+  const templateVersion = await inspectTemplateVersion(targetDir);
 
   let classification = await detectClassification(targetDir, slug);
   const framework = ctx.data.framework || ctx.data.stack || await detectFramework(targetDir);
@@ -150,6 +152,7 @@ async function runPreflight({ args, options = {}, logger }) {
     classification,
     framework: framework || null,
     test_runner: testRunner,
+    template_version: templateVersion,
     artifacts: {
       project_context: { exists: artifacts.project_context.exists, path: artifacts.project_context.path || null },
       prd: { exists: artifacts.prd.exists, path: artifacts.prd.path || null },
@@ -233,6 +236,7 @@ async function runPreflight({ args, options = {}, logger }) {
   logger.log(BAR);
   logger.log('');
   logger.log(`Mode: ${mode}${classification ? ' | Classification: ' + classification : ''}${framework ? ' | Framework: ' + framework : ''}${testRunner ? ' | Test runner: ' + testRunner : ''}`);
+  if (templateVersion.warning) logger.log(`⚠ ${templateVersion.warning}`);
   logger.log('');
 
   logger.log('Artifacts:');

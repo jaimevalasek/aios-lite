@@ -2,6 +2,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const crypto = require('node:crypto');
 const fs = require('node:fs/promises');
 const os = require('node:os');
 const path = require('node:path');
@@ -237,6 +238,84 @@ test('workflow:next --json returns structured payload without human logs', async
   assert.equal(parsed.statePath, '.aioson/context/workflow.state.json');
 });
 
+test('workflow:next CLI binds the request before routing and preserves mismatched state', async () => {
+  const dir = await makeTempDir();
+  const contextDir = path.join(dir, '.aioson/context');
+  await fs.mkdir(contextDir, { recursive: true });
+  await fs.writeFile(
+    path.join(contextDir, 'project.context.md'),
+    `---\nproject_name: "demo"\nproject_type: "cli"\nprofile: "developer"\nframework: "Node.js"\nframework_installed: true\nclassification: "MEDIUM"\nconversation_language: "en"\naioson_version: "1.38.0"\n---\n\n# Project Context\n`,
+    'utf8'
+  );
+  await fs.writeFile(
+    path.join(contextDir, 'features.md'),
+    '# Features\n\n| slug | status | started | completed |\n|---|---|---|---|\n| play-service-distribution | in_progress | 2026-07-27 | — |\n',
+    'utf8'
+  );
+  await fs.writeFile(
+    path.join(contextDir, 'prd-play-service-distribution.md'),
+    productReadyPrd('play-service-distribution'),
+    'utf8'
+  );
+  await fs.writeFile(
+    path.join(dir, '.aioson/install.json'),
+    '{"template_version":"1.38.0"}\n',
+    'utf8'
+  );
+  const statePath = path.join(contextDir, 'workflow.state.json');
+  await fs.writeFile(
+    statePath,
+    `${JSON.stringify({
+      version: 1,
+      mode: 'feature',
+      classification: 'MEDIUM',
+      sequence: ['product', 'sheldon', 'planner', 'dev', 'qa'],
+      current: 'sheldon',
+      next: 'sheldon',
+      completed: ['product'],
+      skipped: [],
+      featureSlug: 'play-service-distribution',
+      detour: null,
+      updatedAt: '2026-07-27T21:23:07.697Z'
+    }, null, 2)}\n`,
+    'utf8'
+  );
+  const digest = (value) => crypto.createHash('sha256').update(value).digest('hex');
+  const before = await fs.readFile(statePath);
+
+  const blocked = await runCli([
+    'workflow:next',
+    dir,
+    '--expect-feature=draft-maintenance-harnesses',
+    '--tool=codex',
+    '--json'
+  ]);
+  assert.equal(blocked.code, 1);
+  assert.equal(blocked.stderr.trim(), '');
+  const blockedPayload = JSON.parse(blocked.stdout);
+  assert.equal(blockedPayload.ok, false);
+  assert.match(blockedPayload.error.message, /Workflow binding mismatch/);
+  assert.match(blockedPayload.error.message, /Dev Simple Plan/);
+  assert.equal(digest(await fs.readFile(statePath)), digest(before));
+  await assert.rejects(fs.access(path.join(contextDir, 'workflow.events.jsonl')), { code: 'ENOENT' });
+  await assert.rejects(fs.access(path.join(contextDir, 'last-handoff.json')), { code: 'ENOENT' });
+
+  const continued = await runCli([
+    'workflow:next',
+    dir,
+    '--expect-feature=play-service-distribution',
+    '--tool=codex',
+    '--json'
+  ]);
+  assert.equal(continued.code, 0);
+  assert.equal(continued.stderr.trim(), '');
+  const continuedPayload = JSON.parse(continued.stdout);
+  assert.equal(continuedPayload.ok, true);
+  assert.equal(continuedPayload.agent, 'sheldon');
+  assert.equal(continuedPayload.featureSlug, 'play-service-distribution');
+  assert.equal(continuedPayload.templateVersion.status, 'outdated');
+});
+
 test('workflow:next --status --json returns structured workflow insights', async () => {
   const dir = await makeTempDir();
   await fs.mkdir(path.join(dir, '.aioson/context'), { recursive: true });
@@ -321,7 +400,10 @@ test('workflow:next --suggest --json returns a deterministic next command', asyn
   assert.equal(parsed.activeStage, 'dev');
   assert.equal(parsed.effectiveMode, 'trusted');
   assert.equal(parsed.suggestion.action, 'continue_stage');
-  assert.equal(parsed.suggestion.command, 'aioson workflow:next . --agent=dev --tool=codex');
+  assert.equal(
+    parsed.suggestion.command,
+    'aioson workflow:next . --expect-feature=protocol-contracts --agent=dev --tool=codex'
+  );
 });
 
 test('legacy dashboard commands return a structured migration error with --json', async () => {

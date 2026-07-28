@@ -138,7 +138,7 @@ module.exports = {
     help_workflow_plan:
       'aioson workflow:plan [path] [--classification=MICRO|SMALL|MEDIUM] [--json] [--locale=pt-BR]',
     help_workflow_next:
-      'aioson workflow:next [path] [--complete[=<agente>]] [--agent=<agente>] [--skip=<agente>] [--status] [--suggest] [--tool=codex|claude|opencode] [--json] [--locale=pt-BR]',
+      'aioson workflow:next [path] [--expect-feature=<slug|none>] [--complete[=<agente>]] [--agent=<agente>] [--skip=<agente>] [--status] [--suggest] [--tool=codex|claude|opencode] [--json] [--locale=pt-BR]',
     help_workflow_status:
       'aioson workflow:status [path] [--suggest] [--tool=codex|claude|opencode] [--json] [--locale=pt-BR]',
     help_workflow_execute:

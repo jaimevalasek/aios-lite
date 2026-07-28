@@ -45,6 +45,7 @@ const {
 } = require('../workflow-profile');
 const { reviewStatus } = require('../review-intelligence/engine');
 const { validateCurrentSheldonReview } = require('../lib/sheldon-review');
+const { inspectTemplateVersion } = require('../template-version-status');
 
 const STATE_RELATIVE_PATH = '.aioson/context/workflow.state.json';
 const CONFIG_RELATIVE_PATH = '.aioson/context/workflow.config.json';
@@ -80,6 +81,50 @@ function normalizeClassification(value, fallback = 'MICRO') {
   const text = String(value || '').trim().toUpperCase();
   if (text === 'MICRO' || text === 'SMALL' || text === 'MEDIUM') return text;
   return fallback;
+}
+
+function readExpectedFeature(options = {}) {
+  const hasKebab = Object.prototype.hasOwnProperty.call(options, 'expect-feature');
+  const hasCamel = Object.prototype.hasOwnProperty.call(options, 'expectFeature');
+  if (!hasKebab && !hasCamel) return { provided: false, featureSlug: null };
+
+  const raw = hasKebab ? options['expect-feature'] : options.expectFeature;
+  const value = String(raw === true ? '' : raw || '').trim().toLowerCase();
+  if (value === 'none' || value === 'project') {
+    return { provided: true, featureSlug: null };
+  }
+  const validation = validateFeatureSlug(value);
+  if (!validation.ok) {
+    const error = new Error(
+      `[workflow:next] Invalid --expect-feature value "${String(raw)}". Use a feature slug or "none" for project mode.`
+    );
+    error.code = 'WORKFLOW_EXPECT_FEATURE_INVALID';
+    throw error;
+  }
+  return { provided: true, featureSlug: validation.feature_slug };
+}
+
+function assertExpectedFeature(state, options = {}) {
+  const expected = readExpectedFeature(options);
+  if (!expected.provided) return expected;
+
+  const activeFeature = state && state.mode === 'feature'
+    ? String(state.featureSlug || '').trim() || null
+    : null;
+  if (expected.featureSlug === activeFeature) return expected;
+
+  const error = new Error(
+    [
+      '[workflow:next] Workflow binding mismatch — activation aborted before agent routing.',
+      `Expected feature: ${expected.featureSlug || '(project mode)'}`,
+      `Active workflow: ${activeFeature || '(project mode)'}`,
+      'Reclassify the current request first. Use Dev Simple Plan without workflow:next for unrelated bounded work, or pass the active feature slug only after confirming continuation.'
+    ].join('\n')
+  );
+  error.code = 'WORKFLOW_FEATURE_MISMATCH';
+  error.expectedFeature = expected.featureSlug;
+  error.activeFeature = activeFeature;
+  throw error;
 }
 
 function ensureSheldonBeforePlanner(sequence) {
@@ -2001,9 +2046,21 @@ async function runWorkflowNext({ args, options, logger, t }) {
   const targetDir = path.resolve(process.cwd(), args[0] || '.');
   const tool = options.tool || 'codex';
   const locale = await resolveLocaleForTarget(targetDir, options);
+  const templateVersion = await inspectTemplateVersion(targetDir);
+  if (templateVersion.warning && logger && typeof logger.warn === 'function') {
+    logger.warn(templateVersion.warning);
+  }
   const { config } = await readWorkflowConfig(targetDir);
-  const loaded = await loadOrCreateState(targetDir, options);
+  const expectedFeature = readExpectedFeature(options);
+  const loaded = await loadOrCreateState(targetDir, {
+    ...options,
+    persist: expectedFeature.provided ? false : options.persist
+  });
   let state = loaded.state;
+  assertExpectedFeature(state, options);
+  if (expectedFeature.provided && loaded.changed && !loaded.persisted) {
+    await persistState(targetDir, state);
+  }
   let completedStage = null;
   let reviewCycleTransition = null;
   let reviewCycleResolution = null;
@@ -2340,7 +2397,8 @@ async function runWorkflowNext({ args, options, logger, t }) {
     verification: activation.verification || null,
     instructionPath: activation.instructionPath,
     prompt: activation.prompt,
-    reviewCycle: reviewCycleTransition || reviewCycleResolution || null
+    reviewCycle: reviewCycleTransition || reviewCycleResolution || null,
+    templateVersion
   };
 
   logger.log(t('workflow_next.title', {
@@ -2397,5 +2455,7 @@ module.exports = {
   assertManifestNotPending,
   PENDING_STATE_WHITELIST,
   shouldRouteToValidator,
-  detectUnsubstantiatedCompletions
+  detectUnsubstantiatedCompletions,
+  readExpectedFeature,
+  assertExpectedFeature
 };

@@ -27,7 +27,7 @@ Default **ON**. Opt out via `AIOSON_OPERATOR_MEMORY=false`. Resolve `aioson op:i
 
 ## Workflow kernel
 
-`workflow:next` owns active routing. Otherwise: Product → Sheldon → Planner → DEV → QA. Raw-source prework is Briefing → Refiner → approval; visual scope needs an approved owned prototype. Other specialists need evidence. Between handoffs give only the next agent and why.
+`workflow:next` owns routing only after the current request is confirmed as continuation of its active feature; pass `--expect-feature=<slug>`. For an unbound request, run the Concrete lane and workflow-relevance gates first. Preserve unrelated workflow state; Simple Plan goes directly to DEV. Otherwise: Product → Sheldon → Planner → DEV → QA. Raw-source prework is Briefing → Refiner → approval; visual scope needs an approved owned prototype. Other specialists need evidence. Between handoffs give only the next agent and why.
 
 Before compaction, `mappings/{slug}/continuity.md` may hold temporary nongating context.
 

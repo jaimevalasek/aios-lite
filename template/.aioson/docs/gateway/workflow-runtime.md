@@ -8,9 +8,10 @@ triggers: [feature workflow, workflow next, auto, step, external client, live se
 
 ## Authority
 
-When invoked through `aioson workflow:next`, injected lifecycle instructions own routing, state, and event emission. Follow them exactly. Outside that envelope:
+After the current request has been bound to the active feature, `aioson workflow:next --expect-feature=<slug>` owns routing, state, and event emission. A persisted workflow does not establish that binding by itself. Outside that confirmed envelope:
 
 - Apply the Concrete implementation lane gate first.
+- Preserve an unrelated active workflow unchanged; Simple Plan runs directly in Dev and never calls `workflow:next`.
 - Canonical feature route: Product → Sheldon → Planner → Dev → QA.
 - When the user starts from raw feature sources, use the pre-product route `plans/{slug}/ → Briefing → Briefing Refiner → user approval`; visual/rich surfaces require the feature-owned prototype to be approved before Product.
 - Product, Sheldon, Planner, Dev, and QA stay in workflow. Other specialists run only for a concrete unresolved decision or enabled/risk-triggered review.
@@ -44,7 +45,7 @@ No requirements/spec/design/readiness/conformance/harness document is an extra c
 Use the current tool name (`codex`, `claude`, or supported equivalent):
 
 ```bash
-aioson workflow:next . --tool=<tool>
+aioson workflow:next . --expect-feature=<slug> --tool=<tool>
 aioson agent:prompt <agent> . --tool=<tool>
 aioson live:start . --tool=<tool> --agent=deyvin --no-launch
 ```

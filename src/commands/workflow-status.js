@@ -193,6 +193,12 @@ function isGateCPlanBlocker(contractCheck) {
   });
 }
 
+function workflowBindingFlag(state) {
+  return state && state.mode === 'feature' && state.featureSlug
+    ? ` --expect-feature=${state.featureSlug}`
+    : ' --expect-feature=none';
+}
+
 function buildSuggestion({
   contextValid,
   state,
@@ -232,7 +238,7 @@ function buildSuggestion({
     return {
       action: 'activate_stage',
       agent: focusStage,
-      command: `aioson workflow:next . --tool=${safeTool}`,
+      command: `aioson workflow:next .${workflowBindingFlag(state)} --tool=${safeTool}`,
       reason: `Next official stage is @${focusStage}.`
     };
   }
@@ -242,7 +248,7 @@ function buildSuggestion({
       return {
         action: 'resolve_gate_c',
         agent: 'planner',
-        command: `aioson workflow:next . --agent=planner --tool=${safeTool}`,
+        command: `aioson workflow:next .${workflowBindingFlag(state)} --agent=planner --tool=${safeTool}`,
         reason: `@dev is blocked by Gate C: implementation plan is missing or not approved. Run @planner first.`,
         details: [...contractCheck.missing]
       };
@@ -251,7 +257,7 @@ function buildSuggestion({
     return {
       action: 'continue_stage',
       agent: focusStage,
-      command: `aioson workflow:next . --agent=${focusStage} --tool=${safeTool}`,
+      command: `aioson workflow:next .${workflowBindingFlag(state)} --agent=${focusStage} --tool=${safeTool}`,
       reason: `@${focusStage} still has pending deliverables before handoff.`,
       details: [...contractCheck.missing]
     };
@@ -261,7 +267,7 @@ function buildSuggestion({
     return {
       action: 'continue_stage',
       agent: focusStage,
-      command: `aioson workflow:next . --agent=${focusStage} --tool=${safeTool}`,
+      command: `aioson workflow:next .${workflowBindingFlag(state)} --agent=${focusStage} --tool=${safeTool}`,
       reason: `@${focusStage} passed hard gates, but completion evidence is still incomplete.`,
       details: [...contractCheck.warnings]
     };
@@ -271,7 +277,7 @@ function buildSuggestion({
   return {
     action: 'complete_stage',
     agent: focusStage,
-    command: `aioson workflow:next . --complete=${focusStage}${autoHealFlag} --tool=${safeTool}`,
+    command: `aioson workflow:next .${workflowBindingFlag(state)} --complete=${focusStage}${autoHealFlag} --tool=${safeTool}`,
     reason: `@${focusStage} appears ready for the next handoff.`,
     details: []
   };
@@ -542,4 +548,4 @@ async function runWorkflowStatus({ args, options, logger, t }) {
   };
 }
 
-module.exports = { runWorkflowStatus };
+module.exports = { runWorkflowStatus, workflowBindingFlag };

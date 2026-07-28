@@ -92,6 +92,23 @@ test('preflight: detects classification from project.context.md', async () => {
   assert.equal(result.classification, 'MEDIUM');
 });
 
+test('preflight: reports installed template version skew in JSON and human output', async () => {
+  const tmpDir = await makeTmpDir();
+  await writeFile(tmpDir, '.aioson/install.json', JSON.stringify({ template_version: '0.1.0' }));
+
+  const json = await runPreflight({
+    args: [tmpDir],
+    options: { json: true, agent: 'dev' },
+    logger: makeLogger()
+  });
+  assert.equal(json.template_version.status, 'outdated');
+  assert.equal(json.template_version.outdated, true);
+
+  const logger = makeLogger();
+  await runPreflight({ args: [tmpDir], options: { agent: 'dev' }, logger });
+  assert.ok(logger.lines.some((line) => /template warning.*aioson update/i.test(line)));
+});
+
 test('preflight: readiness READY when reviewed PRD and approved plan exist for dev', async () => {
   const tmpDir = await makeTmpDir();
   await writeFile(tmpDir, '.aioson/context/project.context.md', '---\nclassification: SMALL\n---');

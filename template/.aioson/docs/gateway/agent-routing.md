@@ -33,6 +33,18 @@ Classify the minimum user-confirmed outcome before Product, Briefing, or feature
 
 Do not inflate scope with optional edge cases. If execution must exceed the chosen budget, stop before widening it, show the before/after path estimate and causal reason, and request approval. An explicitly requested agent/lane wins unless its own hard boundary requires handoff.
 
+### Active workflow relevance gate
+
+Persisted workflow state is evidence about prior work, not proof that the current request belongs to it. Before calling `workflow:next` for a request that was not already activated by that command:
+
+1. State the current requested outcome in one sentence.
+2. Compare it with the active `featureSlug` and its PRD/dossier or implementation plan.
+3. If it is the same work, continue with `workflow:next --expect-feature=<active-slug>`.
+4. If it is unrelated bounded implementation, preserve the active workflow unchanged and route to Dev Simple Plan without calling `workflow:next`.
+5. If it is an unrelated feature, do not reuse the old feature's agents or artifacts; obtain only the feature-switch decision that is genuinely required.
+
+An explicit request to resume the active feature or activate its current agent establishes the binding. Project classification, an unfinished gate, or a stale handoff does not. Never complete reflection, prototype, Product, Sheldon, or Briefing work from an unrelated feature merely to unblock the new request.
+
 ## Agent resolution
 
 Named activation loads `.aioson/agents/{slug}.md` immediately. Main routes:

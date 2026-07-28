@@ -24,6 +24,17 @@ describe('parser.js — parseArgv', () => {
     assert.equal(result.options.agent, 'dev');
   });
 
+  it('parses the workflow feature binding guard as a value', () => {
+    const result = parseArgv([
+      'node',
+      'aioson',
+      'workflow:next',
+      '.',
+      '--expect-feature=play-service-distribution'
+    ]);
+    assert.equal(result.options['expect-feature'], 'play-service-distribution');
+  });
+
   it('parses boolean-only flags without consuming next token', () => {
     const result = parseArgv(['node', 'aioson', 'workflow:next', '.', '--json', '--agent', 'dev']);
     assert.equal(result.options.json, true);
