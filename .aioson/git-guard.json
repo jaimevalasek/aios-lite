@@ -19,7 +19,15 @@
     "template/.aioson/skills/static/static-html-patterns.md",
     "src/context-search.js"
   ],
-  "contentAllowRules": [],
+  "contentAllowRules": [
+    {
+      "path": "src/context-selector.js",
+      "rules": [
+        "generic_secret_assignment"
+      ],
+      "reason": "SQLite FTS5 tokenize configures Unicode text segmentation; it is not a credential assignment."
+    }
+  ],
   "blockPaths": [
     "done/**",
     "references/**",

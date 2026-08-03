@@ -45,21 +45,23 @@ Prefer, in order:
 
 If two authoritative signals conflict, recommend the owner that can repair the state rather than guessing. Objectively inferable stale context may be repaired only by the workflow owner, never by Neo.
 
-## Neural Chain noises
+## Neural Chain impact queue
 
-Files under `.aioson/context/noises/*.md` with unchecked `- [ ]` body items are a routing blocker.
+The authoritative state is `chain_work_items` in `.aioson/runtime/aios.sqlite`; `.aioson/context/noises/{feature}.md` is its human-readable projection. Legacy timestamped noise files are imported by `aioson chain:reconcile .`.
 
-- Report each file and pending count.
-- Pause recommendations to all agents while pending.
-- Offer only: resolve and mark verified items `- [x]`, or explicitly say `skip noises` and reactivate Neo.
-- A prior explicit skip applies only to the current routing decision; do not rewrite the noise files.
-- Do not treat headings, examples, or already checked items as pending work.
+- Report actionable items by feature, status, owner, and pending count.
+- Recommend `@dev` for new work or `@deyvin` when resuming active implementation; they claim items atomically before touching targets.
+- An item means “inspect this causal relationship,” not “edit this file.” `verified_no_change`, `false_positive`, and `obsolete` are valid evidence-backed resolutions.
+- Do not route an item already claimed by another run. Expired claims return to the queue automatically.
+- Unrelated work is not globally blocked. The queue remains visible implementation debt until resolved or explicitly made obsolete.
+- Manual `- [x]` remains compatible and becomes `verified_no_change` during reconciliation.
 
 ## Hygiene
 
 Summarize only non-zero actionable buckets from `hygiene:scan`:
 
 - pending Neural Chain noises
+- stale resolved Neural Chain projections
 - completed features pending archive
 - stale state
 - stale runtime sessions/runs

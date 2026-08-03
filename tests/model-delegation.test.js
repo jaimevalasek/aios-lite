@@ -84,6 +84,27 @@ test('cross-provider work chooses external mode and native cross-provider is for
   assert.equal(native.reason, 'native_cross_provider_forbidden');
 });
 
+test('visual prototype delegation accepts explicit Kimi and Qwen bindings', async () => {
+  for (const [provider, model] of [['kimi', 'kimi-k3'], ['qwen', 'qwen3-coder']]) {
+    const result = await buildDelegationPlan({
+      projectDir: await tempProject(),
+      host: 'codex',
+      provider,
+      model,
+      kind: 'visual-prototype',
+      task: 'Return one bounded prototype envelope.',
+      explicitModelRequest: true,
+      catalogLoader: unavailableCatalog
+    });
+    assert.equal(result.ok, true);
+    assert.equal(result.provider, provider);
+    assert.equal(result.model_resolved, model);
+    assert.equal(result.task_kind, 'visual-prototype');
+    assert.deepEqual(result.tools, ['read']);
+    assert.equal(result.mode, 'external');
+  }
+});
+
 test('invalid host, provider, unsafe model, and configured default fail closed', async () => {
   const base = {
     projectDir: await tempProject(),

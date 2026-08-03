@@ -3,11 +3,11 @@
 /**
  * Neural Chain feature — Phase 1 schema migration.
  *
- * Adds chain_edges table + 3 indexes to .aioson/runtime/aios.sqlite per
- * requirements-neural-chain.md § New entities and fields.
+ * Adds the relationship graph (`chain_edges`) and the operational impact
+ * queue (`chain_work_items`) to `.aioson/runtime/aios.sqlite`.
  *
  * Idempotent (IF NOT EXISTS guards on every step). Safe to call on every
- * openRuntimeDb invocation. The 4 statements are all O(1) probes when the
+ * openRuntimeDb invocation. The statements are all O(1) probes when the
  * schema already exists, so no PRAGMA user_version sentinel is used —
  * coordination with the existing learning-loop migration's user_version=3
  * would require a shared versioning table (deferred until multiple features
@@ -45,7 +45,43 @@ const STEPS = [
      ON chain_edges(target_path, end_at)`,
   `CREATE UNIQUE INDEX IF NOT EXISTS uniq_chain_active
      ON chain_edges(source_path, target_path, edge_type)
-     WHERE end_at IS NULL`
+     WHERE end_at IS NULL`,
+  `CREATE TABLE IF NOT EXISTS chain_work_items (
+     id INTEGER PRIMARY KEY AUTOINCREMENT,
+     dedupe_key TEXT NOT NULL UNIQUE,
+     feature_slug TEXT NOT NULL DEFAULT 'unspecified',
+     origin_run_key TEXT,
+     source_path TEXT NOT NULL,
+     source_fingerprint TEXT NOT NULL,
+     target_path TEXT NOT NULL,
+     kind TEXT NOT NULL CHECK (kind IN ('inspect', 'fix', 'test', 'security', 'documentation')),
+     owner_agent TEXT NOT NULL DEFAULT 'dev',
+     status TEXT NOT NULL DEFAULT 'open'
+       CHECK (status IN ('open', 'claimed', 'in_progress', 'blocked', 'resolved', 'obsolete')),
+     outcome TEXT
+       CHECK (outcome IS NULL OR outcome IN ('fixed', 'verified_no_change', 'false_positive', 'obsolete', 'skipped')),
+     marker TEXT,
+     confidence REAL NOT NULL CHECK (confidence >= 0.0 AND confidence <= 1.0),
+     edge_type TEXT NOT NULL,
+     hit_count INTEGER NOT NULL DEFAULT 1 CHECK (hit_count > 0),
+     reason TEXT NOT NULL,
+     evidence_json TEXT NOT NULL DEFAULT '{}',
+     occurrence_count INTEGER NOT NULL DEFAULT 1 CHECK (occurrence_count > 0),
+     claimed_by TEXT,
+     claim_token TEXT,
+     lease_until TEXT,
+     resolution_evidence TEXT,
+     created_at TEXT NOT NULL,
+     updated_at TEXT NOT NULL,
+     last_seen_at TEXT NOT NULL,
+     resolved_at TEXT
+   )`,
+  `CREATE INDEX IF NOT EXISTS idx_chain_work_items_queue
+     ON chain_work_items(feature_slug, owner_agent, status, confidence DESC, id ASC)`,
+  `CREATE INDEX IF NOT EXISTS idx_chain_work_items_lease
+     ON chain_work_items(status, lease_until)`,
+  `CREATE INDEX IF NOT EXISTS idx_chain_work_items_relation
+     ON chain_work_items(source_path, target_path, edge_type)`
 ];
 
 function runMigration(db) {

@@ -14,6 +14,8 @@ MICRO, SMALL, and MEDIUM use the same route. Classification changes depth, risk 
 
 `@dev --auto` (or `aioson agent:prompt dev . --auto`) enables Autopilot for that activation even when the project default is off. `--step` disables it for that activation and wins if both flags are supplied. Neither option rewrites the persisted preference. In every mode, the chain stops after QA and waits for explicit human authorization before `feature:close`/publish.
 
+New feature execution manifests use schema v2 and default to Autopilot. Their create-once `orchestration.mode` may keep that default, inherit the project setting, or force step-by-step mode. Effective Autopilot uses the manifest's `max_checkpoints` budget instead of the legacy one-checkpoint default. Existing v1 manifests remain valid and are never rewritten; an explicit `--step` disarm still wins.
+
 ## DEV execution
 
 DEV reads the approved PRD, the single implementation plan, repository evidence, selected project rules/docs, and the non-blocking dossier.
@@ -25,6 +27,8 @@ DEV → backend lane → frontend lane → DEV integration → QA
 ```
 
 Lanes run sequentially in a shared worktree. They are runtime workers, not workflow stages or canonical agents. Missing host/model pauses unless the lane declares an applicable fallback. The current client never silently replaces an unavailable host with itself.
+
+The manifest also routes Neural Chain work. DEV owns inspection/fix items. Test and security items route to Tester/Pentester only when those opt-in specialists are enabled; otherwise they fall back to DEV. DEV completion is blocked while its actionable items remain unresolved, and QA receives read-only oversight for independent revalidation.
 
 ## Review
 

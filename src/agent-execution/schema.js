@@ -2,13 +2,17 @@
 
 const path = require('node:path');
 
-const HOSTS = ['claude', 'codex', 'opencode', 'kimi'];
+const HOSTS = ['claude', 'codex', 'opencode', 'kimi', 'qwen'];
 const MODES = ['fresh-session', 'subagent', 'external', 'current-session'];
 const AGENTS = ['dev', 'qa', 'tester', 'pentester', 'validator'];
 const REASONING_EFFORTS = ['low', 'medium', 'high', 'xhigh', 'max', 'ultra'];
 const FALLBACK_REASONS = ['capacity', 'unavailable'];
 const MAX_MODEL_NAME_LENGTH = 200;
 const MAX_DEVELOPMENT_LANES = 8;
+const MANIFEST_VERSIONS = [1, 2];
+const ORCHESTRATION_MODES = ['inherit', 'autopilot', 'step_by_step'];
+const CHAIN_WORK_KINDS = ['inspect', 'fix', 'test', 'security', 'documentation'];
+const CHAIN_WORK_OWNERS = ['dev', 'tester', 'pentester'];
 const ROOT_KEYS = [
   'version',
   'feature',
@@ -18,7 +22,9 @@ const ROOT_KEYS = [
   'development_lanes',
   'capacity_policy',
   'cycle_limits',
-  'reporting'
+  'reporting',
+  'orchestration',
+  'chain_work_policy'
 ];
 const AGENT_KEYS = ['enabled', 'host', 'mode', 'model', 'reasoning_effort', 'writable_roots', 'fallbacks', 'report'];
 const LANE_KEYS = [...AGENT_KEYS, 'prompt', 'write_paths'];
@@ -159,6 +165,74 @@ function validateDevelopmentLanes(value, add) {
   }
 }
 
+function validateOrchestration(value, add) {
+  if (value === undefined) return;
+  if (!isPlainObject(value)) {
+    add('$.orchestration', 'must be an object');
+    return;
+  }
+  for (const key of Object.keys(value)) {
+    if (!['mode', 'max_checkpoints', 'stop_conditions'].includes(key)) {
+      add(`$.orchestration.${key}`, 'unknown field');
+    }
+  }
+  if (!ORCHESTRATION_MODES.includes(value.mode)) {
+    add('$.orchestration.mode', `must be one of ${ORCHESTRATION_MODES.join(', ')}`);
+  }
+  if (!Number.isInteger(value.max_checkpoints) || value.max_checkpoints < 1 || value.max_checkpoints > 50) {
+    add('$.orchestration.max_checkpoints', 'must be an integer between 1 and 50');
+  }
+  if (!Array.isArray(value.stop_conditions) || value.stop_conditions.length === 0) {
+    add('$.orchestration.stop_conditions', 'must be a non-empty array');
+  } else {
+    value.stop_conditions.forEach((condition, index) => {
+      if (typeof condition !== 'string' || !/^[a-z][a-z0-9_]*$/.test(condition)) {
+        add(`$.orchestration.stop_conditions[${index}]`, 'must be a snake_case identifier');
+      }
+    });
+  }
+}
+
+function validateChainWorkPolicy(value, add) {
+  if (value === undefined) return;
+  if (!isPlainObject(value)) {
+    add('$.chain_work_policy', 'must be an object');
+    return;
+  }
+  const allowed = [
+    'enabled',
+    'fallback_owner',
+    'require_enabled_owner',
+    'qa_revalidation',
+    'block_handoff_on_actionable',
+    'owner_by_kind'
+  ];
+  for (const key of Object.keys(value)) {
+    if (!allowed.includes(key)) add(`$.chain_work_policy.${key}`, 'unknown field');
+  }
+  for (const key of ['enabled', 'require_enabled_owner', 'qa_revalidation', 'block_handoff_on_actionable']) {
+    if (typeof value[key] !== 'boolean') add(`$.chain_work_policy.${key}`, 'must be boolean');
+  }
+  if (!CHAIN_WORK_OWNERS.includes(value.fallback_owner)) {
+    add('$.chain_work_policy.fallback_owner', `must be one of ${CHAIN_WORK_OWNERS.join(', ')}`);
+  }
+  if (!isPlainObject(value.owner_by_kind)) {
+    add('$.chain_work_policy.owner_by_kind', 'must be an object');
+    return;
+  }
+  for (const [kind, owner] of Object.entries(value.owner_by_kind)) {
+    if (!CHAIN_WORK_KINDS.includes(kind)) add(`$.chain_work_policy.owner_by_kind.${kind}`, 'unknown work kind');
+    if (!CHAIN_WORK_OWNERS.includes(owner)) {
+      add(`$.chain_work_policy.owner_by_kind.${kind}`, `must be one of ${CHAIN_WORK_OWNERS.join(', ')}`);
+    }
+  }
+  for (const kind of CHAIN_WORK_KINDS) {
+    if (!Object.hasOwn(value.owner_by_kind, kind)) {
+      add(`$.chain_work_policy.owner_by_kind.${kind}`, 'is required');
+    }
+  }
+}
+
 function validateManifest(value, expectedFeature) {
   const errors = [];
   const add = (errorPath, message) => errors.push({ path: errorPath, message });
@@ -178,7 +252,7 @@ function validateManifest(value, expectedFeature) {
       ? 'secret fields are forbidden; use environment configuration'
       : 'unknown field');
   }
-  if (value.version !== 1) add('$.version', 'must equal 1');
+  if (!MANIFEST_VERSIONS.includes(value.version)) add('$.version', `must be one of ${MANIFEST_VERSIONS.join(', ')}`);
   if (!SAFE_ID.test(value.feature || '')) add('$.feature', 'must be a kebab-case slug');
   if (expectedFeature && value.feature !== expectedFeature) add('$.feature', `must equal ${expectedFeature}`);
   if (!HOSTS.includes(value.host)) add('$.host', `must be one of ${HOSTS.join(', ')}`);
@@ -192,6 +266,8 @@ function validateManifest(value, expectedFeature) {
   }
   for (const id of AGENTS) validateExecutionEntry(value.agents?.[id], `$.agents.${id}`, add);
   validateDevelopmentLanes(value.development_lanes, add);
+  validateOrchestration(value.orchestration, add);
+  validateChainWorkPolicy(value.chain_work_policy, add);
 
   const limits = value.cycle_limits;
   if (!isPlainObject(limits)) {
@@ -239,7 +315,11 @@ module.exports = {
   HOSTS,
   MAX_DEVELOPMENT_LANES,
   MAX_MODEL_NAME_LENGTH,
+  MANIFEST_VERSIONS,
   MODES,
+  ORCHESTRATION_MODES,
+  CHAIN_WORK_KINDS,
+  CHAIN_WORK_OWNERS,
   REASONING_EFFORTS,
   validateManifest
 };

@@ -6,7 +6,13 @@ const fs = require('node:fs/promises');
 const os = require('node:os');
 const path = require('node:path');
 const { buildGuardResponse } = require('../src/context-guard');
-const { runContextGuard } = require('../src/commands/context-guard');
+const { runContextGuard, resolveGuardAgent } = require('../src/commands/context-guard');
+
+test('context:guard resolves the active agent from explicit options before event metadata', () => {
+  assert.equal(resolveGuardAgent({ agent: 'qa' }, { agent: 'dev' }), 'qa');
+  assert.equal(resolveGuardAgent({}, { agent_name: '@Genome' }), 'genome');
+  assert.equal(resolveGuardAgent({}, { context: { agent: 'setup' } }), 'setup');
+});
 
 const DB_NAMING_RULE = [
   '---',

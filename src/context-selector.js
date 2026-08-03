@@ -82,7 +82,7 @@ const SEMANTIC_SYNONYMS = new Map([
 ]);
 
 const SURFACES = [
-  { key: 'rules', dir: path.join('.aioson', 'rules'), recursive: false, defaultTier: 'trigger' },
+  { key: 'rules', dir: path.join('.aioson', 'rules'), recursive: true, defaultTier: 'trigger' },
   { key: 'docs', dir: path.join('.aioson', 'docs'), recursive: true, defaultTier: 'trigger' },
   { key: 'design_governance', dir: path.join('.aioson', 'design-docs'), recursive: false, defaultTier: 'trigger' },
   { key: 'context', dir: path.join('.aioson', 'context'), recursive: false, defaultTier: 'trigger' },
@@ -241,6 +241,12 @@ function splitOptionList(value) {
     .filter(Boolean);
 }
 
+function normalizePriority(value) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return 0;
+  return Math.max(0, Math.min(100, Math.trunc(parsed)));
+}
+
 async function walkMarkdown(rootDir, relDir, recursive) {
   const absDir = path.join(rootDir, relDir);
   const out = [];
@@ -327,6 +333,7 @@ async function collectCandidates(targetDir) {
         entities: parseListValue(fm.entities || fm.entity),
         retrievalIntents: parseListValue(fm.retrieval_intents || fm.intents || fm.intent),
         pathPatterns: parseListValue(fm.paths || fm.globs),
+        priority: normalizePriority(fm.priority),
         scope: fm.scope || '',
         featureSlug: fm.feature_slug || fm.feature || inferred.featureSlug || '',
         tags: [...new Set([...parseListValue(fm.tags), ...inferred.tags])],
@@ -718,12 +725,19 @@ function scoreCandidate(candidate, context) {
   const threshold = effectiveLoadTier === 'justified' ? 50 : 30;
   if (score < threshold) return null;
 
+  // Priority orders candidates that already proved relevance. It must never
+  // make an otherwise ineligible rule cross the retrieval threshold.
+  const baseScore = score;
+  score += candidate.priority || 0;
+
   return {
     path: candidate.path,
     surface: candidate.surface,
     load_tier: effectiveLoadTier,
     size: candidate.size,
     score,
+    base_score: baseScore,
+    priority: candidate.priority || 0,
     reason: reasons.join('; ')
   };
 }

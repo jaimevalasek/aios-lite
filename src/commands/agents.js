@@ -20,6 +20,8 @@ const {
 const { readAutonomyProtocol, resolveEffectiveMode } = require('../autonomy-policy');
 const { readAgentManifest, buildAgentCapabilitySummary } = require('../agent-manifests');
 const { emitSecurityRuntimeEvent } = require('../lib/security/runtime-events');
+const { buildChainActivationContext } = require('../neural-chain-activation');
+const { buildAgentContextActivation } = require('../agent-context-activation');
 
 const WORKFLOW_AGENT_IDS = new Set([
   'setup',
@@ -245,6 +247,18 @@ async function runAgentPrompt({ args, options, logger, t }) {
     } else if (promptAgent.id === 'sheldon') {
       activationContext = buildSheldonActivationContext(options);
     }
+    const contextTask = String(options.task || options.goal || '').trim();
+    const generatedContext = await buildAgentContextActivation(targetDir, {
+      agent: promptAgent.id,
+      mode: 'planning',
+      task: contextTask,
+      feature: options.feature || options.slug || ''
+    });
+    const chainActivationContext = await buildChainActivationContext(targetDir, {
+      agent: promptAgent.id,
+      featureSlug: options.feature ? String(options.feature).trim() : null
+    });
+    activationContext = [activationContext, generatedContext, chainActivationContext].filter(Boolean).join('\n\n');
     const autonomyProtocol = await readAutonomyProtocol(targetDir);
     const manifest = await readAgentManifest(targetDir, promptAgent.id);
     effectiveMode = resolveEffectiveMode({

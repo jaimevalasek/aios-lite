@@ -26,6 +26,7 @@ This is the entry door to the English documentation. It is not an alphabetical i
 1. **[Full feature with mandatory @sheldon review](./3-recipes/full-feature-with-sheldon.md)** — `@product → @sheldon → @planner → @dev → @qa`
 2. [From idea to PRD via @briefing](./3-recipes/from-idea-to-prd-via-briefing.md) — when the idea is still vague
 3. [Continuity between sessions](./3-recipes/continuity-between-sessions.md) — feature dossier, dev-resume, drift detection
+4. [Visual exploration and multi-model arena](./3-recipes/visual-exploration-arena.md) — screenshot/code evidence, isolated variants, and Briefing promotion
 
 **By scenario** — translation pending; the canonical PT versions are listed for reference:
 - External plans for @product *(coming soon — [PT](../pt/3-receitas/plans-externos-para-product.md))*

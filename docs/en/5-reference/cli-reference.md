@@ -344,6 +344,29 @@ Run the relevant `review:prepare` flow only for agents listed in `affected_revie
 
 ---
 
+## Visual exploration commands
+
+These commands manage non-canonical design candidates under `.aioson/explorations/{slug}/`:
+
+| Command | Purpose |
+|---|---|
+| `exploration:init` | Create frozen task/intake scaffolding and choose single, sequential, or arena policy. |
+| `exploration:configure` | Change open exploration defaults; use it to grow `single` into `sequential` without overwriting the first run. |
+| `exploration:references` | Copy and fingerprint supplied screenshots/reference files. |
+| `exploration:intake` | Validate and persist the confirmed understanding and screenshot coverage. |
+| `exploration:scan` | Produce a bounded current-front-end source inventory (`none`, `targeted`, or `full`). |
+| `exploration:add-run` | Allocate one immutable variant for manual/native generation. |
+| `exploration:record` | Validate and record a completed or failed variant with exact model provenance. |
+| `exploration:run` | Run explicitly bound `host:model` variants through read-only external adapters. |
+| `exploration:validate` / `exploration:status` | Check intake, artifacts, and current structured state. |
+| `exploration:review` | Generate the blind/labeled browser comparison and feedback JSON. |
+| `exploration:select` | Apply exported feedback or select a completed variant. |
+| `exploration:promote` | Create a fingerprinted `plans/{briefing-slug}/visual-exploration.md` source pack. |
+
+See [Visual exploration and multi-model arena](../3-recipes/visual-exploration-arena.md) for the end-to-end flow. Selection is not Briefing approval.
+
+---
+
 ## workflow:next
 
 Advance the active workflow, complete the current stage, trigger a controlled detour, or skip ahead until `@dev`.
@@ -371,6 +394,8 @@ aioson workflow:next ./my-project --skip=dev
 ### workflow:execute --seed (full-feature autopilot)
 
 `aioson workflow:execute . --feature=<slug> --seed --tool=<tool>` seeds the agentic scheme (`.aioson/context/workflow-execute.json` with `agentic_policy.enabled: true`) without advancing a stage. Product, Sheldon, or Planner may seed the canonical chain described in [Autopilot handoff](./autopilot-handoff.md). Add `--step` to seed it disarmed. A stale `workflow.state.json` left by a closed/abandoned feature is discarded and reseeded automatically; a genuinely different active feature returns `different_active_feature`.
+
+New `agent-execution-{slug}.json` manifests use schema v2 and default to `orchestration.mode: autopilot`. `workflow:execute` uses `orchestration.max_checkpoints` (10 by default) rather than the legacy one-transition default. The mode also accepts `inherit` or `step_by_step`; create-once manifests are never rewritten by resume/reseed and explicit `--step` still wins.
 
 ---
 
@@ -543,6 +568,29 @@ aioson context:load --target=rule:authn-rules --agent=dev --batch="jwt-patterns,
 **Behavior:** creates a row in `execution_events` with `event_type='rule_loaded'` or `'brain_loaded'`. No filesystem validation — pure telemetry. Payload capped at 4KB; paths normalized to forward-slash cross-platform.
 
 See [Active Learning Loop — CLI reference](../active-learning-loop/cli-commands.md) for full details.
+
+---
+
+## Neural Chain impact queue
+
+Neural Chain stores causal follow-up work in `chain_work_items` inside `.aioson/runtime/aios.sqlite`. Files under `.aioson/context/noises/` are stable, human-readable projections; they are no longer the authoritative queue.
+
+```bash
+aioson chain:list . --feature=checkout --json
+aioson chain:claim . --id=NC-12 --agent=dev --json
+aioson chain:resolve . --id=NC-12 --agent=dev --token=<claim-token> \
+  --outcome=verified-no-change --evidence="target inspected; focused tests passed"
+aioson chain:release . --id=NC-12 --agent=dev --token=<claim-token>
+aioson chain:reconcile . --json
+```
+
+- `chain:list` lists actionable work; add `--include-resolved` for history.
+- `chain:claim` atomically leases one or more items so parallel DEV runs do not duplicate work. Expired leases reopen automatically.
+- `chain:resolve` requires a claim token and concrete evidence. Supported outcomes are `fixed`, `verified-no-change`, `false-positive`, and `obsolete`.
+- `chain:release` returns unfinished work to the queue.
+- `chain:reconcile` imports legacy timestamped noise files, applies manually checked projection items, releases expired claims, and regenerates projections.
+
+An item is evidence that a relationship should be inspected, not proof that its target needs an edit. Repeated false positives reduce confidence and eventually retire the relation. Weak one-off co-edit correlations are not materialized unless stronger test or repeated evidence exists.
 
 ---
 
@@ -945,7 +993,7 @@ aioson agent:execution:events . --feature=checkout --run=<run_id> --json
 
 The same resolver is used by `verification:plan`. Human-readable values such as `GPT 5.6 Terra` and short typos resolve to a local Codex slug only when the match is unique and numeric tokens agree. Ambiguous models, incompatible `reasoning_effort`, invalid catalogs, and unsafe paths fail closed.
 
-The manifest enables DEV and QA by default. Development lanes and Tester/Pentester/Validator are opt-in. See [Agent execution, development lanes, and model resolution](./agent-execution.md).
+The manifest enables DEV and QA by default. Development lanes and Tester/Pentester/Validator are opt-in. Schema v2 also carries `orchestration` and `chain_work_policy`; test/security work falls back to DEV unless the corresponding specialist is enabled. Existing v1 manifests remain valid. See [Agent execution, development lanes, and model resolution](./agent-execution.md).
 
 ---
 

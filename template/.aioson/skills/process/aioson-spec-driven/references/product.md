@@ -6,6 +6,7 @@
 - Complete `PROM-*` source coverage when the briefing contains a source promise map.
 - `product_scope: approved`, `prd_ready: approved`, and `sheldon_review: pending` in frontmatter.
 - No implementation design or plan.
+- Classification is derived after CAP/AC completion with `aioson classify . --feature={slug} --apply --json`; capability, acceptance, phase, module, and boundary breadth may raise a deceptively small base score. An explicit higher owner tier is a floor.
 
 Only `.aioson/briefings/{slug}/prototype.html` with an approved manifest owned by `{slug}` may be `current`. Another feature's prototype remains historical after closure. For genuinely nonvisual work, resolve a routine mismatch to `prototype: null` / `prototype_status: none`, name the exclusion in the PRD and chat, and inspect the repository instead of asking for confirmation.
 

@@ -40,6 +40,8 @@ test('reference-identity-extract skill is shipped, managed, and carries its cont
     'name: reference-identity-extract',
     'references/identity',
     'references/structure',
+    '.aioson/explorations/{slug}/identity.md',
+    'scope: exploration|briefing|brand',
     '## Component structure notes',
     'generated_by: reference-identity-extract',
     '--kind=identity',
@@ -93,10 +95,14 @@ test('prototype-forge consumes identity.md as the engine overlay', async () => {
   assert.equal(skill.includes('## Component structure notes'), true);
   assert.equal(skill.includes('overlays the one engine'), true);
   assert.equal(skill.includes('second visual system'), true);
+  assert.equal(skill.includes('visual-exploration'), true);
+  assert.equal(skill.includes('inputs/source-map.md'), true);
+  assert.equal(skill.includes('aioson:reusable-prompts'), true);
 });
 
 test('interface-design continuity reuses identity.md (not a parallel system)', async () => {
   const ref = await readTemplate('.aioson/skills/design/interface-design/references/intent-and-domain.md');
   assert.equal(ref.includes('identity.md'), true);
   assert.equal(ref.includes('extracted-from-references'), true);
+  assert.equal(ref.includes('.aioson/explorations/{slug}/identity.md'), true);
 });

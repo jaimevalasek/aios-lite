@@ -17,6 +17,8 @@ product → sheldon → planner → dev [optional declared execution lanes → D
 
 `--auto` enables Autopilot for the current direct/tracked activation even when the project default is off. `--step` disables it for the current activation and wins if both flags are present. Neither flag rewrites the persisted project/feature preference, and neither authorizes the human `feature:close`/publish gate.
 
+New `agent-execution-{slug}.json` manifests use schema v2 and add a developer-owned `orchestration` policy. New features default to `mode: autopilot`; `inherit` follows the activation/project scheme, and `step_by_step` forces that feature off. In effective Autopilot, `workflow:execute` derives its default checkpoint budget from `orchestration.max_checkpoints` instead of silently stopping after one transition. Existing v1 manifests remain valid and are never rewritten. A direct/persisted `--step` disarm still wins.
+
 Development lanes are nested inside DEV, not new workflow stages. DEV dispatches only lanes explicitly enabled in `agent-execution-{slug}.json`, one at a time in the shared worktree, and remains responsible for integration and full verification. If a requested host/model is unavailable, autopilot pauses. It may use another host only when that lane contains an applicable explicit fallback.
 
 QA is the single default reviewer. After its first pass, additional specialists run only when both enabled by the user/approved plan and triggered:
@@ -26,6 +28,8 @@ qa → tester/pentester → bounded specialist correction or one consolidated de
 ```
 
 `.aioson/context/agent-execution-{slug}.json` is the authority for development lanes, optional specialist enablement, host/model selection, fallbacks, and `cycle_limits`. Classification never enables a lane, Tester, Pentester, or Validator by itself.
+
+The same manifest owns Neural Chain work routing through `chain_work_policy`. `inspect`/`fix` default to DEV; `test` and `security` route to Tester/Pentester only when those specialists are explicitly enabled, otherwise they fall back to DEV. A v2 manifest blocks DEV completion while DEV-owned actionable items remain unresolved. QA receives read-only oversight and independently revalidates corrections.
 
 Tester and Pentester are allowed to implement a correction when their own contract proves it is deterministic, preserves approved behavior/contracts/data/architecture, fits the bounded path budget, and has targeted regression evidence. They persist the finding and `allowed_fix_paths` before editing. `review-cycle:advance` validates that scope and captures a Git baseline; `review-cycle:resolve` refuses the QA handoff when the changed paths exceed it. A direct pass over a disabled specialist requires explicit `--manual` and never mutates the developer-owned manifest. Cross-cutting changes go once to DEV. QA independently accepts or rejects every specialist-authored change; specialists never grant Gate D.
 
@@ -52,6 +56,7 @@ Stop immediately for:
 - a genuine product/security decision;
 - a failed gate or blocking QA finding;
 - cycle/budget limit;
+- an unresolved DEV-owned Neural Chain item when the feature manifest enables the handoff gate;
 - missing authority for an external/destructive action;
 - explicit step-by-step policy.
 

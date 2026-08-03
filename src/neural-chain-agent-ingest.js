@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * Neural Chain — agent_event ingest + per-session audit hook helper.
+ * Neural Chain — agent_event ingest + durable impact-queue hook helper.
  *
  * Slice 3 closes the second edge type ('agent_event'). Co-edit pairs come
  * from the `artifacts` list passed to `agent:done` (typically the files
@@ -27,6 +27,8 @@
 
 const path = require('node:path');
 const { writeNoiseFile } = require('./neural-chain-noise-file');
+const { reconcileNoiseState, syncNoiseProjection } = require('./neural-chain-noise-projection');
+const { upsertWorkItemsFromAudits } = require('./neural-chain-work-items');
 const {
   readChainConfig,
   DEFAULT_AUTONOMY_MODE,
@@ -73,10 +75,6 @@ function isTestFileFor(targetPath, sourcePath) {
  * follow-up. Documented in spec § "Decisões arquiteturais desta slice".
  */
 function classifyImpact({ impact, sourceFile, autonomyMode, threshold }) {
-  if (autonomyMode === 'guarded') {
-    return { marker: null, classification: 'noise' };
-  }
-
   const isTestPair = isTestFileFor(impact && impact.target_path, sourceFile);
   const isThresholdMatch =
     impact &&
@@ -86,15 +84,29 @@ function classifyImpact({ impact, sourceFile, autonomyMode, threshold }) {
     typeof impact.hit_count === 'number' &&
     impact.hit_count > 5;
 
+  const evidenceKind = isTestPair
+    ? 'test_pair'
+    : isThresholdMatch
+      ? 'repeated_relation'
+      : 'co_edit_history';
+
+  if (autonomyMode === 'guarded') {
+    return { marker: null, classification: 'noise', evidenceKind };
+  }
+
   if (isTestPair || isThresholdMatch) {
-    return { marker: 'AUTO-FIXABLE', classification: 'auto_fixable' };
+    return { marker: 'AUTO-FIXABLE', classification: 'auto_fixable', evidenceKind };
   }
 
   if (autonomyMode === 'autonomous') {
-    return { marker: 'AUTO-FIXABLE-BEST-EFFORT', classification: 'auto_fixable_best_effort' };
+    return {
+      marker: 'AUTO-FIXABLE-BEST-EFFORT',
+      classification: 'auto_fixable_best_effort',
+      evidenceKind
+    };
   }
 
-  return { marker: null, classification: 'noise' };
+  return { marker: null, classification: 'noise', evidenceKind };
 }
 
 function deriveSessionPairs(artifacts) {
@@ -239,6 +251,7 @@ function runChainHookOnAgentDone({
   artifacts,
   agentName = null,
   featureSlug = null,
+  originRunKey = null,
   targetDir = null,
   autonomyMode = null,
   chainAutoThreshold = null,
@@ -266,6 +279,14 @@ function runChainHookOnAgentDone({
   if (resolvedThreshold === null) resolvedThreshold = DEFAULT_CHAIN_AUTO_THRESHOLD;
 
   const safeArtifacts = Array.isArray(artifacts) ? artifacts.slice() : [];
+  let reconciliation = null;
+  if (targetDir) {
+    try {
+      reconciliation = reconcileNoiseState({ db, targetDir, now });
+    } catch (_) {
+      // Queue reconciliation is best-effort and must never block agent:done.
+    }
+  }
 
   let ingest;
   try {
@@ -299,7 +320,15 @@ function runChainHookOnAgentDone({
       // queries written against the v1.17.0 schema (will be removed v2).
       source_file: null
     });
-    return { ok: true, ingest, audits, ec_nc_05: true, noise_file: null, autonomy_mode: resolvedMode };
+    return {
+      ok: true,
+      ingest,
+      audits,
+      ec_nc_05: true,
+      noise_file: null,
+      autonomy_mode: resolvedMode,
+      reconciliation
+    };
   }
 
   // Pass 1 — collect impacts per source file AND classify each via
@@ -312,14 +341,14 @@ function runChainHookOnAgentDone({
     const durationMs = Date.now() - startedAt;
     const classified = Array.isArray(rawImpacts)
       ? rawImpacts.map((impact) => {
-          const { marker, classification } = classifyImpact({
+          const { marker, classification, evidenceKind } = classifyImpact({
             impact,
             sourceFile: file,
             autonomyMode: resolvedMode,
             threshold: resolvedThreshold
           });
           if (classification === 'auto_fixable') autoFixableCount += 1;
-          return { ...impact, marker, classification };
+          return { ...impact, marker, classification, evidence_kind: evidenceKind };
         })
       : [];
     audits.push({
@@ -331,25 +360,47 @@ function runChainHookOnAgentDone({
     });
   }
 
-  // BR-NC-06/03: noise file is written in `standard` and `autonomous` modes
-  // too (Slice 6) — items carry the `[AUTO-FIXABLE]` / `[AUTO-FIXABLE-BEST-EFFORT]`
-  // prefix when applicable. `guarded` mode still writes one noise file with
-  // unprefixed items (same as Slice 4). Skip the write only when there are
-  // zero impacts across all artifacts.
+  // Persist actionable impacts in the durable queue and publish one stable
+  // projection per feature. Correlations below the review threshold and
+  // targets already changed in this session are intentionally suppressed.
   let noiseFile = null;
+  let workItems = null;
   const hasAnyImpacts = audits.some((a) => a.impacts_found > 0);
   if (targetDir && hasAnyImpacts) {
     try {
-      const result = writeNoiseFile({
+      workItems = upsertWorkItemsFromAudits({
+        db,
         targetDir,
         featureSlug,
         audits,
+        artifacts: safeArtifacts,
+        originRunKey,
         autonomyMode: resolvedMode,
         now
       });
-      noiseFile = result.path;
+      const projection = syncNoiseProjection({
+        db,
+        targetDir,
+        featureSlug,
+        autonomyMode: resolvedMode,
+        now
+      });
+      noiseFile = projection.item_count > 0 ? projection.path : null;
     } catch (_) {
-      // BR-NC-11 best-effort: noise write must not block agent_done.
+      // Backward-compatible fallback: if the queue cannot be persisted, keep
+      // the original per-session Markdown handoff instead of losing impacts.
+      try {
+        const result = writeNoiseFile({
+          targetDir,
+          featureSlug,
+          audits,
+          autonomyMode: resolvedMode,
+          now
+        });
+        noiseFile = result.path;
+      } catch (_) {
+        // BR-NC-11 best-effort: noise write must not block agent_done.
+      }
     }
   }
 
@@ -384,7 +435,9 @@ function runChainHookOnAgentDone({
     noise_file: noiseFile,
     autonomy_mode: resolvedMode,
     chain_auto_threshold: resolvedThreshold,
-    auto_fixable_count: autoFixableCount
+    auto_fixable_count: autoFixableCount,
+    work_items: workItems,
+    reconciliation
   };
 }
 

@@ -34,7 +34,7 @@ base_unit: 4px
 ## Provenance
 ```
 
-Use `scope: briefing|brand`, brand slug `project`, source `references|intent`, confidence `high|medium|low`, and theme `light|dark|light-dark`.
+Use `scope: exploration|briefing|brand`, brand slug `project`, source `references|intent`, confidence `high|medium|low`, and theme `light|dark|light-dark`.
 
 Minimum content:
 

@@ -8,9 +8,10 @@ const path = require('node:path');
 const ROOT = path.resolve(__dirname, '..', 'template', '.aioson');
 
 test('Neo uses a compact read-only router with lazy operational modules', async () => {
-  const [kernel, legacy] = await Promise.all([
+  const [kernel, legacy, diagnostics] = await Promise.all([
     fs.readFile(path.join(ROOT, 'agents', 'neo.md'), 'utf8'),
-    fs.readFile(path.join(ROOT, 'docs', 'neo', 'legacy-routing-reference.md'), 'utf8')
+    fs.readFile(path.join(ROOT, 'docs', 'neo', 'legacy-routing-reference.md'), 'utf8'),
+    fs.readFile(path.join(ROOT, 'docs', 'neo', 'state-diagnostics.md'), 'utf8')
   ]);
 
   assert.equal(kernel.length < 12000, true, `Neo kernel is ${kernel.length} chars`);
@@ -23,7 +24,9 @@ test('Neo uses a compact read-only router with lazy operational modules', async 
   assert.match(kernel, /Never load every module/i);
   assert.match(kernel, /legacy-routing-reference\.md.*non-executable history/is);
   assert.match(kernel, /5 behavior files[\s\S]*8 total paths[\s\S]*2 existing modules[\s\S]*Simple Plan/i);
-  assert.match(kernel, /Neural Chain noises[\s\S]*pause all routing/i);
+  assert.match(kernel, /actionable Neural Chain items[\s\S]*recommend `@dev`[\s\S]*not a global pause/i);
+  assert.match(diagnostics, /authoritative state is `chain_work_items`/i);
+  assert.match(diagnostics, /claim items atomically/i);
   assert.match(kernel, /Current QA PASS is terminal/i);
   assert.match(kernel, /Do not write files|Never write files/i);
   assert.match(kernel, /does not persist a handoff/i);

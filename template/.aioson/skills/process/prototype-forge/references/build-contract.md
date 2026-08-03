@@ -11,6 +11,8 @@ triggers: [prototype forge execution, operational surface map approved]
 
 Produce one `prototype.html` under 2,000,000 bytes with inline CSS, JS, SVG, and optional data/blob images. Use hash routing. No network request, external script/style/font/service, iframe, module import, or CDN. It must work in the Play viewer's CSP and directly in a browser.
 
+In `canonical-briefing`, the artifact belongs to `.aioson/briefings/{slug}/`. In `visual-exploration`, it belongs only to the parent-assigned `.aioson/explorations/{slug}/runs/{variant}/`; never read a sibling variant under isolated policy.
+
 ## State and navigation
 
 - Seed realistic data for every Core object, enough to show populated and empty states.

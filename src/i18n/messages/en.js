@@ -51,6 +51,18 @@ module.exports = {
       'aioson context:load [path] --target=<rule|brain>:<slug> --agent=<name> [--batch="slug1,slug2"] [--feature=<slug>] [--classification=<MICRO|SMALL|MEDIUM>] [--verbose] [--json] [--locale=en]',
     help_chain_audit:
       'aioson chain:audit <file> [path] [--limit=N] [--feature=<slug>] [--json] [--locale=en]',
+    help_exploration:
+      'aioson exploration:<init|configure|references|intake|scan|add-run|record|validate|status|review|select|promote|run> [path] --slug=<slug> [options] [--json]',
+    help_chain_list:
+      'aioson chain:list [path] [--feature=<slug>] [--agent=dev] [--status=<open,claimed>] [--include-resolved] [--limit=N] [--json] [--locale=en]',
+    help_chain_claim:
+      'aioson chain:claim [path] --agent=<agent> [--id=NC-N] [--feature=<slug>] [--limit=N] [--lease-minutes=N] [--json] [--locale=en]',
+    help_chain_resolve:
+      'aioson chain:resolve [path] --id=NC-N --agent=<agent> --token=<token> --outcome=<fixed|verified-no-change|false-positive|obsolete> --evidence=<text> [--json] [--locale=en]',
+    help_chain_release:
+      'aioson chain:release [path] --id=NC-N --agent=<agent> --token=<token> [--json] [--locale=en]',
+    help_chain_reconcile:
+      'aioson chain:reconcile [path] [--json] [--locale=en]',
     chain_audit: {
       file_required: 'chain:audit requires a file path. Usage: aioson chain:audit <file> [--limit=N] [--feature=<slug>] [--json]',
       runtime_unavailable: 'chain:audit runtime db unavailable: {error}',

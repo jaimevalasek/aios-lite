@@ -78,6 +78,8 @@ test('fresh feature starts at Product', async () => {
   const result = await next(root);
   assert.equal(result.agent, 'product');
   assert.deepEqual(result.completed, []);
+  assert.match(result.prompt, /Generated context retrieval — planning/);
+  assert.match(result.prompt, /define the active feature PRD and current-system fit for feature demo/);
 });
 
 test('workflow activation applies direct --auto and --step overrides', async () => {

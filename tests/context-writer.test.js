@@ -76,6 +76,22 @@ test('renderProjectContext writes required frontmatter fields', () => {
   assert.equal(markdown.includes('Search: Meilisearch'), true);
   assert.equal(markdown.includes('- Example note'), true);
   assert.equal(markdown.includes('classification: "MICRO"'), true);
+  assert.equal(markdown.includes('auto_handoff: true'), true);
+});
+
+test('renderProjectContext allows an explicit step-by-step project default', () => {
+  const markdown = renderProjectContext({
+    projectName: 'manual',
+    projectType: 'script',
+    profile: 'developer',
+    framework: 'Node.js',
+    frameworkInstalled: true,
+    classification: 'SMALL',
+    conversationLanguage: 'en',
+    autoHandoff: false,
+    aiosonVersion: '1.44.0'
+  });
+  assert.match(markdown, /auto_handoff: false/);
 });
 
 test('writeProjectContext persists file on disk', async () => {

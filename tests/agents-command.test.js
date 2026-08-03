@@ -396,6 +396,36 @@ test('agent:prompt rejects pentester app_target without feature and scope', asyn
   );
 });
 
+test('agent:prompt injects a planning context package for a concrete direct task', async () => {
+  const dir = await makeTempDir();
+  await writeProjectContext(dir, 'SMALL');
+  await fs.mkdir(path.join(dir, '.aioson/rules'), { recursive: true });
+  await fs.writeFile(path.join(dir, '.aioson/rules/genome-evidence.md'), [
+    '---',
+    'name: genome-evidence',
+    'description: Evidence requirements for persona genomes.',
+    'agents: [genome]',
+    'modes: [planning]',
+    'triggers: [persona genome, evidence]',
+    '---',
+    '# Genome evidence',
+    '- Preserve source identifiers.'
+  ].join('\n'), 'utf8');
+  const { t } = createTranslator('en');
+  const logger = createCollectLogger();
+
+  const result = await runAgentPrompt({
+    args: ['genome', dir],
+    options: { tool: 'codex', task: 'create a persona genome with evidence' },
+    logger,
+    t
+  });
+
+  assert.match(result.prompt, /Generated context retrieval — planning/);
+  assert.match(result.prompt, /\.aioson\/rules\/genome-evidence\.md/);
+  assert.match(result.prompt, /rerun `context:brief --mode=executing/);
+});
+
 test('agent:prompt Tester names only the canonical test report artifact', async () => {
   const dir = await makeTempDir();
   await writeProjectContext(dir, 'SMALL');

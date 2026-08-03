@@ -213,7 +213,8 @@ async function scanStaleDevState(ctxDir, featureRegistry) {
 async function scanPendingChainNoises(ctxDir) {
   const noisesDir = path.join(ctxDir, 'noises');
   const entries = await fs.readdir(noisesDir, { withFileTypes: true }).catch(() => []);
-  const items = [];
+  const pending = [];
+  const staleResolved = [];
 
   for (const entry of entries) {
     if (!entry.isFile() || !entry.name.endsWith('.md')) continue;
@@ -222,7 +223,7 @@ async function scanPendingChainNoises(ctxDir) {
     try {
       noise = readNoiseFileAndRecompute({ path: fullPath });
     } catch (err) {
-      items.push({
+      pending.push({
         path: `.aioson/context/noises/${entry.name}`,
         slug: entry.name.replace(/\.md$/i, ''),
         pending_count: 0,
@@ -235,10 +236,21 @@ async function scanPendingChainNoises(ctxDir) {
       });
       continue;
     }
-    if (!noise.exists || noise.pendingCount === 0) continue;
+    if (!noise.exists) continue;
+    if (noise.pendingCount === 0) {
+      staleResolved.push({
+        path: `.aioson/context/noises/${entry.name}`,
+        slug: String((noise.frontmatter && noise.frontmatter.slug) || entry.name.replace(/\.md$/i, '')),
+        resolved_count: noise.resolvedCount,
+        total_count: noise.items.length,
+        reason: 'neural chain file has no pending items but remains on disk',
+        suggested_command: 'aioson chain:reconcile .'
+      });
+      continue;
+    }
 
     const frontmatter = noise.frontmatter || {};
-    items.push({
+    pending.push({
       path: `.aioson/context/noises/${entry.name}`,
       slug: String(frontmatter.slug || entry.name.replace(/-\d{8}-\d{4}\.md$/i, '').replace(/\.md$/i, '')),
       pending_count: noise.pendingCount,
@@ -258,7 +270,7 @@ async function scanPendingChainNoises(ctxDir) {
     });
   }
 
-  return items;
+  return { pending, staleResolved };
 }
 
 async function scanStaleRuntimeSessions(targetDir, olderThan = '24h') {
@@ -429,7 +441,7 @@ async function runHygieneScan({ args = [], options = {}, logger }) {
   const doneFeaturesPendingArchive = await scanDoneFeaturesPendingArchive(targetDir);
   const pendingArchiveSlugs = new Set(doneFeaturesPendingArchive.map((item) => item.slug));
   const staleStateFiles = await scanStaleDevState(ctxDir, featureRegistry);
-  const pendingChainNoises = await scanPendingChainNoises(ctxDir);
+  const chainNoises = await scanPendingChainNoises(ctxDir);
   const staleRuntimeSessions = await scanStaleRuntimeSessions(
     targetDir,
     options['older-than'] || options.olderThan || '24h'
@@ -439,7 +451,8 @@ async function runHygieneScan({ args = [], options = {}, logger }) {
   );
 
   const buckets = {
-    pending_chain_noises: pendingChainNoises,
+    pending_chain_noises: chainNoises.pending,
+    stale_resolved_chain_noises: chainNoises.staleResolved,
     stale_runtime_sessions: staleRuntimeSessions,
     duplicate_feature_rows: featureRegistryResult.duplicates,
     done_features_pending_archive: doneFeaturesPendingArchive,

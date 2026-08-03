@@ -88,7 +88,13 @@ Set `sheldon_review: approved` only when:
 
 Each row uses one stable `AC-*`, cites one or more declared `CAP-*`, describes externally observable behavior, and says how QA can prove it. Do not use “works”, “integrated”, “done”, or test count as evidence.
 
-After all PRD edits, set `sheldon_review: approved`, then run:
+After all PRD edits, re-evaluate feature depth before sealing it:
+
+```bash
+aioson classify . --feature={slug} --apply --json
+```
+
+The classifier may raise the tier from scope evidence added during review; it never lowers an explicit higher owner decision. Then set `sheldon_review: approved` and run:
 
 ```bash
 aioson review:prepare . --agent=sheldon --feature={slug} --artifact=.aioson/context/prd-{slug}.md --json

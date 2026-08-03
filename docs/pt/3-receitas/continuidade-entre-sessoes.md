@@ -231,6 +231,14 @@ Além do dossier, o `@dev` mantém `.aioson/context/dev-state.md` — um snapsho
 
 ---
 
+## Memória operacional entre agentes
+
+Antes do handoff ou fechamento, o DEV também pode receber uma fila de impactos do Neural Chain no contexto de ativação. Essa é a memória operacional entre sessões de implementação: mudança de origem, alvo suspeito, confiança, responsável, status, lease e evidência de resolução ficam no SQLite. DEV ou Deyvin faz claim de cada item `NC-*` antes de inspecionar e registra tanto uma correção quanto uma conclusão fundamentada de que nenhuma mudança era necessária ou de que a correlação era falso positivo.
+
+O Markdown em `.aioson/context/noises/{feature}.md` é somente uma projeção humana e desaparece quando não há trabalho acionável. Ele complementa o dossier: o dossier preserva intenção e progresso da feature; o Neural Chain preserva trabalho causal descoberto pelas relações entre arquivos.
+
+---
+
 ## O que acontece quando a feature é fechada
 
 Quando você roda `aioson feature:close --slug=checkout-stripe`, o dossier é movido para `.aioson/context/done/`. O feature archive guarda:

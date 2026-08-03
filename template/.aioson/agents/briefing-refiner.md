@@ -20,7 +20,9 @@ Read in this order:
 2. `.aioson/context/project.context.md`
 3. `.aioson/briefings/config.md`
 
-Resolve one slug, then read `.aioson/briefings/{slug}/briefings.md`. A briefing is refinable only when `status: draft`, or when `status: approved` and `prd_generated: null`. If none exists, route to `@briefing`; if several exist without a named slug, list them and stop for selection. Never refine a briefing with `prd_generated` set.
+Resolve one slug, then read `.aioson/briefings/{slug}/briefings.md`. A briefing is refinable only when `status: draft`, or when `status: approved` and `prd_generated: null`. If several exist without a named slug, list them and stop for selection. Never refine a briefing with `prd_generated` set.
+
+If no refinable briefing exists and the request is visual, exploratory, screenshot-led, a redesign, or a model comparison, load `.aioson/docs/briefing/visual-exploration.md` and run its entry decision instead of silently routing away. If the request is non-visual framing, route to `@briefing`. An exploration is non-canonical and never substitutes for a Briefing.
 
 Read every `plans/{slug}/` file listed by the briefing's `### Source Inventory`, verify its recorded SHA-256, and check that every material source promise has one stable `PROM-*`. A changed/missing source or silently dropped promise is blocking.
 
@@ -30,6 +32,7 @@ Never load every module. Select exactly what the current state needs:
 
 | State | Load |
 |---|---|
+| No refinable briefing plus visual/exploration intent | `.aioson/docs/briefing/visual-exploration.md` |
 | No pending feedback: audit and generate review | `.aioson/docs/briefing/refinement-loop.md` |
 | Pending `refinement-feedback.json`: incorporate, dry-run, confirm, apply/decline | `.aioson/docs/briefing/refinement-loop.md` |
 | Confirmed applied feedback: report downstream authority | `.aioson/docs/briefing/review-authority.md` |
@@ -50,7 +53,7 @@ aioson context:select . --agent=briefing-refiner --mode=planning --task="<refine
 
 Search hits are routing hints, not permission to bulk-load. When current-system fit matters, inspect the nearest implementation, tests, manifest, and production entry point. Put observed behavior and exact paths in the finding; do not ask the user to restate repository facts.
 
-## Bounded state machine
+## Bounded briefing state machine
 
 Choose one transition from filesystem state:
 
@@ -103,12 +106,15 @@ Review generation writes `refinement-findings.json`, `review.html`, `refinement-
 
 Confirmed application updates `briefings.md`, `refinement-report.md`, registry metadata, and round archives. Optional prototype work may add `identity.md`, `delegation-task.md`, `prototype.html`, and `prototype-manifest.md`. Exact schemas and archive names live in the selected module.
 
+Visual exploration writes only under `.aioson/explorations/{exploration-slug}/`. After human selection, `exploration:promote` may prepare `plans/{briefing-slug}/visual-exploration.md`; `@briefing` must still create the canonical briefing before this agent consolidates a feature-owned prototype.
+
 ## Review intelligence checkpoint
 
 For concrete `{slug}`, after the updated briefing audit and before handoff, load `.aioson/skills/process/review-intelligence/SKILL.md` plus only `references/framing.md` when available. Run `aioson review:prepare . --agent=briefing-refiner --feature={slug} --artifact=.aioson/briefings/{slug}/briefings.md --json`; independently complete at most two passes from its template, write `draft_path`, then run `aioson review:check . --agent=briefing-refiner --feature={slug} --report=<draft_path> --json`. Exit `0` continues, `1` feeds the existing refinement loop, and `2` must be corrected/re-prepared — never suppress it. If the skill or command is unavailable, review manually with the same bound and preserve browser/feedback/handoff behavior; missing review infrastructure is non-gating.
 
 ## Handoff
 
+- From exploration, give the comparison path and preserve every run report. Selection may hand off through `exploration:promote` to `@briefing`; never call the selection approved.
 - After review generation, give the exact `review.html` path, require a real browser, explain autosave, and accept feedback through Save to file, Download JSON, or Copy JSON into chat.
 - After an apply with blockers, point to the next generated review instead of modifying the briefing by hand.
 - When clean, tell the user to run `aioson briefing:approve . --slug={slug}`, then activate `@product`.

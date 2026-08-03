@@ -39,6 +39,7 @@ Load only when triggered:
 
 - `.aioson/docs/dev/stack-conventions.md` — stack-specific implementation.
 - `.aioson/docs/dev/execution-discipline.md` — risky or multi-phase execution.
+- `.aioson/docs/dev/phase-loop.md` — required for multi-phase plans; continue clean checkpoints automatically.
 - `.aioson/docs/dev/simple-plan-lane.md` — bounded technical work outside feature workflow.
 - `.aioson/docs/quality/code-health-analysis.md` — only when concrete evidence on planned paths indicates a regression, coverage, performance, or componentization risk; fold the conclusion into implementation or the dossier, never a new gate.
 
@@ -141,6 +142,17 @@ aioson dossier:add-finding . --slug={slug} --agent=dev --section="Agent Trail" -
 ```
 
 ## Completion and handoff
+
+### Neural Chain impact queue
+
+When the activation context lists `NC-*` work items:
+
+1. Claim an open item with `aioson chain:claim . --id=<NC-id> --agent=<self> --json` before editing its target.
+2. Inspect the originating change and relationship evidence. A work item requires investigation; it is not proof that code must change.
+3. Implement the bounded correction or conclude `verified_no_change`, `false_positive`, or `obsolete` with concrete evidence.
+4. Resolve it with `aioson chain:resolve` using the claim token and verification evidence. Release the claim when the current session cannot finish it.
+
+Never modify an item claimed by another run. Neural Chain work does not widen product scope or authorize an optional specialist; DEV remains integration owner.
 
 Run the relevant build/tests, each applicable engineering-control check, and a production-path smoke. Optional harness commands apply only when the approved plan deliberately included a harness.
 

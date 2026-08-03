@@ -1,6 +1,6 @@
 'use strict';
 const fs=require('node:fs/promises');const path=require('node:path');const crypto=require('node:crypto');
-const adapters={claude:require('./adapters/claude'),codex:require('./adapters/codex'),opencode:require('./adapters/opencode'),kimi:require('./adapters/kimi')};
+const adapters={claude:require('./adapters/claude'),codex:require('./adapters/codex'),opencode:require('./adapters/opencode'),kimi:require('./adapters/kimi'),qwen:require('./adapters/qwen')};
 const {assertFeatureSlug,loadManifest,resolveExecutionEntry,resolveExecutionTarget}=require('./manifest');
 const {safeReportPath,validateReport}=require('./reports');
 const {createTelemetryBridge}=require('./telemetry-bridge');

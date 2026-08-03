@@ -18,6 +18,13 @@ const { runContextBrief } = require('./commands/context-brief');
 const { runRulesLint } = require('./commands/rules-lint');
 const { runContextLoad } = require('./commands/context-load');
 const { runChainAudit } = require('./commands/chain-audit');
+const {
+  runChainClaim,
+  runChainList,
+  runChainReconcile,
+  runChainRelease,
+  runChainResolve
+} = require('./commands/chain-work');
 const { runMemorySearch } = require('./commands/memory-search');
 const { runMemoryArchive } = require('./commands/memory-archive');
 const { runMemoryRestore } = require('./commands/memory-restore');
@@ -243,6 +250,21 @@ const { runSquadPublish, runSquadInstall, runSquadGrant, runSquadList } = requir
 const { runSystemPackage, runSystemPublish, runSystemList, runSystemInstall } = require('./commands/store-system');
 const { runBriefingApprove, runBriefingUnapprove, runBriefingReview, runBriefingApplyFeedback } = require('./commands/briefing');
 const { runBriefingMigrateLineage } = require('./commands/briefing-migrate-lineage');
+const {
+  runExplorationAddRun,
+  runExplorationConfigure,
+  runExplorationInit,
+  runExplorationIntake,
+  runExplorationPromote,
+  runExplorationRecord,
+  runExplorationReferences,
+  runExplorationReview,
+  runExplorationRun,
+  runExplorationScan,
+  runExplorationSelect,
+  runExplorationStatus,
+  runExplorationValidate
+} = require('./commands/exploration');
 const { runCompressAgents } = require('./commands/compress-agents');
 
 const JSON_SUPPORTED_COMMANDS = new Set([
@@ -283,6 +305,16 @@ const JSON_SUPPORTED_COMMANDS = new Set([
   'context-load',
   'chain:audit',
   'chain-audit',
+  'chain:list',
+  'chain-list',
+  'chain:claim',
+  'chain-claim',
+  'chain:resolve',
+  'chain-resolve',
+  'chain:release',
+  'chain-release',
+  'chain:reconcile',
+  'chain-reconcile',
   'test:smoke',
   'test-smoke',
   'test:agents',
@@ -361,6 +393,32 @@ const JSON_SUPPORTED_COMMANDS = new Set([
   'briefing-apply-feedback',
   'briefing:migrate-lineage',
   'briefing-migrate-lineage',
+  'exploration:init',
+  'exploration-init',
+  'exploration:configure',
+  'exploration-configure',
+  'exploration:references',
+  'exploration-references',
+  'exploration:intake',
+  'exploration-intake',
+  'exploration:scan',
+  'exploration-scan',
+  'exploration:add-run',
+  'exploration-add-run',
+  'exploration:record',
+  'exploration-record',
+  'exploration:validate',
+  'exploration-validate',
+  'exploration:status',
+  'exploration-status',
+  'exploration:review',
+  'exploration-review',
+  'exploration:select',
+  'exploration-select',
+  'exploration:promote',
+  'exploration-promote',
+  'exploration:run',
+  'exploration-run',
   'review:feature',
   'review-feature',
   'review:prepare',
@@ -932,6 +990,7 @@ function printHelp(t, logger) {
   logHelpLine(t, logger, 'cli.help_briefing_review');
   logHelpLine(t, logger, 'cli.help_briefing_apply_feedback');
   logHelpLine(t, logger, 'cli.help_briefing_migrate_lineage');
+  logHelpLine(t, logger, 'cli.help_exploration');
   logHelpLine(t, logger, 'cli.help_context_validate');
   logHelpLine(t, logger, 'cli.help_context_pack');
   logHelpLine(t, logger, 'cli.help_context_search');
@@ -939,6 +998,12 @@ function printHelp(t, logger) {
   logHelpLine(t, logger, 'cli.help_context_brief');
   logHelpLine(t, logger, 'cli.help_context_guard');
   logHelpLine(t, logger, 'cli.help_context_load');
+  logHelpLine(t, logger, 'cli.help_chain_audit');
+  logHelpLine(t, logger, 'cli.help_chain_list');
+  logHelpLine(t, logger, 'cli.help_chain_claim');
+  logHelpLine(t, logger, 'cli.help_chain_resolve');
+  logHelpLine(t, logger, 'cli.help_chain_release');
+  logHelpLine(t, logger, 'cli.help_chain_reconcile');
   logHelpLine(t, logger, 'cli.help_memory_status');
   logHelpLine(t, logger, 'cli.help_memory_summary');
   logHelpLine(t, logger, 'cli.help_memory_search');
@@ -1264,6 +1329,16 @@ async function main() {
       result = await runContextLoad({ args, options, logger: commandLogger, t });
     } else if (command === 'chain:audit' || command === 'chain-audit') {
       result = await runChainAudit({ args, options, logger: commandLogger, t });
+    } else if (command === 'chain:list' || command === 'chain-list') {
+      result = await runChainList({ args, options, logger: commandLogger, t });
+    } else if (command === 'chain:claim' || command === 'chain-claim') {
+      result = await runChainClaim({ args, options, logger: commandLogger, t });
+    } else if (command === 'chain:resolve' || command === 'chain-resolve') {
+      result = await runChainResolve({ args, options, logger: commandLogger, t });
+    } else if (command === 'chain:release' || command === 'chain-release') {
+      result = await runChainRelease({ args, options, logger: commandLogger, t });
+    } else if (command === 'chain:reconcile' || command === 'chain-reconcile') {
+      result = await runChainReconcile({ args, options, logger: commandLogger, t });
     } else if (command === 'setup:context' || command === 'setup-context') {
       result = await runSetupContext({ args, options, logger: commandLogger, t });
     } else if (command === 'locale:apply' || command === 'locale-apply') {
@@ -1891,6 +1966,32 @@ async function main() {
       result = await runBriefingApplyFeedback({ args, options, logger: commandLogger });
     } else if (command === 'briefing:migrate-lineage' || command === 'briefing-migrate-lineage') {
       result = await runBriefingMigrateLineage({ args, options, logger: commandLogger, t });
+    } else if (command === 'exploration:init' || command === 'exploration-init') {
+      result = await runExplorationInit({ args, options, logger: commandLogger });
+    } else if (command === 'exploration:configure' || command === 'exploration-configure') {
+      result = await runExplorationConfigure({ args, options, logger: commandLogger });
+    } else if (command === 'exploration:references' || command === 'exploration-references') {
+      result = await runExplorationReferences({ args, options, logger: commandLogger });
+    } else if (command === 'exploration:intake' || command === 'exploration-intake') {
+      result = await runExplorationIntake({ args, options, logger: commandLogger });
+    } else if (command === 'exploration:scan' || command === 'exploration-scan') {
+      result = await runExplorationScan({ args, options, logger: commandLogger });
+    } else if (command === 'exploration:add-run' || command === 'exploration-add-run') {
+      result = await runExplorationAddRun({ args, options, logger: commandLogger });
+    } else if (command === 'exploration:record' || command === 'exploration-record') {
+      result = await runExplorationRecord({ args, options, logger: commandLogger });
+    } else if (command === 'exploration:validate' || command === 'exploration-validate') {
+      result = await runExplorationValidate({ args, options, logger: commandLogger });
+    } else if (command === 'exploration:status' || command === 'exploration-status') {
+      result = await runExplorationStatus({ args, options, logger: commandLogger });
+    } else if (command === 'exploration:review' || command === 'exploration-review') {
+      result = await runExplorationReview({ args, options, logger: commandLogger });
+    } else if (command === 'exploration:select' || command === 'exploration-select') {
+      result = await runExplorationSelect({ args, options, logger: commandLogger });
+    } else if (command === 'exploration:promote' || command === 'exploration-promote') {
+      result = await runExplorationPromote({ args, options, logger: commandLogger });
+    } else if (command === 'exploration:run' || command === 'exploration-run') {
+      result = await runExplorationRun({ args, options, logger: commandLogger });
     } else {
       const message = t('cli.unknown_command', { command });
       if (jsonMode) {

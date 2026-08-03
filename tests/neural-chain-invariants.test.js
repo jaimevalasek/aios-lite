@@ -31,8 +31,12 @@ const NEURAL_CHAIN_SRC_FILES = [
   'src/neural-chain-git-ingest.js',
   'src/neural-chain-agent-ingest.js',
   'src/neural-chain-noise-file.js',
+  'src/neural-chain-noise-projection.js',
+  'src/neural-chain-work-items.js',
+  'src/neural-chain-activation.js',
   'src/neural-chain-config.js',
-  'src/commands/chain-audit.js'
+  'src/commands/chain-audit.js',
+  'src/commands/chain-work.js'
 ];
 
 // fs APIs that mutate the filesystem (writes, deletes, renames, perms).
@@ -65,22 +69,30 @@ async function makeTempProject() {
 
 // ─── A.1 BR-NC-04 — Audit never modifies user files ──────────────────────
 
-test('A.1 BR-NC-04 (static) — only neural-chain-noise-file.js contains fs write calls', () => {
+test('A.1 BR-NC-04 (static) — only noise lifecycle modules contain fs write calls', () => {
   const repoRoot = path.join(__dirname, '..');
-  // The single allowed write surface — noise file lifecycle ops on
+  // The allowed write surfaces are noise lifecycle ops on
   // `.aioson/context/noises/*.md`. Any other neural-chain source file
   // introducing fs mutation needs explicit @architect review.
-  const ALLOWED_FILE = 'src/neural-chain-noise-file.js';
-  const ALLOWED_CALLS = ['fs.unlinkSync', 'fs.writeFileSync'];
+  const ALLOWED_CALLS = new Map([
+    ['src/neural-chain-noise-file.js', ['fs.unlinkSync', 'fs.writeFileSync']],
+    ['src/neural-chain-noise-projection.js', [
+      'fs.renameSync',
+      'fs.unlinkSync',
+      'fs.unlinkSync',
+      'fs.unlinkSync',
+      'fs.writeFileSync'
+    ]]
+  ]);
 
   for (const rel of NEURAL_CHAIN_SRC_FILES) {
     const source = fs.readFileSync(path.join(repoRoot, rel), 'utf8');
     const calls = [...source.matchAll(FS_MUTATE_RE)].map((m) => m[0]).sort();
-    if (rel === ALLOWED_FILE) {
+    if (ALLOWED_CALLS.has(rel)) {
       assert.deepEqual(
         calls,
-        ALLOWED_CALLS,
-        `${rel} mutates fs with unexpected calls. Expected only ${JSON.stringify(ALLOWED_CALLS)}, got ${JSON.stringify(calls)}. ` +
+        ALLOWED_CALLS.get(rel),
+        `${rel} mutates fs with unexpected calls. Expected only ${JSON.stringify(ALLOWED_CALLS.get(rel))}, got ${JSON.stringify(calls)}. ` +
         `Audit/ingest code must NOT introduce new filesystem mutations outside the noise file lifecycle.`
       );
     } else {
@@ -88,7 +100,7 @@ test('A.1 BR-NC-04 (static) — only neural-chain-noise-file.js contains fs writ
         calls.length,
         0,
         `BR-NC-04 violation: ${rel} contains fs mutation call(s) ${JSON.stringify(calls)}. ` +
-        `Audit code must NEVER modify user files; only noise-file.js writes to .aioson/context/noises/.`
+        `Audit code must NEVER modify user files; only noise lifecycle modules write to .aioson/context/noises/.`
       );
     }
   }
@@ -352,6 +364,10 @@ test('SF-NC-01 fix — newline in target_path is dropped from noise file body', 
       INSERT INTO chain_edges (source_path, target_path, edge_type, confidence, start_at, last_seen_at, hit_count)
       VALUES (?, ?, ?, ?, ?, ?, ?)
     `).run('src/foo.js', malicious, 'agent_event', 0.3, '2026-05-22T00:00:00Z', '2026-05-22T00:00:00Z', 2);
+    db.prepare(`
+      INSERT INTO chain_edges (source_path, target_path, edge_type, confidence, start_at, last_seen_at, hit_count)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `).run('src/foo.js', 'src/dep.js', 'agent_event', 0.8, '2026-05-22T00:00:00Z', '2026-05-22T00:00:00Z', 8);
 
     const r = runChainHookOnAgentDone({
       db,
@@ -361,7 +377,7 @@ test('SF-NC-01 fix — newline in target_path is dropped from noise file body', 
       featureSlug: 'neural-chain',
       now: new Date('2026-05-22T14:30:00Z')
     });
-    assert.ok(r.noise_file, 'noise file written (bar.js↔foo.js ingest produces clean impacts)');
+    assert.ok(r.noise_file, 'projection written for the separate clean impact');
 
     const body = fs.readFileSync(r.noise_file, 'utf8');
     // The forged AUTO-FIXABLE line MUST NOT appear in the body.

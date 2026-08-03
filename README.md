@@ -730,7 +730,8 @@ aioson workflow:plan [path] [--classification=MICRO|SMALL|MEDIUM] [--json]
 aioson workflow:next [path] [--complete] [--auto-heal] [--force] [--scope-mode=post-dev|post-fix|final] [--verification-policy=advisory|standard|strict]
 aioson workflow:heal [path] --stage=<agent>
 aioson workflow:harden [path] [--dry-run]
-aioson workflow:execute [path] [--dry-run] [--start-from=<agent>]
+aioson workflow:execute [path] --feature=<slug> [--dry-run] [--start-from=<agent>] [--agentic] [--max-checkpoints=<n>] [--step]
+aioson classify [path] --feature=<slug> [--apply] [--interactive] [--json]
 aioson intake:ask [path] --agent=<agent> --schema=<questions.json> [--out=<answers.json>] [--json]
 aioson agent:execution:init [path] --feature=<slug> --host=<host>
 aioson agent:execution:validate [path] --feature=<slug> [--json]
@@ -1005,6 +1006,7 @@ aioson scan:project --json
 - [Refatoração grande](docs/pt/3-receitas/refatoracao-grande.md)
 - [Auditoria de segurança](docs/pt/3-receitas/auditoria-seguranca.md)
 - [Clonar design de site](docs/pt/3-receitas/clonar-design-de-site.md)
+- [Exploração visual e arena entre modelos](docs/pt/3-receitas/arena-de-exploracao-visual.md)
 - [Publicar no AIOSON Store](docs/pt/3-receitas/publicar-no-aioson-com.md)
 
 *Agentes*

@@ -36,6 +36,13 @@ function lintRule(relPath, frontmatter) {
     );
   }
 
+  if (hasValue(frontmatter.priority)) {
+    const priority = Number(frontmatter.priority);
+    if (!Number.isInteger(priority) || priority < 0 || priority > 100) {
+      warnings.push('invalid priority: expected an integer from 0 to 100');
+    }
+  }
+
   return {
     path: relPath,
     name: String(frontmatter.name || path.basename(relPath, '.md')),
@@ -73,7 +80,7 @@ async function runRulesLint({ args, options = {}, logger }) {
   const targetDir = path.resolve(process.cwd(), args[0] || '.');
   const relDir = '.aioson/rules';
 
-  const files = await collectMarkdownFiles(path.join(targetDir, '.aioson', 'rules'), relDir, false);
+  const files = await collectMarkdownFiles(path.join(targetDir, '.aioson', 'rules'), relDir, true);
   if (options.docs) {
     files.push(...await collectMarkdownFiles(path.join(targetDir, '.aioson', 'docs'), '.aioson/docs', true));
   }

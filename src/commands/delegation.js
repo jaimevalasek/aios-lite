@@ -6,6 +6,7 @@ const { redact } = require('../agent-execution/adapters/base');
 
 const DEFAULT_TIMEOUT = 600000;
 const DEFAULT_MAX_OUTPUT = 256 * 1024;
+const ABSOLUTE_MAX_OUTPUT = 4 * 1024 * 1024;
 
 function boundedInteger(value, fallback, min, max) {
   const parsed = Number(value);
@@ -59,7 +60,9 @@ async function runDelegationRun({ args, options = {}, logger, catalogLoader, ada
   const adapters = adapterRegistry || {
     claude: require('../agent-execution/adapters/claude'),
     codex: require('../agent-execution/adapters/codex'),
-    opencode: require('../agent-execution/adapters/opencode')
+    opencode: require('../agent-execution/adapters/opencode'),
+    kimi: require('../agent-execution/adapters/kimi'),
+    qwen: require('../agent-execution/adapters/qwen')
   };
   const adapter = adapters[result.provider];
   if (!adapter) return { ok: false, reason: 'unsupported_provider', provider: result.provider };
@@ -68,7 +71,7 @@ async function runDelegationRun({ args, options = {}, logger, catalogLoader, ada
   }
 
   const timeout = boundedInteger(options.timeout, DEFAULT_TIMEOUT, 1000, 30 * 60 * 1000);
-  const maxOutput = boundedInteger(options['max-output'], DEFAULT_MAX_OUTPUT, 1024, 1024 * 1024);
+  const maxOutput = boundedInteger(options['max-output'], DEFAULT_MAX_OUTPUT, 1024, ABSOLUTE_MAX_OUTPUT);
   let stdout = '';
   let stderr = '';
   let outputExceeded = false;
@@ -119,6 +122,7 @@ async function runDelegationRun({ args, options = {}, logger, catalogLoader, ada
 }
 
 module.exports = {
+  ABSOLUTE_MAX_OUTPUT,
   DEFAULT_MAX_OUTPUT,
   DEFAULT_TIMEOUT,
   boundedInteger,

@@ -9,7 +9,8 @@
 
 const fs = require('node:fs/promises');
 const path = require('node:path');
-const { initManifest, loadManifest } = require('../agent-execution/manifest');
+const { defaults: executionDefaults, initManifest, loadManifest, resolveOrchestrationPolicy } = require('../agent-execution/manifest');
+const { resolveAutopilotSignal } = require('../autopilot-signal');
 const {
   detectClassification,
   scanArtifacts,
@@ -227,6 +228,16 @@ function formatAgenticPolicyLines(policy) {
     `Review loop: owning specialist self-corrects, cross-cutting findings -> dev, final qa; legacy tester max ${policy.review_cycle.max_tester_correction_cycles}; pentester max ${policy.review_cycle.max_pentester_correction_cycles}; close=${policy.review_cycle.feature_close}`,
     `Parallel lanes: ${policy.lanes.enabled ? 'enabled for independent write scopes' : 'disabled for this classification'}`
   ];
+}
+
+function deriveRunnerStopReason({ suggestion, transitionCount, maxCheckpoints, seedOnly = false, step = false }) {
+  if (step) return 'step_by_step';
+  if (seedOnly) return 'scheme_seeded';
+  if (suggestion && suggestion.action === 'workflow_complete') return 'workflow_complete';
+  if (suggestion && suggestion.action === 'continue_stage') return 'stage_execution_required';
+  if (transitionCount >= maxCheckpoints) return 'checkpoint_limit';
+  if (suggestion && suggestion.action) return `awaiting_${suggestion.action}`;
+  return 'no_actionable_transition';
 }
 
 function findNextFromSequence(sequence, completed, skipped = []) {
@@ -636,7 +647,8 @@ async function writeExecutionCheckpoint(targetDir, payload) {
       effective_mode: payload.checkpoint.effective_mode || null,
       handoff_to: payload.checkpoint.handoff && payload.checkpoint.handoff.next_agent
         ? String(payload.checkpoint.handoff.next_agent).replace(/^@/, '')
-        : null
+        : null,
+      stop_reason: payload.stopReason || null
     });
   }
   const nextPayload = {
@@ -655,6 +667,8 @@ async function writeExecutionCheckpoint(targetDir, payload) {
     suggestion: payload.suggestion || null,
     resume_command: payload.resumeCommand || null,
     agentic_policy: payload.agenticPolicy || null,
+    autopilot_signal: payload.autopilotSignal || null,
+    stop_reason: payload.stopReason || null,
     history
   };
   await writeJson(execPath, nextPayload);
@@ -795,10 +809,11 @@ async function runWorkflowExecute({ args, options = {}, logger }) {
   const seedOnly = Boolean(options.seed || options['seed-only'] || options.step);
   const startFrom = options['start-from'] ? String(options['start-from']).trim() : null;
   const skipOptional = Boolean(options['skip-optional']);
-  const parsedMaxCheckpoints = Number.parseInt(String(options['max-checkpoints'] || '1'), 10);
-  const maxCheckpoints = Number.isInteger(parsedMaxCheckpoints) && parsedMaxCheckpoints > 0
+  const hasExplicitMaxCheckpoints = Object.hasOwn(options, 'max-checkpoints');
+  const parsedMaxCheckpoints = Number.parseInt(String(options['max-checkpoints'] || ''), 10);
+  let maxCheckpoints = hasExplicitMaxCheckpoints && Number.isInteger(parsedMaxCheckpoints) && parsedMaxCheckpoints > 0
     ? parsedMaxCheckpoints
-    : 1;
+    : null;
   const parsedLane = options.lane !== undefined ? Number(options.lane) : null;
   const laneIndex = Number.isInteger(parsedLane) && parsedLane > 0 ? parsedLane : null;
   const t = (key, payload) => payload?.agent || payload?.stage || key;
@@ -850,8 +865,32 @@ async function runWorkflowExecute({ args, options = {}, logger }) {
     if (!options.json) logger.error(`Invalid agent execution manifest: ${agentExecution.path}`);
     return failure;
   }
+  const effectiveExecutionManifest = agentExecution.exists && agentExecution.ok
+    ? agentExecution.manifest
+    : executionDefaults(slug, tool);
+  const orchestrationPolicy = resolveOrchestrationPolicy(effectiveExecutionManifest);
+  let autopilotSignal = await resolveAutopilotSignal(targetDir, {
+    slug,
+    auto: options.auto === true || isAgenticRequested(options),
+    step: options.step === true
+  });
+  // Dry-run does not create the manifest, but its preview must match the v2
+  // manifest that a real run would create. Direct --step remains the highest
+  // precedence boundary.
+  if (!agentExecution.exists && !autopilotSignal.enabled && options.step !== true && orchestrationPolicy.mode === 'autopilot') {
+    autopilotSignal = { enabled: true, source: 'agent_execution_default' };
+  }
+  if (!agenticPolicy && autopilotSignal.enabled) {
+    agenticPolicy = buildAgenticPolicy({ agentic: true }, classification);
+    agenticPolicy.source = autopilotSignal.source || 'effective_autopilot';
+  }
   if (agentExecution.exists && agentExecution.ok) {
     agenticPolicy = applyManifestLimitsToPolicy(agenticPolicy, agentExecution.manifest);
+  }
+  if (maxCheckpoints === null) {
+    maxCheckpoints = seedOnly || !autopilotSignal.enabled
+      ? 1
+      : orchestrationPolicy.max_checkpoints;
   }
 
   if (parallelGuard && !parallelGuard.ok && !parallelGuard.skipped) {
@@ -945,6 +984,8 @@ async function runWorkflowExecute({ args, options = {}, logger }) {
       suggestion: statusSnapshot && statusSnapshot.suggestion ? statusSnapshot.suggestion : null,
       resume_command: resumeCommand,
       agentic_policy: agenticPolicy,
+      autopilot_signal: autopilotSignal,
+      orchestration_policy: orchestrationPolicy,
       agent_execution: agentExecution.exists ? { path: agentExecution.path, digest: agentExecution.digest } : { source: 'legacy' },
       parallel_guard: parallelGuard
     };
@@ -986,6 +1027,13 @@ async function runWorkflowExecute({ args, options = {}, logger }) {
     const handoff = await readHandoff(targetDir);
     const handoffProtocol = await readHandoffProtocol(targetDir);
     const nextStage = seeded.state ? (seeded.state.current || seeded.state.next || null) : null;
+    const stopReason = deriveRunnerStopReason({
+      suggestion: statusSnapshot && statusSnapshot.suggestion,
+      transitionCount: 0,
+      maxCheckpoints,
+      seedOnly: true,
+      step: options.step === true
+    });
     const executionState = await writeExecutionCheckpoint(targetDir, {
       feature: slug,
       classification,
@@ -997,7 +1045,9 @@ async function runWorkflowExecute({ args, options = {}, logger }) {
       statusSnapshot,
       suggestion: statusSnapshot && statusSnapshot.suggestion ? statusSnapshot.suggestion : null,
       resumeCommand,
-      agenticPolicy
+      agenticPolicy,
+      autopilotSignal,
+      stopReason
     });
 
     const result = {
@@ -1017,6 +1067,9 @@ async function runWorkflowExecute({ args, options = {}, logger }) {
       suggestion: statusSnapshot && statusSnapshot.suggestion ? statusSnapshot.suggestion : null,
       resume_command: resumeCommand,
       agentic_policy: agenticPolicy,
+      autopilot_signal: autopilotSignal,
+      orchestration_policy: orchestrationPolicy,
+      stop_reason: stopReason,
       agent_execution: { path: agentExecution.path, digest: agentExecution.digest },
       parallel_guard: parallelGuard
     };
@@ -1031,6 +1084,7 @@ async function runWorkflowExecute({ args, options = {}, logger }) {
         ? 'enabled — interactive agents run the chain to feature:close (human gate)'
         : 'disabled'}`
     );
+    logger.log(`Stop reason: ${stopReason}`);
     for (const line of formatAgenticPolicyLines(agenticPolicy)) logger.log(line);
     logger.log('');
     return result;
@@ -1105,6 +1159,11 @@ async function runWorkflowExecute({ args, options = {}, logger }) {
   const handoff = await readHandoff(targetDir);
   const handoffProtocol = await readHandoffProtocol(targetDir);
   const refreshedStatus = currentStatus || await readStatusSnapshot(targetDir, tool, t);
+  const stopReason = deriveRunnerStopReason({
+    suggestion: refreshedStatus && refreshedStatus.suggestion,
+    transitionCount: executionTransitions.length,
+    maxCheckpoints
+  });
   const executionState = await writeExecutionCheckpoint(targetDir, {
     feature: slug,
     classification,
@@ -1116,7 +1175,9 @@ async function runWorkflowExecute({ args, options = {}, logger }) {
     statusSnapshot: refreshedStatus,
     suggestion: refreshedStatus && refreshedStatus.suggestion ? refreshedStatus.suggestion : null,
     resumeCommand,
-    agenticPolicy
+    agenticPolicy,
+    autopilotSignal,
+    stopReason
   });
 
   const result = {
@@ -1135,6 +1196,9 @@ async function runWorkflowExecute({ args, options = {}, logger }) {
     suggestion: refreshedStatus && refreshedStatus.suggestion ? refreshedStatus.suggestion : null,
     resume_command: resumeCommand,
     agentic_policy: agenticPolicy,
+    autopilot_signal: autopilotSignal,
+    orchestration_policy: orchestrationPolicy,
+    stop_reason: stopReason,
     transitions: executionTransitions,
     active_stage: activation && activation.agent ? activation.agent : null,
     next_stage: activation && activation.next ? activation.next : null,
@@ -1148,6 +1212,7 @@ async function runWorkflowExecute({ args, options = {}, logger }) {
     logger.log(`Workflow checkpoint stored at ${EXECUTION_STATE_RELATIVE_PATH}`);
     logger.log(`Feature: ${slug}`);
     logger.log(`Resumed: ${seeded.resumed ? 'yes' : 'no'}`);
+    logger.log(`Stop reason: ${stopReason}`);
   }
 
   return result;
@@ -1157,6 +1222,7 @@ module.exports = {
   EXECUTION_STATE_RELATIVE_PATH,
   buildAgenticPolicy,
   buildExecutionPlan,
+  deriveRunnerStopReason,
   quoteCliArg,
   seedFeatureWorkflowState,
   runWorkflowExecute

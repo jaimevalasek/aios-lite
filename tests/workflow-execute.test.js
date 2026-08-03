@@ -62,6 +62,8 @@ test('workflow:execute: dry-run returns plan without executing', async () => {
   assert.equal(typeof result.resume_command, 'string');
   assert.ok(result.status_snapshot);
   assert.ok(result.suggestion);
+  assert.deepEqual(result.autopilot_signal, { enabled: true, source: 'agent_execution_default' });
+  assert.equal(result.max_checkpoints, 10);
 });
 
 test('workflow:execute --seed: writes the scheme with an enabled agentic_policy and does NOT advance stages', async () => {
@@ -135,6 +137,26 @@ test('workflow:execute --seed: is idempotent (re-seeding the same slug resumes, 
   assert.equal(first.ok, true);
   assert.equal(second.ok, true);
   assert.equal(second.resumed, true);
+});
+
+test('workflow:execute: effective project Autopilot derives the default checkpoint budget instead of one', async () => {
+  const tmpDir = await makeTmpDir();
+  await writeFile(
+    tmpDir,
+    '.aioson/context/project.context.md',
+    '---\nclassification: SMALL\nauto_handoff: true\n---\n# ctx\n'
+  );
+  const result = await runWorkflowExecute({
+    args: [tmpDir],
+    options: { json: true, feature: 'autopilot-default', 'dry-run': true },
+    logger: makeLogger()
+  });
+  assert.equal(result.ok, true);
+  assert.equal(result.autopilot_signal.enabled, true);
+  assert.equal(result.autopilot_signal.source, 'frontmatter');
+  assert.equal(result.max_checkpoints, 10);
+  assert.equal(result.orchestration_policy.max_checkpoints, 10);
+  assert.match(result.resume_command, /--max-checkpoints='10'/);
 });
 
 test('workflow:execute --seed: explicit cycle options initialize the execution manifest, including zero', async () => {

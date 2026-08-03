@@ -149,6 +149,48 @@ test('context:brief gives sheldon PRD enrichment criteria without implementation
   }
 });
 
+test('context:brief retrieves an agent/mode-scoped form normalization rule at execution time', async () => {
+  const dir = await makeTmpDir();
+  try {
+    await writeLaravelProject(dir);
+    await writeFile(dir, '.aioson/rules/forms/input-normalization.md', [
+      '---',
+      'name: input-normalization',
+      'description: Validate and normalize registration form fields including email, CPF, CNPJ and phone masks.',
+      'agents: [dev, qa, tester]',
+      'modes: [executing]',
+      'task_types: [form, input-validation]',
+      'triggers: [formulario, cadastro, email, cpf, cnpj, telefone, mascara, validacao]',
+      'paths: [resources/**, tests/**]',
+      '---',
+      '# Input normalization',
+      '- Validate CPF and CNPJ server-side after removing presentation masks.',
+      '- Apply phone masks without persisting punctuation.'
+    ].join('\n'));
+
+    const result = await buildContextBrief(dir, {
+      agent: 'dev',
+      mode: 'executing',
+      task: 'implementar formulario de cadastro com CPF e telefone',
+      paths: 'resources/js/components/CustomerForm.vue'
+    });
+
+    assert.ok(result.must_load.some((item) => item.path === '.aioson/rules/forms/input-normalization.md'));
+    const planning = await buildContextBrief(dir, {
+      agent: 'dev',
+      mode: 'planning',
+      task: 'implementar formulario de cadastro com CPF e telefone'
+    });
+    assert.equal(
+      planning.must_load.some((item) => item.path === '.aioson/rules/forms/input-normalization.md'),
+      false,
+      'mode remains an absolute eligibility filter'
+    );
+  } finally {
+    await fs.rm(dir, { recursive: true, force: true });
+  }
+});
+
 test('context:brief gives Product and Planner repository-fit roles without pretending Markdown is code evidence', async () => {
   const dir = await makeTmpDir();
   try {
@@ -382,4 +424,27 @@ test('classifyLoads caps must_load at 14 and should_load at 10', () => {
   assert.equal(should_load.length, 10, 'should_load is capped at 10');
   assert.equal(must_load[0].path, 'r0.md', 'highest-scored mandatory rule is kept first');
   assert.equal(must_load.some((item) => item.path === 'r14.md'), false, 'overflow rules are dropped');
+});
+
+test('classifyLoads never drops always or hard-routed mandatory rules at the nominal cap', () => {
+  const profile = { mustSurfaces: new Set(['rules']), shouldSurfaces: new Set(['docs']) };
+  const selected = [];
+  for (let i = 0; i < 16; i++) {
+    selected.push({
+      path: `hard${i}.md`,
+      surface: 'rules',
+      load_tier: i === 15 ? 'always' : 'trigger',
+      score: 100 - i,
+      reason: i === 15 ? 'load_tier:always' : `triggers:signal-${i}`
+    });
+  }
+  for (let i = 0; i < 10; i++) {
+    selected.push({ path: `soft${i}.md`, surface: 'rules', load_tier: 'trigger', score: 50 - i, reason: 'semantic:soft' });
+  }
+
+  const { must_load } = classifyLoads({ selected }, profile);
+
+  assert.equal(must_load.length, 16, 'all deterministic matches survive even beyond the nominal cap');
+  assert.ok(must_load.some((item) => item.path === 'hard15.md'));
+  assert.equal(must_load.some((item) => item.path === 'soft0.md'), false);
 });

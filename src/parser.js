@@ -18,6 +18,7 @@ const BOOLEAN_FLAGS = new Set([
   // Documented switches shared by command-specific help entries.
   'advanced', 'defaults', 'finish', 'headed', 'html',
   'include-archived', 'include-external', 'keep', 'no-backup',
+  'include-resolved',
   'no-recall', 'no-semantic', 'paid', 'private', 'remote',
   'sensitive', 'skip-audit', 'snapshots-only', 'staged-only',
   'strict-env', 'verbose', 'with-infra', 'with-llm', 'write',

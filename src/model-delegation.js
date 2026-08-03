@@ -6,9 +6,9 @@ const { loadModelCatalog } = require('./agent-execution/model-catalog');
 const { resolveModel, validateReasoningEffort } = require('./agent-execution/model-resolver');
 const { isInsideRoot, resolveInsideRoot, validateFeatureSlug } = require('./verification/path-policy');
 
-const HOSTS = ['claude', 'codex', 'opencode'];
+const HOSTS = ['claude', 'codex', 'opencode', 'kimi', 'qwen'];
 const MODES = ['auto', 'native', 'external'];
-const TASK_KINDS = ['research', 'image-research', 'critique', 'verification', 'general'];
+const TASK_KINDS = ['research', 'image-research', 'critique', 'verification', 'general', 'visual-prototype'];
 const MAX_TASK_BYTES = 128 * 1024;
 const SAFE_MODEL_LITERAL = /^[A-Za-z0-9][A-Za-z0-9._:/-]{0,199}$/;
 const SAFE_TOOL = /^[a-z][a-z0-9_-]{0,49}$/;
@@ -48,7 +48,8 @@ function parseTools(value, kind = 'general') {
     'image-research': ['web-search', 'image-search', 'web-fetch'],
     critique: ['read'],
     verification: ['read'],
-    general: ['read']
+    general: ['read'],
+    'visual-prototype': ['read']
   };
   const raw = Array.isArray(value) ? value : String(value || '').split(',');
   const selected = raw.map(item => String(item || '').trim().toLowerCase()).filter(Boolean);

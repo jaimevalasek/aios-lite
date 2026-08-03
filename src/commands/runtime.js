@@ -1261,7 +1261,8 @@ async function runAgentDone({ args, options = {}, logger, t }) {
           targetDir,
           artifacts: artifactPaths,
           agentName: normalizedAgent,
-          featureSlug: options.feature ? String(options.feature).trim() : null
+          featureSlug: options.feature ? String(options.feature).trim() : null,
+          originRunKey: session.runKey
         });
       } catch { /* ignore — never blocks agent_done */ }
 
@@ -1335,7 +1336,8 @@ async function runAgentDone({ args, options = {}, logger, t }) {
         targetDir,
         artifacts: artifactPaths,
         agentName: normalizedAgent,
-        featureSlug: options.feature ? String(options.feature).trim() : null
+        featureSlug: options.feature ? String(options.feature).trim() : null,
+        originRunKey: runKey
       });
     } catch { /* ignore — never blocks agent_done */ }
 

@@ -4,6 +4,32 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.45.0] - 2026-08-03
+
+### Added
+- **Visual exploration arena** — Briefing Refiner can create one-off or multi-model design studies under `.aioson/explorations/`, with isolated variants, provenance manifests, comparable review pages, reusable final reports, and an explicit promotion path into the canonical briefing lifecycle.
+- **Qwen and Kimi design lanes** — named-model delegation can resolve additional model families for parallel visual benchmarks while preserving model/provider provenance and fail-closed execution boundaries.
+- **Neural Chain operational impact queue** — causal follow-up work now persists in SQLite with stable IDs, evidence, DEV ownership, atomic leases, bounded activation context, and explicit list/claim/resolve/release/reconcile commands.
+- **Agent execution v2** — feature manifests now declare Autopilot orchestration, bounded stop conditions, and owner-aware Neural Chain work policy while legacy v1 manifests remain valid.
+
+### Changed
+- Briefing Refiner now distinguishes an approved feature prototype from a reversible exploration, asks for the intended mode when no briefing exists, assesses screenshot sufficiency, and can inspect the current frontend when authorized before producing a redesign.
+- Timestamped noise files are migrated into one stable human-readable projection per feature. Weak one-off co-edit correlations and targets already changed in the same session are suppressed, while test relationships and stronger repeated signals remain actionable.
+- New projects and v2 feature manifests use Autopilot by default, multi-phase DEV checkpoints continue without manual approval, and explicit `--step` remains the highest-priority override.
+- Feature classification now applies evidence-based scope floors from capabilities, acceptance criteria, phases, modules, and runtime boundaries; `classify --apply` safely persists an upward correction such as MICRO → MEDIUM.
+
+### Fixed
+- Production dependency resolution now pins `brace-expansion` 5.0.9, clearing the high-severity denial-of-service advisory reported by the release audit.
+- Workflow routing is bound to the current request before active-feature continuation can take over, preventing unrelated work from being silently attached to stale workflow state.
+- Visual studies reject ambiguous or insufficient evidence, unsafe paths, incomplete model output, and accidental mutation of canonical briefings until an option is explicitly approved.
+- Parallel arena workers tolerate bounded transient Windows file contention while preserving atomic manifest writes.
+- Resolved noises no longer remain indefinitely: reconciliation imports legacy files, honors manually checked items, releases expired claims, deletes empty projections, and feeds resolution outcomes back into future confidence.
+- Actionable Neural Chain work can no longer be silently left behind at the DEV handoff; enabled Tester/Pentester owners receive bounded items and QA retains read-only oversight.
+
+### Validation
+- Full regression: 4,067 passing tests, zero failures, and one skip; syntax checks cover 492 JavaScript files.
+- Full release readiness passes with zero production vulnerabilities, 25/25 operational smoke checks, a 1,296-file package with local-module closure, and an isolated install whose `doctor` passes and configures five MCP servers.
+
 ## [1.44.0] - 2026-07-27
 
 ### Added

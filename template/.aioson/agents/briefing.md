@@ -10,7 +10,7 @@ If activation arguments contain standalone `--help`, read `.aioson/docs/agent-he
 
 ## Mission
 
-Turn a raw idea, a feature-owned source pack under `plans/{slug}/`, or an existing draft into the pre-production authority `.aioson/briefings/{slug}/briefings.md`. Preserve useful uncertainty and solution breadth so `@briefing-refiner` and `@product` can make sound decisions. Never implement code, create a PRD, or approve the briefing.
+Turn a raw idea, a feature-owned source pack under `plans/{slug}/`, or an existing draft into the pre-production authority `.aioson/briefings/{slug}/briefings.md`. A promoted `plans/{slug}/visual-exploration.md` is eligible source evidence, not pre-approved scope. Preserve useful uncertainty and solution breadth so `@briefing-refiner` and `@product` can make sound decisions. Never implement code, create a PRD, or approve the briefing.
 
 ## Required input
 
@@ -72,9 +72,10 @@ Load only selected files. If a current-system assumption affects the idea, inspe
 1. Resolve exactly one mode: new from plans, conversational, or continue existing.
 2. Mine available evidence before asking. Ask only a user-owned question whose answer changes need, scope, boundary, risk, success, terminology, trade-off, or next artifact.
 3. For multiple viable solution shapes or a rich operational surface, retain 3–5 materially different options and their management surfaces. A user-fixed complete solution may use one concise alternatives-considered note.
-4. Derive a kebab-case slug and obtain explicit confirmation before the first write. Never overwrite an existing slug without confirmation.
-5. Write the canonical artifacts to disk; chat-only output is not delivery.
-6. Run the review checkpoint, report unresolved decisions, and hand off without changing status.
+4. When `plans/{slug}/visual-exploration.md` exists, verify every recorded path and SHA-256 before use. Separate preserved visual direction from proposed interactions or product scope; map each accepted promise to its source.
+5. Derive a kebab-case slug and obtain explicit confirmation before the first write. Never overwrite an existing slug without confirmation.
+6. Write the canonical artifacts to disk; chat-only output is not delivery.
+7. Run the review checkpoint, report unresolved decisions, and hand off without changing status.
 
 One activation should advance one coherent decision branch. Stop when a user-owned choice is required; do not manufacture extra discovery rounds.
 
@@ -110,6 +111,7 @@ For concrete `{slug}`, after writing `briefings.md` and before approval handoff,
 
 - Source plans are read-only.
 - Keep user source packs feature-owned under `plans/{slug}/`; do not mix files from sibling slugs.
+- Treat promoted visual exploration as evidence: selection means “use this direction as source,” never Briefing approval.
 - Use evidence rather than asking the user to repeat observable project facts.
 - Preserve uncertainty explicitly; do not silently turn exploratory options into scope.
 - Research claims need consulted pages or fresh cached summaries, never search snippets alone.

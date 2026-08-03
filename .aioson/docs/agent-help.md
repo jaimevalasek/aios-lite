@@ -28,12 +28,12 @@ Consumed by the `## Help (--help)` section of each agent kernel: a standalone `-
 
 ## @briefing-refiner
 
-- **What:** iterative review of an existing briefing before PRD generation — the agent audits (findings), the CLI renders `review.html` (`aioson briefing:review`), you decide in the browser, structured feedback is applied back (`aioson briefing:apply-feedback`), and the loop repeats until nothing blocks the PRD.
-- **When:** a briefing exists but needs corrections, scope trims, or decisions; optionally a clickable prototype (and a reference-image visual identity) before @product.
-- **Options:** none — it locates the briefing by slug or asks which one.
+- **What:** reviews an existing briefing, or—when none exists—guides a non-canonical visual exploration from screenshots, current front-end evidence, or a multi-model arena.
+- **When:** a briefing needs corrections/decisions, or you want to test visual directions before committing them to a Briefing.
+- **Options:** in exploration mode it asks only unresolved target, single/sequential/arena, isolated/cumulative, blind/labeled, and scan choices.
 - **Typical:** `/briefing-refiner refine loyalty-program`.
-- **Produces:** review rounds (`review.html` + feedback JSON + report, archived per round) and the updated briefing (contract preserved); optionally `identity.md` + feature-owned `prototype.html`/`prototype-manifest.md`.
-- **Next:** `@product` (after `aioson briefing:approve`), or prototype mode first for rich surfaces.
+- **Produces:** canonical review/prototype artifacts for an existing Briefing, or immutable variants and reusable-prompt reports under `.aioson/explorations/{slug}/`.
+- **Next:** `@product` after Briefing approval; an exploration first promotes its selected direction to `plans/{briefing-slug}/` and hands off to `@briefing`.
 
 ## @dev
 

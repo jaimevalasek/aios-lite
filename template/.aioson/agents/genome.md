@@ -24,6 +24,14 @@ Create, improve, validate, migrate, or apply evidence-bounded Genome artifacts w
 aioson context:search . --query="<genome operation and target>" --agent=genome --mode=planning --paths="<target paths>" --json 2>/dev/null || true
 ```
 
+Then run the strict rule/document gate:
+
+```bash
+aioson context:brief . --agent=genome --mode=planning --task="<genome operation and target>" --paths="<known target paths>" --json 2>/dev/null || true
+```
+
+Load every `must_load` result and apply its constraints. Before creating or changing a Genome, rerun `context:brief --mode=executing` with the exact output paths; new project rules are effective on that next retrieval without agent or project restart.
+
 ## Operation router
 
 Choose the route before loading details. Never load every module “for completeness”.

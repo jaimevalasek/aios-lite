@@ -14,7 +14,8 @@
 
 const path = require('node:path');
 const readline = require('node:readline');
-const { readFileSafe, contextDir } = require('../preflight-engine');
+const fs = require('node:fs/promises');
+const { readFileSafe, contextDir, parseFrontmatter } = require('../preflight-engine');
 const {
   foldDiacritics,
   detectRichSurfaces,
@@ -149,6 +150,114 @@ function applySensitiveFloor(classification) {
   return classification === 'MICRO' ? 'SMALL' : classification;
 }
 
+const CLASSIFICATION_RANK = { MICRO: 0, SMALL: 1, MEDIUM: 2 };
+
+function applyClassificationFloor(classification, floor) {
+  const current = CLASSIFICATION_RANK[classification] ?? 0;
+  const required = CLASSIFICATION_RANK[floor] ?? 0;
+  return required > current ? floor : classification;
+}
+
+function uniqueMatches(content, pattern) {
+  const values = new Set();
+  let match;
+  pattern.lastIndex = 0;
+  while ((match = pattern.exec(content)) !== null) values.add(String(match[1] || match[0]).toLowerCase());
+  return values;
+}
+
+function countFeaturePaths(content) {
+  const paths = uniqueMatches(content, /`((?:\.?[a-z0-9_-]+[\\/])+[a-z0-9_.{}*\/-]+|[a-z0-9_-]+\.(?:js|ts|tsx|jsx|json|md|rs|go|py|rb|php|java|kt|cs|sql|html|css))`/gi);
+  const modules = new Set();
+  for (const value of paths) {
+    const parts = value.replace(/\\/g, '/').replace(/^\.\//, '').split('/').filter(Boolean);
+    if (parts.length >= 3) modules.add(`${parts[0]}/${parts[1]}`);
+    else if (parts.length >= 1) modules.add(parts[0]);
+  }
+  return { pathCount: paths.size, moduleCount: modules.size };
+}
+
+const FEATURE_BOUNDARY_PATTERNS = [
+  ['persistence', /\b(database|sqlite|postgres|mysql|migration|schema|persist\w*|banco de dados|migracao|persistencia)\b/i],
+  ['service_contract', /\b(api|endpoint|http|webhook|ipc|rpc|command contract|contrato de comando)\b/i],
+  ['process_runtime', /\b(worker|child process|external process|background job|queue|fila|processo externo|processo em background)\b/i],
+  ['orchestration', /\b(workflow|state machine|autopilot|orchestrat\w*|handoff|pipeline|maquina de estados|orquestra\w*)\b/i],
+  ['filesystem', /\b(filesystem|file system|directory|artifact|manifest|sistema de arquivos|diretorio|arquivo gerado)\b/i],
+  ['client_runtime', /\b(tauri|electron|desktop|native window|webview|frontend|backend|janela nativa)\b/i],
+  ['realtime', /\b(websocket|streaming|event stream|real[- ]?time|tempo real)\b/i]
+];
+
+function analyzeFeatureScope(content) {
+  const normalized = foldDiacritics(content);
+  const capabilityCount = uniqueMatches(content, /\b(CAP-[A-Z0-9][A-Z0-9-]*)\b/gi).size;
+  const acceptanceIds = uniqueMatches(content, /\b(AC-[A-Z0-9][A-Z0-9-]*)\b/gi).size;
+  const checkboxes = (content.match(/^[-*]\s+\[[ xX]\]/gm) || []).length;
+  const acceptanceCount = Math.max(acceptanceIds, checkboxes);
+  const phases = uniqueMatches(
+    content,
+    /(?:^|\b)(?:phase|fase|stage|etapa|sprint|iteration|iteracao)\s*[:#-]?\s*(\d+)\b/gim
+  );
+  const { pathCount, moduleCount } = countFeaturePaths(content);
+  const boundaries = FEATURE_BOUNDARY_PATTERNS
+    .filter(([, pattern]) => pattern.test(normalized))
+    .map(([name]) => name);
+
+  let floor = 'MICRO';
+  const reasons = [];
+  const requireMedium = [
+    [capabilityCount >= 4, `${capabilityCount} independently traceable capabilities`],
+    [acceptanceCount >= 10 && capabilityCount >= 2, `${acceptanceCount} acceptance criteria across ${capabilityCount} capabilities`],
+    [phases.size >= 3, `${phases.size} delivery phases`],
+    [boundaries.length >= 3 && (capabilityCount >= 2 || acceptanceCount >= 6 || moduleCount >= 4), `${boundaries.length} runtime boundaries`],
+    [moduleCount >= 5 && (capabilityCount >= 2 || acceptanceCount >= 6), `${moduleCount} affected modules`]
+  ];
+  for (const [matched, reason] of requireMedium) {
+    if (matched) {
+      floor = 'MEDIUM';
+      reasons.push(reason);
+    }
+  }
+
+  if (floor !== 'MEDIUM') {
+    const requireSmall = [
+      [capabilityCount >= 2, `${capabilityCount} independently traceable capabilities`],
+      [acceptanceCount >= 5, `${acceptanceCount} acceptance criteria`],
+      [phases.size >= 2, `${phases.size} delivery phases`],
+      [boundaries.length >= 2, `${boundaries.length} runtime boundaries`],
+      [moduleCount >= 3, `${moduleCount} affected modules`]
+    ];
+    for (const [matched, reason] of requireSmall) {
+      if (matched) {
+        floor = 'SMALL';
+        reasons.push(reason);
+      }
+    }
+  }
+
+  return {
+    floor,
+    reasons,
+    metrics: {
+      capabilities: capabilityCount,
+      acceptance_criteria: acceptanceCount,
+      phases: phases.size,
+      paths: pathCount,
+      modules: moduleCount,
+      boundaries
+    }
+  };
+}
+
+function setDeclaredClassification(content, classification) {
+  const frontmatter = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+  if (!frontmatter) return `---\nclassification: ${classification}\n---\n${content}`;
+  const body = frontmatter[1];
+  const nextBody = /^classification\s*:/mi.test(body)
+    ? body.replace(/^classification\s*:.*$/mi, `classification: ${classification}`)
+    : `${body}\nclassification: ${classification}`;
+  return content.replace(frontmatter[0], `---\n${nextBody}\n---`);
+}
+
 function analyzeContent(content) {
   // Count unique user types
   const userTypeSet = new Set();
@@ -219,6 +328,8 @@ async function runClassify({ args, options = {}, logger }) {
   let userTypeCount, integrationCount, complexityLevel;
   let sourceFile = null;
   let content = null;
+  let scopeContent = null;
+  const scopeSourceFiles = [];
 
   if (interactive) {
     ({ userTypeCount, integrationCount, complexityLevel } = await runInteractive(logger));
@@ -235,7 +346,11 @@ async function runClassify({ args, options = {}, logger }) {
 
     for (const candidate of candidates) {
       content = await readFileSafe(candidate);
-      if (content) { sourceFile = path.relative(targetDir, candidate); break; }
+      if (content) {
+        sourceFile = path.relative(targetDir, candidate);
+        scopeSourceFiles.push(sourceFile);
+        break;
+      }
     }
 
     if (!content) {
@@ -245,6 +360,15 @@ async function runClassify({ args, options = {}, logger }) {
     }
 
     ({ userTypeCount, integrationCount, complexityLevel } = analyzeContent(content));
+    scopeContent = content;
+    if (slug) {
+      const planPath = path.join(dir, `implementation-plan-${slug}.md`);
+      const planContent = await readFileSafe(planPath);
+      if (planContent) {
+        scopeContent += `\n\n${planContent}`;
+        scopeSourceFiles.push(path.relative(targetDir, planPath));
+      }
+    }
   }
 
   const utScore = scoreUserTypes(userTypeCount);
@@ -252,16 +376,38 @@ async function runClassify({ args, options = {}, logger }) {
   const cxScore = scoreComplexity(complexityLevel);
   const totalScore = utScore + intScore + cxScore;
   let classification = scoreToClassification(totalScore);
+  const scoredClassification = classification;
+  const featureScope = analyzeFeatureScope(scopeContent || content || '');
+  const declaredRaw = content ? String(parseFrontmatter(content).classification || '').toUpperCase() : '';
+  const declaredClassification = Object.hasOwn(CLASSIFICATION_RANK, declaredRaw) ? declaredRaw : null;
+  const floorReasons = [];
+  let floored = false;
+
+  const scopeRaised = applyClassificationFloor(classification, featureScope.floor);
+  if (scopeRaised !== classification) {
+    classification = scopeRaised;
+    floored = true;
+    floorReasons.push(...featureScope.reasons.map((reason) => `scope:${reason}`));
+  }
+
+  if (declaredClassification) {
+    const declaredRaised = applyClassificationFloor(classification, declaredClassification);
+    if (declaredRaised !== classification) {
+      classification = declaredRaised;
+      floored = true;
+      floorReasons.push(`declared:${declaredClassification}`);
+    }
+  }
 
   // Gap 3B — sensitive-surface floor (deterministic; raises MICRO -> SMALL only).
   const detectedSurfaces = content ? detectSensitiveSurfaces(content) : [];
   const declaredSurfaces = content ? parseSurfacesOverride(content, 'sensitive_surfaces') : [];
   const sensitiveSurfaces = [...new Set([...detectedSurfaces, ...declaredSurfaces])];
-  let floored = false;
   if (sensitiveSurfaces.length > 0) {
     const scored = classification;
     classification = applySensitiveFloor(classification);
-    floored = classification !== scored;
+    floored = floored || classification !== scored;
+    if (classification !== scored) floorReasons.push(`sensitive:${sensitiveSurfaces.join(',')}`);
   }
 
   // Operational-surface floor (deterministic; raises MICRO -> SMALL only). A rich
@@ -274,9 +420,18 @@ async function runClassify({ args, options = {}, logger }) {
     const scored = classification;
     classification = applySensitiveFloor(classification);
     floored = floored || classification !== scored;
+    if (classification !== scored) floorReasons.push(`operational:${operationalSurfaces.join(',')}`);
   }
 
   const phaseDepth = classificationToPhaseDepth(classification);
+  let applied = false;
+  if (options.apply && sourceFile && content) {
+    const updated = setDeclaredClassification(content, classification);
+    if (updated !== content) {
+      await fs.writeFile(path.resolve(targetDir, sourceFile), updated, 'utf8');
+      applied = true;
+    }
+  }
 
   // A rich operational surface is exactly the case a clickable prototype is meant
   // to de-risk (management screens + interactions before the PRD). Emit the
@@ -290,7 +445,14 @@ async function runClassify({ args, options = {}, logger }) {
     source_file: sourceFile,
     inputs: { user_types: userTypeCount, external_integrations: integrationCount, rule_complexity: complexityLevel },
     scores: { user_types: utScore, integrations: intScore, complexity: cxScore, total: totalScore },
+    scored_classification: scoredClassification,
     classification,
+    declared_classification: declaredClassification,
+    scope_floor: featureScope.floor,
+    scope_metrics: featureScope.metrics,
+    scope_source_files: scopeSourceFiles,
+    floor_reasons: floorReasons,
+    applied,
     sensitive_surfaces: sensitiveSurfaces,
     operational_surfaces: operationalSurfaces,
     floored,
@@ -308,8 +470,11 @@ async function runClassify({ args, options = {}, logger }) {
   logger.log(`User types:              ${userTypeCount}  → +${utScore}`);
   logger.log(`External integrations:   ${integrationCount}  → +${intScore}`);
   logger.log(`Business rule complexity: ${complexityLevel} → +${cxScore}`);
+  logger.log(`Feature scope: CAP=${featureScope.metrics.capabilities}, AC=${featureScope.metrics.acceptance_criteria}, phases=${featureScope.metrics.phases}, modules=${featureScope.metrics.modules}, boundaries=${featureScope.metrics.boundaries.length} → floor ${featureScope.floor}`);
   logger.log(BAR);
   logger.log(`Score: ${totalScore} → ${classification}`);
+  if (floorReasons.length > 0) logger.log(`Classification floor: ${floorReasons.join('; ')}`);
+  if (applied) logger.log(`Applied classification ${classification} to ${sourceFile}`);
   if (sensitiveSurfaces.length > 0) {
     logger.log(`Sensitive surfaces: ${sensitiveSurfaces.join(', ')}${floored ? ' → floored to SMALL' : ''}`);
   }
@@ -329,4 +494,9 @@ async function runClassify({ args, options = {}, logger }) {
   return result;
 }
 
-module.exports = { runClassify };
+module.exports = {
+  analyzeFeatureScope,
+  applyClassificationFloor,
+  setDeclaredClassification,
+  runClassify
+};

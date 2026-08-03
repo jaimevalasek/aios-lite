@@ -2,6 +2,7 @@
 
 Rules in this directory are loaded by agents automatically.
 Each rule file uses YAML frontmatter to declare which agents it applies to and when.
+Rules may be grouped in nested domain folders; selection and `rules:lint` walk them recursively.
 
 Rules **override** agent default conventions. Use them for project-specific standards that must be enforced consistently across all sessions.
 
@@ -36,7 +37,7 @@ paths: [src/billing/**]                   # routing: matched against the files b
 | `name` | yes | Unique identifier for the rule |
 | `description` | yes | What the rule enforces — used to decide relevance |
 | `agents` | no | List of agent names. If absent → all agents load it |
-| `priority` | no | Loading order. Higher = loaded first. Default: 0 |
+| `priority` | no | Loading order after relevance is proven. Integer 0–100; higher = loaded first. Default: 0 |
 | `version` | no | Semantic version for tracking changes |
 | `modes` | no | `planning`, `executing`, or both. If declared, the rule is only eligible in those modes |
 | `task_types` | no | Task categories matched against the `context:select` task description |
@@ -56,6 +57,7 @@ paths: [src/billing/**]                   # routing: matched against the files b
 - Loaded rules **override** the agent's built-in defaults
 - Rules are loaded silently — agents do not announce which rules were loaded
 - An agent named `dev` matches a rule with `agents: [dev]`
+- `priority` orders rules only after they have proved relevance; it never makes an unrelated rule eligible
 
 ### On-demand routing via context:select
 

@@ -9,10 +9,11 @@ Turn user-provided identity and structure images into one editable `identity.md`
 
 ## Scope
 
+- Visual exploration: `.aioson/explorations/{slug}/identity.md`; imported images under `inputs/references/`
 - Briefing: `.aioson/briefings/{slug}/identity.md`; images under `references/identity/` and `references/structure/`
 - Project brand: `.aioson/context/identity.md`; images under `brand-references/identity/` and `brand-references/structure/`
 
-Consumers resolve briefing identity, then project identity, then none. Identity images provide visual tokens; structure images provide `## Component structure notes`. Structure-image colors and typography do not override identity.
+Exploration builds resolve exploration identity first. Canonical builds resolve briefing identity, then project identity, then none. Identity images provide visual tokens; structure images provide `## Component structure notes`. Structure-image colors and typography do not override identity.
 
 ## Extraction
 
@@ -28,7 +29,7 @@ aioson verify:artifact . --kind=identity --file=<path> --advisory 2>/dev/null ||
 
 Fix reported gaps before handoff. Later builds read text, never source images.
 
-The record frontmatter includes `kind: identity`, `source: references`, and `generated_by: reference-identity-extract`. An explicitly persisted image-less intent system uses `source: intent`; otherwise write nothing and let interface-design run intent-first.
+The record frontmatter includes `kind: identity`, the resolved `scope: exploration|briefing|brand`, `source: references`, and `generated_by: reference-identity-extract`. An explicitly persisted image-less intent system uses `source: intent`; otherwise write nothing and let interface-design run intent-first.
 
 ## Hard boundaries
 

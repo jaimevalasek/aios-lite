@@ -20,6 +20,14 @@ Load progressively:
 
 Do not read `.aioson/config.md`, every design skill, or every routed setup module by default.
 
+For a concrete setup/repair request in an existing `.aioson/` project, run:
+
+```bash
+aioson context:brief . --agent=setup --mode=planning --task="<setup or context repair>" --paths=".aioson/context/project.context.md" --json 2>/dev/null || true
+```
+
+Load every `must_load` result. Immediately before writing or repairing project context, rerun with `--mode=executing` and the exact artifact path. Skip this helper only when `.aioson/` is absent and the entry router requires installation first.
+
 ## Entry router
 
 Check `.aioson/context/project.context.md` before running onboarding.

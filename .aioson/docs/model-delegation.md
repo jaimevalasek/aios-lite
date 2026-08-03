@@ -1,6 +1,6 @@
 ---
 name: model-delegation-contract
-description: "Explicit user-requested model delegation across Claude Code, Codex, OpenCode, and external CLI fallbacks."
+description: "Explicit user-requested model delegation across Claude Code, Codex, OpenCode, Kimi, Qwen, and external CLI fallbacks."
 agents: [briefing-refiner, briefing, product, ux-ui, dev, qa]
 task_types: [research, image-research, critique, verification, model-delegation]
 triggers: [use model, using model, usando o modelo, another model, outro modelo, subagent, sub-agent, subagente]
@@ -24,7 +24,7 @@ aioson delegation:plan . \
   --host=<current-host> \
   --provider=<requested-provider-or-current-host> \
   --model="<user-requested-model>" \
-  --kind=research|image-research|critique|verification|general \
+  --kind=research|image-research|critique|verification|visual-prototype|general \
   --task-file=<project-relative-task-file> \
   --research-slug=<slug-when-applicable> \
   --json
@@ -58,8 +58,10 @@ aioson delegation:run . <the same flags> --json
 
 This launches the registered provider CLI without a shell. It never silently changes providers/models. Authentication, unavailable tools, invalid model IDs, timeouts, and capacity failures are real blockers and must be reported.
 The Claude fallback runs in `plan` permission mode and the Codex fallback runs with the `read-only`
-sandbox. OpenCode external delegation remains blocked with `external_read_only_unavailable` until its
+sandbox. Kimi uses plan mode. Qwen pins the CLI-level `--approval-mode plan`, then adds sandbox plus safe mode. OpenCode external delegation remains blocked with `external_read_only_unavailable` until its
 adapter has an equally verifiable read-only boundary; a prompt-only promise is not sufficient.
+
+For a visual exploration arena, use `exploration:run` instead of calling `delegation:run` manually. It freezes one shared intake, binds every explicitly requested `host:model`, isolates competitors unless cumulative context was chosen, and lets only the parent CLI persist delimited prototype/report artifacts in immutable run directories. A failed competitor never authorizes silent model substitution and does not erase completed variants.
 
 ## Read-only worker, parent-owned persistence
 

@@ -16,6 +16,7 @@ const DOCS = [
   'docs/briefing/exploration-and-artifacts.md',
   'docs/briefing/refinement-loop.md',
   'docs/briefing/prototype-and-delegation.md',
+  'docs/briefing/visual-exploration.md',
   'docs/briefing/review-surface-fallback.md',
   'docs/briefing/legacy-agent-contract.md',
   'docs/briefing/legacy-refiner-agent-contract.md'
@@ -52,6 +53,8 @@ test('Briefing routes activation, exploration, deep craft, expansion, and exact 
     'exploration-and-artifacts.md',
     'briefing-craft.md',
     'briefing-expansion-scout/SKILL.md',
+    'visual-exploration.md',
+    'plans/{slug}/visual-exploration.md',
     '.aioson/briefings/{slug}/expansion-scout.md',
     '## Context',
     '## Problem',
@@ -78,6 +81,9 @@ test('Briefing Refiner is a bounded filesystem state machine with on-demand rare
     'prototype-and-delegation.md',
     'review-surface-fallback.md',
     'briefing-expansion-scout/SKILL.md',
+    'visual-exploration.md',
+    '.aioson/explorations/{exploration-slug}/',
+    'plans/{briefing-slug}/visual-exploration.md',
     '.aioson/briefings/{slug}/expansion-scout.md',
     'references/identity',
     'reference-identity-extract',
@@ -116,11 +122,12 @@ test('Briefing modules are managed and template/workspace copies remain byte-ide
 });
 
 test('active Briefing modules retain the high-value contracts removed from kernels', async () => {
-  const [activation, exploration, refinement, prototype, fallback] = await Promise.all([
+  const [activation, exploration, refinement, prototype, visualExploration, fallback] = await Promise.all([
     read(TEMPLATE, 'docs/briefing/activation-and-intake.md'),
     read(TEMPLATE, 'docs/briefing/exploration-and-artifacts.md'),
     read(TEMPLATE, 'docs/briefing/refinement-loop.md'),
     read(TEMPLATE, 'docs/briefing/prototype-and-delegation.md'),
+    read(TEMPLATE, 'docs/briefing/visual-exploration.md'),
     read(TEMPLATE, 'docs/briefing/review-surface-fallback.md')
   ]);
 
@@ -132,5 +139,9 @@ test('active Briefing modules retain the high-value contracts removed from kerne
   assert.match(refinement, /blocking.*Product cannot responsibly write the PRD/is);
   assert.match(prototype, /native_dispatch\.model/);
   assert.match(prototype, /mock-only/i);
+  assert.match(visualExploration, /single.*sequential.*arena/is);
+  assert.match(visualExploration, /targeted repository scan/i);
+  assert.match(visualExploration, /reusable prompts are always retained/i);
+  assert.match(visualExploration, /Selection means.*not Briefing approval/i);
   assert.match(fallback, /canonical feedback v1\.1 JSON/);
 });

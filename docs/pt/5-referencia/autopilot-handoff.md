@@ -14,6 +14,8 @@ MICRO, SMALL e MEDIUM usam a mesma rota. A classificação altera profundidade, 
 
 `@dev --auto` (ou `aioson agent:prompt dev . --auto`) ativa o Autopilot apenas para essa ativação, mesmo quando o padrão do projeto está desligado. `--step` faz o inverso e vence em caso de conflito. Esses flags não reescrevem a preferência persistente da feature. Em qualquer modo, a cadeia termina no veredito do QA e aguarda autorização humana para `feature:close`/publicação.
 
+Novos manifestos de execução usam o schema v2 e começam em Autopilot. O `orchestration.mode`, pertencente ao desenvolvedor e create-once, pode manter esse padrão, herdar a configuração do projeto ou forçar o modo passo a passo. Com Autopilot efetivo, `max_checkpoints` do manifesto substitui o limite legado de uma única transição. Manifestos v1 continuam válidos e nunca são regravados; um desarme explícito por `--step` continua vencendo.
+
 ## Execução do DEV
 
 DEV lê o PRD aprovado, o único plano de implementação, evidência do repositório, rules/docs selecionados e o dossier não bloqueante.
@@ -25,6 +27,8 @@ DEV → faixa backend → faixa frontend → integração pelo DEV → QA
 ```
 
 As faixas rodam sequencialmente no worktree compartilhado. Elas são workers de runtime, não estágios do workflow nem agentes canônicos. Host/modelo ausente pausa, salvo quando a própria faixa declara fallback aplicável. O cliente atual nunca substitui silenciosamente o host indisponível por si mesmo.
+
+O manifesto também roteia itens da Neural Chain. DEV recebe inspeções/correções; itens de teste e segurança vão para Tester/Pentester somente quando esses especialistas opt-in estão habilitados, caso contrário retornam ao DEV. A conclusão do DEV fica bloqueada enquanto houver itens acionáveis sob sua responsabilidade, e QA recebe supervisão somente leitura para revalidar correções.
 
 ## Revisão
 

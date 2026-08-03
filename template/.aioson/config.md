@@ -35,6 +35,8 @@ Ranges:
 - 2-3: SMALL
 - 4-6: MEDIUM
 
+For feature classification, this base score is followed by deterministic scope floors from the canonical PRD and available implementation plan. Multiple traceable `CAP-*`, broad `AC-*` coverage, multiple delivery phases, affected modules, or runtime boundaries may raise a deceptively small base score to SMALL/MEDIUM. An explicit higher owner classification is a floor and is never lowered. Run `aioson classify . --feature={slug} --apply --json` after the PRD capability/acceptance map is complete and again after Sheldon enrichment.
+
 ## Context budget warning
 
 Setting: `context_warning_threshold` (default: 65%)

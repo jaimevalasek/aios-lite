@@ -290,8 +290,9 @@ test('runChainHookOnAgentDone (guarded + impacts) writes noise file', async () =
 
     assert.equal(result.ok, true);
     assert.ok(result.noise_file, 'noise_file path returned');
-    assert.ok(result.noise_file.endsWith(path.join('noises', 'neural-chain-20260521-1430.md')));
+    assert.ok(result.noise_file.endsWith(path.join('noises', 'neural-chain.md')));
     assert.equal(fs.existsSync(result.noise_file), true);
+    assert.match(fs.readFileSync(result.noise_file, 'utf8'), /schema: neural-chain-impact-queue\/v2/);
 
     // chain_audit telemetry events should carry noise_file payload.
     const events = db.prepare(

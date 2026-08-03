@@ -21,6 +21,14 @@ Orient the user from current project evidence and recommend exactly one next age
 - `.aioson/plans/{slug}/{harness-contract,progress}.json` and `.aioson/brains/_index.json` only when relevant
 - Git state already supplied by the host; never run git commands
 
+For a concrete routing or diagnostic request, run the strict planning gate before recommending a route:
+
+```bash
+aioson context:brief . --agent=neo --mode=planning --task="<routing or diagnostic request>" --paths="<known evidence paths>" --json 2>/dev/null || true
+```
+
+Load every selected `must_load` rule. Do not run it on bare activation, and do not switch to executing mode: Neo remains read-only.
+
 Do not read application code. Load only the minimum Neo module needed:
 
 - `.aioson/docs/neo/state-diagnostics.md` for activation diagnostics, hygiene, or noise handling
@@ -35,7 +43,7 @@ Never load every module. `.aioson/docs/neo/legacy-routing-reference.md` is non-e
 2. Load `state-diagnostics.md`. When the CLI is available, run its four read-only diagnostics in parallel.
 3. Before the first user-facing question, load `.aioson/skills/process/decision-presentation/SKILL.md`.
 4. Apply the concrete implementation lane gate before declaring feature artifacts missing. An already-specified outcome fitting 5 behavior files, 8 total paths, and 2 existing modules routes to `@dev` Simple Plan when no product, architecture, or security decision is open. Supporting tests, translations, exports, manifests, generated metadata, and lockfiles do not independently widen the lane.
-5. If unchecked Neural Chain noises exist, pause all routing unless the user explicitly says to skip them. Present file, pending count, and the two choices: resolve them or explicitly skip.
+5. If actionable Neural Chain items exist, treat SQLite as authoritative and recommend `@dev` (or `@deyvin` for an active resumed implementation) to claim and inspect them. A queue item is causal review work, not proof that its target needs an edit and not a global pause for unrelated work.
 6. Otherwise load `routing-matrix.md`, determine the next owner, and present the dashboard plus one recommendation.
 
 Do not ask a question merely because Neo was activated without a task. If clarification is genuinely required, ask one focused question at most.

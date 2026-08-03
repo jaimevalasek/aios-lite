@@ -95,6 +95,33 @@ test('exceção de autopilot injetada descreve a cadeia full-feature, não o mod
   assert.match(prompt, /canonical chain is `@product → @sheldon → @planner → @dev → @qa`/, 'texto novo descreve a cadeia canônica');
   assert.match(prompt, /only when enabled and triggered/, 'especialistas continuam proporcionais');
   assert.match(prompt, /NEVER auto-run `feature:close`/, 'gate humano preservado');
+  assert.match(prompt, /clean vertical phase checkpoint is recovery state, never a human approval gate/, 'fases DEV limpas continuam sem confirmação');
+});
+
+test('resolveAutopilotSignal respeita o override create-once do agent-execution v2', async () => {
+  const fsp = require('node:fs/promises');
+  const os = require('node:os');
+  const path = require('node:path');
+  const { defaults } = require('../src/agent-execution/manifest');
+  const { resolveAutopilotSignal } = require('../src/autopilot-signal');
+  const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'aioson-ap-manifest-'));
+  const contextPath = path.join(dir, '.aioson/context/project.context.md');
+  const manifestPath = path.join(dir, '.aioson/context/agent-execution-cart.json');
+  await fsp.mkdir(path.dirname(contextPath), { recursive: true });
+  await fsp.writeFile(contextPath, '---\nauto_handoff: false\n---\n# ctx\n');
+  const manifest = defaults('cart');
+  manifest.orchestration.mode = 'autopilot';
+  await fsp.writeFile(manifestPath, JSON.stringify(manifest));
+  assert.deepEqual(
+    await resolveAutopilotSignal(dir, { slug: 'cart' }),
+    { enabled: true, source: 'agent_execution_manifest' }
+  );
+  manifest.orchestration.mode = 'step_by_step';
+  await fsp.writeFile(manifestPath, JSON.stringify(manifest));
+  assert.deepEqual(
+    await resolveAutopilotSignal(dir, { slug: 'cart' }),
+    { enabled: false, source: 'agent_execution_manifest' }
+  );
 });
 
 // resolveAutopilotSignal: flag OU scheme semeado (escopado por slug).

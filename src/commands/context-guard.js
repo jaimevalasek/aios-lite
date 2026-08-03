@@ -3,6 +3,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { buildGuardResponse } = require('../context-guard');
+const { normalizeAgentName } = require('../agents');
 
 // `aioson context:guard [path] --tool=claude [--json]`
 //
@@ -18,7 +19,7 @@ async function runContextGuard({ args, options = {}, logger }) {
   try {
     response = await buildGuardResponse(event || {}, targetDir, {
       tool: options.tool || 'claude',
-      agent: options.agent || options.a || 'dev'
+      agent: resolveGuardAgent(options, event)
     });
   } catch {
     // The guard is advisory and runs on the PreToolUse hot path. Any internal
@@ -42,6 +43,17 @@ async function runContextGuard({ args, options = {}, logger }) {
   }
 
   return response;
+}
+
+function resolveGuardAgent(options = {}, event = {}) {
+  const candidate = options.agent
+    || options.a
+    || event?.agent
+    || event?.agent_name
+    || event?.context?.agent
+    || process.env.AIOSON_AGENT
+    || 'dev';
+  return normalizeAgentName(candidate) || 'dev';
 }
 
 async function resolveEvent(args, options) {
@@ -85,4 +97,4 @@ function readStdinEvent() {
   });
 }
 
-module.exports = { runContextGuard };
+module.exports = { runContextGuard, resolveGuardAgent };

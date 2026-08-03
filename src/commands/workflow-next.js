@@ -22,6 +22,8 @@ const { runReviewCycle } = require('./review-cycle');
 const { inspectStagedChanges } = require('../lib/git-commit-guard');
 const { readDecisionCheckpoint } = require('../lib/decision-checkpoint');
 const { emitSecurityRuntimeEvent } = require('../lib/security/runtime-events');
+const { buildChainActivationContext, inspectChainHandoffGate } = require('../neural-chain-activation');
+const { buildAgentContextActivation } = require('../agent-context-activation');
 const dossierBootstrap = require('../dossier/dossier-bootstrap');
 const dossierStore = require('../dossier/store');
 const { emitDossierEvent } = require('../lib/dossier-telemetry');
@@ -1141,6 +1143,19 @@ async function finalizeCurrentStage(targetDir, config, state, stageName) {
 
   // ── Harness Done Gate ───────────────────────────────────────────────────
   if (state.mode === 'feature' && state.featureSlug) {
+    if (normalizedStage === 'dev') {
+      const chainGate = await inspectChainHandoffGate(targetDir, {
+        featureSlug: state.featureSlug,
+        agent: normalizedStage
+      });
+      if (!chainGate.ok) {
+        const ids = chainGate.items.map((item) => item.work_item_id).join(', ');
+        throw new Error(
+          `[Neural Chain Gate BLOCKED] @dev has ${chainGate.items.length} unresolved actionable impact item(s): ${ids}. `
+          + 'Claim, inspect, and resolve them with evidence before completing DEV.'
+        );
+      }
+    }
     if (normalizedStage === 'dev' || normalizedStage === 'qa') {
       // Reject missing/abbreviated delivery paths and other cheap handoff
       // structure before running the feature's potentially expensive commands.
@@ -1898,9 +1913,33 @@ async function activateStage(
   const verificationBriefing = stageName === 'scope-check'
     ? await buildImplementationVerificationBriefing(targetDir, state, scopeCheckMode, verificationPolicy)
     : null;
+  const stageContextTasks = {
+    setup: 'repair and validate project context',
+    product: 'define the active feature PRD and current-system fit',
+    sheldon: 'review and enrich the active PRD before planning',
+    planner: 'create the executable implementation plan from the approved PRD',
+    dev: 'implement the approved PRD and plan with focused tests',
+    qa: 'verify the delivered behavior against the approved PRD and normal production path'
+  };
+  const contextTask = [
+    stageContextTasks[stageName] || `execute the ${stageName} stage`,
+    state.featureSlug ? `for feature ${state.featureSlug}` : 'for the current project request'
+  ].join(' ');
+  const generatedContext = await buildAgentContextActivation(targetDir, {
+    agent: stageName,
+    mode: 'planning',
+    task: contextTask,
+    feature: state.featureSlug || ''
+  });
+  const chainActivationContext = await buildChainActivationContext(targetDir, {
+    agent: stageName,
+    featureSlug: state.featureSlug || null
+  });
   const activationContext = [
     buildStageActivationContext(state, stageName, dependencies, scopeCheckMode),
-    verificationBriefing && verificationBriefing.briefing
+    verificationBriefing && verificationBriefing.briefing,
+    generatedContext,
+    chainActivationContext
   ].filter(Boolean).join('\n\n');
   let prompt = buildAgentPrompt(agent, tool, {
     instructionPath,

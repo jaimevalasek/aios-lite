@@ -226,6 +226,9 @@ function applyExplicitOverrides(data, options, detectedInstalled) {
   }
   if (hasOption(options, 'design-skill')) output.designSkill = String(options['design-skill']);
   if (hasOption(options, 'test-runner')) output.testRunner = String(options['test-runner']);
+  if (hasOption(options, 'auto-handoff')) {
+    output.autoHandoff = normalizeBoolean(options['auto-handoff'], output.autoHandoff);
+  }
   if (hasOption(options, 'web3-enabled')) {
     output.web3Enabled = normalizeBoolean(options['web3-enabled'], output.web3Enabled);
   }
@@ -508,6 +511,7 @@ async function runSetupContext({ args, options, logger, t }) {
     cache: '',
     search: '',
     installCommands: '',
+    autoHandoff: true,
     notes: [],
     aiosonVersion: getCliVersionSync()
   };

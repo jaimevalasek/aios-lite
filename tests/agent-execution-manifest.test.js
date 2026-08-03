@@ -5,7 +5,14 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
 const os = require('node:os');
 const path = require('node:path');
-const { defaults, initManifest, loadManifest, manifestPath } = require('../src/agent-execution/manifest');
+const {
+  defaults,
+  initManifest,
+  loadManifest,
+  manifestPath,
+  resolveChainWorkPolicy,
+  resolveOrchestrationPolicy
+} = require('../src/agent-execution/manifest');
 const { validateManifest } = require('../src/agent-execution/schema');
 
 // AC-AED-01 AC-AED-02 AC-AED-03 AC-AED-13 AC-AED-15
@@ -25,6 +32,29 @@ test('Codex manifest defaults keep DEV/QA on, specialists off, and optional deve
   assert.equal(manifest.development_lanes.integration_owner, 'dev');
   assert.ok(Object.values(manifest.development_lanes.lanes).every(lane => lane.enabled === false));
   assert.deepEqual(manifest.cycle_limits, { dev_qa: 1, tester: 1, pentester: 1 });
+  assert.equal(manifest.version, 2);
+  assert.deepEqual(resolveOrchestrationPolicy(manifest), manifest.orchestration);
+  assert.equal(manifest.orchestration.mode, 'autopilot');
+  assert.equal(manifest.orchestration.max_checkpoints, 10);
+  assert.equal(manifest.chain_work_policy.block_handoff_on_actionable, true);
+  assert.equal(resolveChainWorkPolicy(manifest).owner_by_kind.test, 'dev', 'disabled Tester falls back to DEV');
+});
+
+test('v1 manifests remain valid and v2 routes work only to explicitly enabled specialists', () => {
+  const legacy = defaults('legacy');
+  legacy.version = 1;
+  delete legacy.orchestration;
+  delete legacy.chain_work_policy;
+  assert.equal(validateManifest(legacy, 'legacy').ok, true);
+  assert.equal(resolveChainWorkPolicy(legacy).block_handoff_on_actionable, false);
+
+  const manifest = defaults('demo');
+  manifest.agents.tester.enabled = true;
+  manifest.agents.pentester.enabled = true;
+  const policy = resolveChainWorkPolicy(manifest);
+  assert.equal(policy.owner_by_kind.test, 'tester');
+  assert.equal(policy.owner_by_kind.security, 'pentester');
+  assert.equal(policy.owner_by_kind.inspect, 'dev');
 });
 
 test('hosts without reasoning-effort support do not receive an incompatible default', () => {

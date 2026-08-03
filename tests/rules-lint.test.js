@@ -78,6 +78,52 @@ test('rules:lint flags selector-invisible rules and passes routed rules', async 
   }
 });
 
+test('rules:lint validates nested rule directories used by context selection', async () => {
+  const dir = await makeTmpDir();
+  try {
+    await writeFile(dir, '.aioson/rules/forms/input-validation.md', [
+      '---',
+      'name: input-validation',
+      'description: Form input validation rules.',
+      'agents: [dev, qa]',
+      'modes: [executing]',
+      'triggers: [form, validation]',
+      '---',
+      '# Input validation'
+    ].join('\n'));
+
+    const result = await runRulesLint({ args: [dir], options: { json: true, strict: true }, logger: logger() });
+
+    assert.equal(result.ok, true);
+    assert.equal(result.total, 1);
+    assert.equal(result.rules[0].path, '.aioson/rules/forms/input-validation.md');
+  } finally {
+    await fs.rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('rules:lint rejects invalid priority values', async () => {
+  const dir = await makeTmpDir();
+  try {
+    await writeFile(dir, '.aioson/rules/invalid-priority.md', [
+      '---',
+      'name: invalid-priority',
+      'description: Invalid priority fixture.',
+      'priority: 900',
+      'triggers: [fixture]',
+      '---',
+      '# Invalid priority'
+    ].join('\n'));
+
+    const result = await runRulesLint({ args: [dir], options: { json: true, strict: true }, logger: logger() });
+
+    assert.equal(result.ok, false);
+    assert.match(result.rules[0].warnings.join(' '), /integer from 0 to 100/);
+  } finally {
+    await fs.rm(dir, { recursive: true, force: true });
+  }
+});
+
 test('rules:lint strict mode fails when warnings exist and reports missing fields', async () => {
   const dir = await makeTmpDir();
   try {

@@ -184,6 +184,7 @@ function compactPathItem(item) {
     surface: item.surface,
     load_tier: item.load_tier,
     score: item.score,
+    priority: item.priority || 0,
     reason: item.reason
   };
 }
@@ -410,6 +411,23 @@ function profileForAgent(agent) {
   return { ...base, agent };
 }
 
+const PROTECTED_LOAD_SIGNAL = /(?:paths|feature|task_types|triggers|aliases|entities|retrieval_intents):/;
+
+function isProtectedMustLoad(item) {
+  return item.load_tier === 'always' || PROTECTED_LOAD_SIGNAL.test(item.reason || '');
+}
+
+function capMustLoads(items, limit = 14) {
+  if (items.length <= limit) return items;
+  const protectedItems = items.filter(isProtectedMustLoad);
+  const protectedPaths = new Set(protectedItems.map((item) => item.path));
+  const remaining = items.filter((item) => !protectedPaths.has(item.path));
+  return [
+    ...protectedItems,
+    ...remaining.slice(0, Math.max(0, limit - protectedItems.length))
+  ];
+}
+
 function classifyLoads(selection, profile) {
   const selected = selection.selected || [];
   const must = [];
@@ -424,7 +442,9 @@ function classifyLoads(selection, profile) {
   }
 
   return {
-    must_load: must.slice(0, 14),
+    // The nominal budget remains 14, but deterministic/always matches are
+    // never silently discarded. The package contains paths, not full files.
+    must_load: capMustLoads(must, 14),
     should_load: should.slice(0, 10)
   };
 }

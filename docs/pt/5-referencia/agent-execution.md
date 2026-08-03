@@ -27,6 +27,17 @@ aioson agent:execution:status . --feature=minha-feature --json
 
 A inicialização é create-once. Novos init, resume e seeds do workflow preservam byte por byte o manifesto que já pertence ao desenvolvedor.
 
+## Schema v2: orquestração e Neural Chain
+
+Manifestos novos usam a versão 2, enquanto a versão 1 continua aceita sem alteração. Os campos aditivos são:
+
+- `orchestration.mode`: `autopilot` por padrão, ou `inherit` / `step_by_step` quando o desenvolvedor alterar;
+- `orchestration.max_checkpoints`: orçamento do runner no Autopilot efetivo (padrão 10);
+- `orchestration.stop_conditions`: motivos terminais explícitos;
+- `chain_work_policy`: roteamento tipo→responsável, fallback de especialista, revalidação pelo QA e gate de itens acionáveis do DEV.
+
+Itens de teste/segurança vão para Tester/Pentester apenas quando as entradas existentes desses especialistas estão habilitadas. Caso contrário retornam ao DEV. Isso nunca habilita um especialista opcional por classificação.
+
 ## Faixas de desenvolvimento
 
 Use faixas somente quando o usuário ou o plano aprovado pedir hosts/modelos diferentes ou escopos separados.

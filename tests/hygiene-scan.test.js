@@ -157,6 +157,39 @@ test('hygiene:scan reports pending neural-chain noise files', async () => {
   }
 });
 
+test('hygiene:scan reports fully resolved neural-chain files for reconciliation', async () => {
+  const dir = await makeProject();
+  try {
+    await write(dir, '.aioson/context/features.md', '| slug | status | started | completed |\n');
+    await write(dir, '.aioson/context/noises/checkout.md', [
+      '---',
+      'schema: neural-chain-impact-queue/v2',
+      'slug: checkout',
+      'total_items: 1',
+      'resolved_items: 1',
+      '---',
+      '',
+      '# Neural Chain - Impact Audit',
+      '',
+      '- [x] src/cli.js — test_relationship 0.80 (source: tests/cli.test.js); id: NC-1',
+      ''
+    ].join('\n'));
+
+    const result = await runHygieneScan({
+      args: [dir],
+      options: { json: true },
+      logger: silentLogger()
+    });
+
+    assert.equal(result.buckets.pending_chain_noises.length, 0);
+    assert.equal(result.buckets.stale_resolved_chain_noises.length, 1);
+    assert.equal(result.buckets.stale_resolved_chain_noises[0].path, '.aioson/context/noises/checkout.md');
+    assert.equal(result.buckets.stale_resolved_chain_noises[0].suggested_command, 'aioson chain:reconcile .');
+  } finally {
+    await fs.rm(dir, RM);
+  }
+});
+
 test('hygiene:scan reports stale session files without creating a runtime database', async () => {
   const dir = await makeProject();
   try {

@@ -52,7 +52,7 @@ function defaults(feature, host = 'codex', { cycleLimits } = {}) {
     });
   }
   return {
-    version: 1,
+    version: 2,
     feature,
     host,
     generated_at: new Date().toISOString(),
@@ -67,7 +67,77 @@ function defaults(feature, host = 'codex', { cycleLimits } = {}) {
     },
     capacity_policy: { strategy: 'pause', max_attempts: 1, backoff_ms: 0 },
     cycle_limits: { dev_qa: 1, tester: 1, pentester: 1, ...cycleLimits },
+    orchestration: {
+      mode: 'autopilot',
+      max_checkpoints: 10,
+      stop_conditions: [
+        'workflow_complete',
+        'human_decision_required',
+        'gate_blocked',
+        'context_budget_exceeded',
+        'cycle_limit_reached',
+        'capacity_unavailable',
+        'feature_close_human_gate'
+      ]
+    },
+    chain_work_policy: {
+      enabled: true,
+      fallback_owner: 'dev',
+      require_enabled_owner: true,
+      qa_revalidation: true,
+      block_handoff_on_actionable: true,
+      owner_by_kind: {
+        inspect: 'dev',
+        fix: 'dev',
+        test: 'tester',
+        security: 'pentester',
+        documentation: 'dev'
+      }
+    },
     reporting: { format: 'json', markdown: true }
+  };
+}
+
+function resolveOrchestrationPolicy(manifest) {
+  const value = manifest && manifest.orchestration;
+  return {
+    mode: value && ['inherit', 'autopilot', 'step_by_step'].includes(value.mode) ? value.mode : 'inherit',
+    max_checkpoints: Number.isInteger(value?.max_checkpoints) && value.max_checkpoints > 0
+      ? value.max_checkpoints
+      : 10,
+    stop_conditions: Array.isArray(value?.stop_conditions) ? [...value.stop_conditions] : []
+  };
+}
+
+function resolveChainWorkPolicy(manifest) {
+  const value = manifest && manifest.chain_work_policy;
+  const fallback = 'dev';
+  const ownerByKind = {
+    inspect: 'dev',
+    fix: 'dev',
+    test: 'dev',
+    security: 'dev',
+    documentation: 'dev',
+    ...(value && value.owner_by_kind)
+  };
+  const enabledAgents = manifest && manifest.agents ? manifest.agents : {};
+  const requireEnabled = value ? value.require_enabled_owner !== false : true;
+  let fallbackOwner = value && typeof value.fallback_owner === 'string' ? value.fallback_owner : fallback;
+  if (requireEnabled && Object.keys(enabledAgents).length > 0 && enabledAgents[fallbackOwner]?.enabled !== true) {
+    fallbackOwner = enabledAgents.dev?.enabled === true ? 'dev' : fallbackOwner;
+  }
+
+  for (const [kind, owner] of Object.entries(ownerByKind)) {
+    if (requireEnabled && enabledAgents[owner]?.enabled !== true) ownerByKind[kind] = fallbackOwner;
+  }
+
+  return {
+    enabled: value ? value.enabled !== false : true,
+    fallback_owner: fallbackOwner,
+    require_enabled_owner: requireEnabled,
+    qa_revalidation: value ? value.qa_revalidation !== false : true,
+    block_handoff_on_actionable: value ? value.block_handoff_on_actionable === true : false,
+    owner_by_kind: ownerByKind
   };
 }
 
@@ -215,5 +285,7 @@ module.exports = {
   resolveDevelopmentLane,
   resolveDevelopmentLaneExecution,
   resolveExecutionEntry,
-  resolveExecutionTarget
+  resolveExecutionTarget,
+  resolveOrchestrationPolicy,
+  resolveChainWorkPolicy
 };

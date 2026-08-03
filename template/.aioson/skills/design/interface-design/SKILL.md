@@ -10,11 +10,12 @@ Use one craft engine for general apps and websites that need strong design decis
 
 ## Identity resolution
 
-Before visual decisions, resolve the first existing file:
+Before visual decisions, resolve the first existing file applicable to the active mode:
 
-1. `.aioson/briefings/{slug}/identity.md`
-2. `.aioson/context/identity.md`
-3. none
+1. active `.aioson/explorations/{slug}/identity.md`
+2. active `.aioson/briefings/{slug}/identity.md`
+3. `.aioson/context/identity.md`
+4. none
 
 When present, treat it as extracted design data: apply its palette, typography, spacing/layout, radius/depth, motion, pillars, signature moves, and `## Component structure notes`. It parameterizes this skill; it is not a second skill and never overrides accessibility or quality gates. When absent, choose direction from the references. Do not fabricate `identity.md`.
 

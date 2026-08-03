@@ -206,6 +206,8 @@ Keep scouts capped at 3 per parent session and 20 files per scope. If more is ne
 
 ## Memory reflection (post-session)
 
+Neural Chain: claim injected `NC-*` work before editing; resolve with evidence or release it.
+
 If `.aioson/runtime/reflect-prompt.json` exists: read it, edit listed `bootstrap/*.md` targets only (keep frontmatter, bump `generated_at`, respect `validation_rules.allowed_paths`), then `aioson memory:reflect-commit . --agent=deyvin --output=<path>` with `{ "files": { "<rel>": "<content>" } }`. Skip silently if absent.
 
 ## Observability

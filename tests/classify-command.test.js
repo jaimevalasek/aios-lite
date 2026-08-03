@@ -314,6 +314,65 @@ test('classify: pt-BR Trello clone with no brand word floors to SMALL', async ()
   assert.equal(result.recommend_prototype, true);
 });
 
+test('classify: raises a one-user feature with broad CAP/AC scope to MEDIUM', async () => {
+  const tmpDir = await makeTmpDir();
+  const capabilities = Array.from({ length: 4 }, (_, index) => `| CAP-studio-0${index + 1} | Capability ${index + 1} | required |`).join('\n');
+  const criteria = Array.from({ length: 8 }, (_, index) => `| AC-studio-0${index + 1} | CAP-studio-0${(index % 4) + 1} | Observable result ${index + 1} | test |`).join('\n');
+  await writeFile(tmpDir, '.aioson/context/prd-studio.md', [
+    '# Creator Studio',
+    'As a user, I want one integrated creator workspace.',
+    '## Feature Capability Map',
+    capabilities,
+    '## Acceptance Criteria',
+    criteria
+  ].join('\n'));
+  const result = await runClassify({
+    args: [tmpDir],
+    options: { json: true, feature: 'studio' },
+    logger: makeLogger()
+  });
+  assert.equal(result.scored_classification, 'MICRO');
+  assert.equal(result.scope_floor, 'MEDIUM');
+  assert.equal(result.classification, 'MEDIUM');
+  assert.equal(result.scope_metrics.capabilities, 4);
+});
+
+test('classify: implementation plan breadth can raise a sparse PRD to MEDIUM', async () => {
+  const tmpDir = await makeTmpDir();
+  await writeFile(tmpDir, '.aioson/context/prd-runtime.md', '# Runtime\nAs a user, I want reliable execution.\n');
+  await writeFile(tmpDir, '.aioson/context/implementation-plan-runtime.md', [
+    '## Phase 1',
+    '- `src/runtime/state.js`',
+    '## Phase 2',
+    '- `src/commands/execute.js`',
+    '## Phase 3',
+    '- `tests/runtime.test.js`'
+  ].join('\n'));
+  const result = await runClassify({
+    args: [tmpDir],
+    options: { json: true, feature: 'runtime' },
+    logger: makeLogger()
+  });
+  assert.equal(result.classification, 'MEDIUM');
+  assert.equal(result.scope_metrics.phases, 3);
+  assert.equal(result.scope_source_files.length, 2);
+});
+
+test('classify: --apply persists an inferred higher tier and never lowers an owner MEDIUM floor', async () => {
+  const tmpDir = await makeTmpDir();
+  const file = '.aioson/context/prd-owner-tier.md';
+  await writeFile(tmpDir, file, '---\nclassification: MEDIUM\n---\n# Small wording\nAs a user, I want a label.\n');
+  const result = await runClassify({
+    args: [tmpDir],
+    options: { json: true, feature: 'owner-tier', apply: true },
+    logger: makeLogger()
+  });
+  assert.equal(result.scored_classification, 'MICRO');
+  assert.equal(result.classification, 'MEDIUM');
+  assert.equal(result.applied, false);
+  assert.match(await fs.readFile(path.join(tmpDir, file), 'utf8'), /classification: MEDIUM/);
+});
+
 test('classify: pt-BR "funil de vendas" floors as crm_pipeline', async () => {
   const tmpDir = await makeTmpDir();
   await writeFile(tmpDir, '.aioson/context/prd-funil.md',

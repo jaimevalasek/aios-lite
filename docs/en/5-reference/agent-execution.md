@@ -27,6 +27,17 @@ aioson agent:execution:status . --feature=my-feature --json
 
 Initialization is create-once. Later init, resume, and workflow seed operations preserve the developer-owned manifest byte for byte.
 
+## Schema v2 orchestration and Neural Chain
+
+New manifests use version 2 while version 1 remains accepted unchanged. The additive fields are:
+
+- `orchestration.mode`: `autopilot` by default, or `inherit` / `step_by_step` when the developer changes it;
+- `orchestration.max_checkpoints`: the effective Autopilot runner budget (default 10);
+- `orchestration.stop_conditions`: explicit terminal reasons;
+- `chain_work_policy`: kind-to-owner routing, specialist fallback, QA revalidation, and the DEV actionable-work handoff gate.
+
+Test/security items route to Tester/Pentester only when their existing manifest entries are enabled. Otherwise they fall back to DEV. This never enables an optional specialist by classification.
+
 ## Development lanes
 
 Use lanes only when the user or approved plan explicitly asks for different execution hosts/models or separately owned scopes.

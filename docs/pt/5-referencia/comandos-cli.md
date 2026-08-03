@@ -54,6 +54,27 @@
 | `test:package` | Testa o pacote instalado a partir de uma origem local | Quando vai validar release ou empacotamento |
 | `scan:project` | Faz varredura brownfield, gera índice local e produz contexto inicial | Quando o projeto já existe e falta documentação |
 
+### Fila de impactos do Neural Chain
+
+O Neural Chain grava trabalho causal em `chain_work_items`, dentro de `.aioson/runtime/aios.sqlite`. Os Markdown em `.aioson/context/noises/` são projeções legíveis e deixam de ser a fonte autoritativa.
+
+```bash
+aioson chain:list . --feature=checkout --json
+aioson chain:claim . --id=NC-12 --agent=dev --json
+aioson chain:resolve . --id=NC-12 --agent=dev --token=<claim-token> \
+  --outcome=verified-no-change --evidence="alvo inspecionado; testes focados passaram"
+aioson chain:release . --id=NC-12 --agent=dev --token=<claim-token>
+aioson chain:reconcile . --json
+```
+
+- `chain:list` mostra itens acionáveis; `--include-resolved` inclui o histórico.
+- `chain:claim` cria um lease atômico, evitando trabalho duplicado entre sessões DEV paralelas.
+- `chain:resolve` exige token e evidência concreta; aceita `fixed`, `verified-no-change`, `false-positive` e `obsolete`.
+- `chain:release` devolve à fila um item que não pôde ser concluído.
+- `chain:reconcile` importa noises antigos com timestamp, aplica checkboxes manuais, libera leases expirados e regenera as projeções.
+
+Um item pede inspeção da relação causal; ele não prova que o alvo precisa ser alterado. Correlações fracas de uma única coedição não viram trabalho sem evidência adicional, e falsos positivos repetidos reduzem a confiança até aposentar a relação.
+
 ### Inteligência de review
 
 Os três comandos aditivos vinculam o review de um agente aos bytes exatos do artefato da feature e às autoridades atuais. Eles tornam a revisão em duas passagens auditável; não executam modelo, testes, pesquisa web, transição de workflow ou gate.
@@ -283,6 +304,27 @@ aioson briefing:migrate-lineage . --slug=feature-legada --write
 - Slug inválido/traversal, escape por caminho real, promessa ambígua, cobertura incompleta no PRD, edição concorrente e flags conflitantes falham antes de mutação destrutiva.
 
 Reprepare somente os agentes listados em `affected_reviews` e depois execute novamente a validação normal de artefatos/gates.
+
+#### Comandos de exploração visual
+
+Gerenciam candidatos não canônicos em `.aioson/explorations/{slug}/`:
+
+| Comando | O que faz |
+|---|---|
+| `exploration:init` | Cria task/intake congelados e escolhe `single`, `sequential` ou `arena`. |
+| `exploration:configure` | Altera padrões da exploração aberta; converte `single` em `sequential` sem sobrescrever a primeira variante. |
+| `exploration:references` | Copia e registra SHA-256 dos prints e referências fornecidos. |
+| `exploration:intake` | Valida o entendimento confirmado e a cobertura dos prints. |
+| `exploration:scan` | Gera inventário limitado do front-end atual (`none`, `targeted` ou `full`). |
+| `exploration:add-run` | Reserva variante imutável para geração manual/nativa. |
+| `exploration:record` | Valida e registra variante concluída/falha e sua proveniência. |
+| `exploration:run` | Executa modelos `host:model` explícitos em adapters externos somente leitura. |
+| `exploration:validate` / `exploration:status` | Verifica intake, artefatos e estado estruturado. |
+| `exploration:review` | Gera comparação cega/identificada e JSON de feedback. |
+| `exploration:select` | Aplica feedback exportado ou seleciona uma variante concluída. |
+| `exploration:promote` | Cria `plans/{briefing-slug}/visual-exploration.md` com fingerprints. |
+
+Veja [Exploração visual e arena entre modelos](../3-receitas/arena-de-exploracao-visual.md). Selecionar uma direção não aprova o Briefing.
 
 | Comando | O que faz | Quando usar |
 |---|---|---|
@@ -1706,11 +1748,13 @@ Retorna modo, classificação, framework, test runner, gates e prontidão em uma
 
 ```bash
 aioson classify . --feature=checkout
+# Detectar e aplicar a classificação no frontmatter do PRD:
+aioson classify . --feature=checkout --apply --json
 # Com override manual via prompts:
 aioson classify . --feature=checkout --interactive
 ```
 
-Detecta MICRO / SMALL / MEDIUM lendo PRD e requirements. Use para decidir o fluxo antes de acionar `workflow:execute`.
+Detecta MICRO / SMALL / MEDIUM lendo PRD, requirements e, quando existente, o plano de implementação. Além do score tradicional, considera amplitudes de capacidades `CAP-*`, critérios `AC-*`, fases, módulos e fronteiras de runtime. Uma classificação maior declarada pelo owner funciona como piso e nunca é reduzida por `--apply`.
 
 ### 44. Determinar modelo de sizing
 
@@ -1821,6 +1865,8 @@ aioson workflow:execute . --feature=checkout --seed --tool=claude
 # Semear já desarmado — equivalente ao token inline /product --step
 aioson workflow:execute . --feature=checkout --seed --step --tool=claude
 ```
+
+Novos `agent-execution-{slug}.json` usam schema v2 e `orchestration.mode: autopilot` por padrão. O runner usa `orchestration.max_checkpoints` (10 por padrão) em vez de parar após uma única transição. O modo também aceita `inherit` ou `step_by_step`; o manifesto é create-once, não é regravado por resume/reseed e um `--step` explícito continua vencendo.
 
 Um `workflow.state.json` deixado por uma feature já fechada/abandonada é descartado e re-semeado automaticamente — só uma feature *diferente e genuinamente ativa* (`in_progress` em `features.md`) gera o refuso `different_active_feature`. Nesse caso, feche/pause a feature ativa ou rode `aioson feature:sweep .` para limpar o estado obsoleto. Veja [Autopilot Handoff](./autopilot-handoff.md) para a cadeia completa, os tokens `--auto`/`--step` e as condições de parada.
 

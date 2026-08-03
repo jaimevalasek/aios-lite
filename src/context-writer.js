@@ -71,6 +71,7 @@ function renderProjectContext(data) {
   const walletProvider = data.walletProvider || '';
   const indexer = data.indexer || '';
   const rpcProvider = data.rpcProvider || '';
+  const autoHandoff = normalizeBoolean(data.autoHandoff, true);
   const notes = Array.isArray(data.notes) ? data.notes.filter(Boolean) : [];
 
   return `---
@@ -84,6 +85,7 @@ interaction_language: "${language}"
 conversation_language: "${language}"
 design_skill: "${designSkill}"
 test_runner: "${testRunner}"
+auto_handoff: ${autoHandoff ? 'true' : 'false'}
 web3_enabled: ${web3Enabled ? 'true' : 'false'}
 web3_networks: "${web3Networks}"
 contract_framework: "${contractFramework}"

@@ -69,6 +69,7 @@ After writing the PRD, run `aioson prototype:check . --feature={slug} --strict`.
 6. Surface at most one decision at a time, only when evidence cannot choose safely. Under Autopilot, apply the safe ownership resolution without asking for routine confirmation.
 7. Confirm Must-have, deferred, and out-of-scope boundaries.
 8. Write the PRD to disk; do not return a chat-only draft.
+9. Run `aioson classify . --feature={slug} --apply --json` after the capability map and acceptance criteria are complete. Use its final classification unless the owner explicitly chose a higher tier. Never preserve MICRO merely because the feature has one user type or few named integrations.
 
 ## Output kernel
 

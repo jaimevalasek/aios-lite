@@ -26,6 +26,8 @@ Between manual handoffs, output only the next agent and why; do not start its wo
 
 Autopilot is enabled for the current chain when the activation explicitly includes `--auto`, project `auto_handoff` is true, or `.aioson/context/workflow-execute.json` enables agentic policy. `--step` wins for that activation without rewriting the persisted preference.
 
+For a feature with a v2 `agent-execution-{slug}.json`, `orchestration.mode` is the developer-owned feature override and defaults new features to `autopilot`; `inherit` preserves the rules above. Effective Autopilot derives the runner checkpoint budget from `orchestration.max_checkpoints`, while step-by-step remains one checkpoint. Existing v1 manifests keep legacy behavior and are never rewritten; explicit `--step` still wins.
+
 The automatic chain is Product → Sheldon → Planner → Dev → QA. Sheldon must promote a current hash-bound PASS over the final PRD and hard authorities before Planner. Dev may dispatch explicitly enabled host/model development lanes but remains integration owner. Unavailable execution pauses unless the manifest declares an applicable fallback.
 
 Tester, Pentester, and Validator are disabled by default and run only when enabled and concretely triggered. They never grant Gate D. The chain stops for a genuinely user-owned decision and never closes/publishes a feature.

@@ -35,6 +35,7 @@ Esta é a porta de entrada da documentação em português. Não é um índice a
 9. [Publicar no aioson.com](./3-receitas/publicar-no-aioson-com.md) — `system:package` + `system:publish` (com `--invite`)
 10. [Clonar design de site](./3-receitas/clonar-design-de-site.md) — `@site-forge` + `@design-hybrid-forge`
 11. [Continuidade entre sessões](./3-receitas/continuidade-entre-sessoes.md) — feature dossier, dev-resume, drift detection
+12. [Exploração visual e arena entre modelos](./3-receitas/arena-de-exploracao-visual.md) — redesign por prints/código, variantes isoladas e promoção para Briefing
 
 ### Quero a referência técnica de um agente ou comando
 - **[Fichas dos 29 agentes (30 entradas com 1 alias)](./4-agentes/README.md)** — uma ficha por agente, com diálogo típico, saídas em disco e handoff
@@ -102,7 +103,7 @@ Atualmente só PT está em reforma. EN/ES/FR continuam usando os arquivos legado
 
 **Fase A (entender + começar)** — concluída · 8 docs em `1-entender/` e `2-comecar/`.
 **Fase B (receitas práticas + ficha por agente)** — concluída · 11 receitas em `3-receitas/` + 29 fichas em `4-agentes/`.
-**Fase C (referência técnica completa)** — concluída · 34 docs em `5-referencia/`, incluindo execução de subagentes, memória do operador e Review Intelligence atualizadas para a versão 1.44.0.
+**Fase C (referência técnica completa)** — concluída · 34 docs em `5-referencia/`, incluindo execução de subagentes, memória do operador e Review Intelligence atualizadas para a versão 1.45.0.
 **Fase D (trilhas de workflow)** — concluída · 3 trilhas canônicas de feature: briefing→PRD, plans externos, e trilha completa com @sheldon.
 
 **Métricas finais:** documentação organizada por trilhas, receitas, fichas de agentes e referência técnica, com o conteúdo histórico preservado em [`_arquivo/`](./_arquivo/).

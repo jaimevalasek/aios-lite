@@ -23,6 +23,7 @@ Estas três trilhas mostram **como features chegam ao desenvolvimento** no AIOSO
 | [Auditoria de segurança](./auditoria-seguranca.md) | Revisar vulnerabilidades antes de produção | @pentester |
 | [Publicar no aioson.com](./publicar-no-aioson-com.md) | Distribuir squad, skill ou genome | system:package, system:publish |
 | [Clonar design de site](./clonar-design-de-site.md) | Extrair visual de site ou combinar dois estilos | @site-forge, @design-hybrid-forge |
+| [Exploração visual e arena entre modelos](./arena-de-exploracao-visual.md) | Testar redesigns, prints e variantes antes do Briefing | @briefing-refiner, @briefing |
 | [Continuidade entre sessões](./continuidade-entre-sessoes.md) | Retomar feature após sessão encerrada | @deyvin, dossier, dev-state |
 
 Volte ao portal principal: [docs/pt/README.md](../README.md)

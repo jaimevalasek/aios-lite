@@ -10,6 +10,8 @@
  *   - A scheme for the CURRENT feature with `agentic_policy.enabled: false`
  *     (the `--step` disarm) → OFF, even over `auto_handoff: true` — an explicit
  *     per-feature choice always wins over the project default.
+ *   - A v2 agent-execution manifest with `orchestration.mode` explicitly set to
+ *     `autopilot` or `step_by_step` → that developer-owned per-feature choice.
  *   - `auto_handoff: true` in project.context.md frontmatter → ON (project default).
  *   - `auto_handoff: false` → OFF, even if a seeded scheme is lying around
  *     (step-by-step is the standing choice; a leftover scheme must not override it).
@@ -23,12 +25,23 @@
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const { validateProjectContextFile } = require('./context');
+const { manifestPath, resolveOrchestrationPolicy } = require('./agent-execution/manifest');
 
 const EXECUTION_STATE_RELATIVE_PATH = '.aioson/context/workflow-execute.json';
 
 async function readSeededScheme(targetDir) {
   try {
     const raw = await fs.readFile(path.join(targetDir, EXECUTION_STATE_RELATIVE_PATH), 'utf8');
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+async function readFeatureExecutionManifest(targetDir, slug) {
+  if (!slug) return null;
+  try {
+    const raw = await fs.readFile(manifestPath(targetDir, slug), 'utf8');
     return JSON.parse(raw);
   } catch {
     return null;
@@ -69,6 +82,18 @@ async function resolveAutopilotSignal(targetDir, {
     return { enabled: false, source: 'scheme_disarmed' };
   }
 
+  // The create-once feature manifest is the developer-owned per-feature
+  // execution policy. An explicit mode overrides the inherited project
+  // default, while `inherit` preserves the legacy frontmatter/scheme contract.
+  const executionManifest = await readFeatureExecutionManifest(targetDir, slug);
+  const orchestration = resolveOrchestrationPolicy(executionManifest);
+  if (orchestration.mode === 'step_by_step') {
+    return { enabled: false, source: 'agent_execution_manifest' };
+  }
+  if (orchestration.mode === 'autopilot') {
+    return { enabled: true, source: 'agent_execution_manifest' };
+  }
+
   if (flag === true) return { enabled: true, source: 'frontmatter' };
   if (flag === false) return { enabled: false, source: 'frontmatter_off' };
 
@@ -79,5 +104,6 @@ async function resolveAutopilotSignal(targetDir, {
 }
 
 module.exports = {
+  readFeatureExecutionManifest,
   resolveAutopilotSignal
 };

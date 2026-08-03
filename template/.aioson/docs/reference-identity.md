@@ -1,5 +1,5 @@
 ---
-description: "Reference-image-driven visual identity — how user-provided reference images become a text identity.md the interface-design engine applies, instead of every project inheriting a fixed preset's look. Covers the schema, the two scopes, the extraction skill, the verify:artifact gate, and the cross-harness/no-vision fallback."
+description: "Reference-image-driven visual identity — how user-provided reference images become a text identity.md the interface-design engine applies. Covers exploration, briefing, and brand scopes, the extraction skill, verification, and no-vision fallback."
 agents: [setup, briefing-refiner, ux-ui]
 task_types: [design, configuration, verification]
 triggers: [identity.md, reference image, visual identity, reference-identity-extract, kind=identity, brand reference, design_skill interface-design]
@@ -34,7 +34,7 @@ One text file the build consumes. Frontmatter mirrors the proven extracted-token
 the `interface-design` token families plus its Phase-1 anti-sameness anchors. Authored by the
 `reference-identity-extract` process skill (see its `SKILL.md` for the exact schema).
 
-- **Frontmatter:** `kind`, `scope` (`briefing` | `brand`), `slug`, `source` (`references` | `intent`),
+- **Frontmatter:** `kind`, `scope` (`exploration` | `briefing` | `brand`), `slug`, `source` (`references` | `intent`),
   `generated_by`, `generated_at`, `confidence`, `theme`, `base_unit`.
 - **Sections:** `## Design pillars`, `## Palette` (real hex), `## Typography`, `## Spacing & layout`,
   `## Radius & depth` (exactly one depth strategy), `## Motion`, `## Signature moves`, `## Anti-goals`,
@@ -42,17 +42,15 @@ the `interface-design` token families plus its Phase-1 anti-sameness anchors. Au
 - `source: references` (filled from images) vs `intent` (image-less fallback via interface-design's own
   Phase 0). **Same shape either way**, which is what makes it gateable and harness-portable.
 
-## Two scopes
+## Three scopes
 
 | scope | record | images |
 |---|---|---|
+| **Visual exploration** | `.aioson/explorations/{slug}/identity.md` | `.aioson/explorations/{slug}/inputs/references/` |
 | **Per-briefing** (default) | `.aioson/briefings/{slug}/identity.md` | `.aioson/briefings/{slug}/references/{identity,structure}/` |
 | **Project brand** | `.aioson/context/identity.md` | `.aioson/context/brand-references/{identity,structure}/` |
 
-**Resolution order** (identical for `@ux-ui` and `prototype-forge`): per-briefing → project brand →
-none (then `interface-design` Phase 0 governs). The **text record is canonical and committed**; the
-images are raw source and may be `.gitignore`d — extraction runs once, so the build never needs them
-again.
+**Resolution order:** exploration mode uses exploration → project brand → none; canonical feature work uses per-briefing → project brand → none. Then `interface-design` Phase 0 governs. The text record is the reusable source of truth; exploration identity remains non-canonical until the selected direction is incorporated through Briefing.
 
 ## How it runs
 
@@ -60,6 +58,7 @@ again.
   it offers reference-image intake: the user drops images into `references/{identity,structure}/`, the
   agent loads `reference-identity-extract`, writes `identity.md`, and `prototype-forge` builds from it.
   No images → it skips and `interface-design` runs intent-first. Always optional, never blocking.
+- **`@briefing-refiner`** (exploration mode) — before a Briefing exists, imported screenshots may produce `.aioson/explorations/{slug}/identity.md`; a targeted/full scan may separately prove current structure and behavior. Images establish observed visual evidence, code establishes current-system facts, and neither is silently treated as proposed scope.
 - **`@setup`** — for `site`/`web_app`, the recommended visual route is *interface-design + reference
   images* (sets `design_skill: interface-design`; the concrete look comes from `identity.md`). The
   fixed presets remain an explicit alternative.

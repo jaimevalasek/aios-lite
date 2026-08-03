@@ -1,6 +1,6 @@
 # @briefing-refiner — Revisa e refina um briefing antes do PRD
 
-> **Para quem é:** quem já tem um briefing gerado pelo `@briefing` e quer revisá-lo, anotar e refinar antes de comprometer um PRD.
+> **Para quem é:** quem quer revisar um briefing existente ou explorar uma direção visual antes de criar o Briefing.
 > **Tempo de leitura:** 5 min.
 > **O que você vai sair sabendo:**
 > - O que o `@briefing-refiner` faz e onde ele entra no fluxo.
@@ -21,14 +21,23 @@ O `@briefing-refiner` preenche essa etapa em um **loop de rodadas**: ele audita 
 - O briefing está `draft`, ou `approved` mas ainda **sem PRD gerado** (`prd_generated: null`).
 - Quer registrar comentários, decidir achados, pedir mudanças por seção ou marcar bloqueios antes de seguir para `@product`.
 - Quer **ver a solução** antes do PRD (modo prototype) e, opcionalmente, definir a identidade visual a partir das suas imagens de referência.
+- Ainda não tem Briefing, mas quer testar redesign, prints de referência, uma variante única ou uma arena entre modelos.
 
 ## Quando NÃO invocar
 
-- Ainda não existe briefing — vá primeiro para [`@briefing`](./briefing.md).
+- Ainda não existe briefing e o pedido é somente enquadramento não visual — vá para [`@briefing`](./briefing.md).
 - O briefing já gerou PRD (`prd_generated` preenchido) — refinar exigiria uma rota nova de PRD/enrichment, fora deste agente.
 - A ideia mudou tanto que vale regerar do zero — volte ao `@briefing`.
 
-## O loop de refinamento
+## Quando ainda não existe Briefing: exploração visual
+
+O Refiner oferece criar o Briefing primeiro, iniciar uma exploração ou continuar uma existente. Na exploração, ele confirma o alvo, escolhe `single`, `sequential` ou `arena`, avalia se os prints cobrem o necessário e pergunta se deve complementar as imagens com uma varredura `targeted` ou `full` do front-end atual.
+
+As variantes ficam em `.aioson/explorations/{slug}/`, cada uma com dono/modelo, protótipo e relatório próprios. A comparação pode ser cega, aceita comentários por região e preserva os “prompts matadores” de todas as tentativas. Uma direção selecionada só entra no fluxo canônico quando `exploration:promote` cria `plans/{briefing-slug}/visual-exploration.md`; então `@briefing` cria o Briefing e o Refiner consolida o protótipo da feature.
+
+Veja a receita [Exploração visual e arena entre modelos](../3-receitas/arena-de-exploracao-visual.md).
+
+## O loop de refinamento canônico
 
 ```
 auditoria (agente) → review.html (CLI) → você decide no navegador
@@ -113,12 +122,14 @@ O protótipo é mock-only e nunca vira feedback canônico.
 | `.aioson/briefings/{slug}/refinement-*.{applied,declined}-round{N}.json` | Arquivo morto por rodada (feedback aplicado ou recusado, e findings consumidos) |
 | `.aioson/briefings/{slug}/briefings.md` | Atualizado **apenas** após confirmação |
 | `.aioson/briefings/config.md` | Índice/registro de briefings atualizado |
+| `.aioson/explorations/{slug}/` | Intake, referências, variantes, comparação e relatórios de uma exploração não canônica |
+| `plans/{briefing-slug}/visual-exploration.md` | Fonte promovida e fingerprintada para o `@briefing` |
 
 ## Como ele lê seu projeto
 
 1. `.aioson/config.md`
 2. `.aioson/context/project.context.md`
-3. `.aioson/briefings/config.md` — resolve o slug refinável (se ausente, roteia para `@briefing`).
+3. `.aioson/briefings/config.md` — resolve o slug refinável; sem ele, decide entre Briefing e exploração visual.
 4. `.aioson/briefings/{slug}/briefings.md` — lido antes de escrever qualquer artefato de revisão.
 
 ## Limites importantes (hard constraints)

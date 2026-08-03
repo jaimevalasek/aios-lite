@@ -9,6 +9,8 @@ triggers: [prototype requested, rich-surface prototype accepted, user names anot
 
 Load for every visible or interaction-bearing feature, or when the user explicitly names another model for a bounded supporting task. A genuinely non-visual feature may record `prototype: not_applicable` with evidence instead.
 
+This module owns only the canonical, feature-owned prototype after a Briefing exists. For screenshot-led experiments, redesign options, or model arenas without a refinable Briefing, load `visual-exploration.md`; never write those candidates into `.aioson/briefings/` or reuse them directly as the approved prototype.
+
 ## Explicit model delegation
 
 This route is user-requested only. Load `.aioson/docs/model-delegation.md` and follow it exactly.

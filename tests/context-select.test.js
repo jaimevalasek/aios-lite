@@ -34,6 +34,48 @@ test('pathMatchesPattern supports prefix, single-star and double-star matches', 
   assert.equal(pathMatchesPattern('tests/context-select.test.js', 'src/**'), false);
 });
 
+test('context:select discovers nested rules and uses priority only after relevance is proven', async () => {
+  const dir = await makeTmpDir();
+  try {
+    await writeFile(dir, '.aioson/context/project.context.md', '---\nframework: Node.js\n---\n# Project');
+    await writeFile(dir, '.aioson/context/project-pulse.md', '---\nactive_feature: (none)\n---\n# Pulse');
+    const rule = (name, priority, trigger) => [
+      '---',
+      `name: ${name}`,
+      `description: ${name}`,
+      'agents: [dev]',
+      'modes: [executing]',
+      `priority: ${priority}`,
+      `triggers: [${trigger}]`,
+      'load_tier: trigger',
+      '---',
+      `# ${name}`
+    ].join('\n');
+
+    await writeFile(dir, '.aioson/rules/forms/low.md', rule('low', 1, 'cpf validation'));
+    await writeFile(dir, '.aioson/rules/forms/high.md', rule('high', 20, 'cpf validation'));
+    await writeFile(dir, '.aioson/rules/forms/irrelevant.md', rule('irrelevant', 100, 'deploy kubernetes'));
+
+    const result = await selectContext(dir, {
+      agent: 'dev',
+      mode: 'executing',
+      task: 'implement cpf validation',
+      semantic: false
+    });
+    const paths = result.selected.map((item) => item.path);
+
+    assert.ok(paths.includes('.aioson/rules/forms/high.md'));
+    assert.ok(paths.includes('.aioson/rules/forms/low.md'));
+    assert.equal(paths.includes('.aioson/rules/forms/irrelevant.md'), false, 'priority cannot bypass eligibility');
+    assert.ok(
+      paths.indexOf('.aioson/rules/forms/high.md') < paths.indexOf('.aioson/rules/forms/low.md'),
+      'higher priority orders equally relevant rules first'
+    );
+  } finally {
+    await fs.rm(dir, { recursive: true, force: true });
+  }
+});
+
 test('context:select keeps governance out of planning when no trigger fires', async () => {
   const dir = await makeTmpDir();
   try {
