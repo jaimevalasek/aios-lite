@@ -47,7 +47,7 @@ aioson exploration:run . \
   --json
 ```
 
-The parent allocates an immutable `runs/variant-*` directory per model before parallel execution. Workers remain read-only and return delimited prototype/report blocks; the parent validates and persists them. One failed model does not cancel successful variants or authorize silent substitution.
+The parent allocates an immutable `runs/variant-*` directory per model before parallel execution. Workers remain read-only and return delimited prototype/report blocks; the parent validates and persists them. Reports inherit `interaction_language` configured by Setup in `project.context.md`; agents, skills, genomes, machine markers, and technical identifiers remain canonical in English. `inputs/user-prompts.md` automatically preserves material user prompts and is snapshotted per variant—the user does not need to ask for logging in chat. The root `RELATORIO.md` is updated automatically with those prompts and direct links to every variant prototype and detailed report. One failed model does not cancel successful variants or authorize silent substitution.
 
 Use `sequential` when testing one model after another. An isolated run always receives the original frozen input. A cumulative run names a parent and receives its report as improvement evidence.
 

@@ -17,6 +17,8 @@ This layer currently holds the original EN feature guides. Additional reference 
 | [executable-verification.md](./executable-verification.md) | The executable-verification theme: `verification` + `harness:check`, fresh-context validator, `spec:analyze`, Wave markers, Lane B (`forge:compile` + `@forge-run`) |
 | [autopilot-handoff.md](./autopilot-handoff.md) | Streamlined canonical handoffs through Product → Sheldon → Planner → DEV → QA; bounded stops and human close/publish gate |
 | [agent-execution.md](./agent-execution.md) | Feature-scoped manifests, generic development lanes, safe host/model resolution, explicit fallback, bound reports, and telemetry |
+| [runtime-storage.md](./runtime-storage.md) | Per-clone local database, command/table map, guarded retention, compaction, and Neo maintenance |
+| [output-strategy-delivery.md](./output-strategy-delivery.md) | File-first squad outputs, local runtime indexing, delivery, and legacy migration |
 
 ---
 
@@ -61,4 +63,4 @@ This layer currently holds the original EN feature guides. Additional reference 
 ## Coming from docs/pt/5-referencia/
 
 The following docs exist in PT and will be translated progressively:
-`feature-dossier` · `agent-chain-continuity` · `sdd-framework` · `live-sessions` · `secure-by-default` · `aioson-com-store` · `memoria-e-contexto` · `runtime-observability` · `hooks-session-guard` · `fluxo-artefatos` · `feature-archive` · `design-docs-governance` · `sandbox` · `agent-sharding` · `output-strategy-delivery` · `genome-distribution` · `clientes-ai` · `sdd-planos-e-estrutura`
+`feature-dossier` · `agent-chain-continuity` · `sdd-framework` · `live-sessions` · `secure-by-default` · `aioson-com-store` · `memoria-e-contexto` · `runtime-observability` · `hooks-session-guard` · `fluxo-artefatos` · `feature-archive` · `design-docs-governance` · `sandbox` · `agent-sharding` · `genome-distribution` · `clientes-ai` · `sdd-planos-e-estrutura`

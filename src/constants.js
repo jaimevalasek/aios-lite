@@ -52,6 +52,7 @@ const MANAGED_FILES = [
   '.aioson/docs/genome/runtime-application.md',
   '.aioson/docs/genome/legacy-command-contracts.md',
   '.aioson/docs/neo/state-diagnostics.md',
+  '.aioson/docs/neo/runtime-storage.md',
   '.aioson/docs/neo/routing-matrix.md',
   '.aioson/docs/neo/agent-catalog.md',
   '.aioson/docs/neo/legacy-routing-reference.md',

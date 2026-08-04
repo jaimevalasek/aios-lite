@@ -6,11 +6,16 @@ const path = require('node:path');
 const { runDelegationRun } = require('../commands/delegation');
 const { HOSTS } = require('../model-delegation');
 const {
+  EXACT_PROMPT_MARKER,
+  INCREMENTAL_PROMPT_MARKER,
+  ONE_SHOT_PROMPT_MARKER,
   RUN_REPORT_MARKER,
+  USER_PROMPTS_MARKER,
   addRun,
   atomicWrite,
   readManifest,
   recordRun,
+  reportCopy,
   writeRun
 } = require('./store');
 const { validateIntake } = require('./schema');
@@ -37,16 +42,17 @@ function parseModelMatrix(value) {
 }
 
 async function readInputs(root, expectedSlug) {
-  const [task, sourceMap, intakeRaw] = await Promise.all([
+  const [task, sourceMap, userPrompts, intakeRaw] = await Promise.all([
     fs.readFile(path.join(root, 'inputs', 'task.md'), 'utf8'),
     fs.readFile(path.join(root, 'inputs', 'source-map.md'), 'utf8'),
+    fs.readFile(path.join(root, 'inputs', 'user-prompts.md'), 'utf8').catch(() => ''),
     fs.readFile(path.join(root, 'intake.json'), 'utf8')
   ]);
   const intake = JSON.parse(intakeRaw);
   const validation = validateIntake(intake, expectedSlug);
   if (!validation.ok) return { ok: false, reason: 'intake_invalid', errors: validation.errors };
   if (intake.decision === 'pending') return { ok: false, reason: 'intake_confirmation_required' };
-  return { ok: true, task, sourceMap, intake };
+  return { ok: true, task, sourceMap, userPrompts, intake };
 }
 
 function buildArtifactTask({ manifest, run, inputs, parentReport, boundary }) {
@@ -65,6 +71,9 @@ ${inputs.sourceMap}
 
 INTAKE
 ${JSON.stringify(inputs.intake, null, 2)}
+
+USER PROMPTS RECEIVED
+${inputs.userPrompts || 'No separate verbatim user-prompt ledger was available.'}
 ${cumulative}
 REFERENCE EVIDENCE
 Inspect every imported file named by intake.references[].copied_path that the host can render. Treat screenshots as observed visual evidence, source-map/code as current-system evidence, assumptions as assumptions, and proposed changes as proposals. If image inspection is unavailable, disclose that limitation instead of claiming visual facts.
@@ -77,7 +86,9 @@ QUALITY CONTRACT
 - Use an intentional visual thesis, explicit anti-goals, and one product-specific signature move.
 - Honor keyboard access, visible focus, contrast, reduced motion, mobile and desktop layout.
 - Validate inline JavaScript syntax before returning.
-- In the report, preserve the exact generation prompt, explain the direction, list iteration lessons and limitations, and include a reusable one-shot "killer prompt" plus an incremental prompt sequence for another model or benchmark.
+- Write every user-facing report heading and explanation in ${manifest.language || 'en'}. Keep literal user quotes, code identifiers, paths, markers, and model IDs unchanged.
+- In the report, preserve the user-prompt ledger verbatim under the marker ${USER_PROMPTS_MARKER}; preserve the exact generation prompt under ${EXACT_PROMPT_MARKER}; include a reusable one-shot prompt under ${ONE_SHOT_PROMPT_MARKER}; and include the incremental sequence under ${INCREMENTAL_PROMPT_MARKER}.
+- Explain the direction, list iteration lessons and limitations, and never require the user to ask separately for prompt preservation.
 
 OUTPUT CONTRACT
 Return exactly two delimited blocks and no code fences. Do not write project files.
@@ -86,8 +97,8 @@ AIOSON_PROTOTYPE_BEGIN_${boundary}
 <!doctype html>...complete artifact...
 AIOSON_PROTOTYPE_END_${boundary}
 AIOSON_REPORT_BEGIN_${boundary}
-# Exploration run report
-...Markdown report containing the marker ${RUN_REPORT_MARKER}...
+# Report in ${manifest.language || 'en'}
+...Markdown report containing ${RUN_REPORT_MARKER}, ${USER_PROMPTS_MARKER}, ${EXACT_PROMPT_MARKER}, ${ONE_SHOT_PROMPT_MARKER}, and ${INCREMENTAL_PROMPT_MARKER}...
 AIOSON_REPORT_END_${boundary}`;
 }
 
@@ -100,21 +111,67 @@ function extractBlock(output, name, boundary) {
   return output.slice(start + begin.length, finish).trim();
 }
 
-function normalizeReport(report, task, execution) {
+function ensureMarker(value, marker, headings, fallback) {
+  if (value.includes(marker)) return value;
+  for (const heading of headings) {
+    const expression = new RegExp(`^(###\\s+${heading.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*)$`, 'mi');
+    if (expression.test(value)) return value.replace(expression, `$1\n\n${marker}`);
+  }
+  return `${value}\n\n${fallback}`;
+}
+
+function localizeKnownHeadings(value, copy) {
+  const headings = [
+    ['Exploration run report', copy.runTitle],
+    ['Execution provenance', copy.execution],
+    ['Input summary', copy.inputSummary],
+    ['Design direction and decisions', copy.direction],
+    ['Iteration timeline', copy.timeline],
+    ['Validation and limitations', copy.validation],
+    ['Reusable prompts', copy.reusablePrompts],
+    ['User prompts received', copy.userPrompts],
+    ['Exact generation prompt', copy.exactPrompt],
+    ['One-shot prompt', copy.oneShot],
+    ['Incremental prompt sequence', copy.incremental],
+    ['Bound execution provenance', copy.execution]
+  ];
+  let localized = value;
+  for (const [source, target] of headings) {
+    localized = localized.replace(new RegExp(`^(#{1,3})\\s+${source.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?=\\s|$)`, 'gmi'), `$1 ${target}`);
+  }
+  return localized;
+}
+
+function promptHistoryBody(markdown, fallback) {
+  const body = String(markdown || '').split(/\r?\n/)
+    .filter(line => !/^#\s+/.test(line) && !line.includes(USER_PROMPTS_MARKER))
+    .join('\n').trim();
+  return body || fallback;
+}
+
+function normalizeReport(report, task, execution, { language = 'en', userPrompts = '' } = {}) {
+  const copy = reportCopy(language);
   let value = String(report || '').trim();
-  if (!/^#\s+/m.test(value)) value = `# Exploration run report\n\n${value}`;
+  if (!/^#\s+/m.test(value)) value = `# ${copy.runTitle}\n\n${value}`;
+  value = localizeKnownHeadings(value, copy);
   if (!value.includes('<!-- aioson:visual-exploration-report -->')) {
     value = value.replace(/^(#.*\r?\n)/, '$1\n<!-- aioson:visual-exploration-report -->\n');
   }
   if (!value.includes(RUN_REPORT_MARKER)) {
-    value += `\n\n## Reusable prompts\n\n${RUN_REPORT_MARKER}\n`;
+    value += `\n\n## ${copy.reusablePrompts}\n\n${RUN_REPORT_MARKER}\n`;
   }
-  if (!value.includes('### Exact generation prompt')) value += `\n\n### Exact generation prompt\n\n\`\`\`text\n${task}\n\`\`\`\n`;
-  if (!value.includes('### One-shot prompt')) value += `\n\n### One-shot prompt\n\n\`\`\`text\n${task}\n\`\`\`\n`;
-  if (!value.includes('### Incremental prompt sequence')) {
-    value += '\n\n### Incremental prompt sequence\n\n1. Recreate the frozen surface and its required states.\n2. Apply the visual thesis and signature move without losing behavior.\n3. Render mobile and desktop, critique the result, then repair only evidenced issues.\n';
-  }
-  value += `\n\n## Bound execution provenance\n\n- Host: ${execution.provider}\n- Model requested: ${execution.model_requested}\n- Model resolved: ${execution.model_resolved}\n- Resolution: ${execution.model_resolution_strategy}\n- Mode: ${execution.mode}\n`;
+  value = ensureMarker(value, USER_PROMPTS_MARKER, [copy.userPrompts, 'User prompts received'], `### ${copy.userPrompts}\n\n${USER_PROMPTS_MARKER}\n\n${promptHistoryBody(userPrompts, copy.noUserPrompts)}`);
+  value = ensureMarker(value, EXACT_PROMPT_MARKER, [copy.exactPrompt, 'Exact generation prompt'], `### ${copy.exactPrompt}\n\n${EXACT_PROMPT_MARKER}\n\n\`\`\`text\n${task}\n\`\`\``);
+  value = ensureMarker(value, ONE_SHOT_PROMPT_MARKER, [copy.oneShot, 'One-shot prompt'], `### ${copy.oneShot}\n\n${ONE_SHOT_PROMPT_MARKER}\n\n\`\`\`text\n${task}\n\`\`\``);
+  value = ensureMarker(value, INCREMENTAL_PROMPT_MARKER, [copy.incremental, 'Incremental prompt sequence'], `### ${copy.incremental}\n\n${INCREMENTAL_PROMPT_MARKER}\n\n${copy.tbdIncremental}`);
+  const extra = String(language).toLowerCase().startsWith('pt')
+    ? { resolution: 'Resolução', mode: 'Modo' }
+    : String(language).toLowerCase().startsWith('es')
+      ? { resolution: 'Resolución', mode: 'Modo' }
+      : String(language).toLowerCase().startsWith('fr')
+        ? { resolution: 'Résolution', mode: 'Mode' }
+        : { resolution: 'Resolution', mode: 'Mode' };
+  value += `\n\n## ${copy.execution}\n\n- ${copy.host}: ${execution.provider}\n- ${copy.modelRequested}: ${execution.model_requested}\n- ${copy.modelResolved}: ${execution.model_resolved}\n- ${extra.resolution}: ${execution.model_resolution_strategy}\n- ${extra.mode}: ${execution.mode}\n`;
   return `${value.trim()}\n`;
 }
 
@@ -176,13 +233,27 @@ async function runOne({ projectDir, slug, spec, created, currentHost, inputs, pa
     return { ok: false, run: run.id, reason: 'artifact_envelope_invalid' };
   }
   await atomicWrite(path.join(created.run_root, 'prototype.html'), `${prototype}\n`);
-  await atomicWrite(path.join(created.run_root, 'report.md'), normalizeReport(report, artifactTask, execution));
+  const manifest = (await readManifest(projectDir, slug)).manifest;
+  const userPrompts = await fs.readFile(path.join(created.run_root, 'user-prompts.md'), 'utf8').catch(() => inputs.userPrompts || '');
+  await atomicWrite(path.join(created.run_root, 'report.md'), normalizeReport(report, artifactTask, execution, {
+    language: manifest.language,
+    userPrompts
+  }));
   const recorded = await recordRun(projectDir, slug, run.id, {
     modelResolved: execution.model_resolved,
     resolutionStrategy: execution.model_resolution_strategy
   });
   return recorded.ok
-    ? { ok: true, run: run.id, model_requested: execution.model_requested, model_resolved: execution.model_resolved, warnings: recorded.run.warnings }
+    ? {
+        ok: true,
+        run: run.id,
+        model_requested: execution.model_requested,
+        model_resolved: execution.model_resolved,
+        prototype_path: created.prototype_path,
+        report_path: created.report_path,
+        summary_report_path: created.summary_report_path,
+        warnings: recorded.run.warnings
+      }
     : recorded;
 }
 
@@ -259,6 +330,7 @@ async function runModelArena({
     complete: results.every(result => result.ok),
     slug,
     strategy: loaded.manifest.strategy,
+    summary_report_path: loaded.report_path,
     results
   };
 }

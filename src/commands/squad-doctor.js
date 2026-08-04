@@ -324,7 +324,7 @@ async function runSquadDoctor({ args, options = {}, logger, t }) {
       const indexedRows = db
         .prepare(
           `
-            SELECT content_key, json_path, html_path
+            SELECT content_key, source_path, json_path, html_path
             FROM content_items
             WHERE squad_slug = ?
           `
@@ -332,6 +332,7 @@ async function runSquadDoctor({ args, options = {}, logger, t }) {
         .all(slug);
       const indexedPaths = new Set();
       for (const row of indexedRows) {
+        if (row.source_path) indexedPaths.add(normalizeRel(row.source_path));
         if (row.json_path) indexedPaths.add(normalizeRel(row.json_path));
         if (row.html_path) indexedPaths.add(normalizeRel(row.html_path));
       }

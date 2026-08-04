@@ -22,11 +22,49 @@ const MAX_PROTOTYPE_BYTES = 2_000_000;
 const MAX_REFERENCE_BYTES = 25 * 1024 * 1024;
 const MAX_REFERENCES = 32;
 const RUN_REPORT_MARKER = '<!-- aioson:reusable-prompts -->';
+const USER_PROMPTS_MARKER = '<!-- aioson:user-prompts -->';
+const EXACT_PROMPT_MARKER = '<!-- aioson:exact-generation-prompt -->';
+const ONE_SHOT_PROMPT_MARKER = '<!-- aioson:one-shot-prompt -->';
+const INCREMENTAL_PROMPT_MARKER = '<!-- aioson:incremental-prompt-sequence -->';
 const TRANSIENT_RENAME_ERRORS = new Set(['EACCES', 'EBUSY', 'ENOTEMPTY', 'EPERM']);
 const manifestMutationQueues = new Map();
 
 function now() {
   return new Date().toISOString();
+}
+
+const REPORT_COPY = {
+  en: {
+    manifestTitle: 'Visual exploration', slug: 'Slug', status: 'Status', strategy: 'Strategy', contextPolicy: 'Context policy', displayMode: 'Display mode', target: 'Target', scan: 'Front-end scan', selected: 'Selected run', runs: 'Runs', variant: 'Variant', host: 'Host', requestedModel: 'Requested model', resolvedModel: 'Resolved model', artifacts: 'Artifacts', prototype: 'prototype', report: 'report', none: 'none', pending: 'pending', humanReport: 'Human-readable report', humanReportText: 'Open [`RELATORIO.md`](RELATORIO.md) for the exploration overview, user prompts, and direct links to every variant report.', authority: 'Authority', manifestAuthority: 'This exploration is non-canonical. Product, Planner, and Dev must ignore it until a selected run is promoted into a Briefing source pack and later consolidated as the feature-owned prototype.', promotion: 'Promotion', promotionText: (slug, source) => `Prepared for briefing slug \`${slug}\` at \`${source || 'unknown'}\`.`,
+    summaryTitle: 'Visual exploration report', exploration: 'Exploration', comparison: 'Comparison', comparisonNote: 'available after `exploration:review`', structuredState: 'Structured state', variants: 'Variants', provenance: 'Provenance', detailedReport: 'Detailed report', open: 'open', read: 'read', userPromptsByVariant: 'User prompts by variant', noStructuredPrompts: 'This legacy run did not preserve a separate verbatim user-prompt ledger. See its exact generation prompt in the detailed report; missing wording is not reconstructed.', reusablePrompts: 'Reusable prompts', reusableText: 'Each detailed variant report is append-only and preserves its exact generation prompt, reusable one-shot prompt, incremental sequence, feedback, corrections, validation, and limitations. Rejected variants remain available for learning and external benchmarks.', summaryAuthority: 'This report is a derived, human-readable view. The structured exploration state remains `exploration-manifest.json`, and the exploration remains non-canonical until a selected run is promoted into a Briefing source pack and later consolidated as the feature-owned prototype.',
+    runTitle: 'Exploration run report', execution: 'Execution provenance', modelRequested: 'Model requested', modelResolved: 'Model resolved', inputSummary: 'Input summary', direction: 'Design direction and decisions', timeline: 'Iteration timeline', validation: 'Validation and limitations', userPrompts: 'User prompts received', noUserPrompts: 'No separate verbatim chat prompt was available to the runner. The frozen task below is the available request evidence.', exactPrompt: 'Exact generation prompt', oneShot: 'One-shot prompt', incremental: 'Incremental prompt sequence', planned: 'planned', tbdDirection: 'TBD — generated during the run.', tbdTimeline: 'TBD — append user feedback, changes, bugs, and corrections without erasing prior rounds.', tbdValidation: 'TBD — record only checks actually executed.', tbdIncremental: 'TBD — derive from the successful session, including corrective prompts.'
+  },
+  pt: {
+    manifestTitle: 'Exploração visual', slug: 'Slug', status: 'Status', strategy: 'Estratégia', contextPolicy: 'Política de contexto', displayMode: 'Modo de exibição', target: 'Alvo', scan: 'Varredura do front-end', selected: 'Variante selecionada', runs: 'Variantes', variant: 'Variante', host: 'Host', requestedModel: 'Modelo solicitado', resolvedModel: 'Modelo resolvido', artifacts: 'Artefatos', prototype: 'protótipo', report: 'relatório', none: 'nenhuma', pending: 'pendente', humanReport: 'Relatório legível', humanReportText: 'Abra [`RELATORIO.md`](RELATORIO.md) para ver o panorama da exploração, os prompts do usuário e os links diretos de cada variante.', authority: 'Autoridade', manifestAuthority: 'Esta exploração não é canônica. Product, Planner e Dev devem ignorá-la até que uma variante selecionada seja promovida para um pacote-fonte de Briefing e depois consolidada como protótipo pertencente à feature.', promotion: 'Promoção', promotionText: (slug, source) => `Preparada para o briefing \`${slug}\` em \`${source || 'desconhecido'}\`.`,
+    summaryTitle: 'Relatório da exploração visual', exploration: 'Exploração', comparison: 'Comparação', comparisonNote: 'disponível após `exploration:review`', structuredState: 'Estado estruturado', variants: 'Variantes', provenance: 'Proveniência', detailedReport: 'Relatório detalhado', open: 'abrir', read: 'ler', userPromptsByVariant: 'Prompts do usuário por variante', noStructuredPrompts: 'Esta variante legada não preservou um histórico literal separado dos prompts do usuário. Consulte o prompt exato de geração no relatório detalhado; textos ausentes não são reconstruídos.', reusablePrompts: 'Prompts reutilizáveis', reusableText: 'O relatório detalhado de cada variante é append-only e preserva o prompt exato de geração, o prompt único reutilizável, a sequência incremental, feedbacks, correções, validações e limitações. Variantes rejeitadas continuam disponíveis para aprendizado e benchmarks externos.', summaryAuthority: 'Este relatório é uma visão derivada e legível. O estado estruturado permanece em `exploration-manifest.json`, e a exploração continua não canônica até que uma variante selecionada seja promovida para um pacote-fonte de Briefing e depois consolidada como protótipo pertencente à feature.',
+    runTitle: 'Relatório da variante de exploração', execution: 'Proveniência da execução', modelRequested: 'Modelo solicitado', modelResolved: 'Modelo resolvido', inputSummary: 'Resumo da entrada', direction: 'Direção e decisões de design', timeline: 'Linha do tempo da iteração', validation: 'Validação e limitações', userPrompts: 'Prompts do usuário recebidos', noUserPrompts: 'Nenhum prompt literal separado do chat estava disponível para o runner. A tarefa congelada abaixo é a evidência disponível da solicitação.', exactPrompt: 'Prompt exato de geração', oneShot: 'Prompt único reutilizável', incremental: 'Sequência incremental de prompts', planned: 'planejada', tbdDirection: 'A definir — gerado durante a execução.', tbdTimeline: 'A definir — anexar feedbacks, mudanças, bugs e correções sem apagar rodadas anteriores.', tbdValidation: 'A definir — registrar somente verificações realmente executadas.', tbdIncremental: 'A definir — derivar da sessão bem-sucedida, incluindo prompts corretivos.'
+  },
+  es: {
+    summaryTitle: 'Informe de la exploración visual', exploration: 'Exploración', status: 'Estado', strategy: 'Estrategia', selected: 'Variante seleccionada', comparison: 'Comparación', comparisonNote: 'disponible después de `exploration:review`', structuredState: 'Estado estructurado', variants: 'Variantes', variant: 'Variante', provenance: 'Procedencia', prototype: 'Prototipo', detailedReport: 'Informe detallado', open: 'abrir', read: 'leer', none: 'ninguna', userPromptsByVariant: 'Prompts del usuario por variante', noStructuredPrompts: 'Esta variante heredada no conservó un registro literal separado de los prompts del usuario. Consulte el prompt exacto de generación en el informe detallado; no se reconstruye texto ausente.', reusablePrompts: 'Prompts reutilizables', reusableText: 'El informe detallado de cada variante conserva el prompt exacto, el prompt reutilizable, la secuencia incremental, comentarios, correcciones, validaciones y limitaciones.', authority: 'Autoridad', summaryAuthority: 'Este informe es una vista derivada. El estado estructurado permanece en `exploration-manifest.json` y la exploración no es canónica hasta su promoción y consolidación.', promotion: 'Promoción', promotionText: (slug, source) => `Preparada para el briefing \`${slug}\` en \`${source || 'desconocido'}\`.`, runTitle: 'Informe de la variante de exploración', execution: 'Procedencia de la ejecución', host: 'Host', modelRequested: 'Modelo solicitado', modelResolved: 'Modelo resuelto', inputSummary: 'Resumen de la entrada', direction: 'Dirección y decisiones de diseño', timeline: 'Cronología de la iteración', validation: 'Validación y limitaciones', userPrompts: 'Prompts del usuario recibidos', noUserPrompts: 'No había un prompt literal separado del chat disponible. La tarea congelada es la evidencia disponible.', exactPrompt: 'Prompt exacto de generación', oneShot: 'Prompt reutilizable único', incremental: 'Secuencia incremental de prompts', planned: 'planificada', tbdDirection: 'Pendiente — generado durante la ejecución.', tbdTimeline: 'Pendiente — anexar comentarios, cambios, errores y correcciones.', tbdValidation: 'Pendiente — registrar solo verificaciones ejecutadas.', tbdIncremental: 'Pendiente — derivar de la sesión exitosa.'
+  },
+  fr: {
+    summaryTitle: "Rapport de l’exploration visuelle", exploration: 'Exploration', status: 'Statut', strategy: 'Stratégie', selected: 'Variante sélectionnée', comparison: 'Comparaison', comparisonNote: 'disponible après `exploration:review`', structuredState: 'État structuré', variants: 'Variantes', variant: 'Variante', provenance: 'Provenance', prototype: 'Prototype', detailedReport: 'Rapport détaillé', open: 'ouvrir', read: 'lire', none: 'aucune', userPromptsByVariant: 'Prompts utilisateur par variante', noStructuredPrompts: 'Cette variante héritée n’a pas conservé un journal littéral séparé des prompts utilisateur. Consultez le prompt de génération exact dans le rapport détaillé ; le texte manquant n’est pas reconstruit.', reusablePrompts: 'Prompts réutilisables', reusableText: 'Le rapport détaillé de chaque variante conserve le prompt exact, le prompt réutilisable, la séquence incrémentale, les retours, corrections, validations et limites.', authority: 'Autorité', summaryAuthority: 'Ce rapport est une vue dérivée. L’état structuré reste dans `exploration-manifest.json` et l’exploration demeure non canonique jusqu’à sa promotion et sa consolidation.', promotion: 'Promotion', promotionText: (slug, source) => `Préparée pour le briefing \`${slug}\` dans \`${source || 'inconnu'}\`.`, runTitle: "Rapport de la variante d’exploration", execution: "Provenance de l’exécution", host: 'Host', modelRequested: 'Modèle demandé', modelResolved: 'Modèle résolu', inputSummary: "Résumé de l’entrée", direction: 'Direction et décisions de design', timeline: "Chronologie de l’itération", validation: 'Validation et limites', userPrompts: 'Prompts utilisateur reçus', noUserPrompts: 'Aucun prompt littéral distinct du chat n’était disponible. La tâche figée constitue la preuve disponible.', exactPrompt: 'Prompt de génération exact', oneShot: 'Prompt réutilisable unique', incremental: 'Séquence incrémentale de prompts', planned: 'planifiée', tbdDirection: "À définir — généré pendant l’exécution.", tbdTimeline: 'À définir — ajouter retours, changements, bugs et corrections.', tbdValidation: 'À définir — enregistrer uniquement les vérifications exécutées.', tbdIncremental: 'À définir — dériver de la session réussie.'
+  }
+};
+
+function reportCopy(language) {
+  const base = String(language || 'en').trim().toLowerCase().split('-')[0];
+  return { ...REPORT_COPY.en, ...(REPORT_COPY[base] || {}) };
+}
+
+function localizedEnum(value, language) {
+  const base = String(language || 'en').trim().toLowerCase().split('-')[0];
+  const values = {
+    pt: { open: 'aberta', selected: 'selecionada', 'promotion-prepared': 'promoção preparada', closed: 'fechada', single: 'única', sequential: 'sequencial', arena: 'arena', planned: 'planejada', running: 'em execução', completed: 'concluída', 'completed-with-warnings': 'concluída com alertas', failed: 'falhou', rejected: 'rejeitada' },
+    es: { open: 'abierta', selected: 'seleccionada', 'promotion-prepared': 'promoción preparada', closed: 'cerrada', single: 'única', sequential: 'secuencial', arena: 'arena', planned: 'planificada', running: 'en ejecución', completed: 'completada', 'completed-with-warnings': 'completada con avisos', failed: 'fallida', rejected: 'rechazada' },
+    fr: { open: 'ouverte', selected: 'sélectionnée', 'promotion-prepared': 'promotion préparée', closed: 'fermée', single: 'unique', sequential: 'séquentielle', arena: 'arène', planned: 'planifiée', running: 'en cours', completed: 'terminée', 'completed-with-warnings': 'terminée avec avertissements', failed: 'échouée', rejected: 'rejetée' }
+  };
+  return values[base]?.[value] || value;
 }
 
 function assertChoice(value, choices, field) {
@@ -94,33 +132,127 @@ async function withManifestMutation(projectDir, slug, mutation) {
 }
 
 function renderManifestMarkdown(manifest) {
-  const selected = manifest.selected_run || 'none';
+  const copy = reportCopy(manifest.language);
+  const selected = manifest.selected_run || copy.none;
   const lines = [
-    `# Visual exploration — ${manifest.title}`,
+    `# ${copy.manifestTitle} — ${manifest.title}`,
     '',
     '<!-- aioson:visual-exploration-manifest -->',
     '',
-    `- Slug: \`${manifest.slug}\``,
-    `- Status: \`${manifest.status}\``,
-    `- Strategy: \`${manifest.strategy}\``,
-    `- Context policy: \`${manifest.context_policy}\``,
-    `- Display mode: \`${manifest.display_mode}\``,
-    `- Target: \`${manifest.target_kind}\``,
-    `- Front-end scan: \`${manifest.scan_scope}\``,
-    `- Selected run: \`${selected}\``,
+    `- ${copy.slug}: \`${manifest.slug}\``,
+    `- ${copy.status}: \`${manifest.status}\``,
+    `- ${copy.strategy}: \`${manifest.strategy}\``,
+    `- ${copy.contextPolicy}: \`${manifest.context_policy}\``,
+    `- ${copy.displayMode}: \`${manifest.display_mode}\``,
+    `- ${copy.target}: \`${manifest.target_kind}\``,
+    `- ${copy.scan}: \`${manifest.scan_scope}\``,
+    `- ${copy.selected}: \`${selected}\``,
     '',
-    '## Runs',
+    `## ${copy.runs}`,
     '',
-    '| Variant | Status | Host | Requested model | Resolved model |',
+    `| ${copy.variant} | ${copy.status} | ${copy.host} | ${copy.requestedModel} | ${copy.resolvedModel} | ${copy.artifacts} |`,
+    '|---|---|---|---|---|---|'
+  ];
+  if (!manifest.runs.length) lines.push('| _none yet_ | — | — | — | — | — |');
+  for (const run of manifest.runs) {
+    const artifacts = `[${copy.prototype}](runs/${run.id}/prototype.html) · [${copy.report}](runs/${run.id}/report.md)`;
+    lines.push(`| ${run.label} (\`${run.id}\`) | ${run.status} | ${run.host} | ${run.model_requested} | ${run.model_resolved || copy.pending} | ${artifacts} |`);
+  }
+  lines.push('', `## ${copy.humanReport}`, '', copy.humanReportText, '');
+  lines.push('', `## ${copy.authority}`, '', copy.manifestAuthority, '');
+  if (manifest.promotion?.briefing_slug) {
+    lines.push(`## ${copy.promotion}`, '', copy.promotionText(manifest.promotion.briefing_slug, manifest.promotion.source_pack), '');
+  }
+  return `${lines.join('\n')}\n`;
+}
+
+function markdownSection(markdown, headings) {
+  const lines = String(markdown || '').split(/\r?\n/);
+  const wanted = new Set(headings.map(item => item.toLowerCase()));
+  const start = lines.findIndex(line => {
+    const match = line.match(/^(#{2,4})\s+(.+?)\s*$/);
+    return match && wanted.has(match[2].toLowerCase());
+  });
+  if (start === -1) return '';
+  const level = lines[start].match(/^(#+)/)[1].length;
+  let end = lines.length;
+  for (let index = start + 1; index < lines.length; index += 1) {
+    const match = lines[index].match(/^(#{1,4})\s+/);
+    if (match && match[1].length <= level) {
+      end = index;
+      break;
+    }
+  }
+  return lines.slice(start + 1, end).filter(line => !line.includes('<!-- aioson:')).join('\n').trim();
+}
+
+function userPromptHistory(markdown) {
+  const structured = markdownSection(markdown, [
+    'User prompts received',
+    'Prompts do usuário recebidos',
+    'Prompts del usuario recibidos',
+    'Prompts utilisateur reçus'
+  ]);
+  if (structured) return structured;
+  const prompts = [];
+  const expression = /Feedback humano literal(?: que muda a direção)?:\s*[“"]([^”"]+)[”"]/gi;
+  let match;
+  while ((match = expression.exec(String(markdown || '')))) prompts.push(match[1].trim());
+  const unique = [...new Set(prompts)];
+  return unique.length ? unique.map((prompt, index) => `${index + 1}. “${prompt}”`).join('\n') : '';
+}
+
+async function readRunReports(root, manifest) {
+  const reports = new Map();
+  await Promise.all(manifest.runs.map(async run => {
+    const value = await fs.readFile(path.join(root, 'runs', run.id, 'report.md'), 'utf8').catch(() => '');
+    reports.set(run.id, value);
+  }));
+  return reports;
+}
+
+function renderExplorationReport(manifest, reports = new Map()) {
+  const copy = reportCopy(manifest.language);
+  const selected = manifest.selected_run || copy.none;
+  const lines = [
+    `# ${copy.summaryTitle} — ${manifest.title}`,
+    '',
+    '<!-- aioson:visual-exploration-summary -->',
+    '',
+    `- ${copy.exploration}: \`${manifest.slug}\``,
+    `- ${copy.status}: ${localizedEnum(manifest.status, manifest.language)}`,
+    `- ${copy.strategy}: ${localizedEnum(manifest.strategy, manifest.language)}`,
+    `- ${copy.selected}: \`${selected}\``,
+    `- ${copy.comparison}: [\`comparison.html\`](comparison.html) (${copy.comparisonNote})`,
+    `- ${copy.structuredState}: [\`exploration-manifest.json\`](exploration-manifest.json)`,
+    '',
+    `## ${copy.variants}`,
+    '',
+    `| ${copy.variant} | ${copy.status} | ${copy.provenance} | ${copy.prototype} | ${copy.detailedReport} |`,
     '|---|---|---|---|---|'
   ];
   if (!manifest.runs.length) lines.push('| _none yet_ | — | — | — | — |');
   for (const run of manifest.runs) {
-    lines.push(`| ${run.label} (\`${run.id}\`) | ${run.status} | ${run.host} | ${run.model_requested} | ${run.model_resolved || 'pending'} |`);
+    const resolved = run.model_resolved || run.model_requested;
+    lines.push(`| ${run.label} (\`${run.id}\`) | ${localizedEnum(run.status, manifest.language)} | \`${run.host}/${resolved}\` | [${copy.open}](runs/${run.id}/prototype.html) | [${copy.read}](runs/${run.id}/report.md) |`);
   }
-  lines.push('', '## Authority', '', 'This exploration is non-canonical. Product, Planner, and Dev must ignore it until a selected run is promoted into a Briefing source pack and later consolidated as the feature-owned prototype.', '');
+  lines.push('', `## ${copy.userPromptsByVariant}`, '', USER_PROMPTS_MARKER, '');
+  for (const run of manifest.runs) {
+    lines.push(`### ${run.label} (\`${run.id}\`)`, '');
+    lines.push(userPromptHistory(reports.get(run.id)) || copy.noStructuredPrompts, '');
+  }
+  lines.push(
+    `## ${copy.reusablePrompts}`,
+    '',
+    copy.reusableText,
+    '',
+    `## ${copy.authority}`,
+    '',
+    copy.summaryAuthority,
+    ''
+  );
   if (manifest.promotion?.briefing_slug) {
-    lines.push('## Promotion', '', `Prepared for briefing slug \`${manifest.promotion.briefing_slug}\` at \`${manifest.promotion.source_pack || 'unknown'}\`.`, '');
+    lines.push(`## ${copy.promotion}`, '', copy.promotionText(manifest.promotion.briefing_slug, manifest.promotion.source_pack), '');
   }
   return `${lines.join('\n')}\n`;
 }
@@ -131,6 +263,7 @@ async function writeManifest(projectDir, manifest) {
   const root = explorationRoot(projectDir, manifest.slug);
   await atomicJson(path.join(root, 'exploration-manifest.json'), manifest);
   await atomicWrite(path.join(root, 'exploration-manifest.md'), renderManifestMarkdown(manifest));
+  await atomicWrite(path.join(root, 'RELATORIO.md'), renderExplorationReport(manifest, await readRunReports(root, manifest)));
 }
 
 async function readManifest(projectDir, slug) {
@@ -143,8 +276,24 @@ async function readManifest(projectDir, slug) {
     return { ok: false, reason: 'exploration_manifest_invalid_json', slug: validatedSlug, error: error.message };
   }
   const validation = validateManifest(value, validatedSlug);
+  const root = explorationRoot(projectDir, validatedSlug);
+  const reportPath = path.join(root, 'RELATORIO.md');
+  let reportAvailable = false;
+  if (validation.ok) {
+    try {
+      await fs.access(reportPath);
+      reportAvailable = true;
+    } catch (error) {
+      if (error.code === 'ENOENT') {
+        try {
+          await atomicWrite(reportPath, renderExplorationReport(value, await readRunReports(root, value)));
+          reportAvailable = true;
+        } catch {}
+      }
+    }
+  }
   return validation.ok
-    ? { ok: true, manifest: value, root: explorationRoot(projectDir, validatedSlug) }
+    ? { ok: true, manifest: value, root, report_path: reportPath, report_available: reportAvailable }
     : { ok: false, reason: 'exploration_manifest_invalid', slug: validatedSlug, errors: validation.errors };
 }
 
@@ -215,6 +364,7 @@ async function createExploration(projectDir, {
     runs: [],
     promotion: { briefing_slug: null, source_pack: null, prepared_at: null }
   };
+  const copy = reportCopy(manifest.language);
   const intake = initialIntake({ slug: validatedSlug, goal, targetKind, scanScope });
   await fs.mkdir(path.join(root, 'inputs', 'references'), { recursive: true });
   await fs.mkdir(path.join(root, 'runs'), { recursive: true });
@@ -226,9 +376,13 @@ async function createExploration(projectDir, {
     path.join(root, 'inputs', 'source-map.md'),
     '# Current front-end source map\n\n<!-- aioson:visual-exploration-source-map -->\n\nNo scan has been recorded yet.\n'
   );
+  await atomicWrite(
+    path.join(root, 'inputs', 'user-prompts.md'),
+    `# ${copy.userPrompts}\n\n${USER_PROMPTS_MARKER}\n\n${goal ? `1. ${goal}` : copy.noUserPrompts}\n`
+  );
   await atomicJson(path.join(root, 'intake.json'), intake);
   await writeManifest(projectDir, manifest);
-  return { ok: true, created: true, slug: validatedSlug, root, manifest, intake };
+  return { ok: true, created: true, slug: validatedSlug, root, report_path: path.join(root, 'RELATORIO.md'), manifest, intake };
 }
 
 function alphaLabel(index) {
@@ -242,7 +396,7 @@ function alphaLabel(index) {
 }
 
 async function inputHash(root) {
-  const files = ['inputs/task.md', 'inputs/source-map.md', 'intake.json'];
+  const files = ['inputs/task.md', 'inputs/source-map.md', 'inputs/user-prompts.md', 'intake.json'];
   const hash = crypto.createHash('sha256');
   for (const relative of files) {
     try {
@@ -261,8 +415,16 @@ async function inputHash(root) {
   return hash.digest('hex');
 }
 
-function reportTemplate(run, task) {
-  return `# Exploration run report — ${run.label}\n\n<!-- aioson:visual-exploration-report -->\n\n## Execution provenance\n\n- Host: ${run.host}\n- Model requested: ${run.model_requested}\n- Model resolved: pending\n- Status: planned\n\n## Input summary\n\n${task.trim()}\n\n## Design direction and decisions\n\nTBD — generated during the run.\n\n## Iteration timeline\n\nTBD — append user feedback, changes, bugs, and corrections without erasing prior rounds.\n\n## Validation and limitations\n\nTBD — record only checks actually executed.\n\n## Reusable prompts\n\n${RUN_REPORT_MARKER}\n\n### Exact generation prompt\n\n\`\`\`text\n${task.trim()}\n\`\`\`\n\n### One-shot prompt\n\n\`\`\`text\n${task.trim()}\n\`\`\`\n\n### Incremental prompt sequence\n\nTBD — derive from the successful session, including corrective prompts.\n`;
+function promptHistoryBody(markdown, fallback) {
+  const body = String(markdown || '').split(/\r?\n/)
+    .filter(line => !/^#\s+/.test(line) && !line.includes('<!-- aioson:user-prompts -->'))
+    .join('\n').trim();
+  return body || fallback;
+}
+
+function reportTemplate(run, task, userPrompts, language) {
+  const copy = reportCopy(language);
+  return `# ${copy.runTitle} — ${run.label}\n\n<!-- aioson:visual-exploration-report -->\n\n## ${copy.execution}\n\n- ${copy.host}: ${run.host}\n- ${copy.modelRequested}: ${run.model_requested}\n- ${copy.modelResolved}: ${copy.pending}\n- ${copy.status}: ${copy.planned}\n\n## ${copy.inputSummary}\n\n${task.trim()}\n\n## ${copy.direction}\n\n${copy.tbdDirection}\n\n## ${copy.timeline}\n\n${copy.tbdTimeline}\n\n### ${copy.userPrompts}\n\n${USER_PROMPTS_MARKER}\n\n${promptHistoryBody(userPrompts, copy.noUserPrompts)}\n\n## ${copy.validation}\n\n${copy.tbdValidation}\n\n## ${copy.reusablePrompts}\n\n${RUN_REPORT_MARKER}\n\n### ${copy.exactPrompt}\n\n${EXACT_PROMPT_MARKER}\n\n\`\`\`text\n${task.trim()}\n\`\`\`\n\n### ${copy.oneShot}\n\n${ONE_SHOT_PROMPT_MARKER}\n\n\`\`\`text\n${task.trim()}\n\`\`\`\n\n### ${copy.incremental}\n\n${INCREMENTAL_PROMPT_MARKER}\n\n${copy.tbdIncremental}\n`;
 }
 
 async function addRun(projectDir, slug, {
@@ -291,6 +453,7 @@ async function addRun(projectDir, slug, {
     model_requested: String(model).trim(),
     model_resolved: null,
     model_resolution_strategy: null,
+    report_contract: 2,
     status: 'planned',
     context_policy: effectivePolicy,
     parent_run: parentRun || null,
@@ -305,12 +468,23 @@ async function addRun(projectDir, slug, {
   const runRoot = path.join(loaded.root, 'runs', id);
   await fs.mkdir(runRoot, { recursive: false });
   const task = await fs.readFile(path.join(loaded.root, 'inputs', 'task.md'), 'utf8');
+  const userPrompts = await fs.readFile(path.join(loaded.root, 'inputs', 'user-prompts.md'), 'utf8').catch(() => '');
   await atomicJson(path.join(runRoot, 'run-manifest.json'), run);
-  await atomicWrite(path.join(runRoot, 'report.md'), reportTemplate(run, task));
+  await atomicWrite(path.join(runRoot, 'user-prompts.md'), userPrompts || `# ${reportCopy(manifest.language).userPrompts}\n\n${USER_PROMPTS_MARKER}\n\n${reportCopy(manifest.language).noUserPrompts}\n`);
+  await atomicWrite(path.join(runRoot, 'report.md'), reportTemplate(run, task, userPrompts, manifest.language));
   manifest.runs.push(run);
   manifest.updated_at = now();
   await writeManifest(projectDir, manifest);
-  return { ok: true, created: true, slug: manifest.slug, run, run_root: runRoot };
+  return {
+    ok: true,
+    created: true,
+    slug: manifest.slug,
+    run,
+    run_root: runRoot,
+    prototype_path: path.join(runRoot, 'prototype.html'),
+    report_path: path.join(runRoot, 'report.md'),
+    summary_report_path: path.join(loaded.root, 'RELATORIO.md')
+  };
 }
 
 async function writeRun(projectDir, slug, run) {
@@ -381,8 +555,14 @@ async function validateRunArtifacts(projectDir, slug, runId) {
   if (html) issues.push(...validateInlineScripts(html));
   if (report && !report.includes('<!-- aioson:visual-exploration-report -->')) issues.push('report.md lacks the exploration report marker');
   if (report && !report.includes(RUN_REPORT_MARKER)) issues.push('report.md lacks the reusable-prompts marker');
-  for (const heading of ['### Exact generation prompt', '### One-shot prompt', '### Incremental prompt sequence']) {
-    if (report && !report.includes(heading)) issues.push(`report.md lacks ${heading}`);
+  if (Number(run.report_contract || 1) >= 2) {
+    for (const marker of [USER_PROMPTS_MARKER, EXACT_PROMPT_MARKER, ONE_SHOT_PROMPT_MARKER, INCREMENTAL_PROMPT_MARKER]) {
+      if (report && !report.includes(marker)) issues.push(`report.md lacks ${marker}`);
+    }
+  } else {
+    for (const heading of ['### Exact generation prompt', '### One-shot prompt', '### Incremental prompt sequence']) {
+      if (report && !report.includes(heading)) issues.push(`report.md lacks ${heading}`);
+    }
   }
   return {
     ok: issues.length === 0,
@@ -594,8 +774,12 @@ async function promoteExploration(projectDir, slug, briefingSlug, { force = fals
 }
 
 module.exports = {
+  EXACT_PROMPT_MARKER,
+  INCREMENTAL_PROMPT_MARKER,
   MAX_PROTOTYPE_BYTES,
+  ONE_SHOT_PROMPT_MARKER,
   RUN_REPORT_MARKER,
+  USER_PROMPTS_MARKER,
   addReferences,
   addRun,
   atomicJson,
@@ -608,6 +792,8 @@ module.exports = {
   promoteExploration,
   readManifest,
   recordRun,
+  reportCopy,
+  renderExplorationReport,
   renderManifestMarkdown,
   scanExploration,
   selectRun,

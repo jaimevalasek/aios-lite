@@ -19,10 +19,18 @@ const {
   clearAgentSession
 } = require('../runtime-store');
 const { runAutoDelivery } = require('../delivery-runner');
+const { normalizeOutputStrategy } = require('../squad/output-policy');
 const { writeHandoff, buildRuntimeLogHandoff } = require('../session-handoff');
 const { backupAiosonDocs, isDocCreatingAgent } = require('../backup-local');
 const { runMemoryReflectPrepare } = require('./memory-reflect-prepare');
 const { runChainHookOnAgentDone } = require('../neural-chain-agent-ingest');
+const {
+  DEFAULT_HISTORY_DAYS,
+  DEFAULT_OUTPUT_DAYS,
+  getRuntimeStorageReport,
+  pruneRuntimeData,
+  compactRuntimeDb
+} = require('../runtime-maintenance');
 
 const ALLOWED_LAYOUTS = new Set(['document', 'tabs', 'accordion', 'stack', 'mixed']);
 const DEFAULT_TEXT_FIELDS = ['content', 'text', 'body', 'lyrics', 'markdown'];
@@ -565,6 +573,7 @@ async function ingestContentCandidate(db, targetDir, absolutePath, options = {})
       blueprintSlug: content.blueprint || null,
       usedSkills: normalizeStringArray(options.usedSkills || content.usedSkills),
       payload: content,
+      sourcePath: relativePath,
       jsonPath: relativePath,
       htmlPath: siblingHtmlExists
         ? path.relative(targetDir, siblingIndex).replace(/\\/g, '/')
@@ -613,6 +622,7 @@ async function ingestContentCandidate(db, targetDir, absolutePath, options = {})
     blueprintSlug: payload.blueprint || null,
     usedSkills: normalizeStringArray(options.usedSkills),
     payload,
+    sourcePath: relativePath,
     jsonPath: null,
     htmlPath: path.extname(absolutePath).toLowerCase().startsWith('.ht')
       ? relativePath
@@ -1750,14 +1760,17 @@ async function runOutputStrategyExport({ args, options = {}, logger, t }) {
     return { ok: false, error: 'No outputStrategy found' };
   }
 
+  const canonicalStrategy = normalizeOutputStrategy(strategy, {
+    outputDir: manifest.rules?.outputsDir || `output/${slug}/`
+  });
   const exportsDir = path.join(projectDir, '.aioson', 'squads', 'exports');
   await fs.mkdir(exportsDir, { recursive: true });
   const outFile = path.join(exportsDir, `${slug}.output-strategy.json`);
-  await fs.writeFile(outFile, JSON.stringify(strategy, null, 2) + '\n', 'utf8');
+  await fs.writeFile(outFile, JSON.stringify(canonicalStrategy, null, 2) + '\n', 'utf8');
 
   const relOut = path.relative(projectDir, outFile).replace(/\\/g, '/');
   logger.log(`Exported outputStrategy from "${slug}" → ${relOut}`);
-  return { ok: true, file: relOut, strategy };
+  return { ok: true, file: relOut, strategy: canonicalStrategy };
 }
 
 async function runOutputStrategyImport({ args, options = {}, logger, t }) {
@@ -1799,7 +1812,9 @@ async function runOutputStrategyImport({ args, options = {}, logger, t }) {
   }
 
   const targetManifest = JSON.parse(await fs.readFile(targetPath, 'utf8'));
-  targetManifest.outputStrategy = strategy;
+  targetManifest.outputStrategy = normalizeOutputStrategy(strategy, {
+    outputDir: targetManifest.rules?.outputsDir || `output/${slug}/`
+  });
   await fs.writeFile(targetPath, JSON.stringify(targetManifest, null, 2) + '\n', 'utf8');
 
   logger.log(`Imported outputStrategy into "${slug}" from ${fromSlug || fromFile}`);
@@ -2215,73 +2230,132 @@ async function runAgentRecover({ args, options = {}, logger }) {
 }
 
 
+function parseRetentionDays(options, logger) {
+  const historyDays = parseInt(options['older-than'] || options.olderThan || String(DEFAULT_HISTORY_DAYS), 10);
+  const outputDays = parseInt(options['output-older-than'] || options.outputOlderThan || String(Math.min(DEFAULT_OUTPUT_DAYS, historyDays)), 10);
+  if (isNaN(historyDays) || historyDays < 1 || isNaN(outputDays) || outputDays < 1) {
+    logger.error('Retention values must be whole days greater than zero.');
+    return null;
+  }
+  return { historyDays, outputDays };
+}
+
+function formatStorageBytes(value) {
+  const bytes = Math.max(0, Number(value) || 0);
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function countBusyRuntime(db) {
+  const scalar = (sql) => Number(db.prepare(sql).get().count || 0);
+  const busy = {
+    tasks: scalar("SELECT COUNT(*) AS count FROM tasks WHERE status = 'running'"),
+    agent_runs: scalar("SELECT COUNT(*) AS count FROM agent_runs WHERE status = 'running'"),
+    agent_execution_runs: scalar("SELECT COUNT(*) AS count FROM agent_execution_runs WHERE state IN ('spawning', 'running', 'pausing', 'resuming')")
+  };
+  if (db.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'runner_queue'").get()) {
+    busy.runner_queue = scalar("SELECT COUNT(*) AS count FROM runner_queue WHERE status = 'running'");
+  }
+  busy.total = Object.values(busy).reduce((total, count) => total + count, 0);
+  return busy;
+}
+
+/** aioson runtime:storage [targetDir] */
+async function runRuntimeStorage({ args, options = {}, logger, t }) {
+  const targetDir = resolveTargetDir(args);
+  const policy = parseRetentionDays(options, logger);
+  if (!policy) return { ok: false, error: 'invalid_retention' };
+  const { db, dbPath } = await withRuntimeDb(targetDir, t);
+  try {
+    const report = getRuntimeStorageReport(db, dbPath, policy);
+    if (!options.json) {
+      logger.log(`Runtime storage: ${formatStorageBytes(report.database.sizeBytes)} (${dbPath})`);
+      logger.log(`  WAL: ${formatStorageBytes(report.database.walBytes)} | free pages: ${formatStorageBytes(report.database.reclaimableFreeBytes)}`);
+      logger.log(`  cleanup preview: ${report.preview.directRows} direct row(s)`);
+      for (const category of report.categories.filter((item) => item.bytes > 0)) {
+        logger.log(`  ${category.category}: ${formatStorageBytes(category.bytes)} | ${category.rows} row(s)`);
+      }
+      if (report.recommendations.length > 0) logger.log(`  recommendations: ${report.recommendations.join(', ')}`);
+      logger.log(`  preview safely: aioson runtime:prune . --dry-run --older-than=${policy.historyDays} --output-older-than=${policy.outputDays}`);
+    }
+    return report;
+  } finally {
+    db.close();
+  }
+}
+
 /**
  * aioson runtime:prune [targetDir] --older-than=<days>
  *
- * Removes execution_events, agent_events, and completed agent_runs
- * older than the specified number of days. Tasks are kept but their
- * events are cleaned up.
+ * Removes only expired local telemetry and terminal operational history.
+ * Active work, paused executions inside the retention window, actionable Neural Chain items,
+ * durable learnings/artifacts/plans, queues, and unresolved handoffs survive.
  */
 async function runRuntimePrune({ args, options = {}, logger, t }) {
   const targetDir = resolveTargetDir(args);
-  const days = parseInt(options['older-than'] || options.olderThan || '30', 10);
-
-  if (isNaN(days) || days < 1) {
-    logger.error('Usage: aioson runtime:prune --older-than=<days> (minimum 1)');
-    return { ok: false, error: 'Invalid --older-than value' };
-  }
+  const policy = parseRetentionDays(options, logger);
+  if (!policy) return { ok: false, error: 'invalid_retention' };
+  const dryRun = Boolean(options['dry-run'] || options.dry);
 
   const { db, dbPath } = await withRuntimeDb(targetDir, t);
 
   try {
-    const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
-
-    const execEvents = db.prepare(
-      `DELETE FROM execution_events WHERE created_at < ?`
-    ).run(cutoff);
-
-    const agentEvents = db.prepare(
-      `DELETE FROM agent_events WHERE created_at < ?`
-    ).run(cutoff);
-
-    const runs = db.prepare(
-      `DELETE FROM agent_runs WHERE status IN ('completed', 'failed') AND finished_at < ?`
-    ).run(cutoff);
-
-    const tasks = db.prepare(
-      `DELETE FROM tasks WHERE status IN ('completed', 'failed') AND finished_at < ?`
-    ).run(cutoff);
-
-    const deliveryLogs = db.prepare(
-      `DELETE FROM delivery_log WHERE created_at < ?`
-    ).run(cutoff);
-
-    // Reclaim disk space
-    db.pragma('wal_checkpoint(TRUNCATE)');
-
-    const total = execEvents.changes + agentEvents.changes + runs.changes + tasks.changes + deliveryLogs.changes;
-
-    logger.log(`Pruned ${total} records older than ${days} days from ${dbPath}:`);
-    logger.log(`  execution_events: ${execEvents.changes}`);
-    logger.log(`  agent_events: ${agentEvents.changes}`);
-    logger.log(`  agent_runs: ${runs.changes}`);
-    logger.log(`  tasks: ${tasks.changes}`);
-    logger.log(`  delivery_log: ${deliveryLogs.changes}`);
-
-    return {
-      ok: true,
-      dbPath,
-      days,
-      cutoff,
-      deleted: {
-        execution_events: execEvents.changes,
-        agent_events: agentEvents.changes,
-        agent_runs: runs.changes,
-        tasks: tasks.changes,
-        delivery_log: deliveryLogs.changes,
-        total
+    if (dryRun) {
+      const report = getRuntimeStorageReport(db, dbPath, policy);
+      if (!options.json) {
+        logger.log(`[dry-run] ${report.preview.directRows} direct row(s) are eligible for cleanup in ${dbPath}:`);
+        for (const item of report.preview.candidates.filter((candidate) => candidate.rows > 0)) {
+          logger.log(`  ${item.key}: ${item.rows}`);
+        }
+        logger.log('  No data was removed. Foreign-key cascades may increase the final row count.');
       }
-    };
+      return { ...report.preview, ok: true, dryRun: true, dbPath, compactRequested: Boolean(options.compact) };
+    }
+
+    const result = pruneRuntimeData(db, policy);
+    db.pragma('wal_checkpoint(TRUNCATE)');
+    let compaction = null;
+    if (options.compact) {
+      const busy = countBusyRuntime(db);
+      compaction = busy.total > 0 && !options.force
+        ? { ok: false, skipped: 'active_runtime', busy }
+        : { ok: true, ...compactRuntimeDb(db, dbPath) };
+    }
+
+    if (!options.json) {
+      logger.log(`Pruned ${result.deleted.total} local runtime row(s) from ${dbPath}:`);
+      for (const [table, count] of Object.entries(result.deleted)) {
+        if (table !== 'total' && count > 0) logger.log(`  ${table}: ${count}`);
+      }
+      if (compaction?.ok) logger.log(`  compacted: reclaimed ${formatStorageBytes(compaction.reclaimedBytes)}`);
+      if (compaction?.skipped) logger.log('  compaction skipped: runtime work is active (use --force only after verifying it is stale).');
+    }
+
+    return { ok: true, dbPath, ...result, compaction };
+  } finally {
+    db.close();
+  }
+}
+
+/** aioson runtime:compact [targetDir] [--force] */
+async function runRuntimeCompact({ args, options = {}, logger, t }) {
+  const targetDir = resolveTargetDir(args);
+  const { db, dbPath } = await withRuntimeDb(targetDir, t);
+  try {
+    const integrity = db.pragma('quick_check', { simple: true });
+    if (integrity !== 'ok') {
+      logger.error(`Runtime database quick_check failed: ${integrity}`);
+      return { ok: false, error: 'integrity_check_failed', detail: integrity, dbPath };
+    }
+    const busy = countBusyRuntime(db);
+    if (busy.total > 0 && !options.force) {
+      if (!options.json) logger.log('Runtime compaction skipped because work is active. Re-run with --force only after verifying those records are stale.');
+      return { ok: false, error: 'active_runtime', busy, dbPath };
+    }
+    const compaction = compactRuntimeDb(db, dbPath);
+    if (!options.json) logger.log(`Runtime compacted: ${formatStorageBytes(compaction.beforeBytes)} -> ${formatStorageBytes(compaction.afterBytes)} (${formatStorageBytes(compaction.reclaimedBytes)} reclaimed)`);
+    return { ok: true, dbPath, busy, ...compaction };
   } finally {
     db.close();
   }
@@ -2310,5 +2384,7 @@ module.exports = {
   runOutputStrategyExport,
   runOutputStrategyImport,
   runDevlogSync,
-  runRuntimePrune
+  runRuntimeStorage,
+  runRuntimePrune,
+  runRuntimeCompact
 };

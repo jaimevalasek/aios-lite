@@ -2,6 +2,7 @@
 
 const fs = require('node:fs/promises');
 const path = require('node:path');
+const { getInteractionLanguage, validateProjectContextFile } = require('../context');
 const { detectHost } = require('../model-delegation');
 const { resolveExistingInsideRoot, toPosixPath } = require('../verification/path-policy');
 const { reviewHash, writeComparisonReview } = require('../visual-exploration/review-html');
@@ -49,7 +50,11 @@ async function readJsonInside(root, relativePath) {
 }
 
 async function runExplorationInit({ args, options = {}, logger }) {
-  const result = await createExploration(projectDir(args), {
+  const root = projectDir(args);
+  const context = await validateProjectContextFile(root);
+  const language = options.locale || options.language || options.lang
+    || (context.parsed && context.data ? getInteractionLanguage(context.data, 'en') : 'en');
+  const result = await createExploration(root, {
     slug: options.slug,
     title: options.title,
     goal: options.goal,
@@ -58,7 +63,7 @@ async function runExplorationInit({ args, options = {}, logger }) {
     displayMode: options['display-mode'],
     targetKind: options.target,
     scanScope: options.scan,
-    language: options.locale
+    language
   }).catch(error => ({ ok: false, reason: 'invalid_options', error: error.message }));
   return output(logger, options, result, result.ok ? `Created visual exploration at ${result.root}` : null);
 }
@@ -153,7 +158,10 @@ async function runExplorationStatus({ args, options = {}, logger }) {
   const result = await readManifest(projectDir(args), options.slug);
   if (!options.json && result.ok) {
     logger.log(`${result.manifest.slug}: ${result.manifest.status} (${result.manifest.strategy})`);
-    for (const run of result.manifest.runs) logger.log(`- ${run.label}: ${run.status} — ${run.host}/${run.model_resolved || run.model_requested}`);
+    logger.log(`Report index: ${result.report_path}`);
+    for (const run of result.manifest.runs) {
+      logger.log(`- ${run.label}: ${run.status} — ${run.host}/${run.model_resolved || run.model_requested} — ${path.join(result.root, 'runs', run.id, 'report.md')}`);
+    }
   } else if (!options.json && !result.ok) logger.error(`Visual exploration blocked: ${result.reason}`);
   return result;
 }
@@ -215,9 +223,10 @@ async function runExplorationRun({ args, options = {}, logger, catalogLoader, ad
   });
   if (!options.json) {
     for (const item of result.results || []) {
-      const line = `${item.run || '?'}: ${item.ok ? 'completed' : `failed (${item.reason})`}`;
+      const line = `${item.run || '?'}: ${item.ok ? `completed — ${item.report_path}` : `failed (${item.reason})`}`;
       item.ok ? logger.log(line) : logger.error(line);
     }
+    if (result.summary_report_path) logger.log(`Report index: ${result.summary_report_path}`);
   }
   return result;
 }

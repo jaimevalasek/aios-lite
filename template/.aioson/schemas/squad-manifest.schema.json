@@ -498,9 +498,12 @@
         "primary": {
           "type": "string",
           "enum": [
-            "sqlite",
-            "file"
-          ]
+            "file",
+            "files",
+            "sqlite"
+          ],
+          "default": "file",
+          "description": "Canonical output storage. New manifests use file. files and sqlite remain accepted only while legacy manifests are migrated; SQLite is always a local rebuildable runtime index."
         },
         "artifacts": {
           "type": "string"
@@ -1820,11 +1823,10 @@
           }
         }
       }
-    }
-  },
+    },
   "outputStrategy": {
     "type": "object",
-    "description": "How the squad routes, stores and delivers its outputs",
+    "description": "How the squad writes and delivers file-backed outputs. SQLite is local runtime indexing, never an output destination.",
     "properties": {
       "mode": {
         "type": "string",
@@ -1833,15 +1835,16 @@
           "sqlite",
           "hybrid"
         ],
-        "default": "hybrid",
-        "description": "Primary output strategy: files (physical output only), sqlite (database only), hybrid (both)"
+        "default": "files",
+        "description": "New manifests use files. sqlite and hybrid are legacy values accepted for migration and are treated as files with an optional local runtime index."
       },
       "fileOutput": {
         "type": "object",
         "properties": {
           "enabled": {
             "type": "boolean",
-            "default": true
+            "default": true,
+            "description": "Must remain true for new manifests because the file is the canonical, shareable output."
           },
           "dir": {
             "type": "string",
@@ -1865,10 +1868,13 @@
       },
       "dataOutput": {
         "type": "object",
+        "deprecated": true,
+        "description": "Legacy compatibility only. Runtime indexing is local per clone, rebuildable from output files, and no longer configured as an output destination.",
         "properties": {
           "enabled": {
             "type": "boolean",
-            "default": true
+            "default": true,
+            "description": "Legacy flag; it does not make SQLite the canonical content store."
           },
           "storage": {
             "type": "string",
@@ -2070,6 +2076,7 @@
     "items": {
       "type": "string"
     }
+  }
   },
   "additionalProperties": true
 }

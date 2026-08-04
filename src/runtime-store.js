@@ -273,6 +273,7 @@ async function openRuntimeDb(targetDir, options = {}) {
       blueprint_slug TEXT,
       used_skills_json TEXT,
       payload_json TEXT,
+      source_path TEXT,
       json_path TEXT,
       html_path TEXT,
       created_by_agent TEXT,
@@ -773,6 +774,11 @@ function ensureLegacyColumns(db) {
     db.exec('ALTER TABLE content_items ADD COLUMN used_skills_json TEXT');
   }
 
+  if (!contentItemColumnNames.has('source_path')) {
+    db.exec('ALTER TABLE content_items ADD COLUMN source_path TEXT');
+  }
+  db.exec('CREATE INDEX IF NOT EXISTS idx_content_items_source_updated ON content_items(source_path, updated_at DESC)');
+
   try { db.exec('ALTER TABLE worker_runs ADD COLUMN conversation_id TEXT'); } catch { /* já existe */ }
 
   // Event Enrichment (Plan 61) — new columns in execution_events
@@ -1079,10 +1085,10 @@ function upsertContentItem(db, options) {
   db.prepare(`
     INSERT INTO content_items (
       content_key, task_key, run_key, squad_slug, session_key, title, content_type, layout_type,
-      status, summary, blueprint_slug, used_skills_json, payload_json, json_path, html_path, created_by_agent, created_at, updated_at
+      status, summary, blueprint_slug, used_skills_json, payload_json, source_path, json_path, html_path, created_by_agent, created_at, updated_at
     ) VALUES (
       @content_key, @task_key, @run_key, @squad_slug, @session_key, @title, @content_type, @layout_type,
-      @status, @summary, @blueprint_slug, @used_skills_json, @payload_json, @json_path, @html_path, @created_by_agent, @created_at, @updated_at
+      @status, @summary, @blueprint_slug, @used_skills_json, @payload_json, @source_path, @json_path, @html_path, @created_by_agent, @created_at, @updated_at
     )
     ON CONFLICT(content_key) DO UPDATE SET
       task_key = excluded.task_key,
@@ -1097,6 +1103,7 @@ function upsertContentItem(db, options) {
       blueprint_slug = excluded.blueprint_slug,
       used_skills_json = excluded.used_skills_json,
       payload_json = excluded.payload_json,
+      source_path = excluded.source_path,
       json_path = excluded.json_path,
       html_path = excluded.html_path,
       created_by_agent = excluded.created_by_agent,
@@ -1120,6 +1127,7 @@ function upsertContentItem(db, options) {
         : options.payloadJson
           ? String(options.payloadJson)
           : null,
+    source_path: options.sourcePath ? String(options.sourcePath).trim() : null,
     json_path: options.jsonPath ? String(options.jsonPath).trim() : null,
     html_path: options.htmlPath ? String(options.htmlPath).trim() : null,
     created_by_agent: options.createdByAgent ? String(options.createdByAgent).trim() : null,
@@ -1848,7 +1856,7 @@ function getStatusSnapshot(db) {
   const recentContentItems = db.prepare(`
     SELECT
       content_key, task_key, run_key, squad_slug, session_key, title, content_type, layout_type,
-      status, summary, blueprint_slug, used_skills_json, json_path, html_path, created_by_agent, created_at, updated_at
+      status, summary, blueprint_slug, used_skills_json, source_path, json_path, html_path, created_by_agent, created_at, updated_at
     FROM content_items
     ORDER BY updated_at DESC, created_at DESC
     LIMIT 20
@@ -2781,8 +2789,19 @@ function reconcileExecutionRun(db, correlation, probe=()=>false) {
 }
 
 function pruneExecutionTelemetry(db, options={}) {
-  const days=Math.max(Number(options.retentionDays)||14,1),cutoff=new Date(Date.now()-days*86400000).toISOString(),batch=Math.min(Math.max(Number(options.batch)||100,1),1000);
+  const days=Math.max(Number(options.retentionDays)||30,1),cutoff=new Date(Date.now()-days*86400000).toISOString(),batch=Math.min(Math.max(Number(options.batch)||100,1),1000);
   return db.prepare(`DELETE FROM agent_execution_runs WHERE telemetry_run_id IN (SELECT telemetry_run_id FROM agent_execution_runs WHERE updated_at < ? AND state IN ('passed','failed','cancelled','paused') ORDER BY updated_at LIMIT ?)` ).run(cutoff,batch).changes;
+}
+
+function pruneExecutionOutput(db, options={}) {
+  const days=Math.max(Number(options.retentionDays)||14,1),cutoff=new Date(Date.now()-days*86400000).toISOString(),batch=Math.min(Math.max(Number(options.batch)||5000,1),10000);
+  return db.prepare(`DELETE FROM agent_execution_events WHERE id IN (
+    SELECT event.id FROM agent_execution_events event
+    JOIN agent_execution_runs run ON run.telemetry_run_id=event.telemetry_run_id
+    WHERE event.event_type='output' AND event.created_at < ?
+      AND run.state IN ('passed','failed','cancelled')
+    ORDER BY event.created_at LIMIT ?
+  )`).run(cutoff,batch).changes;
 }
 
 module.exports = {
@@ -2890,5 +2909,5 @@ module.exports = {
   listEvolutionLog
   ,createExecutionRun, findExecutionRun, attachExecutionProcess, transitionExecutionRun,
   appendExecutionEvent, attachExecutionReport, getExecutionSnapshot, listExecutionEvents,
-  reconcileExecutionRun, pruneExecutionTelemetry
+  reconcileExecutionRun, pruneExecutionTelemetry, pruneExecutionOutput
 };

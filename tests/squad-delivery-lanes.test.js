@@ -16,6 +16,16 @@ test('squad schemas expose the same proportional delivery lanes', async () => {
   assert.deepEqual(manifest.properties.deliveryLane.enum, expected);
 });
 
+test('squad manifest schema exposes file-first output policy inside properties', async () => {
+  const manifest = JSON.parse(await fs.readFile(path.join(ROOT, 'schemas', 'squad-manifest.schema.json'), 'utf8'));
+
+  assert.ok(manifest.properties.outputStrategy);
+  assert.equal(manifest.outputStrategy, undefined);
+  assert.equal(manifest.properties.outputStrategy.properties.mode.default, 'files');
+  assert.equal(manifest.properties.storagePolicy.properties.primary.default, 'file');
+  assert.match(manifest.properties.outputStrategy.description, /never an output destination/i);
+});
+
 test('squad creation preserves strict regulated assurance without inflating quick and standard lanes', async () => {
   const [agent, design, create, flow] = await Promise.all([
     fs.readFile(path.join(ROOT, 'agents', 'squad.md'), 'utf8'),

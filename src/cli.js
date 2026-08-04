@@ -125,7 +125,9 @@ const {
   runOutputStrategyExport,
   runOutputStrategyImport,
   runDevlogSync,
-  runRuntimePrune
+  runRuntimeStorage,
+  runRuntimePrune,
+  runRuntimeCompact
 } = require('./commands/runtime');
 const {
   runLiveStart,
@@ -605,8 +607,12 @@ const JSON_SUPPORTED_COMMANDS = new Set([
   'runtime-status',
   'runtime:log',
   'runtime-log',
+  'runtime:storage',
+  'runtime-storage',
   'runtime:prune',
   'runtime-prune',
+  'runtime:compact',
+  'runtime-compact',
   'agent:done',
   'agent-done',
   'agent:recover',
@@ -1079,6 +1085,9 @@ function printHelp(t, logger) {
   logHelpLine(t, logger, 'cli.help_runtime_task_fail');
   logHelpLine(t, logger, 'cli.help_runtime_fail');
   logHelpLine(t, logger, 'cli.help_runtime_status');
+  logHelpLine(t, logger, 'cli.help_runtime_storage');
+  logHelpLine(t, logger, 'cli.help_runtime_prune');
+  logHelpLine(t, logger, 'cli.help_runtime_compact');
   logHelpLine(t, logger, 'cli.help_agent_recover');
   logHelpLine(t, logger, 'cli.help_runtime_session_start');
   logHelpLine(t, logger, 'cli.help_runtime_session_log');
@@ -1717,8 +1726,12 @@ async function main() {
       result = await runScoutCommit({ args, options, logger: commandLogger });
     } else if (command === 'notify') {
       result = await runNotify({ args, options, logger: commandLogger });
+    } else if (command === 'runtime:storage' || command === 'runtime-storage') {
+      result = await runRuntimeStorage({ args, options, logger: commandLogger, t });
     } else if (command === 'runtime:prune' || command === 'runtime-prune') {
       result = await runRuntimePrune({ args, options, logger: commandLogger, t });
+    } else if (command === 'runtime:compact' || command === 'runtime-compact') {
+      result = await runRuntimeCompact({ args, options, logger: commandLogger, t });
     } else if (command === 'runtime:backup' || command === 'runtime-backup') {
       result = await runRuntimeBackup({ args, options, logger: commandLogger, t });
     } else if (command === 'runtime:restore' || command === 'runtime-restore') {

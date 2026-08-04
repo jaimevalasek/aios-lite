@@ -134,11 +134,16 @@ Check hierarchy, contrast, overflow, density, responsiveness, focus, reduced mot
 
 ## Report contract
 
+`interaction_language` from `.aioson/context/project.context.md` (falling back to legacy `conversation_language`) owns the language of `RELATORIO.md`, every run `report.md`, and their user-facing prose. Agent, skill, genome, machine marker, path, model ID, and code contracts remain canonical in English. An explicit `--locale` may override the project language only for that exploration.
+
+Maintain `inputs/user-prompts.md` automatically as an append-only, verbatim ledger of every material user message that directs the exploration or a specific variant. Before `exploration:add-run` or `exploration:run`, append the current prompt with its target (`shared` or `variant-*`) without waiting for the user to request logging; never copy secrets or unrelated chat. The CLI snapshots this ledger into the run and the report must preserve it under `<!-- aioson:user-prompts -->`. If a legacy run lacks literal history, disclose the gap instead of reconstructing wording.
+
 Every run keeps an append-only `report.md` containing:
 
 - bound host/model provenance;
 - input summary and design direction;
 - session timeline with prompts, feedback, changes, bugs, and corrections;
+- the ordered verbatim user-prompt ledger for that run;
 - validation actually performed and limitations;
 - production-library mapping when useful;
 - `<!-- aioson:reusable-prompts -->`;
@@ -147,6 +152,8 @@ Every run keeps an append-only `report.md` containing:
 - next-run corrective prompt when applicable.
 
 Reusable prompts are always retained for user learning and external benchmarks. In a fair arena, do not feed lessons from one competitor into another before all isolated runs finish.
+
+The CLI also maintains `.aioson/explorations/{slug}/RELATORIO.md` as the human-readable exploration index. It must link every `runs/variant-*/prototype.html` and detailed `runs/variant-*/report.md`; it is a derived view, not a replacement for the per-run reports or `exploration-manifest.json`. At the end of every run or review, give the user the exact `RELATORIO.md` path and the new variant's detailed report path. Never leave report discovery implicit behind collapsed `variant-*` folders.
 
 ## Review and localized feedback
 

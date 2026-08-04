@@ -15,6 +15,7 @@ const ROOT_DIR = path.join(__dirname, '..');
 const TEMPLATE_DIR = path.join(ROOT_DIR, 'template');
 const PROJECT_LOCAL_FILES = new Set([
   'aioson-models.json',
+  '.aioson/constitution.md',
   '.aioson/context/design-doc.md',
   '.aioson/design-docs/code-reuse.md',
   '.aioson/design-docs/componentization.md',

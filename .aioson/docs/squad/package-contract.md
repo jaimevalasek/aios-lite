@@ -109,6 +109,16 @@ When they exist, also persist:
 
 The manifest must mirror the real files you generated.
 
+`storagePolicy` is always file-first for new or migrated squads:
+
+- `primary: "file"`
+- `artifacts: "output/{squad-slug}/"` (or the explicit `rules.outputsDir`)
+- generated content must exist independently of `.aioson/runtime/aios.sqlite`
+
+The SQLite runtime is local per clone and may hold rebuildable indexes, telemetry, and coordination. Never use it
+as the only copy of squad content. Legacy `sqlite`/`hybrid` values remain readable only long enough to export and
+migrate their content to files.
+
 ### Premium research and evidence
 
 When output depends on external or current facts, the manifest records `researchPolicy` and names one responsible research executor/stage. Do not advance while a `live-required` or `live-check` task has only cache, snippets, or an unavailable provider presented as success.

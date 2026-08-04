@@ -5,23 +5,31 @@
 
 ## Purpose
 
-Guide the user through configuring how the squad stores, routes, and delivers its outputs.
+Guide the user through configuring how the squad writes, routes, and delivers its outputs.
 Write the result into `outputStrategy` in `squad.manifest.json`.
 
-## Domain heuristics — auto-suggest the right mode
+## Non-negotiable storage boundary
 
-Before asking questions, infer the best strategy from the squad domain:
+- Every canonical squad output is a file under `output/{slug}/` or the explicit `rules.outputsDir`.
+- `.aioson/runtime/aios.sqlite` is a local, rebuildable index for the current clone only.
+- Never offer database-only storage and never make SQLite the only copy of content.
+- Never write `dataOutput` in a new manifest. Runtime indexing is framework behavior, not an output destination.
+- `mode: "sqlite"`, `mode: "hybrid"`, and `storagePolicy.primary: "sqlite"` are legacy inputs to migrate, not choices to present.
 
-| Domain pattern | Suggested mode | Reasoning |
-|---------------|---------------|-----------|
-| Landing page, site, HTML standalone, presentation | `files` | Output IS the file |
-| Copy for ads, social media, product descriptions | `sqlite` | Recurring data, dashboard + webhook |
-| YouTube creator, editorial (scripts + thumbnails) | `hybrid` | Mix of structured data + media |
-| Report/PDF generator | `files` + worker | Worker generates file |
-| Blog, newsletter, editorial content | `hybrid` | Data in DB + HTML preview |
-| Research, analysis, strategy | `files` | Document-oriented, not recurring |
-| Data pipeline, ETL, structured extraction | `sqlite` | Structured data, API/webhook consumption |
-| Image/video/media generation | `hybrid` | Media files + DB references |
+## Domain heuristics — suggest formats, not storage engines
+
+Before asking questions, infer the best file package from the squad domain:
+
+| Domain pattern | Suggested file package | Reasoning |
+|---------------|------------------------|-----------|
+| Landing page, site, presentation | HTML + assets | Directly reviewable deliverable |
+| Copy, social media, product descriptions | JSON + Markdown preview | Structured, diffable and webhook-ready |
+| YouTube/editorial package | JSON + HTML + media references | Keeps structured data and human review together |
+| Report/PDF generator | Markdown/HTML + PDF worker | Source stays versionable; PDF is an export |
+| Blog/newsletter | Markdown + JSON metadata + HTML preview | Portable across CMS and delivery targets |
+| Research/analysis/strategy | Markdown + optional JSON evidence | Human-readable, searchable evidence |
+| Data pipeline/structured extraction | JSON/CSV + schema | Machine-readable without a shared local database |
+| Image/video/media generation | JSON manifest + media files | References and binaries remain explicit |
 
 ## Configuration wizard
 
@@ -29,22 +37,24 @@ Present the inferred suggestion and ask for confirmation:
 
 > "Based on the domain **{domain}**, I suggest:
 >
-> **Output mode: {mode}**
-> - {brief explanation of what this means}
+> **Output package: {formats}**
+> - Files will be written under `{outputsDir}`.
+> - The local runtime may index them for dashboard/search, but the files remain the source of truth.
 >
 > Does this fit your workflow, or do you want to adjust?"
 
 If the user wants to adjust, walk through these questions:
 
-### Q1 — Output destination
-> "Where should the squad outputs go?"
-> - **Files only** — physical files in `output/{slug}/` (HTML, MD, etc.)
-> - **Database only** — structured records in SQLite, viewable in dashboard
-> - **Both** — files for preview + database for management and delivery
+### Q1 — File package
+> "Which reviewable formats should this squad generate?"
+> - **Markdown/HTML** — human review and presentation
+> - **JSON/CSV** — structured consumption
+> - **Both** — structured source plus human preview
+> - **Media package** — JSON manifest plus files under `media/{slug}/`
 
-### Q2 — Delivery (only if `sqlite` or `hybrid`)
+### Q2 — Delivery
 > "Should finished content be delivered somewhere automatically?"
-> - **No** — just store in database, publish manually from dashboard
+> - **No** — keep the generated files in the project
 > - **Cloud** — publish to aioson.com when I click publish
 > - **Webhook** — POST to an external URL (website, CMS, API)
 > - **Both** — cloud + webhook
@@ -67,17 +77,11 @@ After collecting answers, write `outputStrategy` to `squad.manifest.json`:
 ```json
 {
   "outputStrategy": {
-    "mode": "{files|sqlite|hybrid}",
+    "mode": "files",
     "fileOutput": {
       "enabled": true,
       "dir": "output/{squad-slug}/",
-      "formats": ["html", "md"]
-    },
-    "dataOutput": {
-      "enabled": true,
-      "storage": "sqlite",
-      "table": "content_items",
-      "contentItems": true
+      "formats": ["html", "md", "json"]
     },
     "delivery": {
       "webhooks": [
@@ -95,6 +99,18 @@ After collecting answers, write `outputStrategy` to `squad.manifest.json`:
       "cloudPublish": false,
       "autoPublish": false
     }
+  }
+}
+```
+
+Also normalize the storage policy:
+
+```json
+{
+  "storagePolicy": {
+    "primary": "file",
+    "artifacts": "output/{squad-slug}/",
+    "exports": { "html": true, "markdown": true, "json": true }
   }
 }
 ```
@@ -156,19 +172,26 @@ Register the worker in the manifest:
 
 ## Compatibility with storagePolicy
 
-If the squad already has `storagePolicy` but no `outputStrategy`:
-- `primary: "sqlite"` → infer `mode: "hybrid"` (preserve existing behavior)
-- `exports.html: true` → `fileOutput.formats` includes `"html"`
-- Do NOT remove `storagePolicy` — keep both for backward compatibility
+For a legacy squad with `mode: "sqlite"`, `mode: "hybrid"`, `dataOutput`, or
+`storagePolicy.primary: "sqlite"`:
+
+1. Locate or recreate the canonical files under `rules.outputsDir` before changing the manifest.
+2. Set `outputStrategy.mode` to `"files"` and `fileOutput.enabled` to `true`.
+3. Remove `dataOutput`; local indexing does not belong in a shareable squad contract.
+4. Set `storagePolicy.primary` to `"file"` and `storagePolicy.artifacts` to the output directory.
+5. Preserve delivery/webhook settings because they operate on the generated file payload.
+
+Never delete a database-only legacy payload until a file export has been verified. The validator may read legacy
+values and warn, but every newly written or imported strategy must use the file-first contract.
 
 ## After configuration
 
 Show summary:
 ```
 Output strategy configured for **{squad-name}**:
-- Mode: {mode}
-- Files: {enabled/disabled} → {dir}
-- Database: {enabled/disabled} → {table}
+- Mode: files
+- Canonical files: enabled → {dir}
+- Local runtime index: optional/rebuildable per clone (not shared)
 - Delivery: {none | cloud | webhook | cloud+webhook}
 - Auto-publish: {yes/no}
 

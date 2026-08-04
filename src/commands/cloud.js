@@ -4,6 +4,7 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const { ensureDir, exists, nowStamp, toRelativeSafe } = require('../utils');
 const { openRuntimeDb, upsertSquadManifest } = require('../runtime-store');
+const { normalizeStoragePolicy } = require('../squad/output-policy');
 const {
   attachBindingsToExecutors,
   flattenGenomeBindings,
@@ -387,7 +388,7 @@ function buildLocalSquadManifest(snapshot, agents) {
     : {};
   const slug = sanitizeSegment(snapshot.squad.slug, 'squad');
   const explicitMode = typeof source.mode === 'string' ? source.mode : null;
-  const mode = String(explicitMode || (source.storagePolicy?.primary === 'files' ? 'builder' : 'content')).trim();
+  const mode = String(explicitMode || (['file', 'files'].includes(source.storagePolicy?.primary) ? 'builder' : 'content')).trim();
   const sourceContext = source.context && typeof source.context === 'object' ? source.context : {};
   const packageRoot = `.aioson/squads/${slug}`;
   const sourceBindings = mergeGenomeBindings({
@@ -434,14 +435,7 @@ function buildLocalSquadManifest(snapshot, agents) {
         ? source.rules.reviewPolicy
         : ['clarity', 'density', 'consistency', 'next-step']
     },
-    storagePolicy:
-      source.storagePolicy && typeof source.storagePolicy === 'object'
-        ? source.storagePolicy
-        : {
-            primary: mode === 'builder' ? 'files' : 'sqlite',
-            artifacts: mode === 'builder' ? 'files+sqlite' : 'sqlite-json',
-            exports: { html: true, markdown: true, json: true }
-          },
+    storagePolicy: normalizeStoragePolicy(source.storagePolicy, { outputDir: `output/${slug}/` }),
     package: {
       rootDir: packageRoot,
       agentsDir: `${packageRoot}/agents`,
@@ -752,8 +746,9 @@ function buildRulesDoc(manifest) {
     '- Use discovery and design doc before implementation or heavy generation.',
     '',
     '## Persistence',
-    `- Primary: ${manifest.storagePolicy?.primary || 'sqlite'}`,
-    `- Artifacts: ${manifest.storagePolicy?.artifacts || 'sqlite-json'}`,
+    `- Primary: ${manifest.storagePolicy?.primary || 'file'}`,
+    `- Artifacts: ${manifest.storagePolicy?.artifacts || `output/${manifest.slug}/`}`,
+    '- SQLite is a local, rebuildable runtime index and is never the canonical output.',
     ''
   ].join('\n');
 }
@@ -765,7 +760,8 @@ function buildOutputContractsDoc(manifest) {
     '',
     '## Persistence rule',
     `- Mode: ${manifest.mode}`,
-    `- Primary storage: ${manifest.storagePolicy?.primary || 'sqlite'}`,
+    `- Primary storage: ${manifest.storagePolicy?.primary || 'file'}`,
+    '- Runtime index: local SQLite per clone; never versioned or used as the only copy.',
     '',
     '## Blueprints'
   ];
@@ -1542,14 +1538,7 @@ async function loadLocalSquadSnapshot(projectDir, slug, options = {}) {
             logsDir: localManifest?.rules?.logsDir || logsDirRel,
             mediaDir: localManifest?.rules?.mediaDir || mediaDirRel
           },
-          storagePolicy:
-            localManifest.storagePolicy && typeof localManifest.storagePolicy === 'object'
-              ? localManifest.storagePolicy
-              : {
-                  primary: String(localManifest.mode || 'content') === 'builder' ? 'files' : 'sqlite',
-                  artifacts: String(localManifest.mode || 'content') === 'builder' ? 'files+sqlite' : 'sqlite-json',
-                  exports: { html: true, markdown: true, json: true }
-                },
+          storagePolicy: normalizeStoragePolicy(localManifest.storagePolicy, { outputDir: outputDirRel }),
           package:
             localManifest.package && typeof localManifest.package === 'object'
               ? localManifest.package
@@ -1647,11 +1636,7 @@ async function loadLocalSquadSnapshot(projectDir, slug, options = {}) {
             templatesDir: `${packageDirRel}/templates`,
             docsDir: `${packageDirRel}/docs`
           },
-          storagePolicy: {
-            primary: 'sqlite',
-            artifacts: 'sqlite-json',
-            exports: { html: true, markdown: true, json: true }
-          },
+          storagePolicy: normalizeStoragePolicy(null, { outputDir: outputDirRel }),
           context: {
             mode: 'project',
             summary: goal || squadName,

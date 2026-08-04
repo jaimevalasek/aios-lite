@@ -4,6 +4,29 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.46.0] - 2026-08-03
+
+### Added
+- **Guarded local runtime maintenance** — new `runtime:storage`, `runtime:prune`, and `runtime:compact` commands diagnose database growth, preview retention, protect active coordination and durable knowledge, and reclaim disk space only through explicit bounded operations. Neo can run the same guarded procedure after operator approval.
+- **File-first squad output policy** — squad packages and generated content now have files as their canonical, shareable source while SQLite remains a per-clone, rebuildable runtime index. Legacy `sqlite` and `hybrid` manifests remain readable long enough for safe migration.
+- **Portable visual-exploration reports** — every exploration maintains a localized root `RELATORIO.md`, direct prototype/report links, a verbatim material-prompt ledger, and per-variant snapshots for reproducible design benchmarks.
+
+### Changed
+- Agent-execution output telemetry coalesces adjacent stream chunks, expires terminal raw output after 14 days, and retains terminal execution envelopes for 30 days, reducing row and index growth without weakening redaction or per-run byte limits.
+- File-backed `content_items` rows now record `source_path`, can be pruned as regenerable indexes, and can be rebuilt with `runtime:ingest`; legacy database-only rows without a source file are preserved.
+- Output-strategy import/export and cloud squad materialization normalize new writes to `storagePolicy.primary: "file"` and `outputStrategy.mode: "files"` while keeping delivery and webhook settings.
+- Visual explorations inherit the project's interaction language, preserve technical identifiers in canonical English, and surface exact report paths after status, run, and review operations.
+
+### Fixed
+- Production resolution now pins `fast-uri` 3.1.5, clearing the high-severity host-confusion advisory detected by the release gate.
+- `aioson update` keeps the existing local runtime database, preserves project-owned constitution, docs, rules, and squad packages, and applies the new content-index column additively instead of creating a shared or replacement database.
+- Runtime cleanup no longer treats file-backed squad content indexes as irreplaceable payloads and never removes the canonical files under `output/`.
+- Multi-developer projects no longer have an ambiguous database-content contract: each clone owns its ignored SQLite runtime, while Git carries squad definitions and intentionally committed outputs.
+
+### Validation
+- Full regression: 4,089 passing tests, zero failures, and one skip; syntax checks cover 494 JavaScript files.
+- Focused migration, retention, installer, squad-output, delivery, and visual-exploration regressions pass, including additive upgrades from an existing SQLite schema.
+
 ## [1.45.0] - 2026-08-03
 
 ### Added

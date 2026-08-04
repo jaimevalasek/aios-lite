@@ -5,6 +5,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
 const os = require('node:os');
 const path = require('node:path');
+const Database = require('better-sqlite3');
 const { installTemplate, detectExistingInstall, ensureGitGuardBaseline, GIT_GUARD_BASELINE_BLOCK_PATHS } = require('../src/installer');
 
 async function makeTempDir() {
@@ -135,6 +136,7 @@ test('installTemplate writes Forge metadata and gitignore entry', async () => {
   assert.equal(gitignore.includes('!.codex/**'), true);
   assert.equal(gitignore.includes('!.aioson/**'), true);
   assert.equal(gitignore.includes('.aioson/agents/'), false, 'agents/ must NOT be gitignored (Codex @ resolution)');
+  assert.equal(gitignore.includes('.aioson/squads/'), false, 'project squads must remain versionable');
   assert.equal(gitignore.includes('.aioson/locales/'), true);
   assert.equal(gitignore.includes('.aioson/skills/'), true);
   assert.equal(gitignore.includes('.aioson/config.md'), true);
@@ -142,6 +144,60 @@ test('installTemplate writes Forge metadata and gitignore entry', async () => {
   assert.equal(gitignore.includes('.aioson/cloud-imports/'), true);
   assert.equal(gitignore.includes('.aioson/mcp/servers.local.json'), true);
   assert.equal(gitignore.includes('mappings/'), true);
+});
+
+test('project constitution amendments require explicit approval and survive update', async () => {
+  const dir = await makeTempDir();
+  await installTemplate(dir, { mode: 'install' });
+  const constitutionPath = path.join(dir, '.aioson/constitution.md');
+  const amended = '# Project Constitution\n\nApproved project amendment.\n';
+  await fs.writeFile(constitutionPath, amended, 'utf8');
+
+  await installTemplate(dir, {
+    mode: 'update',
+    overwrite: true,
+    backupOnOverwrite: true
+  });
+
+  assert.equal(await fs.readFile(constitutionPath, 'utf8'), amended);
+});
+
+test('update keeps the same local runtime database and preserves project-owned docs and rules', async () => {
+  const dir = await makeTempDir();
+  await installTemplate(dir, { mode: 'install' });
+
+  const dbPath = path.join(dir, '.aioson/runtime/aios.sqlite');
+  const db = new Database(dbPath);
+  db.prepare(`
+    INSERT INTO tasks(task_key,title,status,created_at,updated_at)
+    VALUES ('update-survival','Local runtime survives update','running','2026-08-03T00:00:00Z','2026-08-03T00:00:00Z')
+  `).run();
+  db.close();
+
+  const customDoc = path.join(dir, '.aioson/docs/project-deployment.md');
+  const customRule = path.join(dir, '.aioson/rules/project-payment-rule.md');
+  const customSquad = path.join(dir, '.aioson/squads/editorial/squad.manifest.json');
+  await fs.writeFile(customDoc, '# Project-owned documentation\n', 'utf8');
+  await fs.writeFile(customRule, '# Project-owned rule\n', 'utf8');
+  await fs.mkdir(path.dirname(customSquad), { recursive: true });
+  await fs.writeFile(customSquad, JSON.stringify({
+    slug: 'editorial',
+    storagePolicy: { primary: 'file', artifacts: 'output/editorial/' }
+  }, null, 2) + '\n', 'utf8');
+
+  await installTemplate(dir, {
+    mode: 'update',
+    overwrite: true,
+    backupOnOverwrite: true
+  });
+
+  const updatedDb = new Database(dbPath, { readonly: true });
+  assert.equal(updatedDb.prepare("SELECT COUNT(*) count FROM tasks WHERE task_key='update-survival'").get().count, 1);
+  updatedDb.close();
+  assert.equal(await fs.readFile(customDoc, 'utf8'), '# Project-owned documentation\n');
+  assert.equal(await fs.readFile(customRule, 'utf8'), '# Project-owned rule\n');
+  assert.match(await fs.readFile(customSquad, 'utf8'), /"slug": "editorial"/);
+  assert.equal(await fileExists(path.join(dir, '.aioson/runtime/project-knowledge.sqlite')), false);
 });
 
 test('installTemplate appends keep rules for shared AIOS files even when project already ignores broad folders', async () => {

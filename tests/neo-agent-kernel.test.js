@@ -8,16 +8,18 @@ const path = require('node:path');
 const ROOT = path.resolve(__dirname, '..', 'template', '.aioson');
 
 test('Neo uses a compact read-only router with lazy operational modules', async () => {
-  const [kernel, legacy, diagnostics] = await Promise.all([
+  const [kernel, legacy, diagnostics, maintenance, workspaceMaintenance] = await Promise.all([
     fs.readFile(path.join(ROOT, 'agents', 'neo.md'), 'utf8'),
     fs.readFile(path.join(ROOT, 'docs', 'neo', 'legacy-routing-reference.md'), 'utf8'),
-    fs.readFile(path.join(ROOT, 'docs', 'neo', 'state-diagnostics.md'), 'utf8')
+    fs.readFile(path.join(ROOT, 'docs', 'neo', 'state-diagnostics.md'), 'utf8'),
+    fs.readFile(path.join(ROOT, 'docs', 'neo', 'runtime-storage.md'), 'utf8'),
+    fs.readFile(path.resolve(__dirname, '..', '.aioson', 'docs', 'neo', 'runtime-storage.md'), 'utf8')
   ]);
 
   assert.equal(kernel.length < 12000, true, `Neo kernel is ${kernel.length} chars`);
   assert.equal(legacy.length > 20000, true, 'legacy routing intelligence was not preserved');
 
-  for (const module of ['state-diagnostics.md', 'routing-matrix.md', 'agent-catalog.md']) {
+  for (const module of ['state-diagnostics.md', 'runtime-storage.md', 'routing-matrix.md', 'agent-catalog.md']) {
     assert.match(kernel, new RegExp(module.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   }
 
@@ -30,5 +32,9 @@ test('Neo uses a compact read-only router with lazy operational modules', async 
   assert.match(kernel, /Current QA PASS is terminal/i);
   assert.match(kernel, /Do not write files|Never write files/i);
   assert.match(kernel, /does not persist a handoff/i);
+  assert.equal(workspaceMaintenance, maintenance);
+  assert.match(maintenance, /runtime:prune .*--dry-run/i);
+  assert.match(maintenance, /Never run direct SQL/i);
+  assert.match(maintenance, /--force.*forbidden/i);
   assert.match(kernel, /---routing---[\s\S]*agent:[\s\S]*confidence:[\s\S]*reason:[\s\S]*clarification:/i);
 });

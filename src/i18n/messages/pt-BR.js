@@ -296,6 +296,12 @@ module.exports = {
       'aioson runtime:fail [path] --run=<chave> [--message=<texto>] [--summary=<texto>] [--output=<path>] [--json] [--locale=pt-BR]',
     help_runtime_status:
       'aioson runtime:status [path] [--json] [--locale=pt-BR]',
+    help_runtime_storage:
+      'aioson runtime:storage [path] [--older-than=<dias>] [--output-older-than=<dias>] [--json] [--locale=pt-BR]',
+    help_runtime_prune:
+      'aioson runtime:prune [path] [--older-than=<dias>] [--output-older-than=<dias>] [--dry-run] [--compact] [--force] [--json] [--locale=pt-BR]',
+    help_runtime_compact:
+      'aioson runtime:compact [path] [--force] [--json] [--locale=pt-BR]',
     help_agent_recover:
       'aioson agent:recover [path] [--dry-run] [--older-than=<24h|7d>] [--json] [--locale=pt-BR]',
     help_runtime_log:

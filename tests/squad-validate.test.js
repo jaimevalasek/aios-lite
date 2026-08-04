@@ -219,6 +219,33 @@ test('validate handles squad without manifest gracefully', async () => {
   assert.ok(result.errors.some(e => e.includes('Manifest') || e.includes('manifest') || e.includes('invalid')));
 });
 
+test('legacy database output strategy stays readable but warns to migrate to files', async () => {
+  const dir = await makeTempDir();
+  const slug = 'legacy-output-squad';
+  const manifest = await createValidSquad(dir, slug);
+  manifest.storagePolicy = { primary: 'sqlite', artifacts: 'sqlite-json' };
+  manifest.outputStrategy = {
+    mode: 'hybrid',
+    fileOutput: { enabled: false },
+    dataOutput: { enabled: true, storage: 'sqlite' }
+  };
+  await fs.writeFile(
+    path.join(dir, '.aioson', 'squads', slug, 'squad.manifest.json'),
+    JSON.stringify(manifest, null, 2)
+  );
+
+  const result = await runSquadValidate({
+    args: [dir],
+    options: { squad: slug },
+    logger: createCollectLogger()
+  });
+
+  assert.ok(result.valid);
+  assert.ok(result.warnings.some((warning) => warning.includes('storagePolicy.primary')));
+  assert.ok(result.warnings.some((warning) => warning.includes('outputStrategy.mode')));
+  assert.ok(result.warnings.some((warning) => warning.includes('dataOutput')));
+});
+
 test('AC-premium-14 strict gate rejects escaped paths, stale research evidence and pending genomes', async () => {
   const dir = await makeTempDir();
   const slug = 'premium-invalid';

@@ -477,9 +477,9 @@ async function runRuntimeRestore({ args, options = {}, logger, t }) {
     // Restore content items
     await restoreTable('content', 'content_items', (item) => {
       db.prepare(`
-        INSERT OR REPLACE INTO content_items (content_key, task_key, run_key, squad_slug, session_key, title, content_type, layout_type, status, summary, blueprint_slug, used_skills_json, payload_json, json_path, html_path, created_by_agent, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `).run(item.content_key, item.task_key, item.run_key, item.squad_slug, item.session_key, item.title, item.content_type, item.layout_type, item.status, item.summary, item.blueprint_slug, item.used_skills_json, item.payload_json, item.json_path, item.html_path, item.created_by_agent, item.created_at, item.updated_at);
+        INSERT OR REPLACE INTO content_items (content_key, task_key, run_key, squad_slug, session_key, title, content_type, layout_type, status, summary, blueprint_slug, used_skills_json, payload_json, source_path, json_path, html_path, created_by_agent, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(item.content_key, item.task_key, item.run_key, item.squad_slug, item.session_key, item.title, item.content_type, item.layout_type, item.status, item.summary, item.blueprint_slug, item.used_skills_json, item.payload_json, item.source_path || null, item.json_path, item.html_path, item.created_by_agent, item.created_at, item.updated_at);
     });
 
     // Restore devlog files

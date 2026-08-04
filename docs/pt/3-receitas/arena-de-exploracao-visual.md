@@ -62,7 +62,7 @@ aioson exploration:run . \
   --json
 ```
 
-Cada modelo recebe uma pasta exclusiva `runs/variant-*`. Os workers são somente leitura; o processo pai valida e grava `prototype.html` e `report.md`. Uma falha não apaga as variantes concluídas nem troca o modelo silenciosamente.
+Cada modelo recebe uma pasta exclusiva `runs/variant-*`. Os workers são somente leitura; o processo pai valida e grava `prototype.html` e `report.md`. Os relatórios herdam `interaction_language` configurado pelo Setup em `project.context.md`; agentes, skills, genomes, marcadores e identificadores técnicos continuam canônicos em inglês. A entrada `inputs/user-prompts.md` preserva automaticamente os prompts materiais do usuário e é congelada por variante — não é necessário pedir isso no chat. Na raiz, `RELATORIO.md` é atualizado automaticamente com esses prompts e links diretos para cada protótipo e relatório detalhado. Uma falha não apaga as variantes concluídas nem troca o modelo silenciosamente.
 
 Para testar outro modelo depois, use estratégia `sequential`. Com política `isolated`, ele recebe apenas a entrada original; com `cumulative`, informe `--parent=variant-a` para usar os aprendizados da rodada anterior.
 
@@ -104,10 +104,12 @@ O Briefing separa o que é direção visual do que seria nova interação ou nov
 .aioson/explorations/novo-visual-dashboard/
 ├── exploration-manifest.json
 ├── exploration-manifest.md
+├── RELATORIO.md
 ├── intake.json
 ├── inputs/
 │   ├── task.md
 │   ├── source-map.md
+│   ├── user-prompts.md
 │   └── references/
 ├── runs/
 │   ├── variant-a/{run-manifest.json,prototype.html,report.md}

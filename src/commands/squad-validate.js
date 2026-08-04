@@ -7,6 +7,7 @@ const {
   validatePremiumManifest,
   validateSquadManifest
 } = require('../squad/manifest-validator');
+const { inspectOutputPolicy } = require('../squad/output-policy');
 const { isValidSlug } = require('../dossier/schema');
 
 async function pathExists(targetPath) {
@@ -232,13 +233,9 @@ async function validateSemanticDeep(projectDir, slug, manifest) {
       }
     }
 
-    if (outputStrategy.mode === 'files' && outputStrategy.dataOutput && outputStrategy.dataOutput.enabled) {
-      warnings.push('outputStrategy.mode is "files" but dataOutput.enabled is true — consider "hybrid"');
-    }
-    if (outputStrategy.mode === 'sqlite' && outputStrategy.fileOutput && outputStrategy.fileOutput.enabled) {
-      warnings.push('outputStrategy.mode is "sqlite" but fileOutput.enabled is true — consider "hybrid"');
-    }
   }
+
+  warnings.push(...inspectOutputPolicy(manifest).warnings);
 
   // 6. Task decomposition validation
   for (const exec of executors) {

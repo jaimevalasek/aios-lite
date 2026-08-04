@@ -35,14 +35,20 @@ Use this especially when the squad produces multiple sibling outputs in one pack
 
 ## Output strategy
 
-If the domain suggests recurring data pipelines, webhooks, or storage-backed delivery:
+Every squad is file-first, regardless of domain:
+
+- `storagePolicy.primary` is `file`
+- `outputStrategy.mode` is `files`
+- `fileOutput.enabled` is `true`
+- SQLite may index the files for the local dashboard and search, but it is never the only copy
+
+If the domain suggests recurring data pipelines or webhooks:
 
 - load `.aioson/tasks/squad-output-config.md`
-- configure output explicitly
+- choose structured file formats and configure delivery explicitly
 
-For file-first squads such as reports, landing pages, or one-off artifacts:
-
-- default to `mode: "files"`
+Treat `sqlite`, `hybrid`, and `dataOutput` as legacy manifest inputs. Migrate only after a canonical file export
+exists. The runtime database is local per clone, gitignored, rebuildable, and never part of squad portability.
 
 ## Installed skill reuse
 
@@ -91,4 +97,5 @@ Never:
 - overwrite another squad's output
 - write HTML under `.aioson/`
 - skip `latest.html`
+- use SQLite as the sole copy of generated content
 - reduce structured content to a single blob if the domain naturally wants sections

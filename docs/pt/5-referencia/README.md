@@ -36,6 +36,7 @@
 | [feature-export.md](./feature-export.md) | Exportar (copiar) todos os artefatos de uma feature para um local limpo — entregável portátil |
 | [memoria-e-contexto.md](./memoria-e-contexto.md) | Memória persistente, context cache, context search, context monitor — guia consolidado |
 | [runtime-observability.md](./runtime-observability.md) | Telemetria SQLite, dashboard, runtime:emit, agent:done |
+| [runtime-storage.md](./runtime-storage.md) | Banco local por clone, mapa de uso, retenção segura, compactação e manutenção pelo NEO |
 | [hooks-session-guard.md](./hooks-session-guard.md) | Hooks automáticos de visibilidade no dashboard para Claude Code, Antigravity e Codex |
 
 ---

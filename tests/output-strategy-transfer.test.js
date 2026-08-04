@@ -7,6 +7,7 @@ const os = require('node:os');
 const path = require('node:path');
 
 const { runOutputStrategyExport, runOutputStrategyImport } = require('../src/commands/runtime');
+const { normalizeOutputStrategy } = require('../src/squad/output-policy');
 
 async function makeTempDir() {
   return fs.mkdtemp(path.join(os.tmpdir(), 'aioson-output-transfer-'));
@@ -42,7 +43,9 @@ test('export writes outputStrategy to JSON file', async () => {
     assert.equal(result.ok, true);
 
     const exported = JSON.parse(await fs.readFile(path.join(dir, result.file), 'utf8'));
-    assert.equal(exported.mode, 'hybrid');
+    assert.equal(exported.mode, 'files');
+    assert.equal(exported.dataOutput, undefined);
+    assert.equal(exported.fileOutput.dir, 'output/source-squad/');
     assert.equal(exported.delivery.webhooks.length, 1);
     assert.equal(exported.delivery.autoPublish, true);
   } finally {
@@ -73,7 +76,9 @@ test('import from another squad via --from', async () => {
     assert.equal(result.ok, true);
 
     const targetManifest = JSON.parse(await fs.readFile(path.join(dir, '.aioson', 'squads', 'target', 'squad.manifest.json'), 'utf8'));
-    assert.equal(targetManifest.outputStrategy.mode, 'hybrid');
+    assert.equal(targetManifest.outputStrategy.mode, 'files');
+    assert.equal(targetManifest.outputStrategy.dataOutput, undefined);
+    assert.equal(targetManifest.outputStrategy.fileOutput.dir, 'output/target/');
     assert.equal(targetManifest.outputStrategy.delivery.autoPublish, true);
     assert.equal(targetManifest.outputStrategy.delivery.webhooks[0].slug, 'my-hook');
   } finally {
@@ -94,7 +99,9 @@ test('import from file via --file', async () => {
 
     const targetManifest = JSON.parse(await fs.readFile(path.join(dir, '.aioson', 'squads', 'target', 'squad.manifest.json'), 'utf8'));
     assert.equal(targetManifest.outputStrategy.mode, 'files');
-    assert.equal(targetManifest.outputStrategy.dataOutput.enabled, false);
+    assert.equal(targetManifest.outputStrategy.fileOutput.enabled, true);
+    assert.equal(targetManifest.outputStrategy.fileOutput.dir, 'output/target/');
+    assert.equal(targetManifest.outputStrategy.dataOutput, undefined);
   } finally {
     await fs.rm(dir, { recursive: true, force: true });
   }
@@ -127,7 +134,10 @@ test('roundtrip export then import preserves strategy', async () => {
     assert.equal(importResult.ok, true);
 
     const destManifest = JSON.parse(await fs.readFile(path.join(dir, '.aioson', 'squads', 'destination', 'squad.manifest.json'), 'utf8'));
-    assert.deepEqual(destManifest.outputStrategy, SAMPLE_STRATEGY);
+    assert.deepEqual(
+      destManifest.outputStrategy,
+      normalizeOutputStrategy(SAMPLE_STRATEGY, { outputDir: 'output/destination/' })
+    );
   } finally {
     await fs.rm(dir, { recursive: true, force: true });
   }
