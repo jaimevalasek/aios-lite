@@ -179,6 +179,8 @@ module.exports = {
       'aioson qa:scan [path] [--url=<app-url>] [--depth=3] [--max-pages=50] [--headed] [--html] [--json] [--locale=fr]',
     help_qa_report:
       'aioson qa:report [path] [--html] [--json] [--locale=fr]',
+    help_pentester_report:
+      'aioson pentester:report [chemin] --feature=<slug> [--json] [--locale=fr]',
     help_harness_check:
       'aioson harness:check [path] --slug=<slug> [--criteria=C1,C2] [--timeout=<ms>] [--json] [--locale=fr]',
     help_harness_retro:
@@ -1061,6 +1063,14 @@ module.exports = {
   qa_report: {
     not_found: 'Aucun rapport QA trouve. Executez : aioson qa:run ou aioson qa:scan',
     html_report_written: 'Rapport HTML ecrit : {path}'
+  },
+  pentester_report: {
+    feature_required: 'pentester:report exige --feature=<slug>.',
+    artifact_not_found: 'Artefact de constats Pentester introuvable : {path}',
+    feature_mismatch: 'L artefact appartient a "{actual}", "{expected}" etait attendu.',
+    invalid_artifact: 'Impossible de generer les rapports Pentester : {reason}',
+    written: 'Rapports HTML Pentester ecrits : {path}',
+    coverage_incomplete: 'La couverture Pentester reste incomplete ({count} lacune(s)); le rapport consigne les limites.'
   },
   web_map: {
     url_missing: 'Option obligatoire manquante : --url=<url>.',

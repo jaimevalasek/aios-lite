@@ -19,6 +19,18 @@ const { isCanonicalPlannerState } = require('./workflow-profile');
 const { validateCurrentSheldonReview } = require('./lib/sheldon-review');
 const { resolveGateCBaseline } = require('./lib/gate-checkpoint');
 
+const PENTESTER_TOP_10_2025 = Object.freeze([
+  'A01:2025', 'A02:2025', 'A03:2025', 'A04:2025', 'A05:2025',
+  'A06:2025', 'A07:2025', 'A08:2025', 'A09:2025', 'A10:2025'
+]);
+const PENTESTER_WSTG_FAMILIES = Object.freeze([
+  'WSTG-INFO', 'WSTG-CONF', 'WSTG-IDNT', 'WSTG-ATHN', 'WSTG-ATHZ', 'WSTG-SESS',
+  'WSTG-INPV', 'WSTG-ERRH', 'WSTG-CRYP', 'WSTG-BUSL', 'WSTG-CLNT', 'WSTG-APIT'
+]);
+const PENTESTER_API_TOP_10_2023 = Object.freeze(Array.from({ length: 10 }, (_, index) => `API${index + 1}:2023`));
+const PENTESTER_LLM_TOP_10_2025 = Object.freeze(Array.from({ length: 10 }, (_, index) => `LLM${String(index + 1).padStart(2, '0')}:2025`));
+const PENTESTER_RUN_ID_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z$/;
+
 // Contract definitions per agent stage
 const CONTRACTS = {
   setup: {
@@ -129,10 +141,15 @@ async function readSecurityFindings(findingsPath) {
     const data = JSON.parse(content);
     return {
       ok: true,
+      version: Number(data.version) || 1,
       reviewContract: data.review_contract && typeof data.review_contract === 'object'
         ? data.review_contract
         : null,
-      findings: Array.isArray(data.findings) ? data.findings : []
+      coverage: Array.isArray(data.coverage) ? data.coverage : [],
+      findings: Array.isArray(data.findings) ? data.findings : [],
+      reportBundle: data.report_bundle && typeof data.report_bundle === 'object'
+        ? data.report_bundle
+        : null
     };
   } catch {
     return { ok: false, reason: 'invalid_json' };
@@ -164,6 +181,236 @@ function validateReviewContract(reviewContract) {
   }
 
   return missing;
+}
+
+function normalizeArtifactPath(value) {
+  return String(value || '').trim().replace(/\\/g, '/').replace(/^\.\//, '');
+}
+
+function coverageStatus(row) {
+  const status = String(row?.status || '').trim().toLowerCase();
+  if (status === 'tested_pass' || status === 'pass') return 'passed';
+  return status;
+}
+
+function coverageControlId(row) {
+  return String(row?.control_id || row?.id || '').trim().toUpperCase();
+}
+
+function coverageRowMatches(row, requirement) {
+  const id = coverageControlId(row);
+  if (
+    PENTESTER_TOP_10_2025.includes(requirement)
+    || PENTESTER_API_TOP_10_2023.includes(requirement)
+    || PENTESTER_LLM_TOP_10_2025.includes(requirement)
+  ) {
+    return id === requirement;
+  }
+  const text = [id, row?.standard, row?.standard_id, row?.title, ...(Array.isArray(row?.wstg_ids) ? row.wstg_ids : [])]
+    .join(' ')
+    .toUpperCase();
+  const family = requirement.slice('WSTG-'.length);
+  return text.includes(`WSTG-${family}`) || text.includes(`WSTG-V42-${family}`);
+}
+
+function requiredV2Coverage(contract) {
+  const profiles = new Set((Array.isArray(contract.target_profiles) ? contract.target_profiles : [])
+    .map((value) => String(value).toLowerCase()));
+  const required = [];
+  if (contract.target_mode === 'app_target') required.push(...PENTESTER_TOP_10_2025);
+  if (profiles.has('web') || contract.runtime_mode === 'browser_dast') required.push(...PENTESTER_WSTG_FAMILIES);
+  if (profiles.has('api') || profiles.has('graphql') || profiles.has('rpc')) required.push(...PENTESTER_API_TOP_10_2023);
+  if (profiles.has('llm') || profiles.has('rag') || profiles.has('agentic')) required.push(...PENTESTER_LLM_TOP_10_2025);
+  return [...new Set(required)];
+}
+
+function hasEvidence(row) {
+  return Array.isArray(row?.evidence) && row.evidence.some(isNonEmptyString);
+}
+
+function isSafeWorkspaceRelativePath(value) {
+  const normalized = String(value || '').trim().replace(/\\/g, '/');
+  if (!normalized || normalized.startsWith('/') || /^[A-Za-z]:\//.test(normalized)) return false;
+  return !normalized.split('/').includes('..');
+}
+
+function endpointValidationIssue(value) {
+  const raw = String(value || '').trim();
+  if (!raw) return 'empty endpoint';
+  if (raw.includes('?') || raw.includes('#')) return 'endpoint contains query or fragment';
+  try {
+    const parsed = new URL(raw);
+    if (parsed.username || parsed.password) return 'endpoint contains credentials';
+    if (!['localhost', '127.0.0.1', '::1', '[::1]'].includes(parsed.hostname)) return 'endpoint is not local';
+  } catch {
+    if (!raw.startsWith('/')) return 'endpoint is neither a local URL nor an absolute route';
+  }
+  return null;
+}
+
+async function validateV2SecurityEvidence(targetDir, envelope) {
+  if ((Number(envelope.version) || 1) < 2) return { errors: [], warnings: [] };
+
+  const errors = [];
+  const warnings = [];
+  const contract = envelope.reviewContract || {};
+  const runId = String(contract.run_id || '').trim();
+  if (!['framework_target', 'app_target'].includes(contract.target_mode)) {
+    errors.push('security: v2 review_contract.target_mode must be framework_target or app_target');
+  }
+  if (!['focused', 'comprehensive'].includes(contract.review_depth)) {
+    errors.push('security: v2 review_contract.review_depth must be focused or comprehensive');
+  }
+  if (!isNonEmptyString(contract.runtime_mode)) {
+    errors.push('security: v2 review_contract.runtime_mode is required');
+  }
+  if (!['ASVS-L1', 'ASVS-L2', 'ASVS-L3'].includes(contract.assurance_level)) {
+    errors.push('security: v2 review_contract.assurance_level must be ASVS-L1, ASVS-L2, or ASVS-L3');
+  }
+  for (const field of ['target_profiles', 'allowed_targets', 'forbidden_targets', 'standards', 'tools']) {
+    if (!Array.isArray(contract[field])) {
+      errors.push(`security: v2 review_contract.${field} must be an array`);
+    }
+  }
+  if (!PENTESTER_RUN_ID_PATTERN.test(runId)) {
+    errors.push('security: v2 review_contract.run_id must use YYYY-MM-DDTHH-mm-ss-SSSZ');
+  }
+
+  const coverage = envelope.coverage;
+  if (!Array.isArray(coverage)) {
+    errors.push('security: v2 coverage must be an array');
+  } else {
+    const allowedStatuses = new Set(['passed', 'finding', 'not_applicable', 'not_tested']);
+    const malformed = [];
+    const unsafeTargets = [];
+    for (const row of coverage) {
+      const id = coverageControlId(row) || 'UNMAPPED';
+      const status = coverageStatus(row);
+      if (!allowedStatuses.has(status)) {
+        malformed.push(`${id}: invalid status`);
+      } else if (status === 'passed' && !hasEvidence(row)) {
+        malformed.push(`${id}: passed without evidence`);
+      } else if (status === 'finding' && !(Array.isArray(row.finding_ids) && row.finding_ids.some(isNonEmptyString))) {
+        malformed.push(`${id}: finding without finding_ids`);
+      } else if (status === 'not_applicable' && !isNonEmptyString(row.not_applicable_reason)) {
+        malformed.push(`${id}: not_applicable without reason`);
+      } else if (status === 'not_tested' && !isNonEmptyString(row.not_tested_reason)) {
+        malformed.push(`${id}: not_tested without reason`);
+      }
+      for (const target of Array.isArray(row.tested_paths) ? row.tested_paths : []) {
+        const candidate = target && typeof target === 'object' ? target.path || target.value : target;
+        if (!isSafeWorkspaceRelativePath(candidate)) unsafeTargets.push(`${id}: unsafe path`);
+      }
+      for (const target of Array.isArray(row.tested_endpoints) ? row.tested_endpoints : []) {
+        const candidate = target && typeof target === 'object' ? target.url || target.route || target.path : target;
+        const issue = endpointValidationIssue(candidate);
+        if (issue) unsafeTargets.push(`${id}: ${issue}`);
+      }
+    }
+    if (malformed.length > 0) {
+      errors.push(`security: malformed v2 coverage rows (${malformed.join(', ')})`);
+    }
+    if (unsafeTargets.length > 0) {
+      errors.push(`security: unsafe v2 coverage targets (${unsafeTargets.join(', ')})`);
+    }
+
+    if (contract.target_mode === 'app_target') {
+      const counts = new Map(PENTESTER_TOP_10_2025.map((id) => [id, 0]));
+      for (const row of coverage) {
+        const id = coverageControlId(row);
+        if (counts.has(id)) counts.set(id, counts.get(id) + 1);
+      }
+      const missing = [...counts].filter(([, count]) => count === 0).map(([id]) => id);
+      const duplicates = [...counts].filter(([, count]) => count > 1).map(([id]) => id);
+      if (missing.length > 0) {
+        errors.push(`security: v2 app_target is missing OWASP Top 10:2025 rows (${missing.join(', ')})`);
+      }
+      if (duplicates.length > 0) {
+        errors.push(`security: v2 app_target has duplicate OWASP Top 10:2025 roll-ups (${duplicates.join(', ')})`);
+      }
+    }
+    const missingRequired = requiredV2Coverage(contract)
+      .filter((requirement) => !coverage.some((row) => coverageRowMatches(row, requirement)))
+      .filter((requirement) => !PENTESTER_TOP_10_2025.includes(requirement));
+    if (missingRequired.length > 0) {
+      errors.push(`security: v2 target profiles are missing required coverage rows (${missingRequired.join(', ')})`);
+    }
+  }
+
+  const unsafeFindingTargets = [];
+  for (const finding of envelope.findings) {
+    const id = getFindingIdentifier(finding);
+    for (const target of Array.isArray(finding.affected_artifacts) ? finding.affected_artifacts : []) {
+      if (!isSafeWorkspaceRelativePath(target)) unsafeFindingTargets.push(`${id}: unsafe affected_artifact`);
+    }
+    for (const target of Array.isArray(finding.affected_endpoints) ? finding.affected_endpoints : []) {
+      const candidate = target && typeof target === 'object' ? target.url || target.route || target.path : target;
+      const issue = endpointValidationIssue(candidate);
+      if (issue) unsafeFindingTargets.push(`${id}: ${issue}`);
+    }
+  }
+  if (unsafeFindingTargets.length > 0) {
+    errors.push(`security: unsafe v2 finding targets (${unsafeFindingTargets.join(', ')})`);
+  }
+
+  const bundle = envelope.reportBundle;
+  if (!bundle) {
+    errors.push('security: v2 report_bundle is required');
+    return { errors, warnings };
+  }
+  if (!PENTESTER_RUN_ID_PATTERN.test(runId)) return { errors, warnings };
+
+  const expectedRoot = `.aioson/pentester/${runId}/relatorios`;
+  const expected = {
+    root: expectedRoot,
+    index: `${expectedRoot}/index.html`,
+    vulnerabilities: `${expectedRoot}/vulnerabilidades.html`,
+    corrections: `${expectedRoot}/correcoes.html`,
+    coverage: `${expectedRoot}/cobertura.html`
+  };
+  if (String(bundle.run_id || '') !== runId) {
+    errors.push('security: report_bundle.run_id must match review_contract.run_id');
+  }
+  for (const field of ['missing_owasp_top_10', 'missing_required_controls']) {
+    if (!Array.isArray(bundle[field])) {
+      errors.push(`security: report_bundle.${field} must be an array`);
+    }
+  }
+  if (typeof bundle.coverage_complete !== 'boolean') {
+    errors.push('security: report_bundle.coverage_complete must be a boolean');
+  }
+  for (const [field, expectedPath] of Object.entries(expected)) {
+    if (normalizeArtifactPath(bundle[field]) !== expectedPath) {
+      errors.push(`security: report_bundle.${field} must equal ${expectedPath}`);
+    }
+  }
+
+  for (const field of ['index', 'vulnerabilities', 'corrections', 'coverage']) {
+    if (normalizeArtifactPath(bundle[field]) !== expected[field]) continue;
+    const absolutePath = path.resolve(targetDir, ...expected[field].split('/'));
+    const allowedRoot = path.resolve(targetDir, '.aioson', 'pentester', runId, 'relatorios') + path.sep;
+    if (!absolutePath.startsWith(allowedRoot)) {
+      errors.push(`security: unsafe report path for ${field}`);
+      continue;
+    }
+    const content = await readFileSafe(absolutePath);
+    if (!isNonEmptyString(content)) {
+      errors.push(`security: missing or empty HTML report ${expected[field]}`);
+    }
+  }
+
+  const incompleteRows = Array.isArray(coverage)
+    ? coverage.filter((row) => coverageStatus(row) === 'not_tested')
+    : [];
+  if (bundle.coverage_complete === true && incompleteRows.length > 0) {
+    errors.push('security: report_bundle.coverage_complete cannot be true while coverage contains not_tested rows');
+  } else if (bundle.coverage_complete !== true) {
+    const message = `security: Pentester coverage remains incomplete (${incompleteRows.length} not_tested row(s))`;
+    if (contract.review_depth === 'comprehensive') errors.push(message);
+    else warnings.push(message);
+  }
+
+  return { errors, warnings };
 }
 
 function getFindingIdentifier(finding) {
@@ -507,6 +754,9 @@ async function validateHandoffContract(targetDir, state, stageName, options = {}
             `security: invalid review_contract in ${path.relative(targetDir, findingsPath)} (missing: ${reviewContractMissing.join(', ')})`
           );
         } else {
+          const v2Evidence = await validateV2SecurityEvidence(targetDir, envelope);
+          missing.push(...v2Evidence.errors);
+          missing.push(...v2Evidence.warnings.map((warning) => `${warning} (recommended)`));
           const blockers = envelope.findings.filter(
             (f) =>
               (f.status === 'open' || f.status === 'needs_validation') &&

@@ -56,6 +56,7 @@ const { runQaInit } = require('./commands/qa-init');
 const { runQaRun } = require('./commands/qa-run');
 const { runQaScan } = require('./commands/qa-scan');
 const { runQaReport } = require('./commands/qa-report');
+const { runPentesterReport } = require('./commands/pentester-report');
 const { runWebMap } = require('./commands/web-map');
 const { runWebScrape } = require('./commands/web-scrape');
 const { runScanProject } = require('./commands/scan-project');
@@ -375,6 +376,8 @@ const JSON_SUPPORTED_COMMANDS = new Set([
   'qa-scan',
   'qa:report',
   'qa-report',
+  'pentester:report',
+  'pentester-report',
   'web:map',
   'web-map',
   'web:scrape',
@@ -1044,6 +1047,7 @@ function printHelp(t, logger) {
   logHelpLine(t, logger, 'cli.help_qa_run');
   logHelpLine(t, logger, 'cli.help_qa_scan');
   logHelpLine(t, logger, 'cli.help_qa_report');
+  logHelpLine(t, logger, 'cli.help_pentester_report');
   logHelpLine(t, logger, 'cli.help_harness_check');
   logHelpLine(t, logger, 'cli.help_harness_retro');
   logHelpLine(t, logger, 'cli.help_harness_preview');
@@ -1444,6 +1448,8 @@ async function main() {
       result = await runQaScan({ args, options, logger: commandLogger, t });
     } else if (command === 'qa:report' || command === 'qa-report') {
       result = await runQaReport({ args, options, logger: commandLogger, t });
+    } else if (command === 'pentester:report' || command === 'pentester-report') {
+      result = await runPentesterReport({ args, options, logger: commandLogger, t });
     } else if (command === 'web:map' || command === 'web-map') {
       result = await runWebMap({ args, options, logger: commandLogger, t });
     } else if (command === 'web:scrape' || command === 'web-scrape') {

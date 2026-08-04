@@ -100,11 +100,11 @@ Consumed by the `## Help (--help)` section of each agent kernel: a standalone `-
 
 ## @pentester
 
-- **What:** structured adversarial security review — maps the threat surface, produces reproducible findings, and may apply deterministic bounded hardening under an explicit scope contract.
+- **What:** evidence-driven adversarial security review — maps the complete declared threat surface, records explicit standards/path/route coverage, and may apply every eligible deterministic hardening that fits one bounded packet.
 - **When:** sensitive surface (auth, money, uploads, secrets, external URLs) — via `@qa`'s trigger or on demand.
 - **Options:** `--mode=app_target --feature=<slug> --scope=<target>` via `aioson agent:prompt pentester`; a direct bounded correction over a disabled manifest entry uses `review-cycle:advance ... --manual`.
 - **Typical:** `/pentester review the auth endpoints of feature accounts`.
-- **Produces:** `security-findings-{slug}.json` (owners + severities; `@qa` owns closure).
+- **Produces:** authoritative `security-findings-{slug}.json` plus localized `.aioson/pentester/{run_id}/relatorios/{index,vulnerabilidades,correcoes,cobertura}.html`; `@qa` owns closure.
 - **Next:** `@dev` once for cross-cutting findings, or back to `@qa`; Pentester never self-accepts a fix.
 
 ## @qa

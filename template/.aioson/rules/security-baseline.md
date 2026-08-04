@@ -58,7 +58,7 @@ machine-readable exceptions allowed under `.aioson/context/`).
 
 ### SEC-SBD-01 — Server-side input limits
 
-- Maps to: OWASP A03 / A04
+- Maps to: OWASP `A05:2025` Injection / `A06:2025` Insecure Design / `A10:2025` Mishandling of Exceptional Conditions
 - Default severity: `high`
 - Owner agent: `@dev` (implements), `@sheldon` (declares limits in the PRD), `@qa` (verifies)
 - Applies to: analyst, dev, qa
@@ -67,7 +67,7 @@ machine-readable exceptions allowed under `.aioson/context/`).
 
 ### SEC-SBD-02 — Upload file signature validation
 
-- Maps to: OWASP A03 / A05
+- Maps to: OWASP `A05:2025` Injection / `A06:2025` Insecure Design / `A08:2025` Software or Data Integrity Failures
 - Default severity: `high`
 - Owner agent: `@dev` (implements), `@qa` (verifies)
 - Applies to: analyst, dev, qa
@@ -76,7 +76,7 @@ machine-readable exceptions allowed under `.aioson/context/`).
 
 ### SEC-SBD-03 — Ownership / IDOR authorization
 
-- Maps to: OWASP A01
+- Maps to: OWASP `A01:2025` Broken Access Control
 - Default severity: `critical`
 - Owner agent: `@dev` (implements), `@sheldon` (maps promised surfaces in the PRD), `@qa` (verifies)
 - Applies to: analyst, architect, dev, qa
@@ -85,7 +85,7 @@ machine-readable exceptions allowed under `.aioson/context/`).
 
 ### SEC-SBD-04 — Atomic critical state changes
 
-- Maps to: OWASP A04
+- Maps to: OWASP `A06:2025` Insecure Design / `A10:2025` Mishandling of Exceptional Conditions
 - Default severity: `critical`
 - Owner agent: `@planner` (plans the boundary), `@dev` (implements), `@qa` (verifies)
 - Applies to: architect, dev, qa
@@ -94,7 +94,7 @@ machine-readable exceptions allowed under `.aioson/context/`).
 
 ### SEC-SBD-05 — Secrets outside code
 
-- Maps to: OWASP A02 / A05
+- Maps to: OWASP `A02:2025` Security Misconfiguration / `A04:2025` Cryptographic Failures
 - Default severity: `critical` (committed) / `high` (config drift)
 - Owner agent: `@dev` (implements), `@qa` (verifies)
 - Applies to: analyst, architect, dev, qa
@@ -103,7 +103,7 @@ machine-readable exceptions allowed under `.aioson/context/`).
 
 ### SEC-SBD-06 — External URL sanitization
 
-- Maps to: OWASP A03 / A10
+- Maps to: OWASP `A05:2025` Injection / `A06:2025` Insecure Design; OWASP API `API7:2023` SSRF when fetched server-side
 - Default severity: `medium` (raises to `high` when URL is followed server-side)
 - Owner agent: `@dev` (implements), `@qa` (verifies)
 - Applies to: analyst, dev, qa
@@ -112,7 +112,7 @@ machine-readable exceptions allowed under `.aioson/context/`).
 
 ### SEC-SBD-07 — Storage default-deny / RLS boundary
 
-- Maps to: OWASP A01 / A05
+- Maps to: OWASP `A01:2025` Broken Access Control / `A02:2025` Security Misconfiguration
 - Default severity: `critical`
 - Owner agent: `@planner` (plans the boundary), `@dev` (implements), `@qa` (verifies)
 - Applies to: architect, dev, qa
@@ -121,7 +121,7 @@ machine-readable exceptions allowed under `.aioson/context/`).
 
 ### SEC-SBD-08 — Auth enumeration / rate limiting
 
-- Maps to: OWASP A07
+- Maps to: OWASP `A07:2025` Authentication Failures
 - Default severity: `high`
 - Owner agent: `@dev` (implements), `@qa` (verifies)
 - Applies to: analyst, dev, qa

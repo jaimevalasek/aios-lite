@@ -128,7 +128,10 @@ function buildPentesterActivationContext(options, t) {
 
   if (targetMode === 'app_target') {
     lines.push(
-      'Use only the app_target surface catalog (`app_target_ownership_idor`, `app_target_secrets_crypto`, `app_target_injection_xss`, `app_target_insecure_design_race`, `app_target_auth_rate_limit`).'
+      'Use the complete app_target catalog: `app_target_recon_attack_surface`, `app_target_config_deployment`, `app_target_ownership_idor`, `app_target_auth_rate_limit`, `app_target_session_csrf`, `app_target_injection_xss`, `app_target_secrets_crypto`, `app_target_insecure_design_race`, `app_target_integrity_supply_chain`, `app_target_logging_monitoring`, and `app_target_error_exception`; add `app_target_ssrf`, `app_target_file_upload_parser`, `app_target_browser_exposure`, `app_target_api_realtime`, `app_target_cloud_host`, `app_target_native_client`, and `app_target_llm_agentic` when evidence triggers them.'
+    );
+    lines.push(
+      'Create all ten OWASP Top 10:2025 roll-up rows and every applicable WSTG/ASVS/API/LLM/mobile/native row. Record `passed`, `finding`, `not_applicable`, or `not_tested` with evidence, including coverage by source path/module and sanitized URL/route/method.'
     );
     lines.push(
       'Do not mix framework surfaces unless the feature explicitly touches AIOSON runtime boundaries and you record a `cross_scope_reason`.'

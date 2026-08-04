@@ -57,11 +57,13 @@ const MANAGED_FILES = [
   '.aioson/docs/neo/agent-catalog.md',
   '.aioson/docs/neo/legacy-routing-reference.md',
   '.aioson/docs/pentester/review-contract-and-findings.md',
+  '.aioson/docs/pentester/coverage-standard.md',
   '.aioson/docs/pentester/framework-playbooks.md',
   '.aioson/docs/pentester/correction-cycle.md',
   '.aioson/docs/pentester/app-playbooks.md',
   '.aioson/docs/pentester/browser-dast-playbook.md',
   '.aioson/docs/pentester/llm-supplychain.md',
+  '.aioson/docs/pentester/reporting.md',
   '.aioson/docs/pentester/legacy-agent-contract.md',
   '.aioson/docs/copywriter/modes-and-outputs.md',
   '.aioson/docs/copywriter/genomes-and-research.md',
@@ -456,7 +458,7 @@ const AGENT_DEFINITIONS = [
   {
     id: 'pentester',
     displayName: 'Pentester',
-    description: 'Adversarial security review and threat-surface mapping',
+    description: 'Evidence-driven adversarial review, bounded hardening, and localized security coverage reports',
     command: '@pentester',
     path: '.aioson/agents/pentester.md',
     flags: [
@@ -469,7 +471,7 @@ const AGENT_DEFINITIONS = [
       '.aioson/context/prd-{slug}.md (active feature)',
       '.aioson/context/implementation-plan-{slug}.md (approved paths and risk surfaces)'
     ],
-    output: '.aioson/context/security-findings-{slug}.json'
+    output: '.aioson/context/security-findings-{slug}.json + .aioson/pentester/{run_id}/relatorios/*.html'
   },
   {
     id: 'qa',

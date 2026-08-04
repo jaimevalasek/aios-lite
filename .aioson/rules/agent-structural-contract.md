@@ -145,6 +145,7 @@ Known correct signatures (reference table):
 | `context:index` | `[path] --force` |
 | `preflight` | `--agent=<name> --feature=<slug>` |
 | `dev:state:write` | `--feature=<slug> --phase=<n> --next="<description>" --context=<tokens>`; supports `simple-plan` |
+| `pentester:report` | `[path] --feature=<slug> [--json]` |
 
 ## 7. Template-workspace parity
 

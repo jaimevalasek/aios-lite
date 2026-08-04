@@ -189,6 +189,8 @@ module.exports = {
       'aioson qa:scan [path] [--url=<app-url>] [--depth=3] [--max-pages=50] [--headed] [--html] [--json] [--locale=en]',
     help_qa_report:
       'aioson qa:report [path] [--html] [--json] [--locale=en]',
+    help_pentester_report:
+      'aioson pentester:report [path] --feature=<slug> [--json] [--locale=en]',
     help_harness_init:
       'aioson harness:init [path] --slug=<slug> [--mode=balanced|safe|builder|autopilot] [--locale=en]',
     help_harness_validate:
@@ -1142,6 +1144,14 @@ module.exports = {
   qa_report: {
     not_found: 'No QA report found. Run: aioson qa:run or aioson qa:scan',
     html_report_written: 'HTML report written: {path}'
+  },
+  pentester_report: {
+    feature_required: 'pentester:report requires --feature=<slug>.',
+    artifact_not_found: 'Pentester findings artifact not found: {path}',
+    feature_mismatch: 'Findings artifact belongs to "{actual}", expected "{expected}".',
+    invalid_artifact: 'Could not generate Pentester reports: {reason}',
+    written: 'Pentester HTML reports written: {path}',
+    coverage_incomplete: 'Pentester coverage remains incomplete ({count} gap(s)); the report records the limitations.'
   },
   harness: {
     init_success: 'Harness initialized for feature: {slug}',

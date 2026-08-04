@@ -191,6 +191,8 @@ module.exports = {
       'aioson qa:scan [path] [--url=<app-url>] [--depth=3] [--max-pages=50] [--headed] [--html] [--json] [--locale=pt-BR]',
     help_qa_report:
       'aioson qa:report [path] [--html] [--json] [--locale=pt-BR]',
+    help_pentester_report:
+      'aioson pentester:report [caminho] --feature=<slug> [--json] [--locale=pt-BR]',
     help_harness_init:
       'aioson harness:init [path] --slug=<slug> [--mode=balanced|safe|builder|autopilot] [--locale=pt-BR]',
     help_harness_validate:
@@ -1168,6 +1170,14 @@ module.exports = {
   qa_report: {
     not_found: 'Nenhum relatorio QA encontrado. Execute: aioson qa:run ou aioson qa:scan',
     html_report_written: 'Relatorio HTML escrito: {path}'
+  },
+  pentester_report: {
+    feature_required: 'pentester:report exige --feature=<slug>.',
+    artifact_not_found: 'Artefato de findings do Pentester nao encontrado: {path}',
+    feature_mismatch: 'O artefato pertence a "{actual}", mas era esperado "{expected}".',
+    invalid_artifact: 'Nao foi possivel gerar os relatorios do Pentester: {reason}',
+    written: 'Relatorios HTML do Pentester escritos em: {path}',
+    coverage_incomplete: 'A cobertura do Pentester continua incompleta ({count} lacuna(s)); o relatorio registra as limitacoes.'
   },
   harness: {
     init_success: 'Harness inicializado para a feature: {slug}',
