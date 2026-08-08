@@ -23,12 +23,22 @@ const { openRuntimeDb } = require('./runtime-store');
 
 const BOOTSTRAP_REQUIRED = ['what-is.md', 'how-it-works.md', 'what-it-does.md', 'current-state.md'];
 
-const CLAUDE_AGENT_COMMANDS_REQUIRED = [
-  '.claude/commands/aioson/agent/setup.md',
-  '.claude/commands/aioson/agent/dev.md',
-  '.claude/commands/aioson/agent/qa.md',
-  '.claude/commands/aioson/agent/discover.md'
-];
+// Every agent file installed under .aioson/agents/ needs a matching slash-command
+// wrapper under .claude/commands/aioson/agent/ — derived live so a newly added
+// agent is never silently missing its command file (was a hardcoded 4-item list).
+async function listAgentNames(targetDir) {
+  const dir = path.join(targetDir, '.aioson', 'agents');
+  let entries;
+  try {
+    entries = await fs.readdir(dir, { withFileTypes: true });
+  } catch {
+    return [];
+  }
+  return entries
+    .filter((entry) => entry.isFile() && entry.name.endsWith('.md'))
+    .map((entry) => entry.name.replace(/\.md$/, ''))
+    .sort();
+}
 
 async function countBootstrapFiles(targetDir) {
   const dir = path.join(targetDir, '.aioson/context/bootstrap');
@@ -282,20 +292,24 @@ async function runDoctor(targetDir) {
     hintKey: featuresDirExists ? undefined : 'doctor.features_dir_present_hint'
   });
 
-  // 3. claude_commands_present
-  const missingClaudeCmds = [];
-  for (const rel of CLAUDE_AGENT_COMMANDS_REQUIRED) {
-    if (!(await exists(path.join(targetDir, rel)))) missingClaudeCmds.push(rel);
+  // 3. claude_commands_present — every installed agent must have a matching wrapper
+  const installedAgentNames = await listAgentNames(targetDir);
+  let missingClaudeCmds = [];
+  if (installedAgentNames.length > 0) {
+    const requiredClaudeCmds = installedAgentNames.map((name) => `.claude/commands/aioson/agent/${name}.md`);
+    for (const rel of requiredClaudeCmds) {
+      if (!(await exists(path.join(targetDir, rel)))) missingClaudeCmds.push(rel);
+    }
+    checks.push({
+      id: 'living-memory:claude_commands',
+      severity: 'warning',
+      key: 'doctor.claude_commands_present',
+      params: { missing: missingClaudeCmds.length, required: requiredClaudeCmds.length },
+      ok: missingClaudeCmds.length === 0,
+      hintKey: missingClaudeCmds.length === 0 ? undefined : 'doctor.claude_commands_present_hint',
+      hintParams: missingClaudeCmds.length === 0 ? undefined : { paths: missingClaudeCmds.join(', ') }
+    });
   }
-  checks.push({
-    id: 'living-memory:claude_commands',
-    severity: 'warning',
-    key: 'doctor.claude_commands_present',
-    params: { missing: missingClaudeCmds.length, required: CLAUDE_AGENT_COMMANDS_REQUIRED.length },
-    ok: missingClaudeCmds.length === 0,
-    hintKey: missingClaudeCmds.length === 0 ? undefined : 'doctor.claude_commands_present_hint',
-    hintParams: missingClaudeCmds.length === 0 ? undefined : { paths: missingClaudeCmds.join(', ') }
-  });
 
   // 4. version_drift
   const contextVersion = await readContextVersion(targetDir);

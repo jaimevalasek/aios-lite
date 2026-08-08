@@ -49,6 +49,14 @@ async function makeMinimalProject({ bootstrap = 0, featuresDir = false, claudeCo
     await fs.mkdir(path.join(dir, '.aioson/context/features'), { recursive: true });
   }
 
+  // The claude_commands check derives its required list from .aioson/agents/*.md,
+  // so the fixture always seeds that directory regardless of `claudeCommands`.
+  const adir = path.join(dir, '.aioson/agents');
+  await fs.mkdir(adir, { recursive: true });
+  for (const name of ['setup.md', 'dev.md', 'qa.md', 'discover.md']) {
+    await fs.writeFile(path.join(adir, name), `# ${name}\n`, 'utf8');
+  }
+
   if (claudeCommands) {
     const cdir = path.join(dir, '.claude/commands/aioson/agent');
     await fs.mkdir(cdir, { recursive: true });
@@ -152,6 +160,28 @@ test('claude_commands fix restores from template', async () => {
   // require that an action was emitted with the right shape
   assert.ok(action);
   assert.equal(action.missingCount, 4);
+});
+
+test('claude_commands_present derives its required list from installed agents, not a fixed set', async () => {
+  const dir = await makeMinimalProject({ claudeCommands: true });
+  // A fifth agent with no matching slash-command wrapper — the old hardcoded
+  // 4-item list would have missed this entirely.
+  await fs.writeFile(path.join(dir, '.aioson/agents/newagent.md'), '# newagent\n', 'utf8');
+
+  const report = await runDoctor(dir);
+  const check = findCheck(report, 'living-memory:claude_commands');
+  assert.equal(check.ok, false);
+  assert.equal(check.params.required, 5);
+  assert.equal(check.params.missing, 1);
+  assert.ok(check.hintParams.paths.includes('newagent.md'));
+});
+
+test('claude_commands_present is absent when no agents are installed yet', async () => {
+  const dir = await makeMinimalProject({ claudeCommands: false });
+  await fs.rm(path.join(dir, '.aioson/agents'), { recursive: true, force: true });
+
+  const report = await runDoctor(dir);
+  assert.equal(findCheck(report, 'living-memory:claude_commands'), undefined);
 });
 
 test('version_drift detects mismatch between project.context.md and CLI', async () => {
