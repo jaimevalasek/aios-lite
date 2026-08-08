@@ -138,6 +138,31 @@ test('--advisory: a failing kind reports not-ok but is non-blocking (exit stays 
   process.exitCode = prev;
 });
 
+test('kind=copy flags headline formulas but leaves specific copy alone', async () => {
+  const specific = await tmp();
+  await write(specific, '.aioson/context/copy-orders.md', '# Copy\n\nAprove pedidos travados em 2 cliques, sem abrir o ERP.\n');
+  const clean = await runVerifyArtifact({
+    args: [specific],
+    options: { kind: 'copy', slug: 'orders', json: true, suppressExitCode: true },
+    logger: makeLogger()
+  });
+  assert.equal(clean.ok, true, `specific copy must pass: ${clean.issues.join('; ')}`);
+
+  // The twin of visual slop: a headline that still sells after the product is
+  // swapped out. Both language surfaces the framework ships in are covered.
+  const formulaic = await tmp();
+  await write(formulaic, '.aioson/context/copy-orders.md', '# Copy\n\nTransforme seu negócio hoje.\nTake your sales to the next level.\n');
+  const flagged = await runVerifyArtifact({
+    args: [formulaic],
+    options: { kind: 'copy', slug: 'orders', json: true, suppressExitCode: true },
+    logger: makeLogger()
+  });
+  assert.equal(flagged.ok, false);
+  // The engine reports the pattern that hit, not the matched text.
+  assert.match(flagged.issues.join('\n'), /to the next level/);
+  assert.match(flagged.issues.join('\n'), /ransforme \(o seu/);
+});
+
 test('--advisory survives the CLI wrapper, not just the command', async () => {
   // The wrapper fails the process for any result carrying `ok: false`. Asserting
   // only in-process hid that override for every kind: `--advisory` printed

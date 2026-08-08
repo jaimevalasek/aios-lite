@@ -3,6 +3,8 @@
 Choose ONE direction. Never mix. Mixing produces visual noise.
 The chosen direction defines spacing, typography, border strategy, depth, and motion posture — before components are built.
 
+The token specs below are starting math, not a signature. In origination mode pair the direction with one register from `aesthetic-registers.md`; the register decides the typographic posture and texture, and the families named here are examples of a class, not defaults to accept unexamined. A face chosen because it was printed in this file is the same regression to the average the register exists to prevent.
+
 ---
 
 ## Precision & Density

@@ -37,7 +37,7 @@ Skip to origination mode only when no prototype, no identity, and no established
 ## Origination mode
 
 1. Confirm explicit activation.
-2. Load `references/intent-and-domain.md` and `references/design-directions.md`.
+2. Load `references/intent-and-domain.md` and `references/design-directions.md`. This is the cold start — the moment a generative system reverts to the average — so also load `references/aesthetic-registers.md` and commit to one register before any token decision. Register sets posture, direction sets the token math; one of each, never two of either.
 3. Name the surface type, domain cues, primary user decision, and one signature move.
 4. Load only the additional references needed below.
 5. Establish tokens and responsive constraints before component styling.

@@ -328,6 +328,14 @@ O locator segue esta precedência: `--file` → `--dir` → `--slug` (resolve `.
 
 Heurísticas que precisariam de DOM, layout renderizado ou gosto ficam de fora por construção — um gate que dá alarme falso é desligado em uma semana. Markup de classes utilitárias (Tailwind e afins) expressa token no HTML, então retorna `applicable: false` em vez de inventar veredito.
 
+##### `--runtime` (opt-in)
+
+```bash
+aioson verify:artifact . --kind=visual --slug=pedidos --runtime --advisory
+```
+
+Acrescenta o que só existe depois do layout, a 1280px e 360px: overflow horizontal, texto cortado, elementos empurrados para fora da tela, tap targets abaixo de 44px e contraste WCAG computado de verdade (primeiro plano translúcido é composto contra o ancestral opaco mais próximo). Playwright é dependência opcional, igual ao `qa:run`; quando falta, a execução informa que não aconteceu em vez de degradar para um "passou".
+
 `prototype:check` roda a mesma telemetria automaticamente quando resolve um protótipo próprio, sempre como bloco advisory — ela nunca altera o veredito do vínculo.
 
 #### `briefing:sources`

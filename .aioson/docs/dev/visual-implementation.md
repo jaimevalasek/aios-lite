@@ -50,7 +50,11 @@ Inspect real content at desktop and mobile widths, plus the material loading, em
 
 Mobile is a recomposition, not a shrunken desktop: re-evaluate order, density, controls, wrapping, and interaction priority.
 
-## 5. Measure what you built
+## 5. Adding an effect, a background, or a hero asset
+
+Load `.aioson/docs/design/visual-effects.md`. It carries the effect vocabulary plus the cost and asset contracts: an effect must explain state, reinforce the signature move, or carry the material — and it ships with reduced-motion, a mobile fallback, and no layout shift. AIOSON generates no imagery; meaningful assets come from the user, the product, or the repository, through the identity pipeline.
+
+## 6. Measure what you built
 
 Before declaring visual work complete, run the telemetry over the front-end you touched:
 
@@ -62,6 +66,8 @@ It returns arithmetic, not opinion: token adherence, spacing off the 4px grid, a
 
 A utility-class codebase returns `applicable: false`; that is a scope statement, not a pass.
 
-## 6. Reuse before adding
+When a browser is available, add `--runtime` for what only exists after layout — horizontal overflow at 360px, clipped text, elements pushed off-screen, undersized tap targets, and real computed contrast. Without Playwright installed it reports that it did not run; it never degrades into a silent pass.
+
+## 7. Reuse before adding
 
 Map each region to a real component in this project's library. A new component needs a named reason. Off-grid spacing, hardcoded colors, mixed radii, and mixed depth strategies are drift — fix them rather than adding another variant.

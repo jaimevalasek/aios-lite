@@ -158,6 +158,48 @@ test('the routed visual-implementation doc carries the criteria dev no longer in
   assert.match(template, /outranks every node here/i);
 });
 
+test('the effect and asset vocabulary is framework-level, routed, and honest about its limits', async () => {
+  const relativePath = '.aioson/docs/design/visual-effects.md';
+  const [template, workspace] = await Promise.all([
+    read(TEMPLATE_ROOT, relativePath),
+    read(WORKSPACE_ROOT, relativePath)
+  ]);
+
+  assert.equal(workspace, template, `template/workspace drift: ${relativePath}`);
+  // Routing frontmatter is what makes it reachable at all; without load_tier it
+  // would either never load or load for every non-visual feature.
+  assert.match(template, /^load_tier: trigger$/m);
+  assert.match(template, /^agents: \[dev, deyvin, briefing-refiner, benchmark\]$/m);
+
+  // The two contracts that make an effect shippable rather than merely pretty.
+  assert.match(template, /prefers-reduced-motion/);
+  assert.match(template, /## 3\. Cost contract/);
+  assert.match(template, /## 4\. Asset contract/);
+  // AIOSON has no image model. Claiming otherwise is how a prototype ends up
+  // describing assets that were never produced.
+  assert.match(template, /generates no imagery/i);
+});
+
+test('both the implementation and the prototype polish pass can reach the effects vocabulary', async () => {
+  const surfaces = [
+    '.aioson/docs/dev/visual-implementation.md',
+    '.aioson/skills/process/prototype-forge/references/quality-and-manifest.md'
+  ];
+
+  for (const relativePath of surfaces) {
+    const [template, workspace] = await Promise.all([
+      read(TEMPLATE_ROOT, relativePath),
+      read(WORKSPACE_ROOT, relativePath)
+    ]);
+    assert.equal(workspace, template, `template/workspace drift: ${relativePath}`);
+    assert.match(
+      template,
+      /docs\/design\/visual-effects\.md/,
+      `${relativePath} cannot reach the effects vocabulary`
+    );
+  }
+});
+
 test('rule precedence over the brain is stated once, in the brain itself', async () => {
   for (const root of [TEMPLATE_ROOT, WORKSPACE_ROOT]) {
     const brain = JSON.parse(await read(root, BRAIN_RELATIVE_PATH));

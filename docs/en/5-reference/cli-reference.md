@@ -367,6 +367,14 @@ Locator precedence: `--file` → `--dir` → `--slug` (resolves `.aioson/briefin
 
 Heuristics that would need a DOM, a rendered layout, or taste are excluded by construction — a gate that cries wolf gets switched off within a week. Utility-class markup (Tailwind and friends) expresses tokens in HTML, so it returns `applicable: false` rather than inventing a verdict.
 
+### `--runtime` (opt-in)
+
+```bash
+aioson verify:artifact . --kind=visual --slug=orders --runtime --advisory
+```
+
+Adds what only exists after layout, at 1280px and 360px: horizontal overflow, clipped text, elements pushed off-screen, tap targets under 44px, and real computed WCAG contrast (translucent foregrounds composited against the nearest opaque ancestor). Playwright is an optional dependency, exactly as for `qa:run`; when it is absent the run reports that it did not happen instead of degrading into a pass.
+
 `prototype:check` runs the same telemetry automatically whenever it resolves an owned prototype, always as an advisory block — it never changes the binding verdict.
 
 ---

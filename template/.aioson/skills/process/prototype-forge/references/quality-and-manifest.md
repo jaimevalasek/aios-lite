@@ -13,6 +13,7 @@ Before UI coding, state internally one visual thesis, two or three anti-goals, a
 2. Apply the design skill's swap, squint, signature, token, responsive, contrast, and interaction-state checks.
 3. Inspect DOM/CSS. When browser/screenshot tools exist, inspect at least one mobile and one desktop viewport. In `visual-exploration`, an available browser is mandatory: run exactly one `render → screenshot/DOM critique → repair → final render` loop. If unavailable, disclose the limitation and never claim visual inspection.
 4. Fix overflow, hierarchy, type rhythm, contrast, unsupported assets, dead controls, and generic composition without losing any Core screen/action/state.
+   When the polish adds a background treatment, atmosphere, entrance motion, or a hero asset, load `.aioson/docs/design/visual-effects.md` and honor its cost and asset contracts. An effect that explains no state and reinforces no signature move is decoration, and a decorative shape standing where product evidence belongs is the most recognizable slop marker there is.
 5. Record only checks actually performed. Never claim screenshot evidence when none ran.
 
 The manifest includes:

@@ -74,6 +74,21 @@ const PROFILER_DIR = '.aioson/profiler-reports';
 // match, to avoid flagging legitimate `[1]`-style citations.
 const TEMPLATE_TOKENS = ['\\[Full Name\\]', '\\[count\\]', '\\[low/medium/high'];
 
+// Content slop: headline formulas that survive a total product swap. Kept to the
+// handful that are unmistakably template marketing in EN and pt-BR, because the
+// cost of a false positive on real brand copy is higher than the miss. The
+// engine compiles these without flags, so case variants are spelled out.
+const COPY_CLICHES = [
+  '[Tt]ransform your (workflow|business|team)',
+  '[Tt]ake (your|it) .{0,24} to the next level',
+  '[Uu]nlock the (power|potential) of',
+  '[Ss]upercharge your',
+  '[Rr]evolutioni[sz]e (the way|your)',
+  '[Ll]eve (o seu|seu|sua) .{0,24} para (o|um) (pr[óo]ximo n[íi]vel)',
+  '[Tt]ransforme (o seu|seu|sua) (neg[óo]cio|fluxo de trabalho|empresa)',
+  '[Dd]esbloqueie o (poder|potencial)'
+];
+
 const RULESETS = {
   // discover — the 4-file cold-start cache must all exist with real frontmatter.
   bootstrap: () => ({
@@ -150,14 +165,16 @@ const RULESETS = {
 
   // copywriter — an advisory placeholder/template scan over the saved copy doc
   // (the rich resonance checks stay in the agent's Phase-5 checklist; this just
-  // makes "no placeholder/Lorem/TODO/unfilled token" deterministic).
+  // makes "no placeholder/Lorem/TODO/unfilled token/headline formula"
+  // deterministic). Visual slop has a twin in copy: a headline that still works
+  // after the product is swapped out is the same regression to the mean.
   copy: (ctx) => ({
     label: 'copywriter copy document',
     criteria: [{
       id: 'copy',
       files: [`.aioson/context/copy-${ctx.slug}.md`],
       must_match: [],
-      must_not_match: [...PLACEHOLDER_PATTERNS, ...TEMPLATE_TOKENS]
+      must_not_match: [...PLACEHOLDER_PATTERNS, ...TEMPLATE_TOKENS, ...COPY_CLICHES]
     }]
   }),
 
@@ -318,14 +335,17 @@ const VISUAL_MAX_FILES = 40;
  */
 function collectVisualSources({ targetDir, file, dir, slug }) {
   const read = (abs) => { try { return fs.readFileSync(abs, 'utf8'); } catch { return null; } };
-  const bucket = { html: [], css: [], files: [] };
+  const bucket = { html: [], css: [], files: [], entry: null };
   const add = (abs) => {
     const ext = path.extname(abs).toLowerCase();
     if (!VISUAL_EXTS.has(ext)) return;
     const content = read(abs);
     if (content === null) return;
     (ext === '.css' ? bucket.css : bucket.html).push(content);
-    bucket.files.push(path.relative(targetDir, abs).split(path.sep).join('/'));
+    const rel = path.relative(targetDir, abs).split(path.sep).join('/');
+    bucket.files.push(rel);
+    // The first HTML document is the only thing a browser can be pointed at.
+    if (!bucket.entry && ext !== '.css') bucket.entry = rel;
   };
 
   if (file) {
@@ -354,7 +374,7 @@ function collectVisualSources({ targetDir, file, dir, slug }) {
   }
 
   if (bucket.files.length === 0) return null;
-  return { html: bucket.html.join('\n'), css: bucket.css.join('\n'), files: bucket.files };
+  return { html: bucket.html.join('\n'), css: bucket.css.join('\n'), files: bucket.files, entry: bucket.entry };
 }
 
 const ADAPTERS = {
@@ -598,13 +618,38 @@ const ADAPTERS = {
       };
     }
 
-    const ok = result.issues.length === 0;
+    const issues = [...result.issues];
+    const warnings = [...result.warnings];
+    const metrics = { ...result.metrics, files: sources.files };
+
+    // Opt-in runtime pass. Static telemetry reads what was written; this reads
+    // what the browser did with it — overflow, clipping, real computed contrast.
+    // A missing browser is a reported state, never a silent pass.
+    if (ctx.runtime && sources.entry) {
+      const { collectRuntimeMeasurements, summarizeRuntime } = require('../lib/visual-runtime');
+      const { pathToFileURL } = require('node:url');
+      const collected = await collectRuntimeMeasurements({
+        fileUrl: pathToFileURL(path.resolve(ctx.targetDir, sources.entry)).href,
+        launcher: ctx.browserLauncher || null
+      });
+      if (!collected.available) {
+        warnings.push(collected.reason);
+        metrics.runtime = { available: false, reason: collected.reason };
+      } else {
+        const runtime = summarizeRuntime(collected.runs);
+        issues.push(...runtime.issues);
+        warnings.push(...runtime.warnings);
+        metrics.runtime = { available: true, entry: sources.entry, ...runtime.metrics };
+      }
+    }
+
+    const ok = issues.length === 0;
     return {
       ok,
-      issues: result.issues,
-      warnings: result.warnings,
-      checks: [{ id: 'visual', ok, detail: result.issues.join('; ') || null }],
-      metrics: { ...result.metrics, files: sources.files }
+      issues,
+      warnings,
+      checks: [{ id: 'visual', ok, detail: issues.join('; ') || null }],
+      metrics
     };
   }
 };
@@ -674,7 +719,11 @@ async function runVerifyArtifact({ args, options = {}, logger }) {
     return { ok: false, kind };
   }
 
-  const result = await evaluateKind(kind, { slug, targetDir, file, dir, noBuild, buildTimeout, buildCommand }, logger);
+  const runtime = Boolean(options.runtime);
+  const result = await evaluateKind(kind, {
+    slug, targetDir, file, dir, noBuild, buildTimeout, buildCommand,
+    runtime, browserLauncher: options.browserLauncher || null
+  }, logger);
 
   if (result === null) {
     const msg = `verify:artifact: unknown kind "${kind}". Available: ${availableKinds().join(', ')}`;
