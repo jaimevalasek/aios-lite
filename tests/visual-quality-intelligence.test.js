@@ -200,6 +200,34 @@ test('both the implementation and the prototype polish pass can reach the effect
   }
 });
 
+test('the cold start has a register vocabulary and a funnel that uses it', async () => {
+  const registers = '.aioson/skills/design/interface-design/references/aesthetic-registers.md';
+  const skill = '.aioson/skills/design/interface-design/SKILL.md';
+  const exploration = '.aioson/docs/briefing/visual-exploration.md';
+
+  for (const relativePath of [registers, skill, exploration]) {
+    const [template, workspace] = await Promise.all([
+      read(TEMPLATE_ROOT, relativePath),
+      read(WORKSPACE_ROOT, relativePath)
+    ]);
+    assert.equal(workspace, template, `template/workspace drift: ${relativePath}`);
+  }
+
+  const vocabulary = await read(TEMPLATE_ROOT, registers);
+  // Origination mode only: a register must never be able to override an approved
+  // prototype or an extracted identity record.
+  assert.match(vocabulary, /\*\*origination mode only\*\*/i);
+  assert.match(vocabulary, /never overrides accessibility/i);
+  for (const register of ['## Technical', '## Quiet', '## Editorial', '## Material', '## Constructed']) {
+    assert.match(vocabulary, new RegExp(register.replace(/[#]/g, '\\#')));
+  }
+
+  // The engine has to actually reach it at the moment it would otherwise default.
+  assert.match(await read(TEMPLATE_ROOT, skill), /aesthetic-registers\.md/);
+  // And the arena has to be able to compare registers, not only models.
+  assert.match(await read(TEMPLATE_ROOT, exploration), /Arena over registers/);
+});
+
 test('rule precedence over the brain is stated once, in the brain itself', async () => {
   for (const root of [TEMPLATE_ROOT, WORKSPACE_ROOT]) {
     const brain = JSON.parse(await read(root, BRAIN_RELATIVE_PATH));

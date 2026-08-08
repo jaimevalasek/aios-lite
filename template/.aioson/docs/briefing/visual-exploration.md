@@ -108,6 +108,24 @@ aioson exploration:run . --slug={slug} --models="<host:model>,<host:model>" --pa
 
 One failed model does not cancel completed variants. Never replace a requested model silently. Workers are read-only and return delimited HTML/report blocks; the parent CLI alone writes variant folders.
 
+### Arena over registers
+
+The arena above compares *models*. When the open question is direction rather than capability — the usual case at a cold start — compare **registers** instead: same host, same model, same frozen input, one run per aesthetic register from `interface-design/references/aesthetic-registers.md`.
+
+Use the funnel rather than one-shot generation:
+
+1. **Widen** — three to five runs, one register each, deliberately far apart. Label each with its register so the comparison stays readable.
+2. **Narrow** — pick one register, then two or three runs inside it that vary a single axis (composition, density, or the signature move). Set `--parent` so the lineage is recorded.
+3. **Resolve** — take the winner into the polish pass and the identity record.
+
+```bash
+aioson exploration:add-run . --slug={slug} --host=<host> --model="<model>" --label="Quiet" --json
+aioson exploration:add-run . --slug={slug} --host=<host> --model="<model>" --label="Editorial" --json
+aioson exploration:add-run . --slug={slug} --host=<host> --model="<model>" --label="Quiet — ledger composition" --parent=variant-a --json
+```
+
+One register per run, never blended: the point of widening is that the options are genuinely different, and a hedge between two registers is neither. Record the chosen register, its anti-goals, and the signature move in the selected run's report so the decision survives promotion.
+
 For manual/native generation, allocate first:
 
 ```bash
