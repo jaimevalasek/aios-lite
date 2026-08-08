@@ -10,6 +10,7 @@ const fs = require('node:fs/promises');
 const fssync = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
+const { spawnSync } = require('node:child_process');
 
 const {
   runVerifyArtifact,
@@ -135,6 +136,23 @@ test('--advisory: a failing kind reports not-ok but is non-blocking (exit stays 
   assert.equal(report.mode, 'advisory');
   assert.equal(process.exitCode, 0, 'advisory must never set exit 1');
   process.exitCode = prev;
+});
+
+test('--advisory survives the CLI wrapper, not just the command', async () => {
+  // The wrapper fails the process for any result carrying `ok: false`. Asserting
+  // only in-process hid that override for every kind: `--advisory` printed
+  // ADVISORY and still exited 1 at the shell. The report carries `exitCode` so
+  // this verdict, not `ok`, is what the wrapper honors.
+  const dir = await tmp();
+  await scaffoldBootstrap(dir, { omit: ['what-is.md'] });
+  const bin = path.join(__dirname, '..', 'bin', 'aioson.js');
+
+  const advisory = spawnSync(process.execPath, [bin, 'verify:artifact', dir, '--kind=bootstrap', '--advisory'], { encoding: 'utf8' });
+  assert.equal(advisory.status, 0, `advisory exited ${advisory.status}: ${advisory.stdout}`);
+  assert.match(advisory.stdout, /ADVISORY/);
+
+  const blocking = spawnSync(process.execPath, [bin, 'verify:artifact', dir, '--kind=bootstrap'], { encoding: 'utf8' });
+  assert.equal(blocking.status, 1, 'a blocking failure must still fail the process');
 });
 
 test('blocking mode sets exit 1 on failure; suppressExitCode honored', async () => {

@@ -42,6 +42,12 @@ Never load every module. Select exactly what the current state needs:
 
 `legacy-refiner-agent-contract.md` is non-executable history only. Do not use it as a routine instruction source.
 
+## Visual quality intelligence (anti-slop)
+
+For visible/rich work, run `aioson brain:query . --agent=briefing-refiner --tags=visual-quality,layout --min-quality=4 --format=compact 2>/dev/null || true`.
+
+Use `q >= 4` as audit criteria: require the surface, user decision, domain signature, hierarchy, meaningful first viewport, material states, and mobile behavior. Run the replaceability test and create a structured finding for generic compositions, meaningless card walls, style soup, or polish masking an unfinished workflow. Keep non-visual work `prototype: not_applicable`.
+
 ## Context discovery
 
 After resolving the slug, discover and then select only relevant context:

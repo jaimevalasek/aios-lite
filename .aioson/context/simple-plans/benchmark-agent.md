@@ -1,0 +1,106 @@
+---
+slug: benchmark-agent
+status: done
+owner: dev
+created_at: 2026-08-07
+updated_at: 2026-08-07
+classification: MICRO
+risk: medium
+source: direct-user-request
+---
+
+# Simple Plan - Official Benchmark Agent
+
+## Scope
+
+Create and register one stateless `@benchmark` agent that turns a frozen, simple prompt into the most complete runnable app or game it can deliver without clarification questions, while preserving fair-run isolation and emitting a deterministic result contract for an external orchestrator such as AIOSON Cockpit.
+
+## Context selected
+
+- `context:select`: selected the agent structural contract, visual exploration isolation rules, output brevity, Simple Plan lane, agent help, and execution discipline for the intended paths.
+- Existing pattern to follow: canonical agent instructions live in `template/.aioson/agents/`, are mirrored byte-for-byte to `.aioson/agents/`, are registered through `AGENT_DEFINITIONS`/`MANAGED_FILES`, and receive focused contract tests.
+- Applicable rules/docs: `.aioson/rules/agent-structural-contract.md`, `.aioson/rules/agent-language-policy.md`, `.aioson/rules/visual-exploration-contract.md`, `.aioson/rules/output-brevity.md`, `.aioson/rules/simple-plan-lane.md`, and `.aioson/docs/dev/simple-plan-lane.md`.
+- Prompt review: `.aioson/skills/process/prompt-sharpener/SKILL.md` plus `.aioson/skills/process/review-intelligence/SKILL.md` and its single `delivery-assurance.md` reference.
+- Existing user authority: benchmark runs share one frozen prompt; Arena and raw-vs-AIOSON, multicontas, harness/model selection, duration, tokens, cost, slug, history, and comparison belong to the Cockpit.
+
+## Implementation intelligence
+
+- Framework leverage: reuse the existing agent catalog, `agents --json`, `agent:prompt --headless --json`, arbitrary tool fallback in `buildAgentPrompt`, template synchronization convention, Node `node:test`, and the shared help document. No new command or dependency is required.
+- Structure and data boundary: the Markdown kernel owns reasoning pressure and the delivery-result schema; `src/constants.js` owns discovery metadata; the calling harness owns execution; an external orchestrator owns run identity, accounts, timing, tokens, monetary cost, sibling variants, and comparison.
+- Reuse over custom code: borrow isolation/provenance principles from Visual Exploration but do not reuse or invoke its runner, immutable store, single-HTML constraint, or comparison generator.
+- Prompt posture: expand intent autonomously, inspect evidence before deciding, perform a brief targeted web-research pass when tools and policy allow it, use mature libraries when they materially improve the result, implement the real happy path plus relevant states, and validate before reporting completion.
+- Fairness boundary: treat the original prompt and assigned run root as immutable inputs; never inspect sibling runs, learn from competitors, orchestrate other models, or write tokens/cost guesses.
+- Output boundary: implementation stays within the assigned run root (current working directory when none is explicitly supplied) and ends with valid `benchmark-result.json` plus `report.md` even when the result is partial, when the filesystem still permits it.
+
+## Done criteria
+
+- `@benchmark` is returned by `getAgentDefinition`, `agents --json`, and `agent:prompt benchmark ... --headless --json`.
+- The kernel contains the mandatory language, mission, required-input, hard-constraint, output, and final `agent:done` contracts.
+- The kernel forbids clarification/preference questions and instead records evidence-grounded assumptions, while handling genuine safety/permission/credential blockers with a safe partial result.
+- A targeted current-research pass is required when web tools and policy allow it; unavailable research is reported rather than fabricated.
+- The build protocol explicitly covers repository inspection, autonomous expansion, stack/library selection, premium coherent visual direction, responsive/accessibility/performance constraints, real implementation, and executable validation.
+- The agent is stateless with respect to Arena: it neither creates slugs nor controls harnesses, models, accounts, sibling runs, timing, tokens, prices, or comparison.
+- The documented JSON example parses and carries relative entrypoints, assumptions, applied research, features, validation evidence, limitations, and artifacts without orchestrator-owned metrics.
+- Template/workspace agent and help files are byte-identical.
+- Focused tests and repository syntax checks pass.
+
+## Useful options considered
+
+- Include now: standalone and externally assigned run-root behavior; no-question assumption protocol; targeted web research; mature JS/library leverage; premium visual/product quality; fairness/isolation; result/report contract; catalog registration; concise help; focused tests.
+- Defer: a formal agent capability manifest, a standalone JSON-schema validator command, screenshots generated by the gateway, model-specific prompt dialects, and a second benchmark-compatible agent. Add only after a real consumer needs them.
+- Escalate: any AIOSON-owned benchmark database, slug lifecycle, multi-account/model fan-out, pricing service, comparison UI, or Cockpit-aware protocol. These would violate the approved one-way ownership boundary and require separate product/architecture work.
+
+## Out of scope
+
+- Implementing or building AIOSON Cockpit.
+- Running an Arena from the AIOSON CLI.
+- Creating `.aioson/benchmarks/`, `.aioson/explorations/`, a feature workflow, PRD, harness contract, or comparison HTML.
+- Measuring or estimating provider tokens, duration, subscription spend, USD/BRL cost, or controller overhead.
+- Requiring every app/game to be a single HTML file.
+- Automatically scoring one model against another.
+
+## Expected files
+
+- `template/.aioson/agents/benchmark.md` — behavior: canonical benchmark reasoning and artifact contract.
+- `.aioson/agents/benchmark.md` — support: synchronized workspace copy.
+- `src/constants.js` — behavior: managed-file and agent-catalog registration.
+- `template/.aioson/docs/agent-help.md` — support: concise `--help` contract.
+- `.aioson/docs/agent-help.md` — support: synchronized workspace copy.
+- `tests/benchmark-agent.test.js` — support: catalog, structure, isolation, intelligence, schema, help, and parity tests.
+- `.aioson/context/simple-plans/benchmark-agent.md` — support: bounded implementation record.
+- `.aioson/context/dev-state.md` — support: current Simple Plan recovery state.
+
+## Implementation sequence
+
+1. Write the canonical prompt as a compact decision kernel, including the exact result example and ownership exclusions.
+2. Mirror the prompt and add its registry entry without disturbing the staged briefing work already present in `src/constants.js`.
+3. Add a short help entry and mirror it without disturbing the staged briefing help changes.
+4. Add focused contract tests, then exercise the real catalog and headless prompt commands.
+5. Run targeted tests and syntax validation.
+6. Apply the bounded two-pass delivery review, repair material findings once, and record evidence below.
+
+## Verification
+
+- `node --test tests/benchmark-agent.test.js tests/agents.test.js tests/agent-contracts.test.js`
+- `node bin/aioson.js agents . --json`
+- `node bin/aioson.js agent:prompt benchmark . --tool=codex --headless --json`
+- `node bin/aioson.js agent:prompt benchmark . --tool=grokbuild --headless --json`
+- `npm run check:syntax`
+- `npm test`
+
+## Session state
+
+Next step: none — the AIOSON-side agent contract is implemented and verified; Cockpit may consume it through the public catalog/prompt commands.
+
+## Notes
+
+- The Cockpit implementation plan remains at `C:/dev/playapps/aioson-cockpit/plans/benchmark-mission.md`.
+- Existing staged changes in briefing, pentester, package, CLI, localization, and documentation are user-owned and must remain intact.
+- No AIOSON agents or subagents are activated while this agent is being authored.
+- The delivery review found and repaired the external-run path ambiguity: `run root` owns result/report while an optional contained `delivery root` owns the app source; standalone defaults both to the current directory.
+- The delivery review made the terminal handoff explicit and removed a fictitious research URL from the JSON example, preventing gateway-handoff ambiguity and accidental fabricated provenance.
+- `node --test tests/benchmark-agent.test.js tests/agents.test.js tests/agent-contracts.test.js`: 33 passed, 0 failed after the final prompt changes.
+- `npm run check:syntax`: exit 0; 498 JavaScript files checked after the final test changes.
+- Real CLI checks: `agents --json` returned `benchmark`; headless `agent:prompt` succeeded for `codex` and generic `grokbuild`, both referencing the managed agent and result contract.
+- `npm test`: exit 0; 4,112 tests, 4,111 passed, 0 failed, 1 skipped. The later changes were limited to the benchmark Markdown contract and its focused assertions, which were re-run above.
+- Review Intelligence pass 1 covered specification fidelity, acceptance coverage, code health, runtime truth, and residual risk. Pass 2 covered standalone/external first use, missing prompt, unavailable web/credentials, partial failure, repeated isolated runs, path abuse, terminal return, and schema evolution; verdict: pass with no open material finding.

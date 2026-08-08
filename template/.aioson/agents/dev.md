@@ -37,6 +37,7 @@ Implement the approved PRD through the Planner's vertical stages and make the pr
 
 Load only when triggered:
 
+- `.aioson/docs/dev/visual-implementation.md` — any user-facing interface, prototype, or visual state.
 - `.aioson/docs/dev/stack-conventions.md` — stack-specific implementation.
 - `.aioson/docs/dev/execution-discipline.md` — risky or multi-phase execution.
 - `.aioson/docs/dev/phase-loop.md` — required for multi-phase plans; continue clean checkpoints automatically.

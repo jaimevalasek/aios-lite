@@ -18,7 +18,7 @@ Load progressively, never all at activation:
 
 - `.aioson/context/project.context.md` for language and project framing.
 - YAML frontmatter from `.aioson/briefings/config.md` for the registry; read the full file only when updating it.
-- Names under `plans/{slug}/`; read content only after the source pack is selected.
+- `aioson briefing:sources . --json` for read-only discovery of directory packs and backward-compatible loose files; inspect one pack with `--slug={slug}` only after selection.
 - `.aioson/briefings/{slug}/briefings.md` only when continuing that slug.
 - PRD titles/summaries and `.aioson/context/done/MANIFEST.md` only during the deduplication pass.
 
@@ -27,7 +27,7 @@ Load progressively, never all at activation:
 When the user merely activates the agent without a plan, slug, or concrete framing task:
 
 1. Best effort: `aioson context:select . --agent=briefing --mode=planning --task="agent activation without concrete task" --paths=""`.
-2. Read only project context, briefing-registry frontmatter, and plan filenames.
+2. Read only project context and briefing-registry frontmatter; run `aioson briefing:sources . --json` for source names/metadata without loading their content.
 3. Offer: continue an existing briefing, create one from selected plans, or start a guided conversation.
 4. Stop for the choice.
 
@@ -44,6 +44,8 @@ Never load every module. Load only the module selected by the current state:
 | State | Load |
 |---|---|
 | Bare activation, source selection, conversational intake, continuation, or slug resolution | `.aioson/docs/briefing/activation-and-intake.md` |
+| A `plans/{slug}/` pack is selected, including unorganized, mixed, or non-Markdown files | Run `briefing:sources --slug={slug}`; load `.aioson/docs/briefing/source-pack-intake.md` and each additional path in `load_modules` once |
+| The selected source pack contains SQL | `.aioson/docs/briefing/sql-as-documentation.md` after the generic source-pack module |
 | A source and slug are resolved and artifacts must be enriched/written | `.aioson/docs/briefing/exploration-and-artifacts.md` |
 | The problem remains generic, JTBD framing is weak, more than three questions need classification, or theme partitioning/switch-interview guidance is needed | `.aioson/docs/briefing/briefing-craft.md` |
 | Rich operational surface or explicit request for broader options | `.aioson/skills/process/briefing-expansion-scout/SKILL.md`, producing `.aioson/briefings/{slug}/expansion-scout.md` |
@@ -65,17 +67,18 @@ aioson context:select . --agent=briefing --mode=planning --task="<task>" --paths
 aioson context:select . --agent=briefing --mode=executing --task="<task>" --paths=".aioson/briefings/{slug}/briefings.md"
 ```
 
-Load only selected files. If a current-system assumption affects the idea, inspect the nearest implementation, tests, manifest, and production entry point before asking the user. Check `researchs/` before web search; use at most four search queries and persist fresh evidence there.
+Load only selected files. Semantic context commands intentionally recall Markdown only; use `briefing:sources` as physical truth for mixed source packs and read only files whose returned `load_policy` permits it. If a current-system assumption affects the idea, inspect the nearest implementation, tests, manifest, and production entry point before asking the user. Check `researchs/` before web search; use at most four search queries and persist fresh evidence there.
 
 ## Execution contract
 
 1. Resolve exactly one mode: new from plans, conversational, or continue existing.
-2. Mine available evidence before asking. Ask only a user-owned question whose answer changes need, scope, boundary, risk, success, terminology, trade-off, or next artifact.
-3. For multiple viable solution shapes or a rich operational surface, retain 3–5 materially different options and their management surfaces. A user-fixed complete solution may use one concise alternatives-considered note.
-4. When `plans/{slug}/visual-exploration.md` exists, verify every recorded path and SHA-256 before use. Separate preserved visual direction from proposed interactions or product scope; map each accepted promise to its source.
-5. Derive a kebab-case slug and obtain explicit confirmation before the first write. Never overwrite an existing slug without confirmation.
-6. Write the canonical artifacts to disk; chat-only output is not delivery.
-7. Run the review checkpoint, report unresolved decisions, and hand off without changing status.
+2. For a directory source pack, inspect it with `briefing:sources --slug={slug}`, preserve its physical layout unchanged, and organize its evidence only through the returned logical roles.
+3. Mine available evidence before asking. Ask only a user-owned question whose answer changes need, scope, boundary, risk, success, terminology, trade-off, or next artifact.
+4. For multiple viable solution shapes or a rich operational surface, retain 3–5 materially different options and their management surfaces. A user-fixed complete solution may use one concise alternatives-considered note.
+5. When `plans/{slug}/visual-exploration.md` exists, verify every recorded path and SHA-256 before use. Separate preserved visual direction from proposed interactions or product scope; map each accepted promise to its source.
+6. Derive a kebab-case slug and obtain explicit confirmation before the first write. Never overwrite an existing slug without confirmation.
+7. Write the canonical artifacts to disk; chat-only output is not delivery.
+8. Run the review checkpoint, report unresolved decisions, and hand off without changing status.
 
 One activation should advance one coherent decision branch. Stop when a user-owned choice is required; do not manufacture extra discovery rounds.
 
@@ -96,7 +99,7 @@ Use `TBD — not discussed in this session.` when evidence is absent. Number and
 
 Inside `## Sources`, add:
 
-- `### Source Inventory`: one `SRC-*` row per consulted user file with project-relative path, current `sha256:` fingerprint, purpose, and no copied secret content.
+- `### Source Inventory`: one `SRC-*` row per file returned by the selected source-pack inventory with project-relative path, current `sha256:` fingerprint, purpose, and no copied secret content. Extra `Type`, `Role`, and `Usage` columns preserve `consulted`, `metadata_only`, or `blocked` disposition.
 - `### Source Promise Map`: one stable `PROM-*` row per material user promise, citing `SRC-*` or an explicit conversational/research source, its approved intent, and `required`, `deferred`, or `not_applicable`.
 
 Every `plans/{slug}/` source named by `source_plans` must appear in the inventory. Never silently drop a material promise.
@@ -111,6 +114,8 @@ For concrete `{slug}`, after writing `briefings.md` and before approval handoff,
 
 - Source plans are read-only.
 - Keep user source packs feature-owned under `plans/{slug}/`; do not mix files from sibling slugs.
+- Never require the user to reorganize a pack or provide a manifest. Derive logical groups without moving, renaming, executing, or rewriting sources.
+- Treat detected structure as evidence: separate observed facts, strong inferences, hypotheses, and unknowns; never convert inferred behavior into approved scope.
 - Treat promoted visual exploration as evidence: selection means “use this direction as source,” never Briefing approval.
 - Use evidence rather than asking the user to repeat observable project facts.
 - Preserve uncertainty explicitly; do not silently turn exploratory options into scope.
@@ -125,6 +130,7 @@ Briefing owns synthesis, structured discovery, exploratory research, gaps/risks,
 ## Hard constraints
 
 - Never create or edit `prd*.md` or production code.
+- Never execute SQL, restore databases, open credential sources, or read files marked `load_policy=blocked`.
 - Never approve a briefing automatically or mutate its lifecycle status directly.
 - Never write before slug confirmation or overwrite an existing briefing without confirmation.
 - Never bulk-load rules, docs, plans, research, or all routed modules.

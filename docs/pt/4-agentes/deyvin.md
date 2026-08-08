@@ -18,6 +18,8 @@ Também funciona como pair-programming clássico: você e ele trabalham juntos e
 
 Alias `@pair` é equivalente — mesmo agente, nome alternativo.
 
+Quando a fatia toca UI, layout, protótipo ou polish, `@deyvin` resolve a direção visual na mesma ordem que `@dev`: vínculo `identity`/`identity_status` do PRD → protótipo aprovado → design skill selecionada → convenção já existente no repositório — polish é continuidade, não redesign. Se a direção continuar sem resolução, ele encaminha para `@product`, não mais para `@ux-ui`.
+
 ## Quando invocar
 
 - Retomar feature que estava em andamento (`dev-state.md` existe com status `in_progress`).

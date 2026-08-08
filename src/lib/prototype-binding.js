@@ -8,6 +8,12 @@ const CURRENT_STATUS = 'current';
 const NONE_STATUS = 'none';
 const NULL_TOKENS = new Set(['', 'null', 'none', '~']);
 
+const IDENTITY_CURRENT = 'current';
+const IDENTITY_PROJECT = 'project';
+const IDENTITY_NONE = 'none';
+const IDENTITY_STATUSES = [IDENTITY_CURRENT, IDENTITY_PROJECT, IDENTITY_NONE];
+const PROJECT_IDENTITY_PATH = '.aioson/context/identity.md';
+
 function normalizeRelPath(value) {
   return String(value || '')
     .trim()
@@ -52,6 +58,13 @@ function parseManifestStatus(manifest) {
   if (frontmatterStatus) return frontmatterStatus.toLowerCase();
   const contractStatus = parseContractField(manifest, 'status');
   return contractStatus ? contractStatus.toLowerCase() : null;
+}
+
+function parseManifestIdentity(manifest) {
+  const frontmatter = parseFrontmatter(String(manifest || ''));
+  const frontmatterIdentity = scalar(frontmatter.identity);
+  if (frontmatterIdentity) return frontmatterIdentity;
+  return parseContractField(manifest, 'identity');
 }
 
 function issue(reason, message, field = null) {
@@ -434,13 +447,295 @@ async function validatePrototypeBinding({
   };
 }
 
+// Identity binding — the second half of the visual contract.
+//
+// `identity.md` is the extracted, editable record that parameterizes the one design
+// engine. Unlike a prototype it has three legitimate shapes, so it is NOT a binary
+// current/none field:
+//   current  → feature-owned  .aioson/briefings/{feature}/identity.md  (scope: briefing)
+//   project  → shared brand   .aioson/context/identity.md              (scope: brand)
+//   none     → intent-first, no extracted identity
+//
+// An exploration identity is non-canonical by contract and may never reach a PRD.
+//
+// Policy: fail on a lie, stay quiet on silence. A PRD that never mentions identity is
+// not broken — most features legitimately have none, and every in-flight PRD predates
+// this field. The one case that DOES fail is the leak this guard exists for: the
+// prototype manifest records the identity it was built from and the PRD drops it.
+async function validateIdentityBinding({
+  targetDir,
+  slug,
+  prd,
+  manifest = null,
+  prototypeApplicable = false,
+  strict = false
+}) {
+  const feature = String(slug || '').trim();
+  const frontmatter = parseFrontmatter(String(prd || ''));
+  const section = prototypeContractSection(prd);
+  const issues = [];
+  const warnings = [];
+  const checks = {
+    declaration_present: false,
+    path_owned: false,
+    identity_exists: false,
+    scope_matches: false
+  };
+
+  const hasIdentityField = Object.prototype.hasOwnProperty.call(frontmatter, 'identity');
+  const hasStatusField = Object.prototype.hasOwnProperty.call(frontmatter, 'identity_status');
+  const frontIdentity = scalar(frontmatter.identity);
+  const sectionIdentity = parseContractField(section, 'identity');
+  const frontStatus = String(frontmatter.identity_status || '')
+    .trim()
+    .replace(/^["']|["']$/g, '')
+    .toLowerCase();
+
+  const manifestIdentity = manifest ? parseManifestIdentity(manifest) : null;
+  const declared = hasIdentityField || hasStatusField || Boolean(sectionIdentity);
+
+  if (!declared) {
+    // The upstream prototype was built from an identity and the PRD lost it.
+    if (manifestIdentity) {
+      issues.push(issue(
+        'identity_binding_dropped',
+        `The approved prototype manifest was built from \`${manifestIdentity}\`, but the PRD declares no identity binding. Carry it as \`identity\`/\`identity_status\` so implementation inherits the same visual record.`,
+        'identity'
+      ));
+      return {
+        ok: false,
+        declared: false,
+        status: IDENTITY_NONE,
+        feature,
+        identity: null,
+        scope: null,
+        manifest_identity: manifestIdentity,
+        checks,
+        issues,
+        warnings,
+        message: issues[0].message
+      };
+    }
+    if (strict && prototypeApplicable) {
+      warnings.push(issue(
+        'identity_binding_undeclared',
+        'PRD binds a current prototype but declares no identity binding. Declare `identity_status: current|project|none` so the visual record is explicit.',
+        'identity_status'
+      ));
+    }
+    return {
+      ok: true,
+      declared: false,
+      status: IDENTITY_NONE,
+      feature,
+      identity: null,
+      scope: null,
+      manifest_identity: null,
+      checks,
+      issues,
+      warnings,
+      message: 'PRD declares no identity binding.'
+    };
+  }
+
+  checks.declaration_present = true;
+  const identityPath = frontIdentity || sectionIdentity;
+  const inferredStatus = identityPath
+    ? (normalizeRelPath(identityPath).toLowerCase() === PROJECT_IDENTITY_PATH
+      ? IDENTITY_PROJECT
+      : IDENTITY_CURRENT)
+    : IDENTITY_NONE;
+  const status = IDENTITY_STATUSES.includes(frontStatus) ? frontStatus : inferredStatus;
+
+  if (frontStatus && !IDENTITY_STATUSES.includes(frontStatus)) {
+    issues.push(issue(
+      'invalid_identity_status',
+      `identity_status must be \`${IDENTITY_STATUSES.join('`, `')}\`, not \`${frontStatus}\`.`,
+      'identity_status'
+    ));
+  }
+  if (frontIdentity && sectionIdentity
+    && normalizeRelPath(frontIdentity).toLowerCase() !== normalizeRelPath(sectionIdentity).toLowerCase()) {
+    issues.push(issue(
+      'identity_binding_conflict',
+      `PRD frontmatter points to identity \`${frontIdentity}\`, but its Prototype contract points to \`${sectionIdentity}\`.`,
+      'identity'
+    ));
+  }
+  if (manifestIdentity && identityPath
+    && normalizeRelPath(manifestIdentity).toLowerCase() !== normalizeRelPath(identityPath).toLowerCase()) {
+    issues.push(issue(
+      'identity_binding_conflict',
+      `The approved prototype manifest was built from \`${manifestIdentity}\`, but the PRD binds \`${identityPath}\`.`,
+      'identity'
+    ));
+  }
+
+  if (status === IDENTITY_NONE) {
+    if (identityPath) {
+      issues.push(issue(
+        'identity_binding_conflict',
+        'identity_status is `none`, but the PRD still carries an identity path.',
+        'identity'
+      ));
+    }
+    if (manifestIdentity) {
+      issues.push(issue(
+        'identity_binding_dropped',
+        `identity_status is \`none\`, but the approved prototype manifest was built from \`${manifestIdentity}\`.`,
+        'identity_status'
+      ));
+    }
+    return {
+      ok: issues.length === 0,
+      declared: true,
+      status: IDENTITY_NONE,
+      feature,
+      identity: null,
+      scope: null,
+      manifest_identity: manifestIdentity,
+      checks,
+      issues,
+      warnings,
+      message: issues.length === 0
+        ? 'Feature explicitly declares that it has no identity record; the design engine runs intent-first.'
+        : issues[0].message
+    };
+  }
+
+  if (!identityPath) {
+    issues.push(issue(
+      'missing_identity_path',
+      `identity_status is \`${status}\` but no identity path is declared.`,
+      'identity'
+    ));
+    return {
+      ok: false,
+      declared: true,
+      status,
+      feature,
+      identity: null,
+      scope: null,
+      manifest_identity: manifestIdentity,
+      checks,
+      issues,
+      warnings,
+      message: issues[0].message
+    };
+  }
+
+  const normalizedIdentity = normalizeRelPath(identityPath);
+  const expectedIdentity = status === IDENTITY_PROJECT
+    ? PROJECT_IDENTITY_PATH
+    : (feature ? `.aioson/briefings/${feature}/identity.md` : null);
+
+  const identitySafe = resolveInsideRoot(targetDir, identityPath);
+  if (!identitySafe.ok) {
+    issues.push(issue(
+      identitySafe.reason,
+      `Identity path is invalid: ${identityPath}.`,
+      'identity'
+    ));
+  } else if (expectedIdentity && normalizedIdentity.toLowerCase() !== expectedIdentity.toLowerCase()) {
+    issues.push(issue(
+      'identity_feature_mismatch',
+      `Identity \`${identityPath}\` is not owned by feature \`${feature}\`; expected \`${expectedIdentity}\`.`,
+      'identity'
+    ));
+  } else {
+    checks.path_owned = true;
+  }
+
+  if (checks.path_owned) {
+    const content = await readFileSafe(identitySafe.path);
+    checks.identity_exists = content !== null;
+    if (!checks.identity_exists) {
+      issues.push(issue(
+        'dangling_identity',
+        `Identity binding points to \`${identityPath}\`, but that file is missing.`,
+        'identity'
+      ));
+    } else {
+      const recordFrontmatter = parseFrontmatter(content);
+      const kind = scalar(recordFrontmatter.kind);
+      const scope = String(scalar(recordFrontmatter.scope) || '').toLowerCase();
+      const recordSlug = scalar(recordFrontmatter.slug);
+      const expectedScope = status === IDENTITY_PROJECT ? 'brand' : 'briefing';
+
+      if (kind && kind.toLowerCase() !== 'identity') {
+        issues.push(issue(
+          'identity_kind_mismatch',
+          `\`${identityPath}\` declares \`kind: ${kind}\`; an identity binding must point at an identity record.`,
+          'identity'
+        ));
+      } else if (!kind) {
+        warnings.push(issue(
+          'identity_kind_missing',
+          `\`${identityPath}\` does not declare \`kind: identity\`. Regenerate it with reference-identity-extract so the record stays verifiable.`,
+          'identity'
+        ));
+      }
+
+      if (scope === 'exploration') {
+        issues.push(issue(
+          'identity_scope_non_canonical',
+          `\`${identityPath}\` has \`scope: exploration\`. An exploration identity is non-canonical and may never bind a PRD; consolidate it into the feature-owned identity first.`,
+          'identity'
+        ));
+      } else if (scope && scope !== expectedScope) {
+        issues.push(issue(
+          'identity_scope_mismatch',
+          `identity_status is \`${status}\` but \`${identityPath}\` declares \`scope: ${scope}\`; expected \`${expectedScope}\`.`,
+          'identity'
+        ));
+      } else {
+        checks.scope_matches = true;
+      }
+
+      if (status === IDENTITY_CURRENT && feature && recordSlug
+        && recordSlug.toLowerCase() !== feature.toLowerCase()) {
+        issues.push(issue(
+          'identity_feature_mismatch',
+          `\`${identityPath}\` declares \`slug: ${recordSlug}\`, not \`${feature}\`.`,
+          'identity'
+        ));
+      }
+    }
+  }
+
+  return {
+    ok: issues.length === 0,
+    declared: true,
+    status,
+    feature,
+    identity: normalizedIdentity || null,
+    scope: status === IDENTITY_PROJECT ? 'brand' : 'briefing',
+    manifest_identity: manifestIdentity,
+    checks,
+    issues,
+    warnings,
+    message: issues.length > 0
+      ? issues[0].message
+      : warnings.length > 0
+        ? warnings[0].message
+        : `Identity binding \`${normalizedIdentity}\` is owned and readable.`
+  };
+}
+
 module.exports = {
   CURRENT_STATUS,
   NONE_STATUS,
+  IDENTITY_CURRENT,
+  IDENTITY_PROJECT,
+  IDENTITY_NONE,
+  IDENTITY_STATUSES,
+  PROJECT_IDENTITY_PATH,
   normalizeRelPath,
   prototypeContractSection,
   parseContractField,
   parseManifestFeature,
   parseManifestStatus,
-  validatePrototypeBinding
+  parseManifestIdentity,
+  validatePrototypeBinding,
+  validateIdentityBinding
 };

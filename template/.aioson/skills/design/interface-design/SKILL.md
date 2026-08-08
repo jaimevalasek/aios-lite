@@ -8,18 +8,33 @@ description: >-
 
 Use one craft engine for general apps and websites that need strong design decisions without a preset aesthetic. Never combine it with another design skill.
 
-## Identity resolution
+## Visual authority resolution
 
-Before visual decisions, resolve the first existing file applicable to the active mode:
+Before visual decisions, resolve authority in this order and stop at the first hit:
 
-1. active `.aioson/explorations/{slug}/identity.md`
-2. active `.aioson/briefings/{slug}/identity.md`
-3. `.aioson/context/identity.md`
-4. none
+1. an approved prototype bound by the PRD (`prototype_status: current`) — **conformance mode**
+2. the identity record the PRD binds through `identity`/`identity_status`
+3. active `.aioson/explorations/{slug}/identity.md` (exploration mode only; never for canonical work)
+4. active `.aioson/briefings/{slug}/identity.md`
+5. `.aioson/context/identity.md`
+6. an established repository component language
+7. none — **origination mode**
 
-When present, treat it as extracted design data: apply its palette, typography, spacing/layout, radius/depth, motion, pillars, signature moves, and `## Component structure notes`. It parameterizes this skill; it is not a second skill and never overrides accessibility or quality gates. When absent, choose direction from the references. Do not fabricate `identity.md`.
+An identity record is extracted design data: apply its palette, typography, spacing/layout, radius/depth, motion, pillars, signature moves, and `## Component structure notes`. It parameterizes this skill; it is not a second skill and never overrides accessibility or quality gates. Do not fabricate `identity.md`.
 
-## Workflow
+## Conformance mode
+
+When an approved prototype or an established component language already answers the visual question, this skill does not re-decide direction — it transfers one. Re-deciding is how an approved surface silently becomes a different product.
+
+1. Read the prototype and its manifest `## Visual direction` (thesis, anti-goals, signature move). Those are now your inputs, not candidates.
+2. Extract the real tokens, component anatomy, states, and responsive behavior already expressed there.
+3. Map each prototype region to the project's actual component library. Reuse the existing component before adding one; a new component needs a named reason.
+4. Preserve the approved layout, states, and interactions. A deviation must be recorded in the PRD as an approved deviation before you implement it — never introduced silently as an improvement.
+5. Apply the quality checks below to what you transferred, not to a fresh direction.
+
+Skip to origination mode only when no prototype, no identity, and no established convention exists.
+
+## Origination mode
 
 1. Confirm explicit activation.
 2. Load `references/intent-and-domain.md` and `references/design-directions.md`.
@@ -50,4 +65,4 @@ When present, treat it as extracted design data: apply its palette, typography, 
 
 ## Done gate
 
-Reject overlap, clipped text, missing states/assets, raw palette drift, generic template composition, isolated blurred-circle decoration, responsive behavior that only shrinks desktop, or any mismatch with an active identity file.
+Reject overlap, clipped text, missing states/assets, raw palette drift, generic template composition, isolated blurred-circle decoration, responsive behavior that only shrinks desktop, any mismatch with an active identity file, or — in conformance mode — any drift from the approved prototype that the PRD does not record as an approved deviation.

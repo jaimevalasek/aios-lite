@@ -16,16 +16,20 @@ Load this module only to resolve the briefing mode, source, unresolved decisions
    - An explicit new request bypasses existing-briefing choice.
    - Otherwise list slug, status, and creation date, then offer continue, create, or summarize.
    - Never overwrite an existing slug without explicit confirmation.
-2. List `plans/*.md` names.
-   - Named files: use only those.
-   - One file: propose it as the read-only default.
+2. Run `aioson briefing:sources . --json` to list feature-owned `plans/{slug}/` directory packs plus backward-compatible loose files under `plans/`.
+   - Named pack or files: use only those.
+   - One selectable pack/file: propose it as the read-only default.
    - Several without selection: use a checkbox intake or one concise selection question, then stop.
+   - Known archive roots such as `plans/done/` are not new-source candidates; never alter their contents.
+   - Invalid-slug directories remain visible but cannot become a briefing target until a kebab-case slug is confirmed; never rename them automatically.
    - None: offer conversational framing.
-3. Read selected source contents only after the selection.
+3. After selection, inspect a directory pack with `aioson briefing:sources . --slug={slug} --json`, load each path in its returned `load_modules` once, then read permitted contents progressively.
+
+Directory packs may contain only SQL, only Markdown, or heterogeneous auxiliary sources in any physical layout. Never require a manifest or ask the user to reorganize them. Loose `plans/*.md` selection remains supported unchanged.
 
 ## New briefing from plans
 
-Read selected plans fully and project context. During deduplication, inspect only PRD titles/summaries and `.aioson/context/done/MANIFEST.md`; do not open archived feature bodies unless history is explicitly requested.
+Read selected loose plans fully. For directory packs, follow the inspector's logical roles and load policies rather than bulk-reading every file. During deduplication, inspect only PRD titles/summaries and `.aioson/context/done/MANIFEST.md`; do not open archived feature bodies unless history is explicitly requested.
 
 Run planning selection before expanding context:
 

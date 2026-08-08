@@ -27,6 +27,23 @@ module.exports = {
       'aioson agent:invoke <agent> [path] [--tool=codex|claude|opencode] [--mode=framework_target|app_target] [--feature=<slug>] [--scope=<area>] [--lang=<bcp47-tag>] [--locale=pt-BR]',
     help_agent_epilogue:
       'aioson agent:epilogue [path] --agent=<agente> --summary=<texto> [--feature=<slug>] [--approve-gate=A|B|C|D] [--json] [--locale=pt-BR]',
+    help_rule_new:
+      'aioson rule:new [caminho] --name=<nome-kebab> [--description=<texto>] [--agents=a,b] [--paths=glob,glob] [--triggers=t,t] [--task-types=t,t] [--priority=0-100] [--load-tier=trigger|always] [--force] [--json] [--locale=pt-BR]',
+    rule_new: {
+      created: 'Regra "{name}" criada em {path}.',
+      replaced: 'Regra "{name}" substituida em {path}.',
+      name_required: 'rule:new exige --name=<nome-kebab-case>.',
+      invalid_name: 'O nome da regra "{name}" precisa ser kebab-case (letras, digitos, hifens simples).',
+      not_project: 'Nao ha diretorio .aioson/ aqui - execute dentro de um projeto AIOSON.',
+      exists: 'A regra "{name}" ja existe em {path}. Edite o arquivo ou use --force para substituir.',
+      invalid_load_tier: 'load_tier precisa ser `always` ou `trigger`.',
+      invalid_priority: 'priority precisa ser um numero entre 0 e 100.',
+      no_routing_dimension: 'Aviso: nenhum agents, triggers, task-types ou paths foi declarado, entao o context:select dificilmente alcancara esta regra. Declare ao menos um, ou use --load-tier=always.',
+      next: 'Proximo passo: troque os enunciados de exemplo por requisitos concretos e verificaveis, depois rode aioson verify:artifact . --kind=rule --file={path}',
+      error: 'rule:new falhou ({reason}).'
+    },
+    help_briefing_sources:
+      'aioson briefing:sources [caminho] [--slug=<slug>] [--json] [--locale=pt-BR]',
     help_briefing_approve:
       'aioson briefing:approve [caminho] [--slug=<slug>] [--locale=pt-BR]',
     help_briefing_unapprove:
@@ -37,6 +54,12 @@ module.exports = {
       'aioson briefing:apply-feedback [caminho] [--slug=<slug>] [--feedback=<caminho>] [--confirm|--declined] [--allow-stale] [--json] [--locale=pt-BR]',
     help_briefing_migrate_lineage:
       'aioson briefing:migrate-lineage [caminho] --slug=<slug> [--dry-run|--write] [--json] [--locale=pt-BR]',
+    briefing_sources: {
+      error: 'Não foi possível inspecionar as fontes do Briefing ({error}) para {slug}.',
+      inspected: 'Pacote de fontes "{slug}" inspecionado: {files} arquivo(s), SQL={sql}, bloqueados={blocked}.',
+      none: 'Nenhum pacote de fontes do Briefing foi encontrado em plans/.',
+      discovered: 'Foram encontrados {packs} pacote(s) de fontes e {loose} arquivo(s) avulso(s).'
+    },
     help_context_validate: 'aioson context:validate [path] [--json] [--locale=pt-BR]',
     help_context_pack:
       'aioson context:pack [path] [--agent=<agente>] [--goal=<texto>] [--module=<modulo-ou-pasta>] [--max-files=8] [--json] [--locale=pt-BR]',

@@ -13,6 +13,8 @@ const WORKSPACE = path.join(ROOT, '.aioson');
 
 const DOCS = [
   'docs/briefing/activation-and-intake.md',
+  'docs/briefing/source-pack-intake.md',
+  'docs/briefing/sql-as-documentation.md',
   'docs/briefing/exploration-and-artifacts.md',
   'docs/briefing/refinement-loop.md',
   'docs/briefing/prototype-and-delegation.md',
@@ -50,6 +52,9 @@ test('Briefing routes activation, exploration, deep craft, expansion, and exact 
 
   for (const token of [
     'activation-and-intake.md',
+    'source-pack-intake.md',
+    'sql-as-documentation.md',
+    'briefing:sources',
     'exploration-and-artifacts.md',
     'briefing-craft.md',
     'briefing-expansion-scout/SKILL.md',
@@ -122,8 +127,10 @@ test('Briefing modules are managed and template/workspace copies remain byte-ide
 });
 
 test('active Briefing modules retain the high-value contracts removed from kernels', async () => {
-  const [activation, exploration, refinement, prototype, visualExploration, fallback] = await Promise.all([
+  const [activation, sourcePack, sqlSources, exploration, refinement, prototype, visualExploration, fallback] = await Promise.all([
     read(TEMPLATE, 'docs/briefing/activation-and-intake.md'),
+    read(TEMPLATE, 'docs/briefing/source-pack-intake.md'),
+    read(TEMPLATE, 'docs/briefing/sql-as-documentation.md'),
     read(TEMPLATE, 'docs/briefing/exploration-and-artifacts.md'),
     read(TEMPLATE, 'docs/briefing/refinement-loop.md'),
     read(TEMPLATE, 'docs/briefing/prototype-and-delegation.md'),
@@ -133,6 +140,13 @@ test('active Briefing modules retain the high-value contracts removed from kerne
 
   assert.match(activation, /JTBD/);
   assert.match(activation, /aioson intake:ask/);
+  assert.match(activation, /SQL, only Markdown, or heterogeneous auxiliary sources/i);
+  assert.match(sourcePack, /never.*moving, renaming, rewriting/is);
+  assert.match(sourcePack, /Observed.*Strong inference.*Hypothesis.*Unknown/is);
+  assert.match(sourcePack, /consulted.*metadata_only.*blocked/is);
+  assert.match(sqlSources, /Never execute SQL/i);
+  assert.match(sqlSources, /current system, a desired blueprint, or history/i);
+  assert.match(sqlSources, /schema dump rewritten as prose/i);
   assert.match(exploration, /3–5 materially different shapes/);
   assert.match(exploration, /Operational surface/i);
   assert.match(refinement, /notes alone never reach `briefings\.md`/i);

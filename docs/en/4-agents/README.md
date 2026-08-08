@@ -28,8 +28,8 @@ Autopilot defaults to the DEV → QA handoff and can cover the full canonical ch
 | `@setup` | Project onboarding — detect stack, classify MICRO/SMALL/MEDIUM, write `project.context.md` |
 | `@briefing` | Pre-PRD framing — turn `plans/` sketches into structured briefings with gap analysis |
 | [`@briefing-refiner`](./briefing-refiner.md) | Briefing refinement loop — audits the briefing into structured findings, the CLI renders the localized `review.html` surface (`briefing:review`), confirmed feedback is applied via `briefing:apply-feedback`, rounds repeat until nothing blocks the PRD |
-| `@product` | PRD — vision, problem, users, scope, acceptance criteria |
-| `@sheldon` | Optional PRD review and enrichment; updates Product's single PRD instead of creating a parallel specification package |
+| `@product` | PRD — vision, problem, users, scope, acceptance criteria; resolves and records the prototype and identity bindings (`identity`/`identity_status`) the PRD carries forward |
+| `@sheldon` | Optional PRD review and enrichment; updates Product's single PRD instead of creating a parallel specification package; blocks approval when a material state the approved prototype renders (loading, empty, error, permission-denied, responsive) has neither an acceptance criterion nor a recorded deferral |
 | `@planner` | Converts the approved PRD into the single vertical implementation plan |
 | `@analyst` | Explicit consultant for domain discovery, entities, flows, and brownfield mapping |
 | `@scope-check` | Explicit consultant for bounded intent/plan/delivery drift review |
@@ -37,7 +37,7 @@ Autopilot defaults to the DEV → QA handoff and can cover the full canonical ch
 | `@ux-ui` | UI/UX spec — **opt-in detour** for UI-heavy specs; `@dev` applies design skills directly by default |
 | `@pm` | Explicit consultant for backlog and user-story questions; not the implementation-plan owner |
 | `@orchestrator` | Opt-in coordination specialist, not a default feature stage or specification authority |
-| `@dev` | Feature implementation and final integration. May dispatch configured development lanes sequentially in the shared worktree, then verifies the integrated plan. |
+| `@dev` | Feature implementation and final integration. Resolves visual authority from the PRD identity binding → approved prototype → design skill → repository conventions, escalating a genuinely unresolved visual decision to `@product` (not `@ux-ui`). May dispatch configured development lanes sequentially in the shared worktree, then verifies the integrated plan. |
 | `@qa` | Proportional final review with a bounded investigation budget; writes the single QA verdict and returns reproducible defects to DEV. |
 | `@validator` | Opt-in binary contract verification in a fresh isolated context |
 | [`@forge-run`](./forge-run.md) | Lane B (opt-in) — compile a MEDIUM feature's specs into an executable workflow and run it (`forge:compile`) |
@@ -48,7 +48,7 @@ Autopilot defaults to the DEV → QA handoff and can cover the full canonical ch
 
 | Agent | Role |
 |---|---|
-| `@deyvin` (alias `@pair`) | Continuity-first pair — recovers state with `confirmed/inferred`, small validated batches |
+| `@deyvin` (alias `@pair`) | Continuity-first pair — recovers state with `confirmed/inferred`, small validated batches; resolves visual continuity the same way `@dev` does (identity binding → prototype → design skill → repository), escalating to `@product` instead of `@ux-ui` |
 | `@committer` | Professional Git commit message generation |
 | `@discover` | Semantic project cache — `bootstrap/` (structured) and `brains/` (Zettelkasten) |
 | `@neo` | Session router — "I don't know what to do next" |

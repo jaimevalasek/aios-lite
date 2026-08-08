@@ -11,7 +11,10 @@ const TEMPLATE = path.join(ROOT, 'template/.aioson/agents/deyvin.md');
 // Rebudgeted 15360 -> 15872 on 2026-07-01: the --help activation token (a
 // 3-line pointer to .aioson/docs/agent-help.md, help content lives there
 // on-demand) is agent contract, not density regression.
-const KERNEL_BUDGET_BYTES = 15872;
+// 15360 -> 15872 (2026-07-01, --help token pointer) -> 16384 (2026-08-07, the
+// visual-quality/anti-slop block). Each raise is one 512B step with a recorded
+// reason; the section itself is kept compressed to deyvin's density contract.
+const KERNEL_BUDGET_BYTES = 16384;
 
 function read(p) {
   return fs.readFileSync(p, 'utf8');

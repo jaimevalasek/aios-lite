@@ -51,10 +51,13 @@ If `design_skill` is set:
 - load `.aioson/skills/design/{design_skill}/SKILL.md`
 - load only the references needed for the current screen or component
 - treat it as the only active visual system
+- when the PRD carries an `identity` binding, load that record too: it parameterizes the skill and never becomes a second visual system
 
 If `design_skill` is blank and the task clearly depends on visual direction:
 
-- stop and ask whether to route through `@ux-ui` or proceed explicitly without a registered design skill
+- use the PRD `identity` binding and the approved prototype as the direction; they outrank any preset
+- with neither available, follow the existing repository component language and say so explicitly
+- stop for the user only when there is no identity, no prototype, and no established convention to conform to
 
 ## Motion and animation
 

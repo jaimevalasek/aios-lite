@@ -48,6 +48,7 @@ test('localized help never emits copyable commands that switch back to English',
 
 test('help exposes briefing lifecycle commands in every supported locale', async () => {
   const commands = [
+    'briefing:sources',
     'briefing:approve',
     'briefing:unapprove',
     'briefing:review',

@@ -20,6 +20,7 @@ The manifest includes:
 - one screen-inventory row per Core object, including management surface
 - `## Core interactions`, one backticked interaction token per line so `aioson prototype:check` can trace it to acceptance criteria
 - selected `design_skill`
+- frontmatter `identity:` naming the exact record the prototype was built from — the feature-owned `.aioson/briefings/{slug}/identity.md`, the shared `.aioson/context/identity.md`, or `none` for an intent-first build. This is the provenance the PRD must carry forward; `aioson prototype:check` fails when the manifest names a record and the PRD drops it. Never name an exploration identity: it is non-canonical and cannot bind downstream.
 - explicit “mock only — refresh resets, no backend”
 - `draft` or `locked-at: {ref}`
 - `## Visual direction`: thesis, anti-goals, signature move

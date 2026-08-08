@@ -252,6 +252,7 @@ const { runSkillPublish, runSkillInstallStore, runSkillListRemote } = require('.
 const { runSquadPublish, runSquadInstall, runSquadGrant, runSquadList } = require('./commands/store-squad');
 const { runSystemPackage, runSystemPublish, runSystemList, runSystemInstall } = require('./commands/store-system');
 const { runBriefingApprove, runBriefingUnapprove, runBriefingReview, runBriefingApplyFeedback } = require('./commands/briefing');
+const { runBriefingSources } = require('./commands/briefing-sources');
 const { runBriefingMigrateLineage } = require('./commands/briefing-migrate-lineage');
 const {
   runExplorationAddRun,
@@ -392,6 +393,10 @@ const JSON_SUPPORTED_COMMANDS = new Set([
   'audit-code',
   'verify:artifact',
   'verify-artifact',
+  'rule:new',
+  'rule-new',
+  'briefing:sources',
+  'briefing-sources',
   'briefing:review',
   'briefing-review',
   'briefing:apply-feedback',
@@ -994,6 +999,8 @@ function printHelp(t, logger) {
   logHelpLine(t, logger, 'cli.help_agent_help');
   logHelpLine(t, logger, 'cli.help_agent_invoke');
   logHelpLine(t, logger, 'cli.help_agent_epilogue');
+  logHelpLine(t, logger, 'cli.help_rule_new');
+  logHelpLine(t, logger, 'cli.help_briefing_sources');
   logHelpLine(t, logger, 'cli.help_briefing_approve');
   logHelpLine(t, logger, 'cli.help_briefing_unapprove');
   logHelpLine(t, logger, 'cli.help_briefing_review');
@@ -1463,6 +1470,9 @@ async function main() {
     } else if (command === 'audit:code' || command === 'audit-code') {
       const { runAuditCode } = require('./commands/audit-code');
       result = await runAuditCode({ args, options, logger: commandLogger, t });
+    } else if (command === 'rule:new' || command === 'rule-new') {
+      const { runRuleNew } = require('./commands/rule-new');
+      result = await runRuleNew({ args, options, logger: commandLogger, t });
     } else if (command === 'verify:artifact' || command === 'verify-artifact') {
       const { runVerifyArtifact } = require('./commands/verify-artifact');
       result = await runVerifyArtifact({ args, options, logger: commandLogger, t });
@@ -1975,6 +1985,8 @@ async function main() {
       result = await runSystemList({ args, options, logger: commandLogger, t });
     } else if (command === 'system:install' || command === 'system-install') {
       result = await runSystemInstall({ args, options, logger: commandLogger, t });
+    } else if (command === 'briefing:sources' || command === 'briefing-sources') {
+      result = await runBriefingSources({ args, options, logger: commandLogger, t });
     } else if (command === 'briefing:approve' || command === 'briefing-approve') {
       result = await runBriefingApprove({ args, options, logger: commandLogger });
     } else if (command === 'briefing:unapprove' || command === 'briefing-unapprove') {

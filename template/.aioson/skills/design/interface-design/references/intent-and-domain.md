@@ -14,14 +14,17 @@ Defaults disguise themselves as infrastructure. Craft means owning every decisio
 
 ## Design memory and continuity
 
-If `.interface-design/system.md` exists, treat it as the visual source of truth:
-- Load it before changing direction, tokens, or component patterns.
+There is exactly one visual source of truth: the identity record. Resolve it as the PRD's `identity` binding, else the active `.aioson/explorations/{slug}/identity.md` (exploration work only), else the active `.aioson/briefings/{slug}/identity.md`, else `.aioson/context/identity.md`. It is the **extracted-from-references** design memory, distilled once from the user's own reference images (see `.aioson/docs/reference-identity.md`).
+
+When it exists:
+- Load its token sections and `## Component structure notes` before choosing a direction.
+- **Apply** them rather than re-deriving a generic direction. It is an input you apply, not a separate design system.
 - Respect it unless the user explicitly wants a redesign.
 - Update it when you introduce a reusable pattern, token rule, or layout decision.
 
-If an `identity.md` exists (active `.aioson/explorations/{slug}/identity.md`, else active `.aioson/briefings/{slug}/identity.md`, else `.aioson/context/identity.md`), treat it as the visual source of truth too — it is the **extracted-from-references** form of `system.md`, distilled once from the user's own reference images (see `.aioson/docs/reference-identity.md`). Load its token sections and `## Component structure notes` before choosing a direction, and **apply** them rather than re-deriving a generic one. It is an input you apply, not a separate design system.
+Never create a second design-memory file outside `.aioson/` — a legacy `.interface-design/system.md` is superseded by the identity record and must not be treated as a competing authority.
 
-If the file does not exist and the task covers more than one screen or component family, create it with:
+If no identity record exists and the task covers more than one screen or component family, create `.aioson/context/identity.md` (scope `brand`) with:
 - Product context and UI intent
 - Chosen design direction and anti-goals
 - Token decisions (color, type, spacing, radius, depth, motion)

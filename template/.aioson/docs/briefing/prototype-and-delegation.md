@@ -61,8 +61,14 @@ If the user named another model for reference research or critique, finish expli
 .aioson/briefings/{slug}/prototype-manifest.md
 ```
 
-The manifest declares `feature: {slug}` and `status: draft` during refinement. Never reuse another briefing's manifest/prototype. The user-controlled `aioson briefing:approve` command changes it to `status: approved`; only then may Product and downstream agents treat it as binding.
-4. Verify owner/path directly because no PRD exists. Product later runs `aioson prototype:check . --feature={slug} --strict`.
+The manifest declares `feature: {slug}`, `status: draft`, and the `identity:` record the build consumed (or `none`) during refinement. That identity line is what carries the extracted visual system past briefing approval into the PRD and implementation; omitting it silently strands the record here. Never reuse another briefing's manifest/prototype. The user-controlled `aioson briefing:approve` command changes it to `status: approved`; only then may Product and downstream agents treat it as binding.
+4. Verify owner/path directly because no PRD exists. Product later runs `aioson prototype:check . --feature={slug} --strict`. Measure the built prototype here — the earliest point where craft is provable, before any PRD binds it:
+
+```bash
+aioson verify:artifact . --kind=visual --slug={slug} --advisory 2>/dev/null || true
+```
+
+Repair the blocking findings (decorative blob, animation with no `prefers-reduced-motion`, cards three deep) in the prototype itself. Threshold warnings — token adherence, off-grid spacing, depth strategies, font count, missing states — become structured findings only when this surface cannot justify them.
 5. Give the exact paths and state that the prototype models the final visual/interaction contract but does not prove backend integration: mock-only behavior is design evidence, never implementation proof, and refresh may reset mock state. Status remains draft until the user approves the briefing, then Product must preserve or explicitly document deviations from the approved binding.
 
 Prototype work never edits `briefings.md`, never becomes canonical feedback, and never trades away a Core screen/action/state for visual polish.

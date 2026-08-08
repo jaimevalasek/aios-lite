@@ -1,5 +1,13 @@
 # Handoff and Quality — Interface Design
 
+The shared visual-quality criteria live in one place — the `design/visual-quality` brain — so they cannot drift between the skills and agents that apply them:
+
+```bash
+aioson brain:query . --tags=visual-quality --min-quality=4 --format=compact 2>/dev/null || true
+```
+
+The checks below are this skill's craft-level tests. Where they overlap a brain node, the node is the canonical statement: the swap test below is the same criterion as `vq-002` (replaceability). A project rule under `.aioson/rules/` outranks both — a client with its own design system is conforming to it, not defaulting.
+
 ---
 
 ## Quality checks (run before delivering)
@@ -55,31 +63,34 @@ Walk through each section before handing off:
 
 ---
 
-## Handoff to @dev
+## Closing the visual contract
 
-A strong handoff includes:
-- Explicit visual direction and anti-goals
+This skill is normally loaded by the agent doing the implementation, not handed across an agent boundary. Resolve the same contract either way — as a written spec when another agent will build, or as the checklist you satisfy in code when you are building now:
+
+- Explicit visual direction and anti-goals, inherited from the prototype manifest in conformance mode
 - Design token block (fonts, colors, spacing, radius, depth strategy, motion posture)
-- Per-screen layout notes with component names mapped to real library components
+- Per-screen layout notes with each region mapped to a **real component in this project's library** — reuse before adding; a new component needs a named reason
 - Full state matrix (default / hover / focus / active / disabled / loading / empty / error / success)
 - Responsive rules (mobile breakpoints, collapse behavior)
 - Accessibility checklist items
 - Any signature visual moves with implementation notes
 - Anti-patterns to avoid
 
-The `ui-spec.md` must be concise enough to code from directly. Not a design document — a build contract.
+Produce a separate `ui-spec.md` only when a different agent will implement it. When you implement directly, the code and the design memory below are the record — do not manufacture a spec artifact nobody will read.
 
 ---
 
 ## Update design memory
 
-When the work introduces or changes reusable design decisions, update `.interface-design/system.md` with:
-- Final direction and anti-goals
-- Token block
-- Component pattern notes
-- New exceptions or constraints
+Visual continuity has exactly one canonical home: the identity record. When the work introduces or changes reusable, project-wide design decisions, update `.aioson/context/identity.md` (scope `brand`) with the final direction and anti-goals, the token block, component pattern notes, and any new exception or constraint. Keep feature-specific decisions in that feature's `.aioson/briefings/{slug}/identity.md`.
 
-This file is the continuity layer between screens, agents, and future sessions.
+Then re-verify the record:
+
+```bash
+aioson verify:artifact . --kind=identity --file=<path> --advisory 2>/dev/null || true
+```
+
+Never create a parallel design-memory file outside `.aioson/`. Two continuity layers drift, and the one the workflow binds is the one under `.aioson/`.
 
 ---
 

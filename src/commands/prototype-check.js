@@ -1,14 +1,19 @@
 'use strict';
 
 /**
- * aioson prototype:check — deterministic fidelity guard for the prototype contract.
+ * aioson prototype:check — deterministic guard for the visual contract.
  *
  * The command first verifies that a prototype is owned by the active feature,
  * not borrowed from another feature or reactivated from historical text. It then
  * verifies that the prototype reaches the single product authority:
  *   1. PRD status, feature owner, canonical paths, files, and manifest agree;
  *   2. the Core interactions the manifest lists are echoed in the PRD acceptance
- *      contract authored by Product/Sheldon.
+ *      contract authored by Product/Sheldon;
+ *   3. the identity record the prototype was built from survives into the PRD, so
+ *      implementation inherits the same visual system instead of re-deciding it.
+ *
+ * (3) fails only on a contradiction — a dropped, conflicting, borrowed, dangling, or
+ * non-canonical identity. A PRD that legitimately has no identity stays green.
  *
  * It is a STRUCTURAL check, not a semantic one: coverage is a folded substring match
  * of each manifest interaction phrase against the PRD text. The prototype
@@ -26,7 +31,8 @@
 const path = require('node:path');
 const { readFileSafe, contextDir } = require('../preflight-engine');
 const {
-  validatePrototypeBinding
+  validatePrototypeBinding,
+  validateIdentityBinding
 } = require('../lib/prototype-binding');
 
 const BAR = '━'.repeat(30);
@@ -57,7 +63,42 @@ async function runPrototypeCheck({ args, options = {}, logger }) {
   const prdFile = slug ? `prd-${slug}.md` : 'prd.md';
   const prd = await readFileSafe(path.join(dir, prdFile));
 
+  // Resolved after the prototype binding, then folded into whichever result is
+  // emitted. A broken identity contract is a hard failure; an advisory one only
+  // colors an otherwise-clean run.
+  let identity = null;
+
+  // Advisory visual telemetry, folded in the same way. The binding gate proves
+  // ownership and acceptance coverage; it says nothing about the craft of what
+  // was actually built. Measuring it here costs one file read at the moment the
+  // prototype is already resolved — and it never changes the verdict. A metric
+  // that could fail this gate would be tuned into silence within a week.
+  let visual = null;
+
   const emit = (result) => {
+    if (identity) {
+      result.identity = identity;
+      result.checks = {
+        ...(result.checks || {}),
+        identity_declared: identity.declared,
+        identity_path_owned: identity.checks.path_owned,
+        identity_record_exists: identity.checks.identity_exists,
+        identity_scope_matches: identity.checks.scope_matches
+      };
+      if (!identity.ok && result.ok) {
+        const first = identity.issues[0];
+        result.ok = false;
+        result.status = 'fail';
+        result.reason = first.reason;
+        result.field = first.field;
+        result.message = first.message;
+      } else if (identity.ok && identity.warnings.length > 0 && result.ok && result.status === 'ok') {
+        result.status = 'warn';
+        result.reason = identity.warnings[0].reason;
+        result.message = identity.warnings[0].message;
+      }
+    }
+    if (visual) result.visual = visual;
     if (options.json) return result;
     logger.log('');
     logger.log(slug ? `Prototype check — ${slug}` : 'Prototype check');
@@ -69,6 +110,15 @@ async function runPrototypeCheck({ args, options = {}, logger }) {
       if (result.interactions.uncovered.length) {
         logger.log(`Uncovered: ${result.interactions.uncovered.map((i) => `"${i}"`).join(', ')}`);
       }
+    }
+    if (identity) {
+      logger.log(`Identity binding: ${identity.declared ? `${identity.status}${identity.identity ? ` → ${identity.identity}` : ''}` : 'undeclared'}`);
+    }
+    if (visual && visual.applicable) {
+      const m = visual.metrics;
+      const pct = m.token_adherence_pct === null ? 'n/a' : `${m.token_adherence_pct}%`;
+      logger.log(`Visual telemetry (advisory): tokens ${pct} | spacing off-grid ${m.spacing_off_grid} | depth ${(m.depth_strategies || []).join('+') || 'none'} | reduced-motion ${m.reduced_motion_handled ? 'yes' : 'no'}`);
+      for (const finding of [...visual.issues, ...visual.warnings]) logger.log(`  · ${finding}`);
     }
     logger.log('');
     return result;
@@ -92,6 +142,31 @@ async function runPrototypeCheck({ args, options = {}, logger }) {
     ...binding.checks,
     prd_acceptance_contract: false
   };
+
+  identity = await validateIdentityBinding({
+    targetDir,
+    slug,
+    prd,
+    manifest,
+    prototypeApplicable: binding.applicable,
+    strict
+  });
+
+  if (binding.applicable && binding.ok && binding.prototype) {
+    const html = await readFileSafe(path.resolve(targetDir, binding.prototype));
+    if (html) {
+      const { analyzeVisualSources } = require('../lib/visual-telemetry');
+      const measured = analyzeVisualSources({ html });
+      visual = {
+        applicable: measured.applicable,
+        file: binding.prototype,
+        metrics: measured.metrics,
+        issues: measured.issues,
+        warnings: measured.warnings,
+        ...(measured.applicable ? {} : { reason: measured.reason })
+      };
+    }
+  }
 
   if (!binding.applicable && binding.ok) {
     return emit({

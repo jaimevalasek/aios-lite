@@ -44,6 +44,12 @@ Load only when triggered:
 - `.aioson/docs/product/prd-contract.md` — always before writing.
 - `.aioson/skills/process/product-scope-expansion/SKILL.md` — only for a rich surface, a prior `.aioson/context/features/{slug}/scope-expansion.md`, or an explicit request for richer options; its output is advisory, never a new gate.
 
+## Specification quality intelligence (anti-slop)
+
+For a feature with a visible surface, run `aioson brain:query . --agent=product --tags=spec-quality --min-quality=4 --format=compact 2>/dev/null || true`.
+
+Apply `q >= 4`. Run the replaceability test on the specification itself: strip the domain nouns from the vision and the Capability Map, and rewrite whatever still reads complete around this product's real object, decision, and evidence. A visible surface with no owned prototype and no identity record is one named gap with its route, not a neutral default. Promote the material states, asset availability, reduced-motion, performance, and accessibility expectations the surface depends on into `AC-*` rows. Record the constraint, never the composition — layout, tokens, and components stay with the prototype and the design engine.
+
 ## Deterministic preflight
 
 Run:
@@ -64,6 +70,7 @@ After writing the PRD, run `aioson prototype:check . --feature={slug} --strict`.
    - exact owned path + manifest `feature: {slug}` → `current`;
    - missing path, owner mismatch, another slug, or closed-feature artifact → `none` and explicit historical exclusion.
 3. If resolution is `none`, inspect the current production code, tests, and nearest behavior instead of using the historical prototype as visual authority.
+   - Resolve the identity binding in the same pass: read the approved manifest's `identity:` line, then fall back to a feature-owned `.aioson/briefings/{slug}/identity.md`, then `.aioson/context/identity.md`, then `none`. Carry the resolved path forward verbatim; never upgrade an absent record into an invented one.
 4. Reconcile briefing, verified prototype when `current`, inspected existing behavior, and user statements.
 5. For every required capability, record whether the product behavior is reused, extended, replaced, or new and name the observable delta.
 6. Surface at most one decision at a time, only when evidence cannot choose safely. Under Autopilot, apply the safe ownership resolution without asking for routine confirmation.
@@ -88,6 +95,8 @@ sheldon_review: pending
 prototype: .aioson/briefings/{slug}/prototype.html
 prototype_status: current
 prototype_feature: {slug}
+identity: .aioson/briefings/{slug}/identity.md
+identity_status: current
 ---
 ```
 
@@ -98,6 +107,16 @@ prototype: null
 prototype_status: none
 prototype_feature: null
 ```
+
+`identity` is the second half of the visual contract and is resolved independently of the prototype. It has three legitimate states:
+
+```yaml
+identity_status: current   # identity: .aioson/briefings/{slug}/identity.md — feature-owned record
+identity_status: project   # identity: .aioson/context/identity.md — shared brand record
+identity_status: none      # identity: null — no extracted record; the design engine runs intent-first
+```
+
+Never bind an exploration identity: it is non-canonical by contract. If the approved prototype manifest declares the record it was built from, the PRD must carry that same path — dropping it forces implementation to re-decide the visual system and is a `prototype:check` failure.
 
 Use the shortest structure that closes product intent:
 
@@ -111,7 +130,7 @@ Use the shortest structure that closes product intent:
 - Success metrics
 - Prototype contract: binding screens/interactions and any approved deviations
 - Open questions, with `blocking` explicitly marked when applicable
-- Visual identity when relevant
+- Visual identity: the resolved `identity` binding and what it constrains, or the explicit `none` with its reason
 
 Product owns complete, observable acceptance criteria. `@sheldon` always challenges and enriches them in place before Planner. No source promise may disappear: a non-required decision needs a concrete rationale and any material scope change remains user-owned.
 
@@ -138,6 +157,8 @@ Every briefing `PROM-*` appears exactly once. `required` and `already_satisfied`
 `Fit decision` is `reuse`, `extend`, `replace`, or `new`. Cite exact repository paths/packages and observed behavior; for `new`, state the inspected boundary and why no existing behavior fits. This is product compatibility evidence, not an architecture or file plan.
 
 The PRD always contains one explicit `## Prototype contract`. With `current`, record status, feature, exact prototype/manifest paths, interactions, and deviations. With `none`, record `prototype: none`, `manifest: none`, and every discovered old path under `excluded historical references` with its owning slug/status.
+
+The same section carries one `identity:` line matching the frontmatter binding, so the visual record travels with the interaction contract instead of dying at the briefing boundary.
 
 Before handoff, state one clear line in chat:
 

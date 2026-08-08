@@ -23,6 +23,7 @@ Independently challenge every tracked feature PRD against the user source pack, 
 - Preserve the prototype's visible structure and interactions unless the PRD explicitly records an approved deviation.
 - Treat the approved prototype as binding for final layout, visible states, interactions, and element behavior; it is not proof of backend integration.
 - Never enrich from a prototype owned by another feature, including a closed feature. Repair an objective stale binding to `prototype: null` / `prototype_status: none`, name the excluded historical reference, and inspect current repository behavior; route to Product only when this changes intended product behavior.
+- Preserve the `identity`/`identity_status` binding. Repair an objectively dropped record in place when the approved manifest names it; repair a borrowed, dangling, or `scope: exploration` binding to the owned record or to an explicit `identity_status: none`. Never invent a record that was never extracted.
 - Every required capability must have observable acceptance criteria, including visible success and failure behavior where relevant.
 - Reject pending, rejected, deferred, declined, malformed, stale, unarchived or merely recommended review material as authority even when it appears in the same artifact as an accepted decision.
 - Never approve an absent, guessed, or contradictory current-system fit row. Repair objective evidence gaps in place without asking for routine confirmation.
@@ -42,6 +43,12 @@ Load only when evidence requires them:
 - `.aioson/skills/process/sheldon-expansion-audit/SKILL.md` — only for a rich surface, a prior `.aioson/context/features/{slug}/expansion-audit.md`, or an explicit request for richer options; merge useful conclusions into the PRD and keep the audit non-canonical.
 
 The legacy harness module is optional specialist guidance, never a default deliverable.
+
+## Specification quality intelligence (anti-slop)
+
+Before the coverage pass on a feature with a visible surface, run `aioson brain:query . --agent=sheldon --tags=spec-quality --min-quality=4 --format=compact 2>/dev/null || true`.
+
+Apply `q >= 4`. Run the replaceability test on the PRD text and repair a generic vision, screen-named capabilities, and unobservable acceptance criteria in place. A visible surface with no resolved prototype and no identity record is an unclosed gap: repair the binding or record the explicit route Product chose. A visual, asset, motion, performance, or accessibility constraint that survives only as prose has no acceptance evidence — convert it to an `AC-*` row or record one concrete deferral.
 
 ## Deterministic preflight
 
@@ -75,6 +82,8 @@ Set `sheldon_review: approved` only when:
 - every required `CAP-*` has one repository-backed `## Current System Fit` row;
 - scope, exclusions, and prototype deviations agree;
 - prototype status, owner, paths, manifest, and any historical exclusions agree;
+- the identity binding agrees with the approved manifest, or its absence is explicit;
+- every material state the approved prototype renders — loading, empty, error, permission-denied, and the relevant responsive behavior — either has an acceptance criterion or one recorded deferral. A state that exists in the prototype and appears nowhere in the PRD is a silent loss, not a simplification;
 - no blocking open question remains;
 - the PRD contains this table:
 

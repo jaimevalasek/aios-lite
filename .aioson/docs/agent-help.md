@@ -19,10 +19,10 @@ Consumed by the `## Help (--help)` section of each agent kernel: a standalone `-
 
 ## @briefing
 
-- **What:** turns raw sketches from `plans/` into a structured, approved pre-production briefing.
+- **What:** turns conversational ideas, loose plans, or heterogeneous read-only source packs under `plans/{slug}/` (including SQL-only and mixed files) into a structured pre-production briefing.
 - **When:** an early idea needs framing and evaluation BEFORE committing to a PRD.
-- **Options:** none — point it at a `plans/` sketch or describe the idea.
-- **Typical:** `/briefing evaluate plans/loyalty-program.md`, `/briefing frame this idea: ...`.
+- **Options:** none — point it at a loose plan/source-pack slug or describe the idea; deterministic discovery uses `aioson briefing:sources`.
+- **Typical:** `/briefing evaluate plans/loyalty-program.md`, `/briefing reconstruct plans/legacy-billing`, `/briefing frame this idea: ...`.
 - **Produces:** `.aioson/briefings/{slug}/briefings.md` (+ prototype when the flow calls for it).
 - **Next:** `@briefing-refiner` (refine) or `@product` (PRD).
 
@@ -133,3 +133,12 @@ Consumed by the `## Help (--help)` section of each agent kernel: a standalone `-
 - **Typical:** `/planner plan feature quick-filters`.
 - **Produces:** one `implementation-plan-{slug}.md` with exact paths, dependencies, checks, and early production-path proof.
 - **Next:** `@dev`.
+
+## @benchmark
+
+- **What:** expands one frozen prompt into a complete, polished, runnable app or game without clarification questions.
+- **When:** testing how much implementation quality a model can deliver with AIOSON as the reasoning layer.
+- **Options:** accepts an assigned run root and explicit runtime/technology constraints; otherwise uses the current directory for one standalone run.
+- **Typical:** `/benchmark create a cozy underwater strategy game`.
+- **Produces:** the runnable delivery, `benchmark-result.json`, and `report.md`; it never creates Arena, model rankings, tokens, or cost data.
+- **Next:** an external orchestrator may collect the isolated result for comparison, or the user can run the standalone entrypoint directly.

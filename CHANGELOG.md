@@ -4,6 +4,39 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+- **Identity binding across the workflow** — the extracted `identity.md` visual record now travels with the prototype instead of dying at the briefing boundary. The prototype manifest declares the record it was built from, the PRD carries `identity`/`identity_status` (`current`, `project`, or `none`), and `prototype:check` fails when that record is dropped, borrowed from another feature, dangling, non-canonical (`scope: exploration`), or contradicts the manifest. A PRD that legitimately has no identity stays green.
+- **`rule:new`** — scaffolds a project-authored rule under `.aioson/rules/` with valid routing frontmatter (`agents`, `paths`, `triggers`, `task_types`, `priority`, `load_tier`), so a project can extend agent behavior without adding an agent. `verify:artifact --kind=rule` then proves the rule is routable and that its scaffold placeholders were replaced.
+- **Routed visual-implementation guidance** — `.aioson/docs/dev/visual-implementation.md` carries the anti-slop and visual-authority criteria for `@dev`/`@deyvin`, loaded only when the work is actually visual.
+- **`verify:artifact --kind=visual` — static visual telemetry.** The measured half of anti-slop: it reads the HTML/CSS that was actually written and returns arithmetic instead of prose — token adherence, spacing off the 4px grid, active depth strategies, font families, reduced-motion and state coverage, card nesting, media elements. Blocking findings stay to what is provable from the text (decorative blob, animation with no `prefers-reduced-motion`, cards three deep); thresholds are warnings. Build-free, browser-free, and identical on any host or model. Locator precedence `--file` → `--dir` → `--slug`; utility-class markup returns `applicable: false` instead of a fabricated verdict. `@briefing-refiner` measures the prototype the moment it exists and `@dev` measures the implemented front-end, both advisory.
+- **`prototype:check` reports the same telemetry** as an advisory block whenever it resolves an owned prototype, without touching its verdict — the binding gate proves ownership and acceptance coverage, and now also shows the craft of what was built.
+- **Specification-lens anti-slop for the PRD authority** — the visual-quality brain gained three `spec-quality` nodes (`sq-001`–`sq-003`) reached by `@product` and `@sheldon` through a separate tag, so the replaceability test now runs on the specification text before it runs on the pixels. A generic vision or screen-named capability is repaired at the PRD, a visible surface with no prototype and no identity record becomes one named gap with its route instead of a silent default, and state/asset/reduced-motion/performance/accessibility expectations become `AC-*` rows. The PRD authority never inherits the layout nodes — composition stays with the prototype and the design engine.
+
+### Changed
+- `interface-design` gained an explicit conformance mode: when an approved prototype or established component language exists, the skill transfers that direction instead of re-deciding it, and maps each region to a real component in the project's library.
+- Visual continuity has one canonical home. The legacy `.interface-design/system.md` design-memory file is superseded by the identity record under `.aioson/`; two continuity layers were free to drift.
+- Rule-over-brain precedence is stated once, as brain node `vq-000`, instead of being restated in each agent kernel.
+- `@sheldon` now blocks approval when a material state the approved prototype renders (loading, empty, error, permission-denied, responsive) has neither an acceptance criterion nor a recorded deferral.
+
+### Fixed
+- `verify:artifact --advisory` now actually exits 0 at the shell. The CLI wrapper fails the process for any result carrying `ok: false`, which silently overrode the advisory decision for every kind — the command printed `ADVISORY` and still exited 1. The report carries an explicit `exitCode`, which the wrapper honors first. The existing coverage only asserted in-process, so the override was invisible.
+- `@dev` and `@deyvin` no longer route unresolved visual decisions to `@ux-ui`, which is an opt-in detour and not part of the implementation chain; they resolve from the identity binding and prototype, or escalate to `@product`.
+
+## [1.47.0] - 2026-08-04
+
+### Added
+- **Briefing source-pack intake** — the new `briefing:sources` command recursively inventories SQL-only and heterogeneous inputs under `plans/{slug}/`, classifies their logical role, fingerprints each source, and selects the conditional guidance the Briefing agent needs without moving or executing user files.
+- **SQL as documentation** — schemas, ordered migrations, routines, views, and bounded data hints can now describe an existing system while preserving a visible boundary between source facts, derived inferences, and missing product intent.
+- **Pentester coverage reports** — security reviews now produce localized, redacted HTML reports with standards, folder, module, route, method, finding, and remediation coverage.
+
+### Changed
+- Briefing intake now handles mixed documentation, structured files, source code, visual references, and unknown printable auxiliaries as one logically organized source pack, with a single intent question only when the pack does not establish its own purpose.
+- Feature source lineage reuses the same guarded recursive collector as Briefing intake so SQL and auxiliary inputs remain consistently fingerprinted across downstream workflow artifacts.
+
+### Fixed
+- Archive roots, generated directories, symlinks, binary databases, archives, credentials, large inputs, and row-bearing SQL dumps are skipped, blocked, or reduced to metadata according to their risk instead of being treated as ordinary prompt context.
+- Pentester keeps the canonical code-health lens path reachable when a sensitive execution chain or regression weakness requires it.
+
 ## [1.46.0] - 2026-08-03
 
 ### Added

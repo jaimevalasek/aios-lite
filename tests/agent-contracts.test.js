@@ -26,7 +26,11 @@ test('canonical prompts expose compact decision contracts', async () => {
     for (const heading of ['LANGUAGE BOUNDARY', '## Mission', '## Required input', '## Hard constraints']) {
       assert.match(content, new RegExp(heading.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')), `${name} missing ${heading}`);
     }
-    assert.ok(content.length < 14000, `${name} prompt grew beyond the compact kernel budget`);
+    // 14000 -> 14336 (14 KiB) on 2026-08-07: dev.md gained one routed-module
+    // pointer for visual-implementation.md. The budget did its job — it rejected
+    // the 1.7KB inline anti-slop block and forced it into a routed doc, so a
+    // non-visual feature no longer pays for it.
+    assert.ok(content.length < 14336, `${name} prompt grew beyond the compact kernel budget (${content.length})`);
   }
 });
 

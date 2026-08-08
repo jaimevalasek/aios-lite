@@ -321,6 +321,74 @@ The `SMALL` and `MEDIUM` outputs include a note reminding you of this sequence.
 
 ---
 
+## rule:new
+
+Scaffold a project-authored rule under `.aioson/rules/`. Rules are how a project extends agent behavior without adding an agent: `context:select` scores them by `agents`, `paths`, `triggers`, `task_types`, `priority`, and `load_tier`, so a well-formed rule reaches every agent that touches matching work.
+
+```bash
+aioson rule:new . --name=visual-quality-contract \
+  --description="Our design system outranks generic visual guidance" \
+  --agents=dev,qa,briefing-refiner \
+  --paths="src/**,resources/**" \
+  --triggers="layout,UI,component"
+```
+
+- `--name` must be kebab-case; it becomes the filename and the frontmatter `name`.
+- Declare at least one of `--agents`, `--paths`, `--triggers`, or `--task-types`, or the rule is rarely selected (it warns when you don't).
+- `--priority` defaults to `50`, above the framework's own 5–10 band, so a project rule outranks shipped guidance.
+- `--load-tier=always` loads the rule on every activation; the default `trigger` loads it only on a match.
+- It never overwrites an existing rule without `--force` — a rule on disk is project-authored content.
+
+The generated file carries a `## Precedence` section stating that the rule outranks framework defaults, design-skill guidance, and `.aioson/brains/` nodes. Fill in the placeholder statements, then verify it:
+
+```bash
+aioson verify:artifact . --kind=rule --file=.aioson/rules/visual-quality-contract.md
+```
+
+That check proves the frontmatter routes and that the scaffold placeholders were replaced with concrete, checkable requirements.
+
+---
+
+## verify:artifact --kind=visual
+
+Static visual telemetry: it reads the HTML/CSS that was actually written and returns numbers instead of opinion. No browser, no build, no toolchain — identical behavior on any host or model.
+
+```bash
+aioson verify:artifact . --kind=visual --slug=orders --advisory      # the feature-owned prototype
+aioson verify:artifact . --kind=visual --file=app/index.html --json
+aioson verify:artifact . --kind=visual --dir=src/ui --advisory
+```
+
+Locator precedence: `--file` → `--dir` → `--slug` (resolves `.aioson/briefings/{slug}/prototype.html`).
+
+**Metrics** (the JSON `metrics` field): token adherence (%), spacing values off the 4px grid, active depth strategies, font families, animation count and whether `prefers-reduced-motion` is handled, state coverage, maximum card nesting, media elements.
+
+**Blocking findings** — only what is provable from the text: a decorative blob (one rule that is simultaneously absolutely positioned, fully rounded, and blurred); animation with no `prefers-reduced-motion` block; card containers nested three deep. **Warnings** — thresholds that need judgment: token adherence below 60%, five or more off-grid spacing values, three simultaneous depth strategies, more than three font families, an interactive surface with no state marker.
+
+Heuristics that would need a DOM, a rendered layout, or taste are excluded by construction — a gate that cries wolf gets switched off within a week. Utility-class markup (Tailwind and friends) expresses tokens in HTML, so it returns `applicable: false` rather than inventing a verdict.
+
+`prototype:check` runs the same telemetry automatically whenever it resolves an owned prototype, always as an advisory block — it never changes the binding verdict.
+
+---
+
+## briefing:sources
+
+Discover heterogeneous source packs under `plans/{slug}/` without requiring a manifest or changing the user's physical organization.
+
+```bash
+aioson briefing:sources . --json
+aioson briefing:sources . --slug=legacy-system --json
+```
+
+- Without `--slug`, it lists selectable directories and backward-compatible loose files under `plans/` without loading content.
+- Conventional archive roots such as `plans/done/` are excluded from new-pack candidates and reported in `ignored_directories`.
+- With `--slug`, it fingerprints and classifies every source, builds logical groups, and orders detectable SQL migrations.
+- Packs may mix Markdown, SQL, contracts, source code, examples, and references in any physical layout.
+- It never moves, renames, or executes sources; credentials, binary databases, large files, and row-bearing dumps receive restrictive load policies.
+- `load_modules` tells `@briefing` which specialized modules are justified for that selected pack.
+
+---
+
 ## briefing:migrate-lineage
 
 Preview or migrate a registered legacy briefing to the canonical `Source Inventory` and `Source Promise Map` schemas.

@@ -187,7 +187,7 @@ const REQUIRES_SLUG = new Set(['genome', 'research-report', 'enriched-profile', 
 
 // Kinds whose artifact has a date-stamped / caller-known path — resolved via
 // --file=<path> rather than derived from a slug.
-const REQUIRES_FILE = new Set(['orache-report', 'identity']);
+const REQUIRES_FILE = new Set(['orache-report', 'identity', 'rule']);
 
 // ─── adapters to existing validators ────────────────────────────────────────
 //
@@ -304,6 +304,57 @@ function evaluateCommitMessage(message) {
     issues.push(`subject is vague: "${subject}" — say what changed and why`);
   }
   return issues;
+}
+
+// ─── kind=visual (static telemetry for a produced interface) ─────────────────
+
+const VISUAL_EXTS = new Set(['.html', '.htm', '.css']);
+const VISUAL_MAX_FILES = 40;
+
+/**
+ * Collect the HTML/CSS corpus for `kind=visual`, in locator precedence:
+ * --file (one artifact) → --dir (a front-end root) → --slug (the feature-owned
+ * prototype). Returns { html, css, files } or null when nothing resolves.
+ */
+function collectVisualSources({ targetDir, file, dir, slug }) {
+  const read = (abs) => { try { return fs.readFileSync(abs, 'utf8'); } catch { return null; } };
+  const bucket = { html: [], css: [], files: [] };
+  const add = (abs) => {
+    const ext = path.extname(abs).toLowerCase();
+    if (!VISUAL_EXTS.has(ext)) return;
+    const content = read(abs);
+    if (content === null) return;
+    (ext === '.css' ? bucket.css : bucket.html).push(content);
+    bucket.files.push(path.relative(targetDir, abs).split(path.sep).join('/'));
+  };
+
+  if (file) {
+    const abs = path.resolve(targetDir, file);
+    if (!fs.existsSync(abs)) return null;
+    add(abs);
+  } else if (dir) {
+    const root = path.resolve(targetDir, dir);
+    if (!fs.existsSync(root)) return null;
+    const stack = [root];
+    while (stack.length && bucket.files.length < VISUAL_MAX_FILES) {
+      const current = stack.pop();
+      let entries;
+      try { entries = fs.readdirSync(current, { withFileTypes: true }); } catch { continue; }
+      for (const e of entries) {
+        const full = path.join(current, e.name);
+        if (e.isDirectory()) { if (!SITE_IGNORE.has(e.name)) stack.push(full); } else if (e.isFile()) add(full);
+      }
+    }
+  } else if (slug) {
+    const abs = path.resolve(targetDir, '.aioson', 'briefings', slug, 'prototype.html');
+    if (!fs.existsSync(abs)) return null;
+    add(abs);
+  } else {
+    return null;
+  }
+
+  if (bucket.files.length === 0) return null;
+  return { html: bucket.html.join('\n'), css: bucket.css.join('\n'), files: bucket.files };
 }
 
 const ADAPTERS = {
@@ -460,6 +511,101 @@ const ADAPTERS = {
     }
     const found = evaluateCommitMessage(message);
     return { ok: found.length === 0, issues: found, warnings: [], checks: [{ id: 'commit-message', ok: found.length === 0, detail: found.join('; ') || null }] };
+  },
+
+  // rule:new — a project-authored rule is only useful if context:select can reach
+  // it and it says something checkable. This proves both: the routing frontmatter
+  // resolves, and the scaffold placeholders were actually replaced.
+  rule: async (ctx) => {
+    const rel = ctx.file || (ctx.slug ? `.aioson/rules/${ctx.slug}.md` : null);
+    if (!rel) {
+      return { ok: false, issues: ['kind=rule requires --file=<path> or --slug=<rule-name>'], warnings: [], checks: [] };
+    }
+    let content;
+    try {
+      content = fs.readFileSync(path.resolve(ctx.targetDir, rel), 'utf8');
+    } catch {
+      return { ok: false, issues: [`cannot read rule file: ${rel}`], warnings: [], checks: [] };
+    }
+
+    const issues = [];
+    const warnings = [];
+    const frontmatter = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+    if (!frontmatter) {
+      issues.push('no YAML frontmatter — context:select cannot route a rule without it');
+    } else {
+      const fm = frontmatter[1];
+      const has = (key) => new RegExp(`^${key}:\\s*\\S`, 'm').test(fm);
+      if (!has('name')) issues.push('frontmatter has no `name`');
+      if (!has('description')) issues.push('frontmatter has no `description` — it is what semantic recall matches on');
+
+      const routing = ['agents', 'paths', 'triggers', 'task_types'].filter(has);
+      const alwaysLoaded = /^load_tier:\s*always\s*$/m.test(fm);
+      if (routing.length === 0 && !alwaysLoaded) {
+        issues.push('no routing dimension (agents / paths / triggers / task_types) and load_tier is not `always` — this rule would rarely be selected');
+      }
+      const priority = fm.match(/^priority:\s*(-?\d+)/m);
+      if (priority && (Number(priority[1]) < 0 || Number(priority[1]) > 100)) {
+        issues.push(`priority ${priority[1]} is outside 0-100`);
+      }
+    }
+
+    const body = content.replace(/^---\r?\n[\s\S]*?\r?\n---/, '');
+    if (/Replace this list with|Replace this description with|Name what this rule deliberately/i.test(body)) {
+      issues.push('scaffold placeholders are still present — replace them with concrete, checkable requirements');
+    }
+    const statements = (body.match(/^\s*[-*]\s+\S/gm) || []).length;
+    if (statements === 0) issues.push('the rule states no requirements');
+    else if (statements < 2) warnings.push('only one requirement stated — confirm the rule is complete');
+    if (!/##\s+Precedence/i.test(body)) {
+      warnings.push('no `## Precedence` section — state explicitly that this project rule outranks brain and skill defaults');
+    }
+
+    return {
+      ok: issues.length === 0,
+      issues,
+      warnings,
+      checks: [{ id: `rule:${path.basename(rel, '.md')}`, ok: issues.length === 0, detail: issues.join('; ') || null }]
+    };
+  },
+
+  // The measured half of anti-slop. Every other visual gate in AIOSON is prose
+  // an agent may or may not honor; this one reads the HTML/CSS that was written
+  // and reports arithmetic — token adherence, spacing rhythm, depth strategies,
+  // motion and state coverage — plus the structural defects provable from text.
+  // Findings a browser or taste would be needed for stay out by construction.
+  visual: async (ctx) => {
+    const sources = collectVisualSources(ctx);
+    if (!sources) {
+      return {
+        ok: false,
+        issues: ['kind=visual found no HTML/CSS — pass --file=<path>, --dir=<front-end root>, or --slug=<feature> for the owned prototype'],
+        warnings: [],
+        checks: []
+      };
+    }
+
+    const { analyzeVisualSources } = require('../lib/visual-telemetry');
+    const result = analyzeVisualSources(sources);
+
+    if (!result.applicable) {
+      return {
+        ok: true,
+        issues: [],
+        warnings: [`visual telemetry not applicable: ${result.reason}`],
+        checks: [{ id: 'visual', ok: true, detail: result.reason }],
+        metrics: { ...result.metrics, files: sources.files }
+      };
+    }
+
+    const ok = result.issues.length === 0;
+    return {
+      ok,
+      issues: result.issues,
+      warnings: result.warnings,
+      checks: [{ id: 'visual', ok, detail: result.issues.join('; ') || null }],
+      metrics: { ...result.metrics, files: sources.files }
+    };
   }
 };
 
@@ -509,7 +655,7 @@ async function runVerifyArtifact({ args, options = {}, logger }) {
     const blocking = !advisory;
     if (options.json) {
       setExitCode(blocking ? 1 : 0);
-      return { generator: GENERATOR, kind, slug: null, root: targetDir, mode: advisory ? 'advisory' : 'blocking', ok: false, blocking, issues: [msg], warnings: [], checks: [], error: 'missing_slug' };
+      return { generator: GENERATOR, kind, slug: null, root: targetDir, mode: advisory ? 'advisory' : 'blocking', ok: false, blocking, issues: [msg], warnings: [], checks: [], error: 'missing_slug', exitCode: blocking ? 1 : 0 };
     }
     logger.error(msg);
     setExitCode(blocking ? 1 : 0);
@@ -521,7 +667,7 @@ async function runVerifyArtifact({ args, options = {}, logger }) {
     const blocking = !advisory;
     if (options.json) {
       setExitCode(blocking ? 1 : 0);
-      return { generator: GENERATOR, kind, slug, root: targetDir, mode: advisory ? 'advisory' : 'blocking', ok: false, blocking, issues: [msg], warnings: [], checks: [], error: 'missing_file' };
+      return { generator: GENERATOR, kind, slug, root: targetDir, mode: advisory ? 'advisory' : 'blocking', ok: false, blocking, issues: [msg], warnings: [], checks: [], error: 'missing_file', exitCode: blocking ? 1 : 0 };
     }
     logger.error(msg);
     setExitCode(blocking ? 1 : 0);
@@ -557,6 +703,18 @@ async function runVerifyArtifact({ args, options = {}, logger }) {
     checks: result.checks || []
   };
 
+  // Telemetry kinds return measurements alongside the verdict. They are the
+  // point of the run, not decoration — a number that never reaches the caller
+  // cannot be acted on.
+  if (result.metrics) report.metrics = result.metrics;
+
+  // The CLI wrapper fails the process for any result carrying `ok: false`, which
+  // would silently override --advisory at the shell — the command decided not to
+  // block and the shell blocked anyway. Returning the exit code explicitly makes
+  // this verdict the authority: the wrapper honors `exitCode` before it looks at
+  // `ok`. Without it, "advisory never blocks" is only true in-process.
+  report.exitCode = blocking ? 1 : 0;
+
   // Persist for downstream consumption (mirrors audit:code).
   try {
     const ctxDir = path.join(targetDir, '.aioson', 'context');
@@ -574,6 +732,12 @@ async function runVerifyArtifact({ args, options = {}, logger }) {
 
   const verdict = ok ? 'OK' : (advisory ? 'ADVISORY' : 'FAIL');
   logger.log(`verify:artifact — kind=${kind}${slug ? ` slug=${slug}` : ''} — ${verdict}`);
+  if (report.metrics) {
+    const m = report.metrics;
+    const pct = m.token_adherence_pct === null || m.token_adherence_pct === undefined ? 'n/a' : `${m.token_adherence_pct}%`;
+    logger.log(`  tokens ${pct} | spacing off-grid ${m.spacing_off_grid ?? 'n/a'} | depth ${(m.depth_strategies || []).join('+') || 'none'} | fonts ${(m.font_families || []).length} | reduced-motion ${m.reduced_motion_handled ? 'yes' : 'no'}`);
+    if (Array.isArray(m.states_missing) && m.states_missing.length) logger.log(`  states missing: ${m.states_missing.join(', ')}`);
+  }
   for (const issue of issues) logger.log(`  ✗ ${issue}`);
   for (const w of warnings) logger.log(`  ⚠ ${w}`);
   if (ok && warnings.length === 0) logger.log('  (no issues)');
@@ -592,6 +756,7 @@ module.exports = {
   PLACEHOLDER_PATTERNS,
   staticSiteChecks,
   scanSiteForLeaks,
+  collectVisualSources,
   runSiteBuild,
   evaluateCommitMessage
 };

@@ -30,6 +30,7 @@ const MANAGED_FILES = [
   '.aioson/agents/neo.md',
   '.aioson/agents/design-hybrid-forge.md',
   '.aioson/agents/site-forge.md',
+  '.aioson/agents/benchmark.md',
   '.aioson/agents/profiler-researcher.md',
   '.aioson/agents/profiler-enricher.md',
   '.aioson/agents/profiler-forge.md',
@@ -71,6 +72,8 @@ const MANAGED_FILES = [
   '.aioson/docs/copywriter/campaign-package.md',
   '.aioson/docs/copywriter/legacy-agent-contract.md',
   '.aioson/docs/briefing/activation-and-intake.md',
+  '.aioson/docs/briefing/source-pack-intake.md',
+  '.aioson/docs/briefing/sql-as-documentation.md',
   '.aioson/docs/briefing/exploration-and-artifacts.md',
   '.aioson/docs/briefing/refinement-loop.md',
   '.aioson/docs/briefing/review-authority.md',
@@ -568,6 +571,15 @@ const AGENT_DEFINITIONS = [
     path: '.aioson/agents/site-forge.md',
     dependsOn: ['.aioson/context/project.context.md'],
     output: 'src/components/*.tsx + src/app/page.tsx + docs/research/{hostname}/ + public/images/{hostname}/'
+  },
+  {
+    id: 'benchmark',
+    displayName: 'Benchmark',
+    description: 'Autonomously expand, build, polish, and validate one isolated app or game benchmark run',
+    command: '@benchmark',
+    path: '.aioson/agents/benchmark.md',
+    dependsOn: ['.aioson/context/project.context.md'],
+    output: 'runnable app/game + benchmark-result.json + report.md in the assigned run root'
   },
   {
     id: 'forge-run',

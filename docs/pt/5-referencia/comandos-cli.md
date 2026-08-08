@@ -284,6 +284,68 @@ A nova versão da Store permite empacotar, distribuir e instalar não só agente
 
 Scripts determinísticos que movem verificações de estado, validação de artefatos e gate checks para fora do contexto LLM, economizando entre 4.800–8.800 tokens por feature. Veja [SDD Automation Scripts](./sdd-automation-scripts.md).
 
+#### `rule:new`
+
+Cria uma regra própria do projeto em `.aioson/rules/`. Regras são como você estende o comportamento dos agentes **sem criar um agente novo**: o `context:select` pontua cada regra por `agents`, `paths`, `triggers`, `task_types`, `priority` e `load_tier`, então uma regra bem formada chega a todo agente que tocar naquele tipo de trabalho.
+
+```bash
+aioson rule:new . --name=contrato-qualidade-visual \
+  --description="Nosso design system prevalece sobre orientação visual genérica" \
+  --agents=dev,qa,briefing-refiner \
+  --paths="src/**,resources/**" \
+  --triggers="layout,UI,componente"
+```
+
+- `--name` precisa ser kebab-case; vira o nome do arquivo e o `name` do frontmatter.
+- Declare ao menos um entre `--agents`, `--paths`, `--triggers` ou `--task-types` — sem isso a regra quase nunca é selecionada (o comando avisa).
+- `--priority` usa `50` por padrão, acima da faixa 5–10 do próprio framework, para que a regra do projeto prevaleça.
+- `--load-tier=always` carrega a regra em toda ativação; o padrão `trigger` carrega só quando há correspondência.
+- Nunca sobrescreve uma regra existente sem `--force` — regra no disco é conteúdo autoral do projeto.
+
+O arquivo gerado já traz a seção `## Precedence`, declarando que a regra prevalece sobre padrões do framework, orientação das skills de design e nós de `.aioson/brains/`. Preencha os enunciados de exemplo e valide:
+
+```bash
+aioson verify:artifact . --kind=rule --file=.aioson/rules/contrato-qualidade-visual.md
+```
+
+Essa verificação prova que o frontmatter roteia de verdade e que os textos de exemplo foram substituídos por requisitos concretos e verificáveis.
+
+#### `verify:artifact --kind=visual`
+
+Telemetria visual estática: lê o HTML/CSS que foi realmente escrito e devolve números em vez de opinião. Sem browser, sem build, sem toolchain — roda igual em qualquer host ou modelo.
+
+```bash
+aioson verify:artifact . --kind=visual --slug=pedidos --advisory      # protótipo da feature
+aioson verify:artifact . --kind=visual --file=app/index.html --json
+aioson verify:artifact . --kind=visual --dir=src/ui --advisory
+```
+
+O locator segue esta precedência: `--file` → `--dir` → `--slug` (resolve `.aioson/briefings/{slug}/prototype.html`).
+
+**Métricas** (campo `metrics` do JSON): aderência a token (%), valores de espaçamento fora da grade de 4px, estratégias de profundidade ativas, famílias tipográficas, animações e se `prefers-reduced-motion` foi tratado, cobertura de estados, aninhamento máximo de cards, elementos de mídia.
+
+**Achados bloqueantes** (só o que é provável a partir do texto): blob decorativo — regra ao mesmo tempo absoluta, totalmente arredondada e borrada; animação sem bloco `prefers-reduced-motion`; cards aninhados três níveis. **Avisos** (limiares que pedem julgamento): aderência a token abaixo de 60%, cinco ou mais espaçamentos fora da grade, três estratégias de profundidade simultâneas, mais de três famílias tipográficas, superfície interativa sem marcador de estado.
+
+Heurísticas que precisariam de DOM, layout renderizado ou gosto ficam de fora por construção — um gate que dá alarme falso é desligado em uma semana. Markup de classes utilitárias (Tailwind e afins) expressa token no HTML, então retorna `applicable: false` em vez de inventar veredito.
+
+`prototype:check` roda a mesma telemetria automaticamente quando resolve um protótipo próprio, sempre como bloco advisory — ela nunca altera o veredito do vínculo.
+
+#### `briefing:sources`
+
+Descobre pacotes heterogêneos em `plans/{slug}/` sem exigir manifesto ou organização prévia e sem alterar os arquivos originais.
+
+```bash
+aioson briefing:sources . --json
+aioson briefing:sources . --slug=sistema-legado --json
+```
+
+- Sem `--slug`, lista diretórios selecionáveis e arquivos avulsos retrocompatíveis sob `plans/`, sem carregar seu conteúdo.
+- Raízes de arquivo morto como `plans/done/` não entram como novos candidatos e aparecem em `ignored_directories` no JSON.
+- Com `--slug`, calcula SHA-256, classifica tipo, papel e política de leitura, agrupa fontes logicamente e ordena migrations SQL quando possível.
+- Pacotes podem combinar Markdown, SQL, contratos, código, exemplos e referências em qualquer disposição física.
+- O comando nunca move, renomeia ou executa fontes; credenciais, bancos binários, arquivos grandes e dumps com linhas recebem políticas restritivas.
+- `load_modules` informa ao `@briefing` quais módulos especializados carregar somente para aquele pacote.
+
 #### `briefing:migrate-lineage`
 
 Inspeciona ou migra um briefing legado registrado para os esquemas canônicos de `Source Inventory` e `Source Promise Map`.

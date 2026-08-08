@@ -1,13 +1,13 @@
 'use strict';
 
-const fs = require('node:fs/promises');
-const fsNative = require('node:fs');
-const crypto = require('node:crypto');
-const path = require('node:path');
 const {
   resolveExistingInsideRoot,
   resolveInsideRoot
 } = require('../verification/path-policy');
+const {
+  collectBriefingSourceFiles,
+  sha256File
+} = require('./briefing-source-pack');
 const {
   AC_ID_RE,
   CAP_ID_RE,
@@ -29,13 +29,6 @@ const {
   parseSurfacesOverride
 } = require('./feature-completeness-format');
 
-async function sha256File(filePath) {
-  const hash = crypto.createHash('sha256');
-  const stream = fsNative.createReadStream(filePath);
-  for await (const chunk of stream) hash.update(chunk);
-  return hash.digest('hex');
-}
-
 function normalizeSha256(value) {
   return cleanCell(value).toLowerCase().replace(/^sha256:/, '');
 }
@@ -49,22 +42,9 @@ function extractPhysicalSourcePlans(briefing) {
 }
 
 async function collectFeatureSourceFiles(targetDir, slug) {
-  const root = await resolveExistingInsideRoot(targetDir, `plans/${slug}`);
-  if (!root.ok) return [];
-  const collected = [];
-  async function walk(absoluteDir, relativeDir) {
-    const entries = await fs.readdir(absoluteDir, { withFileTypes: true }).catch(() => []);
-    for (const entry of entries) {
-      const relativePath = `${relativeDir}/${entry.name}`.replace(/\\/g, '/');
-      if (entry.isDirectory()) {
-        await walk(path.join(absoluteDir, entry.name), relativePath);
-      } else if (entry.isFile()) {
-        collected.push(relativePath);
-      }
-    }
-  }
-  await walk(root.real_path, `plans/${slug}`);
-  return collected.sort();
+  const collected = await collectBriefingSourceFiles(targetDir, slug);
+  if (!collected.ok) return [];
+  return collected.files.map((file) => file.path);
 }
 
 async function validateSourceLineage({

@@ -1,0 +1,180 @@
+'use strict';
+
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs/promises');
+const path = require('node:path');
+
+const { queryBrains } = require('../src/brain-query');
+
+const ROOT = path.resolve(__dirname, '..');
+const TEMPLATE_ROOT = path.join(ROOT, 'template');
+const WORKSPACE_ROOT = ROOT;
+const AGENTS = ['dev', 'deyvin', 'briefing-refiner', 'benchmark'];
+// Product/Sheldon consume the same brain through the spec-quality lens only: the PRD
+// authority must not inherit layout nodes it has no right to decide.
+const SPEC_AGENTS = ['product', 'sheldon'];
+const INDEXED_AGENTS = [...AGENTS, ...SPEC_AGENTS];
+const BRAIN_RELATIVE_PATH = '.aioson/brains/design/visual-quality.brain.json';
+const INDEX_RELATIVE_PATH = '.aioson/brains/_index.json';
+
+async function read(root, relativePath) {
+  return fs.readFile(path.join(root, relativePath), 'utf8');
+}
+
+test('the layout lens stays exactly with the implementation-oriented agents', async () => {
+  for (const root of [TEMPLATE_ROOT, WORKSPACE_ROOT]) {
+    const index = JSON.parse(await read(root, INDEX_RELATIVE_PATH));
+    const entry = index.brains.find((brain) => brain.id === 'design/visual-quality');
+
+    assert.ok(entry, `visual quality brain missing from ${root}`);
+    assert.deepEqual(entry.agents, INDEXED_AGENTS);
+    assert.equal(entry.nodes, 12);
+    assert.equal(entry.path, BRAIN_RELATIVE_PATH);
+
+    for (const agent of AGENTS) {
+      const result = await queryBrains({
+        targetDir: root,
+        agent,
+        tags: ['visual-quality'],
+        minQuality: 4
+      });
+
+      assert.equal(result.ok, true);
+      assert.deepEqual(result.warnings, []);
+      assert.equal(result.nodes.length, 9);
+      assert.ok(result.nodes.some((node) => node.id === 'vq-002' && node.v === 'AVOID'));
+    }
+  }
+});
+
+test('the spec-quality lens reaches the PRD authority without leaking layout nodes', async () => {
+  for (const root of [TEMPLATE_ROOT, WORKSPACE_ROOT]) {
+    for (const agent of SPEC_AGENTS) {
+      const result = await queryBrains({
+        targetDir: root,
+        agent,
+        tags: ['spec-quality'],
+        minQuality: 4
+      });
+
+      assert.equal(result.ok, true);
+      assert.deepEqual(result.warnings, []);
+      assert.deepEqual(
+        result.nodes.map((node) => node.id),
+        ['sq-001', 'sq-002', 'sq-003'],
+        `${agent} must receive exactly the specification lens`
+      );
+      // The whole point of the separate tag: Product/Sheldon never inherit the
+      // implementation nodes, so the PRD cannot start prescribing composition.
+      for (const node of result.nodes) {
+        assert.ok(
+          !node.tags.includes('visual-quality'),
+          `${node.id} carries the visual-quality tag and would leak into the PRD lens`
+        );
+      }
+    }
+  }
+});
+
+test('the specification lens keeps composition out of the PRD authority', async () => {
+  for (const root of [TEMPLATE_ROOT, WORKSPACE_ROOT]) {
+    const brain = JSON.parse(await read(root, BRAIN_RELATIVE_PATH));
+    const specNodes = brain.nodes.filter((node) => node.tags.includes('spec-quality'));
+
+    assert.equal(specNodes.length, 3);
+
+    const replaceability = specNodes.find((node) => node.id === 'sq-001');
+    assert.equal(replaceability.v, 'AVOID');
+
+    // sq-002 is the node that turns a silent `identity_status: none` into a named
+    // gap; without the boundary warning it would authorize Product to design.
+    const authority = specNodes.find((node) => node.id === 'sq-002');
+    assert.match(authority.warn, /never the composition/i);
+  }
+});
+
+test('visual quality brain and agent kernels remain template/workspace synchronized', async () => {
+  for (const relativePath of [INDEX_RELATIVE_PATH, BRAIN_RELATIVE_PATH]) {
+    assert.equal(
+      await read(WORKSPACE_ROOT, relativePath),
+      await read(TEMPLATE_ROOT, relativePath),
+      `template/workspace drift: ${relativePath}`
+    );
+  }
+
+  for (const agent of INDEXED_AGENTS) {
+    const relativePath = `.aioson/agents/${agent}.md`;
+    const [template, workspace] = await Promise.all([
+      read(TEMPLATE_ROOT, relativePath),
+      read(WORKSPACE_ROOT, relativePath)
+    ]);
+
+    assert.equal(workspace, template, `template/workspace drift: ${relativePath}`);
+
+    if (SPEC_AGENTS.includes(agent)) {
+      assert.match(template, /Specification quality intelligence \(anti-slop\)/i);
+      assert.match(template, new RegExp(`aioson brain:query \\. --agent=${agent} --tags=spec-quality`));
+      assert.match(template, /replaceability test/i);
+      // The kernel must not send the PRD authority into the layout lens.
+      assert.doesNotMatch(
+        template,
+        /--tags=visual-quality/,
+        `${agent}.md queries the layout lens it has no authority to decide`
+      );
+      continue;
+    }
+
+    if (agent === 'dev') {
+      // dev.md routes instead of inlining: the kernel is at its density budget and a
+      // non-visual feature must not pay for visual criteria it will never apply.
+      assert.match(template, /docs\/dev\/visual-implementation\.md/);
+      continue;
+    }
+
+    assert.match(template, /Visual quality intelligence \(anti-slop\)/i);
+    assert.match(template, /aioson brain:query \. --agent=/i);
+    assert.match(template, /replaceability test/i);
+  }
+});
+
+test('the routed visual-implementation doc carries the criteria dev no longer inlines', async () => {
+  const relativePath = '.aioson/docs/dev/visual-implementation.md';
+  const [template, workspace] = await Promise.all([
+    read(TEMPLATE_ROOT, relativePath),
+    read(WORKSPACE_ROOT, relativePath)
+  ]);
+
+  assert.equal(workspace, template, `template/workspace drift: ${relativePath}`);
+  assert.match(template, /aioson brain:query \. --agent=dev/);
+  assert.match(template, /replaceability test/i);
+  assert.match(template, /identity/i);
+  // The routing frontmatter is what makes the doc reachable at all.
+  assert.match(template, /^agents: \[dev, deyvin\]$/m);
+  assert.match(template, /^load_tier: trigger$/m);
+  // A project rule must outrank the brain, or a client design system cannot win.
+  // The statement itself lives in one place — brain node vq-000 — so it cannot drift.
+  assert.match(template, /vq-000/);
+  assert.match(template, /outranks every node here/i);
+});
+
+test('rule precedence over the brain is stated once, in the brain itself', async () => {
+  for (const root of [TEMPLATE_ROOT, WORKSPACE_ROOT]) {
+    const brain = JSON.parse(await read(root, BRAIN_RELATIVE_PATH));
+    const node = brain.nodes.find((n) => n.id === 'vq-000');
+
+    assert.ok(node, 'vq-000 (rule precedence) missing from the visual-quality brain');
+    assert.match(node.s, /\.aioson\/rules\//);
+    assert.match(node.p, /project rule > brain node/);
+  }
+
+  // No agent kernel may restate it — that duplication is what drifts.
+  for (const agent of INDEXED_AGENTS) {
+    const kernel = await read(TEMPLATE_ROOT, `.aioson/agents/${agent}.md`);
+    assert.doesNotMatch(
+      kernel,
+      /outranks these nodes/i,
+      `${agent}.md restates rule precedence; it belongs to brain node vq-000 only`
+    );
+  }
+});

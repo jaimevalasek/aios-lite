@@ -158,7 +158,11 @@ Skills de design disponíveis:
 - `interface-design` — Design de interfaces (dashboards, apps, ferramentas)
 - `premium-command-center-ui` — UI premium para command centers
 
-A skill `interface-design` é um **motor**: antes de desenhar, ela resolve um `identity.md` — primeiro `.aioson/briefings/{slug}/identity.md`, depois `.aioson/context/identity.md` — e aplica essa identidade em tudo que produz; sem `identity.md`, roda intent-first. O `identity.md` é extraído **uma única vez** das suas imagens de referência pela skill de processo `reference-identity-extract`, e todo consumidor do motor (`@dev`, `@ux-ui`, protótipos) herda essa resolução. Ele é *input* do motor — não um segundo design skill.
+A skill `interface-design` é um **motor**: antes de desenhar, ela resolve a autoridade visual em ordem, parando no primeiro acerto — (1) um protótipo aprovado vinculado pelo PRD (`prototype_status: current`), em **modo conformidade**; (2) o registro `identity.md` que o PRD vincula via `identity`/`identity_status`; (3) `.aioson/explorations/{slug}/identity.md` (só em modo exploração, nunca para trabalho canônico); (4) `.aioson/briefings/{slug}/identity.md`; (5) `.aioson/context/identity.md`; (6) a linguagem de componentes já estabelecida no repositório; (7) nenhuma — **modo origem**. Sem nenhum sinal, roda intent-first.
+
+Em **modo conformidade**, a skill não decide direção de novo — ela transfere a direção já aprovada: lê o protótipo e sua `## Visual direction`, extrai os tokens e a anatomia de componentes reais já expressos ali, e mapeia cada região para o componente correspondente na biblioteca do projeto. Um desvio só é válido se já estiver registrado no PRD como desvio aprovado.
+
+O `identity.md` é extraído **uma única vez** das suas imagens de referência pela skill de processo `reference-identity-extract`, e todo consumidor do motor (`@dev`, `@deyvin`, `@ux-ui`, protótipos) herda essa resolução — ele é *input* paramétrico do motor, não um segundo design skill. O arquivo legado `.interface-design/system.md` (memória de design por projeto) foi superado pelo registro de identidade sob `.aioson/`: duas camadas de continuidade visual eram livres para divergir.
 
 ## Skills de processo
 
