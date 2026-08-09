@@ -35,16 +35,16 @@
     },
     {
       "id": "vq-002",
-      "title": "Replaceability test for generic composition",
+      "title": "Replaceability test for generic composition and copy",
       "tags": ["visual-quality", "anti-slop", "layout", "ui"],
       "q": 5,
       "v": "AVOID",
-      "s": "Reject a composition that could serve any SaaS after changing only the logo, copy, and accent color. Rework it around the product's actual object, workflow, content, or environment.",
-      "p": "remove the brand name and domain nouns; if the screen still looks complete, it is probably too generic",
+      "s": "Reject a surface that could serve any SaaS after changing only the logo, domain nouns, and accent color. Rework its composition and copy around the product's actual object, workflow, content, or environment. Treat repeated em dashes as a cadence smell: keep them for a deliberate interruption or contrast, and otherwise rewrite with shorter sentences or more precise punctuation.",
+      "p": "remove the brand name and domain nouns; if the screen still looks complete, it is probably too generic; if nearby sentences repeat the same em-dash rhythm, rewrite them",
       "src": "AIOSON visual quality gate",
       "date": "2026-08-07",
-      "not": "Centered headline + two pills + abstract gradient/blob + three equal feature cards as the default opening composition",
-      "warn": "Common patterns are allowed when the active identity, product evidence, and hierarchy give them a specific reason.",
+      "not": "Centered headline + two pills + abstract gradient/blob + three equal feature cards as the default opening composition, paired with copy that repeatedly joins asides or claims through em dashes",
+      "warn": "Common patterns and an occasional em dash are allowed when intent gives them a specific reason. Preserve quotations, code, commands, and established brand punctuation.",
       "see": ["vq-001", "vq-004"]
     },
     {
@@ -133,16 +133,16 @@
     },
     {
       "id": "sq-001",
-      "title": "Replaceability test for a generic specification",
+      "title": "Replaceability test for a generic specification and prose",
       "tags": ["spec-quality", "anti-slop", "prd", "specification"],
       "q": 5,
       "v": "AVOID",
-      "s": "Reject a PRD whose vision, capability map, or acceptance criteria still read complete after the domain nouns are removed. Rewrite them around the object, decision, and evidence this product actually owns.",
-      "p": "strip the domain nouns from Vision and the CAP outcomes; if the text still reads complete, the specification is generic",
+      "s": "Reject a PRD whose vision, capability map, or acceptance criteria still read complete after the domain nouns are removed. Rewrite them around the object, decision, and evidence this product actually owns. Also reject repeated em-dash cadence that substitutes rhythm for precise relationships; keep an em dash only for deliberate interruption or contrast and otherwise use direct sentences or more precise punctuation.",
+      "p": "strip the domain nouns from Vision and CAP outcomes; if the text still reads complete, the specification is generic; scan neighboring sentences for repeated em-dash rhythm",
       "src": "AIOSON product authority and specification quality gate",
       "date": "2026-08-08",
-      "not": "A vision like \"a modern, intuitive platform to manage X\", capabilities named after screens, or acceptance criteria asserting that the interface is responsive and intuitive",
-      "warn": "Specificity is not novelty: a conventional capability stated in this product's own terms passes, and invented differentiation does not.",
+      "not": "A vision like \"a modern, intuitive platform to manage X\", capabilities named after screens, acceptance criteria asserting that the interface is responsive and intuitive, or prose that chains claims through repeated em dashes",
+      "warn": "Specificity is not novelty: a conventional capability stated in this product's own terms passes, and invented differentiation does not. Preserve quotations, code, commands, and established brand punctuation.",
       "see": ["sq-002", "vq-002"]
     },
     {

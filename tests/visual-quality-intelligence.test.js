@@ -43,7 +43,10 @@ test('the layout lens stays exactly with the implementation-oriented agents', as
       assert.equal(result.ok, true);
       assert.deepEqual(result.warnings, []);
       assert.equal(result.nodes.length, 9);
-      assert.ok(result.nodes.some((node) => node.id === 'vq-002' && node.v === 'AVOID'));
+      const replaceability = result.nodes.find((node) => node.id === 'vq-002');
+      assert.equal(replaceability.v, 'AVOID');
+      assert.match(replaceability.s, /repeated em dashes/i);
+      assert.match(replaceability.warn, /quotations, code, commands/i);
     }
   }
 });
@@ -65,6 +68,9 @@ test('the spec-quality lens reaches the PRD authority without leaking layout nod
         ['sq-001', 'sq-002', 'sq-003'],
         `${agent} must receive exactly the specification lens`
       );
+      const replaceability = result.nodes.find((node) => node.id === 'sq-001');
+      assert.match(replaceability.s, /repeated em-dash cadence/i);
+      assert.match(replaceability.warn, /quotations, code, commands/i);
       // The whole point of the separate tag: Product/Sheldon never inherit the
       // implementation nodes, so the PRD cannot start prescribing composition.
       for (const node of result.nodes) {

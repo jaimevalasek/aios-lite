@@ -69,6 +69,13 @@ test('benchmark kernel forces autonomous expansion, research, implementation qua
   assert.match(kernel, /Never fabricate sources, citations, research, or findings/i);
   assert.match(kernel, /mature libraries/i);
   assert.match(kernel, /premium visual direction/i);
+  assert.match(kernel, /Read `design_skill` only from project context/i);
+  assert.match(kernel, /load exactly one contained package/i);
+  assert.match(kernel, /\.aioson\/skills\/design\/\{design_skill\}\/SKILL\.md/i);
+  assert.match(kernel, /\.aioson\/installed-skills\/\{design_skill\}\/SKILL\.md/i);
+  assert.match(kernel, /single visual system/i);
+  assert.match(kernel, /Never auto-select `interface-design`/i);
+  assert.match(kernel, /repeated em-dash cadence/i);
   assert.match(kernel, /responsive/i);
   assert.match(kernel, /accessib/i);
   assert.match(kernel, /reduced motion/i);
