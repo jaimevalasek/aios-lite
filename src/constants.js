@@ -467,14 +467,18 @@ const AGENT_DEFINITIONS = [
     flags: [
       { name: 'mode', value: 'framework_target|app_target', description: 'Target mode for security review' },
       { name: 'feature', value: '<slug>', description: 'Feature slug (required for app_target)' },
-      { name: 'scope', value: '<scope>', description: 'Target scope (required for app_target)' }
+      { name: 'scope', value: '<scope>', description: 'Target scope (required for app_target)' },
+      { name: 'scope-mode', value: 'feature|simple-plan|paths|routes|project', description: 'What to review; asked when not supplied, and feature/simple-plan without a slug lists the candidates' },
+      { name: 'paths', value: '<paths>', description: 'Explicit folders/files for --scope-mode=paths' },
+      { name: 'routes', value: '<routes>', description: 'Explicit local routes/URL for --scope-mode=routes' },
+      { name: 'report', value: 'full|none', description: 'HTML report bundle or economy mode without it (default full)' }
     ],
     dependsOn: [
       '.aioson/context/project.context.md',
       '.aioson/context/prd-{slug}.md (active feature)',
       '.aioson/context/implementation-plan-{slug}.md (approved paths and risk surfaces)'
     ],
-    output: '.aioson/context/security-findings-{slug}.json + .aioson/pentester/{run_id}/relatorios/*.html'
+    output: '.aioson/context/security-findings-{slug}.json + .aioson/pentester/{run_id}/relatorios/*.html when --report=full'
   },
   {
     id: 'qa',

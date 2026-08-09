@@ -203,7 +203,9 @@ module.exports = {
     help_qa_report:
       'aioson qa:report [path] [--html] [--json] [--locale=es]',
     help_pentester_report:
-      'aioson pentester:report [ruta] --feature=<slug> [--json] [--locale=es]',
+      'aioson pentester:report [ruta] [--feature=<slug>] [--list] [--json] [--locale=es]',
+    help_feature_list:
+      'aioson feature:list [ruta] [--status=<status[,status2]>] [--limit=N] [--json] [--locale=es]',
     help_harness_check:
       'aioson harness:check [path] --slug=<slug> [--criteria=C1,C2] [--timeout=<ms>] [--json] [--locale=es]',
     help_harness_retro:
@@ -1079,8 +1081,20 @@ module.exports = {
     not_found: 'No se encontro reporte QA. Ejecuta: aioson qa:run o aioson qa:scan',
     html_report_written: 'Reporte HTML escrito: {path}'
   },
+  feature_list: {
+    title: 'Features registradas en este proyecto ({count}):',
+    item: '{marker} {slug} - {status} (inicio {started})',
+    empty: 'Todavia no hay features registradas en .aioson/context/features.md.',
+    truncated: '... y {hidden} mas (usa --limit=0 para listarlas todas).'
+  },
   pentester_report: {
-    feature_required: 'pentester:report requiere --feature=<slug>.',
+    feature_required: 'pentester:report requiere --feature=<slug>. Ejecutalo sin --feature para listar las ejecuciones disponibles.',
+    list_title: 'Ejecuciones del Pentester disponibles para informe ({count}):',
+    list_item: '  {feature} - {findings} hallazgo(s), {open} abiertos, {report}',
+    list_has_report: 'informe HTML ya generado',
+    list_no_report: 'sin informe HTML todavia',
+    list_empty: 'No se encontro ningun artefacto de hallazgos del Pentester en .aioson/context/.',
+    list_hint: 'Genera uno con: aioson pentester:report . --feature=<slug> --json',
     artifact_not_found: 'No se encontro el artefacto de hallazgos del Pentester: {path}',
     feature_mismatch: 'El artefacto pertenece a "{actual}", se esperaba "{expected}".',
     invalid_artifact: 'No se pudieron generar los informes del Pentester: {reason}',

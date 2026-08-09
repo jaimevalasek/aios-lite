@@ -37,6 +37,27 @@ Você > auth-convites
              [2] app_target — auditar código da sua aplicação
 Você > 2 — app_target
 
+@pentester > O que revisar?
+             [1] uma feature registrada
+             [2] um simple plan
+             [3] pastas/arquivos específicos
+             [4] rotas/URL local
+             [5] todas as superfícies do projeto (mais tokens)
+Você > 1 — uma feature
+
+@pentester > [aioson feature:list . --json]
+             Qual feature?
+             [1] auth-convites — in_progress (início 2026-08-02)
+             [2] checkout-rework — done (início 2026-07-19)
+             [3] billing-import — paused (início 2026-07-04)
+Você > 1
+
+@pentester > Relatório HTML?
+             [1] full — pacote de quatro páginas + JSON (mais tokens)
+             [2] none — só o JSON + resumo na resposta (economiza tokens;
+                 dá para gerar o pacote depois sem refazer os probes)
+Você > 2 — none
+
 @pentester > Confirme o escopo da feature:
              Arquivos principais? Fluxos cobertos?
 Você > src/auth/invite.js, src/routes/auth.js, src/middleware/auth.js
@@ -233,6 +254,10 @@ O JSON tem IDs estáveis. Outros agentes (`@qa`, `@validator`) podem referenciar
 |---|---|
 | Quero auditar o próprio framework AIOSON | Use modo `framework_target` — superfícies diferentes (memória, handoffs, tool invocation). |
 | Quero auditar supply chain | O `@pentester` cobre `supply_chain_integrity` (TS-09) quando você menciona mudanças em `package.json` ou CI. |
+| Quero gastar menos tokens | Rode com `--report=none` (ou `--no-report`) e um escopo estreito (`--scope-mode=paths --paths=...`). O JSON continua sendo gerado. |
+| Quero o pacote HTML só depois | Rode `aioson pentester:report .` para ver as execuções salvas (quantos findings, quais já têm HTML) e depois `aioson pentester:report . --feature={slug} --json` na escolhida — as quatro páginas saem do JSON, sem repetir os probes. |
+| Não lembro o slug da feature | `aioson feature:list .` lista todas com status e data; `--status=in_progress` filtra só as abertas. |
+| Quero varrer o projeto inteiro | `--scope-mode=project` — profundidade `comprehensive`, custo de tokens bem maior. |
 | Quero relatório em formato diferente | O `.json` é a fonte. Você pode pedir ao `@copywriter` para formatar em Markdown legível para o cliente. |
 
 ---

@@ -102,9 +102,9 @@ Consumed by the `## Help (--help)` section of each agent kernel: a standalone `-
 
 - **What:** evidence-driven adversarial security review — maps the complete declared threat surface, records explicit standards/path/route coverage, and may apply every eligible deterministic hardening that fits one bounded packet.
 - **When:** sensitive surface (auth, money, uploads, secrets, external URLs) — via `@qa`'s trigger or on demand.
-- **Options:** `--mode=app_target --feature=<slug> --scope=<target>` via `aioson agent:prompt pentester`; a direct bounded correction over a disabled manifest entry uses `review-cycle:advance ... --manual`.
-- **Typical:** `/pentester review the auth endpoints of feature accounts`.
-- **Produces:** authoritative `security-findings-{slug}.json` plus localized `.aioson/pentester/{run_id}/relatorios/{index,vulnerabilidades,correcoes,cobertura}.html`; `@qa` owns closure.
+- **Options:** `--mode=app_target --feature=<slug> --scope=<target>` via `aioson agent:prompt pentester`; `--scope-mode=feature|simple-plan|paths|routes|project` with `--paths=`/`--routes=` chooses what is reviewed, and `--report=full|none` (`--no-report`) chooses whether the HTML bundle is produced. Without those flags the agent asks once. A direct bounded correction over a disabled manifest entry uses `review-cycle:advance ... --manual`.
+- **Typical:** `/aioson:agent:pentester review the auth endpoints of feature accounts`, `/aioson:agent:pentester --scope-mode=project --report=none`. With `--scope-mode=feature` and no slug it lists the project's features (`aioson feature:list`) and asks which one.
+- **Produces:** authoritative `security-findings-{slug}.json` always, plus localized `.aioson/pentester/{run_id}/relatorios/{index,vulnerabilidades,correcoes,cobertura}.html` when `--report=full`; economy mode summarizes in the response and the bundle can still be built later — `aioson pentester:report .` lists the persisted runs, `aioson pentester:report . --feature=<slug> --json` builds one. `@qa` owns closure.
 - **Next:** `@dev` once for cross-cutting findings, or back to `@qa`; Pentester never self-accepts a fix.
 
 ## @qa

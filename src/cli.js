@@ -220,6 +220,7 @@ const { runFeatureClose } = require('./commands/feature-close');
 const { runFeatureArchive, runFeatureSweep } = require('./commands/feature-archive');
 const { runFeatureExport } = require('./commands/feature-export');
 const { runFeatureCurrent } = require('./commands/feature-current');
+const { runFeatureList } = require('./commands/feature-list');
 const { runDossierInit, runDossierShow, runDossierAddFinding, runDossierAddCodemap, runDossierLinkRule, runDossierCompact } = require('./commands/dossier');
 const { runDossierAddResearch } = require('./commands/dossier-add-research');
 const { runDossierAudit } = require('./commands/dossier-audit');
@@ -823,6 +824,8 @@ const JSON_SUPPORTED_COMMANDS = new Set([
   'feature-export',
   'feature:current',
   'feature-current',
+  'feature:list',
+  'feature-list',
   'dossier:init',
   'dossier-init',
   'dossier:show',
@@ -1055,6 +1058,7 @@ function printHelp(t, logger) {
   logHelpLine(t, logger, 'cli.help_qa_scan');
   logHelpLine(t, logger, 'cli.help_qa_report');
   logHelpLine(t, logger, 'cli.help_pentester_report');
+  logHelpLine(t, logger, 'cli.help_feature_list');
   logHelpLine(t, logger, 'cli.help_harness_check');
   logHelpLine(t, logger, 'cli.help_harness_retro');
   logHelpLine(t, logger, 'cli.help_harness_preview');
@@ -1894,6 +1898,8 @@ async function main() {
       result = await runFeatureExport({ args, options, logger: commandLogger });
     } else if (command === 'feature:current' || command === 'feature-current') {
       result = await runFeatureCurrent({ args, options, logger: commandLogger });
+    } else if (command === 'feature:list' || command === 'feature-list') {
+      result = await runFeatureList({ args, options, logger: commandLogger, t });
     } else if (command === 'dossier:init' || command === 'dossier-init') {
       result = await runDossierInit({ args, options, logger: commandLogger });
     } else if (command === 'dossier:show' || command === 'dossier-show') {

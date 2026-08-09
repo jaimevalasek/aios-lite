@@ -77,6 +77,24 @@ test('help exposes review intelligence commands in every supported locale', asyn
   }
 });
 
+test('help exposes the pentester scope pickers in every supported locale', async () => {
+  for (const locale of ['en', 'pt-BR', 'es', 'fr']) {
+    const cli = await runCli(['help', `--locale=${locale}`]);
+    assert.equal(cli.code, 0, `help failed for ${locale}`);
+    assert.equal(cli.stdout.includes('aioson feature:list'), true, `feature:list missing from ${locale} help`);
+    assert.equal(
+      cli.stdout.includes('aioson pentester:report'),
+      true,
+      `pentester:report missing from ${locale} help`
+    );
+    assert.equal(
+      /aioson pentester:report[^\n]*\[--feature=<slug>\]/.test(cli.stdout),
+      true,
+      `${locale} help still presents --feature as mandatory for pentester:report`
+    );
+  }
+});
+
 test('AC-premium-20 help exposes squad:eval in every supported locale', async () => {
   for (const locale of ['en', 'pt-BR', 'es', 'fr']) {
     const cli = await runCli(['help', `--locale=${locale}`]);

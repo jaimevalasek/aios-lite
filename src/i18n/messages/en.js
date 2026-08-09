@@ -213,7 +213,9 @@ module.exports = {
     help_qa_report:
       'aioson qa:report [path] [--html] [--json] [--locale=en]',
     help_pentester_report:
-      'aioson pentester:report [path] --feature=<slug> [--json] [--locale=en]',
+      'aioson pentester:report [path] [--feature=<slug>] [--list] [--json] [--locale=en]',
+    help_feature_list:
+      'aioson feature:list [path] [--status=<status[,status2]>] [--limit=N] [--json] [--locale=en]',
     help_harness_init:
       'aioson harness:init [path] --slug=<slug> [--mode=balanced|safe|builder|autopilot] [--locale=en]',
     help_harness_validate:
@@ -1168,8 +1170,20 @@ module.exports = {
     not_found: 'No QA report found. Run: aioson qa:run or aioson qa:scan',
     html_report_written: 'HTML report written: {path}'
   },
+  feature_list: {
+    title: 'Features registered in this project ({count}):',
+    item: '{marker} {slug} - {status} (started {started})',
+    empty: 'No features registered yet in .aioson/context/features.md.',
+    truncated: '... and {hidden} more (use --limit=0 to list all).'
+  },
   pentester_report: {
-    feature_required: 'pentester:report requires --feature=<slug>.',
+    feature_required: 'pentester:report requires --feature=<slug>. Run it without --feature to list the available runs.',
+    list_title: 'Pentester runs available for reporting ({count}):',
+    list_item: '  {feature} - {findings} finding(s), {open} open, {report}',
+    list_has_report: 'HTML report already generated',
+    list_no_report: 'no HTML report yet',
+    list_empty: 'No Pentester findings artifact found in .aioson/context/.',
+    list_hint: 'Generate one with: aioson pentester:report . --feature=<slug> --json',
     artifact_not_found: 'Pentester findings artifact not found: {path}',
     feature_mismatch: 'Findings artifact belongs to "{actual}", expected "{expected}".',
     invalid_artifact: 'Could not generate Pentester reports: {reason}',

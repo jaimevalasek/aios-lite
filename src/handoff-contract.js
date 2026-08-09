@@ -30,6 +30,7 @@ const PENTESTER_WSTG_FAMILIES = Object.freeze([
 const PENTESTER_API_TOP_10_2023 = Object.freeze(Array.from({ length: 10 }, (_, index) => `API${index + 1}:2023`));
 const PENTESTER_LLM_TOP_10_2025 = Object.freeze(Array.from({ length: 10 }, (_, index) => `LLM${String(index + 1).padStart(2, '0')}:2025`));
 const PENTESTER_RUN_ID_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z$/;
+const PENTESTER_REPORT_MODES = Object.freeze(['full', 'none']);
 
 // Contract definitions per agent stage
 const CONTRACTS = {
@@ -183,6 +184,12 @@ function validateReviewContract(reviewContract) {
   return missing;
 }
 
+function normalizeReportMode(value) {
+  if (value === undefined || value === null || String(value).trim() === '') return 'full';
+  const mode = String(value).trim().toLowerCase();
+  return PENTESTER_REPORT_MODES.includes(mode) ? mode : null;
+}
+
 function normalizeArtifactPath(value) {
   return String(value || '').trim().replace(/\\/g, '/').replace(/^\.\//, '');
 }
@@ -266,6 +273,10 @@ async function validateV2SecurityEvidence(targetDir, envelope) {
   }
   if (!['ASVS-L1', 'ASVS-L2', 'ASVS-L3'].includes(contract.assurance_level)) {
     errors.push('security: v2 review_contract.assurance_level must be ASVS-L1, ASVS-L2, or ASVS-L3');
+  }
+  const reportMode = normalizeReportMode(contract.report_mode);
+  if (!reportMode) {
+    errors.push('security: v2 review_contract.report_mode must be full or none');
   }
   for (const field of ['target_profiles', 'allowed_targets', 'forbidden_targets', 'standards', 'tools']) {
     if (!Array.isArray(contract[field])) {
@@ -353,9 +364,23 @@ async function validateV2SecurityEvidence(targetDir, envelope) {
     errors.push(`security: unsafe v2 finding targets (${unsafeFindingTargets.join(', ')})`);
   }
 
+  const incompleteRows = Array.isArray(coverage)
+    ? coverage.filter((row) => coverageStatus(row) === 'not_tested')
+    : [];
+  const pushCoverageGap = (count) => {
+    const message = `security: Pentester coverage remains incomplete (${count} not_tested row(s))`;
+    if (contract.review_depth === 'comprehensive') errors.push(message);
+    else warnings.push(message);
+  };
+
   const bundle = envelope.reportBundle;
   if (!bundle) {
-    errors.push('security: v2 report_bundle is required');
+    if (reportMode === 'none') {
+      warnings.push('security: Pentester ran with report_mode none — findings JSON only, no HTML bundle');
+      if (incompleteRows.length > 0) pushCoverageGap(incompleteRows.length);
+    } else {
+      errors.push('security: v2 report_bundle is required');
+    }
     return { errors, warnings };
   }
   if (!PENTESTER_RUN_ID_PATTERN.test(runId)) return { errors, warnings };
@@ -399,15 +424,10 @@ async function validateV2SecurityEvidence(targetDir, envelope) {
     }
   }
 
-  const incompleteRows = Array.isArray(coverage)
-    ? coverage.filter((row) => coverageStatus(row) === 'not_tested')
-    : [];
   if (bundle.coverage_complete === true && incompleteRows.length > 0) {
     errors.push('security: report_bundle.coverage_complete cannot be true while coverage contains not_tested rows');
   } else if (bundle.coverage_complete !== true) {
-    const message = `security: Pentester coverage remains incomplete (${incompleteRows.length} not_tested row(s))`;
-    if (contract.review_depth === 'comprehensive') errors.push(message);
-    else warnings.push(message);
+    pushCoverageGap(incompleteRows.length);
   }
 
   return { errors, warnings };

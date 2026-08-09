@@ -33,6 +33,8 @@ const BOOLEAN_FLAGS = new Set([
   // verify:artifact — pure booleans; `--advisory .` / `--no-build .` must
   // not swallow the path positional.
   'advisory', 'no-build',
+  // pentester:report — pure boolean; `--list .` must not swallow the path.
+  'list',
   // briefing:apply-feedback — pure booleans; `--confirm .` / `--declined .`
   // / `--allow-stale .` must not swallow the path positional.
   'confirm', 'declined', 'allow-stale',
