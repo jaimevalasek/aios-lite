@@ -50,12 +50,16 @@ const VOID_OR_OPAQUE = new Set([
   'script', 'style', 'br', 'img', 'input', 'hr', 'meta', 'link', 'source', 'track', 'area', 'col', 'embed', 'wbr'
 ]);
 
+// Presence markers for the states a finished surface is expected to render.
+// A missing marker is a warning, never a blocking finding, so these are matched
+// in the project's authoring languages: markup written in pt-BR would otherwise
+// report a state as absent purely because it was not named in English.
 const STATE_MARKERS = [
-  { state: 'loading', re: /\bis-loading\b|\bloading\b|\bskeleton\b|\bspinner\b|aria-busy/i },
-  { state: 'empty', re: /\bempty-state\b|\bis-empty\b|\bempty\b|\bno-results\b|\bnenhum\b/i },
-  { state: 'error', re: /\bis-error\b|\bhas-error\b|\berror-state\b|\berror\b|\berro\b|aria-invalid/i },
-  { state: 'disabled', re: /:disabled\b|\bdisabled\b|aria-disabled/i },
-  { state: 'focus', re: /:focus\b|:focus-visible\b|\bfocus-ring\b/i }
+  { state: 'loading', re: /\bis-loading\b|\bloading\b|\bskeleton\b|\bspinner\b|aria-busy|\bcarregando\b|\bcarregamento\b/i },
+  { state: 'empty', re: /\bempty-state\b|\bis-empty\b|\bempty\b|\bno-results\b|\bnenhum\b|\bvazio\b|\bsem-resultados\b/i },
+  { state: 'error', re: /\bis-error\b|\bhas-error\b|\berror-state\b|\berror\b|\berro\b|aria-invalid|\bfalha\b/i },
+  { state: 'disabled', re: /:disabled\b|\bdisabled\b|aria-disabled|\bdesabilitado\b|\bdesativado\b/i },
+  { state: 'focus', re: /:focus\b|:focus-visible\b|\bfocus-ring\b|\bfoco\b/i }
 ];
 
 const INTERACTIVE = /<button|<input|<select|<textarea|<form|addEventListener|onclick=/i;
@@ -228,10 +232,16 @@ function analyzeVisualSources({ html = '', css = '' } = {}) {
   // Decorative blob: absolutely positioned, fully rounded, blurred. Three
   // co-occurring properties in one rule — a shape that exists to decorate and
   // nothing else. Any two of them alone is ordinary UI.
+  //
+  // "Fully rounded" means a circle/ellipse (50%) or the pill idiom (999px and
+  // up). A modest radius does not qualify: an absolutely positioned, blurred
+  // panel with `border-radius: 9px` is a soft glow behind a card, not a blob,
+  // and this is the blocking tier — it has to stay near-zero false positive.
+  const FULLY_ROUNDED = /border-radius\s*:\s*(?:50%|\d{3,}px|9{3,})/i;
   const blobs = ruleBlocks(styleText).filter((block) => {
     const body = block.body;
     return /position\s*:\s*(absolute|fixed)/i.test(body)
-      && /border-radius\s*:\s*(50%|9+px|9999)/i.test(body)
+      && FULLY_ROUNDED.test(body)
       && /filter\s*:\s*[^;]*blur\s*\(/i.test(body);
   }).map((block) => block.selector);
 

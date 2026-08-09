@@ -110,6 +110,50 @@ test('a blob needs all three properties — a rounded avatar is not a finding', 
   assert.equal(result.issues.filter((i) => /decorative blob/.test(i)).length, 0);
 });
 
+test('a modest radius is a soft glow, not a blob — the blocking tier stays precise', () => {
+  // All three blob properties co-occur, but the radius is 9px: this is a glow
+  // panel behind a card, and flagging it would be a false positive in the tier
+  // that is supposed to be provable from the text alone.
+  const glow = `<style>
+  .glow { position: absolute; border-radius: 9px; filter: blur(40px); background: #7c3aed; inset: 0; }
+  .a { padding: 8px; } .b { gap: 16px; } .c { color: #111; } .d { margin: 4px; }
+  .e { font-size: 14px; } .f { border-radius: 8px; } .g { background: #fff; }
+  </style><div class="glow"></div>`;
+  const result = analyzeVisualSources({ html: glow });
+  assert.equal(result.applicable, true);
+  assert.equal(result.issues.filter((i) => /decorative blob/.test(i)).length, 0);
+
+  // The pill idiom and an explicit circle still are blobs.
+  for (const radius of ['999px', '9999px', '50%']) {
+    const blob = glow.replace('border-radius: 9px', `border-radius: ${radius}`);
+    const flagged = analyzeVisualSources({ html: blob });
+    assert.equal(
+      flagged.issues.filter((i) => /decorative blob/.test(i)).length,
+      1,
+      `border-radius: ${radius} should still read as a decorative blob`
+    );
+  }
+});
+
+test('state markers are recognized in the authoring language, not only in English', () => {
+  const ptBr = `<style>
+  .carregando { opacity: .5; padding: 8px; }
+  .vazio { color: #666; margin: 16px; }
+  .erro { color: #b00; padding: 4px; }
+  button:disabled { opacity: .4; }
+  button:focus { outline: 2px solid #333; }
+  .a { gap: 8px; } .b { font-size: 14px; } .c { background: #fff; }
+  </style><form><button class="carregando">Salvar</button></form>`;
+  const result = analyzeVisualSources({ html: ptBr });
+  assert.equal(result.applicable, true);
+  assert.equal(result.metrics.interactive_surface, true);
+  assert.deepEqual(
+    result.metrics.states_missing,
+    [],
+    'pt-BR markup must not report states as absent purely because they were not named in English'
+  );
+});
+
 test('utility-class markup reports not-applicable instead of inventing a verdict', () => {
   const tailwindish = '<div class="flex items-center gap-4 rounded-xl bg-slate-900 p-6 text-sm">ok</div>';
   const result = analyzeVisualSources({ html: tailwindish });
