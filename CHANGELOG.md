@@ -2,9 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## [1.48.0] - 2026-08-09
 
 ### Added
+- **Scoped, economical security reviews** — `@pentester` now resolves what to review before it probes anything. `--scope-mode=feature|simple-plan|paths|routes|project` bounds the surface, `--paths`/`--routes` name it explicitly, and `--report=full|none` decides whether the run also produces the HTML bundle. Flags win, an unambiguous request answers on its own, and only a real remaining fork reaches the user. With `report_mode: none` the missing report bundle becomes a warning instead of a contract error, and incomplete coverage escalates in its place, so economy mode never buys silence.
+- **`pentester:report --list`** — enumerates the runs that can still be reported, with their finding counts and whether an HTML report already exists, instead of failing on a `--feature` slug the user had to guess.
+- **`feature:list`** — enumerates the features registered in `features.md` with status, dates, and the active one marked. `feature:current` answers which feature is active; this answers which features exist, which is what a scoped review needs before it can bind itself to a slug. Supports `--status=`, `--limit=`, and `--json`.
 - **Identity binding across the workflow** — the extracted `identity.md` visual record now travels with the prototype instead of dying at the briefing boundary. The prototype manifest declares the record it was built from, the PRD carries `identity`/`identity_status` (`current`, `project`, or `none`), and `prototype:check` fails when that record is dropped, borrowed from another feature, dangling, non-canonical (`scope: exploration`), or contradicts the manifest. A PRD that legitimately has no identity stays green.
 - **`rule:new`** — scaffolds a project-authored rule under `.aioson/rules/` with valid routing frontmatter (`agents`, `paths`, `triggers`, `task_types`, `priority`, `load_tier`), so a project can extend agent behavior without adding an agent. `verify:artifact --kind=rule` then proves the rule is routable and that its scaffold placeholders were replaced.
 - **Routed visual-implementation guidance** — `.aioson/docs/dev/visual-implementation.md` carries the anti-slop and visual-authority criteria for `@dev`/`@deyvin`, loaded only when the work is actually visual.
@@ -22,8 +25,11 @@ All notable changes to this project will be documented in this file.
 - Visual continuity has one canonical home. The legacy `.interface-design/system.md` design-memory file is superseded by the identity record under `.aioson/`; two continuity layers were free to drift.
 - Rule-over-brain precedence is stated once, as brain node `vq-000`, instead of being restated in each agent kernel.
 - `@sheldon` now blocks approval when a material state the approved prototype renders (loading, empty, error, permission-denied, responsive) has neither an acceptance criterion nor a recorded deferral.
+- The `@pentester` kernel resolves scope and report mode as one step against `review-contract-and-findings.md`, and persists `scope_target`/`target_scope`/`report_mode` into the v2 contract before the first probe.
 
 ### Fixed
+- **The decorative-blob finding no longer fires on a soft glow.** It requires a fully rounded shape, but the radius pattern also matched `9px`, so an absolutely positioned, blurred panel behind a card was reported as decoration — a false positive in the blocking tier, which is the one tier that must be provable from the text alone. It now matches a circle (`50%`) or the pill idiom (`999px` and up).
+- **Visual state coverage is measured in the authoring language.** The loading, empty, error, disabled, and focus markers were English-first with partial pt-BR, so pt-BR markup was reported as missing states it actually rendered. `carregando`, `vazio`, `falha`, `desabilitado`/`desativado`, and `foco` now count, matching the EN + pt-BR coverage `kind=copy` already had.
 - `verify:artifact --advisory` now actually exits 0 at the shell. The CLI wrapper fails the process for any result carrying `ok: false`, which silently overrode the advisory decision for every kind — the command printed `ADVISORY` and still exited 1. The report carries an explicit `exitCode`, which the wrapper honors first. The existing coverage only asserted in-process, so the override was invisible.
 - `@dev` and `@deyvin` no longer route unresolved visual decisions to `@ux-ui`, which is an opt-in detour and not part of the implementation chain; they resolve from the identity binding and prototype, or escalate to `@product`.
 
