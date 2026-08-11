@@ -207,8 +207,15 @@ function globToRegex(glob) {
     const char = normalized[i];
     const next = normalized[i + 1];
     if (char === '*' && next === '*') {
-      out += '.*';
-      i += 1;
+      // `**/` also matches zero directories, so `**/migrations/**` covers
+      // both `migrations/x.php` and `database/migrations/x.php`.
+      if (normalized[i + 2] === '/') {
+        out += '(?:.*/)?';
+        i += 2;
+      } else {
+        out += '.*';
+        i += 1;
+      }
     } else if (char === '*') {
       out += '[^/]*';
     } else {
@@ -223,7 +230,10 @@ function pathMatchesPattern(filePath, pattern) {
   const file = normalizeSlashes(filePath);
   const normalizedPattern = normalizeSlashes(pattern);
   if (!file || !normalizedPattern) return false;
-  if (normalizedPattern.endsWith('/**')) {
+  // The directory-prefix fast path only applies to a literal prefix. A pattern
+  // like `**/migrations/**` used to fall in here and compare against the
+  // literal string `**/migrations`, matching nothing at all.
+  if (normalizedPattern.endsWith('/**') && !normalizedPattern.slice(0, -3).includes('*')) {
     const prefix = normalizedPattern.slice(0, -3);
     return file === prefix || file.startsWith(`${prefix}/`);
   }

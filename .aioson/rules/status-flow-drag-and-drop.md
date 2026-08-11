@@ -10,6 +10,7 @@ aliases: [quadro, funil, arrastar e soltar]
 entities: [Kanban, Board, Pipeline, Stage, Column, Card, Lane, Queue]
 retrieval_intents: [implementation, feature, planning]
 modes: [planning, executing]
+guard_surfaces: [ui]
 ---
 
 # Drag-and-Drop for Recurrent Status Flows

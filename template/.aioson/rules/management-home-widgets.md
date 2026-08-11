@@ -10,6 +10,7 @@ aliases: [painel, indicadores, visão geral]
 entities: [Dashboard, Widget, KPI, Chart, Indicator, Metric, Report, Home]
 retrieval_intents: [implementation, feature, planning]
 modes: [planning, executing]
+guard_surfaces: [ui]
 ---
 
 # Management Home: Decision-Driving Widgets

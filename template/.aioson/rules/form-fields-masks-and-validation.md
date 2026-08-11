@@ -10,6 +10,7 @@ aliases: [formulário, cadastro, campo, input]
 entities: [Form, Input, Field, Validation, Mask, Error state]
 retrieval_intents: [implementation, feature, planning]
 modes: [planning, executing]
+guard_surfaces: [ui]
 ---
 
 # Form Fields: Masks and Validation

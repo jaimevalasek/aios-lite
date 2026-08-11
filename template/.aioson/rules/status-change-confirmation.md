@@ -10,6 +10,7 @@ aliases: [confirmação, exclusão, modal de confirmação, cancelar]
 entities: [Status, Confirmation, Modal, Dialog, Destructive action]
 retrieval_intents: [implementation, feature, planning]
 modes: [planning, executing]
+guard_surfaces: [ui]
 ---
 
 # Status Change and Destructive Action Confirmation

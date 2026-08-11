@@ -3,6 +3,7 @@
 const path = require('node:path');
 const { buildContextBrief, extractDocConstraints } = require('./context-brief');
 const { parseFrontmatter, readFileSafe } = require('./preflight-engine');
+const { parseListValue, pathMatchesPattern } = require('./context-selector');
 
 // Harness-agnostic core for `context:guard`.
 //
@@ -25,11 +26,52 @@ const HARD_SIGNAL = /(?:triggers|paths|entities|aliases|task_types):/;
 // rules (e.g. agent prompt structure). Generic baseline rules remain silent.
 const DOMAIN_SIGNAL = /(?:entities|aliases):/;
 
-// A guard rule that declares `paths` is a contract over those files. It may
-// still surface in the brief via fuzzy trigger/description keyword overlap when
-// an UNRELATED file is edited — but it must only inject when the edited path is
-// actually in scope. This `paths:` reason is the proof the file matched.
-const PATH_MATCH_SIGNAL = /\bpaths:/;
+// A rule that declares `paths` is a contract over those files. It may still
+// surface in the brief via fuzzy trigger/description keyword overlap when an
+// UNRELATED file is edited — so the guard verifies the scope itself against
+// the edited path (the brief's reason string does not reliably carry a
+// `paths:` marker even for in-scope files).
+function guardPathCandidates(targetDir, filePath) {
+  const raw = String(filePath || '');
+  if (!raw) return [];
+  const candidates = [raw];
+  try {
+    const rel = path.relative(targetDir, path.resolve(targetDir, raw));
+    if (rel && !rel.startsWith('..')) candidates.push(rel);
+  } catch { /* keep the raw candidate */ }
+  return candidates;
+}
+
+function ruleInPathScope(frontmatter, pathCandidates) {
+  const patterns = parseListValue(frontmatter.paths || frontmatter.globs);
+  if (patterns.length === 0) return true;
+  return pathCandidates.some((candidate) =>
+    patterns.some((pattern) => pathMatchesPattern(candidate, pattern)));
+}
+
+// `guard_surfaces:` lets a rule bind its injection to a kind of artifact.
+// Today the only kind is `ui`: markup/style files, product docs, and scripts
+// that visibly touch the DOM. A universal interaction rule (forms, kanban,
+// confirmation modals) is noise inside CLI sources, JSON data, or a Node
+// harness even when their content mentions its keywords — files ABOUT forms
+// are not forms.
+const UI_FILE_EXTENSIONS = new Set([
+  '.html', '.htm', '.css', '.scss', '.sass', '.less',
+  '.jsx', '.tsx', '.vue', '.svelte', '.astro'
+]);
+const DOC_FILE_EXTENSIONS = new Set(['.md', '.mdx']);
+const SCRIPT_FILE_EXTENSIONS = new Set(['.js', '.mjs', '.cjs', '.ts', '.mts', '.cts']);
+const DOM_MARKERS = /document\s*\.\s*(?:getElementById|querySelector|querySelectorAll|createElement|addEventListener|body)|classList\s*\.|innerHTML|<\/?[a-z][a-z0-9-]*(?:\s[^>]*)?>|className\s*=|useState\s*\(|createRoot\s*\(/i;
+
+function detectSurfaceKinds(filePath, content) {
+  const kinds = new Set();
+  const ext = path.extname(String(filePath || '')).toLowerCase();
+  if (UI_FILE_EXTENSIONS.has(ext)) kinds.add('ui');
+  // Product/spec docs carry interaction contracts (briefings, manifests, PRDs).
+  else if (DOC_FILE_EXTENSIONS.has(ext)) kinds.add('ui');
+  else if (SCRIPT_FILE_EXTENSIONS.has(ext) && DOM_MARKERS.test(String(content || ''))) kinds.add('ui');
+  return kinds;
+}
 
 // Tunable relevance gate.
 const GUARD_GATE = {
@@ -81,13 +123,23 @@ function ruleDeclaresPaths(frontmatter) {
   return Boolean(frontmatter && (frontmatter.paths || frontmatter.globs));
 }
 
-function ruleAllowsGuard(rule, frontmatter) {
+function ruleAllowsGuard(rule, frontmatter, surfaceKinds = null, pathCandidates = null) {
   const reason = rule.reason || '';
+  // Path scope is a contract for EVERY guard injection, domain signal or not:
+  // a rule that declares `paths` must never inject on fuzzy keyword spill from
+  // a file outside them.
+  if (ruleDeclaresPaths(frontmatter) && pathCandidates && !ruleInPathScope(frontmatter, pathCandidates)) {
+    return false;
+  }
+  // Surface scope: a rule that declares `guard_surfaces` only injects when the
+  // edited artifact is one of those kinds.
+  if (surfaceKinds) {
+    const surfaces = parseListValue(frontmatter.guard_surfaces)
+      .map((kind) => String(kind).trim().toLowerCase());
+    if (surfaces.length > 0 && !surfaces.some((kind) => surfaceKinds.has(kind))) return false;
+  }
   if (DOMAIN_SIGNAL.test(reason)) return true;
   if (!truthyFrontmatter(frontmatter.guard) || !HARD_SIGNAL.test(reason)) return false;
-  // Path-scoped guard rule: inject only when the edited file is genuinely in its
-  // declared path scope, never on fuzzy keyword spill from an unrelated file.
-  if (ruleDeclaresPaths(frontmatter) && !PATH_MATCH_SIGNAL.test(reason)) return false;
   return true;
 }
 
@@ -116,13 +168,13 @@ function normalizeRuleLine(value) {
 // Read each salient rule file and extract ITS OWN constraints — so the
 // injection is attributed per rule and never carries the generic concern-based
 // constraints the brief aggregates from the whole selection.
-async function buildRuleBlocks(targetDir, salient, gate) {
+async function buildRuleBlocks(targetDir, salient, gate, surfaceKinds = null, pathCandidates = null) {
   const blocks = [];
   for (const rule of salient) {
     const content = await readFileSafe(path.join(targetDir, rule.path));
     if (!content) continue;
     const frontmatter = parseFrontmatter(content);
-    if (!ruleAllowsGuard(rule, frontmatter)) continue;
+    if (!ruleAllowsGuard(rule, frontmatter, surfaceKinds, pathCandidates)) continue;
     const extracted = extractDocConstraints(content);
     const constraints = dedupeStrings(extracted.constraints).slice(0, gate.maxConstraints);
     const constraintSet = new Set(constraints.map(normalizeRuleLine));
@@ -185,7 +237,9 @@ async function buildGuardResponse(event, targetDir, options = {}) {
   if (ruled.length === 0) return emptyResponse();
   if (!confidenceAllows(brief.confidence, gate)) return emptyResponse();
 
-  const ruleBlocks = await buildRuleBlocks(targetDir, ruled, gate);
+  const surfaceKinds = detectSurfaceKinds(filePath, content);
+  const pathCandidates = guardPathCandidates(targetDir, filePath);
+  const ruleBlocks = await buildRuleBlocks(targetDir, ruled, gate, surfaceKinds, pathCandidates);
   if (ruleBlocks.length === 0) return emptyResponse();
 
   const additionalContext = formatInjectionText(filePath, ruleBlocks);
@@ -201,6 +255,7 @@ async function buildGuardResponse(event, targetDir, options = {}) {
 module.exports = {
   buildGuardResponse,
   deriveQuery,
+  detectSurfaceKinds,
   extractEditedContent,
   matchedRules,
   ruleAllowsGuard,

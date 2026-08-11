@@ -5,7 +5,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
 const os = require('node:os');
 const path = require('node:path');
-const { buildGuardResponse } = require('../src/context-guard');
+const { buildGuardResponse, detectSurfaceKinds } = require('../src/context-guard');
 const { runContextGuard, resolveGuardAgent } = require('../src/commands/context-guard');
 
 test('context:guard resolves the active agent from explicit options before event metadata', () => {
@@ -82,6 +82,30 @@ const AGENT_STRUCTURAL_RULE = [
   '- Every agent prompt edit must preserve the language boundary, required input, and best-effort telemetry suffixes.',
   '- Best-effort context helper commands must end with `2>/dev/null || true`.',
   '- Do NOT continue into the next agent work.',
+  ''
+].join('\n');
+
+// The shipped interaction-rule shape: domain entities/aliases plus a
+// guard_surfaces binding so it only injects into UI-kind artifacts.
+const FORM_UI_RULE = [
+  '---',
+  'source_type: rule',
+  'description: "Structured form fields ship with masks and inline validation"',
+  'agents: all',
+  'modes: [executing]',
+  'task_types: [form, crud]',
+  'triggers: [form, mask, validation, cpf, cadastro]',
+  'aliases: [formulário, cadastro]',
+  'entities: [Form, Input, Mask]',
+  'guard_surfaces: [ui]',
+  'load_tier: trigger',
+  'priority: 8',
+  '---',
+  '',
+  '# Form fields',
+  '',
+  '## Required behavior',
+  '- Every structured field gets a live mask and inline validation.',
   ''
 ].join('\n');
 
@@ -319,6 +343,83 @@ test('context:guard does NOT inject a path-scoped guard rule when editing an out
     const response = await buildGuardResponse(event, dir, { tool: 'claude', agent: 'dev' });
 
     assert.deepEqual(response, {}); // out-of-scope path -> no cry-wolf injection
+  } finally {
+    await fs.rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('detectSurfaceKinds separates UI artifacts from files that merely mention UI', () => {
+  assert.ok(detectSurfaceKinds('app/cadastro.html', '').has('ui'));
+  assert.ok(detectSurfaceKinds('styles/form.css', '').has('ui'));
+  assert.ok(detectSurfaceKinds('docs/briefing.md', '').has('ui'));
+  assert.ok(detectSurfaceKinds('src/ui/form.js', "document.querySelector('#cpf').addEventListener('input', aplicar);").has('ui'));
+  assert.equal(detectSurfaceKinds('src/lib/telemetry.js', 'const STRUCTURED = /cpf|mask|form/; module.exports = {};').size, 0);
+  assert.equal(detectSurfaceKinds('brains/_index.json', '{"tags": ["forms", "kanban"]}').size, 0);
+});
+
+test('a guard_surfaces:[ui] rule stays out of non-UI files that mention its keywords (P1)', async () => {
+  const dir = await makeTmpDir();
+  try {
+    await writeProject(dir);
+    await writeFile(dir, '.aioson/rules/form-ui.md', FORM_UI_RULE);
+
+    // A measurement library ABOUT forms: keywords everywhere, no DOM in sight.
+    const nonUi = {
+      tool_name: 'Write',
+      tool_input: {
+        file_path: 'src/lib/telemetry.js',
+        content: 'const STRUCTURED = /cpf|mask|validation|cadastro/;\nfunction scanForm(source) { return STRUCTURED.test(source); }'
+      }
+    };
+    const silent = await buildGuardResponse(nonUi, dir, { tool: 'claude', agent: 'dev' });
+    const silentRules = silent._guard ? silent._guard.rules : [];
+    assert.equal(silentRules.includes('.aioson/rules/form-ui.md'), false, 'files about forms are not forms');
+
+    // The same keywords inside real markup: the rule applies.
+    const markup = {
+      tool_name: 'Write',
+      tool_input: {
+        file_path: 'app/cadastro/form.html',
+        content: '<form id="cadastro"><label for="cpf">CPF</label><input id="cpf" name="cpf" placeholder="CPF"></form>'
+      }
+    };
+    const injected = await buildGuardResponse(markup, dir, { tool: 'claude', agent: 'dev' });
+    assert.equal(injected._guard.injected, true);
+    assert.ok(injected._guard.rules.includes('.aioson/rules/form-ui.md'));
+
+    // A DOM-flavored script counts as UI even with a .js extension.
+    const domScript = {
+      tool_name: 'Write',
+      tool_input: {
+        file_path: 'src/ui/mascara.js',
+        content: "const campo = document.querySelector('#cpf');\ncampo.addEventListener('input', () => { campo.value = mascaraCPF(campo.value); });"
+      }
+    };
+    const scriptInjected = await buildGuardResponse(domScript, dir, { tool: 'claude', agent: 'dev' });
+    assert.ok(scriptInjected._guard && scriptInjected._guard.rules.includes('.aioson/rules/form-ui.md'));
+  } finally {
+    await fs.rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('declared paths bind injection even for a domain-signal rule (P1)', async () => {
+  const dir = await makeTmpDir();
+  try {
+    await writeProject(dir);
+
+    // db-naming declares paths over migrations/database. Echoing its entities
+    // and triggers from an unrelated source file used to inject via the domain
+    // signal alone; declared scope must win.
+    const event = {
+      tool_name: 'Write',
+      tool_input: {
+        file_path: 'src/notes/todo.js',
+        content: 'remember: the workspace migration renames the project table schema'
+      }
+    };
+    const response = await buildGuardResponse(event, dir, { tool: 'claude', agent: 'dev' });
+    const rules = response._guard ? response._guard.rules : [];
+    assert.equal(rules.includes('.aioson/rules/db-naming.md'), false, 'out-of-scope path must stay silent');
   } finally {
     await fs.rm(dir, { recursive: true, force: true });
   }
