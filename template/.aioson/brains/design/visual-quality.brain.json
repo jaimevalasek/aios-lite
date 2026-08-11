@@ -188,6 +188,48 @@
       "see": ["vq-003", "vq-004", "vq-007"]
     },
     {
+      "id": "vq-013",
+      "title": "UI keyframes never share names with scene keyframes",
+      "tags": ["visual-quality", "ui", "motion", "prototype"],
+      "q": 4,
+      "v": "BEST_PRACTICE",
+      "s": "A CSS animation replaces the element's entire transform, so a keyframe written for a background scene (orbit rings, drifting shapes) that carries a positioning transform like translate(-50%,-50%) will displace any UI element that reuses it. Spinners, icons, and control feedback get their own rotation- or scale-only keyframes; scene keyframes keep their centering transforms under their own names.",
+      "p": "UI spinner = rotation-only keyframe with its own name; scene keyframe with positioning transform is never reused by controls",
+      "src": "AIOSON supervised prototype build: shared `spin` keyframe displaced CEP and submit spinners ~10px during loading",
+      "date": "2026-08-11",
+      "not": "One `spin` keyframe serving both an orbiting background ring (translate + rotate) and a 16px button spinner",
+      "warn": "The same override rule hides base transforms (scale, lift) while any animation runs; keep the animated property set disjoint from the resting transform or reapply it inside the keyframe.",
+      "see": ["vq-008", "vq-014"]
+    },
+    {
+      "id": "vq-014",
+      "title": "Re-triggering a class animation requires a forced reflow",
+      "tags": ["visual-quality", "ui", "motion", "interaction", "prototype"],
+      "q": 4,
+      "v": "BEST_PRACTICE",
+      "s": "Removing and re-adding an animation class in the same synchronous block does not restart the animation — the browser coalesces the mutations. Error shakes and validation pulses silently stop firing on repeated submits. Force a reflow between remove and add (`void el.offsetWidth`) or drive the feedback with the Web Animations API.",
+      "p": "classList.remove -> void el.offsetWidth -> classList.add, only on the state that re-animates",
+      "src": "AIOSON supervised prototype build: error shake played once and never again on repeated invalid submits",
+      "date": "2026-08-11",
+      "not": "Toggling an is-error class on every validation pass and assuming the shake replays",
+      "warn": "Scope the forced reflow to the re-triggering path; a reflow on every state change is a layout-thrash tax.",
+      "see": ["vq-007", "vq-013"]
+    },
+    {
+      "id": "vq-015",
+      "title": "Live masks preserve the caret or declare append-only typing",
+      "tags": ["visual-quality", "forms", "ux", "ui", "prototype"],
+      "q": 4,
+      "v": "BEST_PRACTICE",
+      "s": "Reassigning `el.value = mask(el.value)` on input jumps the caret to the end, so editing the middle of a masked CPF/phone/date field scrambles the typing position. Production fields recompute the caret from the count of significant digits before it; a prototype may accept append-only typing but must say so in its manifest instead of presenting the jump as finished behavior.",
+      "p": "caret after mask = position of the same significant digit, not end-of-string; otherwise disclose append-only",
+      "src": "AIOSON supervised prototype build: mid-field edits jumped the caret to the end in every masked input",
+      "date": "2026-08-11",
+      "not": "Shipping value-reassignment masking as complete while mid-field edits teleport the caret",
+      "warn": "Deleting a literal separator must consume the digit before it, or backspace loops the separator back forever; test deletion paths, not only forward typing.",
+      "see": ["vq-009"]
+    },
+    {
       "id": "sq-001",
       "title": "Replaceability test for a generic specification and prose",
       "tags": ["spec-quality", "anti-slop", "prd", "specification"],
