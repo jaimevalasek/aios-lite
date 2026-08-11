@@ -64,6 +64,69 @@ const STATE_MARKERS = [
 
 const INTERACTIVE = /<button|<input|<select|<textarea|<form|addEventListener|onclick=/i;
 
+// ── interaction contracts (forms, confirmation, drag-and-drop, widgets) ──────
+// Lexical mirrors of the .aioson/rules/ interaction contracts. Same trade as
+// everything else in this file: the one near-zero-FP defect (a native browser
+// dialog, contractually banned in prototypes) is an issue; the rest are
+// presence/absence measurements a reviewer judges in context.
+
+// Bare or window-qualified native dialog call. `(?<![\w$.])` rejects method
+// calls on other objects (`modal.confirm(`) and identifiers that merely end in
+// the name (`showConfirm(`); Portuguese verbs (`confirmar(`) fail the `\s*\(`.
+const NATIVE_DIALOG = /(?<![\w$.])(?:window\s*\.\s*)?(alert|confirm|prompt)\s*\(/g;
+
+// Field-identity words that imply a structured format. Deliberately excludes
+// bare `date`/`data` (the fix is type="date", and pt-BR "data" is too common).
+const STRUCTURED_FIELD = /cpf|cnpj|\bcep\b|postal|zipcode|zip.?code|phone|telefone|celular|whatsapp|cart[aã]o|card.?number|nascimento|moeda|currency|pre[cç]o|price|valor/i;
+
+// Input types that already carry semantics; a structured field using one of
+// these is not a bare text input.
+const SEMANTIC_INPUT_TYPES = new Set(['tel', 'email', 'number', 'date', 'time', 'datetime-local', 'month', 'week', 'url']);
+
+const DESTRUCTIVE_CONTROL = /excluir|deletar|apagar|\bdelete\b|\bremove\b|remover|destroy|desativar|deactivate|arquivar|\barchive\b/i;
+const DIALOG_MARKERS = /<dialog\b|role\s*=\s*["']dialog["']|aria-modal|\bmodal\b|\bconfirm(?:ation)?-dialog\b/i;
+
+const KANBAN_MARKERS = /\bkanban\b|\bpipeline\b[\s\S]{0,600}\bstage\b|\bboard\b[\s\S]{0,600}\b(column|lane|coluna)\b/i;
+const DND_MARKERS = /\bdraggable\s*=|dragstart|dragover|dragend|ondrop\b|\bsortable\b|\bdnd\b|pointerdown/i;
+
+const MANAGEMENT_MARKERS = /\b(dashboard|cockpit|crm|erp|back.?office|painel|admin)\b/i;
+const WIDGET_MARKERS = /\b(widget|kpi|chart|metric|m[eé]trica|indicador|sparkline|graph|gr[aá]fico)\b|<canvas\b/i;
+
+/** Text of every `<script>` block plus inline `on*=` handler values. */
+function extractScriptText(html) {
+  const markup = String(html || '');
+  const out = [];
+  const scriptRe = /<script\b[^>]*>([\s\S]*?)<\/script>/gi;
+  let m;
+  while ((m = scriptRe.exec(markup))) out.push(m[1]);
+  const handlerRe = /\bon\w+\s*=\s*("[^"]*"|'[^']*')/gi;
+  while ((m = handlerRe.exec(markup))) out.push(m[1].slice(1, -1));
+  return out.join('\n');
+}
+
+/** `<input …>` tags whose identity implies a structured format but whose attributes carry no input semantics. */
+function bareStructuredInputs(html) {
+  const out = [];
+  const re = /<input\b([^>]*)>/gi;
+  let m;
+  while ((m = re.exec(String(html || '')))) {
+    const attrs = m[1] || '';
+    const attr = (name) => {
+      const found = attrs.match(new RegExp(`\\b${name}\\s*=\\s*("[^"]*"|'[^']*')`, 'i'));
+      return found ? found[1].slice(1, -1) : null;
+    };
+    const identity = [attr('name'), attr('id'), attr('placeholder'), attr('aria-label')].filter(Boolean).join(' ');
+    if (!identity || !STRUCTURED_FIELD.test(identity)) continue;
+    const type = (attr('type') || 'text').toLowerCase();
+    const hasSemantics =
+      SEMANTIC_INPUT_TYPES.has(type) ||
+      /\binputmode\s*=|\bpattern\s*=|\bmaxlength\s*=|\bautocomplete\s*=/i.test(attrs) ||
+      /mask/i.test(`${attr('class') || ''} ${attrs.match(/\bdata-[\w-]*mask[\w-]*/i) || ''}`);
+    if (!hasSemantics) out.push(identity.trim().slice(0, 60));
+  }
+  return out;
+}
+
 const CARD_TAG = /^(div|section|article|li|aside)$/i;
 const CARD_CLASS = /\b(card|panel|tile|widget)\b/i;
 
@@ -229,6 +292,18 @@ function analyzeVisualSources({ html = '', css = '' } = {}) {
   const cardNesting = maxCardNesting(markup);
   const mediaElements = (markup.match(/<(img|video|canvas|picture)\b/gi) || []).length;
 
+  // ── interaction contracts ────────────────────────────────────────────────
+  const scriptText = extractScriptText(markup);
+  const nativeDialogs = [...new Set([...scriptText.matchAll(NATIVE_DIALOG)].map((hit) => hit[1]))];
+  const unmaskedInputs = bareStructuredInputs(markup);
+  const destructiveControls = (markup.match(/<button\b[^>]*>[^<]*<\/button>|<button\b[^>]*>/gi) || [])
+    .filter((tag) => DESTRUCTIVE_CONTROL.test(tag)).length;
+  const hasDialogMachinery = DIALOG_MARKERS.test(corpus);
+  const kanbanSurface = KANBAN_MARKERS.test(markup);
+  const hasDndMarkers = DND_MARKERS.test(corpus);
+  const managementSurface = MANAGEMENT_MARKERS.test(markup);
+  const hasWidgetMarkers = WIDGET_MARKERS.test(corpus);
+
   // Decorative blob: absolutely positioned, fully rounded, blurred. Three
   // co-occurring properties in one rule — a shape that exists to decorate and
   // nothing else. Any two of them alone is ordinary UI.
@@ -262,7 +337,15 @@ function analyzeVisualSources({ html = '', css = '' } = {}) {
     states_missing: statesMissing,
     interactive_surface: interactive,
     max_card_nesting: cardNesting,
-    media_elements: mediaElements
+    media_elements: mediaElements,
+    native_dialog_calls: nativeDialogs,
+    structured_inputs_without_semantics: unmaskedInputs,
+    destructive_controls: destructiveControls,
+    dialog_machinery: hasDialogMachinery,
+    kanban_surface: kanbanSurface,
+    dnd_markers: hasDndMarkers,
+    management_surface: managementSurface,
+    widget_markers: hasWidgetMarkers
   };
 
   // ── findings ─────────────────────────────────────────────────────────────
@@ -279,6 +362,9 @@ function analyzeVisualSources({ html = '', css = '' } = {}) {
   }
   if (cardNesting >= 3) {
     issues.push(`card containers nested ${cardNesting} deep — use rows, dividers, inset sections or a dialog instead of another card`);
+  }
+  if (nativeDialogs.length > 0) {
+    issues.push(`native browser dialog call(s): ${nativeDialogs.map((name) => `${name}()`).join(', ')} — use the design system's modal/toast; native dialogs are contractually banned`);
   }
 
   if (adherence !== null && tokenTotal >= 10 && adherence < 60) {
@@ -297,6 +383,19 @@ function analyzeVisualSources({ html = '', css = '' } = {}) {
   if (interactive && statesMissing.length > 0) {
     warnings.push(`interactive surface with no marker for: ${statesMissing.join(', ')} — visual polish cannot hide an unfinished workflow`);
   }
+  if (unmaskedInputs.length > 0) {
+    const sample = unmaskedInputs.slice(0, 3).join('; ');
+    warnings.push(`${unmaskedInputs.length} structured field(s) with no input semantics (${sample}${unmaskedInputs.length > 3 ? ', …' : ''}) — a CPF/phone/currency field needs a mask, inputmode, pattern, maxlength or autocomplete (form-fields-masks-and-validation rule)`);
+  }
+  if (destructiveControls > 0 && !hasDialogMachinery) {
+    warnings.push(`${destructiveControls} destructive control(s) with no dialog machinery in the corpus — status changes and deletions confirm through a design-system modal (status-change-confirmation rule)`);
+  }
+  if (kanbanSurface && !hasDndMarkers) {
+    warnings.push('kanban/pipeline surface with no drag-and-drop markers — recurrent status flows move by drag-and-drop with an accessible fallback (status-flow-drag-and-drop rule)');
+  }
+  if (managementSurface && !hasWidgetMarkers) {
+    warnings.push('management surface with no widget/KPI/chart markers — a management home opens with decision-driving widgets (management-home-widgets rule)');
+  }
 
   return { applicable: true, metrics, issues, warnings };
 }
@@ -305,6 +404,8 @@ module.exports = {
   analyzeVisualSources,
   // exported for reuse / tests
   extractStyleBlocks,
+  extractScriptText,
+  bareStructuredInputs,
   declarations,
   ruleBlocks,
   maxCardNesting,

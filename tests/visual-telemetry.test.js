@@ -162,6 +162,65 @@ test('utility-class markup reports not-applicable instead of inventing a verdict
   assert.deepEqual(result.issues, []);
 });
 
+// Every interaction contract violated at once: native dialogs, a bare CPF/phone
+// field, a delete button with no dialog machinery, a click-only kanban, and a
+// management shell with no widget in sight. Word "modal" must not appear.
+const INTERACTION_SLOP = `<!doctype html><html><head><style>
+:root { --s: 8px; --fg: #111; } .shell { padding: var(--s); color: var(--fg); }
+.board { gap: var(--s); } .column { padding: var(--s); } .item { padding: var(--s); }
+.field { margin: var(--s); } .btn { padding: var(--s); } .top { gap: var(--s); }
+.a { font-size: 14px; } .b { background: #fff; } .c { border-radius: 8px; }
+</style></head><body class="dashboard shell">
+<form><input type="text" name="cpf" placeholder="CPF"><input type="text" id="telefone"></form>
+<div class="kanban board"><div class="column">A Fazer</div><div class="column">Feito</div></div>
+<button class="btn" onclick="if(confirm('Excluir?')) alert('ok')">Excluir cliente</button>
+</body></html>`;
+
+// The same surfaces honoring the contracts: semantic inputs, a <dialog> confirm,
+// draggable kanban items, KPI widgets. A custom \`ui.confirm()\` is not native.
+const INTERACTION_CLEAN = `<!doctype html><html><head><style>
+:root { --s: 8px; --fg: #111; } .shell { padding: var(--s); color: var(--fg); }
+.board { gap: var(--s); } .column { padding: var(--s); } .widget { padding: var(--s); }
+.kpi { margin: var(--s); } .btn { padding: var(--s); } .top { gap: var(--s); }
+.a { font-size: 14px; } .b { background: #fff; } .c { border-radius: 8px; }
+</style></head><body class="dashboard shell">
+<section class="widget kpi">Pedidos hoje: 12 (+8%)</section>
+<form><input type="text" name="cpf" inputmode="numeric" maxlength="14" placeholder="CPF">
+<input type="tel" id="telefone"></form>
+<div class="kanban board"><div class="column"><div class="item" draggable="true">PED-1</div></div></div>
+<button class="btn" data-action="excluir">Excluir cliente</button>
+<dialog id="confirm-excluir"><p>Excluir cliente?</p></dialog>
+<script>function abrir(){ ui.confirm('Excluir cliente?'); } document.addEventListener('dragstart', abrir);</script>
+</body></html>`;
+
+test('interaction contracts: every violation is measured, native dialogs are the blocking tier', () => {
+  const result = analyzeVisualSources({ html: INTERACTION_SLOP });
+  assert.equal(result.applicable, true);
+
+  assert.deepEqual(result.metrics.native_dialog_calls.sort(), ['alert', 'confirm']);
+  assert.match(result.issues.join('\n'), /native browser dialog call/);
+
+  assert.equal(result.metrics.structured_inputs_without_semantics.length, 2);
+  assert.match(result.warnings.join('\n'), /structured field\(s\) with no input semantics/);
+  assert.match(result.warnings.join('\n'), /destructive control\(s\) with no dialog machinery/);
+  assert.match(result.warnings.join('\n'), /kanban\/pipeline surface with no drag-and-drop markers/);
+  assert.match(result.warnings.join('\n'), /management surface with no widget\/KPI\/chart markers/);
+});
+
+test('interaction contracts: a conforming surface and a custom confirm() method stay silent', () => {
+  const result = analyzeVisualSources({ html: INTERACTION_CLEAN });
+  assert.equal(result.applicable, true);
+
+  // ui.confirm() is a design-system method, not window.confirm — the blocking
+  // tier must not fire on it, and none of the four contract warnings apply.
+  assert.deepEqual(result.metrics.native_dialog_calls, []);
+  assert.deepEqual(result.issues, []);
+  assert.deepEqual(
+    result.warnings.filter((w) => /input semantics|dialog machinery|drag-and-drop markers|widget\/KPI/.test(w)),
+    []
+  );
+});
+
 test('card nesting counts containers, not every wrapper div', () => {
   assert.equal(maxCardNesting('<div class="card"><div class="row"><div class="card">x</div></div></div>'), 2);
   assert.equal(maxCardNesting('<div class="card">a</div><div class="card">b</div>'), 1);

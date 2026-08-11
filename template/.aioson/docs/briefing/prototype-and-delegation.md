@@ -46,7 +46,7 @@ aioson verify:artifact . --kind=identity --file=.aioson/briefings/{slug}/identit
 `identity.md` parameterizes the one chosen design engine; its `## Component structure notes` inform the operational surface. Without images, let `interface-design` operate intent-first.
 
 - If `design_skill` names an installed preset, use only that preset.
-- If it is blank for a site/web app and the user declines references, ask which installed skill to use; do not auto-pick.
+- If it is blank, default to `interface-design` in intent-first origination mode without asking. Commit to one aesthetic register and one product-specific signature move, then originate a new layout with premium tokenized craft — palette, typography, depth, and purposeful motion honoring `prefers-reduced-motion` — at the same ambition regardless of which model executes the run. This default is declared, never silent: record `design_skill: interface-design (default)` in `prototype-manifest.md` and add one non-blocking structured finding recommending the project register a definitive `design_skill`. Reference images stay optional; when the user provides them, the identity route above still applies.
 
 If the user named another model for reference research or critique, finish explicit delegation first. Otherwise do not delegate merely because it might help.
 

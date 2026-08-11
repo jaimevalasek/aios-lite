@@ -68,6 +68,18 @@ A register is not a theme and never overrides accessibility, contrast, state cov
 - **Motion** — sharp, mechanical, short.
 - **Failure mode** — novelty without usability. The controls stay obvious even when the composition is not.
 
+## Cinematic
+
+*For: entertainment, streaming, film, games, launch pages with a film to show, immersive portfolios — anything where the media is the argument.*
+
+- **Typography** — display type at true display sizes composed over media; UI type small, quiet, and out of the frame's way.
+- **Color** — near-black ground; the palette comes from the media itself — sampled scrims and glows, not brand primaries. One accent for action.
+- **Space** — full-bleed frames. The viewport is a stage, sections are scenes; composition by frame, not by grid rows.
+- **Depth** — light instead of borders: scrims and gradients drawn from the image, glow only where legibility needs it.
+- **Texture** — the footage or artwork itself; subtle grain over flat areas binds UI to image.
+- **Motion** — choreographed: staged entrances, scroll-driven reveals, restrained parallax. Motion is the narration — and still degrades to meaningful static frames under reduced motion.
+- **Failure mode** — a trailer with buttons. Legibility scrims, visible focus, and controls that stay reachable are what separate cinema from noise.
+
 ---
 
 ## Choosing

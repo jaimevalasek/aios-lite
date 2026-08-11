@@ -101,6 +101,17 @@ Size alone is never enough. Use weight + tracking + opacity to create layers.
 Never animate layout properties (width, height, padding). Animate `transform` and `opacity` only.
 Always provide `prefers-reduced-motion: reduce` fallback.
 
+### Premium motion choreography (expressive surfaces)
+
+For landings, cinematic surfaces, and premium reveals — on top of the posture above, never instead of it:
+
+- **Easing tokens** — define two curves and reuse them everywhere (`--ease-out: cubic-bezier(.22,.61,.36,1)`, `--ease-emphasis: cubic-bezier(.83,0,.17,1)`); mixed ad-hoc easings read as jitter.
+- **Entrance choreography** — stagger sibling reveals 40–80ms apart, one direction per scene, at most ~5 staggered items before switching to grouped reveals.
+- **Scroll reveals** — IntersectionObserver + class toggle at threshold ~0.2; reveal once and never re-hide on scroll-up.
+- **Hover physics** — transform-only (scale ≤ 1.03, translate ≤ 4px) on the fast curve; shadow or glow changes ride the same duration.
+- **Parallax / pinned scenes** — subtle (≤ 10% travel), one pinned scene at a time, never hijack native scroll speed.
+- **Reduced motion** — every choreography degrades to opacity or a meaningful static frame; the page must argue equally well without motion.
+
 ---
 
 ## Operational density — admin / config / settings pages

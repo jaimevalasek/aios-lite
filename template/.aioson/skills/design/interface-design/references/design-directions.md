@@ -93,11 +93,56 @@ Rationale  : premium dark works when contrast is controlled, surfaces are few,
 
 ---
 
+## Immersive Media
+
+*For: cinema, streaming, games, entertainment, launch pages built around footage or artwork — pairs naturally with the Cinematic register.*
+
+```
+Foundation : Near-black stage (light-based depth — scrims, not borders)
+Spacing    : 8px base — scene rhythm: 8, 16, 24, 40, 64, 96
+Colors     : base=#05070a, foreground=#f5f7fa, secondary=rgba(245,247,250,.72),
+             scrim=linear-gradient(transparent → rgba(5,7,10,.92)),
+             accent sampled from the artwork, one only
+Radius     : 0 for frames, 8px/16px for controls (frames sharp, controls soft)
+Typography : display face at true display sizes (48–120px, tight leading) over media;
+             UI 13–16px, quiet, out of the frame
+Components :
+  Hero     → full-viewport media, legibility scrim, one action, one meta row
+  Rail     → edge-to-edge horizontal scroll with snap and a visible overflow cue
+  Overlay  → controls fade on idle, return on pointer/focus, always keyboard-reachable
+Rationale  : the media carries the design; UI recedes and light replaces borders.
+             Scrims keep type legible without boxing the image.
+```
+
+---
+
+## Conversion Landing
+
+*For: landing pages, product launches, campaign pages — any surface whose job is one decision.*
+
+```
+Foundation : product-evidence-first; any register sits on top
+Spacing    : section rhythm 96/128px desktop, 48/64px mobile; 8px base inside components
+Colors     : quiet ground, ONE conversion accent reserved for the primary CTA —
+             the accent appears on nothing that is not the action
+Radius     : consistent with the paired register
+Typography : the promise at display size (clamp 36–72px), proof at body size,
+             headline line length under ~14 words
+Components :
+  Hero     → promise + real product evidence + primary CTA inside the first viewport
+  Proof    → logos, numbers, testimonials with sources — never invented metrics
+  Sections → narrative order: promise → proof → capability → objection → CTA
+  CTA      → repeated at decision points with the same words and accent, nothing competing
+Rationale  : a landing converts through evidence and one unmistakable action, not
+             decoration; every section either advances the argument or leaves.
+```
+
+---
+
 ## Other directions (adapt token specs above)
 
 - **Data & Analysis** — cool blue, high-density tables, monospace for numbers, minimal chrome
 - **Editorial** — strong typographic hierarchy, generous white space, restrained color
-- **Commerce** — aspirational photography support, high contrast CTAs, smooth transitions
 - **Minimal & Calm** — near-monochrome, whitespace as design element, hairline borders only
 - **Boldness & Clarity** — stronger accent, harder contrast, one dominant focal move
 - **Utility & Function** — minimal decoration, maximum legibility, near-invisible chrome

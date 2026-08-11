@@ -94,6 +94,7 @@ Optional Web3 context fields (recommended for `project_type=dapp`):
 - `@setup` can register the initial choice.
 - `@product` and `@ux-ui` can confirm or update that choice when it is still blank.
 - `@dev` must consume the chosen `design_skill`; it must never auto-select one.
+- `@briefing-refiner` prototype work defaults to `interface-design` origination when `design_skill` is blank, recording the fallback in the prototype manifest; registering the definitive choice stays with `@product`/`@ux-ui`.
 
 ## Runtime lifecycle
 
