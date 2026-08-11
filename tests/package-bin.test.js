@@ -10,5 +10,8 @@ test('package exposes both aios and aioson CLI bins', () => {
 });
 
 test('package bounds Node test concurrency for subprocess-heavy Windows runs', () => {
-  assert.equal(pkg.scripts.test, 'node --test --test-concurrency=8');
+  assert.equal(
+    pkg.scripts.test,
+    'node --require ./tests/setup/windows-fs-retries.js --test --test-concurrency=8'
+  );
 });
