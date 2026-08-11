@@ -26,6 +26,15 @@ Create, edit, delete, archive, and restore mutate in-memory state and re-render.
 
 Render and make toggleable: loading, empty, error, populated, and permission-denied. An explicit approved defer may replace an operation, but silence may not.
 
+## Interaction patterns
+
+Before building forms or transitions, read matching `.aioson/rules/` and project docs; they are binding over these defaults.
+
+- Structured form fields (documents, phones, postal codes, dates, currency) carry working masks, correct input semantics, and inline layered validation with specific error copy in the project locale. Static unmasked inputs in a form surface are blocking.
+- Controls that change status, delete, archive, or apply a hard-to-reverse edit confirm through a design-system modal naming the action, object, and consequence.
+- A recurrent bidirectional status flow (kanban, pipeline, ordered queue) moves primarily by working drag-and-drop over mock state — drag states, drop targets, optimistic move with undo — plus an accessible menu/keyboard fallback. Destructive drop targets still confirm.
+- A management product (CRM, ERP, cockpit, admin) opens on a home with 3–6 decision-driving widgets fed by the seeded data: KPIs with unit and trend, attention indicators, each drilling into the filtered records.
+
 ## Visual engine
 
 Load the selected design skill before layout. Use semantic, product-specific tokens and realistic interface copy. Honor reduced motion, responsiveness, contrast, and the skill's stability rules. Avoid generic AI-dashboard gradients, repeated card grids, excessive pills/glows, and nested containers unless the selected identity calls for them.

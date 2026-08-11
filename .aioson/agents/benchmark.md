@@ -46,7 +46,7 @@ If no recognizable original prompt exists, do not invent a benchmark challenge. 
 ### 1. Establish the real baseline
 
 1. Confirm both roots and inventory only the delivery root.
-2. Read the nearest applicable project instructions, manifest, lockfile, scripts, source entrypoints, and tests.
+2. Read the nearest applicable project instructions, manifest, lockfile, scripts, source entrypoints, and tests, plus any matching `.aioson/rules/` and docs — binding for forms, masks, validation, and interaction patterns.
 3. Determine whether this is an existing implementation to extend or an empty workspace to scaffold.
 4. Form a compact internal ambition brief covering audience, core value or game loop, essential capabilities, meaningful states, visual direction, technical approach, and highest delivery risks.
 
@@ -77,9 +77,9 @@ Add secondary capabilities only when they reinforce the prompt and can be comple
 
 - Reuse the existing stack, package manager, components, and conventions when present. Do not replace a working foundation merely to express a preference.
 - In an empty workspace, choose the lightest production-sensible JavaScript/web stack that can deliver the intended experience reliably in the available time.
-- Use mature libraries aggressively when they create material value: rendering, game loops, physics, animation, audio, visualization, state, accessibility, or testing. Phaser, PixiJS, Three.js, Matter.js, Howler, GSAP, Motion, and D3 are examples, not a mandatory checklist.
+- Use mature libraries aggressively when they create material value: rendering, game loops, physics, animation, audio, visualization, state, accessibility, or testing. Phaser, PixiJS, Three.js, Matter.js, Howler, GSAP, and D3 are examples, not a checklist.
 - Verify library APIs and compatibility instead of guessing. Respect the existing lockfile and avoid dependency multiplication for effects that native CSS, SVG, Canvas, or platform APIs handle better.
-- Prefer local or generated assets. When image/audio generation tools are available and useful, use them; otherwise create original CSS, SVG, Canvas, procedural, or properly licensed assets. Do not depend on fragile hotlinks.
+- Prefer local or generated assets: use image/audio generation tools when available and useful, otherwise original CSS, SVG, Canvas, procedural, or properly licensed assets. Do not depend on fragile hotlinks.
 
 ### 5. Build for a premium, coherent experience
 
@@ -103,7 +103,7 @@ Create a premium visual direction with one clear art concept. Tokenize color, ty
 
 For UI work, run `aioson brain:query . --agent=benchmark --tags=visual-quality --min-quality=4 2>/dev/null || true`.
 
-Apply returned `q >= 4` nodes; never implement `AVOID`. Without query results, still name the surface, decision, domain signature, hierarchy, and one signature move. Run the replaceability test; inspect evidence, mobile, states, accessibility, and reduced motion; rewrite repeated em-dash cadence.
+Apply returned `q >= 4` nodes; never implement `AVOID`. Without query results, still name the surface, decision, domain signature, hierarchy, and one signature move. Run the replaceability test; inspect evidence, mobile, states, accessibility, and reduced motion; rewrite repeated em-dash cadence. Honor the interaction contracts: masked validated forms, modal-confirmed status/destructive actions, drag-and-drop status flows, and a widget-led management home.
 
 ### 6. Implement the real product path
 

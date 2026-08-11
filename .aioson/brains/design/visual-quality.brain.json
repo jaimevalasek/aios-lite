@@ -3,7 +3,7 @@
   "agent": "dev,deyvin,briefing-refiner,benchmark,product,sheldon",
   "domain": "visual-quality",
   "desc": "Quality-scored visual patterns and anti-patterns for producing specific, usable interfaces instead of generic AI-looking layouts, plus the specification-lens nodes that keep the product authority from going generic upstream.",
-  "updated": "2026-08-08",
+  "updated": "2026-08-11",
   "nodes": [
     {
       "id": "vq-000",
@@ -130,6 +130,62 @@
       "not": "Adding animation, blur, glow, or parallax to make an undifferentiated layout feel finished",
       "warn": "If removing the effect makes the interface confusing, fix hierarchy or copy before adding more effects.",
       "see": ["vq-001", "vq-006", "vq-007"]
+    },
+    {
+      "id": "vq-009",
+      "title": "Structured form fields carry masks and inline validation",
+      "tags": ["visual-quality", "anti-slop", "ui", "ux", "forms", "prototype"],
+      "q": 5,
+      "v": "BEST_PRACTICE",
+      "s": "Every structured field (document IDs, phone, postal code, date, currency) gets a live mask, correct type/inputmode/autocomplete, and layered validation: mask while typing, semantic check on blur (check digits where the format defines them), required/cross-field rules on submit. Error copy is inline, specific, and names the expected format. Read `.aioson/rules/` and project docs for the domain formats; the project locale decides defaults (pt-BR: CPF, CNPJ, CEP, phone, DD/MM/AAAA).",
+      "p": "structured field = mask + input semantics + inline layered validation + specific error copy",
+      "src": "AIOSON form-fields-masks-and-validation rule",
+      "date": "2026-08-11",
+      "not": "Bare free-text inputs for structured data, submit-only validation, a generic 'invalid data' toast, or a prototype form that is static markup with no working validation",
+      "warn": "Masks follow the project's locale and domain rules, not a hardcoded format list; accessibility (aria-invalid, aria-describedby, non-color-only errors) is part of the contract.",
+      "see": ["vq-007", "vq-010"]
+    },
+    {
+      "id": "vq-010",
+      "title": "Status changes and destructive actions confirm via design-system modal",
+      "tags": ["visual-quality", "ui", "ux", "interaction", "prototype"],
+      "q": 5,
+      "v": "BEST_PRACTICE",
+      "s": "A control that changes an entity's lifecycle status, deletes, archives, or applies a hard-to-reverse edit opens a polished design-system confirmation modal: title naming action and object, one consequence line stating reversibility, verb-labeled confirm (destructive styling when destructive), secondary cancel, trapped focus, Esc cancels.",
+      "p": "status/destructive control -> design-system modal (action + object + consequence + verb confirm), never native confirm()",
+      "src": "AIOSON status-change-confirmation rule",
+      "date": "2026-08-11",
+      "not": "Native alert/confirm/prompt, a destructive button that fires immediately, or confirmation modals on routine edits that train users to click through",
+      "warn": "Drag-and-drop transitions use optimistic feedback plus undo instead of a modal, except drops onto destructive or terminal targets, which still confirm.",
+      "see": ["vq-007", "vq-011"]
+    },
+    {
+      "id": "vq-011",
+      "title": "Recurrent status flows move by drag-and-drop, not dropdowns",
+      "tags": ["visual-quality", "ui", "ux", "interaction", "layout", "prototype"],
+      "q": 5,
+      "v": "BEST_PRACTICE",
+      "s": "When items move between statuses or lists repeatedly and in both directions (kanban, pipelines, funnels, ordered queues), drag-and-drop is the primary transition: visible drag affordance, lifted drag state, highlighted drop targets, optimistic move with undo toast, and an accessible keyboard/menu equivalent for every transition.",
+      "p": "recurring bidirectional flow = drag-and-drop primary + accessible fallback + optimistic undo",
+      "src": "AIOSON status-flow-drag-and-drop rule",
+      "date": "2026-08-11",
+      "not": "A kanban or pipeline surface whose only transition is a dropdown or edit form, a drag that only mutates the DOM without persisting, or drag-only flows with no keyboard path",
+      "warn": "Buttons and menus stay for one-shot non-recurring transitions; destructive drop targets still confirm per vq-010.",
+      "see": ["vq-007", "vq-010"]
+    },
+    {
+      "id": "vq-012",
+      "title": "A management home opens with decision-driving widgets",
+      "tags": ["visual-quality", "ui", "layout", "interaction", "prototype"],
+      "q": 5,
+      "v": "BEST_PRACTICE",
+      "s": "A product that manages quantifiable work (CRM, ERP, cockpit, admin, back office, even a simple one) opens on a home with 3-6 prioritized widgets fed by real or seeded data: KPIs with unit, period, and trend or comparison, and attention indicators linking to the filtered work. One dominant focal widget; every widget drills down to the records it summarizes.",
+      "p": "management home = few prioritized widgets, each answering 'how are we doing' or 'what needs me now', each drilling down",
+      "src": "AIOSON management-home-widgets rule",
+      "date": "2026-08-11",
+      "not": "A bare menu or empty table as the entry screen, context-free numbers, decorative placeholder charts, or an equal-weight stat-tile wall",
+      "warn": "Value test per widget: if removing it makes no user decision harder, it is decoration; keep vq-004 container discipline.",
+      "see": ["vq-003", "vq-004", "vq-007"]
     },
     {
       "id": "sq-001",

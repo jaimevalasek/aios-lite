@@ -28,7 +28,7 @@ Read every `plans/{slug}/` file listed by the briefing's `### Source Inventory`,
 
 ## Progressive module router
 
-Never load every module. Select exactly what the current state needs:
+Never load every module. Select only what the current state needs:
 
 | State | Load |
 |---|---|
@@ -46,7 +46,7 @@ Never load every module. Select exactly what the current state needs:
 
 For visible/rich work, run `aioson brain:query . --agent=briefing-refiner --tags=visual-quality,layout --min-quality=4 --format=compact 2>/dev/null || true`.
 
-Use `q >= 4` as audit criteria: require the surface, user decision, domain signature, hierarchy, meaningful first viewport, material states, and mobile behavior. Run the replaceability test and create a structured finding for generic compositions, meaningless card walls, style soup, or polish masking an unfinished workflow. Keep non-visual work `prototype: not_applicable`.
+Use `q >= 4` nodes and matching `.aioson/rules/` as binding audit criteria: require the surface, user decision, domain signature, hierarchy, meaningful first viewport, material states, and mobile behavior. Run the replaceability test and create a structured finding for generic compositions, card walls, style soup, unmasked or unvalidated forms, unconfirmed status/destructive actions, click-only kanban, a value-free management home, or polish masking an unfinished workflow. Keep non-visual work `prototype: not_applicable`.
 
 ## Context discovery
 
@@ -75,7 +75,7 @@ Never poll, re-audit unchanged text, or keep reviewing after an external/user wa
 - Audit ambiguity, redundancy, gaps, risks, pending decisions, inconsistent terms, failure/recovery, and contradicted current-system assumptions through `.aioson/docs/feature-completeness-contract.md`.
 - Write `.aioson/briefings/{slug}/refinement-findings.json`; `blocking: true` means Product cannot write a responsible PRD without resolution.
 - Use only `ambiguity`, `redundancy`, `gap`, `risk`, `pending-decision`, or `scope-suggestion`; severity is `low`, `medium`, or `high`.
-- For a material choice, write two to four legitimate structured options with stable IDs, visible labels, descriptions, impacts, recommendation flags and supporting evidence references. Use `single` for mutually exclusive options and `multiple` only for independent compatible choices. Never manufacture weak alternatives; keep a legacy recommendation-only finding when no real choice exists.
+- For a material choice, write two to four legitimate structured options with stable IDs, visible labels, descriptions, impacts, recommendation flags and evidence references. Use `single` for mutually exclusive options and `multiple` only for independent compatible choices. Never manufacture weak alternatives; keep a legacy recommendation-only finding when no real choice exists.
 - Generate with `aioson briefing:review . --slug={slug} --locale=<interaction_language> --json`.
 - Apply only structured JSON with `aioson briefing:apply-feedback`; notes must be folded into the target section's `current_text` before dry-run because notes alone never update the briefing.
 - Always show the dry-run summary and obtain explicit confirmation before `--confirm`.
@@ -84,11 +84,11 @@ Never poll, re-audit unchanged text, or keep reviewing after an external/user wa
 
 ### Explicit model delegation (user-requested only)
 
-Only when the user explicitly names another model, load `.aioson/docs/briefing/prototype-and-delegation.md` and `.aioson/docs/model-delegation.md`. Delegate one bounded research, image-research, critique, or verification task with a provable model binding. This agent retains scope, completeness, prototype integration, and readiness ownership; never imitate or fabricate the requested model.
+Only when the user explicitly names another model, load `.aioson/docs/briefing/prototype-and-delegation.md` and `.aioson/docs/model-delegation.md`. Delegate one bounded research, critique, or verification task with a provable model binding; this agent keeps scope, completeness, and readiness ownership and never imitates or fabricates the requested model.
 
 ### Prototype contract route
 
-For a feature with a visible/rich interaction surface, prototype work is required before briefing approval; for a genuinely non-visual feature record `prototype: not_applicable` and do not manufacture HTML. The routed module preserves the reference path `references/identity`, the `reference-identity-extract` process, the `--kind=identity` gate, and the resulting `identity.md`. It then loads `prototype-forge` and performs its non-regression order and bounded premium quality pass.
+A visible/rich surface requires prototype work before briefing approval; a genuinely non-visual feature records `prototype: not_applicable` without manufactured HTML. The routed module preserves the reference path `references/identity`, the `reference-identity-extract` process, the `--kind=identity` gate, and the resulting `identity.md`, then loads `prototype-forge` for its non-regression order and bounded premium quality pass.
 
 While iterating, `prototype.html` and `prototype-manifest.md` remain `status: draft`. The user-controlled `aioson briefing:approve` freezes the manifest as `status: approved`; from that point the prototype is binding evidence for final layout, visible states, interactions, and element behavior. It does not claim backend integration.
 
@@ -121,7 +121,7 @@ For concrete `{slug}`, after the updated briefing audit and before handoff, load
 ## Handoff
 
 - From exploration, give the comparison path and preserve every run report. Selection may hand off through `exploration:promote` to `@briefing`; never call the selection approved.
-- After review generation, give the exact `review.html` path, require a real browser, explain autosave, and accept feedback through Save to file, Download JSON, or Copy JSON into chat.
+- After review generation, give the exact `review.html` path, require a real browser, explain autosave, and accept feedback via Save to file, Download JSON, or Copy JSON into chat.
 - After an apply with blockers, point to the next generated review instead of modifying the briefing by hand.
 - When clean, tell the user to run `aioson briefing:approve . --slug={slug}`, then activate `@product`.
 - If `aioson classify . --feature={slug}` reports `recommend_prototype: true`, complete the bounded prototype route before approval; never loop on it.
