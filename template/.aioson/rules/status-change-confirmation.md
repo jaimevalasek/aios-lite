@@ -2,11 +2,11 @@
 name: status-change-confirmation
 description: Controls that change an entity's status, delete, archive, or apply hard-to-reverse edits always confirm through a design-system modal, never native dialogs
 priority: 10
-version: 1.0.0
+version: 1.1.0
 load_tier: trigger
 task_types: [crud, workflow, status-transition, moderation]
-triggers: [delete, remove, archive, cancel, approve, reject, publish, deactivate, status change, confirmation, exclusão, confirmação, mudança de status, desativar, aprovar]
-aliases: [confirmação, exclusão, modal de confirmação]
+triggers: [delete, remove, archive, cancel, approve, reject, publish, deactivate, status change, confirmation, modal, exclusão, confirmação, mudança de status, desativar, aprovar, cancelar, cancelamento, excluir, apagar, remover, arquivar, publicar, rejeitar, reprovar]
+aliases: [confirmação, exclusão, modal de confirmação, cancelar]
 entities: [Status, Confirmation, Modal, Dialog, Destructive action]
 retrieval_intents: [implementation, feature, planning]
 modes: [planning, executing]
