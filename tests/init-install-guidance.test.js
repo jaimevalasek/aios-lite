@@ -119,9 +119,11 @@ test('install synchronizes canonical agent prompts when --lang is provided', asy
   const tempDir = await makeTempDir();
   const { t } = createTranslator('en');
   const logger = createCollectLogger();
+  // no-hooks: a real (non-dry-run) install would otherwise write hook config
+  // into the machine-global AI tool settings during the test run.
   const result = await runInstall({
     args: [tempDir],
-    options: { lang: 'pt-BR' },
+    options: { lang: 'pt-BR', 'no-hooks': true },
     logger,
     t
   });

@@ -479,9 +479,42 @@ async function runHooksUninstall({ args, options = {}, logger }) {
   return { ok: true, results };
 }
 
+// ─── Default install for init/install/update ─────────────────────────────────
+
+// Best-effort hooks install the lifecycle commands run by default: honors
+// --no-hooks and dry-run, resolves the hooks target from the command's --tool
+// flag (falling back to machine auto-detection for prompt-only tools), and
+// never throws — a hooks failure must not fail the surrounding command.
+// Calls runHooksInstall through module.exports so tests can stub it.
+const DEFAULT_HOOK_TOOLS = new Set(['claude', 'antigravity', 'codex']);
+
+async function installDefaultHooks({ targetDir, options = {}, logger, t }) {
+  if (options['no-hooks']) {
+    logger.log(t('hooks_setup.skipped'));
+    return null;
+  }
+  const requestedTool = String(options.tool || '').trim().toLowerCase();
+  logger.log('');
+  logger.log(t('hooks_setup.installing'));
+  try {
+    return await module.exports.runHooksInstall({
+      args: [targetDir],
+      options: {
+        tool: DEFAULT_HOOK_TOOLS.has(requestedTool) ? requestedTool : 'all',
+        'dry-run': Boolean(options['dry-run'])
+      },
+      logger
+    });
+  } catch (error) {
+    logger.log(t('hooks_setup.failed', { message: error.message }));
+    return { ok: false, error: error.message };
+  }
+}
+
 module.exports = {
   runHooksInstall,
   runHooksUninstall,
+  installDefaultHooks,
   buildClaudeHooks,
   buildAntigravityHooks,
   scrubAntigravityHookFile,

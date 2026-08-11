@@ -17,6 +17,9 @@ async function readRepoTemplate(relPath) {
   return fs.readFile(path.resolve(__dirname, '..', 'template', relPath), 'utf8');
 }
 
+// Every real (non-dry-run) runUpdate below passes 'no-hooks': true — the
+// default hooks install would otherwise write machine-global AI tool settings
+// during the test run.
 function createQuietLogger() {
   return {
     log() {},
@@ -49,7 +52,7 @@ aioson_version: "0.1.8"
   const logger = createQuietLogger();
   const result = await runUpdate({
     args: [dir],
-    options: {},
+    options: { 'no-hooks': true },
     logger,
     t
   });
@@ -89,7 +92,7 @@ aioson_version: "0.1.9"
   const logger = createQuietLogger();
   const result = await runUpdate({
     args: [dir],
-    options: { lang: 'fr' },
+    options: { lang: 'fr', 'no-hooks': true },
     logger,
     t
   });
@@ -177,7 +180,7 @@ aioson_version: "1.8.0"
   const { t } = createTranslator('en');
   const result = await runUpdate({
     args: [dir],
-    options: {},
+    options: { 'no-hooks': true },
     logger: createQuietLogger(),
     t
   });
@@ -213,7 +216,7 @@ aioson_version: "1.8.0"
   const { t } = createTranslator('en');
   const result = await runUpdate({
     args: [dir],
-    options: { selective: true },
+    options: { selective: true, 'no-hooks': true },
     logger: createQuietLogger(),
     t
   });
@@ -237,7 +240,7 @@ test('update refreshes framework integration docs and preserves project-owned in
   const { t } = createTranslator('en');
   const result = await runUpdate({
     args: [dir],
-    options: {},
+    options: { 'no-hooks': true },
     logger: createQuietLogger(),
     t
   });

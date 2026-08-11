@@ -1,6 +1,9 @@
 'use strict';
 
 const path = require('node:path');
+// Namespace require (no destructuring) so tests can stub installDefaultHooks'
+// inner runHooksInstall — the real thing mutates machine-global settings.
+const hooksInstall = require('./hooks-install');
 const { detectFramework } = require('../detector');
 const { installTemplate, readInstallProfile } = require('../installer');
 const { applyAgentLocale, normalizeInteractionLanguage } = require('../locales');
@@ -147,13 +150,18 @@ async function runInstall({ args, options, logger, t }) {
     logger.log(t('install.existing_project_scan_hint'));
   }
 
+  // Same default as init: the project only has its full enforcement mesh once
+  // the hooks exist. --no-hooks opts out; a failure never fails the install.
+  const hooksResult = await hooksInstall.installDefaultHooks({ targetDir, options, logger, t });
+
   return {
     ok: true,
     targetDir,
     detection,
     ...result,
     localeApply,
-    installProfile
+    installProfile,
+    hooksInstall: hooksResult
   };
 }
 

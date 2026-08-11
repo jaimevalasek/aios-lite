@@ -1,6 +1,9 @@
 'use strict';
 
 const path = require('node:path');
+// Namespace require (no destructuring) so tests can stub installDefaultHooks'
+// inner runHooksInstall — the real thing mutates machine-global settings.
+const hooksInstall = require('./hooks-install');
 const { detectFramework } = require('../detector');
 const { updateInstallation } = require('../updater');
 const { validateProjectContextFile, getInteractionLanguage } = require('../context');
@@ -62,10 +65,16 @@ async function runUpdate({ args, options, logger, t }) {
     }
   }
 
+  // Same default as init/install: updating an older project is exactly when
+  // the hooks layer is most likely missing. --no-hooks opts out; a failure
+  // never fails the update.
+  const hooksResult = await hooksInstall.installDefaultHooks({ targetDir, options, logger, t });
+
   return {
     targetDir,
     ...result,
-    localeSync
+    localeSync,
+    hooksInstall: hooksResult
   };
 }
 

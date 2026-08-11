@@ -112,28 +112,7 @@ async function runInit({ args, options, logger, t }) {
   // rules before every write/edit, plus runtime telemetry). Installed by
   // default so a fresh project ships with the full mesh; --no-hooks opts out,
   // and a failure is reported but never fails the init.
-  let hooksResult = null;
-  if (options['no-hooks']) {
-    logger.log(t('init.hooks_skipped'));
-  } else {
-    const HOOK_TOOLS = new Set(['claude', 'antigravity', 'codex']);
-    const requestedTool = String(options.tool || '').trim().toLowerCase();
-    logger.log('');
-    logger.log(t('init.hooks_installing'));
-    try {
-      hooksResult = await hooksInstall.runHooksInstall({
-        args: [targetDir],
-        options: {
-          tool: HOOK_TOOLS.has(requestedTool) ? requestedTool : 'all',
-          'dry-run': dryRun
-        },
-        logger
-      });
-    } catch (error) {
-      hooksResult = { ok: false, error: error.message };
-      logger.log(t('init.hooks_failed', { message: error.message }));
-    }
-  }
+  const hooksResult = await hooksInstall.installDefaultHooks({ targetDir, options, logger, t });
 
   return {
     ok: true,

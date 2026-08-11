@@ -90,7 +90,7 @@ test('runInstall non-interactive with saved profile honors it (no fallback to in
 
   await runInstall({
     args: [dir],
-    options: { 'no-interactive': true },
+    options: { 'no-interactive': true, 'no-hooks': true },
     logger,
     t
   });
@@ -112,7 +112,7 @@ test('runInstall non-interactive without saved profile announces install-all fal
 
   await runInstall({
     args: [dir],
-    options: { 'no-interactive': true },
+    options: { 'no-interactive': true, 'no-hooks': true },
     logger,
     t
   });

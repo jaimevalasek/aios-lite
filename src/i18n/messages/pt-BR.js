@@ -412,10 +412,12 @@ module.exports = {
     step_setup: '2. Abra na sua AI CLI e execute @setup',
     step_agents: '3. Se nao aparecer seletor visual, execute: aioson agents',
     step_agent_prompt:
-      '4. Gere o prompt de setup para sua ferramenta: aioson agent:prompt setup --tool={tool}',
-    hooks_installing: 'Instalando hooks do AIOSON (context:guard + telemetria de runtime) — desative com --no-hooks:',
-    hooks_skipped: 'Hooks ignorados (--no-hooks). Instale depois com: aioson hooks:install',
-    hooks_failed: 'Falha ao instalar hooks (nao bloqueia): {message}. Instale depois com: aioson hooks:install'
+      '4. Gere o prompt de setup para sua ferramenta: aioson agent:prompt setup --tool={tool}'
+  },
+  hooks_setup: {
+    installing: 'Instalando hooks do AIOSON (context:guard + telemetria de runtime) — desative com --no-hooks:',
+    skipped: 'Hooks ignorados (--no-hooks). Instale depois com: aioson hooks:install',
+    failed: 'Falha ao instalar hooks (nao bloqueia): {message}. Instale depois com: aioson hooks:install'
   },
   init_all: {
     installing_full: 'Instalacao completa (todas as ferramentas + squads) — wizard ignorado via --all'
