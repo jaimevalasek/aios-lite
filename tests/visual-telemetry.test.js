@@ -221,6 +221,38 @@ test('interaction contracts: a conforming surface and a custom confirm() method 
   );
 });
 
+test('HTML comments never count as measurement — a rationale header is not the surface', () => {
+  // Real case: a prototype's design-rationale header said "not admin density"
+  // and that lone word read as a management surface. Commented-out markup is
+  // not the artifact — every lexical scan runs on comment-free markup.
+  const commented = `<!--
+    Design rationale: public-facing form, not admin density, no dashboard chrome.
+    <button onclick="if(confirm('Excluir?')) alert('ok')">Excluir cliente</button>
+    <input type="text" name="cpf" placeholder="CPF">
+    kanban board with a column per stage
+  -->
+  <style>
+  :root { --s: 8px; --fg: #111; } .shell { padding: var(--s); color: var(--fg); }
+  .field { margin: var(--s); } .btn { padding: var(--s); } .top { gap: var(--s); }
+  .a { font-size: 14px; } .b { background: #fff; } .c { border-radius: 8px; }
+  .d { padding: var(--s); } .e { gap: var(--s); } .f { color: var(--fg); }
+  </style>
+  <form><input type="tel" id="telefone" maxlength="15"></form>`;
+  const result = analyzeVisualSources({ html: commented });
+  assert.equal(result.applicable, true);
+
+  assert.equal(result.metrics.management_surface, false);
+  assert.equal(result.metrics.kanban_surface, false);
+  assert.equal(result.metrics.destructive_controls, 0);
+  assert.deepEqual(result.metrics.native_dialog_calls, []);
+  assert.deepEqual(result.metrics.structured_inputs_without_semantics, []);
+  assert.deepEqual(result.issues, []);
+  assert.deepEqual(
+    result.warnings.filter((w) => /management surface|kanban|dialog machinery|input semantics|native/.test(w)),
+    []
+  );
+});
+
 test('card nesting counts containers, not every wrapper div', () => {
   assert.equal(maxCardNesting('<div class="card"><div class="row"><div class="card">x</div></div></div>'), 2);
   assert.equal(maxCardNesting('<div class="card">a</div><div class="card">b</div>'), 1);

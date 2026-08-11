@@ -135,6 +135,16 @@ function stripComments(css) {
   return String(css || '').replace(/\/\*[\s\S]*?\*\//g, '');
 }
 
+/**
+ * Strip HTML comments so commented-out markup never counts as a measurement.
+ * A design-rationale header saying "not admin density" must not read as a
+ * management surface, and a commented-out `<input name="cpf">` is not a bare
+ * structured field.
+ */
+function stripHtmlComments(html) {
+  return String(html || '').replace(/<!--[\s\S]*?-->/g, '');
+}
+
 /** Collect the text of every `<style>` block in an HTML document. */
 function extractStyleBlocks(html) {
   const out = [];
@@ -222,7 +232,7 @@ function maxCardNesting(html) {
  * @returns {{applicable: boolean, metrics: object, issues: string[], warnings: string[]}}
  */
 function analyzeVisualSources({ html = '', css = '' } = {}) {
-  const markup = String(html || '');
+  const markup = stripHtmlComments(html);
   const styleText = stripComments(`${extractStyleBlocks(markup)}\n${String(css || '')}`);
   const decls = declarations(styleText);
 
@@ -410,5 +420,6 @@ module.exports = {
   ruleBlocks,
   maxCardNesting,
   stripComments,
+  stripHtmlComments,
   SPACING_GRID
 };
