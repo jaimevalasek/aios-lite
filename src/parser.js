@@ -30,9 +30,12 @@ const BOOLEAN_FLAGS = new Set([
   // audit:code / harness:check — pure booleans; `--changed .` / `--strict .`
   // must not swallow the trailing path positional.
   'changed', 'strict',
-  // verify:artifact — pure booleans; `--advisory .` / `--no-build .` must
-  // not swallow the path positional.
-  'advisory', 'no-build',
+  // verify:artifact — pure booleans; `--advisory .` / `--no-build .` /
+  // `--runtime .` must not swallow the path positional.
+  'advisory', 'no-build', 'runtime',
+  // init/install/update hooks default and hooks:install guard opt-outs —
+  // pure booleans; `--no-hooks .` / `--no-guard .` must not swallow the path.
+  'no-hooks', 'no-guard',
   // pentester:report — pure boolean; `--list .` must not swallow the path.
   'list',
   // briefing:apply-feedback — pure booleans; `--confirm .` / `--declined .`
