@@ -55,9 +55,10 @@ Apply `q >= 4`. Run the replaceability test on the PRD text and repair a generic
 ```bash
 aioson context:brief . --agent=sheldon --mode=planning --task="review and approve the active PRD" --feature={slug} 2>/dev/null || true
 aioson prototype:check . --feature={slug} --strict
+aioson verify:artifact . --kind=prd --slug={slug} --advisory 2>/dev/null || true
 ```
 
-Do not approve a failing prototype binding. `prototype:check` proves ownership/inventory only; it never proves that the delivered application works.
+Do not approve a failing prototype binding. `prototype:check` proves ownership/inventory only; it never proves that the delivered application works. `kind=prd` measures the mechanical half of the approval contract (PROM coverage, CAP→fit→AC chain, assertion-only evidence, binding coherence); its issues are gap-analysis input, never a substitute for judgment.
 After inspecting cited paths, rerun `context:brief` with `--paths=<comma-separated-evidence-paths>` when concrete paths were found.
 
 ## Gap analysis and sizing kernel
@@ -103,7 +104,7 @@ After all PRD edits, re-evaluate feature depth before sealing it:
 aioson classify . --feature={slug} --apply --json
 ```
 
-The classifier may raise the tier from scope evidence added during review; it never lowers an explicit higher owner decision. Then set `sheldon_review: approved` and run:
+The classifier may raise the tier from scope evidence added during review; it never lowers an explicit higher owner decision. Then run `aioson verify:artifact . --kind=prd --slug={slug}` and repair every reported issue — the mechanical contract must measure clean before the seal. Then set `sheldon_review: approved` and run:
 
 ```bash
 aioson review:prepare . --agent=sheldon --feature={slug} --artifact=.aioson/context/prd-{slug}.md --json

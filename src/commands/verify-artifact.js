@@ -589,6 +589,45 @@ const ADAPTERS = {
     };
   },
 
+  // The deterministic half of Sheldon's PRD approval contract: PROM coverage
+  // against the briefing, the CAP → Current System Fit → Acceptance Criteria
+  // chain, assertion-only evidence cells, and prototype binding coherence.
+  // What needs product judgment stays with the reviewing agent.
+  prd: async (ctx) => {
+    let rel = ctx.file || (ctx.slug ? `.aioson/context/prd-${ctx.slug}.md` : null);
+    if (!rel) {
+      return { ok: false, issues: ['kind=prd requires --file=<path> or --slug=<feature>'], warnings: [], checks: [] };
+    }
+    if (!ctx.file && !fs.existsSync(path.resolve(ctx.targetDir, rel)) && fs.existsSync(path.resolve(ctx.targetDir, '.aioson/context/prd.md'))) {
+      rel = '.aioson/context/prd.md';
+    }
+    let prdText;
+    try {
+      prdText = fs.readFileSync(path.resolve(ctx.targetDir, rel), 'utf8');
+    } catch {
+      return { ok: false, issues: [`cannot read PRD file: ${rel}`], warnings: [], checks: [] };
+    }
+
+    const { analyzePrd, parseFrontmatter } = require('../lib/prd-lint');
+    const slug = ctx.slug || parseFrontmatter(prdText).feature || null;
+    let briefingText = '';
+    if (slug) {
+      try {
+        briefingText = fs.readFileSync(path.resolve(ctx.targetDir, `.aioson/briefings/${slug}/briefings.md`), 'utf8');
+      } catch { /* no briefing — PROM coverage not applicable */ }
+    }
+
+    const result = analyzePrd({ prd: prdText, briefing: briefingText, targetDir: ctx.targetDir });
+    const ok = result.issues.length === 0;
+    return {
+      ok,
+      issues: result.issues,
+      warnings: result.warnings,
+      checks: [{ id: 'prd', ok, detail: result.issues.join('; ') || null }],
+      metrics: { ...result.metrics, file: rel, briefing_read: briefingText.length > 0 }
+    };
+  },
+
   // The measured half of anti-slop. Every other visual gate in AIOSON is prose
   // an agent may or may not honor; this one reads the HTML/CSS that was written
   // and reports arithmetic — token adherence, spacing rhythm, depth strategies,
