@@ -253,6 +253,37 @@ test('HTML comments never count as measurement — a rationale header is not the
   );
 });
 
+test('commented-out JS never fires the native-dialog blocking tier', () => {
+  // The blocking tier promises near-zero false positives: a commented-out
+  // confirm()/alert() is not a call. Line comments, block comments, and the
+  // URL edge (`https://` is not a comment) are all covered.
+  const commentedJs = `<style>
+  :root { --s: 8px; --fg: #111; } .shell { padding: var(--s); color: var(--fg); }
+  .a { font-size: 14px; } .b { background: #fff; } .c { border-radius: 8px; }
+  .d { margin: var(--s); } .e { gap: var(--s); } .f { color: var(--fg); }
+  .g { padding: var(--s); } .h { gap: var(--s); }
+  </style>
+  <button id="go">Enviar</button>
+  <script>
+  // if (confirm('Excluir?')) alert('ok')
+  /* prompt('nome?') */
+  const docs = 'https://example.com/confirm(guide)';
+  document.getElementById('go').addEventListener('click', () => ui.confirm('Enviar?'));
+  </script>`;
+  const result = analyzeVisualSources({ html: commentedJs });
+  assert.equal(result.applicable, true);
+  assert.deepEqual(result.metrics.native_dialog_calls, []);
+  assert.deepEqual(result.issues, []);
+
+  // A real call on a line that also carries a comment still fires.
+  const realCall = commentedJs.replace(
+    "// if (confirm('Excluir?')) alert('ok')",
+    "window.confirm('Excluir?'); // pending design-system modal"
+  );
+  const flagged = analyzeVisualSources({ html: realCall });
+  assert.deepEqual(flagged.metrics.native_dialog_calls, ['confirm']);
+});
+
 test('card nesting counts containers, not every wrapper div', () => {
   assert.equal(maxCardNesting('<div class="card"><div class="row"><div class="card">x</div></div></div>'), 2);
   assert.equal(maxCardNesting('<div class="card">a</div><div class="card">b</div>'), 1);

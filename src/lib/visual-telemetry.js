@@ -70,10 +70,11 @@ const INTERACTIVE = /<button|<input|<select|<textarea|<form|addEventListener|onc
 // dialog, contractually banned in prototypes) is an issue; the rest are
 // presence/absence measurements a reviewer judges in context.
 
-// Bare or window-qualified native dialog call. `(?<![\w$.])` rejects method
-// calls on other objects (`modal.confirm(`) and identifiers that merely end in
-// the name (`showConfirm(`); Portuguese verbs (`confirmar(`) fail the `\s*\(`.
-const NATIVE_DIALOG = /(?<![\w$.])(?:window\s*\.\s*)?(alert|confirm|prompt)\s*\(/g;
+// Bare or window-qualified native dialog call. `(?<![\w$./])` rejects method
+// calls on other objects (`modal.confirm(`), identifiers that merely end in
+// the name (`showConfirm(`), and URL paths (`example.com/confirm(guide)`);
+// Portuguese verbs (`confirmar(`) fail the `\s*\(`.
+const NATIVE_DIALOG = /(?<![\w$./])(?:window\s*\.\s*)?(alert|confirm|prompt)\s*\(/g;
 
 // Field-identity words that imply a structured format. Deliberately excludes
 // bare `date`/`data` (the fix is type="date", and pt-BR "data" is too common).
@@ -143,6 +144,19 @@ function stripComments(css) {
  */
 function stripHtmlComments(html) {
   return String(html || '').replace(/<!--[\s\S]*?-->/g, '');
+}
+
+/**
+ * Strip JS comments before the native-dialog scan — a commented-out
+ * `// confirm('...')` must never fire the blocking tier. Lexical like
+ * everything here: `//` preceded by `:` survives so string URLs are safe;
+ * a `//` inside another string may over-strip its line, which trades a rare
+ * false negative for the tier's near-zero-false-positive promise.
+ */
+function stripJsComments(js) {
+  return String(js || '')
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/(^|[^:\\])\/\/[^\n]*/gm, '$1');
 }
 
 /** Collect the text of every `<style>` block in an HTML document. */
@@ -303,7 +317,7 @@ function analyzeVisualSources({ html = '', css = '' } = {}) {
   const mediaElements = (markup.match(/<(img|video|canvas|picture)\b/gi) || []).length;
 
   // ── interaction contracts ────────────────────────────────────────────────
-  const scriptText = extractScriptText(markup);
+  const scriptText = stripJsComments(extractScriptText(markup));
   const nativeDialogs = [...new Set([...scriptText.matchAll(NATIVE_DIALOG)].map((hit) => hit[1]))];
   const unmaskedInputs = bareStructuredInputs(markup);
   const destructiveControls = (markup.match(/<button\b[^>]*>[^<]*<\/button>|<button\b[^>]*>/gi) || [])
@@ -421,5 +435,6 @@ module.exports = {
   maxCardNesting,
   stripComments,
   stripHtmlComments,
+  stripJsComments,
   SPACING_GRID
 };
