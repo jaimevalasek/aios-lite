@@ -36,7 +36,7 @@
     "node": ">=20.0.0"
   },
   "scripts": {
-    "test": "node --test --test-concurrency=8",
+    "test": "node --require ./tests/setup/windows-fs-retries.js --test --test-concurrency=8",
     "test:boundaries": "node --test tests/agent-execution-adapters.test.js tests/agent-execution-cli.test.js tests/agent-execution-dispatcher.test.js tests/agent-execution-manifest.test.js tests/scripts/release-readiness.test.js tests/skill-audit.test.js tests/squad-eval.test.js tests/squad-manifest-validator.test.js tests/store-system.test.js tests/web-security.test.js",
     "test:genome": "node --test tests/genome-compat.test.js tests/genome-migrate.test.js",
     "test:genome-2.0-smoke": "node scripts/smoke/genome-2.0-smoke.js",
