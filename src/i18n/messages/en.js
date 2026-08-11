@@ -540,6 +540,8 @@ module.exports = {
     context_language_mismatch: '`interaction_language` ({interaction}) differs from `conversation_language` ({conversation})',
     context_language_mismatch_hint: 'Keep both fields synchronized, or remove the legacy `conversation_language` alias.',
     node_version: 'Node.js >= 18 (current: {version})',
+    visual_runtime: 'Visual runtime telemetry (Playwright present)',
+    visual_runtime_hint: 'Visual gates are static-only. Enable browser measurement with: npm i -D playwright && npx playwright install chromium',
     gateway_claude_pointer: 'CLAUDE gateway references shared AIOSON files',
     gateway_claude_pointer_hint:
       'Ensure CLAUDE.md references .aioson/config.md and .aioson/agents/setup.md.',

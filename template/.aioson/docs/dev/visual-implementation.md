@@ -59,14 +59,14 @@ Load `.aioson/docs/design/visual-effects.md`. It carries the effect vocabulary p
 Before declaring visual work complete, run the telemetry over the front-end you touched:
 
 ```bash
-aioson verify:artifact . --kind=visual --dir=<front-end root> --advisory 2>/dev/null || true
+aioson verify:artifact . --kind=visual --dir=<front-end root> --advisory --runtime 2>/dev/null || true
 ```
 
 It returns arithmetic, not opinion: token adherence, spacing off the 4px grid, active depth strategies, font families, reduced-motion coverage, state coverage, card nesting. Repair the blocking findings — decorative blob, animation with no `prefers-reduced-motion`, cards three deep. Treat the threshold warnings as evidence for the decision you already owe: either fix the drift or name why this surface is the exception.
 
 A utility-class codebase returns `applicable: false`; that is a scope statement, not a pass.
 
-When a browser is available, add `--runtime` for what only exists after layout — horizontal overflow at 360px, clipped text, elements pushed off-screen, undersized tap targets, and real computed contrast. Without Playwright installed it reports that it did not run; it never degrades into a silent pass.
+`--runtime` is part of the default invocation because it measures what only exists after layout — horizontal overflow at 360px, clipped text, elements pushed off-screen, undersized tap targets, and real computed contrast. Without Playwright installed it reports that it did not run (never a silent pass); state that outcome when declaring visual work complete, and `aioson doctor` shows how to enable it.
 
 ## 7. Reuse before adding
 

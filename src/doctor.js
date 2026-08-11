@@ -263,6 +263,28 @@ async function runDoctor(targetDir) {
     ok: major >= 18
   });
 
+  // Visual runtime telemetry (advisory): Playwright powers
+  // `verify:artifact --kind=visual --runtime`. Without it every visual gate is
+  // static-only — the two real defects a browser catches (overflow, clipped
+  // text, displaced elements, contrast) stay invisible. Resolved from the
+  // project first, then from the CLI's own tree.
+  let playwrightAvailable = false;
+  for (const paths of [[path.join(targetDir, 'node_modules')], undefined]) {
+    try {
+      require.resolve('playwright', paths ? { paths } : undefined);
+      playwrightAvailable = true;
+      break;
+    } catch { /* keep probing */ }
+  }
+  checks.push({
+    id: 'visual:runtime_telemetry',
+    severity: 'warning',
+    key: 'doctor.visual_runtime',
+    params: {},
+    ok: playwrightAvailable,
+    hintKey: playwrightAvailable ? undefined : 'doctor.visual_runtime_hint'
+  });
+
   // ── Living Memory checks (Fase 4) ────────────────────────────────────────
   // Severity = 'warning' so they surface to the user as advisories without
   // breaking the overall `report.ok` (which gates downstream tooling).

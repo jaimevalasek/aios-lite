@@ -65,10 +65,12 @@ The manifest declares `feature: {slug}`, `status: draft`, and the `identity:` re
 4. Verify owner/path directly because no PRD exists. Product later runs `aioson prototype:check . --feature={slug} --strict`. Measure the built prototype here — the earliest point where craft is provable, before any PRD binds it:
 
 ```bash
-aioson verify:artifact . --kind=visual --slug={slug} --advisory 2>/dev/null || true
+aioson verify:artifact . --kind=visual --slug={slug} --advisory --runtime 2>/dev/null || true
 ```
 
 Repair the blocking findings (decorative blob, animation with no `prefers-reduced-motion`, cards three deep) in the prototype itself. Threshold warnings — token adherence, off-grid spacing, depth strategies, font count, missing states — become structured findings only when this surface cannot justify them.
+
+`--runtime` is always attempted, never assumed: with Playwright present it measures what only a browser sees (horizontal overflow at 360px, clipped text, off-screen elements, tap targets, computed contrast); absent, the report says so and the gate stays static-only. Either way, record the outcome in the manifest's Quality evidence — "runtime measured, N findings repaired" or the report's own not-available reason. A silent skip is the one forbidden state.
 5. Give the exact paths and state that the prototype models the final visual/interaction contract but does not prove backend integration: mock-only behavior is design evidence, never implementation proof, and refresh may reset mock state. Status remains draft until the user approves the briefing, then Product must preserve or explicitly document deviations from the approved binding.
 
 Prototype work never edits `briefings.md`, never becomes canonical feedback, and never trades away a Core screen/action/state for visual polish.

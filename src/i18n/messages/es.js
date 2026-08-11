@@ -409,6 +409,8 @@ module.exports = {
     context_language_mismatch_hint:
       'Mantenga ambos campos sincronizados o elimine el alias heredado `conversation_language`.',
     node_version: 'Node.js >= 18 (actual: {version})',
+    visual_runtime: 'Telemetria visual de runtime (Playwright presente)',
+    visual_runtime_hint: 'Gates visuales solo estaticos. Habilita la medicion en browser con: npm i -D playwright && npx playwright install chromium',
     gateway_claude_pointer: 'El gateway de CLAUDE referencia archivos compartidos de AIOSON',
     gateway_claude_pointer_hint:
       'Asegura que CLAUDE.md referencie .aioson/config.md y .aioson/agents/setup.md.',
