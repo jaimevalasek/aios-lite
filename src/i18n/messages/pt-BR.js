@@ -402,7 +402,7 @@ module.exports = {
   },
   init: {
     usage_error:
-      'Uso: aioson init <project-name> [--force] [--dry-run] [--all] [--lang=<bcp47-tag>] [--tool=codex|claude|opencode] [--locale=pt-BR]',
+      'Uso: aioson init <project-name> [--force] [--dry-run] [--all] [--no-hooks] [--lang=<bcp47-tag>] [--tool=codex|claude|opencode] [--locale=pt-BR]',
     non_empty_dir: 'Diretorio nao esta vazio: {targetDir}. Use --force para continuar.',
     created_at: 'Projeto criado em: {targetDir}',
     files_copied: 'Arquivos copiados: {count}',
@@ -412,7 +412,10 @@ module.exports = {
     step_setup: '2. Abra na sua AI CLI e execute @setup',
     step_agents: '3. Se nao aparecer seletor visual, execute: aioson agents',
     step_agent_prompt:
-      '4. Gere o prompt de setup para sua ferramenta: aioson agent:prompt setup --tool={tool}'
+      '4. Gere o prompt de setup para sua ferramenta: aioson agent:prompt setup --tool={tool}',
+    hooks_installing: 'Instalando hooks do AIOSON (context:guard + telemetria de runtime) — desative com --no-hooks:',
+    hooks_skipped: 'Hooks ignorados (--no-hooks). Instale depois com: aioson hooks:install',
+    hooks_failed: 'Falha ao instalar hooks (nao bloqueia): {message}. Instale depois com: aioson hooks:install'
   },
   init_all: {
     installing_full: 'Instalacao completa (todas as ferramentas + squads) — wizard ignorado via --all'

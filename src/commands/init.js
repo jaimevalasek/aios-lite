@@ -2,6 +2,9 @@
 
 const fs = require('node:fs/promises');
 const path = require('node:path');
+// Namespace require (no destructuring) so tests can stub runHooksInstall —
+// the real thing mutates the machine-global AI tool settings.
+const hooksInstall = require('./hooks-install');
 const { installTemplate } = require('../installer');
 const { applyAgentLocale, normalizeInteractionLanguage } = require('../locales');
 const { resolvePromptTool } = require('../prompt-tool');
@@ -105,12 +108,40 @@ async function runInit({ args, options, logger, t }) {
     logger.log(t('init.step_agent_prompt', { tool: promptTool }));
   }
 
+  // Hooks are the always-on enforcement layer (context:guard injecting project
+  // rules before every write/edit, plus runtime telemetry). Installed by
+  // default so a fresh project ships with the full mesh; --no-hooks opts out,
+  // and a failure is reported but never fails the init.
+  let hooksResult = null;
+  if (options['no-hooks']) {
+    logger.log(t('init.hooks_skipped'));
+  } else {
+    const HOOK_TOOLS = new Set(['claude', 'antigravity', 'codex']);
+    const requestedTool = String(options.tool || '').trim().toLowerCase();
+    logger.log('');
+    logger.log(t('init.hooks_installing'));
+    try {
+      hooksResult = await hooksInstall.runHooksInstall({
+        args: [targetDir],
+        options: {
+          tool: HOOK_TOOLS.has(requestedTool) ? requestedTool : 'all',
+          'dry-run': dryRun
+        },
+        logger
+      });
+    } catch (error) {
+      hooksResult = { ok: false, error: error.message };
+      logger.log(t('init.hooks_failed', { message: error.message }));
+    }
+  }
+
   return {
     ok: true,
     targetDir,
     ...result,
     localeApply,
-    installProfile
+    installProfile,
+    hooksInstall: hooksResult
   };
 }
 

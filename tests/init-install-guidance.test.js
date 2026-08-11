@@ -90,9 +90,11 @@ test('init synchronizes canonical agent prompts when --lang is provided', async 
   try {
     const { t } = createTranslator('en');
     const logger = createCollectLogger();
+    // no-hooks: a real (non-dry-run) init would otherwise write hook config
+    // into the machine-global AI tool settings during the test run.
     const result = await runInit({
       args: ['demo-lang'],
-      options: { lang: 'es' },
+      options: { lang: 'es', 'no-hooks': true },
       logger,
       t
     });

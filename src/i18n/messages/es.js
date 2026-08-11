@@ -296,7 +296,7 @@ module.exports = {
   },
   init: {
     usage_error:
-      'Uso: aioson init <project-name> [--force] [--dry-run] [--all] [--lang=<bcp47-tag>] [--tool=codex|claude|opencode] [--locale=es]',
+      'Uso: aioson init <project-name> [--force] [--dry-run] [--all] [--no-hooks] [--lang=<bcp47-tag>] [--tool=codex|claude|opencode] [--locale=es]',
     non_empty_dir: 'El directorio no esta vacio: {targetDir}. Usa --force para continuar.',
     created_at: 'Proyecto creado en: {targetDir}',
     files_copied: 'Archivos copiados: {count}',
@@ -306,7 +306,10 @@ module.exports = {
     step_setup: '2. Abre en tu AI CLI y ejecuta @setup',
     step_agents: '3. Si no aparece selector visual, ejecuta: aioson agents',
     step_agent_prompt:
-      '4. Genera el prompt de setup para tu herramienta: aioson agent:prompt setup --tool={tool}'
+      '4. Genera el prompt de setup para tu herramienta: aioson agent:prompt setup --tool={tool}',
+    hooks_installing: 'Instalando hooks de AIOSON (context:guard + telemetria de runtime) — desactiva con --no-hooks:',
+    hooks_skipped: 'Hooks omitidos (--no-hooks). Instala despues con: aioson hooks:install',
+    hooks_failed: 'Fallo al instalar hooks (no bloquea): {message}. Instala despues con: aioson hooks:install'
   },
   init_all: {
     installing_full: 'Instalacion completa (todas las herramientas + squads) — wizard ignorado via --all'

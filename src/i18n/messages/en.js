@@ -438,7 +438,7 @@ module.exports = {
   },
   init: {
     usage_error:
-      'Usage: aioson init <project-name> [--force] [--dry-run] [--lang=<bcp47-tag>] [--tool=codex|claude|opencode] [--locale=en]',
+      'Usage: aioson init <project-name> [--force] [--dry-run] [--no-hooks] [--lang=<bcp47-tag>] [--tool=codex|claude|opencode] [--locale=en]',
     non_empty_dir: 'Directory is not empty: {targetDir}. Use --force to continue.',
     created_at: 'Project created at: {targetDir}',
     files_copied: 'Files copied: {count}',
@@ -447,7 +447,10 @@ module.exports = {
     step_cd: '1. cd {projectName}',
     step_setup: '2. Open in your AI CLI and run @setup',
     step_agents: '3. If no visual picker appears, run: aioson agents',
-    step_agent_prompt: '4. Generate setup prompt for your tool: aioson agent:prompt setup --tool={tool}'
+    step_agent_prompt: '4. Generate setup prompt for your tool: aioson agent:prompt setup --tool={tool}',
+    hooks_installing: 'Installing AIOSON hooks (context:guard + runtime telemetry) — opt out with --no-hooks:',
+    hooks_skipped: 'Hooks skipped (--no-hooks). Install later with: aioson hooks:install',
+    hooks_failed: 'Hooks install failed (non-blocking): {message}. Install later with: aioson hooks:install'
   },
   init_all: {
     installing_full: 'Installing complete (all tools + squads) — wizard skipped via --all'
