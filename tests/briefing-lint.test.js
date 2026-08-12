@@ -152,6 +152,21 @@ test('kind=briefing measures a real briefing on disk end to end', async () => {
     assert.equal(res.exitCode, 0);
     assert.equal(res.metrics.sections_present, MANDATORY_SECTIONS.length);
 
+    // No prototype and no non-visual declaration → advisory warning, never an
+    // issue: a draft may legitimately not have built it yet, but approve will
+    // refuse, so the pending state must surface here first.
+    assert.equal(res.metrics.prototype_state, 'missing');
+    assert.ok(res.warnings.some((w) => w.includes('prototype unresolved')));
+
+    await fs.writeFile(path.join(dir, '.aioson/briefings', SLUG, 'prototype.html'), '<button>Go</button>\n', 'utf8');
+    const resolved = await runVerifyArtifact({
+      args: [dir],
+      options: { kind: 'briefing', slug: SLUG, json: true, advisory: true, suppressExitCode: true },
+      logger
+    });
+    assert.equal(resolved.metrics.prototype_state, 'prototype');
+    assert.ok(!resolved.warnings.some((w) => w.includes('prototype unresolved')));
+
     const missing = await runVerifyArtifact({
       args: [dir],
       options: { kind: 'briefing', slug: 'ghost', json: true, advisory: true, suppressExitCode: true },

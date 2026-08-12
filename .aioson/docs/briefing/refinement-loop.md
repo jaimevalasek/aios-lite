@@ -107,6 +107,7 @@ The briefing stays unchanged; the CLI records skipped changes and archives `refi
 ## Decide after apply
 
 - `next_action: resolve_blockers` or materially changed briefing → create at most one fresh review, then stop for browser feedback.
+- `next_action: build_prototype` → the briefing has visual scope but no owned prototype and no `prototype: not_applicable` declaration; run the prototype route before reporting readiness — `briefing:approve` refuses while it is unresolved.
 - No blockers and no substantive open questions → report readiness for user approval and Product.
 - Unchanged text with no new evidence → do not regenerate.
 

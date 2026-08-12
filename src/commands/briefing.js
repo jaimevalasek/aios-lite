@@ -31,6 +31,7 @@ const {
   validateFindingsInput
 } = require('../lib/briefing-refiner/feedback-schema');
 const { resolveBriefingPath } = require('../lib/briefing-refiner/briefing-paths');
+const { resolvePrototypeState } = require('../lib/briefing-refiner/prototype-resolution');
 const { writeReviewArtifacts } = require('../lib/briefing-refiner/review-html');
 const {
   applyConfirmedFeedback,
@@ -123,16 +124,11 @@ function readFlatFrontmatterField(content, field) {
 
 async function prepareApprovedPrototypeManifest(projectDir, slug, briefingContent = '') {
   const root = resolveBriefingPath(projectDir, slug);
-  const prototypePath = path.join(root, 'prototype.html');
   const manifestPath = path.join(root, 'prototype-manifest.md');
-  try {
-    await fsp.access(prototypePath);
-  } catch {
-    const explicitlyNonVisual = /^(?:prototype|prototype_status):\s*(?:not_applicable|not-applicable|none)\s*$/im.test(briefingContent)
-      || /##\s+Prototype contract[\s\S]*?\bstatus:\s*(?:not_applicable|not-applicable|none)\b/i.test(briefingContent);
-    return explicitlyNonVisual
-      ? { ok: true, applicable: false, nonVisual: true }
-      : { ok: false, error: 'prototype_resolution_missing', prototypePath };
+  const resolution = resolvePrototypeState(projectDir, slug, briefingContent);
+  if (resolution.state === 'non_visual') return { ok: true, applicable: false, nonVisual: true };
+  if (resolution.state === 'missing') {
+    return { ok: false, error: 'prototype_resolution_missing', prototypePath: resolution.prototypePath };
   }
 
   let manifest;
@@ -152,6 +148,29 @@ async function prepareApprovedPrototypeManifest(projectDir, slug, briefingConten
   let updated = updateFlatFrontmatterField(manifest, 'status', 'approved');
   updated = updateFlatFrontmatterField(updated, 'approved_at', new Date().toISOString());
   return { ok: true, applicable: true, manifestPath, updated };
+}
+
+// Every refusal of the prototype gate names what is missing, where it lives,
+// and the legitimate exits — a bare error code sent users into a wall.
+function logPrototypeGateError(logger, slug, failure) {
+  const base = `.aioson/briefings/${slug}`;
+  if (failure.error === 'prototype_resolution_missing') {
+    logger.error(`Briefing "${slug}" não pode ser aprovado: protótipo não resolvido (prototype_resolution_missing).`);
+    logger.error(`  Esperado: ${base}/prototype.html`);
+    logger.error('  Escopo visual → ative @briefing-refiner para gerar o protótipo antes da aprovação.');
+    logger.error('  Feature sem superfície visual → registre a linha `prototype: not_applicable` no briefings.md e aprove de novo.');
+  } else if (failure.error === 'prototype_manifest_missing') {
+    logger.error(`Briefing "${slug}" tem prototype.html, mas falta o manifesto (prototype_manifest_missing).`);
+    logger.error(`  Esperado: ${base}/prototype-manifest.md com \`feature: ${slug}\` e \`status: draft\` — @briefing-refiner deve gerá-lo.`);
+  } else if (failure.error === 'prototype_manifest_owner_mismatch') {
+    logger.error(`O manifesto do protótipo pertence a outra feature ("${failure.owner || '?'}", esperado "${slug}") (prototype_manifest_owner_mismatch).`);
+    logger.error(`  Corrija o campo \`feature:\` em ${base}/prototype-manifest.md — nunca reaproveite o protótipo de outro briefing.`);
+  } else if (failure.error === 'prototype_manifest_status_invalid') {
+    logger.error(`O manifesto do protótipo tem status inválido "${failure.status || '?'}" (prototype_manifest_status_invalid).`);
+    logger.error(`  Status aceitos: draft ou approved. Corrija ${base}/prototype-manifest.md.`);
+  } else {
+    logger.error(`Não foi possível aprovar o protótipo de "${slug}": ${failure.error}.`);
+  }
 }
 
 // ─── briefing:approve ─────────────────────────────────────────────────────────
@@ -215,7 +234,7 @@ async function runBriefingApprove({ args, options = {}, logger }) {
     briefingContent
   );
   if (!prototypeApproval.ok) {
-    logger.error(`Não foi possível aprovar o protótipo de "${target.slug}": ${prototypeApproval.error}.`);
+    logPrototypeGateError(logger, target.slug, prototypeApproval);
     return { ok: false, error: prototypeApproval.error, slug: target.slug };
   }
 
@@ -649,8 +668,21 @@ async function runBriefingApplyFeedback({ args, options = {}, logger }) {
       );
     } catch { /* no findings file, or archive failed — best-effort */ }
   }
-  if (result.reportData && result.archived) {
-    result.reportData.feedback_path = result.archived;
+  // An unresolved prototype makes `briefing:approve` refuse — never point the
+  // user there while it is missing. Blockers keep priority over this check.
+  let prototypePending = false;
+  if (result.nextAction === 'approve_briefing') {
+    try {
+      const updatedBriefing = await fsp.readFile(resolveBriefingPath(projectDir, slug, 'briefings.md'), 'utf8');
+      prototypePending = resolvePrototypeState(projectDir, slug, updatedBriefing).state === 'missing';
+    } catch { /* unreadable briefing — approve will surface it */ }
+  }
+  if (prototypePending) {
+    result.nextAction = 'build_prototype';
+    if (result.reportData) result.reportData.next_action = 'build_prototype';
+  }
+  if (result.reportData && (result.archived || prototypePending)) {
+    if (result.archived) result.reportData.feedback_path = result.archived;
     await writeRefinementReport(projectDir, slug, result.reportData);
   }
 
@@ -658,6 +690,10 @@ async function runBriefingApplyFeedback({ args, options = {}, logger }) {
   if (result.returnedToDraft) logger.log('  Briefing returned from approved to draft.');
   if (result.nextAction === 'resolve_blockers') {
     logger.log('  Blockers remain — resolve them and regenerate the review (aioson briefing:review).');
+  } else if (result.nextAction === 'build_prototype') {
+    logger.log('  No blockers, but the prototype is unresolved — `aioson briefing:approve` will refuse until it exists.');
+    logger.log(`  Visual scope → activate @briefing-refiner to build .aioson/briefings/${slug}/prototype.html (+ manifest).`);
+    logger.log('  Non-visual feature → record `prototype: not_applicable` in briefings.md, then approve.');
   } else {
     logger.log('  No blockers — approve with `aioson briefing:approve` and hand off to @product, or regenerate the review for another round.');
   }

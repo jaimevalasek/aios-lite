@@ -712,6 +712,20 @@ const ADAPTERS = {
       warnings.push(`source lineage analysis failed: ${error.message}`);
     }
 
+    // Prototype resolution is advisory here — a draft briefing may legitimately
+    // not have built it yet — but briefing:approve refuses while it is missing,
+    // so surface the pending state before the human hits that wall.
+    try {
+      const { resolvePrototypeState } = require('../lib/briefing-refiner/prototype-resolution');
+      const prototype = resolvePrototypeState(ctx.targetDir, ctx.slug, briefingText);
+      metrics.prototype_state = prototype.state;
+      if (prototype.state === 'missing') {
+        warnings.push(`prototype unresolved — briefing:approve will refuse until @briefing-refiner builds .aioson/briefings/${ctx.slug}/prototype.html or the briefing records \`prototype: not_applicable\``);
+      }
+    } catch (error) {
+      warnings.push(`prototype resolution check failed: ${error.message}`);
+    }
+
     const ok = issues.length === 0;
     return {
       ok,

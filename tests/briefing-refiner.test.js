@@ -217,9 +217,10 @@ test('briefing approval freezes an owned prototype and unapproval returns it to 
   assert.match(manifest, /^approved_at: null$/m);
 });
 
-test('briefing approval blocks an unresolved visual/prototype decision', async () => {
+test('briefing approval blocks an unresolved visual/prototype decision with an actionable message', async () => {
   const dir = await makeProject();
-  const logger = { log() {}, error() {} };
+  const lines = [];
+  const logger = { log: (m = '') => lines.push(String(m)), error: (m = '') => lines.push(String(m)) };
   await fs.writeFile(
     path.join(dir, '.aioson', 'briefings', 'idea-two', 'briefings.md'),
     '# Briefing without prototype resolution\n',
@@ -235,6 +236,37 @@ test('briefing approval blocks an unresolved visual/prototype decision', async (
     error: 'prototype_resolution_missing',
     slug: 'idea-two'
   });
+  // The refusal must name the expected path and both exits, not just the code.
+  const output = lines.join('\n');
+  assert.match(output, /prototype_resolution_missing/);
+  assert.match(output, /\.aioson\/briefings\/idea-two\/prototype\.html/);
+  assert.match(output, /@briefing-refiner/);
+  assert.match(output, /prototype: not_applicable/);
+});
+
+test('briefing approval names the manifest problem when prototype.html exists', async () => {
+  const dir = await makeProject();
+  const lines = [];
+  const logger = { log: (m = '') => lines.push(String(m)), error: (m = '') => lines.push(String(m)) };
+  const briefingDir = path.join(dir, '.aioson', 'briefings', 'idea-two');
+  await fs.writeFile(path.join(briefingDir, 'briefings.md'), '# Visual briefing\n', 'utf8');
+  await fs.writeFile(path.join(briefingDir, 'prototype.html'), '<button>Save</button>\n', 'utf8');
+
+  // No manifest at all → the message names the expected file and owner fields.
+  const missing = await runBriefingApprove({ args: [dir], options: { slug: 'idea-two' }, logger });
+  assert.equal(missing.error, 'prototype_manifest_missing');
+  assert.match(lines.join('\n'), /prototype-manifest\.md com `feature: idea-two`/);
+
+  // A manifest owned by another feature → the mismatch names both slugs.
+  lines.length = 0;
+  await fs.writeFile(
+    path.join(briefingDir, 'prototype-manifest.md'),
+    '---\nfeature: someone-else\nstatus: draft\n---\n\n# Prototype\n',
+    'utf8'
+  );
+  const mismatch = await runBriefingApprove({ args: [dir], options: { slug: 'idea-two' }, logger });
+  assert.equal(mismatch.error, 'prototype_manifest_owner_mismatch');
+  assert.match(lines.join('\n'), /"someone-else", esperado "idea-two"/);
 });
 
 test('briefing:unapprove refuses an approved briefing that already generated a PRD', async () => {
@@ -816,15 +848,18 @@ test('briefing:apply-feedback dry-runs, applies with --confirm, archives, and ke
   const untouched = await fs.readFile(path.join(dir, '.aioson/briefings/idea-one/briefings.md'), 'utf8');
   assert.equal(untouched.includes('Refined problem via CLI.'), false);
 
-  // confirm: applies, archives the consumed feedback + findings
+  // confirm: applies, archives the consumed feedback + findings. idea-one has
+  // neither a prototype nor a non-visual declaration, so the next action is
+  // build_prototype — approve would refuse.
   const applied = await runBriefingApplyFeedback({ args: [dir], options: { slug: 'idea-one', confirm: true }, logger });
   assert.equal(applied.ok, true);
-  assert.equal(applied.nextAction, 'approve_briefing');
+  assert.equal(applied.nextAction, 'build_prototype');
   assert.equal(applied.archived, '.aioson/briefings/idea-one/refinement-feedback.applied-round1.json');
   const markdown = await fs.readFile(path.join(dir, '.aioson/briefings/idea-one/briefings.md'), 'utf8');
   const appliedReport = await fs.readFile(path.join(dir, '.aioson/briefings/idea-one/refinement-report.md'), 'utf8');
   assert.equal(markdown.includes('Refined problem via CLI.'), true);
   assert.match(appliedReport, /Feedback: \.aioson\/briefings\/idea-one\/refinement-feedback\.applied-round1\.json/);
+  assert.match(appliedReport, /Next action: build_prototype/);
   assert.match(appliedReport, /Approved review authority: binding/);
   assert.match(appliedReport, /F1 \[legacy_recommendation\].*Adopt a measurable smoke scenario/);
   assert.doesNotMatch(appliedReport, /F2 \[(?:structured_selection|legacy_recommendation)\]/);
@@ -837,6 +872,63 @@ test('briefing:apply-feedback dry-runs, applies with --confirm, archives, and ke
   assert.equal(next.ok, true);
   assert.equal(next.round, 2);
   assert.equal(next.findings, 0);
+});
+
+test('briefing:apply-feedback next action is prototype-aware', async () => {
+  const dir = await makeProject();
+  const logger = { log() {}, error() {} };
+  const briefingDir = path.join(dir, '.aioson/briefings/idea-one');
+  const feedbackPath = path.join(briefingDir, 'refinement-feedback.json');
+
+  async function exportAndApply(sectionId, text, applyLogger = logger) {
+    const feedback = JSON.parse(await fs.readFile(feedbackPath, 'utf8'));
+    feedback.export_method = 'download';
+    const section = feedback.sections.find((s) => s.id === sectionId);
+    section.status = 'change_requested';
+    section.current_text = text;
+    await fs.writeFile(feedbackPath, JSON.stringify(feedback, null, 2), 'utf8');
+    return runBriefingApplyFeedback({ args: [dir], options: { slug: 'idea-one', confirm: true }, logger: applyLogger });
+  }
+
+  // Round 1: no prototype, no non-visual declaration → build_prototype, and the
+  // CLI must NOT send the user to briefing:approve (which would refuse).
+  await runBriefingReview({ args: [dir], options: { slug: 'idea-one' }, logger });
+  const lines = [];
+  const capture = { log: (m = '') => lines.push(String(m)), error: (m = '') => lines.push(String(m)) };
+  const first = await exportAndApply('problem', 'Problem v2.', capture);
+  assert.equal(first.ok, true);
+  assert.equal(first.nextAction, 'build_prototype');
+  const report = await fs.readFile(path.join(briefingDir, 'refinement-report.md'), 'utf8');
+  assert.match(report, /Next action: build_prototype/);
+  const output = lines.join('\n');
+  assert.match(output, /prototype is unresolved/);
+  assert.match(output, /@briefing-refiner/);
+  assert.doesNotMatch(output, /approve with/);
+
+  // Round 2: prototype built → approve_briefing returns.
+  await fs.writeFile(path.join(briefingDir, 'prototype.html'), '<button>Go</button>\n', 'utf8');
+  await runBriefingReview({ args: [dir], options: { slug: 'idea-one' }, logger });
+  const second = await exportAndApply('context', 'Context v2.');
+  assert.equal(second.ok, true);
+  assert.equal(second.nextAction, 'approve_briefing');
+  const secondReport = await fs.readFile(path.join(briefingDir, 'refinement-report.md'), 'utf8');
+  assert.match(secondReport, /Next action: approve_briefing/);
+
+  // A non-visual declaration is the other legitimate exit: idea-two declares
+  // prototype: not_applicable, so its confirmed apply keeps approve_briefing.
+  await fs.writeFile(
+    path.join(dir, '.aioson/briefings/idea-two/briefings.md'),
+    `---\nprototype: not_applicable\n---\n\n${BRIEFING}`,
+    'utf8'
+  );
+  await runBriefingReview({ args: [dir], options: { slug: 'idea-two' }, logger });
+  const ideaTwoFeedbackPath = path.join(dir, '.aioson/briefings/idea-two/refinement-feedback.json');
+  const ideaTwoFeedback = JSON.parse(await fs.readFile(ideaTwoFeedbackPath, 'utf8'));
+  ideaTwoFeedback.export_method = 'download';
+  await fs.writeFile(ideaTwoFeedbackPath, JSON.stringify(ideaTwoFeedback, null, 2), 'utf8');
+  const nonVisual = await runBriefingApplyFeedback({ args: [dir], options: { slug: 'idea-two', confirm: true }, logger });
+  assert.equal(nonVisual.ok, true);
+  assert.equal(nonVisual.nextAction, 'approve_briefing');
 });
 
 test('AC-BRDR-06: confirmed structured selection is recorded with rationale, evidence, hashes, and exact archive', async () => {
