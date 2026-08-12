@@ -30,6 +30,8 @@ Use `.aioson/genomes/INDEX.md` for discovery. Its operational sections are bindi
 
 If several installed masters fit equally and the choice would materially change voice, recommend one and ask. Otherwise select from explicit project/index evidence.
 
+In squad context, the strongest voice signal is a binding whose `approval` block is current: the user already ratified that voice on a real specimen via `genome:approve`. Prefer an approved, non-stale binding over an equally-fitting unapproved master; a stale approval (source hash or compilation identity drifted since the freeze) is surfaced as a flag, never silently reused as if current.
+
 ## Audience depth
 
 Confirm audience identity, lived problem, desired outcome, decision triggers, objections, vocabulary, and proof threshold. If evidence is shallow, construct a compact working avatar from PRD/discovery/user input and label inferred claims; do not depend on a missing avatar reference.

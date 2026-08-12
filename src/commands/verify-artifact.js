@@ -163,20 +163,41 @@ const RULESETS = {
     ]
   }),
 
-  // copywriter — an advisory placeholder/template scan over the saved copy doc
-  // (the rich resonance checks stay in the agent's Phase-5 checklist; this just
-  // makes "no placeholder/Lorem/TODO/unfilled token/headline formula"
+  // copywriter — an advisory placeholder/template scan over the saved copy
+  // artifacts (the rich resonance checks stay in the agent's Phase-5 checklist;
+  // this just makes "no placeholder/Lorem/TODO/unfilled token/headline formula"
   // deterministic). Visual slop has a twin in copy: a headline that still works
   // after the product is swapped out is the same regression to the mean.
-  copy: (ctx) => ({
-    label: 'copywriter copy document',
-    criteria: [{
-      id: 'copy',
-      files: [`.aioson/context/copy-${ctx.slug}.md`],
-      must_match: [],
-      must_not_match: [...PLACEHOLDER_PATTERNS, ...TEMPLATE_TOKENS, ...COPY_CLICHES]
-    }]
-  }),
+  // The six modes write four canonical documents; the scan covers whichever
+  // exist for the slug — a VSL-only session used to fail on the absent
+  // copy-{slug}.md while the actual script went unscanned. Only a slug with no
+  // copy artifact at all is an issue.
+  copy: (ctx) => {
+    const candidates = [
+      `.aioson/context/copy-${ctx.slug}.md`,
+      `.aioson/context/copy-review-${ctx.slug}.md`,
+      `.aioson/context/vsl-script-${ctx.slug}.md`,
+      `.aioson/context/campaign-${ctx.slug}.md`
+    ];
+    const present = candidates.filter((rel) => fs.existsSync(path.resolve(ctx.targetDir, rel)));
+    if (present.length === 0) {
+      // One criterion carrying all four paths, so the failure names every
+      // canonical location the copywriter could have written.
+      return {
+        label: 'copywriter copy document',
+        criteria: [{ id: 'copy', files: candidates, must_match: [], must_not_match: [] }]
+      };
+    }
+    return {
+      label: 'copywriter copy document',
+      criteria: present.map((rel) => ({
+        id: `copy:${path.basename(rel)}`,
+        files: [rel],
+        must_match: [],
+        must_not_match: [...PLACEHOLDER_PATTERNS, ...TEMPLATE_TOKENS, ...COPY_CLICHES]
+      }))
+    };
+  },
 
   // reference-identity-extract — identity.md is the extracted token + per-component
   // structure system-of-record. Its path varies by scope (briefing vs brand) so it is

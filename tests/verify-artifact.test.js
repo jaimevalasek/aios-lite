@@ -350,6 +350,43 @@ test('kind=copy --advisory: reports issues without blocking (exit stays 0)', asy
   process.exitCode = prev;
 });
 
+test('kind=copy scans every canonical mode output that exists — a VSL-only session is measured, not failed', async () => {
+  // Mode 5 writes only vsl-script-{slug}.md; the scan must cover it instead of
+  // failing on the absent copy-{slug}.md.
+  const vslOnly = await tmp();
+  await write(vslOnly, '.aioson/context/vsl-script-launch.md', COPY_OK);
+  const ok = await runKind(vslOnly, 'copy', 'launch');
+  assert.equal(ok.ok, true, JSON.stringify(ok.issues));
+
+  await write(vslOnly, '.aioson/context/vsl-script-launch.md', `${COPY_OK}\nLorem ipsum dolor\n`);
+  const bad = await runKind(vslOnly, 'copy', 'launch');
+  assert.equal(bad.ok, false);
+  assert.match(bad.issues.join('\n'), /vsl-script-launch\.md/);
+
+  // Mode 6 writes campaign + body: a placeholder in EITHER file fails.
+  const campaign = await tmp();
+  await write(campaign, '.aioson/context/copy-launch.md', COPY_OK);
+  await write(campaign, '.aioson/context/campaign-launch.md', `${COPY_OK}\nTODO: subjects\n`);
+  const mixed = await runKind(campaign, 'copy', 'launch');
+  assert.equal(mixed.ok, false);
+  assert.match(mixed.issues.join('\n'), /campaign-launch\.md/);
+
+  // Mode 3 (review/rewrite) is scanned too.
+  const review = await tmp();
+  await write(review, '.aioson/context/copy-review-launch.md', COPY_OK);
+  assert.equal((await runKind(review, 'copy', 'launch')).ok, true);
+});
+
+test('kind=copy with no artifact at all names every canonical location', async () => {
+  const dir = await tmp();
+  const r = await runKind(dir, 'copy', 'launch');
+  assert.equal(r.ok, false);
+  const joined = r.issues.join('\n');
+  for (const rel of ['copy-launch.md', 'copy-review-launch.md', 'vsl-script-launch.md', 'campaign-launch.md']) {
+    assert.ok(joined.includes(rel), `missing-artifact issue must name ${rel}`);
+  }
+});
+
 // ───────────────────────── commit-message (advisory subject heuristics) ─────────────────────────
 
 test('evaluateCommitMessage: a clean Conventional Commits subject has no issues', () => {

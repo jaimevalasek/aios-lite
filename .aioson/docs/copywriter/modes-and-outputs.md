@@ -12,7 +12,7 @@ triggers: [copywriter activation, landing copy, section copy, VSL, campaign pack
 1. **Full page:** all copy for a landing, sales, event, product, or SaaS page. Save `.aioson/context/copy-{slug}.md`.
 2. **Section:** hero, benefits, proof, FAQ, CTA, onboarding, error, empty state, tooltip, or other named section. Update only that section in `copy-{slug}.md`.
 3. **Review and rewrite:** diagnose supplied copy, annotate material conversion weaknesses, and provide a replacement. Save `.aioson/context/copy-review-{slug}.md`.
-4. **Squad executor:** obey the squad content blueprint, genome bindings, output directory, and acceptance contract; squad authority overrides generic defaults.
+4. **Squad executor:** obey the squad content blueprint, genome bindings, output directory, and acceptance contract; squad authority overrides generic defaults. Specimen production for `genome:approve` runs through this mode: the held-out piece a user inspects before freezing a master-voice binding is written by the copywriter under `output/{squad-slug}/specimen/{genome-slug}/`, with the bound genome compiled and active. The freeze itself stays with the user.
 5. **VSL:** complete script using `vsl-craft.md`. Save `.aioson/context/vsl-script-{slug}.md`.
 6. **Campaign package:** coordinated landing/body, headline matrix, channel ads, CTA matrix, and email subjects. Save `.aioson/context/campaign-{slug}.md`, also save body copy to `copy-{slug}.md`, and emit campaign JSON only when requested.
 
