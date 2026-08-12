@@ -1,6 +1,6 @@
 'use strict';
 
-const fs = require('node:fs');
+const { writeThrough } = require('./lib/console-write');
 const { parseArgv } = require('./parser');
 const { createTranslator, normalizeLocale } = require('./i18n');
 const { runInit } = require('./commands/init');
@@ -960,10 +960,10 @@ function toText(value) {
 function createLogger() {
   return {
     log(value = '') {
-      fs.writeSync(1, `${toText(value)}\n`);
+      writeThrough(process.stdout, 1, `${toText(value)}\n`);
     },
     error(value = '') {
-      fs.writeSync(2, `${toText(value)}\n`);
+      writeThrough(process.stderr, 2, `${toText(value)}\n`);
     }
   };
 }
@@ -1234,7 +1234,7 @@ function commandSupportsJson(command) {
 
 function writeJson(payload) {
   const text = `${JSON.stringify(payload, null, 2)}\n`;
-  fs.writeSync(1, text);
+  writeThrough(process.stdout, 1, text);
 }
 
 async function main() {
