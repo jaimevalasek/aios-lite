@@ -200,7 +200,7 @@ const RULESETS = {
 
 // Kinds whose target file path is keyed by --slug; without it we cannot resolve
 // the artifact, so fail with a clear usage error instead of a `null/` path.
-const REQUIRES_SLUG = new Set(['genome', 'research-report', 'enriched-profile', 'hybrid-skill', 'copy', 'review']);
+const REQUIRES_SLUG = new Set(['genome', 'research-report', 'enriched-profile', 'hybrid-skill', 'copy', 'review', 'sources']);
 
 // Kinds whose artifact has a date-stamped / caller-known path — resolved via
 // --file=<path> rather than derived from a slug.
@@ -586,6 +586,52 @@ const ADAPTERS = {
       issues,
       warnings,
       checks: [{ id: `rule:${path.basename(rel, '.md')}`, ok: issues.length === 0, detail: issues.join('; ') || null }]
+    };
+  },
+
+  // Sheldon's source-pack verification, machine-run: re-hash every inventoried
+  // source against its recorded fingerprint and reconcile the SRC-* / PROM-* /
+  // Source Coverage bijections plus lifecycle — the work the kernel previously
+  // asked the model to redo by hand, file by file. Reuses the same lineage
+  // analyzer the gates already trust; this only exposes its verdict early.
+  sources: async (ctx) => {
+    const { analyzeFeatureCompleteness } = require('../lib/feature-completeness');
+    let analysis;
+    try {
+      analysis = await analyzeFeatureCompleteness(ctx.targetDir, ctx.slug, {});
+    } catch (error) {
+      return { ok: false, issues: [`source lineage analysis failed: ${error.message}`], warnings: [], checks: [] };
+    }
+    const lineage = analysis.source_lineage
+      || { applicable: false, findings: [], inventory: [], promises: [], coverage: [] };
+    if (!lineage.applicable) {
+      return {
+        ok: true,
+        issues: [],
+        warnings: ['source lineage not applicable: no briefing found for this feature'],
+        checks: [{ id: 'sources', ok: true, detail: 'not applicable' }],
+        metrics: { applicable: false }
+      };
+    }
+    const issues = lineage.findings.map((f) => `[${f.check}] ${f.message}`);
+    const present = lineage.inventory.filter((item) => item.file_status === 'present').length;
+    const ok = issues.length === 0;
+    return {
+      ok,
+      issues,
+      warnings: [],
+      checks: [{ id: 'sources', ok, detail: issues.join('; ') || null }],
+      metrics: {
+        applicable: true,
+        sources_total: lineage.inventory.length,
+        sources_present: present,
+        sources_missing: lineage.inventory.length - present,
+        promises_total: lineage.promises.length,
+        promises_required: lineage.promises.filter((p) => p.state === 'required').length,
+        coverage_rows: lineage.coverage.length,
+        lifecycle_stage: lineage.lifecycle ? lineage.lifecycle.stage : null,
+        absorbed: lineage.lifecycle ? lineage.lifecycle.absorbed : null
+      }
     };
   },
 

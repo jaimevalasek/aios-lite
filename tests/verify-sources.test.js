@@ -1,0 +1,162 @@
+'use strict';
+
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const crypto = require('node:crypto');
+const fs = require('node:fs/promises');
+const os = require('node:os');
+const path = require('node:path');
+
+const { runVerifyArtifact, availableKinds } = require('../src/commands/verify-artifact');
+
+function makeLogger() {
+  const lines = [];
+  return { log: (m = '') => lines.push(String(m)), error: (m = '') => lines.push(String(m)), warn: () => {}, lines };
+}
+
+async function makeTmpDir() {
+  return fs.mkdtemp(path.join(os.tmpdir(), 'aioson-verify-sources-'));
+}
+
+async function writeFile(dir, relPath, content) {
+  const full = path.join(dir, relPath);
+  await fs.mkdir(path.dirname(full), { recursive: true });
+  await fs.writeFile(full, content, 'utf8');
+  return full;
+}
+
+const SOURCE_TEXT = 'Approved raw source: users record and cancel orders.\n';
+const SOURCE_SHA = crypto.createHash('sha256').update(SOURCE_TEXT).digest('hex');
+
+function briefingText(sha) {
+  return `---
+slug: orders
+source_plans: ["plans/orders-source.md"]
+---
+
+# Briefing — Orders
+
+### Source Inventory
+
+| SRC | Path | SHA-256 | Purpose |
+|---|---|---|---|
+| SRC-001 | plans/orders-source.md | ${sha} | Approved raw source for the order lifecycle |
+
+### Source Promise Map
+
+| Promise | Source | Approved intent | State |
+|---|---|---|---|
+| PROM-001 | SRC-001 | Users record an order from the entry point | required |
+| PROM-002 | SRC-001 | Users cancel an order with confirmation | required |
+`;
+}
+
+const PRD_TEXT = `---
+feature: orders
+prototype: null
+prototype_status: none
+---
+
+# PRD — Orders
+
+## Source Coverage
+
+| Promise | Decision | CAP / AC | Evidence / rationale |
+|---|---|---|---|
+| PROM-001 | required | CAP-orders-create / AC-orders-01 | Order recording is the core promise of the approved source |
+| PROM-002 | required | CAP-orders-cancel / AC-orders-02 | Cancellation flow confirmed in the approved source |
+
+## Feature Capability Map
+
+| CAP | Promised outcome | Actor / trigger | Scope decision | Rationale |
+|---|---|---|---|---|
+| CAP-orders-create | User records an order and sees it listed | User submits the order form | required | Core promise |
+| CAP-orders-cancel | User cancels an order with confirmation | User clicks cancel | required | Approved lifecycle |
+
+## Acceptance Criteria
+
+| AC | CAP | Observable behavior | Evidence |
+|---|---|---|---|
+| AC-orders-01 | CAP-orders-create | Submitting a valid order shows it in the list with its total | focused automated test + production-path smoke |
+| AC-orders-02 | CAP-orders-cancel | Cancelling asks for confirmation and the order leaves the active list | integration test with fixture orders |
+`;
+
+async function makeProject({ sha = SOURCE_SHA, sourceText = SOURCE_TEXT, prd = PRD_TEXT } = {}) {
+  const dir = await makeTmpDir();
+  await writeFile(dir, 'plans/orders-source.md', sourceText);
+  await writeFile(dir, '.aioson/briefings/orders/briefings.md', briefingText(sha));
+  await writeFile(dir, '.aioson/context/prd-orders.md', prd);
+  return dir;
+}
+
+test('kind=sources verifies a coherent source pack clean, with the inventory measured', async () => {
+  assert.ok(availableKinds().includes('sources'));
+  const dir = await makeProject();
+
+  const report = await runVerifyArtifact({
+    args: [dir],
+    options: { kind: 'sources', slug: 'orders', json: true, suppressExitCode: true },
+    logger: makeLogger()
+  });
+
+  assert.equal(report.kind, 'sources');
+  assert.deepEqual(report.issues, [], `expected clean, got: ${report.issues.join(' | ')}`);
+  assert.equal(report.ok, true);
+  assert.equal(report.metrics.sources_total, 1);
+  assert.equal(report.metrics.sources_present, 1);
+  assert.equal(report.metrics.promises_required, 2);
+  assert.equal(report.metrics.coverage_rows, 2);
+});
+
+test('a source edited after the briefing snapshot is a stale fingerprint issue', async () => {
+  const dir = await makeProject({ sourceText: SOURCE_TEXT + 'tampered after approval\n' });
+
+  const report = await runVerifyArtifact({
+    args: [dir],
+    options: { kind: 'sources', slug: 'orders', json: true, suppressExitCode: true },
+    logger: makeLogger()
+  });
+
+  assert.equal(report.ok, false);
+  assert.match(report.issues.join('\n'), /source_fingerprint_stale.*SRC-001/);
+});
+
+test('a promise dropped from Source Coverage is caught by the machine, not the model', async () => {
+  const prdMissingProm = PRD_TEXT.replace(/\| PROM-002 \|.*\n/, '');
+  const dir = await makeProject({ prd: prdMissingProm });
+
+  const report = await runVerifyArtifact({
+    args: [dir],
+    options: { kind: 'sources', slug: 'orders', json: true, suppressExitCode: true },
+    logger: makeLogger()
+  });
+
+  assert.equal(report.ok, false);
+  assert.match(report.issues.join('\n'), /source_promise_dropped.*PROM-002/);
+});
+
+test('a feature with no briefing reports not-applicable instead of failing', async () => {
+  const dir = await makeTmpDir();
+  await writeFile(dir, '.aioson/context/prd-orders.md', PRD_TEXT);
+
+  const report = await runVerifyArtifact({
+    args: [dir],
+    options: { kind: 'sources', slug: 'orders', json: true, suppressExitCode: true },
+    logger: makeLogger()
+  });
+
+  assert.equal(report.ok, true);
+  assert.deepEqual(report.issues, []);
+  assert.match(report.warnings.join('\n'), /not applicable/);
+});
+
+test('kind=sources without --slug fails with the standard message', async () => {
+  const dir = await makeTmpDir();
+  const report = await runVerifyArtifact({
+    args: [dir],
+    options: { kind: 'sources', json: true, suppressExitCode: true },
+    logger: makeLogger()
+  });
+  assert.equal(report.ok, false);
+  assert.match((report.issues || []).join('\n'), /requires --slug/);
+});

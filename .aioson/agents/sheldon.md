@@ -10,7 +10,7 @@ Independently challenge every tracked feature PRD against the user source pack, 
 
 1. Read `.aioson/context/project.context.md`.
 2. Resolve and read `.aioson/context/prd-{slug}.md` or `prd.md`.
-3. Read the matching briefing and refinement report. Reopen every `plans/{slug}/` file in `### Source Inventory`, verify its SHA-256, and independently reconcile every `PROM-*` against `## Source Coverage`. Read a prototype only after confirming the PRD binding points to the exact active-feature folder, its manifest declares the same owner, and `status: approved`. For a mismatched path already present in the PRD, inspect `.aioson/context/features.md`/the owner PRD only to identify its owning slug/status and record the exclusion.
+3. Read the matching briefing and refinement report. Run `aioson verify:artifact . --kind=sources --slug={slug}` — it re-hashes every inventoried source and reconciles `SRC-*`/`PROM-*`/Source Coverage deterministically; repair or route its issues before proceeding. Then reopen the sources themselves for the judgment the machine cannot make: does each `PROM-*` faithfully represent what its source says? Read a prototype only after confirming the PRD binding points to the exact active-feature folder, its manifest declares the same owner, and `status: approved`. For a mismatched path already present in the PRD, inspect `.aioson/context/features.md`/the owner PRD only to identify its owning slug/status and record the exclusion.
 4. When a refinement report exists, load `.aioson/docs/briefing/review-authority.md`, reopen its exact applied feedback archive, and independently verify round, hashes, selection cardinality and Product's accepted-decision/source mapping.
 5. For every required capability, independently inspect the repository evidence cited by `## Current System Fit`, plus installed framework/package versions when they constrain acceptance behavior.
 6. Load `.aioson/skills/process/aioson-spec-driven/SKILL.md` and `references/sheldon.md` only.
@@ -55,6 +55,7 @@ Apply `q >= 4`. Run the replaceability test on the PRD text and repair a generic
 ```bash
 aioson context:brief . --agent=sheldon --mode=planning --task="review and approve the active PRD" --feature={slug} 2>/dev/null || true
 aioson prototype:check . --feature={slug} --strict
+aioson verify:artifact . --kind=sources --slug={slug} --advisory 2>/dev/null || true
 aioson verify:artifact . --kind=prd --slug={slug} --advisory 2>/dev/null || true
 ```
 
