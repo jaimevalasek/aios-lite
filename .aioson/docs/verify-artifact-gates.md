@@ -1,6 +1,6 @@
 ---
 description: "Artifact done-gates (verify:artifact) — build-free, model-agnostic completeness/integrity checks for the non-code artifacts the specialized agents produce before they register done."
-agents: [setup, genome, profiler-researcher, profiler-enricher, profiler-forge, discover, orache, design-hybrid-forge, site-forge, copywriter, committer, squad]
+agents: [setup, genome, profiler-researcher, profiler-enricher, profiler-forge, discover, orache, design-hybrid-forge, site-forge, copywriter, committer, squad, briefing, briefing-refiner, product, sheldon, tester, dev]
 task_types: [verification, configuration]
 triggers: [verify:artifact, artifact gate, done gate, artifact done-gate, placeholder gate, kind=]
 ---
@@ -40,6 +40,15 @@ done-gate line, not a bespoke implementation.
 | `site` | `@site-forge` | static floor + `npm run build` on the real stack | blocking |
 | `copy` | `@copywriter` | ruleset (placeholder / Lorem / TODO / unfilled-token scan) | advisory |
 | `commit-message` | `@committer` | subject heuristics (`--file` draft or HEAD commit) | advisory |
+| `briefing` | `@briefing` | briefing lint (registry lifecycle/structure, prototype-pending surfacing) | advisory |
+| `identity` | `@briefing-refiner` | ruleset (identity record shape and binding coherence) | advisory |
+| `prd` | `@sheldon` (advisory preflight also in `@product`) | PRD lint (PROM coverage, CAP→fit rows, AC chain, assertion-only-evidence ban, binding coherence) | blocking before the seal |
+| `sources` | `@sheldon`, `@product` | source-pack re-hash + `SRC-*`/`PROM-*`/Source Coverage reconciliation | blocking |
+| `review` | `@briefing-refiner` | review-surface gate (canonical marker, stale `source_hash`, feedback schema) | advisory |
+| `visual` | `@dev` / design flows | visual-quality measurement over the delivered surface | advisory |
+| `test-report` | `@tester` | test-report lint (mandatory sections, hypothesis classes, correction packet) | blocking done gate |
+| `squad-pilot` | `@squad` | squad-pilot lint (pilot block, fingerprint, deliverable + builder drift) | blocking — `squad:pilot-approve` refuses while issues remain |
+| `rule` | any rule author (`rule:new` hint) | ruleset (`.aioson/rules/` frontmatter and shape) | advisory |
 
 ## Contract
 
@@ -80,6 +89,8 @@ A squad ships through its own `aioson squad:validate` (structural: manifest
 schema, required files, every declared executor file exists, no duplicate slugs,
 canonical paths) plus its source-grounded multi-model **eval-gate** — both
 promoted from opt-in into the default `validate` step. See `@squad`'s Done gate.
+The squad's pilot deliverable additionally runs `verify:artifact --kind=squad-pilot`
+(table above), and freezing it stays user-only via `squad:pilot-approve`.
 
 ## Why this shape
 

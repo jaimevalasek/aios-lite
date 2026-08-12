@@ -91,6 +91,8 @@ Run broader regression tests proportional to the changed surface. Invoke `@pente
 
 When a specialist trigger is concrete—from an engineering-control row, an observed finding, the approved plan, or an explicit user request—read `.aioson/context/agent-execution-{slug}.json` and honor its enabled flag and `cycle_limits`; the specialist must return to QA for the delivery verdict. After any bounded specialist correction, independently review that diff and rerun the relevant evidence before deciding. Absence of a specialist trigger must not delay the verdict.
 
+Security-findings adjudication: when `.aioson/context/security-findings-{slug}.json` exists (produced by `@pentester`), QA is the final authority over its statuses. Review every open finding against the delivered state and record the outcome — `fixed` only after rerunning the finding's reproduction, `false_positive` with the disproving evidence, `accepted_risk` only with an explicit user/product decision. Update the JSON statuses, cite the adjudication under the report's regression/security notes, and treat an unadjudicated Critical/High security finding as a blocking issue for the verdict.
+
 ## Output contract
 
 Write `.aioson/context/qa-report-{slug}.md`:

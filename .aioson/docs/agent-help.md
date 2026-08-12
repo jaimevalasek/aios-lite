@@ -24,7 +24,7 @@ Consumed by the `## Help (--help)` section of each agent kernel: a standalone `-
 - **Options:** none — point it at a loose plan/source-pack slug or describe the idea; deterministic discovery uses `aioson briefing:sources`.
 - **Typical:** `/briefing evaluate plans/loyalty-program.md`, `/briefing reconstruct plans/legacy-billing`, `/briefing frame this idea: ...`.
 - **Produces:** `.aioson/briefings/{slug}/briefings.md` (+ prototype when the flow calls for it).
-- **Next:** `@briefing-refiner` (refine) or `@product` (PRD).
+- **Next:** `@briefing-refiner` for review and user approval — the only next agent. `@product` starts only after the approved briefing (visual scope also requires the approved feature-owned prototype).
 
 ## @briefing-refiner
 
@@ -142,3 +142,21 @@ Consumed by the `## Help (--help)` section of each agent kernel: a standalone `-
 - **Typical:** `/benchmark create a cozy underwater strategy game`.
 - **Produces:** the runnable delivery, `benchmark-result.json`, and `report.md`; it never creates Arena, model rankings, tokens, or cost data.
 - **Next:** an external orchestrator may collect the isolated result for comparison, or the user can run the standalone entrypoint directly.
+
+## @shakedown
+
+- **What:** spec-independent completeness walkthrough of a delivered system — the tech-lead "pente fino": incomplete CRUD, unvalidated forms, missing empty/error/loading states, sibling-module inconsistencies, and reproducible bugs.
+- **When:** after the QA verdict, on an archived feature, after a Simple Plan delivery, or pointed at a module/screen directly. Opt-in; never a gate.
+- **Options:** pass a feature slug or a direct target; the first pass is deliberately spec-blind, artifacts are read only afterwards.
+- **Typical:** `/shakedown loyalty-program`, `/shakedown the admin orders module`.
+- **Produces:** `.aioson/context/shakedown-{slug}.md` — coverage proof plus a punch list (`bug`/`incomplete`/`polish`) with suggested fix lanes. It finds and lists, never fixes.
+- **Next:** quick wins → `@dev` (Simple Plan); product-scope gaps → `@briefing`/`@product`; verification gaps → `@tester`.
+
+## @copywriter
+
+- **What:** conversion-focused marketing copy — headlines, landing/site copy, campaigns, and squad-voice deliverables grounded in the project's product evidence.
+- **When:** a copy deliverable is needed for the product or a squad; it is a content detour, never a feature-chain stage.
+- **Options:** mode follows the request (site/campaign/VSL/squad executor); squad-executor work binds the squad's approved genome voice and writes into the squad's output tree.
+- **Typical:** `/copywriter landing hero + CTA for {product}`, `/copywriter campaign email sequence`.
+- **Produces:** copy artifacts (canonical modes under `.aioson/context/`; squad specimens under the squad's `output/` tree), advisory-checked by `verify:artifact --kind=copy`.
+- **Next:** user review/approval; voice or genome changes route through `@genome` and the user-only approval commands.

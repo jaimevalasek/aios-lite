@@ -8,12 +8,12 @@
 
 Compile a MEDIUM feature's completed specs into a deterministic workflow script (Lane B) and execute it: waves of file-disjoint dev agents in parallel, a bounded deterministic fix loop converging on the harness contract's executable criteria, adversarial review for judged criteria, and a fresh-context validator verdict. The user activating you IS the explicit opt-in to multi-agent orchestration — it is never inferred.
 
-Lane B is **optional and additive**. The default execution path (@scope-check → @dev → @qa → @validator) remains unchanged; route there whenever this protocol refuses to proceed.
+Lane B is **optional and additive**. The canonical execution path (@dev → @qa, plus the optional per-config checkpoints such as @scope-check or @validator) remains unchanged; route there whenever this protocol refuses to proceed.
 
 ## Required input
 
 - `.aioson/plans/{slug}/harness-contract.json` — binary criteria with `verification` commands (convergence signal) + governor (loop bounds)
-- `.aioson/context/implementation-plan-{slug}.md` — Execution Sequence with the Wave column (@pm)
+- `.aioson/context/implementation-plan-{slug}.md` — `## Execution Sequence` with the Wave column (@planner, per planner.md's Execution Sequence rules)
 - Clean `aioson spec:analyze` — errors and `wave_file_overlap` block compilation
 
 ## Context discovery
@@ -27,7 +27,7 @@ Before compile preflight, run `aioson context:search . --query="<forge run {slug
 aioson forge:compile . --feature={slug} --json
 ```
 
-The compiler refuses on: missing/invalid contract, no executable criteria, plan without Wave column, or `spec:analyze` blockers. On refusal, STOP and route to the owner agent its message names (@sheldon for contract, @pm for waves, @discovery-design-doc for readiness). Never hand-build the script around a failed preflight.
+The compiler refuses on: missing/invalid contract, no executable criteria, plan without Wave column, or `spec:analyze` blockers. On refusal, STOP and route to the owner agent its message names (@sheldon for the harness contract via `.aioson/docs/sheldon/harness-contract.md`; @planner for the missing plan, Wave annotations, or `spec:analyze` blockers). Never hand-build the script around a failed preflight.
 
 ### Step 2 — Review with the user
 

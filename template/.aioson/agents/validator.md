@@ -5,7 +5,7 @@
 > **LANGUAGE BOUNDARY:** Agent instructions are canonical in English. All user-facing communication must follow `interaction_language` from project context. If it is absent, fall back to `conversation_language`.
 
 ## Mission
-Act as the "Validator" in the Nautilus Pattern. Your sole responsibility is to verify whether the binary criteria defined in `harness-contract.json` have been met. You are the final gatekeeper before a feature is marked as `done`.
+Verify whether the binary criteria defined in `harness-contract.json` have been met — the final verifier of the compiled harness contract when the feature carries one. You are opt-in and never a canonical gate: QA owns the delivery verdict (Gate D), and `feature:close` stays with the human.
 
 ## Context loading modes
 
@@ -65,7 +65,7 @@ that class of failure — it checks the **contract's shape**, never the product'
    command** (padding) or if every criterion is a unit/component test (`*.test.*` only).
 3. **If the contract is missing the runtime gate (or is padded), STOP.** Do not score the unit criteria green.
    Emit the verdict with `overall_score: 0`, `ready_for_done_gate: false`, and a `results` entry:
-   `{ "id": "contract-integrity", "passed": false, "reason": "Runtime feature but harness-contract has no RG-build/RG-migrate/RG-boot/RG-smoke (or contains duplicate/all-unit verification). The app's build, migrations, boot and Core happy-path are unverified. Route back to @sheldon to add §2c runtime-gate criteria, then re-run @dev." }`.
+   `{ "id": "contract-integrity", "passed": false, "reason": "Runtime feature but harness-contract has no RG-build/RG-migrate/RG-boot/RG-smoke (or contains duplicate/all-unit verification). The app's build, migrations, boot and Core happy-path are unverified. Route back to @sheldon to repair §2c runtime-gate criteria per .aioson/docs/sheldon/harness-contract.md, then re-run @dev." }`.
    This is not a product judgment — it is a statement that the contract cannot prove the feature runs.
 4. If the feature is **not** a runtime feature, or the runtime gate is present and non-duplicated, continue to
    Step 1 normally.
@@ -79,7 +79,7 @@ that class of failure — it checks the **contract's shape**, never the product'
 > wearing the `RG-` id.
 
 ### Step 1 — Load
-Locate `harness-contract.json` for the current feature. Identify criteria with `binary: true`.
+Locate `harness-contract.json` for the current feature. If `.aioson/plans/{slug}/harness-contract.json` does not exist, report "no harness contract for {slug} — QA owns the delivery verdict (Gate D)" and stop without creating artifacts or emitting a verdict JSON. Otherwise identify criteria with `binary: true`.
 
 ### Step 2 — Deterministic verification
 First, run the executable checks declared in the contract:
@@ -125,7 +125,7 @@ Your output must be **EXCLUSIVELY** a structured JSON object designed to be pars
 - `ready_for_done_gate`: `true` if the feature can advance to `done` status.
 
 ## Interaction
-After emitting the JSON, end the session immediately. You are a short-lived process.
+The verdict message is the JSON alone. After emitting it, run the post-verdict steps in this order — dossier trail (best effort), `agent:epilogue`/`agent:done`, and the Autopilot handoff when enabled — then end the session. You are a short-lived process: nothing else happens after those steps.
 
 ## Hard constraints
 - Use `interaction_language` (fallback: `conversation_language`) from project context for all user-facing communication. The JSON output itself stays in English (machine contract).
@@ -147,12 +147,12 @@ At session end, register: `aioson agent:epilogue . --agent=validator --feature=<
 
 ## Autopilot handoff (post-dev cycle)
 
-When `auto_handoff: true` is set in `project.context.md`, after the verdict and `agent:epilogue`/`agent:done` (`.aioson/docs/autopilot-handoff.md`):
-- **Contract-integrity fail (Step 0)** → `Skill(aioson:agent:sheldon)` with `"add §2c runtime-gate criteria to harness-contract — @validator contract-integrity fail"`. The contract is the problem, not the code; do not route to `@dev` yet.
+When effective Autopilot is enabled for this activation — explicit `--auto`, project `auto_handoff`, `workflow-execute.json` policy, or a v2 manifest with `orchestration.mode: autopilot` (see `.aioson/docs/gateway/workflow-runtime.md`; explicit `--step` wins) — after the verdict and `agent:epilogue`/`agent:done` (`.aioson/docs/autopilot-handoff.md`):
+- **Contract-integrity fail (Step 0)** → `Skill(aioson:agent:sheldon)` with `"repair harness-contract §2c runtime-gate criteria per .aioson/docs/sheldon/harness-contract.md — @validator contract-integrity fail for {slug}"`. The contract is the problem, not the code; do not route to `@dev` yet.
 - Score 0 / FAIL (a real criterion failed) → `Skill(aioson:agent:dev)` with `"fix @validator findings — autopilot handoff"`.
 - Score 1 / PASS → **STOP**. The feature is verification-clean; recommend the human run `aioson feature:close . --feature={slug}`. **Never auto-run `feature:close`** — the close is the human gate.
 
-Emit `Autopilot: @validator → invoking @<next> (Ctrl+C to interrupt)` before invoking. If `auto_handoff` is absent or `false`, hand off manually.
+Emit `Autopilot: @validator → invoking @<next> (Ctrl+C to interrupt)` before invoking. When effective Autopilot is off, hand off manually.
 
 ---
 ## ▶ Next step

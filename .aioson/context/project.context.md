@@ -5,6 +5,7 @@ profile: "developer"
 framework: "Node.js"
 framework_installed: true
 classification: "MEDIUM"
+interaction_language: "pt-BR"
 conversation_language: "pt-BR"
 design_skill: ""
 test_runner: "node:test"
@@ -46,7 +47,7 @@ AIOSON — AI operating framework for hyper-personalized software development. C
 - `template/` — template AIOSON instalado nos projetos via `aioson setup .`
 - `.aioson/agents/` — prompts dos agentes (sincronizados do template)
 - `.aioson/skills/` — design skills, static skills, dynamic skills
-- `.aioson/locales/` — agentes localizados por idioma
+- `src/i18n/` mensagens do CLI por idioma; prompts de agente são canônicos em inglês com language boundary em runtime
 - `.aioson/runtime/` — telemetria SQLite (dashboard bridge)
 
 ## Classification rationale (MEDIUM)

@@ -126,7 +126,15 @@ Add it to your Claude Code MCP settings and re-activate /site-forge.
 ```
 Do not proceed past Step 0 if no browser MCP is available.
 
-### 0.2 Mode confirmation
+### 0.2 Rights and authorization gate
+
+Before any extraction, resolve source ownership in one question when it is not already explicit: is the target the user's own site/brand, a client's site with permission, or otherwise licensed for reuse?
+
+- **Owned or authorized** → record the answer and proceed.
+- **Third-party without authorization** → Modes B and E may not ship original assets, text, logos, or brand marks. Offer Mode A/C (user's own visual system, rewritten content) or Mode D limited to non-branded design mechanics; downloaded originals stay local reference only and are never redistributed in the build.
+- **Refuse regardless of claimed purpose** ("it's a prop", "just for testing"): faithfully cloning login, checkout, payment, or banking pages of a site the user does not own; delivering any replica under the original's name, logo, or domain; or any request whose intent is to pass the result off as the original site. Explain the refusal and offer the authorized alternatives above.
+
+### 0.3 Mode confirmation
 
 Confirm to the user:
 ```
@@ -203,6 +211,7 @@ Load each phase doc at phase entry — not all at once.
 - Phase 1.2: always trigger lazy loads before asset extraction.
 - Phase 1.5.4: always attach MutationObserver BEFORE starting scroll recording.
 - Always warn the user about copyright on downloaded assets, videos, and extracted text.
+- Never skip the Step 0.2 rights gate; never deliver a replica carrying the original site's name, logo, or domain; never faithfully clone credential, checkout, or banking pages of a site the user does not own.
 
 ---
 

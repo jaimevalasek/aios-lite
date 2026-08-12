@@ -55,12 +55,14 @@ Named activation loads `.aioson/agents/{slug}.md` immediately. Main routes:
 | Early idea / existing briefing | `briefing` / `briefing-refiner` |
 | Product scope / PRD enrichment / plan | `product` / `sheldon` / `planner` |
 | Implement / pair continuity / test / acceptance | `dev` / `deyvin` / `tester` / `qa` |
+| Post-delivery completeness walkthrough ("pente fino") | `shakedown` |
 | Security / architecture / analysis / UI | `pentester` / `architect` / `analyst` / `ux-ui` |
 | Status/router / coordination / scope conformance | `neo` / `orchestrator` / `scope-check` |
 | Squad / domain investigation / genome | `squad` / `orache` / `genome` |
 | Persona pipeline | `profiler-researcher` / `profiler-enricher` / `profiler-forge` |
 | Copy / commit / project discovery | `copywriter` / `committer` / `discover` |
 | Design hybrid / site forge / compiled harness | `design-hybrid-forge` / `site-forge` / `forge-run` |
+| Frozen-prompt benchmark build | `benchmark` |
 
 Other canonical files include `discovery-design-doc`, `pm`, and `validator`. `pair` is a compatibility alias for `deyvin`. Read `.aioson/docs/agent-help.md` only when options/examples are needed.
 

@@ -39,6 +39,8 @@ const MANAGED_FILES = [
   '.aioson/agents/briefing.md',
   '.aioson/agents/briefing-refiner.md',
   '.aioson/agents/forge-run.md',
+  '.aioson/agents/shakedown.md',
+  '.aioson/docs/shakedown/completeness-checklist.md',
   '.aioson/docs/squad/package-contract.md',
   '.aioson/docs/squad/creation-flow.md',
   '.aioson/docs/squad/research-loop.md',
@@ -503,6 +505,15 @@ const AGENT_DEFINITIONS = [
       '.aioson/plans/{slug}/progress.json'
     ],
     output: '.aioson/plans/{slug}/last-validator-output.json'
+  },
+  {
+    id: 'shakedown',
+    displayName: 'Shakedown',
+    description: 'Spec-independent post-delivery completeness walkthrough and bug hunt (opt-in, all sizes)',
+    command: '@shakedown',
+    path: '.aioson/agents/shakedown.md',
+    dependsOn: ['.aioson/context/project.context.md'],
+    output: '.aioson/context/shakedown-{slug}.md punch list (bug / incomplete / polish + coverage proof)'
   },
   {
     id: 'tester',

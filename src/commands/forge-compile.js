@@ -262,12 +262,12 @@ async function runForgeCompile({ args, options = {}, logger }) {
   // ── Preflight 2: plano com coluna Wave ───────────────────────────────────
   const planPath = path.join(targetDir, '.aioson', 'context', `implementation-plan-${slug}.md`);
   if (!fs.existsSync(planPath)) {
-    logger.error(`Implementation plan not found: ${path.relative(targetDir, planPath)} — @pm produces it (Gate C).`);
+    logger.error(`Implementation plan not found: ${path.relative(targetDir, planPath)} — @planner produces it (Gate C).`);
     return { ok: false, error: 'plan_not_found', slug };
   }
   const rows = parseExecutionWaves(fs.readFileSync(planPath, 'utf8'));
   if (!rows || rows.length === 0) {
-    logger.error('Execution Sequence has no Wave column (or no parseable rows) — re-run @pm to annotate waves (pm.md Wave column rules).');
+    logger.error('Execution Sequence has no Wave column (or no parseable rows) — re-run @planner to annotate waves (planner.md `## Execution Sequence` rules).');
     return { ok: false, error: 'no_wave_column', slug };
   }
   const waves = groupByWave(rows);

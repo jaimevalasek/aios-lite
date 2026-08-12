@@ -14,6 +14,22 @@ Resolve one named interaction, state, accessibility, or visual-system ambiguity 
 4. Read `.aioson/context/features/{slug}/dossier.md` when present.
 5. Run `aioson context:brief . --agent=ux-ui --mode=planning --task="<named interaction question>" --paths="<UI paths>" 2>/dev/null || true`.
 
+## Mode router
+
+Route by the explicit activation argument or the first matched condition; load exactly the named module, never the folder wholesale. When a loaded module conflicts with this kernel's hard constraints, the kernel wins — modules define procedure inside these bounds. A `ui-spec` exists only when its mode was explicitly requested, never as a mandatory artifact.
+
+| Mode | Trigger | Load |
+|---|---|---|
+| Consult (default) | named ambiguity, no other trigger | this kernel only |
+| Create/refine spec | user explicitly requests a UI spec deliverable | `.aioson/docs/ux-ui/design-execution.md` |
+| Audit | `@ux-ui audit` | `.aioson/docs/ux-ui/audit-mode.md` |
+| Research | `@ux-ui research` | `.aioson/docs/ux-ui/research-mode.md` |
+| Tokens | `@ux-ui tokens` | `.aioson/docs/ux-ui/token-contract.md` |
+| Component map | `@ux-ui component-map` | `.aioson/docs/ux-ui/component-map.md` |
+| Accessibility | `@ux-ui a11y` | `.aioson/docs/ux-ui/accessibility-audit.md` |
+| Site delivery | `project_type: site` page delivery explicitly routed here | `.aioson/docs/ux-ui/site-delivery.md` |
+| Design gate | `design_skill` blank and the named decision needs a visual system | `.aioson/docs/ux-ui/design-gate.md` |
+
 ## Design skill gate
 
 **ABSOLUTE RULE — ONE SKILL ONLY.** When the named decision needs a visual engine, use the project's one selected design skill. If `identity.md` exists, it is **INPUT to the one skill**: it parameterizes it and is **not a design system of its own**. Reference-image extraction may inform the decision without creating a second visual system.

@@ -24,6 +24,9 @@ Optional alignment checkpoints:
 Optional test engineering (activate after @dev when coverage is insufficient):
 - `@tester` — systematic test engineering for implemented apps. Activate when: (1) app was built without adequate tests, (2) @qa identifies coverage gaps in 3+ modules, or (3) working on a legacy/brownfield project.
 
+Optional completeness walkthrough (activate after @qa, on an archived feature, after a Simple Plan delivery, or on a direct target):
+- `@shakedown` — spec-independent tech-lead walkthrough: QA verifies the promise; shakedown audits the silence (incomplete CRUD, unvalidated forms, missing states, sibling inconsistencies, plus reproducible bugs). Produces a `shakedown-{slug}.md` punch list with suggested fix lanes; it finds and lists, never fixes, and is never a gate.
+
 ## Official classification
 Score (0-6):
 - User types: 1=0, 2=1, 3+=2
@@ -105,17 +108,17 @@ When AIOSON manages the session via `aioson workflow:next`, ALL orchestration is
 
 The agent `.md` files define WHAT each agent does. The CLI defines HOW the session is orchestrated.
 
-**Agents should call these commands to keep the dashboard in sync (skip if `aioson` CLI is not installed):**
+**Agents keep the dashboard in sync with the modern telemetry commands (skip if `aioson` CLI is not installed):**
 
 | Moment | Command |
 |---|---|
-| On activation | `aioson runtime-log . --agent=@{agent} --title="..." --message="Starting {agent}"` |
-| After each step | `aioson runtime-log . --agent=@{agent} --message="<what was done>"` |
-| On completion | `aioson runtime-log . --agent=@{agent} --finish --status=completed --summary="..."` |
-| Advance workflow | `aioson workflow:next . --complete` |
+| Milestones / step evidence | `aioson runtime:emit . --agent=<agent> --type=<event> --summary="..."` |
+| Session end — heartbeat | `aioson pulse:update . --agent=<agent> --feature=<slug> --action="..." --next="..."` |
+| Session end — completion | `aioson agent:done . --agent=<agent> --summary="..."` (or `agent:epilogue` where the kernel says so) |
+| Advance workflow | `aioson workflow:next . --complete=<stage>` when the agent kernel instructs it |
 
-These commands are injected into the agent prompt automatically by `aioson workflow:next`.
-In direct mode (LLM without CLI), agents call them manually following the rules in CLAUDE.md / AGENTS.md.
+`workflow:next` injects the tracked-session lifecycle block into agent prompts itself. Never replay telemetry manually with ad-hoc `runtime-log` shell snippets and never open a parallel runtime session inside an active live envelope (`.aioson/docs/gateway/workflow-runtime.md`).
+In direct mode (LLM without CLI), agents call the same commands manually following the rules in CLAUDE.md / AGENTS.md.
 
 ## Devlog (direct LLM mode without CLI)
 

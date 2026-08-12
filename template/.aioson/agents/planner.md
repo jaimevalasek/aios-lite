@@ -134,6 +134,19 @@ When split execution was explicitly requested, add one compact section to the sa
 
 Then update the existing `agent-execution-{slug}.json` runtime manifest with the same disjoint scopes. Do not create an architecture document or a second plan. A host is a registered CLI adapter; a model may be supplied by that host/provider. Fallback to the current Codex session is forbidden unless the manifest explicitly declares the fallback and its activation reason. Keep shared integration files with DEV rather than assigning the same path to two lanes.
 
+When the feature will run the compiled harness lane (`.aioson/plans/{slug}/harness-contract.json` exists or the user requests `@forge-run`), add one `## Execution Sequence` table to the same plan — `forge:compile` refuses without it; the normal Dev lane never needs it:
+
+```markdown
+## Execution Sequence
+| Phase | Wave | Files | Scope | Done when |
+|---|---|---|---|---|
+| 1 | 1 | src/real-path.ext, tests/real-test.ext | CAP-{slug}-main | exact verification command passes |
+```
+
+- One row per delivery phase, reusing the exact paths from that phase's Implementation Delta/Capability Delivery rows (comma-separated, no globs).
+- `Wave` is a positive integer execution group. Waves run in ascending order; phases sharing a wave run in parallel and must have disjoint `Files` — `spec:analyze` blocks compilation on `wave_file_overlap`.
+- Keep waves few; a wave with a single phase is valid. Shared integration files belong to a later solo wave, never to two phases of the same wave.
+
 ## Feature dossier
 
 Read the active dossier when present and add the production entry point, reused boundaries, phases, and exact plan path in best effort. It is not a planning artifact or gate.

@@ -7,11 +7,11 @@ triggers: [harness contract, binary criteria, acceptance criteria]
 
 # Sheldon Harness Contract Generation
 
-Load this module when `@sheldon` reaches RF-05 in a MEDIUM enrichment. Implements AC-HD-06 of `harness-driven-aioson`.
+Load this module only when harness-contract work is explicitly routed to `@sheldon` — a `@validator` contract-integrity failure, an explicit user request, or a feature that opts into the compiled harness lane (`@forge-run`). Implements AC-HD-06 of `harness-driven-aioson`. A harness contract is never a default deliverable; the PRD is always enriched in place, with no separate enrichment artifact.
 
 ## When to run
 
-Run **after** writing `sheldon-enrichment-{slug}.md`, gated by `project.context.md` classification:
+Within an explicitly routed harness engagement, run **after** the PRD is enriched and sealed in place; classification gates what to produce:
 
 | Classification | Action |
 |---|---|

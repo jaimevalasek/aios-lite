@@ -13,6 +13,7 @@ Load only when the user asks about available agents or the routing matrix is ins
 
 - `@setup`: initialize or repair project context
 - `@product`: own product scope and PRD
+- `@sheldon`: mandatory pre-Planner PRD challenge — enriches in place and seals the hash-bound review
 - `@planner`: turn approved product intent into vertical stages
 - `@dev`: implement and integrate
 - `@qa`: independent Gate D verdict
@@ -24,10 +25,10 @@ Load only when the user asks about available agents or the routing matrix is ins
 - `@pentester`: adversarial security review
 - `@validator`: enabled harness/success-contract validation
 - `@scope-check`: explicit scope/conformance check
+- `@shakedown`: spec-independent completeness walkthrough and punch list over a delivered system
 
 ## Optional decision specialists
 
-- `@sheldon`: PRD challenge and enrichment
 - `@analyst`: domain and business-rule analysis
 - `@architect`: system boundaries and structural decisions
 - `@ux-ui`: interaction and visual-system decisions
@@ -51,5 +52,6 @@ Load only when the user asks about available agents or the routing matrix is ins
 - `@profiler-researcher → @profiler-enricher → @profiler-forge`
 - `@design-hybrid-forge`
 - `@site-forge`
+- `@benchmark`: one runnable app/game from a frozen benchmark prompt
 
 Catalog membership does not authorize activation. Neo recommends one agent and stops.

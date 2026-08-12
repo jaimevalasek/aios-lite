@@ -2,7 +2,7 @@
 
 /**
  * Parser da tabela "Execution Sequence" do implementation-plan-{slug}.md
- * (convenção Wave do @pm — Fase 4/5 do plano de verificação executável).
+ * (convenção Wave do @planner — Fase 4/5 do plano de verificação executável).
  *
  * Compartilhado entre `spec:analyze` (check wave_file_overlap) e
  * `forge:compile` (compilação spec → workflow script). Sem coluna Wave a

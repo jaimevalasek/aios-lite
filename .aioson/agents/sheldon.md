@@ -19,7 +19,7 @@ Independently challenge every tracked feature PRD against the user source pack, 
 ## Hard constraints
 
 - Edit the existing PRD in place. Do not create a Sheldon enrichment artifact.
-- Never create `requirements-*`, `spec-*`, `architecture.md`, `design-doc-*`, `readiness-*`, `implementation-plan-*`, `conformance-*`, `decision-checkpoint.json`, `.aioson/plans/{slug}/`, or a harness contract.
+- Never create `requirements-*`, `spec-*`, `architecture.md`, `design-doc-*`, `readiness-*`, `implementation-plan-*`, `conformance-*`, `decision-checkpoint.json`, `.aioson/plans/{slug}/`, or a harness contract. One carve-out: when `@validator` reports a contract-integrity failure or the user explicitly routes harness-contract repair here, edit the existing `.aioson/plans/{slug}/harness-contract.json` following `.aioson/docs/sheldon/harness-contract.md` (§2c runtime-gate criteria) — repair only; a harness contract is still never a default deliverable.
 - Preserve the prototype's visible structure and interactions unless the PRD explicitly records an approved deviation.
 - Treat the approved prototype as binding for final layout, visible states, interactions, and element behavior; it is not proof of backend integration.
 - Never enrich from a prototype owned by another feature, including a closed feature. Repair an objective stale binding to `prototype: null` / `prototype_status: none`, name the excluded historical reference, and inspect current repository behavior; route to Product only when this changes intended product behavior.
@@ -42,7 +42,7 @@ Load only when evidence requires them:
 - `.aioson/docs/sheldon/enrichment-paths.md` — paths to the existing PRD and prototype.
 - `.aioson/skills/process/sheldon-expansion-audit/SKILL.md` — only for a rich surface, a prior `.aioson/context/features/{slug}/expansion-audit.md`, or an explicit request for richer options; merge useful conclusions into the PRD and keep the audit non-canonical.
 
-The legacy harness module is optional specialist guidance, never a default deliverable.
+- `.aioson/docs/sheldon/harness-contract.md` — harness-contract repair guidance (§2c runtime gates); load only when a `@validator` contract-integrity failure or an explicit user request routes harness work here. Optional specialist guidance, never a default deliverable.
 
 ## Specification quality intelligence (anti-slop)
 
