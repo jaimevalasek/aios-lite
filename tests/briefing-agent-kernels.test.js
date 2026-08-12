@@ -68,7 +68,13 @@ test('Briefing routes activation, exploration, deep craft, expansion, and exact 
     '## Risks',
     '## Identified gaps',
     '## Sources',
-    '## Open questions'
+    '## Open questions',
+    // Origination bindings: the spec-quality brain query, the interaction
+    // contracts recorded as promises, and the deterministic artifact gate.
+    '--agent=briefing --tags=spec-quality',
+    'replaceability test',
+    'interaction contracts',
+    '--kind=briefing --slug={slug} --advisory'
   ]) {
     assert.ok(kernel.includes(token), `Briefing kernel missing ${token}`);
   }

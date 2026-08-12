@@ -27,6 +27,7 @@ If the product manages quantifiable work — CRM, ERP, cockpit, admin panel, bac
 
 ## Applies to
 
+- @briefing: a briefing for a management surface records which decisions the home must serve, as promises or classified open questions.
 - @briefing-refiner / @benchmark: a management-domain prototype or benchmark build without a value-bearing home is a blocking finding; widgets must be fed by the seeded mock state.
 - @dev / @deyvin: widgets query live data; a hardcoded number that never changes is a defect.
 - @product: the PRD for a management surface names the home widgets and the decision each one serves.

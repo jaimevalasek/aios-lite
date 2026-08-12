@@ -23,7 +23,7 @@
     },
     {
       "id": "design/visual-quality",
-      "agents": ["dev", "deyvin", "briefing-refiner", "benchmark", "product", "sheldon"],
+      "agents": ["briefing", "dev", "deyvin", "briefing-refiner", "benchmark", "product", "sheldon"],
       "tags": ["visual-quality", "anti-slop", "ui", "ux", "layout", "prototype", "responsive", "interface", "design", "spec-quality", "prd", "specification", "forms", "interaction", "motion"],
       "desc": "Visual quality patterns that prevent generic AI-looking layouts while preserving intentional, domain-specific design, including form, confirmation, drag-and-drop, and dashboard interaction contracts plus verified animation/mask implementation gotchas; the spec-quality nodes carry the same test upstream to the PRD",
       "path": ".aioson/brains/design/visual-quality.brain.json",

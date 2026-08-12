@@ -27,6 +27,7 @@ When items move between statuses or lists repeatedly and in both directions — 
 
 ## Applies to
 
+- @briefing: a briefing describing a recurrent stage-based flow records drag-and-drop as the expected primary transition, as a promise or classified open question.
 - @dev / @deyvin: persist the new status/order from the drop event; a drag that only mutates the DOM is a defect.
 - @briefing-refiner / @benchmark: when the surface has a kanban-like flow, the prototype or benchmark build implements working drag-and-drop over mock state — click-only kanban is a blocking finding.
 - @product / @ux-ui: specs for stage-based surfaces name drag-and-drop as the primary transition and list the accessible fallback.
