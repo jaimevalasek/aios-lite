@@ -24,6 +24,23 @@ Ao encontrar um defeito reproduzível, QA:
 
 O mesmo diagnóstico sem evidência nova não é repetido mais de duas vezes. QA não deve gastar uma sessão longa investigando especulações numa mudança pequena.
 
+## Lente de interação em superfície visual
+
+Quando a entrega tem superfície visual ou operacional rica, o QA consulta o brain de qualidade visual (`brain:query --agent=qa --tags=interaction,forms --min-quality=4`) e trata seus nós e as regras de `.aioson/rules/` que casam como **critério de entrega** — não como recomendação de estilo.
+
+Cada contrato de interação que o PRD, o plano ou um AC prometeu precisa de **uma linha concreta de evidência CAP/AC provada na superfície real**:
+
+| Contrato prometido | O que a verificação prova |
+|---|---|
+| Máscara e validação de campo | cada campo estruturado é exercitado com entrada válida e malformada; campo que aceita o que a máscara rejeita é FAIL |
+| Confirmação de mudança de status | todo controle destrutivo ou de mudança de status tem caminho de teste pelo confirmar **e** pelo cancelar |
+| Drag-and-drop em fluxo recorrente | arrasta um card real e confirma que o novo status/ordem persiste depois de um reload; movimento que só muda o DOM é FAIL |
+| Widgets da home de gestão | altera o dado por trás e confirma que cada widget reflete a mudança; widget congelado no valor de seed é FAIL |
+
+A consulta **nunca adiciona escopo**: um contrato que nada prometeu continua sendo recomendação, não achado. Isso fecha a cadeia `origem (@briefing) → spec (@product) → protótipo (@briefing-refiner) → implementação (@dev) → verificação (@qa)`.
+
+Detalhes das quatro regras: [Regras de interação e gate visual](../5-referencia/regras-de-interacao-e-gate-visual.md).
+
 ## Especialistas opt-in
 
 Tester, Pentester e Validator começam desligados em todas as classificações. Podem ser recomendados quando:

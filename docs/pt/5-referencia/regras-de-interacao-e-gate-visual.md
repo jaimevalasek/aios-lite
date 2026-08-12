@@ -62,6 +62,39 @@ Pontos principais:
 
 ---
 
+## A cadeia — da origem à verificação
+
+Uma regra de interação não vale só na hora de codar. Cada uma nomeia, no próprio frontmatter (`## Applies to`), o que cada agente da rota precisa fazer com ela. O resultado é uma cadeia fechada: o contrato nasce como escopo, é desenhado, é implementado e é verificado — em vez de ser descoberto como ausência no fim.
+
+```text
+@briefing            → registra o contrato como promessa ou pergunta classificada
+      ▼
+@product / @ux-ui    → a spec nomeia formato, máscara, transição, widget e decisão servida
+      ▼
+@briefing-refiner    → o protótipo demonstra o contrato funcionando sobre estado mock
+  / @benchmark          (input sem máscara, botão destrutivo sem modal, kanban só de clique
+                         e home sem valor são achados bloqueantes)
+      ▼
+@dev / @deyvin       → implementa contra a mutação real, usando os utilitários do projeto
+      ▼
+@qa                  → prova cada contrato prometido na superfície real, com uma linha
+                       de evidência CAP/AC; falha vira FAIL, não observação de estilo
+```
+
+O que o `@qa` prova, por regra:
+
+| Regra | Evidência de verificação |
+|---|---|
+| `form-fields-masks-and-validation` | exercita cada campo estruturado com entrada válida e malformada; campo que aceita o que a máscara rejeita é FAIL |
+| `status-change-confirmation` | todo controle destrutivo ou de mudança de status tem caminho de teste pelo confirmar **e** pelo cancelar |
+| `status-flow-drag-and-drop` | arrasta um card real e confirma que o novo status/ordem persiste depois de um reload; movimento que só muda o DOM é FAIL |
+| `management-home-widgets` | altera o dado por trás e confirma que cada widget reflete a mudança; widget congelado no valor de seed é FAIL |
+
+Duas travas importam aqui:
+
+- **Nada disso adiciona escopo.** A verificação cobra o que o PRD, o plano ou um AC prometeu. Um contrato que nada prometeu segue sendo recomendação.
+- **A origem é o `@briefing`.** O lugar mais barato de registrar um contrato de interação é antes do PRD existir; o mais caro é depois do código pronto.
+
 ## Como as regras chegam ao agente
 
 Duas rotas, e elas se complementam.
@@ -156,7 +189,18 @@ A severidade é `warning` — ele aparece na lista, mas não derruba o resultado
 ## Onde mais isso aparece
 
 - **`prototype:check`** roda a mesma telemetria automaticamente quando resolve um protótipo próprio, sempre como bloco advisory. Nunca altera o veredito do vínculo.
-- **Brain de qualidade visual** (`.aioson/brains/design/visual-quality.brain.json`) carrega os mesmos contratos como nós de conhecimento consultáveis: `vq-009` (máscaras e validação), `vq-010` (confirmação de status), `vq-011` (drag-and-drop), `vq-012` (widgets da home de gestão). O nó `vq-000` declara que uma regra do projeto prevalece sobre o brain.
+- **Brain de qualidade visual** (`.aioson/brains/design/visual-quality.brain.json`) carrega os mesmos contratos como nós de conhecimento consultáveis: `vq-009` (máscaras e validação), `vq-010` (confirmação de status), `vq-011` (drag-and-drop), `vq-012` (widgets da home de gestão), `vq-014` (reanimação de classe exige reflow forçado) e `vq-015` (máscara ao vivo preserva o cursor). O nó `vq-000` declara que uma regra do projeto prevalece sobre o brain.
+
+  Os agentes chegam a esses nós por consulta dirigida, cada um com a lente do seu papel:
+
+  ```bash
+  # @briefing — na origem, sobre Problem e Proposed solution
+  aioson brain:query . --agent=briefing --tags=spec-quality --min-quality=4 --format=compact
+
+  # @qa — na verificação, sobre a superfície entregue
+  aioson brain:query . --agent=qa --tags=interaction,forms --min-quality=4 --format=compact
+  ```
+
 - **Regra própria do projeto** vence a regra do framework. Use `aioson rule:new` com `--priority` acima de 10 (o padrão do comando é 50) para sobrepor qualquer um destes contratos com o que o seu produto exige. Veja [Comandos do CLI](./comandos-cli.md#rulenew).
 
 ---

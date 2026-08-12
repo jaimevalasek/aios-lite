@@ -31,6 +31,38 @@ Antes de editar código de produção, Tester registra reprodução, AC/controle
 
 Defeito ambíguo ou transversal vai uma única vez ao DEV. Tester nunca aprova Gate D.
 
+## Contrato de cobertura adversarial
+
+O valor do Tester é profundidade adversarial, e agora essa profundidade é **medível**. O relatório `.aioson/context/test-report-{slug}.md` carrega frontmatter (`feature: {slug}`) e exatamente estas seções:
+
+| Seção | O que registra |
+|---|---|
+| `## Scope` | o gatilho da ativação e a capacidade/risco/paths testados |
+| `## Hypothesis matrix` | uma linha por hipótese: `\| Path \| Class \| Test \| Result \|` |
+| `## Tests added or changed` | os testes criados ou alterados |
+| `## Commands and results` | os comandos exatos executados, com o resultado observado |
+| `## Residual risk` | todo path ou caso não coberto dentro do escopo testado, e por quê |
+
+`Class` é uma de `boundary`, `invariant`, `state-transition`, `failure`, `regression`, `property`. A matriz prova que o Tester **enumerou** os casos de fronteira, falha e propriedade — não que a cobertura é suficiente.
+
+`## Residual risk` vazio afirma que o escopo testado está totalmente provado. Parar antes da cobertura total é uma decisão legítima; ela só precisa ser **visível**, nunca um default silencioso.
+
+Um `FAIL` registrado é evidência legítima; um `PASS` fabricado é defeito.
+
+Quando há correção, `## Correction packet` entra com `allowed_fix_paths` — sem isso o `review-cycle:advance` rejeita.
+
+## Gate determinístico antes do handoff
+
+Depois de escrever o relatório, o agente roda:
+
+```bash
+aioson verify:artifact . --kind=test-report --slug={slug} --advisory
+```
+
+Ele prova identidade do relatório, as cinco seções, a matriz com colunas e classes válidas, evidência de comando executado e risco residual nomeado. Se cada hipótese realmente morde — e o veredito de entrega — continuam com o agente e com o QA.
+
+Detalhes de cada checagem: [Comandos do CLI](../5-referencia/comandos-cli.md#verifyartifact---kindtest-report).
+
 ## Handoff típico
 
 - **Vem de:** usuário, plano ou finding concreto de QA.

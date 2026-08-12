@@ -74,10 +74,14 @@ Você > compliance trabalhista brasileiro
 
 ```
 .aioson/squads/{slug}/
-├── squad.json              ← manifesto do squad
+├── squad.manifest.json     ← manifesto canônico (executores, bindings de genome, bloco pilot)
 ├── executors/*.md          ← um arquivo por executor
-├── genome-binding.json     ← vínculo com genome (se aplicável)
+├── docs/PILOT.md           ← evidência do pilot (squad de classe entregável)
 └── assets/                 ← materiais de referência
+
+output/{slug}/
+├── pilot/                  ← o entregável flagship que prova o squad
+└── specimen/{genome}/      ← espécime held-out de um genome, para aprovação
 ```
 
 ---
@@ -91,6 +95,33 @@ Antes de criar, o `@squad` lê:
 
 ---
 
+## O gate de pilot
+
+Um squad de classe entregável (`mode: software` ou `mixed`) só chega a "pronto" depois de provar que entrega o artefato flagship do domínio dele **no seu padrão de qualidade**. `squad:validate` prova estrutura, `squad:eval` prova aterramento — o pilot prova entrega.
+
+O `@squad` orquestra, mas nunca escreve o entregável no lugar dos executores e **nunca aprova**:
+
+```bash
+# 1. Barato antes de caro
+aioson squad:validate . --squad=<slug> --strict
+aioson squad:eval . --squad=<slug>
+
+# 2. Os executores do próprio squad constroem em output/{slug}/pilot/
+#    e registram a evidência em .aioson/squads/{slug}/docs/PILOT.md
+
+# 3. Lint determinístico — corrija cada problema
+aioson verify:artifact . --kind=squad-pilot --slug=<slug> --advisory
+
+# 4. Você inspeciona o entrypoint e congela
+aioson squad:pilot-approve . --squad=<slug>
+```
+
+Squad de conteúdo ou pesquisa registra `pilot.status: not_applicable` — o `@squad` nunca fabrica um entregável só para satisfazer o gate. A lane `quick` pode adiar com um `pilot.deferReason` concreto; `regulated` e `premium` nunca adiam.
+
+Contrato completo (bloco `pilot`, seções do `PILOT.md`, o que o pilot vincula e o que não, drift de `builders`): [Squads → Pilot](../5-referencia/squads.md#pilot--o-entregável-que-prova-o-squad).
+
+---
+
 ## Comandos CLI relacionados
 
 ```bash
@@ -100,8 +131,14 @@ aioson squad:scaffold . --slug=<slug> --name="Meu Squad" --mode=mixed
 # Diagnosticar squad existente
 aioson squad:doctor . --squad=<slug>
 
+# Validar estrutura e manifesto
+aioson squad:validate . --squad=<slug> --strict
+
+# Congelar o pilot (só você roda isto)
+aioson squad:pilot-approve . --squad=<slug>
+
 # Publicar no aioson.com
-aioson system:publish --type=squad --slug=<slug>
+aioson squad:publish . --slug=<slug>
 ```
 
 ---
@@ -119,6 +156,8 @@ aioson system:publish --type=squad --slug=<slug>
 - **squad refresh:** `@squad refresh <slug>` atualiza um squad existente com nova investigação sem recriar do zero
 - **investigação opt-out (v1.29.0):** a investigação de domínio com `@orache` agora roda **por padrão** — completa para domínios regulados/especializados, Quick Scan (1–2 rodadas) para domínios comuns sem fontes. É o que aterra os executores em frameworks/vocabulário reais em vez de priors do modelo (a causa nº1 de executor raso). O `@squad` anuncia o scan em vez de perguntar; diga "pula" para dispensar.
 - **genome pass na criação (v1.29.0):** os genomes planejados por executor são gerados e vinculados **durante** a criação do squad — não mais como passo manual depois. Um squad de domínio especializado nunca sai com `## Active genomes` vazio: ou vincula o genome, ou entrega o comando `@genome` exato pendente no resumo da criação. Para re-aterrar executores rasos de squads antigos, rode `@squad refresh <slug>`.
+- **contrato de pilot:** squads de classe entregável provam-se com um pilot congelado por você (`aioson squad:pilot-approve`). O bloco `pilot` no manifesto passa a ser estado canônico, e um pilot aprovado vira a régua de qualidade de toda sessão futura do squad. Veja [o gate de pilot](#o-gate-de-pilot).
+- **destilação de domínio:** depois de um pilot aprovado, o `@squad` pode oferecer destilar a assinatura transferível para `.aioson/skills/squad/domains/{domain}.md` — nunca automaticamente, uma passada por aprovação. O segundo squad de um domínio nasce sabendo o que o primeiro aprendeu.
 
 ---
 

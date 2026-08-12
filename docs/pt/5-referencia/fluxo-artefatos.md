@@ -194,6 +194,35 @@ Para features MEDIUM, a **Lane B** (`@forge-run` → `aioson forge:compile`) com
 
 ---
 
+## Gates determinísticos de artefato
+
+Onde o `harness:check` prova um critério `SG-*` de uma feature de código, o `verify:artifact` prova um **artefato produzido** — do mesmo jeito barato: lê os arquivos declarados e confirma que a estrutura obrigatória existe e que nenhum placeholder ou truncamento passou, antes do agente se declarar concluído. Sem shell, sem build.
+
+Para os agentes mapeados em `src/artifact-kinds.js`, o gate **dispara sozinho** em modo advisory quando a sessão fecha com `agent:done` — o agente não precisa lembrar de rodá-lo:
+
+| Agente | Kind | O que é provado |
+|---|---|---|
+| `@setup` | `project-context` | `project.context.md` válido |
+| `@discover` | `bootstrap` | os 4 arquivos do cache de cold start |
+| `@briefing` | `briefing` | frontmatter, as 8 seções, perguntas classificadas, registro e linhagem de fontes |
+| `@briefing-refiner` | `review` | `review.html` gerado pelo CLI, não à mão |
+| `@tester` | `test-report` | matriz de hipóteses, evidência de comando, risco residual nomeado |
+| `@squad` | `squad-pilot` | contrato de pilot: bloco, entrypoint, `PILOT.md`, fingerprint |
+| `@genome` / `@profiler-forge` | `genome` | `genome:doctor` + aviso de aprovação stale |
+| `@committer` | `commit-message` | qualidade do assunto do commit |
+| `@copywriter`, `@orache`, `@site-forge`, trio Profiler, `@design-hybrid-forge` | `copy`, `orache-report`, `site`, … | esqueleto obrigatório e ausência de placeholder |
+
+Outros kinds existem mas são chamados explicitamente, não por `agent:done`: `prd` e `sources` no preflight do `@sheldon` (cobertura `PROM-*`, cadeia CAP → AC, linhagem `SRC-*` e frescor de fingerprint), `rule` depois de `aioson rule:new`, `identity` e `visual` nos fluxos visuais.
+
+A tabela completa de kinds, com o localizador que cada um exige: [Comandos do CLI](./comandos-cli.md#verifyartifact--o-gate-de-artefato).
+
+Duas linhas divisórias valem para todos:
+
+- **Advisory nunca bloqueia.** O modo padrão dos done-gates avisa e segue; `--strict` promove avisos a bloqueios, e sem `--advisory` um problema real derruba o comando com código 1.
+- **O que precisa de julgamento fica com quem julga.** Se cada promessa representa fielmente a fonte, se uma hipótese de teste realmente morde, se o pilot carrega a assinatura do domínio — nada disso é decidido por expressão regular.
+
+---
+
 ## Veja também
 
 - [Fichas dos 29 agentes](../4-agentes/README.md) — quando usar cada agente e o que ele entrega

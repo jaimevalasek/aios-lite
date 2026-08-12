@@ -53,6 +53,70 @@ Um squad nunca duplica a responsabilidade de outro sem pedido explícito.
 
 ---
 
+## Pilot — o entregável que prova o squad
+
+`squad:validate` prova estrutura. `squad:eval` prova aterramento. Nenhum dos dois prova que o squad consegue entregar o artefato flagship do domínio dele na régua de qualidade que **você** tem na cabeça.
+
+O **pilot** prova. É um entregável representativo do domínio — uma landing cinematográfica, uma tela de pipeline de CRM — construído pelos executores do próprio squad, iterado em rascunho e congelado por você.
+
+**Aprovação por artefato, não por prosa.**
+
+### Onde cada peça vive
+
+| Peça | Caminho | Por quê |
+|---|---|---|
+| Estado canônico (bloco `pilot`) | `.aioson/squads/{slug}/squad.manifest.json` | é o contrato que os importadores já validam — sem arquivo paralelo para dessincronizar |
+| Doc de evidência | `.aioson/squads/{slug}/docs/PILOT.md` | viaja junto com o pacote |
+| O entregável | `output/{slug}/pilot/` | arquivo de verdade; nada de HTML dentro de `.aioson/` |
+
+O bloco `pilot` no manifesto carrega `status` (`not_applicable`, `pending`, `draft`, `approved`), `task`, `entrypoint`, `fingerprint`, `approved_at`, `builders` e `deferReason`.
+
+O `PILOT.md` tem exatamente quatro seções: `## Pilot task`, `## Validations` (comandos exatos executados com o resultado observado — honesto, nunca fabricado), `## Binds` e `## Does not bind`.
+
+### Quem precisa de pilot
+
+- **Squads de classe entregável** (`mode: software` ou `mixed`): o pilot faz parte da prontidão. A lane `standard` e acima constrói; `quick` pode adiar com um `pilot.deferReason` concreto; `regulated` e `premium` nunca adiam.
+- **Squads de conteúdo e pesquisa**: registram `pilot.status: not_applicable`. Nunca fabrique um entregável só para satisfazer o gate.
+
+### O que o pilot vincula — e o que não
+
+**Vincula:** a assinatura visual e de interação — linguagem de layout, motion, estados, máscara e validação, contratos de confirmação e de drag-and-drop, profundidade de acabamento.
+
+**Não vincula:** integração com dados reais, escala, a superfície completa da feature. O pilot é a menor vertical representativa, nunca o produto.
+
+### O ciclo
+
+```bash
+# 1. Estrutura e aterramento (barato antes de caro)
+aioson squad:validate . --squad=cinematic-web --strict
+aioson squad:eval . --squad=cinematic-web
+
+# 2. Os executores do próprio squad constroem o pilot.
+#    O @squad orquestra e nunca escreve o entregável no lugar deles.
+
+# 3. Lint determinístico — corrija cada problema
+aioson verify:artifact . --kind=squad-pilot --slug=cinematic-web --advisory
+
+# 4. Você inspeciona o entrypoint e congela
+aioson squad:pilot-approve . --squad=cinematic-web
+```
+
+O comando recusa congelar enquanto o gate apontar problema. Passando, carimba `status: approved`, o `fingerprint` recalculado do entregável, `approved_at` e `builders`.
+
+### Depois da aprovação
+
+O pilot vira a régua vinculante do squad: toda sessão futura que produz entregável carrega o bloco `pilot` e o `PILOT.md` como referência de qualidade. Entrega abaixo daquela assinatura é achado, não escolha de estilo.
+
+Editar o entregável depois da aprovação deixa o `fingerprint` obsoleto e a prontidão cai até você reaprovar — comportamento correto, não erro.
+
+O congelamento também registra **quem** construiu: `builders` guarda a identidade (`sourceHash`, `compilationId`) dos bindings de genome compilados no momento da aprovação. Um enrich ou recompile muda os executores sem mudar `output/`, então esse desvio aparece como aviso do lint: o pilot continua sendo o artefato aprovado, mas o squad que o construiu já não existe naquela forma.
+
+Um pilot aprovado também é evidência do que "bom" significa naquele domínio. O `@squad` pode oferecer destilar essa assinatura para `.aioson/skills/squad/domains/{domain}.md` — nunca automaticamente — para que o próximo squad do mesmo domínio já nasça sabendo o que o primeiro aprendeu.
+
+> `squad:pilot-approve` é exclusivamente seu. Nenhum agente roda esse comando.
+
+---
+
 ## Genome — a camada cognitiva
 
 Skill diz ao agente **o que fazer**. Genome diz **como pensar**: modelos mentais, heurísticas de julgamento, anti-padrões, vocabulário e benchmarks de referência.
@@ -62,6 +126,24 @@ Quatro tipos: `domain`, `function`, `persona` e `hybrid`.
 - Especificação técnica dos campos (incluindo `disc`, `enneagram`, `big_five`, `mbti`, `hexaco_h`, `confidence`, `hybrid_mode`): [Genome 4.0](./genome-4.0-spec.md)
 - Ficha do agente: [`4-agentes/genome.md`](../4-agentes/genome.md)
 - Publicar e instalar genomes: [Distribuição de genomes](./genome-distribution.md)
+
+### Aprovação por espécime
+
+Assim como o pilot congela a qualidade do squad, a **aprovação por espécime** congela a fidelidade de um genome. `genome:doctor` prova estrutura e o A/B held-out prova pontuação — nenhum dos dois prova que o comportamento compilado carrega a identidade da fonte.
+
+1. Um executor do próprio squad, com o binding **compilado** ativo, produz um espécime held-out em `output/{squad}/specimen/{genome}/`.
+2. Você lê o espécime e responde uma pergunta: isso soa como a fonte?
+3. Se sim, congele.
+
+```bash
+aioson genome:approve . --squad=<slug> --genome=<slug> [--executor=<slug>] [--specimen=<path>]
+```
+
+O comando grava um bloco `approval` no binding dentro do `squad.manifest.json` (`specimen`, `sourceHash`, `compilationId`, `approvedAt`). Ele recusa binding que não esteja `compiled`, espécime ausente ou fora de `output/`, e binding ambíguo — nesse caso passe `--executor=<slug>`.
+
+Enriquecer ou recompilar o genome torna a aprovação **stale** até você reaprovar. O drift aparece como aviso em `aioson verify:artifact . --kind=genome --slug=<genome>`, nomeando cada squad afetado.
+
+Detalhes e exemplos: [Comandos do CLI](./comandos-cli.md#aprovação-de-genome-por-espécime-genomeapprove).
 
 ### Pipeline de persona (Profiler)
 
@@ -97,6 +179,8 @@ aioson squad:agent-create . --name=revisor --scope=squad --squad=juridico \
 
 | Quero | Onde está |
 |---|---|
+| Provar que o squad entrega no meu padrão de qualidade | [Pilot](#pilot--o-entregável-que-prova-o-squad) |
+| Congelar a fidelidade de um genome a partir de um espécime | [Aprovação por espécime](#aprovação-por-espécime) |
 | Monitorar squads em tempo real num painel web | [Squad Dashboard](./squad-dashboard.md) |
 | Transformar processos do squad em scripts sem LLM | [Automação de squads](./automacao-squads.md) |
 | Entregar conteúdo automaticamente (webhook de saída, delivery) | [Output strategy e delivery](./output-strategy-delivery.md) |

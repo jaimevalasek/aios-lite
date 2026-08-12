@@ -76,6 +76,44 @@ Quando o pacote contém SQL, o agente o trata como documentação executável do
 
 > **Fast path de ativação:** ativar `@briefing` "seco", sem nomear plano ou tarefa, carrega **só** o `project.context.md`, o frontmatter do registro e o inventário de nomes/metadados de `plans/` — apresenta o menu e para. O conteúdo entra somente depois que um pacote é selecionado. Veja [Carregamento seletivo de contexto](../5-referencia/memoria-e-contexto.md#carregamento-seletivo-de-contexto-v1290).
 
+## O que o briefing precisa conter
+
+O `briefings.md` é artefato canônico, não rascunho livre. Ele carrega frontmatter (`slug`, `created_at`, `updated_at`, `source_plans`) e oito seções obrigatórias, nesta ordem:
+
+`## Context` · `## Problem` · `## Proposed solution` · `## Themes` · `## Risks` · `## Identified gaps` · `## Sources` · `## Open questions`
+
+Duas convenções sustentam o resto do fluxo:
+
+- **Perguntas em aberto são numeradas e classificadas** com `[research-able]`, `[testable]`, `[decision-required]` ou `[out-of-scope]`. Pergunta sem etiqueta não sobrevive ao gate.
+- **Ausência de evidência é escrita**, não omitida: use `TBD — not discussed in this session.` Um `TBD` solto, sem essa forma, vira aviso.
+
+Dentro de `## Sources` nasce a linhagem que o `@sheldon` vai cobrar depois: `### Source Inventory` (uma linha `SRC-*` por arquivo, com caminho relativo e fingerprint `sha256:`) e `### Source Promise Map` (uma linha `PROM-*` por promessa material, citando sua fonte).
+
+## Contratos de qualidade de spec e de interação
+
+Quando a feature tem superfície visível ou operacional rica, o `@briefing` consulta o brain de qualidade visual (`brain:query --agent=briefing --tags=spec-quality`) e trata seus nós e as regras de `.aioson/rules/` que casam como **vinculantes**:
+
+- O **teste de substituibilidade** roda em `## Problem` e `## Proposed solution` — o primeiro lugar onde texto genérico pode entrar. Se o parágrafo continua fazendo sentido depois de trocar o produto, ele não descreve nada.
+- Os **contratos de interação** da superfície (máscaras e validação, confirmação de mudança de status, drag-and-drop em fluxo recorrente, widgets de decisão) são registrados como promessa ou como pergunta classificada em aberto.
+
+O ganho é de ordem: o contrato nasce como escopo em vez de ser descoberto como ausência pelo `@briefing-refiner` — ou, pior, pelo `@qa`. Veja [Regras de interação e gate visual](../5-referencia/regras-de-interacao-e-gate-visual.md).
+
+## Gate determinístico antes do handoff
+
+Depois de escrever o `briefings.md`, o agente roda a verificação determinística e conserta tudo que aparecer:
+
+```bash
+aioson verify:artifact . --kind=briefing --slug={slug} --advisory
+```
+
+Ela prova o que é mecanicamente provável — identidade no frontmatter, as oito seções, classificação das perguntas, disciplina de placeholder, a entrada no registro `config.md` e a linhagem de fontes (fingerprint desatualizado, quebra de `SRC-*`/`PROM-*`). Briefing legado ou conversacional sem inventário não é reprovado: a inaplicabilidade vira aviso.
+
+Antes esse mesmo check só acontecia dois agentes depois, no preflight do `@sheldon`. Agora ele roda onde a linhagem nasce.
+
+O que **não** é verificado por máquina continua sendo julgamento do agente: se cada `PROM-*` representa fielmente a sua fonte, e se a incerteza foi preservada honestamente.
+
+Detalhes de cada checagem: [Comandos do CLI](../5-referencia/comandos-cli.md#verifyartifact---kindbriefing).
+
 ## Opção `--help`
 
 Uma ativação com `--help` (`/briefing --help`) imprime um resumo rápido — o que faz, quando usar, chamada típica, o que produz, próximo agente — localizado no seu idioma, e para sem executar nada. Fonte: `.aioson/docs/agent-help.md`.

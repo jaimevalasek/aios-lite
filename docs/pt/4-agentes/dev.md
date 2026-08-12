@@ -31,6 +31,20 @@ Quando carregado, DEV resolve a autoridade visual nesta ordem, parando no primei
 
 Com um protótipo aprovado em vigor, a skill de design roda em **modo conformidade**: transfere a direção aprovada em vez de decidi-la de novo, mapeando cada região para um componente real da biblioteca do projeto.
 
+## Build de stack compilado é recurso limitado
+
+Em stacks compilados, "rodar o build" não é um comando barato: um `cargo` padrão sobe um `rustc` por core lógico, e build scripts `*-sys` ainda somam `cl.exe`/`link.exe`/MSBuild por cima. Disparar isso por slice, em shells de background ou em worktrees paralelos, esgota a memória da máquina do operador.
+
+As convenções de stack (`.aioson/docs/dev/stack-conventions.md`, carregadas por `@dev` e `@deyvin` em tarefas de implementação) tratam build como recurso **serializado e limitado**:
+
+- valide slices com `cargo check` (ou `cargo clippy`); `cargo build` só quando um binário executável é realmente necessário;
+- rode testes com escopo (`cargo test -p <crate> <filtro>`); a suíte completa roda uma vez, no gate de entrega, não a cada slice;
+- **uma invocação de cargo por vez** — nunca inicie um segundo build/teste com um em andamento, nem em shells de background paralelos, nem em worktrees paralelos (o lock de `target` não protege entre worktrees);
+- antes do primeiro build pesado, garanta que o `.cargo/config.toml` limita o paralelismo com `[build] jobs` (cerca de metade dos cores lógicos) e define `CMAKE_BUILD_PARALLEL_LEVEL` no mesmo valor; se o arquivo não existir, o agente o cria e avisa você;
+- build scripts baseados em `cc` compartilham o jobserver do cargo e ficam dentro do limite; os dirigidos por cmake só obedecem a `CMAKE_BUILD_PARALLEL_LEVEL`.
+
+O princípio vale para qualquer stack compilado: escolha o comando mais barato que prova a slice, e um build de cada vez.
+
 ## Faixas de desenvolvimento
 
 O manifesto `agent-execution-{slug}.json` pode habilitar faixas como backend, frontend ou outra frente com `host`, `model`, `prompt` e `write_paths`.

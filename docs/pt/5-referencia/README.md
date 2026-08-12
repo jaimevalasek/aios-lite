@@ -38,7 +38,8 @@
 | [runtime-observability.md](./runtime-observability.md) | Telemetria SQLite, dashboard, runtime:emit, agent:done |
 | [runtime-storage.md](./runtime-storage.md) | Banco local por clone, mapa de uso, retenção segura, compactação e manutenção pelo NEO |
 | [hooks-session-guard.md](./hooks-session-guard.md) | Hooks instalados por padrão: `context:guard` antes de cada escrita + telemetria de runtime (Claude Code, Antigravity, Codex) |
-| [regras-de-interacao-e-gate-visual.md](./regras-de-interacao-e-gate-visual.md) | As quatro regras de interação (máscaras, confirmação, drag-and-drop, widgets), `guard_surfaces`, e o que o `verify:artifact --kind=visual` mede |
+| [regras-de-interacao-e-gate-visual.md](./regras-de-interacao-e-gate-visual.md) | As quatro regras de interação (máscaras, confirmação, drag-and-drop, widgets), a cadeia `@briefing → … → @qa`, `guard_surfaces`, e o que o `verify:artifact --kind=visual` mede |
+| [comandos-cli.md#verifyartifact--o-gate-de-artefato](./comandos-cli.md#verifyartifact--o-gate-de-artefato) | Todos os `kind` do `verify:artifact` e o localizador que cada um exige — o gate "pronto = provado" dos artefatos não-código |
 
 ---
 
@@ -59,7 +60,7 @@
 
 | Documento | Descrição |
 |---|---|
-| [squads.md](./squads.md) | Visão geral de squads: criação, squad efêmero, roteamento entre squads, genome, servidor de webhook |
+| [squads.md](./squads.md) | Visão geral de squads: criação, squad efêmero, roteamento entre squads, pilot, genome e aprovação por espécime, servidor de webhook |
 | [sdd-planos-e-estrutura.md](./sdd-planos-e-estrutura.md) | Mapa dos artefatos canônicos e das faixas opcionais do DEV |
 | [sdd-automation-scripts.md](./sdd-automation-scripts.md) | Regra dos 80%: scripts determinísticos de gate, classificação e estado |
 | [motor-hardening.md](./motor-hardening.md) | Hardening do motor: gates técnicos, auto-cura, test briefing |

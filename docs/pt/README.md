@@ -9,6 +9,120 @@ Esta é a porta de entrada. Siga a ordem abaixo se você é novo, ou pule direto
 
 ---
 
+## O fluxo principal — da ideia bruta ao veredito
+
+Esta é a rota que uma feature percorre no AIOSON. Cada agente entrega um **artefato em disco**; o próximo lê esse artefato e continua de onde o anterior parou. Ninguém depende de "lembrar da conversa" — a passagem de bastão é sempre um arquivo.
+
+```text
+   matéria-prima            plans/{slug}/, anotações, SQL, prints, uma ideia solta
+        │
+        ▼
+   @briefing                → .aioson/briefings/{slug}/briefings.md
+        │                      problema, temas, riscos, gaps, perguntas em aberto
+        ▼
+   @briefing-refiner        → review.html + refinement-report.md
+        │                      + prototype.html quando o escopo é visual
+        ▼
+   VOCÊ aprova              → aioson briefing:approve . --slug={slug}
+        │
+        ▼
+   @product                 → .aioson/context/prd-{slug}.md
+        │                      capacidades, exclusões, critérios de aceite (ACs)
+        ▼
+   @sheldon                 → o MESMO prd-{slug}.md, revisado e selado
+        │
+        ▼
+   @planner                 → .aioson/context/implementation-plan-{slug}.md
+        │                      fases verticais, arquivos esperados, checks executáveis
+        ▼
+   @dev                     → código + .aioson/context/dev-state.md
+        │
+        ▼
+   @qa                      → .aioson/context/qa-report-{slug}.md — PASS ou FAIL
+```
+
+### O que cada etapa faz
+
+| Etapa | O que o agente faz | O que entra | O que sai |
+|---|---|---|---|
+| [`@briefing`](./4-agentes/briefing.md) | Coleta a matéria-prima e a transforma em um documento estruturado — sem decidir escopo | Arquivos em `plans/{slug}/` ou uma conversa guiada | `briefings.md` com problema, temas, riscos, gaps e perguntas classificadas |
+| [`@briefing-refiner`](./4-agentes/briefing-refiner.md) | Audita o briefing em achados estruturados e, quando o escopo é visual, produz o **protótipo** que você aprova | O briefing em `draft` | `review.html` para você decidir no navegador, `refinement-report.md` e `prototype.html` |
+| **Você** | Aprova o briefing — nenhum agente aprova no seu lugar | Briefing refinado | `aioson briefing:approve . --slug={slug}` |
+| [`@product`](./4-agentes/product.md) | Transforma o briefing aprovado em PRD: o que a feature faz, o que ela **não** faz, e como saber que ficou pronta | Briefing aprovado | `prd-{slug}.md` — a autoridade de escopo |
+| [`@sheldon`](./4-agentes/sheldon.md) | Revisão técnica e de arquitetura: acha o edge case frágil, o risco não nomeado, o AC que não é verificável | O PRD | O **mesmo** `prd-{slug}.md`, enriquecido e selado para planejamento |
+| [`@planner`](./4-agentes/planner.md) | Quebra o PRD aprovado em fases verticais executáveis, cada uma com arquivos esperados e um check que prova a fase | PRD selado | `implementation-plan-{slug}.md` |
+| [`@dev`](./4-agentes/dev.md) | Implementa fase por fase, rodando os checks do plano | PRD + plano | Código funcionando + `dev-state.md` |
+| [`@qa`](./4-agentes/qa.md) | Revisão final independente: confere cada AC pelo caminho real de produção e emite o veredito | Código + PRD + plano | `qa-report-{slug}.md` com PASS ou FAIL |
+
+### Por que a ordem é essa
+
+Cada etapa existe para impedir que uma decisão cara seja tomada cedo demais, com informação de menos:
+
+1. **`@briefing` antes de tudo** porque escrever um PRD a partir de uma ideia vaga produz um PRD vago. Ele coleta e organiza; não decide.
+2. **`@briefing-refiner` antes da aprovação** porque ambiguidade que passa daqui vira dívida no PRD — e porque, em escopo visual, é muito mais barato discordar de um protótipo do que de uma tela já implementada.
+3. **Sua aprovação antes do `@product`** porque o escopo é decisão de dono do produto, não de agente.
+4. **`@sheldon` depois do `@product`** porque revisão técnica precisa de algo concreto para criticar; revisar uma intenção não produz achado.
+5. **`@planner` depois do PRD selado** porque plano feito sobre escopo instável é replanejado a cada mudança.
+6. **`@dev` depois do plano** porque implementar sem fases verticais leva a "90% pronto" indefinidamente.
+7. **`@qa` por último e independente** porque quem implementou não é a melhor pessoa para achar o que ficou faltando.
+
+O bloco `@briefing → @briefing-refiner → aprovação` é **opcional**: se a feature já está clara, comece direto no `@product`. Mas se você começar, precisa terminar — um briefing pela metade não vira PRD. MICRO, SMALL e MEDIUM percorrem a mesma rota; a classificação muda profundidade e orçamento, não a ordem. Especialistas (`@analyst`, `@architect`, `@ux-ui`, `@tester`, `@pentester`) entram somente sob pedido explícito ou por uma dúvida nomeada.
+
+### Exemplo curto de ponta a ponta
+
+Uma feature pequena: "exportar o relatório de pedidos em CSV".
+
+```text
+─── Sessão 1 ───
+Você > @briefing
+@briefing > Encontrei plans/export-csv/ com 2 arquivos. Uso os dois?
+Você > Sim.
+@briefing > .aioson/briefings/export-csv/briefings.md criado.
+            3 perguntas em aberto (1 decision-required: separador , ou ;).
+            Próximo: @briefing-refiner.
+
+Você > @briefing-refiner
+@briefing-refiner > 4 achados (1 bloqueia o PRD: formato de data não definido).
+                    Revisão renderizada: .aioson/briefings/export-csv/review.html
+                    Abra, decida cada achado e volte.
+Você > [decide no navegador; o feedback é aplicado]
+@briefing-refiner > Nada bloqueia o PRD. Aprove quando quiser.
+
+# no terminal:
+$ aioson briefing:approve . --slug=export-csv
+
+─── Sessão 2 ───
+Você > @product
+@product > PRD criado em .aioson/context/prd-export-csv.md — 6 ACs.
+           Próximo: @sheldon.
+
+Você > @sheldon
+@sheldon > Risco: exportação de 100k linhas trava a request.
+           Adicionei AC de streaming e limite. PRD selado.
+           Próximo: @planner.
+
+─── Sessão 3 ───
+Você > @planner
+@planner > Plano em .aioson/context/implementation-plan-export-csv.md
+           Fase 1: serializador + testes · Fase 2: endpoint com streaming
+           Próximo: @dev.
+
+Você > @dev
+@dev > Fases 1 e 2 completas, checks do plano passando.
+       Próximo: @qa.
+
+Você > @qa
+@qa > 6/6 ACs verificados pelo caminho real. qa-report-export-csv.md: PASS.
+```
+
+> **Ativações:** em clientes de linguagem natural (Codex, OpenCode) use `@briefing`, `@product`…; em clientes com slash command (Claude Code) as mesmas ativações funcionam como `/briefing`, `/product`… Os comandos `aioson ...` rodam no terminal.
+>
+> Perdido no meio do caminho? Ative [`@neo`](./4-agentes/neo.md): ele lê o estado do projeto e diz qual é o próximo agente.
+
+**Aprofundar:** [receita da rota canônica](./3-receitas/feature-completa-com-sheldon.md) · [da ideia ao PRD via `@briefing`](./3-receitas/da-ideia-ao-prd-via-briefing.md) · [fichas de todos os agentes](./4-agentes/README.md) · [fluxo de artefatos](./5-referencia/fluxo-artefatos.md)
+
+---
+
 ## Em três comandos
 
 ```bash

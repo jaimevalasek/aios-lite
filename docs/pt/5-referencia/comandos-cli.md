@@ -162,11 +162,14 @@ O mesmo resolver é usado por `verification:plan`; nomes como `GPT 5.6 Terra`, `
 | Comando | O que faz | Quando usar |
 |---|---|---|
 | `genome:doctor` | Valida um arquivo de genome | Quando quer checar integridade de um genome |
+| `genome:approve` | **Você** congela um espécime produzido com o genome compilado, gravando o bloco `approval` no binding | Depois de inspecionar o espécime e concluir que ele carrega a identidade da fonte. Veja [Aprovação de genome por espécime](#aprovação-de-genome-por-espécime-genomeapprove) |
 | `genome:migrate` | Migra genomes para o formato novo | Quando está atualizando genomes legados |
 | `squad:status` | Mostra visão geral das squads instaladas | Quando quer saber o estado atual das squads |
 | `squad:doctor` | Diagnostica saúde operacional das squads | Quando suspeita de drift, staleness ou artefatos faltando |
 | `squad:repair-genomes` | Corrige referências de genomes em manifesto de squad | Quando um manifesto aponta bindings quebrados |
 | `squad:validate` | Valida a estrutura e o manifesto de uma squad específica | Antes de exportar ou publicar |
+| `squad:eval` | Avalia o aterramento (grounding) da squad | Depois de `squad:validate`, antes de construir o pilot |
+| `squad:pilot-approve` | **Você** congela o pilot da squad — o entregável flagship que vira a régua de qualidade dela | Depois que os executores construíram o pilot e o lint determinístico está limpo. Veja [Pilot de squad](#pilot-de-squad-squadpilot-approve) |
 | `squad:export` | Exporta uma squad local para snapshot/entrega | Quando quer empacotar a squad |
 | `squad:pipeline` | Lista, inspeciona ou acompanha pipelines declarados na squad | Quando a squad define pipelines reutilizáveis |
 | `squad:agent-create` | Cria agente customizado em `.aioson/my-agents/` ou dentro de uma squad | Quando quer criar agente personalizado. Veja [Agentes Customizados](../4-agentes/squad.md) |
@@ -178,7 +181,7 @@ O mesmo resolver é usado por `verification:plan`; nomes como `GPT 5.6 Terra`, `
 | `squad:processes` | Lista e encerra processos ativos de uma squad | Quando quer inspecionar ou parar agentes sem usar o dashboard |
 | `squad:recovery` | Gera contexto de recovery para reinjecting após compact | Quando um agente perdeu contexto após compactação |
 | `squad:bus` | Posta, lê, monitora e resume mensagens do intra-bus de uma sessão de squad | Quando quer inspecionar a comunicação entre executores ou postar um finding/block manualmente. Veja [Squad Bus](#37-intra-bus-de-squad) |
-| `squad:autorun` | Decompõe um objetivo em tarefas, executa em grupos paralelos com reflection e registra no bus | Quando quer que uma squad execute autonomamente a partir de um goal de alto nível. Veja [Squad Autorun](#38-execuçao-autonoma-de-squad-squadautorun) |
+| `squad:autorun` | Decompõe um objetivo em tarefas, executa em grupos paralelos com reflection e registra no bus | Quando quer que uma squad execute autonomamente a partir de um goal de alto nível. Veja [Squad Autorun](#38-execução-autônoma-de-squad--squadautorun) |
 | `output-strategy:export` | Exporta a estratégia de output (webhooks, delivery) de uma squad | Quando quer copiar configuração para outra squad ou documentar |
 | `output-strategy:import` | Importa estratégia de output de um arquivo ou outra squad | Quando quer replicar webhooks/delivery entre squads |
 | `deliver` | Dispara delivery manual de conteúdo para webhooks configurados | Quando quer reenviar conteúdo ou testar webhooks |
@@ -309,6 +312,101 @@ aioson verify:artifact . --kind=rule --file=.aioson/rules/contrato-qualidade-vis
 ```
 
 Essa verificação prova que o frontmatter roteia de verdade e que os textos de exemplo foram substituídos por requisitos concretos e verificáveis.
+
+#### `verify:artifact` — o gate de artefato
+
+`verify:artifact` é a versão "sem build" do *pronto = provado, não afirmado*: ele lê os arquivos declarados e prova que a estrutura obrigatória existe e que nenhum placeholder ou truncamento passou, antes do agente se declarar concluído. É `fs` + expressão regular + `JSON.parse` — custa milissegundos e roda igual em qualquer sistema operacional.
+
+```bash
+aioson verify:artifact . --kind=<kind> [--slug=<slug>|--file=<path>|--dir=<dir>] [--advisory] [--strict] [--json]
+```
+
+- `--advisory` avisa mas nunca bloqueia (sempre sai com código 0). É o modo padrão dos done-gates dos agentes.
+- `--strict` promove os avisos a problemas bloqueantes.
+- Cada execução persiste o relatório completo em `.aioson/context/verify-artifact-{kind}.json`.
+- Sem `--advisory`, um problema real derruba o comando com código de saída 1.
+
+Os `kind` disponíveis, com o localizador que cada um exige:
+
+| Kind | Artefato verificado | Localizador | Agente que produz |
+|---|---|---|---|
+| `project-context` | `.aioson/context/project.context.md` | — | `@setup` |
+| `bootstrap` | os 4 arquivos de `.aioson/context/bootstrap/` | — | `@discover` |
+| `commit-message` | qualidade do assunto do commit | — | `@committer` |
+| `briefing` | `.aioson/briefings/{slug}/briefings.md` | `--slug` | `@briefing` |
+| `review` | `.aioson/briefings/{slug}/review.html` | `--slug` | `@briefing-refiner` |
+| `sources` | linhagem `SRC-*`/`PROM-*` da feature | `--slug` | `@sheldon` |
+| `prd` | `.aioson/context/prd-{slug}.md` | `--slug` ou `--file` | `@sheldon` |
+| `test-report` | `.aioson/context/test-report-{slug}.md` | `--slug` | `@tester` |
+| `squad-pilot` | contrato de pilot da squad | `--slug` | `@squad` |
+| `genome` | genome em `.aioson/genomes/` | `--slug` | `@genome`, `@profiler-forge` |
+| `research-report` | `.aioson/profiler-reports/{slug}/research-report.md` | `--slug` | `@profiler-researcher` |
+| `enriched-profile` | `.aioson/profiler-reports/{slug}/enriched-profile.md` | `--slug` | `@profiler-enricher` |
+| `hybrid-skill` | pacote da skill híbrida | `--slug` | `@design-hybrid-forge` |
+| `copy` | `.aioson/context/copy-{slug}.md` | `--slug` | `@copywriter` |
+| `orache-report` | relatório de investigação | `--file` | `@orache` |
+| `identity` | `identity.md` de referência visual | `--file` | (extração de identidade) |
+| `rule` | uma regra de `.aioson/rules/` | `--file` | `aioson rule:new` |
+| `site` | raiz de um site gerado | `--dir` | `@site-forge` |
+| `visual` | telemetria de HTML/CSS | `--file`, `--dir` ou `--slug` | fluxos visuais |
+
+Um kind que exige localizador e não o recebe falha com erro de uso explícito, em vez de verificar um caminho inexistente. Quando o agente encerra a sessão com `agent:done`, o gate correspondente dispara sozinho em modo advisory — o mapa agente → kind vive em `src/artifact-kinds.js`.
+
+#### `verify:artifact --kind=briefing`
+
+A metade determinística do contrato do `@briefing`, rodada onde a linhagem nasce em vez de dois agentes depois.
+
+```bash
+aioson verify:artifact . --kind=briefing --slug=marketplace-v1 --advisory
+```
+
+O que ele prova:
+
+- **Identidade no frontmatter** — o `slug` bate com o diretório; `created_at`, `updated_at` e `source_plans` presentes (ausências viram aviso; use `[]` para briefing conversacional).
+- **As oito seções obrigatórias** — `## Context`, `## Problem`, `## Proposed solution`, `## Themes`, `## Risks`, `## Identified gaps`, `## Sources`, `## Open questions`. Fora da ordem canônica é aviso; faltando é problema.
+- **Classificação das perguntas em aberto** — toda pergunta numerada precisa de uma etiqueta `[research-able]`, `[testable]`, `[decision-required]` ou `[out-of-scope]`.
+- **Disciplina de placeholder** — `TODO`, `FIXME`, `Lorem ipsum` e tokens de template não passam. A frase canônica `TBD — not discussed in this session.` continua legal; um `TBD` solto vira aviso.
+- **Registro em `config.md`** — existe entrada para o slug, com status `draft`, `approved` ou `implemented`.
+- **Linhagem de fontes** — o mesmo analisador que o `--kind=sources` usa, então fingerprint desatualizado e quebra de `SRC-*`/`PROM-*` aparecem na hora da escrita. Briefing legado ou conversacional sem inventário não é reprovado: a inaplicabilidade vira aviso.
+
+Se cada promessa representa fielmente a sua fonte continua sendo julgamento do agente — isso nenhuma expressão regular decide.
+
+#### `verify:artifact --kind=test-report`
+
+A metade determinística do contrato do `@tester`: prova que a cobertura foi **enumerada**, não que ela é suficiente.
+
+```bash
+aioson verify:artifact . --kind=test-report --slug=export-csv --advisory
+```
+
+O que ele prova sobre `.aioson/context/test-report-{slug}.md`:
+
+- **Frontmatter** com `feature: {slug}` batendo com o relatório.
+- **As cinco seções obrigatórias** — `## Scope`, `## Hypothesis matrix`, `## Tests added or changed`, `## Commands and results`, `## Residual risk`.
+- **Matriz de hipóteses** — tabela Markdown com as colunas `Path`, `Class`, `Test` e `Result`. Cada `Class` precisa ser uma de `boundary`, `invariant`, `state-transition`, `failure`, `regression`, `property`. Matriz sem nenhuma linha `boundary` nem `failure` vira aviso: profundidade adversarial é o padrão em caminho crítico.
+- **Evidência de comando executado** — `## Commands and results` precisa registrar ao menos um comando exato com o resultado observado. `FAIL` registrado é evidência legítima; `PASS` inventado é defeito.
+- **Risco residual** — seção vazia afirma que o escopo testado está totalmente provado, e isso vira aviso. Parar antes da cobertura total precisa ser uma decisão nomeada, não um default silencioso.
+- **Pacote de correção** — quando existe `## Correction packet`, ele precisa trazer `allowed_fix_paths`, senão o `review-cycle:advance` rejeita depois.
+
+#### `verify:artifact --kind=squad-pilot`
+
+A metade determinística do contrato de pilot de squad. Detalhes do contrato: [Squads](./squads.md#pilot--o-entregável-que-prova-o-squad).
+
+```bash
+aioson verify:artifact . --kind=squad-pilot --slug=cinematic-web --advisory
+```
+
+O que ele prova:
+
+- **Coerência do bloco `pilot`** no `squad.manifest.json` — `status` válido (`not_applicable`, `pending`, `draft`, `approved`) e `task` preenchida.
+- **Contenção do entrypoint** — `pilot.entrypoint` precisa viver sob `output/{slug}/pilot/` e existir em disco.
+- **Doc de evidência** — `.aioson/squads/{slug}/docs/PILOT.md` com as seções `## Pilot task`, `## Validations`, `## Binds` e `## Does not bind`; `## Validations` precisa registrar ao menos um comando executado com o resultado observado.
+- **Higiene de placeholder** — `TODO`/`FIXME`/`Lorem ipsum` reprovam tanto o `PILOT.md` quanto os arquivos do entregável.
+- **Adiamento proporcional à lane** — `pending` só é aceito na lane `quick` e com um `pilot.deferReason` concreto; `regulated` e `premium` nunca adiam. Squad de classe entregável (`mode: software` ou `mixed`) não pode registrar `not_applicable`.
+- **Frescor do fingerprint** — depois de aprovado, editar o entregável deixa o fingerprint obsoleto até você reaprovar. Isso é comportamento correto, não erro.
+- **Drift de builders** (aviso) — a aprovação congela quais genomes compilados moldaram os executores que construíram o pilot. Um enrich ou recompile muda a squad sem tocar em `output/`, então o desvio aparece como aviso.
+
+Se o pilot realmente carrega a assinatura do domínio é julgamento **seu**: o lint nunca emite uma aprovação.
 
 #### `verify:artifact --kind=visual`
 
@@ -497,9 +595,9 @@ Três comandos de inteligência de sistema para otimizar tokens, gerar contexto 
 
 | Comando | O que faz | Quando usar |
 |---|---|---|
-| `agent:audit` | Audita tamanho e tokens de todos os arquivos de agente; detecta seções candidatas a on-demand loading e calcula economia potencial por sessão | Quando quer entender o custo de contexto dos agentes e identificar o que pode ser movido para `.aioson/docs/` (carregamento sob demanda). Veja [Auditoria de Agentes](#39-auditar-agentes-agentaudit) |
-| `brief:gen` | Lê uma fase do plano de implementação + `architecture.md` + `spec.md` e gera um brief 100% autocontido para um worker | Antes de entregar uma fase a um executor de squad — garante que o worker tem tudo que precisa sem buscar contexto adicional. Veja [Geração de Brief](#40-gerar-brief-de-worker-briefgen) |
-| `verify:gate` | Verificação de olhos frescos: compara spec vs artefato entregue sem histórico de conversa; emite `PASS`, `PASS_WITH_NOTES`, `FAIL_WITH_ISSUES` ou `BLOCKED` | Após cada entrega de fase — detecta bugs que o agente gerador não consegue ver por viés de contexto. Veja [Verify Gate](#41-verificar-entrega-verifygate) |
+| `agent:audit` | Audita tamanho e tokens de todos os arquivos de agente; detecta seções candidatas a on-demand loading e calcula economia potencial por sessão | Quando quer entender o custo de contexto dos agentes e identificar o que pode ser movido para `.aioson/docs/` (carregamento sob demanda). Veja [Auditoria de Agentes](#39-auditar-agentes--agentaudit) |
+| `brief:gen` | Lê uma fase do plano de implementação + `architecture.md` + `spec.md` e gera um brief 100% autocontido para um worker | Antes de entregar uma fase a um executor de squad — garante que o worker tem tudo que precisa sem buscar contexto adicional. Veja [Geração de Brief](#40-gerar-brief-de-worker--briefgen) |
+| `verify:gate` | Verificação de olhos frescos: compara spec vs artefato entregue sem histórico de conversa; emite `PASS`, `PASS_WITH_NOTES`, `FAIL_WITH_ISSUES` ou `BLOCKED` | Após cada entrega de fase — detecta bugs que o agente gerador não consegue ver por viés de contexto. Veja [Verify Gate](#41-verificar-entrega--verifygate) |
 
 ### Loop Guardrails e harness
 
@@ -949,6 +1047,40 @@ aioson genome:migrate .aioson/genomes --write
 
 Use `genome:doctor` para validar um arquivo individual e `genome:migrate` para atualizar um conjunto legado para o formato novo.
 
+### Aprovação de genome por espécime (`genome:approve`)
+
+`genome:doctor` prova estrutura e o A/B held-out prova pontuação. Nenhum dos dois prova que o comportamento compilado carrega a **identidade** da fonte — isso é julgamento humano, e é você quem congela.
+
+```bash
+aioson genome:approve . --squad=<slug> --genome=<slug> [--executor=<slug>] [--specimen=<path>] [--json]
+```
+
+O ciclo:
+
+1. Um executor da própria squad, com o binding compilado ativo, produz um **espécime** held-out — um entregável real feito com aquele genome. O caminho padrão é `output/{squad}/specimen/{genome}/`.
+2. Você inspeciona o espécime. A pergunta é uma só: isso soa como a fonte?
+3. Se sim, congele.
+
+```bash
+aioson genome:approve . --squad=marketing-odonto --genome=halbert-copy
+aioson genome:approve . --squad=marketing-odonto --genome=halbert-copy --executor=copywriter
+aioson genome:approve . --squad=marketing-odonto --genome=halbert-copy \
+  --specimen=output/marketing-odonto/specimen/halbert-copy-v2 --json
+```
+
+O comando grava um bloco `approval` no binding dentro do `squad.manifest.json`, com `specimen`, `sourceHash`, `compilationId` e `approvedAt`.
+
+Ele **recusa** congelar quando:
+
+- o binding não está com status `compiled` — aprovação congela comportamento provado, não intenção;
+- o binding não tem `sourceHash` nem `compilationId` (recompile pelo serviço de binding para haver identidade a congelar);
+- o espécime está faltando, vazio, contém `..` ou vive fora de `output/`;
+- o genome está vinculado em mais de um lugar — passe `--executor=<slug>` para escolher qual.
+
+Enriquecer ou recompilar o genome torna a aprovação **stale** até você reaprovar. O drift aparece como aviso em `aioson verify:artifact . --kind=genome --slug=<genome>`, nomeando cada squad cuja aprovação não bate mais com a identidade de compilação.
+
+> Agentes nunca rodam `genome:approve`. O veredito de fidelidade é exclusivamente seu.
+
 ### 17. Operar squads locais
 
 ```bash
@@ -967,6 +1099,37 @@ Use:
 - `squad:validate` antes de exportar ou publicar
 - `squad:export` para empacotar a squad
 - `squad:pipeline` para inspecionar pipelines definidos dentro da squad
+
+### Pilot de squad (`squad:pilot-approve`)
+
+`squad:validate` prova estrutura e `squad:eval` prova aterramento. Nenhum dos dois prova que a squad entrega o artefato flagship dela na régua de qualidade que você tem na cabeça. O **pilot** prova: um entregável representativo do domínio, construído pelos executores da própria squad, iterado em `draft` e congelado por você.
+
+Vale para squads de classe entregável (`mode: software` ou `mixed`). Squads de conteúdo e pesquisa registram `pilot.status: not_applicable` — nunca fabrique um entregável só para satisfazer o gate.
+
+A ordem é do mais barato para o mais caro:
+
+```bash
+# 1. Estrutura e aterramento
+aioson squad:validate . --squad=cinematic-web --strict
+aioson squad:eval . --squad=cinematic-web
+
+# 2. Os executores da squad constroem o pilot em output/cinematic-web/pilot/
+#    e escrevem a evidência em .aioson/squads/cinematic-web/docs/PILOT.md
+
+# 3. Lint determinístico — corrija tudo que aparecer
+aioson verify:artifact . --kind=squad-pilot --slug=cinematic-web --advisory
+
+# 4. VOCÊ inspeciona o entrypoint e congela
+aioson squad:pilot-approve . --squad=cinematic-web [--json]
+```
+
+O comando recusa congelar enquanto o gate determinístico apontar qualquer problema. Passando, ele carimba no bloco `pilot` do `squad.manifest.json`: `status: approved`, o `fingerprint` recalculado do entregável, `approved_at` e `builders` — as identidades dos bindings de genome compilados no momento da aprovação. Um `deferReason` existente é removido.
+
+Só um pilot em `draft` (ou já `approved`, para recongelar) pode ser aprovado. Depois disso o pilot vira a **régua vinculante** da squad: toda sessão futura que produz entregável carrega o bloco `pilot` e o `PILOT.md` como referência de qualidade, e uma entrega abaixo daquela assinatura é achado, não escolha de estilo.
+
+Editar o entregável depois da aprovação deixa o fingerprint obsoleto e a prontidão cai até você reaprovar. Enriquecer um genome muda quem constrói sem tocar em `output/` — por isso o drift de `builders` aparece como aviso separado.
+
+> Agentes nunca rodam `squad:pilot-approve`. O congelamento é exclusivamente seu.
 
 ### 18. Monitorar squads com o Squad Dashboard
 
