@@ -1,8 +1,51 @@
 # Hooks & Session Guard
 
-> Visibilidade automática no dashboard sem nenhuma chamada manual ao CLI durante a sessão.
+> A camada que aplica as regras do projeto antes de cada escrita e registra o que o agente fez, sem nenhuma chamada manual ao CLI durante a sessão.
 
-Por padrão, o dashboard só vê o que o CLI registrou explicitamente. Com o sistema de hooks, cada vez que o agente escreve um arquivo, roda um comando ou termina a sessão, um evento é automaticamente gravado no SQLite — sem o agente precisar chamar `aioson` manualmente.
+Os hooks fazem duas coisas:
+
+1. **Antes de cada escrita ou edição de arquivo**, o `context:guard` lê o que está prestes a ser gravado e injeta as restrições das regras do projeto que valem para aquele arquivo.
+2. **Depois de cada escrita, comando bash e fim de sessão**, um evento é gravado no SQLite — é assim que o dashboard enxerga a sessão.
+
+---
+
+## Instalados por padrão
+
+`aioson init`, `aioson install` e `aioson update` instalam os hooks automaticamente. Você não precisa rodar nada a mais.
+
+```bash
+npx @jaimevalasek/aioson init meu-projeto     # instala template + hooks
+npx @jaimevalasek/aioson install              # instala template + hooks
+npx @jaimevalasek/aioson update               # atualiza template + (re)instala hooks
+```
+
+Durante a instalação você vê:
+
+```
+Instalando hooks do AIOSON (context:guard + telemetria de runtime) — desative com --no-hooks:
+Detected tools: claude
+Hooks Install — agent: @dev
+──────────────────────────────────────────────────
+  ✓ Claude Code — /home/user/.claude/settings.json
+```
+
+**Para não instalar**, use `--no-hooks`:
+
+```bash
+npx @jaimevalasek/aioson init meu-projeto --no-hooks
+npx @jaimevalasek/aioson install --no-hooks
+npx @jaimevalasek/aioson update --no-hooks
+```
+
+Nesse caso a saída avisa: `Hooks ignorados (--no-hooks). Instale depois com: aioson hooks:install`.
+
+Três detalhes que valem saber:
+
+- **Falha em hook nunca derruba o comando.** Se a instalação dos hooks falhar, o `init`/`install`/`update` continua e imprime `Falha ao instalar hooks (nao bloqueia)`.
+- **A ferramenta-alvo vem do `--tool`.** Se você passou `--tool=claude`, `--tool=codex` ou (para hooks) `antigravity`, os hooks vão para essa ferramenta. Sem `--tool` reconhecido, o instalador detecta o que existe na máquina e configura tudo que encontrar.
+- **O `update` também reinstala.** É exatamente ao atualizar um projeto antigo que a camada de hooks costuma estar faltando.
+
+Por que o padrão é instalar: as regras do projeto em `.aioson/rules/` só chegam de fato no momento da escrita quando o `context:guard` está ativo. Sem ele, uma regra depende do agente ter carregado o contexto certo antes.
 
 ---
 
@@ -10,7 +53,14 @@ Por padrão, o dashboard só vê o que o CLI registrou explicitamente. Com o sis
 
 ```
 Claude Code / Antigravity / Codex
-  └─ agente escreve src/cart.ts  (PostToolUse: Write)
+  └─ agente VAI escrever src/cart.ts  (PreToolUse: Write)
+       └─ hook dispara → aioson context:guard
+            └─ deriva uma query do próprio arquivo (nome + conteúdo)
+            └─ roda o motor do context:brief
+            └─ injeta as restrições das regras salientes
+            └─ sempre sai com código 0 — nunca bloqueia a ferramenta
+
+  └─ agente escreveu src/cart.ts  (PostToolUse: Write)
        └─ hook dispara → aioson hooks:emit
             └─ verifica se live session existe
             └─ se não: auto-inicia sessão (session:guard ou auto-start inline)
@@ -30,9 +80,65 @@ O `session:guard` é opcional — o `hooks:emit` já inicia a sessão automatica
 
 ---
 
+## context:guard — regras aplicadas na hora da escrita
+
+O `context:guard` roda como hook `PreToolUse` no Claude Code, casando `Write|Edit|MultiEdit|NotebookEdit`. Ele recebe o evento pendente por stdin, deriva a query do próprio artefato — nunca de uma lista de palavras-chave escrita pelo modelo — e devolve um bloco de contexto adicional quando alguma regra do projeto é realmente pertinente.
+
+Ele é **advisory por construção**: o comando termina com `2>/dev/null || true` e sempre sai com sucesso. Nenhuma escrita é bloqueada.
+
+### Quando uma regra é injetada
+
+Uma regra precisa passar por todos estes filtros:
+
+1. **Sinal forte no brief** — a regra foi selecionada por `triggers`, `paths`, `entities`, `aliases` ou `task_types`, não por palpite semântico nem por carregamento sempre-ativo.
+2. **Confiança mínima `medium`** — briefs de confiança baixa nunca injetam.
+3. **Escopo de caminho** — se a regra declara `paths:` (ou `globs:`) no frontmatter, o arquivo editado precisa casar com algum dos padrões. Uma regra com escopo declarado nunca injeta por sobreposição fuzzy de palavra-chave num arquivo fora dele.
+4. **Escopo de superfície** — se a regra declara `guard_surfaces:`, o tipo de artefato editado precisa estar na lista.
+5. **Opt-in de salience** — a regra declara `entities`/`aliases`, ou marca `guard: true` no frontmatter. Regras de baseline genéricas ficam caladas.
+
+### `guard_surfaces:` — vincular a regra ao tipo de artefato
+
+As quatro regras de interação do framework (`form-fields-masks-and-validation`, `status-change-confirmation`, `status-flow-drag-and-drop`, `management-home-widgets`) declaram `guard_surfaces: [ui]`. Hoje `ui` é o único tipo, e o guard o detecta assim:
+
+| Arquivo | Conta como `ui`? |
+|---|---|
+| `.html`, `.htm`, `.css`, `.scss`, `.sass`, `.less`, `.jsx`, `.tsx`, `.vue`, `.svelte`, `.astro` | Sim, pela extensão |
+| `.md`, `.mdx` | Sim — briefings, manifestos e PRDs carregam contrato de interação |
+| `.js`, `.mjs`, `.cjs`, `.ts`, `.mts`, `.cts` | Só se o conteúdo tocar o DOM (`document.querySelector`, `classList.`, `innerHTML`, JSX, `useState(`, `createRoot(`) |
+| Qualquer outro (JSON, YAML, fonte de CLI, script de build) | Não |
+
+Um arquivo *sobre* formulários não é um formulário. Sem esse vínculo, uma regra universal de interação aparecia dentro de código de CLI, dado JSON e harness de teste só porque o texto mencionava "form" ou "status".
+
+Detalhes das quatro regras em [Regras de interação e gate visual](./regras-de-interacao-e-gate-visual.md).
+
+### Rodar o guard na mão
+
+```bash
+# Simular o evento de uma escrita
+echo '{"tool_name":"Write","tool_input":{"file_path":"src/form.jsx","content":"<input name=\"cpf\">"}}' | \
+  aioson context:guard . --tool=claude --agent=dev --json
+
+# Ou a partir de um arquivo de evento
+aioson context:guard . --event-file=evento.json --json
+```
+
+Sem regra pertinente, a resposta é um objeto vazio. Com regra, vem `hookSpecificOutput.additionalContext` com as restrições, atribuídas por arquivo de regra.
+
+### Instalar os hooks sem o guard
+
+```bash
+aioson hooks:install . --agent=dev --tool=claude --no-guard
+```
+
+`--no-guard` também remove um guard instalado antes — reinstalar com a flag limpa o hook `PreToolUse` de verdade.
+
+---
+
 ## Passo a passo: Claude Code
 
 ### 1. Instalar os hooks
+
+Se você rodou `init`, `install` ou `update` sem `--no-hooks`, isso já aconteceu. Use `hooks:install` quando quiser trocar o agente-dono, reinstalar depois de um `--no-hooks`, ou configurar só uma ferramenta.
 
 ```bash
 # Instalar hooks para o agente dev (padrão)
@@ -40,6 +146,9 @@ aioson hooks:install . --agent=dev --tool=claude
 
 # Para outro agente (ex: qa)
 aioson hooks:install . --agent=qa --tool=claude
+
+# Sem o context:guard (só telemetria)
+aioson hooks:install . --agent=dev --tool=claude --no-guard
 
 # Preview sem modificar nada
 aioson hooks:install . --agent=dev --tool=claude --dry-run
@@ -53,6 +162,7 @@ Hooks Install — agent: @dev
   ✓ Claude Code — /home/user/.claude/settings.json
 
 Hooks installed. From now on:
+  • Before each file write/edit → context:guard injects salient project-rule constraints
   • Every file write/edit → logged as artifact event
   • Every bash command → logged as step_done event
   • Session end → logged as agent:done
@@ -61,11 +171,22 @@ To verify: aioson live:status . --agent=dev
 To uninstall: aioson hooks:uninstall --tool=claude
 ```
 
+Reinstalar é seguro: o instalador remove as entradas antigas do AIOSON antes de gravar as novas, e nunca mexe em hooks que você mesmo escreveu.
+
 ### 2. O que é adicionado em `~/.claude/settings.json`
 
 ```json
 {
   "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit|NotebookEdit",
+        "hooks": [{
+          "type": "command",
+          "command": "aioson context:guard \"$PWD\" --tool=claude --agent=dev --json 2>/dev/null || true"
+        }]
+      }
+    ],
     "PostToolUse": [
       {
         "matcher": "Write|Edit|MultiEdit",
@@ -334,7 +455,8 @@ aioson runtime:emit . --agent=dev \
 ### Setup inicial (uma vez)
 
 ```bash
-# Instalar hooks para a ferramenta que você usa
+# Já feito pelo init/install/update. Só rode se você usou --no-hooks
+# ou quer trocar o agente-dono / a ferramenta:
 aioson hooks:install . --agent=dev --tool=claude   # ou --tool=antigravity ou --tool=all
 ```
 
@@ -435,13 +557,22 @@ Para Antigravity, use `.agents/hooks.json` na pasta do projeto em vez do global.
 ## Referência rápida
 
 ```bash
-# Instalar hooks
+# Instalados por padrão pelo init/install/update. Para não instalar:
+aioson init meu-projeto --no-hooks
+aioson install . --no-hooks
+aioson update . --no-hooks
+
+# Instalar / reinstalar na mão
 aioson hooks:install . --agent=dev --tool=claude
 aioson hooks:install . --agent=dev --tool=antigravity
 aioson hooks:install . --agent=dev --tool=all
+aioson hooks:install . --agent=dev --tool=claude --no-guard   # só telemetria
 
 # Remover hooks
 aioson hooks:uninstall . --agent=dev --tool=claude
+
+# Rodar o guard na mão (o hook chama sozinho)
+aioson context:guard . --tool=claude --agent=dev --json
 
 # Supervisor de sessão
 aioson session:guard . --agent=dev --tool=claude &

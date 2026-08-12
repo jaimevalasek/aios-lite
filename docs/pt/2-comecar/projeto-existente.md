@@ -51,7 +51,11 @@ O wizard interativo aparece:
    ◯ Français
 ```
 
-> **Dica:** o `--all` instala tudo sem wizard (todas as ferramentas, modo Development+Squads). `--no-interactive` para CI.
+> **Dica:** `--no-interactive` pula o wizard — ele usa o perfil salvo se houver, e instala tudo (avisando) se não houver. O `--all` existe só no `init`. Para reabrir o wizard depois, `install --reconfigure`.
+
+No fim, o `install` também instala os hooks do AIOSON — `context:guard` antes de cada escrita de arquivo, mais telemetria de runtime. Use `--no-hooks` se não quiser. Detalhes em [Hooks e Session Guard](../5-referencia/hooks-session-guard.md).
+
+Todas as flags e o passo a passo de atualização estão em [Instalar e atualizar](./instalar-e-atualizar.md).
 
 ---
 

@@ -37,7 +37,8 @@
 | [memoria-e-contexto.md](./memoria-e-contexto.md) | Memória persistente, context cache, context search, context monitor — guia consolidado |
 | [runtime-observability.md](./runtime-observability.md) | Telemetria SQLite, dashboard, runtime:emit, agent:done |
 | [runtime-storage.md](./runtime-storage.md) | Banco local por clone, mapa de uso, retenção segura, compactação e manutenção pelo NEO |
-| [hooks-session-guard.md](./hooks-session-guard.md) | Hooks automáticos de visibilidade no dashboard para Claude Code, Antigravity e Codex |
+| [hooks-session-guard.md](./hooks-session-guard.md) | Hooks instalados por padrão: `context:guard` antes de cada escrita + telemetria de runtime (Claude Code, Antigravity, Codex) |
+| [regras-de-interacao-e-gate-visual.md](./regras-de-interacao-e-gate-visual.md) | As quatro regras de interação (máscaras, confirmação, drag-and-drop, widgets), `guard_surfaces`, e o que o `verify:artifact --kind=visual` mede |
 
 ---
 
@@ -46,6 +47,7 @@
 | Documento | Descrição |
 |---|---|
 | [comandos-cli.md](./comandos-cli.md) | Referência completa de todos os comandos do `aioson` |
+| [../2-comecar/instalar-e-atualizar.md](../2-comecar/instalar-e-atualizar.md) | Requisitos, flags de `init`/`install`/`update`, hooks por padrão e como subir de versão sem cair na armadilha do CLI velho |
 | [clientes-ai.md](./clientes-ai.md) | Como usar com Claude Code, Codex e OpenCode |
 | [sandbox.md](./sandbox.md) | Execução segura com timeout, redação de secrets e output summarizado |
 | [compress-agents.md](./compress-agents.md) | Reduzir consumo de tokens comprimindo instruções de agentes |
@@ -57,6 +59,7 @@
 
 | Documento | Descrição |
 |---|---|
+| [squads.md](./squads.md) | Visão geral de squads: criação, squad efêmero, roteamento entre squads, genome, servidor de webhook |
 | [sdd-planos-e-estrutura.md](./sdd-planos-e-estrutura.md) | Mapa dos artefatos canônicos e das faixas opcionais do DEV |
 | [sdd-automation-scripts.md](./sdd-automation-scripts.md) | Regra dos 80%: scripts determinísticos de gate, classificação e estado |
 | [motor-hardening.md](./motor-hardening.md) | Hardening do motor: gates técnicos, auto-cura, test briefing |

@@ -322,19 +322,34 @@ aioson verify:artifact . --kind=visual --dir=src/ui --advisory
 
 O locator segue esta precedência: `--file` → `--dir` → `--slug` (resolve `.aioson/briefings/{slug}/prototype.html`).
 
-**Métricas** (campo `metrics` do JSON): aderência a token (%), valores de espaçamento fora da grade de 4px, estratégias de profundidade ativas, famílias tipográficas, animações e se `prefers-reduced-motion` foi tratado, cobertura de estados, aninhamento máximo de cards, elementos de mídia.
+**Métricas de craft** (campo `metrics` do JSON): aderência a token (%), valores de espaçamento fora da grade de 4px, estratégias de profundidade ativas, famílias tipográficas, animações e se `prefers-reduced-motion` foi tratado, cobertura de estados, aninhamento máximo de cards, elementos de mídia.
 
-**Achados bloqueantes** (só o que é provável a partir do texto): blob decorativo — regra ao mesmo tempo absoluta, totalmente arredondada e borrada; animação sem bloco `prefers-reduced-motion`; cards aninhados três níveis. **Avisos** (limiares que pedem julgamento): aderência a token abaixo de 60%, cinco ou mais espaçamentos fora da grade, três estratégias de profundidade simultâneas, mais de três famílias tipográficas, superfície interativa sem marcador de estado.
+**Métricas de contrato de interação** — espelham as quatro regras de interação de `.aioson/rules/`: chamadas de diálogo nativo, campos estruturados sem semântica de input, controles destrutivos e presença de maquinaria de diálogo, superfície kanban e marcadores de drag-and-drop, superfície de gestão e marcadores de widget/KPI.
+
+**Achados bloqueantes** (só o que é provável a partir do texto):
+
+- blob decorativo — regra ao mesmo tempo absoluta, totalmente arredondada e borrada;
+- animação sem bloco `prefers-reduced-motion`;
+- cards aninhados três níveis;
+- chamada de diálogo nativo — `alert(`, `confirm(` ou `prompt(`, puro ou com `window.` na frente.
+
+**Avisos** (limiares que pedem julgamento): aderência a token abaixo de 60%, cinco ou mais espaçamentos fora da grade, três estratégias de profundidade simultâneas, mais de três famílias tipográficas, superfície interativa sem marcador de estado, campo estruturado (CPF/telefone/moeda) sem máscara nem `inputmode`/`pattern`/`maxlength`/`autocomplete`, controle destrutivo sem maquinaria de diálogo, kanban sem marcador de drag-and-drop, superfície de gestão sem marcador de widget.
+
+Comentários não contam: comentário HTML (`<!-- -->`), CSS (`/* */`) e JavaScript (`//`, `/* */`) são removidos antes da medição. Um `confirm()` comentado não dispara a camada bloqueante e um `<input name="cpf">` comentado não vira campo sem máscara.
 
 Heurísticas que precisariam de DOM, layout renderizado ou gosto ficam de fora por construção — um gate que dá alarme falso é desligado em uma semana. Markup de classes utilitárias (Tailwind e afins) expressa token no HTML, então retorna `applicable: false` em vez de inventar veredito.
 
-##### `--runtime` (opt-in)
+Detalhes das regras por trás dos avisos: [Regras de interação e gate visual](./regras-de-interacao-e-gate-visual.md).
+
+##### `--runtime`
 
 ```bash
-aioson verify:artifact . --kind=visual --slug=pedidos --runtime --advisory
+aioson verify:artifact . --kind=visual --slug=pedidos --advisory --runtime
 ```
 
-Acrescenta o que só existe depois do layout, a 1280px e 360px: overflow horizontal, texto cortado, elementos empurrados para fora da tela, tap targets abaixo de 44px e contraste WCAG computado de verdade (primeiro plano translúcido é composto contra o ancestral opaco mais próximo). Playwright é dependência opcional, igual ao `qa:run`; quando falta, a execução informa que não aconteceu em vez de degradar para um "passou".
+Acrescenta o que só existe depois do layout, a 1280px e 360px: overflow horizontal, texto cortado, elementos empurrados para fora da tela, tap targets abaixo de 44px e contraste WCAG computado de verdade (primeiro plano translúcido é composto contra o ancestral opaco mais próximo).
+
+Nos fluxos visuais roteados do framework (protótipo do `@briefing-refiner`, front-end implementado pelo `@dev`/`@deyvin`) o `--runtime` faz parte da invocação padrão, não é um extra. Playwright continua sendo dependência opcional: quando falta, a execução informa que não aconteceu em vez de degradar para um "passou", e esse resultado deve ser registrado ao declarar o trabalho visual concluído. `aioson doctor` mostra se ele está disponível na sua máquina.
 
 `prototype:check` roda a mesma telemetria automaticamente quando resolve um protótipo próprio, sempre como bloco advisory — ela nunca altera o veredito do vínculo.
 
@@ -550,6 +565,22 @@ aioson workflow:plan .
 
 Use esse fluxo quando o código já existe e você quer colocar o AIOSON sem recriar o projeto.
 
+### 2A. Hooks: instalados por padrão
+
+`init`, `install` e `update` instalam os hooks do AIOSON por padrão — `context:guard` como `PreToolUse` (injeta as regras do projeto antes de cada escrita) mais a telemetria de runtime e o `agent:done` no fim da sessão.
+
+```bash
+aioson init meu-saas --no-hooks       # não instala
+aioson install . --no-hooks
+aioson update . --no-hooks
+
+aioson hooks:install . --agent=dev --tool=claude            # instalar depois
+aioson hooks:install . --agent=dev --tool=claude --no-guard # só telemetria
+aioson hooks:uninstall . --tool=claude                      # remover
+```
+
+A ferramenta-alvo vem do `--tool` quando ele nomeia `claude`, `codex` ou `antigravity`; caso contrário o instalador detecta o que existe na máquina. Falha na instalação dos hooks nunca derruba o comando. Detalhes em [Hooks e Session Guard](./hooks-session-guard.md).
+
 ### 3. Atualizar sem perder contexto
 
 ```bash
@@ -558,6 +589,8 @@ aioson doctor . --fix
 ```
 
 Use depois de atualizar a versão do pacote. O `update` mexe só nos arquivos gerenciados e o `doctor --fix` recoloca o que estiver faltando. Ao terminar, `update` imprime `Template version applied: <versão>` (e `(<sha>, <data>)` quando a instalação vem de um checkout git, como um `npm link` de dogfooding) — assim dá para conferir exatamente qual template chegou.
+
+> Se o `update` continua trazendo a versão antiga, o problema é o CLI, não o projeto: ele copia os templates embutidos no CLI que está no disco. Atualize o CLI primeiro. Passo a passo em [Instalar e atualizar](../2-comecar/instalar-e-atualizar.md#atualizar).
 
 ### 4. Ver e ajustar configurações globais
 

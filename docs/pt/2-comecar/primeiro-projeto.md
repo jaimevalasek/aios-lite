@@ -36,6 +36,15 @@ O wizard vai te perguntar:
 
 > **Dica leigo:** se quiser pular o wizard e instalar tudo, `--all`. Se for em CI, `--no-interactive`.
 
+No fim, o `init` também instala os hooks do AIOSON:
+
+```
+Instalando hooks do AIOSON (context:guard + telemetria de runtime) — desative com --no-hooks:
+  ✓ Claude Code — /home/voce/.claude/settings.json
+```
+
+São eles que aplicam as regras do projeto antes de cada escrita de arquivo e registram o que o agente fez. Se você não quer, use `--no-hooks`. Detalhes em [Hooks e Session Guard](../5-referencia/hooks-session-guard.md).
+
 O comando deixa essa estrutura:
 
 ```
@@ -304,4 +313,5 @@ Ele te diz quem é o próximo.
 
 - Tem um projeto que **já existe** e quer adicionar AIOSON nele? → [Em projeto existente](./projeto-existente.md)
 - Quer entender quando MICRO vs SMALL vs MEDIUM? → [Decisões iniciais](./decisoes-iniciais.md)
+- Todas as flags de `init`/`install`/`update` e como subir de versão → [Instalar e atualizar](./instalar-e-atualizar.md)
 - Quer ver o time inteiro? → [Mapa do ecossistema](../1-entender/mapa-do-ecossistema.md)

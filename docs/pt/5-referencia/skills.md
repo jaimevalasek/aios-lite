@@ -153,16 +153,49 @@ Para projetos Web3, skills adicionais são carregadas conforme `web3_networks`:
 
 Skills de design são especiais — apenas **uma** pode estar ativa por projeto, definida pelo campo `design_skill` em `project.context.md`. O agente `@dev` aplica exclusivamente o design system selecionado, sem misturar padrões de outros sistemas.
 
-Skills de design disponíveis:
-- `cognitive-core-ui` — UI com foco cognitivo
-- `interface-design` — Design de interfaces (dashboards, apps, ferramentas)
-- `premium-command-center-ui` — UI premium para command centers
+Skills de design disponíveis (as mesmas oferecidas pelo wizard do `init`/`install`):
+
+| Skill | Para |
+|---|---|
+| `clean-saas-ui` | Mínima e funcional — dashboards e ferramentas |
+| `aurora-command-ui` | Escura e luminosa — command centers e apps |
+| `cognitive-core-ui` | Densa em informação — dados e analytics |
+| `bold-editorial-ui` | Tipografia de alto contraste — sites de conteúdo |
+| `warm-craft-ui` | Tons quentes e orgânicos — consumo e lifestyle |
+| `glassmorphism-ui` | Camadas translúcidas — interfaces imersivas |
+| `neo-brutalist-ui` | Cru e de alto contraste — declarações fortes |
+| `premium-command-center-ui` | Nível enterprise — operação e monitoramento |
+| `interface-design` | Sistema fundacional, de propósito geral |
 
 A skill `interface-design` é um **motor**: antes de desenhar, ela resolve a autoridade visual em ordem, parando no primeiro acerto — (1) um protótipo aprovado vinculado pelo PRD (`prototype_status: current`), em **modo conformidade**; (2) o registro `identity.md` que o PRD vincula via `identity`/`identity_status`; (3) `.aioson/explorations/{slug}/identity.md` (só em modo exploração, nunca para trabalho canônico); (4) `.aioson/briefings/{slug}/identity.md`; (5) `.aioson/context/identity.md`; (6) a linguagem de componentes já estabelecida no repositório; (7) nenhuma — **modo origem**. Sem nenhum sinal, roda intent-first.
 
 Em **modo conformidade**, a skill não decide direção de novo — ela transfere a direção já aprovada: lê o protótipo e sua `## Visual direction`, extrai os tokens e a anatomia de componentes reais já expressos ali, e mapeia cada região para o componente correspondente na biblioteca do projeto. Um desvio só é válido se já estiver registrado no PRD como desvio aprovado.
 
 O `identity.md` é extraído **uma única vez** das suas imagens de referência pela skill de processo `reference-identity-extract`, e todo consumidor do motor (`@dev`, `@deyvin`, `@ux-ui`, protótipos) herda essa resolução — ele é *input* paramétrico do motor, não um segundo design skill. O arquivo legado `.interface-design/system.md` (memória de design por projeto) foi superado pelo registro de identidade sob `.aioson/`: duas camadas de continuidade visual eram livres para divergir.
+
+### Quando `design_skill` está em branco
+
+O `@briefing-refiner` não pergunta e não escolhe no escuro: ele adota `interface-design` em modo origem. Mas o padrão é **declarado, nunca silencioso** — ele grava `design_skill: interface-design (default)` no `prototype-manifest.md` e registra um achado estruturado não-bloqueante recomendando que o projeto defina um `design_skill` definitivo.
+
+Se o `design_skill` nomeia um preset instalado, só aquele preset é usado. Imagens de referência continuam opcionais; quando você fornece, a rota de identidade acima vale.
+
+### Registro estético e direção — a partida a frio
+
+Em modo origem (nenhum protótipo, nenhum `identity.md`, nenhuma linguagem de componentes estabelecida), a `interface-design` se compromete com **um registro** antes de decidir qualquer token. É o momento exato em que um sistema generativo volta para a média estatística, porque "clean modern SaaS" é a cara da média.
+
+Duas escolhas, feitas juntas:
+
+- **Direção** (`design-directions.md`) responde o que o produto **precisa**: Precision & Density, Warmth & Approachability, Sophistication & Trust, Premium Dark Platform, Immersive Media, Conversion Landing. Ela define a matemática dos tokens.
+- **Registro** (`aesthetic-registers.md`) responde como o produto **soa**: Technical, Quiet, Editorial, Material, Constructed, Cinematic. Ele define a postura.
+
+Nunca se mistura dois registros. As famílias tipográficas citadas em cada registro são exemplos de uma classe, não padrões para aceitar sem examinar.
+
+Duas adições recentes:
+
+- **Registro Cinematic** — para entretenimento, streaming, cinema, jogos, portfólios imersivos: fundo quase preto, paleta amostrada da própria mídia, frames full-bleed em vez de linhas de grade, luz no lugar de bordas, motion coreografado que degrada para frames estáticos com sentido sob `prefers-reduced-motion`. O modo de falha é "um trailer com botões".
+- **Direções Immersive Media e Conversion Landing** — a primeira combina naturalmente com o registro Cinematic; a segunda é para superfícies cujo trabalho é **uma** decisão: um único acento de conversão reservado ao CTA principal, ordem narrativa promessa → prova → capacidade → objeção → CTA, e prova real com fonte, nunca métrica inventada.
+
+O registro escolhido, os anti-objetivos e o movimento-assinatura vão para a seção `## Visual direction` do manifesto do protótipo e, quando a decisão vale para o projeto inteiro, para o registro de identidade. Registro escolhido e não escrito é registro re-decidido pelo próximo agente.
 
 ## Skills de processo
 
