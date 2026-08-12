@@ -32,6 +32,8 @@ When a genome is applied to an existing squad:
 
 Presence is not readiness. Preserve binding lifecycle (`pending`, `resolved`, `compiled`, `conflicted`, `stale`, `removed`), source version/hash, compilation identity, dependencies, owner, and next action. A premium binding is ready only after the applicable procedure, restrictions, checklist, style, or output contract is materialized in the intended executor.
 
+A binding may also carry a user-frozen `approval` block (specimen path, `sourceHash`, `compilationId`, `approvedAt`), written only by `aioson genome:approve`. Preserve it verbatim; it goes stale when the compilation identity drifts, and only the user re-freezes it.
+
 ## Compatibility rules
 
 When inspecting or modifying an existing squad:

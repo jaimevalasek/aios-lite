@@ -55,13 +55,30 @@ function normalizePriority(value, fallback = DEFAULT_BINDING_PRIORITY) {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+// User-frozen specimen approval (written only by `genome:approve`). Returns
+// null for anything that carries no approval data, so bindings without one
+// keep their exact legacy shape.
+function normalizeApproval(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const approval = {
+    specimen: normalizeOptionalText(value.specimen),
+    sourceHash: normalizeOptionalText(value.sourceHash ?? value.source_hash),
+    compilationId: normalizeOptionalText(value.compilationId ?? value.compilation_id),
+    approvedAt: normalizeOptionalText(value.approvedAt ?? value.approved_at)
+  };
+  if (!approval.specimen && !approval.sourceHash && !approval.compilationId && !approval.approvedAt) return null;
+  return approval;
+}
+
 function normalizeBinding(binding, fallback = {}) {
   const raw = typeof binding === 'string' ? { slug: binding } : binding && typeof binding === 'object' ? { ...binding } : {};
   const slug = normalizeSlug(raw.slug || fallback.slug);
 
   if (!slug) return null;
 
-  return {
+  const approval = normalizeApproval(raw.approval ?? fallback.approval);
+
+  const normalized = {
     slug,
     type: normalizeOptionalEnum(raw.type ?? fallback.type, GENOME_TYPES),
     mode: normalizeText(raw.mode || fallback.mode || DEFAULT_BINDING_MODE).toLowerCase(),
@@ -88,6 +105,8 @@ function normalizeBinding(binding, fallback = {}) {
     owner: normalizeOptionalText(raw.owner ?? fallback.owner),
     action: normalizeOptionalText(raw.action ?? fallback.action)
   };
+  if (approval) normalized.approval = approval;
+  return normalized;
 }
 
 function dedupeBindings(bindings = []) {
@@ -311,6 +330,7 @@ module.exports = {
   EXECUTOR_SCOPE,
   BINDING_STATUSES,
   ensureArray,
+  normalizeApproval,
   normalizeBinding,
   normalizeGenomeBindings,
   normalizeLegacyExecutorGenomes,

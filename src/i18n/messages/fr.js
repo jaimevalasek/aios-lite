@@ -245,6 +245,8 @@ module.exports = {
       'aioson config <set KEY=value|show|get KEY> [--json] [--locale=fr]',
     help_genome_doctor:
       'aioson genome:doctor <fichier> [--json] [--locale=fr]',
+    help_genome_approve:
+      'aioson genome:approve [path] --squad=<slug> --genome=<slug> [--executor=<slug>] [--specimen=<path>] [--json] [--locale=fr]',
     help_genome_migrate:
       'aioson genome:migrate <fichier-ou-dossier> [--write] [--no-backup] [--json] [--locale=fr]',
     help_squad_status:

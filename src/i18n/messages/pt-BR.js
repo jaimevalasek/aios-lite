@@ -261,6 +261,8 @@ module.exports = {
       'aioson config <set KEY=value|show|get KEY> [--json] [--locale=pt-BR]',
     help_genome_doctor:
       'aioson genome:doctor <arquivo> [--json] [--locale=pt-BR]',
+    help_genome_approve:
+      'aioson genome:approve [path] --squad=<slug> --genome=<slug> [--executor=<slug>] [--specimen=<path>] [--json] [--locale=pt-BR]',
     help_genome_migrate:
       'aioson genome:migrate <arquivo-ou-diretorio> [--write] [--no-backup] [--json] [--locale=pt-BR]',
     help_squad_status:

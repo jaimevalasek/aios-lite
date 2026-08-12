@@ -22,6 +22,11 @@ Bindings use explicit states:
 
 Never equate presence in `genomeBindings` with readiness.
 
+A binding may additionally carry a user-frozen `approval` block, written only
+by `aioson genome:approve`: it pins the inspected specimen plus the
+`sourceHash`/`compilationId` at freeze time, and goes stale the moment either
+drifts. Preserve it verbatim during repairs; only the user re-freezes it.
+
 ## Operational propagation
 
 Compilation maps stable genome content into the real executor:

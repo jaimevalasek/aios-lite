@@ -10,6 +10,7 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const { isValidSlug } = require('../dossier/schema');
 const { analyzeSquadPilot, computePilotFingerprint } = require('../lib/squad-pilot-lint');
+const { flattenGenomeBindings } = require('../genomes/bindings');
 
 async function writeAtomic(filePath, content) {
   await fs.mkdir(path.dirname(filePath), { recursive: true });
@@ -65,6 +66,19 @@ async function runSquadPilotApprove({ args = [], options = {}, logger = console 
   pilot.status = 'approved';
   pilot.fingerprint = computed.fingerprint;
   pilot.approved_at = new Date().toISOString();
+  // Freeze WHO built the pilot, not just what was built: the compiled genome
+  // binding identities at approval time. Later genome drift makes the pilot's
+  // builder record stale (surfaced by the lint), even when the deliverable
+  // fingerprint still matches.
+  pilot.builders = flattenGenomeBindings(manifest.genomeBindings || manifest.genomes)
+    .filter((binding) => binding.status === 'compiled')
+    .map((binding) => ({
+      genome: binding.slug,
+      scope: binding.scope,
+      executor: binding.agentSlug,
+      sourceHash: binding.sourceHash,
+      compilationId: binding.compilationId
+    }));
   delete pilot.deferReason;
   await writeAtomic(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
 
@@ -75,6 +89,7 @@ async function runSquadPilotApprove({ args = [], options = {}, logger = console 
     entrypoint: pilot.entrypoint || null,
     fingerprint: pilot.fingerprint,
     approved_at: pilot.approved_at,
+    builders: pilot.builders.length,
     deliverable_files: computed.files,
     warnings: analysis.warnings,
     exitCode: 0

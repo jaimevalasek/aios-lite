@@ -117,6 +117,47 @@
           "type": "string",
           "description": "ISO timestamp of the user freeze"
         },
+        "builders": {
+          "type": "array",
+          "description": "Compiled genome binding identities captured at freeze time — the genomes that shaped the executors that built the pilot; post-approval drift is surfaced as staleness warnings",
+          "items": {
+            "type": "object",
+            "required": [
+              "genome"
+            ],
+            "properties": {
+              "genome": {
+                "type": "string"
+              },
+              "scope": {
+                "type": "string",
+                "enum": [
+                  "squad",
+                  "executor"
+                ]
+              },
+              "executor": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "sourceHash": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "compilationId": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "additionalProperties": true
+          }
+        },
         "deferReason": {
           "type": "string",
           "description": "Concrete reason a quick-lane squad defers its pilot; illegal on other lanes"
@@ -1366,6 +1407,31 @@
                       "string",
                       "null"
                     ]
+                  },
+                  "approval": {
+                    "type": "object",
+                    "description": "User-frozen specimen approval written only by genome:approve; stale when sourceHash/compilationId drift",
+                    "properties": {
+                      "specimen": {
+                        "type": "string"
+                      },
+                      "sourceHash": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "compilationId": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "approvedAt": {
+                        "type": "string"
+                      }
+                    },
+                    "additionalProperties": true
                   }
                 },
                 "additionalProperties": true
@@ -1419,6 +1485,31 @@
                         "string",
                         "null"
                       ]
+                    },
+                    "approval": {
+                      "type": "object",
+                      "description": "User-frozen specimen approval written only by genome:approve; stale when sourceHash/compilationId drift",
+                      "properties": {
+                        "specimen": {
+                          "type": "string"
+                        },
+                        "sourceHash": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "compilationId": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "approvedAt": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": true
                     }
                   },
                   "additionalProperties": true

@@ -17,6 +17,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
+const { flattenGenomeBindings } = require('../genomes/bindings');
 
 const PILOT_STATUSES = ['not_applicable', 'pending', 'draft', 'approved'];
 const DELIVERABLE_MODES = ['software', 'mixed'];
@@ -87,6 +88,63 @@ function computePilotFingerprint(targetDir, slug) {
     hash.update(`${rel}\0${fileHash}\n`);
   }
   return { fingerprint: `sha256:${hash.digest('hex')}`, files: files.length };
+}
+
+function builderKey(entry) {
+  const genome = entry.genome || entry.slug || '';
+  const scope = entry.scope || 'squad';
+  const executor = entry.executor || entry.agentSlug || '';
+  return `${genome}\0${scope}\0${executor}`;
+}
+
+function describeBuilder(entry) {
+  const genome = entry.genome || entry.slug || '(unknown)';
+  const executor = entry.executor || entry.agentSlug;
+  return entry.scope === 'executor' && executor ? `"${genome}" on executor "${executor}"` : `"${genome}" (squad-wide)`;
+}
+
+/**
+ * Builder-identity drift for an APPROVED pilot: the freeze records which
+ * compiled genome bindings shaped the executors that built the deliverable
+ * (`pilot.builders`). The deliverable fingerprint cannot see this — a genome
+ * enrich/recompile changes the squad without touching output/ — so drift is
+ * surfaced as warnings: the pilot is still the approved artifact, but the
+ * squad that built it no longer exists in that form.
+ */
+function checkPilotBuilders(manifest, pilot, warnings, metrics) {
+  const compiledNow = flattenGenomeBindings(manifest.genomeBindings || manifest.genomes)
+    .filter((binding) => binding.status === 'compiled');
+  metrics.builders_recorded = Array.isArray(pilot.builders) ? pilot.builders.length : null;
+
+  if (!Array.isArray(pilot.builders)) {
+    if (compiledNow.length > 0) {
+      warnings.push('approved pilot does not record its builder genome identities; re-approve with squad:pilot-approve to bind them');
+    }
+    return;
+  }
+
+  let drifted = 0;
+  const current = new Map(compiledNow.map((binding) => [builderKey(binding), binding]));
+  for (const recorded of pilot.builders) {
+    if (!recorded || typeof recorded !== 'object') continue;
+    const binding = current.get(builderKey(recorded));
+    if (!binding) {
+      drifted += 1;
+      warnings.push(`pilot was approved with genome ${describeBuilder(recorded)} which is no longer compiled — rebuild or re-approve the pilot`);
+    } else if (binding.sourceHash !== recorded.sourceHash || binding.compilationId !== recorded.compilationId) {
+      drifted += 1;
+      warnings.push(`genome ${describeBuilder(recorded)} changed since pilot approval (compilation identity drift) — rebuild and re-approve the pilot`);
+    }
+  }
+
+  const recordedKeys = new Set(pilot.builders.filter((entry) => entry && typeof entry === 'object').map(builderKey));
+  for (const binding of compiledNow) {
+    if (!recordedKeys.has(builderKey(binding))) {
+      drifted += 1;
+      warnings.push(`genome ${describeBuilder(binding)} was compiled into the squad after pilot approval — the approved pilot no longer reflects the current executors`);
+    }
+  }
+  metrics.builder_drift = drifted;
 }
 
 function sectionBody(doc, section) {
@@ -253,6 +311,7 @@ function analyzeSquadPilot({ targetDir, slug, forApproval = false }) {
     } else if (current && declaredFingerprint !== current.fingerprint) {
       issues.push('pilot fingerprint is stale — the deliverable changed after approval; re-approve with squad:pilot-approve');
     }
+    checkPilotBuilders(manifest, pilot, warnings, metrics);
   } else if (declaredFingerprint && current && declaredFingerprint !== current.fingerprint) {
     warnings.push('draft pilot fingerprint does not match the current deliverable');
   }

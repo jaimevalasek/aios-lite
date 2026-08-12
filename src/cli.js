@@ -66,6 +66,7 @@ const { runReviewFeature } = require('./commands/review-feature');
 const { runReviewPrepare, runReviewCheck, runReviewStatus } = require('./commands/review-intelligence');
 const { runConfig } = require('./commands/config');
 const { runGenomeDoctor } = require('./commands/genome-doctor');
+const { runGenomeApprove } = require('./commands/genome-approve');
 const { runGenomeMigrate } = require('./commands/genome-migrate');
 const { runSquadStatus } = require('./commands/squad-status');
 const { runSquadDoctor } = require('./commands/squad-doctor');
@@ -442,6 +443,8 @@ const JSON_SUPPORTED_COMMANDS = new Set([
   'config',
   'genome:doctor',
   'genome-doctor',
+  'genome:approve',
+  'genome-approve',
   'genome:migrate',
   'genome-migrate',
   'squad:status',
@@ -1073,6 +1076,7 @@ function printHelp(t, logger) {
   logHelpLine(t, logger, 'cli.help_scan_project');
   logHelpLine(t, logger, 'cli.help_config');
   logHelpLine(t, logger, 'cli.help_genome_doctor');
+  logHelpLine(t, logger, 'cli.help_genome_approve');
   logHelpLine(t, logger, 'cli.help_genome_migrate');
   logHelpLine(t, logger, 'cli.help_squad_status');
   logHelpLine(t, logger, 'cli.help_squad_doctor');
@@ -1499,6 +1503,8 @@ async function main() {
       result = await runConfig({ args, options, logger: commandLogger, t });
     } else if (command === 'genome:doctor' || command === 'genome-doctor') {
       result = await runGenomeDoctor({ args, options, logger: commandLogger, t });
+    } else if (command === 'genome:approve' || command === 'genome-approve') {
+      result = await runGenomeApprove({ args, options, logger: commandLogger });
     } else if (command === 'genome:migrate' || command === 'genome-migrate') {
       result = await runGenomeMigrate({ args, options, logger: commandLogger, t });
     } else if (command === 'squad:status' || command === 'squad-status') {

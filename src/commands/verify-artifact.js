@@ -423,10 +423,19 @@ const ADAPTERS = {
     } catch (err) {
       return { ok: false, issues: [`genome:doctor failed: ${err.message}`], warnings: [], checks: [] };
     }
+    // Advisory drift scan: after an enrich/recompile, name every squad whose
+    // USER approval (genome:approve) no longer matches the binding identity.
+    let approvalWarnings = [];
+    try {
+      const { findGenomeApprovalDrift } = require('../lib/genome-approval-lint');
+      approvalWarnings = findGenomeApprovalDrift({ targetDir: ctx.targetDir, genomeSlug: ctx.slug });
+    } catch {
+      // advisory only — never block the doctor verdict
+    }
     return {
       ok: Boolean(res.ok),
       issues: res.ok ? [] : (res.issues || []).slice(),
-      warnings: (res.warnings || []).slice(),
+      warnings: [...(res.warnings || []), ...approvalWarnings],
       checks: [{ id: `genome:${ctx.slug}`, ok: Boolean(res.ok), detail: res.ok ? null : (res.issues || []).join('; ') }]
     };
   },

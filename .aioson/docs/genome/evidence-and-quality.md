@@ -43,6 +43,26 @@ Do not advance while:
 
 For squad use, compare the same held-out task with and without the genome. Report dimensions separately: source fidelity, procedure adherence, constraint adherence, output structure, style fit, and task outcome. A critical regression remains visible even if other dimensions improve; never collapse it into a flattering single score.
 
+## Approval by artifact
+
+Doctor proves structure and the held-out A/B proves scores; neither proves the
+compiled behavior carries the source's identity to human judgment. That verdict
+is the user's, and it is frozen, never inferred:
+
+- the squad's own executor produces one held-out **specimen** with the compiled
+  binding active, under `output/{squad-slug}/specimen/{genome-slug}/`;
+- the user — never an agent — freezes it with
+  `aioson genome:approve . --squad=<squad> --genome=<slug>`; the command refuses
+  a binding that is not `compiled` or a missing specimen;
+- the freeze records the binding's `sourceHash` and `compilationId`; any later
+  enrichment or recompilation makes the approval stale until re-approved;
+- expected before premium claims for `persona`/`hybrid` genomes at standard or
+  deep fidelity; optional for `domain`/`function`, where the held-out A/B
+  already covers outcome.
+
+A stale or missing approval is a report line with the exact re-approval
+command, never a silent pass and never a blocker invented mid-flight.
+
 ## Repair ownership
 
 - missing or weak source → genome author / Profiler pipeline;

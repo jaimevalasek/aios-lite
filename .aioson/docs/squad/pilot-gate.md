@@ -25,7 +25,8 @@ iterated in draft, and frozen by the user as the squad's binding quality bar.
 
 The canonical state is the `pilot` block in `squad.manifest.json`:
 `status` (`not_applicable | pending | draft | approved`), `task`, `entrypoint`,
-`fingerprint`, `approved_at`, `deferReason`. Three locations, each for a reason:
+`fingerprint`, `approved_at`, `builders`, `deferReason`. Three locations, each
+for a reason:
 
 | Artifact | Path | Why |
 |---|---|---|
@@ -60,6 +61,13 @@ vertical — one cinematic landing, one CRM pipeline screen — never the produc
 
 Editing the deliverable after approval makes the fingerprint stale; readiness
 drops until the user re-approves. That is correct behavior, not an error.
+
+The freeze also records WHO built the pilot: `pilot.builders` captures the
+compiled genome binding identities (`sourceHash`, `compilationId`) at approval
+time. The deliverable fingerprint cannot see a genome enrich or recompile — the
+executors change without `output/` changing — so builder drift surfaces as lint
+warnings: the pilot is still the approved artifact, but the squad that built it
+no longer exists in that form. Rebuild and re-approve when the drift matters.
 
 ## After approval: the pilot as session authority
 

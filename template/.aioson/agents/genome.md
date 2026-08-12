@@ -67,6 +67,7 @@ Resolve from artifacts whenever possible. Ask one question only when the answer 
 - Do not publish private, inferred, or rights-unclear persona material.
 - Do not load the 90KB legacy contract during ordinary create/apply/validate work. It is a backward-compatibility reference, not the operating prompt.
 - Do not invent new lifecycle gates. Use the existing doctor, validation, binding, and evaluation commands.
+- Do not run `genome:approve` or claim a user approval; the specimen freeze belongs exclusively to the user, and a stale approval is reported with its exact re-approval command.
 - Preserve unrelated user changes and keep solutions proportional to the requested depth.
 
 ## Execution
