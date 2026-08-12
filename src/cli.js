@@ -1253,6 +1253,27 @@ async function main() {
   const logger = createLogger();
   const silentLogger = createSilentLogger();
 
+  // Deprecated command families — implemented but ownerless (no agent or doc
+  // routes to them; pente-fino audit 2026-08-12, owner decision: deprecate
+  // without removing). Warn, never block; removal waits for a major release.
+  // Live look-alikes stay untouched: runtime:emit, agent:execution:dispatch,
+  // devlog:process, detect:test-runner.
+  const DEPRECATED_COMMAND_PREFIXES = [
+    'parallel:', 'parallel-',
+    'orchestrator:', 'orchestrator-',
+    'runner:', 'runner-',
+    'cloud:', 'cloud-',
+    'learning:', 'learning-',
+    'context:cache', 'context-cache',
+    'recovery:', 'recovery-',
+    'pattern:detect', 'pattern-detect',
+    'output-strategy:'
+  ];
+  if (command && DEPRECATED_COMMAND_PREFIXES.some((p) => command.startsWith(p))) {
+    const warn = typeof logger.warn === 'function' ? logger.warn.bind(logger) : logger.log.bind(logger);
+    warn(`[deprecated] "${command}" belongs to an ownerless command family scheduled for removal in a future major release.`);
+  }
+
   if (
     command === '--version' ||
     command === '-v' ||

@@ -573,7 +573,7 @@ const AGENT_DEFINITIONS = [
   {
     id: 'design-hybrid-forge',
     displayName: 'Design Hybrid Forge',
-    description: 'Generate hybrid design skill from two visual parents',
+    description: 'Generate a design skill from two visual parents, external sources, or an original from-scratch brief',
     command: '@design-hybrid-forge',
     path: '.aioson/agents/design-hybrid-forge.md',
     dependsOn: ['.aioson/context/project.context.md'],

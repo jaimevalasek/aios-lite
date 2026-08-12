@@ -1,11 +1,11 @@
 ---
-description: "AIOSON — Generate hybrid design skill from two visual parents"
+description: "AIOSON — Generate a design skill from two visual parents, external sources, or an original from-scratch brief"
 ---
 
 If $ARGUMENTS is exactly "--help" or starts with "--help":
 Do NOT activate the agent. Instead, display this help and stop:
 
-@design-hybrid-forge — Generate hybrid design skill from two visual parents
+@design-hybrid-forge — Generate a design skill from two visual parents, external sources, or an original from-scratch brief
 Usage: /aioson:agent:design-hybrid-forge [task description]
 Requires:
   .aioson/context/project.context.md

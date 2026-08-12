@@ -40,6 +40,10 @@ When tool directories exist, also mirror the generated skill to:
 
 Do not write into `.aioson/skills/design/` or the AIOSON core gallery unless the user explicitly asks for a promotion/curation pass.
 
+## From-scratch mode (explicit request only)
+
+When the user explicitly asks for a new design skill with no parents and no source URL, run this same pipeline with the user's brief as sole origin: Step 1 collects brief, name, domain, and optional modifiers (skip parent validation and pair-compatibility); Step 2 synthesizes the identity (creative tension, substrate, structure, accents, 3 pillars) from the brief; Steps 3–6 run unchanged — naming-registry check, quality gates, and both previews included. Record `sources: [{ "type": "original", "brief": "<one line>" }]` in `.skill-meta.json`. From-scratch is never a silent fallback for a failed parent resolution.
+
 ## Step 1 — Intake
 1. If `.aioson/context/design-variation-preset.md` exists, read it before asking questions. Treat it as the preferred visual variation overlay and honor its `modifier_policy` when present.
 2. List available design skills from `.aioson/skills/design/` and `.aioson/installed-skills/`.
