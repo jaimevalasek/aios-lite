@@ -12,7 +12,7 @@ module.exports = {
       'aioson install [path] [--force] [--dry-run] [--lang=<bcp47-tag>] [--tool=codex|claude|opencode] [--locale=en]',
     help_setup:
       'aioson setup [path] [--defaults] [--framework=<name>] [--lang=<bcp47-tag>] [--project-name=<name>] [--force] [--dry-run] [--tool=codex|claude|opencode] [--locale=en]',
-    help_update: 'aioson update [path] [--dry-run] [--lang=<bcp47-tag>] [--locale=en]',
+    help_update: 'aioson update [path] [--dry-run] [--allow-downgrade] [--lang=<bcp47-tag>] [--locale=en]',
     help_info: 'aioson info [path] [--json] [--locale=en]',
     help_doctor: 'aioson doctor [path] [--fix] [--dry-run] [--json] [--locale=en]',
     help_hygiene_scan: 'aioson hygiene:scan [path] [--json] [--locale=en]',
@@ -489,6 +489,7 @@ module.exports = {
   },
   update: {
     not_installed: 'No AIOSON installation found in {targetDir}.',
+    downgrade_blocked: 'This project was last updated by AIOSON {projectVersion}, but this CLI is {cliVersion}. Updating now would downgrade the managed files. Update the CLI first (npm install -g @jaimevalasek/aioson) and run update again, or pass --allow-downgrade to proceed anyway.',
     done_at: 'Update completed at: {targetDir}',
     template_version: 'Template version applied: {version}',
     files_updated: 'Files updated: {count}',

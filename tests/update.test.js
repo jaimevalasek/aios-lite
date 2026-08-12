@@ -258,3 +258,90 @@ test('update refreshes framework integration docs and preserves project-owned in
 async function fileExists(p) {
   try { await fs.access(p); return true; } catch { return false; }
 }
+
+// ─── Downgrade guard ─────────────────────────────────────────────────────────
+// The template copy comes from the installed CLI's own bundle, so a stale
+// global CLI running `update` on a newer project would mass-downgrade every
+// managed file. install.json's template_version is the project side of the
+// comparison.
+
+async function stampTemplateVersion(dir, version) {
+  const metaPath = path.join(dir, '.aioson/install.json');
+  const data = JSON.parse(await fs.readFile(metaPath, 'utf8'));
+  data.template_version = version;
+  await fs.writeFile(metaPath, `${JSON.stringify(data, null, 2)}\n`, 'utf8');
+}
+
+test('update blocks when the project template is newer than the CLI', async () => {
+  const dir = await makeTempDir();
+  await installTemplate(dir, { mode: 'install' });
+  await stampTemplateVersion(dir, '999.0.0');
+
+  const { t } = createTranslator('en');
+  await assert.rejects(
+    () => runUpdate({ args: [dir], options: { 'no-hooks': true }, logger: createQuietLogger(), t }),
+    (err) => {
+      assert.match(err.message, /999\.0\.0/);
+      assert.match(err.message, /--allow-downgrade/);
+      return true;
+    }
+  );
+});
+
+test('update --allow-downgrade proceeds past the downgrade guard', async () => {
+  const dir = await makeTempDir();
+  await installTemplate(dir, { mode: 'install' });
+  await stampTemplateVersion(dir, '999.0.0');
+
+  const { t } = createTranslator('en');
+  const result = await runUpdate({
+    args: [dir],
+    options: { 'no-hooks': true, 'allow-downgrade': true },
+    logger: createQuietLogger(),
+    t
+  });
+  assert.equal(result.ok, true);
+});
+
+test('update proceeds when template_version is absent or unparseable', async () => {
+  const dir = await makeTempDir();
+  await installTemplate(dir, { mode: 'install' });
+  await stampTemplateVersion(dir, 'not-a-version');
+
+  const { t } = createTranslator('en');
+  const result = await runUpdate({
+    args: [dir],
+    options: { 'no-hooks': true },
+    logger: createQuietLogger(),
+    t
+  });
+  assert.equal(result.ok, true, 'unknown project version must not block the update');
+});
+
+test('install --force hits the same downgrade guard (no backups in install mode)', async () => {
+  const { runInstall } = require('../src/commands/install');
+  const dir = await makeTempDir();
+  await installTemplate(dir, { mode: 'install' });
+  await stampTemplateVersion(dir, '999.0.0');
+
+  const { t } = createTranslator('en');
+  await assert.rejects(
+    () => runInstall({
+      args: [dir],
+      options: { force: true, 'no-hooks': true, 'no-interactive': true },
+      logger: createQuietLogger(),
+      t
+    }),
+    /--allow-downgrade/
+  );
+
+  // Without overwrite the guard stays out of the way — plain install on an
+  // existing project only fills gaps and must keep working from any CLI.
+  const result = await runInstall({
+    args: [dir],
+    options: { 'no-hooks': true, 'no-interactive': true },
+    logger: createQuietLogger(),
+    t
+  });
+  assert.ok(result, 'non-overwrite install proceeds');
+});

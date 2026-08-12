@@ -13,7 +13,7 @@ module.exports = {
     help_setup:
       'aioson setup [path] [--defaults] [--framework=<nome>] [--lang=<bcp47-tag>] [--project-name=<nome>] [--force] [--dry-run] [--tool=codex|claude|opencode] [--locale=pt-BR]',
     help_update:
-      'aioson update [path] [--dry-run] [--lang=<bcp47-tag>] [--locale=pt-BR]',
+      'aioson update [path] [--dry-run] [--allow-downgrade] [--lang=<bcp47-tag>] [--locale=pt-BR]',
     help_info: 'aioson info [path] [--json] [--locale=pt-BR]',
     help_doctor: 'aioson doctor [path] [--fix] [--dry-run] [--json] [--locale=pt-BR]',
     help_hygiene_scan: 'aioson hygiene:scan [path] [--json] [--locale=pt-BR]',
@@ -456,6 +456,7 @@ module.exports = {
   },
   update: {
     not_installed: 'Nenhuma instalacao do AIOSON encontrada em {targetDir}.',
+    downgrade_blocked: 'Este projeto foi atualizado pela ultima vez com o AIOSON {projectVersion}, mas este CLI e {cliVersion}. Atualizar agora faria downgrade dos arquivos gerenciados. Atualize o CLI primeiro (npm install -g @jaimevalasek/aioson) e rode o update de novo, ou use --allow-downgrade para prosseguir mesmo assim.',
     done_at: 'Atualizacao concluida em: {targetDir}',
     template_version: 'Versao do template aplicada: {version}',
     files_updated: 'Arquivos atualizados: {count}',

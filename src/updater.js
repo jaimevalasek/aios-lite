@@ -1,8 +1,29 @@
 'use strict';
 
 const path = require('node:path');
-const { detectExistingInstall, installTemplate, readInstallProfile } = require('./installer');
+const {
+  detectExistingInstall,
+  installTemplate,
+  readInstallProfile,
+  readInstalledTemplateVersion
+} = require('./installer');
+const { getCliVersion } = require('./version');
 const { migrateProfileRename } = require('./migrations/profile-rename');
+
+// Numeric x.y.z compare; returns negative/0/positive, or null when either
+// side is unparseable (null disables the downgrade guard rather than guessing).
+function compareTemplateVersions(a, b) {
+  const parse = (v) => String(v).trim().split('.').map((n) => Number.parseInt(n, 10));
+  const pa = parse(a);
+  const pb = parse(b);
+  for (let i = 0; i < 3; i++) {
+    const da = pa[i] ?? 0;
+    const db = pb[i] ?? 0;
+    if (Number.isNaN(da) || Number.isNaN(db)) return null;
+    if (da !== db) return da - db;
+  }
+  return 0;
+}
 
 async function updateInstallation(targetDir, options = {}) {
   const installed = await detectExistingInstall(targetDir);
@@ -12,6 +33,24 @@ async function updateInstallation(targetDir, options = {}) {
       reason: 'not-installed',
       message: `No AIOSON installation found in ${path.resolve(targetDir)}.`
     };
+  }
+
+  // Downgrade guard — the template copy comes from the installed CLI's own
+  // bundle, so a stale global CLI running `update` on a newer project would
+  // mass-downgrade every managed file (the "old CLI trap"). Block it and
+  // point at the fix; --allow-downgrade is the deliberate escape hatch.
+  const cliVersion = await getCliVersion();
+  const projectVersion = await readInstalledTemplateVersion(targetDir);
+  if (projectVersion && !options.allowDowngrade) {
+    const cmp = compareTemplateVersions(cliVersion, projectVersion);
+    if (cmp !== null && cmp < 0) {
+      return {
+        ok: false,
+        reason: 'downgrade-blocked',
+        cliVersion,
+        projectVersion
+      };
+    }
   }
 
   const savedProfile = await readInstallProfile(targetDir);
@@ -52,5 +91,6 @@ async function updateInstallation(targetDir, options = {}) {
 }
 
 module.exports = {
-  updateInstallation
+  updateInstallation,
+  compareTemplateVersions
 };

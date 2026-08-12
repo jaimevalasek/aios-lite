@@ -12,7 +12,8 @@ const {
   normalizeHookAgentName,
   runHooksInstall,
   runHooksUninstall,
-  scrubAntigravityHookFile
+  scrubAntigravityHookFile,
+  readJsonForMerge
 } = require('../src/commands/hooks-install');
 
 function captureLogger() {
@@ -157,4 +158,37 @@ test('runHooksUninstall flags a genuinely unknown tool as unsupported (P2)', asy
   assert.equal(res.results[0].tool, 'sublime');
   assert.equal(res.results[0].reason, 'unsupported');
   assert.ok(out.lines.some((line) => /Unknown tool: sublime/.test(line)));
+});
+
+// ─── Corrupted-config guard ──────────────────────────────────────────────────
+// Merging over a settings file we could not parse would rewrite it as a
+// hooks-only object and destroy every other setting the user keeps there.
+// readJsonForMerge is the classifier every merge site consults first.
+
+test('readJsonForMerge treats a missing file as a fresh start', async () => {
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'aioson-hooks-merge-'));
+  const result = await readJsonForMerge(path.join(dir, 'does-not-exist.json'));
+  assert.deepEqual(result, { data: {}, corrupted: false });
+  await fs.rm(dir, { recursive: true, force: true });
+});
+
+test('readJsonForMerge parses a valid file', async () => {
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'aioson-hooks-merge-'));
+  const file = path.join(dir, 'settings.json');
+  await fs.writeFile(file, '{"model":"opus","hooks":{}}', 'utf8');
+  const result = await readJsonForMerge(file);
+  assert.equal(result.corrupted, false);
+  assert.equal(result.data.model, 'opus');
+  await fs.rm(dir, { recursive: true, force: true });
+});
+
+test('readJsonForMerge flags an existing unparseable file as corrupted', async () => {
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'aioson-hooks-merge-'));
+  const file = path.join(dir, 'settings.json');
+  // trailing comma — the classic hand-edit that must NOT become a rewrite
+  await fs.writeFile(file, '{"model":"opus",}', 'utf8');
+  const result = await readJsonForMerge(file);
+  assert.equal(result.corrupted, true);
+  assert.equal(result.data, null);
+  await fs.rm(dir, { recursive: true, force: true });
 });

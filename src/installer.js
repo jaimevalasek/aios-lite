@@ -298,6 +298,22 @@ async function readInstallProfile(targetDir) {
   }
 }
 
+// Which template version last touched this project — feeds the update
+// downgrade guard. null (missing/corrupted/pre-stamp install.json) means
+// "unknown", which disables the guard rather than blocking the update.
+async function readInstalledTemplateVersion(targetDir) {
+  const metaPath = path.join(targetDir, '.aioson/install.json');
+  if (!(await exists(metaPath))) return null;
+  try {
+    const data = JSON.parse(await fs.readFile(metaPath, 'utf8'));
+    return typeof data.template_version === 'string' && data.template_version
+      ? data.template_version
+      : null;
+  } catch {
+    return null;
+  }
+}
+
 async function backupManagedFile(targetDir, relPath, backupRoot) {
   const source = path.join(targetDir, relPath);
   if (!(await exists(source))) return null;
@@ -514,6 +530,7 @@ module.exports = {
   detectExistingInstall,
   installTemplate,
   readInstallProfile,
+  readInstalledTemplateVersion,
   listFilesRecursive,
   ensureGitignoreEntry,
   ensureGitignoreEntries,

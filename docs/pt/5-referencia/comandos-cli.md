@@ -590,7 +590,7 @@ aioson doctor . --fix
 
 Use depois de atualizar a versão do pacote. O `update` mexe só nos arquivos gerenciados e o `doctor --fix` recoloca o que estiver faltando. Ao terminar, `update` imprime `Template version applied: <versão>` (e `(<sha>, <data>)` quando a instalação vem de um checkout git, como um `npm link` de dogfooding) — assim dá para conferir exatamente qual template chegou.
 
-> Se o `update` continua trazendo a versão antiga, o problema é o CLI, não o projeto: ele copia os templates embutidos no CLI que está no disco. Atualize o CLI primeiro. Passo a passo em [Instalar e atualizar](../2-comecar/instalar-e-atualizar.md#atualizar).
+> Se o `update` continua trazendo a versão antiga, o problema é o CLI, não o projeto: ele copia os templates embutidos no CLI que está no disco. Atualize o CLI primeiro. Um CLI **mais antigo** que o projeto é bloqueado automaticamente (a mensagem explica a ordem certa; `--allow-downgrade` força). Passo a passo em [Instalar e atualizar](../2-comecar/instalar-e-atualizar.md#atualizar).
 
 ### 4. Ver e ajustar configurações globais
 

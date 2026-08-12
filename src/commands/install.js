@@ -5,7 +5,8 @@ const path = require('node:path');
 // inner runHooksInstall — the real thing mutates machine-global settings.
 const hooksInstall = require('./hooks-install');
 const { detectFramework } = require('../detector');
-const { installTemplate, readInstallProfile } = require('../installer');
+const { installTemplate, readInstallProfile, readInstalledTemplateVersion } = require('../installer');
+const { compareTemplateVersions } = require('../updater');
 const { applyAgentLocale, normalizeInteractionLanguage } = require('../locales');
 const { resolvePromptTool } = require('../prompt-tool');
 const { runInstallWizard } = require('../install-wizard');
@@ -90,6 +91,19 @@ async function runInstall({ args, options, logger, t }) {
 
   // When reconfigure, we need overwrite=true so changed profile is reflected
   const overwrite = force || reconfigure;
+
+  // Same downgrade guard as update: with overwrite on, a stale global CLI
+  // would replace newer managed files — and install mode takes no backups.
+  if (overwrite && !options['allow-downgrade']) {
+    const projectVersion = await readInstalledTemplateVersion(targetDir);
+    if (projectVersion) {
+      const cliVersion = await getCliVersion();
+      const cmp = compareTemplateVersions(cliVersion, projectVersion);
+      if (cmp !== null && cmp < 0) {
+        throw new Error(t('update.downgrade_blocked', { cliVersion, projectVersion }));
+      }
+    }
+  }
 
   const result = await installTemplate(targetDir, {
     overwrite,

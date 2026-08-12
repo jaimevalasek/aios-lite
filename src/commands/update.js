@@ -22,10 +22,17 @@ async function runUpdate({ args, options, logger, t }) {
     dryRun,
     all,
     selective,
+    allowDowngrade: Boolean(options['allow-downgrade']),
     frameworkDetection: detection.framework
   });
 
   if (!result.ok) {
+    if (result.reason === 'downgrade-blocked') {
+      throw new Error(t('update.downgrade_blocked', {
+        cliVersion: result.cliVersion,
+        projectVersion: result.projectVersion
+      }));
+    }
     throw new Error(t('update.not_installed', { targetDir }));
   }
 

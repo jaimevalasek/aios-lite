@@ -101,6 +101,8 @@ Aqui mora a pegadinha mais comum do AIOSON. **Duas coisas** têm versão, e elas
 2. **Os arquivos do AIOSON dentro do projeto** (`.aioson/`).
 
 > ⚠ **O motivo número 1 de "rodei `aioson update` e não veio a versão nova":** o `update` copia os templates que vieram embutidos **no CLI que está no seu disco**. Se o seu CLI global está numa release antiga, o `update` vai copiar os arquivos daquela release antiga, quantas vezes você rodar. Primeiro é preciso atualizar o CLI.
+>
+> Desde a 1.50 o pior caso é bloqueado automaticamente: se o CLI for **mais antigo** que a versão registrada no projeto (`.aioson/install.json`), o `update` (e o `install --force`) recusa com uma mensagem explicando a ordem certa, em vez de fazer downgrade dos arquivos gerenciados. Para forçar mesmo assim, use `--allow-downgrade`.
 
 ### Passo 1 — atualizar o CLI
 
@@ -143,6 +145,7 @@ Repita em cada projeto que você quer atualizar.
 | `--selective` | Modo conservador legado: atualiza menos arquivos |
 | `--all` | Aceito por compatibilidade; "tudo" já é o padrão |
 | `--dry-run` | Mostra o que mudaria sem escrever |
+| `--allow-downgrade` | Libera um update com CLI mais antigo que o projeto (bloqueado por padrão) |
 | `--lang=pt-BR` | Reaplica o pack de idioma junto |
 | `--no-hooks` | Não reinstala os hooks |
 

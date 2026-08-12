@@ -83,6 +83,24 @@ function isAiosonHookEntry(entry) {
   return AIOSON_HOOK_SIGNATURES.some((sig) => cmd.includes(sig));
 }
 
+// Read a JSON config as the base of a merge. A missing file is a fresh start,
+// but a file that exists and does not parse must abort the merge for that
+// target: writing "merged" hooks over content we could not read would replace
+// the user's whole settings file with a hooks-only object.
+async function readJsonForMerge(filePath) {
+  let raw;
+  try {
+    raw = await fs.readFile(filePath, 'utf8');
+  } catch {
+    return { data: {}, corrupted: false };
+  }
+  try {
+    return { data: JSON.parse(raw), corrupted: false };
+  } catch {
+    return { data: null, corrupted: true };
+  }
+}
+
 function buildClaudeHooks(agentName, includeGuard = true) {
   const safeAgentName = normalizeHookAgentName(agentName);
   const emitCmd = makeEmitCommand(safeAgentName, 'claude');
@@ -126,10 +144,11 @@ async function installClaudeHooks(agentName, dryRun, logger, includeGuard = true
   const configPath = CONFIG_PATHS.claude;
   await fs.mkdir(path.dirname(configPath), { recursive: true });
 
-  let existing = {};
-  try {
-    existing = JSON.parse(await fs.readFile(configPath, 'utf8'));
-  } catch { /* file doesn't exist yet */ }
+  const { data: existing, corrupted } = await readJsonForMerge(configPath);
+  if (corrupted) {
+    logger.log(`  ⚠ Claude Code — ${configPath} exists but is not valid JSON; leaving it untouched. Fix the file and re-run: aioson hooks:install`);
+    return { tool: 'claude', configPath, skipped: 'invalid-config' };
+  }
 
   const newHooks = buildClaudeHooks(agentName, includeGuard);
 
@@ -200,20 +219,33 @@ async function installAntigravityHooks(agentName, projectDir, dryRun, logger) {
   if (!dryRun) {
     await fs.mkdir(path.dirname(globalPath), { recursive: true });
     await fs.mkdir(path.dirname(workspacePath), { recursive: true });
+    const skipped = [];
 
     // Global hooks
-    let globalExisting = {};
-    try { globalExisting = JSON.parse(await fs.readFile(globalPath, 'utf8')); } catch { /* new file */ }
-    const mergedGlobal = mergeAntigravityHooks(globalExisting, hooks);
-    await fs.writeFile(globalPath, JSON.stringify(mergedGlobal, null, 2), 'utf8');
-    logger.log(`  ✓ Antigravity global — ${globalPath}`);
+    const globalRead = await readJsonForMerge(globalPath);
+    if (globalRead.corrupted) {
+      skipped.push('global');
+      logger.log(`  ⚠ Antigravity global — ${globalPath} exists but is not valid JSON; leaving it untouched. Fix the file and re-run: aioson hooks:install`);
+    } else {
+      const mergedGlobal = mergeAntigravityHooks(globalRead.data, hooks);
+      await fs.writeFile(globalPath, JSON.stringify(mergedGlobal, null, 2), 'utf8');
+      logger.log(`  ✓ Antigravity global — ${globalPath}`);
+    }
 
     // Workspace hooks (project-scoped, takes priority)
-    let wsExisting = {};
-    try { wsExisting = JSON.parse(await fs.readFile(workspacePath, 'utf8')); } catch { /* new file */ }
-    const mergedWs = mergeAntigravityHooks(wsExisting, hooks);
-    await fs.writeFile(workspacePath, JSON.stringify(mergedWs, null, 2), 'utf8');
-    logger.log(`  ✓ Antigravity workspace — ${workspacePath}`);
+    const wsRead = await readJsonForMerge(workspacePath);
+    if (wsRead.corrupted) {
+      skipped.push('workspace');
+      logger.log(`  ⚠ Antigravity workspace — ${workspacePath} exists but is not valid JSON; leaving it untouched. Fix the file and re-run: aioson hooks:install`);
+    } else {
+      const mergedWs = mergeAntigravityHooks(wsRead.data, hooks);
+      await fs.writeFile(workspacePath, JSON.stringify(mergedWs, null, 2), 'utf8');
+      logger.log(`  ✓ Antigravity workspace — ${workspacePath}`);
+    }
+
+    if (skipped.length > 0) {
+      return { tool: 'antigravity', globalPath, workspacePath, hooks, skipped: 'invalid-config', skippedFiles: skipped };
+    }
   } else {
     logger.log(`  [dry-run] Would write: ${globalPath}`);
     logger.log(`  [dry-run] Would write: ${workspacePath}`);
@@ -519,5 +551,6 @@ module.exports = {
   buildAntigravityHooks,
   scrubAntigravityHookFile,
   normalizeHookAgentName,
-  isAiosonHookEntry
+  isAiosonHookEntry,
+  readJsonForMerge
 };
