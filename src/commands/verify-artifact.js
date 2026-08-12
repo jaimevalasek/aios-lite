@@ -200,7 +200,7 @@ const RULESETS = {
 
 // Kinds whose target file path is keyed by --slug; without it we cannot resolve
 // the artifact, so fail with a clear usage error instead of a `null/` path.
-const REQUIRES_SLUG = new Set(['genome', 'research-report', 'enriched-profile', 'hybrid-skill', 'copy', 'review', 'sources', 'briefing', 'test-report']);
+const REQUIRES_SLUG = new Set(['genome', 'research-report', 'enriched-profile', 'hybrid-skill', 'copy', 'review', 'sources', 'briefing', 'test-report', 'squad-pilot']);
 
 // Kinds whose artifact has a date-stamped / caller-known path — resolved via
 // --file=<path> rather than derived from a slug.
@@ -715,6 +715,24 @@ const ADAPTERS = {
       warnings: result.warnings,
       checks: [{ id: 'test-report', ok, detail: result.issues.join('; ') || null }],
       metrics: { ...result.metrics, file: rel }
+    };
+  },
+
+  // The deterministic half of the squad pilot contract: pilot-block coherence,
+  // entrypoint containment, the PILOT.md evidence doc, placeholder hygiene,
+  // lane-proportional deferral, and fingerprint freshness. The taste verdict —
+  // does the pilot carry the domain signature — stays with the user, whose
+  // squad:pilot-approve is the only way a pilot becomes approved.
+  'squad-pilot': async (ctx) => {
+    const { analyzeSquadPilot } = require('../lib/squad-pilot-lint');
+    const result = analyzeSquadPilot({ targetDir: ctx.targetDir, slug: ctx.slug });
+    const ok = result.issues.length === 0;
+    return {
+      ok,
+      issues: result.issues,
+      warnings: result.warnings,
+      checks: [{ id: 'squad-pilot', ok, detail: result.issues.join('; ') || null }],
+      metrics: result.metrics
     };
   },
 

@@ -65,6 +65,7 @@ Before acting, derive one primary `operation`:
 - `create`
 - `validate`
 - `eval`
+- `pilot`
 - `analyze`
 - `extend`
 - `repair`
@@ -88,6 +89,7 @@ Then build `required_modules` using this deterministic map:
 | `default-create`, `design`, `create`, `extend`, `analyze`, `plan`, `repair` | `.aioson/docs/squad/research-loop.md` |
 | `default-create`, `design`, `create`, `extend`, `analyze`, `plan`, `repair` | `.aioson/docs/squad/quality-lens.md` |
 | `eval`, or a delivery / CI quality gate is requested | `.aioson/docs/squad/eval-gate.md` |
+| `pilot`, or `default-create`/`create` closing a deliverable-class squad (`mode: software`/`mixed`) | `.aioson/docs/squad/pilot-gate.md` |
 | `default-create`, `create`, `extend`, `refresh`, or grounding an executor's expertise in sources | `.aioson/docs/squad/persona-grounding.md` |
 | `default-create`, `design`, `create`, `extend`, `analyze`, `plan`, `repair`, or request implies recurring content, pipelines, multi-platform delivery, persona-based work, review loops, or executor-pattern choices | `.aioson/skills/squad/SKILL.md`, then only the relevant files under `domains/`, `patterns/`, `formats/`, and `references/` |
 | Request mentions content deliverables, `contentBlueprints`, session HTML, or `--config=output` | `.aioson/docs/squad/content-output.md` |
@@ -111,6 +113,7 @@ If the user includes a squad subcommand, route to the matching task:
 - `@squad validate <slug>` → `.aioson/tasks/squad-validate.md`
 - `@squad analyze <slug>` → `.aioson/tasks/squad-analyze.md`
 - `@squad eval <slug>` → `.aioson/tasks/squad-eval.md` (executable source rubric + held-out tasks + genome A/B report)
+- `@squad pilot <slug>` → `.aioson/tasks/squad-pilot.md` (build the flagship pilot deliverable; the freeze stays with the user)
 - `@squad extend <slug>` → `.aioson/tasks/squad-extend.md`
 - `@squad repair <slug>` → `.aioson/tasks/squad-repair.md`
 - `@squad refresh <slug>` → `.aioson/tasks/squad-refresh.md` (breadth-aware update of existing executors — use when the user reports the squad acted narrow or refused legitimate adjacent requests)
@@ -132,6 +135,7 @@ If no subcommand is provided, run the default fast path:
 - Latest session HTML lives in `output/{squad-slug}/latest.html`
 - Logs live in `aioson-logs/{squad-slug}/`
 - Media lives in `media/{squad-slug}/`
+- A deliverable-class squad carries a `pilot` block in its manifest; the pilot deliverable lives in `output/{squad-slug}/pilot/` and its evidence doc in `.aioson/squads/{squad-slug}/docs/PILOT.md`
 - Persistent squads must ship both `agents/agents.md` and `squad.manifest.json`
 - Persistent squads must register in `CLAUDE.md` and `AGENTS.md`
 - Generated squad executors may be genome-bound; official `.aioson/agents/` files may not
@@ -157,6 +161,7 @@ If no subcommand is provided, run the default fast path:
 - Do not write HTML or other non-markdown artifacts under `.aioson/context/`.
 - Do not skip `latest.html` after a productive session round.
 - Do not leave skills, MCPs, or subagent policy implicit in persistent squads.
+- Do not approve a pilot or run `squad:pilot-approve`; the freeze belongs exclusively to the user.
 
 ## Output contract
 - Package root: `.aioson/squads/{squad-slug}/`
@@ -175,7 +180,7 @@ If no subcommand is provided, run the default fast path:
 - Media: `media/{squad-slug}/`
 
 ## Done gate
-A squad does not close until it is proven well-formed. Two layers, both part of the default `validate` step — not opt-in:
+A squad does not close until it is proven well-formed. Three layers, all part of the default `validate` step — not opt-in (the third applies to deliverable-class squads):
 
 ```bash
 # 1. Structural (deterministic, blocking): manifest schema, required files,
@@ -184,11 +189,17 @@ aioson squad:validate . --squad=<slug> --strict --json
 
 # 2. Source-grounded + held-out quality with per-dimension genome A/B evidence.
 aioson squad:eval . --squad=<slug> --json
+
+# 3. Deliverable-class squads (mode software/mixed): deterministic pilot lint.
+#    The pilot itself is frozen only by the USER via squad:pilot-approve.
+aioson verify:artifact . --kind=squad-pilot --slug=<slug> --advisory
 ```
 
 Fix every strict validation error before declaring done. Require a current eval PASS for any persistent or regulated squad. An ephemeral Quick Scan may defer only through a concrete `evaluation.deferReason`. Only then register done.
 
 Apply proportional depth: Quick ends provisional after a routing smoke and explicit eval defer reason; Standard runs one eval with critical held-out PASS plus one representative end-to-end warm-up; Premium and Regulated require the full current PASS and specialist warm-up. Regulated can never defer current evidence.
 
+A deliverable-class squad reaches production readiness only after the user freezes its pilot with `aioson squad:pilot-approve . --squad=<slug>`; content/research squads record `pilot.status: not_applicable`. Quick may defer with a concrete `pilot.deferReason`; Regulated never defers a pilot.
+
 ## Observability
-At session end, register: `aioson agent:done . --agent=squad --summary="Squad <slug>: <N> agents assembled" 2>/dev/null || true`
+At session end, register: `aioson agent:done . --agent=squad --slug=<slug> --summary="Squad <slug>: <N> agents assembled" 2>/dev/null || true`

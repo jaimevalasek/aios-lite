@@ -37,7 +37,7 @@ test('resolveAgentArtifact maps the periphery and ignores everyone else', () => 
   assert.equal(resolveAgentArtifact('orache').needs, 'file');
   assert.equal(resolveAgentArtifact('site-forge').needs, 'dir');
   // workflow + non-artifact agents resolve to null (no auto-fire for them)
-  for (const a of ['dev', 'qa', 'product', 'sheldon', 'orchestrator', 'squad', '', undefined]) {
+  for (const a of ['dev', 'qa', 'product', 'sheldon', 'orchestrator', '', undefined]) {
     assert.equal(resolveAgentArtifact(a), null, `expected null for "${a}"`);
   }
 });

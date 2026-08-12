@@ -84,6 +84,45 @@
       ],
       "description": "Proportional creation and assurance depth selected in the blueprint"
     },
+    "pilot": {
+      "type": "object",
+      "description": "Pilot contract for deliverable-class squads (mode software/mixed): the flagship deliverable under output/{slug}/pilot/ that the user freezes via squad:pilot-approve as the squad binding quality bar. Content/research squads record status not_applicable.",
+      "additionalProperties": false,
+      "required": [
+        "status"
+      ],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "not_applicable",
+            "pending",
+            "draft",
+            "approved"
+          ]
+        },
+        "task": {
+          "type": "string",
+          "description": "The flagship task the pilot proves — the smallest representative vertical of the domain"
+        },
+        "entrypoint": {
+          "type": "string",
+          "description": "Relative path under output/{slug}/pilot/ that opens the pilot"
+        },
+        "fingerprint": {
+          "type": "string",
+          "description": "sha256 content fingerprint of the pilot deliverable tree, written by squad:pilot-approve"
+        },
+        "approved_at": {
+          "type": "string",
+          "description": "ISO timestamp of the user freeze"
+        },
+        "deferReason": {
+          "type": "string",
+          "description": "Concrete reason a quick-lane squad defers its pilot; illegal on other lanes"
+        }
+      }
+    },
     "mission": {
       "type": "string",
       "maxLength": 500

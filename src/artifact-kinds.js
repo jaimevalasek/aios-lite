@@ -32,7 +32,8 @@ const AGENT_ARTIFACT_KIND = {
   'site-forge': { kind: 'site', needs: 'dir', opts: { noBuild: true } },
   'briefing-refiner': { kind: 'review', needs: 'slug' },
   briefing: { kind: 'briefing', needs: 'slug' },
-  tester: { kind: 'test-report', needs: 'slug' }
+  tester: { kind: 'test-report', needs: 'slug' },
+  squad: { kind: 'squad-pilot', needs: 'slug' }
 };
 
 const NEEDS_FLAG = { slug: '--slug=<slug>', file: '--file=<path>', dir: '--dir=<dir>' };

@@ -255,6 +255,8 @@ module.exports = {
       'aioson squad:validate [path] --squad=<slug> [--strict] [--json] [--locale=es]',
     help_squad_eval:
       'aioson squad:eval [path] --squad=<slug> [--json] [--locale=es]',
+    help_squad_pilot_approve:
+      'aioson squad:pilot-approve [path] --squad=<slug> [--json] [--locale=es]',
     help_squad_export:
       'aioson squad:export [path] --squad=<slug> [--locale=es]',
     help_squad_pipeline:
