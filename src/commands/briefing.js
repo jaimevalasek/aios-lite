@@ -17,6 +17,8 @@
 const fsp = require('node:fs/promises');
 const path = require('node:path');
 const readline = require('node:readline');
+const { parseYamlFrontmatter, getInteractionLanguage } = require('../context');
+const { createTranslator } = require('../i18n');
 const {
   configPath: registryConfigPath,
   markRefinementState,
@@ -151,25 +153,41 @@ async function prepareApprovedPrototypeManifest(projectDir, slug, briefingConten
 }
 
 // Every refusal of the prototype gate names what is missing, where it lives,
-// and the legitimate exits — a bare error code sent users into a wall.
-function logPrototypeGateError(logger, slug, failure) {
+// and the legitimate exits — a bare error code sent users into a wall. Messages
+// follow the project's interaction_language (LANGUAGE BOUNDARY): keys live in
+// src/i18n/messages/* under `briefing_gate`, and the error codes stay stable
+// English identifiers in every locale (tests and tooling match them).
+async function resolveProjectGateTranslator(projectDir) {
+  try {
+    const raw = await fsp.readFile(
+      path.join(projectDir, '.aioson', 'context', 'project.context.md'),
+      'utf8'
+    );
+    const parsed = parseYamlFrontmatter(raw);
+    return createTranslator(getInteractionLanguage(parsed.data, 'en')).t;
+  } catch {
+    return createTranslator('en').t;
+  }
+}
+
+function logPrototypeGateError(logger, slug, failure, t) {
   const base = `.aioson/briefings/${slug}`;
   if (failure.error === 'prototype_resolution_missing') {
-    logger.error(`Briefing "${slug}" não pode ser aprovado: protótipo não resolvido (prototype_resolution_missing).`);
-    logger.error(`  Esperado: ${base}/prototype.html`);
-    logger.error('  Escopo visual → ative @briefing-refiner para gerar o protótipo antes da aprovação.');
-    logger.error('  Feature sem superfície visual → registre a linha `prototype: not_applicable` no briefings.md e aprove de novo.');
+    logger.error(t('briefing_gate.resolution_missing', { slug }));
+    logger.error(t('briefing_gate.resolution_missing_expected', { path: `${base}/prototype.html` }));
+    logger.error(t('briefing_gate.resolution_missing_visual'));
+    logger.error(t('briefing_gate.resolution_missing_non_visual'));
   } else if (failure.error === 'prototype_manifest_missing') {
-    logger.error(`Briefing "${slug}" tem prototype.html, mas falta o manifesto (prototype_manifest_missing).`);
-    logger.error(`  Esperado: ${base}/prototype-manifest.md com \`feature: ${slug}\` e \`status: draft\` — @briefing-refiner deve gerá-lo.`);
+    logger.error(t('briefing_gate.manifest_missing', { slug }));
+    logger.error(t('briefing_gate.manifest_missing_expected', { path: `${base}/prototype-manifest.md`, slug }));
   } else if (failure.error === 'prototype_manifest_owner_mismatch') {
-    logger.error(`O manifesto do protótipo pertence a outra feature ("${failure.owner || '?'}", esperado "${slug}") (prototype_manifest_owner_mismatch).`);
-    logger.error(`  Corrija o campo \`feature:\` em ${base}/prototype-manifest.md — nunca reaproveite o protótipo de outro briefing.`);
+    logger.error(t('briefing_gate.owner_mismatch', { owner: failure.owner || '?', slug }));
+    logger.error(t('briefing_gate.owner_mismatch_fix', { path: `${base}/prototype-manifest.md` }));
   } else if (failure.error === 'prototype_manifest_status_invalid') {
-    logger.error(`O manifesto do protótipo tem status inválido "${failure.status || '?'}" (prototype_manifest_status_invalid).`);
-    logger.error(`  Status aceitos: draft ou approved. Corrija ${base}/prototype-manifest.md.`);
+    logger.error(t('briefing_gate.status_invalid', { status: failure.status || '?' }));
+    logger.error(t('briefing_gate.status_invalid_fix', { path: `${base}/prototype-manifest.md` }));
   } else {
-    logger.error(`Não foi possível aprovar o protótipo de "${slug}": ${failure.error}.`);
+    logger.error(t('briefing_gate.generic', { slug, error: failure.error }));
   }
 }
 
@@ -234,7 +252,7 @@ async function runBriefingApprove({ args, options = {}, logger }) {
     briefingContent
   );
   if (!prototypeApproval.ok) {
-    logPrototypeGateError(logger, target.slug, prototypeApproval);
+    logPrototypeGateError(logger, target.slug, prototypeApproval, await resolveProjectGateTranslator(projectDir));
     return { ok: false, error: prototypeApproval.error, slug: target.slug };
   }
 

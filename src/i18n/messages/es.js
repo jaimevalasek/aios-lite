@@ -1,6 +1,19 @@
 'use strict';
 
 module.exports = {
+  briefing_gate: {
+    resolution_missing: 'El briefing "{slug}" no puede aprobarse: prototipo sin resolver (prototype_resolution_missing).',
+    resolution_missing_expected: '  Esperado: {path}',
+    resolution_missing_visual: '  Alcance visual → activa @briefing-refiner para generar el prototipo antes de la aprobación.',
+    resolution_missing_non_visual: '  Feature sin superficie visual → registra la línea `prototype: not_applicable` en briefings.md y aprueba de nuevo.',
+    manifest_missing: 'El briefing "{slug}" tiene prototype.html, pero falta el manifiesto (prototype_manifest_missing).',
+    manifest_missing_expected: '  Esperado: {path} con `feature: {slug}` y `status: draft` — @briefing-refiner debe generarlo.',
+    owner_mismatch: 'El manifiesto del prototipo pertenece a otra feature ("{owner}", se esperaba "{slug}") (prototype_manifest_owner_mismatch).',
+    owner_mismatch_fix: '  Corrige el campo `feature:` en {path} — nunca reutilices el prototipo de otro briefing.',
+    status_invalid: 'El manifiesto del prototipo tiene un status inválido "{status}" (prototype_manifest_status_invalid).',
+    status_invalid_fix: '  Status aceptados: draft o approved. Corrige {path}.',
+    generic: 'No se pudo aprobar el prototipo de "{slug}": {error}.'
+  },
   cli: {
     title: 'AIOSON CLI',
     title_line: '{title}\n',

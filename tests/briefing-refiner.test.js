@@ -252,6 +252,16 @@ test('briefing approval names the manifest problem when prototype.html exists', 
   await fs.writeFile(path.join(briefingDir, 'briefings.md'), '# Visual briefing\n', 'utf8');
   await fs.writeFile(path.join(briefingDir, 'prototype.html'), '<button>Save</button>\n', 'utf8');
 
+  // The gate speaks the project's interaction_language (LANGUAGE BOUNDARY):
+  // this fixture pins the pt-BR projection; without a context file the gate
+  // falls back to the canonical English catalog.
+  await fs.mkdir(path.join(dir, '.aioson', 'context'), { recursive: true });
+  await fs.writeFile(
+    path.join(dir, '.aioson', 'context', 'project.context.md'),
+    '---\nproject_name: "t"\nproject_type: "script"\nprofile: "developer"\nframework: "Node.js"\nframework_installed: true\nclassification: "MICRO"\ninteraction_language: "pt-BR"\naioson_version: "0.0.0"\n---\n',
+    'utf8'
+  );
+
   // No manifest at all → the message names the expected file and owner fields.
   const missing = await runBriefingApprove({ args: [dir], options: { slug: 'idea-two' }, logger });
   assert.equal(missing.error, 'prototype_manifest_missing');
