@@ -43,6 +43,8 @@ aioson ac:test-audit . --feature={slug} --strict
 
 The AC audit is one signal. If it cannot understand the project's stack, inspect and run the stack-native tests directly; report the tool limitation instead of claiming zero coverage.
 
+For a delivery with a visual or rich operational surface, run `aioson brain:query . --agent=qa --tags=interaction,forms --min-quality=4 --format=compact 2>/dev/null || true`; its nodes and matching `.aioson/rules/` are delivery criteria for promised surfaces: each interaction contract carried by the PRD, plan, or an AC (mask/validation behavior, status-change confirm and cancel paths, drag-and-drop persistence, live widget data) needs one concrete CAP/AC evidence row proven on the real surface. The query never adds scope; a contract nothing promised stays a recommendation.
+
 ## Risk-first checklist
 
 #### Critical

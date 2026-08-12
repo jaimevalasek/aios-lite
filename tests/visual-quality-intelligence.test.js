@@ -14,7 +14,10 @@ const AGENTS = ['dev', 'deyvin', 'briefing-refiner', 'benchmark'];
 // Product/Sheldon consume the same brain through the spec-quality lens only: the PRD
 // authority must not inherit layout nodes it has no right to decide.
 const SPEC_AGENTS = ['product', 'sheldon'];
-const INDEXED_AGENTS = [...AGENTS, ...SPEC_AGENTS];
+// Briefing originates through the spec-quality lens; QA verifies delivery through
+// the interaction lens. Neither may inherit the layout nodes. Order mirrors the
+// on-disk index array exactly.
+const INDEXED_AGENTS = ['briefing', ...AGENTS, ...SPEC_AGENTS, 'qa'];
 const BRAIN_RELATIVE_PATH = '.aioson/brains/design/visual-quality.brain.json';
 const INDEX_RELATIVE_PATH = '.aioson/brains/_index.json';
 
@@ -83,6 +86,44 @@ test('the spec-quality lens reaches the PRD authority without leaking layout nod
   }
 });
 
+test('the interaction lens reaches QA without granting layout authority', async () => {
+  for (const root of [TEMPLATE_ROOT, WORKSPACE_ROOT]) {
+    const result = await queryBrains({
+      targetDir: root,
+      agent: 'qa',
+      tags: ['interaction', 'forms'],
+      minQuality: 4
+    });
+
+    assert.equal(result.ok, true);
+    assert.deepEqual(result.warnings, []);
+    // Exactly the four interaction contracts plus the two verified
+    // implementation gotchas — no layout/composition node may leak in.
+    assert.deepEqual(
+      result.nodes.map((node) => node.id),
+      ['vq-009', 'vq-010', 'vq-011', 'vq-012', 'vq-014', 'vq-015']
+    );
+  }
+
+  // The rules close the same chain on the verification end: every interaction
+  // rule names what QA proves, so context:brief anchors the delivery review.
+  const INTERACTION_RULES = [
+    'form-fields-masks-and-validation.md',
+    'status-change-confirmation.md',
+    'status-flow-drag-and-drop.md',
+    'management-home-widgets.md'
+  ];
+  for (const file of INTERACTION_RULES) {
+    const relativePath = `.aioson/rules/${file}`;
+    const [template, workspace] = await Promise.all([
+      read(TEMPLATE_ROOT, relativePath),
+      read(WORKSPACE_ROOT, relativePath)
+    ]);
+    assert.equal(workspace, template, `template/workspace drift: ${relativePath}`);
+    assert.match(template, /^- @qa:/m, `${file} has no @qa line in ## Applies to`);
+  }
+});
+
 test('the specification lens keeps composition out of the PRD authority', async () => {
   for (const root of [TEMPLATE_ROOT, WORKSPACE_ROOT]) {
     const brain = JSON.parse(await read(root, BRAIN_RELATIVE_PATH));
@@ -117,6 +158,32 @@ test('visual quality brain and agent kernels remain template/workspace synchroni
     ]);
 
     assert.equal(workspace, template, `template/workspace drift: ${relativePath}`);
+
+    if (agent === 'briefing') {
+      // Origination binds the spec lens inline (kernel budget: no dedicated
+      // section heading), pinned in detail by briefing-agent-kernels.test.js.
+      assert.match(template, /aioson brain:query \. --agent=briefing --tags=spec-quality/);
+      assert.match(template, /replaceability test/i);
+      assert.doesNotMatch(
+        template,
+        /--tags=visual-quality/,
+        'briefing.md queries the layout lens it has no authority to decide'
+      );
+      continue;
+    }
+
+    if (agent === 'qa') {
+      // Verification consumes the interaction contracts as delivery criteria for
+      // promised surfaces — never the layout lens, never as a new scope source.
+      assert.match(template, /aioson brain:query \. --agent=qa --tags=interaction,forms/);
+      assert.match(template, /never adds scope/i);
+      assert.doesNotMatch(
+        template,
+        /--tags=visual-quality/,
+        'qa.md queries the layout lens it has no authority to decide'
+      );
+      continue;
+    }
 
     if (SPEC_AGENTS.includes(agent)) {
       assert.match(template, /Specification quality intelligence \(anti-slop\)/i);

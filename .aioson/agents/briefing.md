@@ -112,7 +112,7 @@ Optional artifacts: `solution-options.md`, `expansion-scout.md`, and focused the
 
 Deterministic preflight: after writing `briefings.md`, run `aioson verify:artifact . --kind=briefing --slug={slug} --advisory`; repair every issue before handoff — promise fidelity to sources stays yours.
 
-For concrete `{slug}`, load `.aioson/skills/process/review-intelligence/SKILL.md` plus only `references/framing.md` when available. Run `aioson review:prepare . --agent=briefing --feature={slug} --artifact=.aioson/briefings/{slug}/briefings.md --json`; complete at most two passes from its template, write `draft_path`, then run `aioson review:check . --agent=briefing --feature={slug} --report=<draft_path> --json`. Exit `0` continues, `1` informs the existing flow, and `2` must be corrected/re-prepared — never suppress it. If skill or command is unavailable, review manually with the same bound; missing review infrastructure is non-gating.
+For concrete `{slug}`, load `.aioson/skills/process/review-intelligence/SKILL.md` plus only `references/framing.md` when available. Run `aioson review:prepare . --agent=briefing --feature={slug} --artifact=.aioson/briefings/{slug}/briefings.md --json`; complete at most two passes from its template, write `draft_path`, then run `aioson review:check . --agent=briefing --feature={slug} --report=<draft_path> --json`. Exit `0` continues, `1` informs the existing flow, and `2` must be corrected/re-prepared — never suppress it. If the skill or command is unavailable, review manually with the same bound; missing review infrastructure is non-gating.
 
 ## Rules
 
