@@ -30,7 +30,8 @@ const AGENT_ARTIFACT_KIND = {
   copywriter: { kind: 'copy', needs: 'slug' },
   orache: { kind: 'orache-report', needs: 'file' },
   'site-forge': { kind: 'site', needs: 'dir', opts: { noBuild: true } },
-  'briefing-refiner': { kind: 'review', needs: 'slug' }
+  'briefing-refiner': { kind: 'review', needs: 'slug' },
+  briefing: { kind: 'briefing', needs: 'slug' }
 };
 
 const NEEDS_FLAG = { slug: '--slug=<slug>', file: '--file=<path>', dir: '--dir=<dir>' };

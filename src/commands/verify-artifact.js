@@ -200,7 +200,7 @@ const RULESETS = {
 
 // Kinds whose target file path is keyed by --slug; without it we cannot resolve
 // the artifact, so fail with a clear usage error instead of a `null/` path.
-const REQUIRES_SLUG = new Set(['genome', 'research-report', 'enriched-profile', 'hybrid-skill', 'copy', 'review', 'sources']);
+const REQUIRES_SLUG = new Set(['genome', 'research-report', 'enriched-profile', 'hybrid-skill', 'copy', 'review', 'sources', 'briefing']);
 
 // Kinds whose artifact has a date-stamped / caller-known path — resolved via
 // --file=<path> rather than derived from a slug.
@@ -632,6 +632,63 @@ const ADAPTERS = {
         lifecycle_stage: lineage.lifecycle ? lineage.lifecycle.stage : null,
         absorbed: lineage.lifecycle ? lineage.lifecycle.absorbed : null
       }
+    };
+  },
+
+  // The deterministic half of the Briefing contract, run where the lineage is
+  // born instead of two agents later: frontmatter identity, the eight mandatory
+  // sections, open-question classification, placeholder discipline, and the
+  // config.md registry entry — plus the same source-lineage analyzer kind=sources
+  // trusts, so fingerprint staleness and SRC-*/PROM-* breaks surface at authoring
+  // time. Whether each promise faithfully represents its source stays with the agent.
+  briefing: async (ctx) => {
+    const rel = `.aioson/briefings/${ctx.slug}/briefings.md`;
+    let briefingText;
+    try {
+      briefingText = fs.readFileSync(path.resolve(ctx.targetDir, rel), 'utf8');
+    } catch {
+      return { ok: false, issues: [`briefing not found: ${rel}`], warnings: [], checks: [] };
+    }
+    let configText = '';
+    try {
+      configText = fs.readFileSync(path.resolve(ctx.targetDir, '.aioson/briefings/config.md'), 'utf8');
+    } catch { /* registry check degrades to a warning */ }
+
+    const { analyzeBriefing } = require('../lib/briefing-lint');
+    const result = analyzeBriefing({ briefing: briefingText, config: configText, slug: ctx.slug });
+    const issues = [...result.issues];
+    const warnings = [...result.warnings];
+    const metrics = { ...result.metrics, file: rel };
+
+    // Lineage at birth. Legacy and conversational briefings without an
+    // inventory are legal, so inapplicability and analyzer failure degrade to
+    // warnings — the structural lint above remains the verdict's backbone.
+    try {
+      const { analyzeFeatureCompleteness } = require('../lib/feature-completeness');
+      const analysis = await analyzeFeatureCompleteness(ctx.targetDir, ctx.slug, {});
+      const lineage = analysis.source_lineage || { applicable: false, findings: [] };
+      if (lineage.applicable) {
+        issues.push(...lineage.findings.map((f) => `[${f.check}] ${f.message}`));
+        metrics.lineage = {
+          sources_total: (lineage.inventory || []).length,
+          promises_total: (lineage.promises || []).length,
+          lifecycle_stage: lineage.lifecycle ? lineage.lifecycle.stage : null
+        };
+      } else {
+        warnings.push('source lineage not applicable to this briefing');
+        metrics.lineage = { applicable: false };
+      }
+    } catch (error) {
+      warnings.push(`source lineage analysis failed: ${error.message}`);
+    }
+
+    const ok = issues.length === 0;
+    return {
+      ok,
+      issues,
+      warnings,
+      checks: [{ id: 'briefing', ok, detail: issues.join('; ') || null }],
+      metrics
     };
   },
 
