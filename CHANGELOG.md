@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.50.0] - 2026-08-11
+
+### Added
+- **Downgrade guard for `update` and `install --force`.** The template copy comes from the installed CLI's own bundle, so a stale global CLI running `update` on a newer project would mass-downgrade every managed file — and `install --force` would do it with no backups at all, since `backupOnOverwrite` only arms in update mode. Both now compare the CLI version against the project's `install.json` `template_version` and refuse with a message (in all four locales) that explains the CLI-before-project order; `--allow-downgrade` is the deliberate escape hatch. A project with no recorded or unparseable version never blocks.
+
+### Fixed
+- **Windows consoles no longer render CLI output as mojibake.** The logger wrote with `fs.writeSync(1)`, which reaches a console handle as raw bytes and gets decoded with the legacy codepage (cp850/cp437) — every `✓ — • ⚠ ─` and pt-BR accent came out as `Ô£ô`/`ÔÇö` garbage, seen live on the hooks-by-default output of `aioson update`. TTY output now goes through `process.stdout`/`stderr`, which uses the console's Unicode API and renders correctly under any codepage; pipes and files keep `fs.writeSync`, so `--json` automation keeps its guaranteed-synchronous delivery. This is also why the i18n catalogs historically avoid accents — with the root cause fixed, future messages need not.
+- **A corrupted global config can no longer be silently destroyed by the hooks install.** The merge read `~/.claude/settings.json` and the Antigravity hooks files with a catch that treated "exists but does not parse" as "does not exist", so one trailing comma from a hand edit meant the user's entire settings file was rewritten as a hooks-only object. `readJsonForMerge` now distinguishes the two: a corrupted file is left untouched, reported with instructions, and that tool is skipped. Uninstall already had safe semantics.
+
 ## [1.49.0] - 2026-08-11
 
 ### Added
