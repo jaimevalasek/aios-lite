@@ -3,7 +3,7 @@
   "agent": "dev",
   "domain": "patterns",
   "desc": "Implementation patterns @dev should default to. Quality-scored, anti-pattern aware. Seed nodes — extend with new q≥4 patterns after each significant slice.",
-  "updated": "2026-05-07",
+  "updated": "2026-08-12",
   "nodes": [
     {
       "id": "dev-001",
@@ -73,7 +73,21 @@
       "date": "2026-05-07",
       "not": "write 10 files then run tsc — error cascades make root cause hard to find",
       "warn": "verification command must be the real one (the one CI runs), not a proxy you trust",
-      "see": ["dev-003"]
+      "see": ["dev-003", "dev-006"]
+    },
+    {
+      "id": "dev-006",
+      "title": "compiled-stack builds are a serialized, capped machine resource",
+      "tags": ["build", "resources", "process", "discipline", "rust", "tooling"],
+      "q": 5,
+      "v": "BEST_PRACTICE",
+      "s": "A default build on a compiled stack spawns one compiler job per logical core (cargo → rustc; *-sys build scripts add MSVC cl.exe/link.exe/MSBuild) and can exhaust the machine's RAM. Run the cheapest command that proves the slice (cargo check over cargo build, scoped tests over the full suite), one build at a time — never a second build while one runs, never in parallel background shells — and cap parallelism in project config before the first heavy build.",
+      "p": "# .cargo/config.toml\n[build]\njobs = 8  # ≈ half the logical cores\n[env]\nCMAKE_BUILD_PARALLEL_LEVEL = \"8\"",
+      "src": "operator machine freeze — 16 parallel rustc jobs + MSVC linker on 16 GB RAM (2026-08-12)",
+      "date": "2026-08-12",
+      "not": "firing cargo build and cargo test concurrently, or full builds in parallel worktrees — cargo's target lock does not protect across projects or worktrees",
+      "warn": "cc-based build scripts share cargo's jobserver so the jobs cap bounds them; cmake-driven ones only obey CMAKE_BUILD_PARALLEL_LEVEL",
+      "see": ["dev-005"]
     }
   ]
 }

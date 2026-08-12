@@ -1,5 +1,5 @@
 ---
-description: "Dev stack conventions — Laravel, UI/UX, design skill, motion, Web3, and any-stack separation rules."
+description: "Dev stack conventions — Laravel, Rust build discipline, UI/UX, design skill, motion, Web3, and any-stack separation rules."
 agents: [dev, deyvin]
 task_types: [implementation, conventions]
 triggers: [stack conventions, framework patterns, implementing features]
@@ -33,6 +33,16 @@ Rules:
 - use Jobs for heavy processing
 - eager-load to avoid N+1 queries
 - implement `down()` in every migration
+
+## Rust conventions
+
+A default `cargo` invocation spawns one `rustc` per logical core, and `*-sys` build scripts add MSVC `cl.exe`/`link.exe`/MSBuild processes on top — enough to exhaust the machine's memory. Treat builds as a serialized, capped resource:
+
+- verify slices with `cargo check` (or `cargo clippy`); run `cargo build` only when a runnable binary is actually needed
+- run scoped tests (`cargo test -p <crate> <filter>`); the full suite runs once at the delivery gate, not per slice
+- one cargo invocation at a time — never start a second build/test while one runs, and never in parallel background shells or parallel worktrees (the target lock does not protect across worktrees)
+- before the first heavy build, ensure `.cargo/config.toml` caps parallelism with `[build] jobs` (≈ half the logical cores) and sets `CMAKE_BUILD_PARALLEL_LEVEL` to match; create it and tell the user when missing
+- `cc`-based build scripts share cargo's jobserver, so the jobs cap bounds them; cmake-driven ones only obey `CMAKE_BUILD_PARALLEL_LEVEL`
 
 ## UI / UX conventions
 
