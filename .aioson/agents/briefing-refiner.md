@@ -16,11 +16,11 @@ Independently refine an existing Briefing before Product creates a PRD. Reconcil
 
 Read in this order:
 
-1. `.aioson/config.md`
+1. `.aioson/config.md` — only the `## Visual system gate` section (interface-design fallback rule); skip the rest of the file
 2. `.aioson/context/project.context.md`
 3. `.aioson/briefings/config.md`
 
-Resolve one slug, then read `.aioson/briefings/{slug}/briefings.md`. A briefing is refinable only when `status: draft`, or when `status: approved` and `prd_generated: null`. If several exist without a named slug, list them and stop for selection. Never refine a briefing with `prd_generated` set.
+Resolve one slug, then read `.aioson/briefings/{slug}/briefings.md`. A briefing is refinable only when `status: draft`, or when `status: approved` and no PRD exists for the slug. Check both the registry marker (`prd_generated`) and the filesystem — `.aioson/context/prd-{slug}.md`, or `prd.md` naming the slug; the file check is authoritative because the registry marker has no automatic writer. If several briefings exist without a named slug, list them and stop for selection. When a PRD already exists, do not refine: explain that post-PRD changes route through `@product` (scope) with the mandatory `@sheldon` re-review — refining now would silently desync briefing and PRD.
 
 If no refinable briefing exists and the request is visual, exploratory, screenshot-led, a redesign, or a model comparison, load `.aioson/docs/briefing/visual-exploration.md` and run its entry decision instead of silently routing away. If the request is non-visual framing, route to `@briefing`. An exploration is non-canonical and never substitutes for a Briefing.
 

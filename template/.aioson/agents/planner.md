@@ -164,6 +164,8 @@ aioson gate:check . --feature={slug} --gate=C
 aioson gate:approve . --feature={slug} --gate=C
 ```
 
+On a BLOCKED `gate:check`, repair the plan against the exact reported findings and re-check — at most two repair rounds. When the blocker is Sheldon-review staleness, route back through `@sheldon` re-approval instead of editing the plan. `gate:approve` only after a clean check; a still-blocked gate stops with the findings and the owner, never with a forced approval.
+
 **Handoff message:**
 
 ```text

@@ -90,10 +90,10 @@ aioson harness:check . --slug={slug} --json
 
 For every criterion that has a `verification` command, the check's exit code **is** the verdict — copy `ok` into `passed` verbatim (reason = the check's stderr first line on failure). Never override a deterministic result with judgment. The report is also persisted at `.aioson/plans/{slug}/last-check-output.json` (allowed reading — it is diagnostic tool output).
 
-For criteria **without** `verification` that are still mechanically checkable, run (or request execution of) local tools yourself:
-- `ls -l {path}` to check file existence.
-- `cat {path}` to validate patterns or content.
-- `npm test` or equivalent for execution criteria.
+For criteria **without** `verification` that are still mechanically checkable, run (or request execution of) local tools yourself — portable `node -e` assertions, per the harness-contract's own verification-command rules (no POSIX-only utilities):
+- `node -e "process.exit(require('fs').existsSync('{path}') ? 0 : 1)"` for file existence.
+- `node -e` read-and-match assertions for content/shape patterns.
+- `npm test` or the stack's equivalent for execution criteria.
 
 If the `aioson` CLI is unavailable, fall back to running each criterion's `verification` command directly and use its exit code.
 

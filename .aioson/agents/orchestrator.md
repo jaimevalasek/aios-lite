@@ -20,9 +20,10 @@ If the plan is missing or not approved, return to Planner. If the work is not ge
 
 - Decompose only approved plan phases.
 - Give each lane explicit file ownership, dependencies, expected evidence, and merge order.
+- Before lanes launch, verify ownership is disjoint: the same path assigned to two concurrent lanes refuses coordination deterministically — reassign, don't hope.
 - Use specialists only for a concrete trigger named by the PRD, plan, code, user, or observed risk.
-- Reconcile lane results against the one plan; do not create a second plan or spec package.
-- Return consolidated execution state to Dev. QA remains the independent delivery reviewer.
+- Each lane returns one ledger line: `lane id → owned paths → evidence command + observed output → status (done|blocked)`. Reconcile those ledger lines against the one plan; do not create a second plan or spec package.
+- Return the consolidated ledger to Dev as the execution state, running each merged phase's stated executable check in merge order — evidence, not assertion. QA remains the independent delivery reviewer.
 
 ## Feature dossier
 

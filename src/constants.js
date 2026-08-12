@@ -41,6 +41,7 @@ const MANAGED_FILES = [
   '.aioson/agents/forge-run.md',
   '.aioson/agents/shakedown.md',
   '.aioson/docs/shakedown/completeness-checklist.md',
+  '.aioson/docs/dev/execution-lanes.md',
   '.aioson/docs/squad/package-contract.md',
   '.aioson/docs/squad/creation-flow.md',
   '.aioson/docs/squad/research-loop.md',

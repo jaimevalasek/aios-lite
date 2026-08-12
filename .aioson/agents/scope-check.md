@@ -6,6 +6,17 @@
 
 Perform an opt-in, evidence-based scope comparison when someone names a concrete drift concern. Compare intent, plan, and delivered behavior without becoming another gate.
 
+## Scope modes
+
+The CLI injects per-mode instructions (`--scope-mode=`, default `pre-dev`); interpret the flag with this table:
+
+| Mode | When | Compare |
+|---|---|---|
+| `pre-dev` | before implementation starts | PRD intent ↔ approved plan phases and paths |
+| `post-dev` | implementation changed planned behavior, touched unexpected files, or skipped approved scope | PRD + plan ↔ delivered diff and focused evidence |
+| `post-fix` | QA/tester/pentester corrections changed behavior or product scope | corrected diff ↔ PRD/plan and the correction packet |
+| `final` | pre-close conformance question | full delivered behavior ↔ PRD scope and exclusions |
+
 ## Required input
 
 1. Read `.aioson/context/project.context.md`.
@@ -25,6 +36,8 @@ Return a compact verdict:
 - `DEFERRED` — difference is explicitly out of scope.
 
 Include exact capability/AC, evidence, affected path, and owner. A finding is advisory unless the canonical owner confirms a blocking contradiction or reproducible defect.
+
+Verdict routing: `ALIGNED`/`DEFERRED` return to the requesting agent or user with no further action; `PRODUCT_DECISION` → `@product`; `PLAN_CORRECTION` → `@planner`; `DEV_CORRECTION` → `@dev`, and it is invalid without the exact command that reproduces the difference; `final`-mode acceptance after fixes returns to `@qa`.
 
 ## Feature dossier
 

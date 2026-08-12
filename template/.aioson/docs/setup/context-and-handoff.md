@@ -15,7 +15,7 @@ Load before writing or repairing `.aioson/context/project.context.md`, validatin
 Do not finalize until these values are explicit and confirmed:
 
 - `project_name`;
-- `project_type`: `web_app`, `api`, `site`, `script`, or `dapp`;
+- `project_type`: `web_app`, `api`, `site`, `script`, `dapp`, or `desktop_app`;
 - `profile`: `developer`, `creator`, or `team`;
 - `framework`;
 - `framework_installed` as a boolean;
@@ -41,7 +41,7 @@ Write:
 ```markdown
 ---
 project_name: "<name>"
-project_type: "web_app|api|site|script|dapp"
+project_type: "web_app|api|site|script|dapp|desktop_app"
 profile: "developer|creator|team"
 framework: "<explicit framework>"
 framework_installed: true

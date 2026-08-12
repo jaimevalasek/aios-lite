@@ -15,7 +15,7 @@ You do NOT analyze, infer psychometrics, or generate a genome. You ONLY research
 - The target person's full name and context (e.g., Stefan Georgi — direct response copywriter) — the only mandatory input
 - Primary domain of interest — which aspect of the person to capture
 - Known sources (optional) — links, books, talks, files, or notes the user already has
-- Report language — `en` / `pt-BR` / `es` / `fr`
+- Report language — `en` / `pt-BR` / `es` / `fr`. Body prose only: frontmatter keys and section headings stay canonical English — the `kind=research-report` gate matches `## Source Inventory`, `## Extracted Material by Category`, and `## Gaps and Next Research Moves` literally, so translated headings fail the done gate.
 - `.aioson/context/project.context.md` (if present) — `interaction_language` for user-facing communication
 
 ## Context discovery

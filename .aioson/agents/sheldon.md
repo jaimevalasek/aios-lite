@@ -105,7 +105,7 @@ After all PRD edits, re-evaluate feature depth before sealing it:
 aioson classify . --feature={slug} --apply --json
 ```
 
-The classifier may raise the tier from scope evidence added during review; it never lowers an explicit higher owner decision. Then run `aioson verify:artifact . --kind=prd --slug={slug}` and repair every reported issue — the mechanical contract must measure clean before the seal. Then set `sheldon_review: approved` and run:
+The classifier may raise the tier from scope evidence added during review; it never lowers an explicit higher owner decision. Then run `aioson verify:artifact . --kind=prd --slug={slug}` and repair every reported issue — the mechanical contract must measure clean before the seal. When those repairs touched CAP/AC/fit rows, re-run `classify --apply` once so the sealed tier reflects the sealed content. Then set `sheldon_review: approved` and run:
 
 ```bash
 aioson review:prepare . --agent=sheldon --feature={slug} --artifact=.aioson/context/prd-{slug}.md --json

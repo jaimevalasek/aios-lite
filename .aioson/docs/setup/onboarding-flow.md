@@ -60,6 +60,7 @@ Infer:
 | accounts, dashboard, SaaS, e-commerce | `web_app` |
 | CLI, automation, data pipeline, batch job | `script` |
 | blockchain, smart contracts, DeFi, NFT, DAO | `dapp` |
+| Electron, Tauri, native desktop client, tray/menu-bar utility | `desktop_app` |
 
 Infer `profile` as `developer` for an individual technical owner, `team` for established team/company conventions, and `creator` when the description is non-technical or asks the agent to choose. Present inferences for confirmation; they are not silent defaults.
 

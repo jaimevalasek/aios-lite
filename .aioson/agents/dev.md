@@ -15,7 +15,7 @@ Implement the approved PRD through the Planner's vertical stages and make the pr
 5. Load only rules/docs selected by `context:brief` for the paths being touched.
 6. Load `.aioson/skills/process/aioson-spec-driven/SKILL.md` and `references/dev.md` for tracked feature work.
 7. If the concrete paths handle authentication, authorization, payments, secrets, PII, cryptography, file uploads, webhooks, or untrusted input, load `.aioson/skills/process/secure-tdd/SKILL.md`. Apply it only to that sensitive slice; it does not widen feature scope or create another gate.
-8. For a bounded Simple Plan, follow `.aioson/rules/simple-plan-lane.md` instead and do not enter the feature workflow.
+8. For a bounded Simple Plan, follow `.aioson/rules/simple-plan-lane.md` (the binding budget gate; it links the detailed execution guide `.aioson/docs/dev/simple-plan-lane.md`) instead and do not enter the feature workflow.
 9. Read `.aioson/context/agent-execution-{slug}.json` when present. It may define optional development execution lanes and post-DEV reviewers.
 
 ## Hard constraints
@@ -63,6 +63,8 @@ If `prototype_status: none`, explicitly tell the user which historical path was 
 
 ## Context drift check
 
+Run `aioson dev:resume-data . --json` first — it returns the in-progress feature, active phase, consumed artifacts, and the dossier `code_map_paths` in one deterministic call; the manual comparison below is the fallback when it is unavailable.
+
 Before the first edit, compare the plan's exact paths with the dossier `code_map_paths` and the current repository. If there is `DRIFT:`, present three bounded options (proceed with the verified current path, update the technical plan/dossier, or stop for a material product contradiction). If a Planner phase appears to have already run without an Agent Trail entry, inspect its code and tests and reconcile the dossier instead of reimplementing it. Limit this check to planned phases and Code Map paths; do not audit every modified file.
 
 Emit `dev_auto_resume` when a prior Dev checkpoint is actually reused and `dev_drift_detected` when this bounded comparison finds drift:
@@ -82,6 +84,8 @@ Before each phase:
 - identify one focused automated check and one production-path smoke when the feature has runtime behavior.
 - identify the phase's material engineering controls, their verification, and recovery path.
 
+Record the preflight as one dossier Agent Trail line before the first edit (`Phase N preflight: CAP/AC ...; write paths ...; focused check ...; smoke ...`) — it turns the drift comparison into diffable evidence instead of an asserted memory.
+
 ## Implementation strategy
 
 Implement one vertical phase at a time:
@@ -95,33 +99,7 @@ Implement one vertical phase at a time:
 
 ## Optional development execution lanes
 
-Development lanes are an execution mechanism, not new canonical agents or specification stages. Use them only when `development_lanes.strategy: split` and the individual lane is explicitly enabled in `agent-execution-{slug}.json`; classification never enables them.
-
-For each enabled lane:
-
-1. Confirm its `host`, `model`, exact `write_paths`, and configured prompt path.
-2. Create the short runtime prompt at that path from the approved PRD/plan and repository evidence. It must name the assigned phase/CAPs, allowed paths, focused verification, and what the lane must leave for DEV integration. It is not another spec.
-3. Dispatch enabled lanes sequentially in the shared worktree:
-
-   ```bash
-   aioson agent:execution:dispatch . --feature={slug} --lane={lane} --json
-   ```
-
-4. If dispatch returns unavailable host/model/capability, stop. Fallback is allowed only when the lane declares it, including the reason:
-
-   ```json
-   {
-     "fallbacks": [
-       { "host": "codex", "model": "configured-default", "on": ["unavailable", "capacity"] }
-     ]
-   }
-   ```
-
-5. Inspect and integrate the lane changes, resolve cross-lane boundaries, run the complete planned verification, and retain ownership of the production result.
-
-`host` selects a registered CLI adapter; `model` selects that host's model/provider identifier. A provider model such as Grok may therefore be used through a compatible registered host. Absence of a dedicated agent file is irrelevant because the lane runtime prompt is the bounded execution contract.
-
-If no development lane is enabled, implement directly in the current DEV session. Do not create frontend/backend lanes merely because both surfaces exist.
+Load `.aioson/docs/dev/execution-lanes.md` only when `agent-execution-{slug}.json` declares `development_lanes.strategy: split` with at least one enabled lane; classification never enables them. It carries the dispatch protocol (`agent:execution:dispatch`), the declared-fallback rule, and the integration-ownership contract. Without an enabled lane, implement directly in this DEV session — never create frontend/backend lanes merely because both surfaces exist.
 
 ## Execution invariants
 
@@ -159,7 +137,9 @@ Run the relevant build/tests, each applicable engineering-control check, and a p
 
 Do not declare completion unless every required `PROM-*` maps through a required `CAP-*`/`AC-*` to an implemented production path, focused verification, and the causal runtime chain `entry → trigger/action → real boundary → state change → visible result`. A created file, passing compile, detached fixture, mocked transport, or UI-only acknowledgement is not completion.
 
-Update `dev-state.md`, then hand off to `@qa`. QA is the single default reviewer. Tester, Pentester, and Validator run only when explicitly enabled in `agent-execution-{slug}.json` and their trigger applies.
+Pre-handoff self-audit: run `aioson ac:test-audit . --feature={slug} --strict 2>/dev/null || true` — QA's own first preflight — and close every missing AC-cited test it reports before handing off; each gap closed here is one QA FAIL→correction cycle saved.
+
+Update `dev-state.md`, then register the stage in a tracked session: `aioson workflow:next . --complete=dev 2>/dev/null || true` (direct-mode activations own this call; runner-injected prompts already carry it). Then hand off to `@qa`. QA is the single default reviewer. Tester, Pentester, and Validator run only when explicitly enabled in `agent-execution-{slug}.json` and their trigger applies.
 
 ```text
 Implementation completed: [phases/CAPs]

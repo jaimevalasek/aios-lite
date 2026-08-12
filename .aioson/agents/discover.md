@@ -192,6 +192,9 @@ confidence: high|medium|low
 
 ## Recent changes
 {Last significant changes — use git log if available}
+
+## What the system already has
+{Append-only living memory — one `[slug · YYYY-MM-DD]` line per delivered capability. Committer and reflect flows append here; carry every existing line forward verbatim on regeneration (`memory:trim` owns pruning, never a rescan).}
 ```
 
 ## Execution protocol
@@ -209,7 +212,7 @@ confidence: high|medium|low
 - **Concise** — each file should be 1-2KB max; agents read these frequently
 - **Plain language** — avoid code; write what a new team member would need to know
 - **No speculation** — if something is unclear, mark it with `confidence: low` and note the gap
-- **Preserve human edits** — in refresh mode, never overwrite sections that the user manually edited (detect by checking if content diverges significantly from what the scan would produce)
+- **Preserve human and agent appends** — in refresh mode, carry forward verbatim: every line prefixed `[slug · date]`, the entire `## What the system already has` section, and any section heading not in the template. Never regenerate those from scan output.
 - **Use the project's interaction language** — the content should match `interaction_language` from project context
 
 ## Confidence levels

@@ -70,29 +70,32 @@ When the CLI is available, run `aioson context:select . --agent=site-forge --mod
 ### Onboarding questionnaire
 
 ```
-Use the selected project language to ask the user which cloning mode they want. Present these options:
+Use the selected project language to ask the user which cloning mode they want. Present these options (numbers, so answers never shadow internal mode letters):
 
-  A - Extract content and images, then build a new site with one of the user's skills.
-      Best when the user likes the source site's content/layout but wants their own visual system.
+  1 - Keep this site's structure and content, restyled with one of the user's skills.
+      Best when the user likes the source's layout/structure but wants their own visual system.
 
-  B - Faithfully clone the site and forge a reusable design skill from it.
+  2 - Faithfully clone the site and forge a reusable design skill from it.
       Best when the user wants a site that looks very close to the original.
 
-  C - Extract only the design system: CSS, animations, and interactions.
-      Best when the user wants to reuse the visual/interaction system later.
+  3 - Extract content and images, then build a new site slotted into one of the user's skills' layouts.
+      Best when only the source's content matters and the skill owns the layout.
+
+  4 - Extract only the design system: CSS, animations, and interactions.
       No site is built; only the skill is produced.
 
-  D - Clone original text/images and blend them with one of the user's skills (default 50/50).
-      Best when the user wants the new site to resemble the source while keeping their own brand identity.
+  5 - Clone original text/images and blend design tokens between site and skill (default 50/50).
+      Best when the new site should resemble the source while keeping the user's brand identity.
 
-Ask the user to answer A, B, C, or D.
+Ask the user to answer 1-5.
 ```
 
 **After user answers:**
-- A selected → collect URL + skill from `.aioson/installed-skills/` or `.aioson/skills/design/` → route to **Mode C**
-- B selected → collect URL → route to **Mode B**
-- C selected → collect URL → route to **Mode D** (skill only)
-- D selected → collect URL + skill + blend ratio (default 50%) → route to **Mode E**
+- 1 → collect URL + skill from `.aioson/installed-skills/` or `.aioson/skills/design/` → route to **Mode A** (Transform)
+- 2 → collect URL → route to **Mode B**
+- 3 → collect URL + skill → route to **Mode C**
+- 4 → collect URL → route to **Mode D** (skill only)
+- 5 → collect URL + skill + blend ratio (default 50%) → route to **Mode E**
 
 Once all inputs confirmed, proceed to Step 0.
 

@@ -166,6 +166,6 @@ At session end, register: `aioson agent:done . --agent=committer --summary="<one
 ## ▶ MANDATORY FIRST ACTION
 **Do not speak until you have done this:**
 1. Try to read `.aioson/context/commit-prep.json`.
-2. If it exists, `ready=true`, and is not stale, **generate the commit message immediately**.
+2. If it exists with `ready=true`, is not stale (under 30 minutes), has no `committedAt`, and its guard mode is not an unauthorized trusted mode, **generate the commit message immediately** — this is the same full gate as Step 1; no shortcut drops a condition.
 3. Otherwise, run `git status --short` right now.
 ---

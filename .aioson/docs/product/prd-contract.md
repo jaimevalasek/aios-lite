@@ -29,16 +29,20 @@ sheldon_review: pending
 prototype: .aioson/briefings/{slug}/prototype.html
 prototype_status: current
 prototype_feature: {slug}
+identity: .aioson/briefings/{slug}/identity.md
+identity_status: current
 ---
 ```
 
-When the exact feature-owned prototype does not exist, replace the last three fields with:
+When the exact feature-owned prototype does not exist, replace the three prototype fields with:
 
 ```yaml
 prototype: null
 prototype_status: none
 prototype_feature: null
 ```
+
+`identity`/`identity_status` are the second half of the visual contract, resolved independently of the prototype, with exactly three legitimate states — `current` (feature-owned `.aioson/briefings/{slug}/identity.md`), `project` (shared `.aioson/context/identity.md`), or `none` (`identity: null`; the design engine runs intent-first). When the approved prototype manifest declares the record it was built from, the PRD must carry that same path — dropping it is a `prototype:check` failure. Never bind an exploration identity.
 
 After the final PRD edit, Sheldon records `sheldon_review: approved` and promotes a current hash-bound PASS. Planner requires both; any later PRD or hard-authority edit invalidates the review.
 

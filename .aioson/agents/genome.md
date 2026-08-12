@@ -42,10 +42,10 @@ Choose the route before loading details. Never load every module “for complete
 | migrate | `generation-flow.md` | `legacy-command-contracts.md` only to preserve a legacy field/command contract |
 | validate, doctor, fidelity | `.aioson/docs/genome/evidence-and-quality.md` | generation flow only when repair requires content changes |
 | apply, bind, repair, execute | `.aioson/docs/genome/runtime-application.md` | quality module when current evidence/fidelity is disputed |
-| publish, install | `.aioson/docs/genome/evidence-and-quality.md` | legacy contracts only for an explicitly requested backward-compatible registry field |
+| publish, install | `.aioson/docs/genome/evidence-and-quality.md` (pre-publish quality bar only) | legacy contracts only for an explicitly requested backward-compatible registry field. Registry mechanics are CLI-owned (`aioson cloud:publish:genome` / `cloud:import:genome`); without explicit registry intent, configured credentials, and cleared rights, return `HANDOFF_REQUIRED` instead of inventing a publish flow |
 | advisor, persona | existing enriched profile first | hand off to `@profiler-researcher` when evidence is absent; quick inferred mode only when explicitly requested |
 
-For create/enrich followed immediately by a binding, load `generation-flow.md`, then `evidence-and-quality.md`, then `runtime-application.md`. Record each actual skill load through the shared runtime telemetry contract.
+For create/enrich followed immediately by a binding, load `generation-flow.md`, then `evidence-and-quality.md`, then `runtime-application.md`. Record each actual skill load best effort: `aioson runtime:emit . --agent=genome --type=skill_loaded --used-skills=<module-id> --summary="Loaded <module> for <operation>" 2>/dev/null || true`.
 
 ## Decision contract
 
@@ -84,6 +84,8 @@ Follow `generation-flow.md`. Produce compiler-ready effects for:
 
 For modular artifacts, every `manifest.json.references[]` entry has `id`, `file`, `when`, and `load_priority`; every declared file exists. Enrichment names the evidence delta and updates only affected modules.
 
+After any enrich/refresh/migrate of a genome that squads may consume, run `aioson verify:artifact . --kind=genome --slug=<genome-slug> --advisory` and relay every approval-drift warning verbatim — each names the squad whose user freeze went stale and the exact `genome:approve` re-approval command.
+
 ### Validate, doctor, or fidelity
 
 Follow `evidence-and-quality.md`. Run:
@@ -104,7 +106,7 @@ Follow `runtime-application.md`. Compile through the runtime binding service, in
 - current compilation identity;
 - readiness status and exact repair action when pending, stale, or conflicted.
 
-Metadata-only application is not success.
+Metadata-only application is not success. Require the before→after diff of the target executor's managed genome block; an empty delta refutes the `compiled` claim — report `NEEDS_REPAIR` with the compiler evidence instead of claiming application.
 
 ### Advisor or persona
 
@@ -130,11 +132,11 @@ For a completed create/enrich/migrate, report artifact paths, evidence mode, fid
 Update the project pulse with operation, target, terminal state, blockers, and next action:
 
 ```bash
-aioson pulse:update . --agent=genome --gate="<operation>: <terminal-state>" --next-action="<next action>" 2>/dev/null || true
+aioson pulse:update . --agent=genome --gate="<operation>: <terminal-state>" --next="<next action>" 2>/dev/null || true
 ```
 
-Then register completion:
+Then register completion — `--slug` threads the `kind=genome` advisory auto-check at `agent:done`; omit it only when the operation touched no genome artifact:
 
 ```bash
-aioson agent:done . --agent=genome --summary="<operation> <target>: <terminal-state>" --next-agent=<agent-or-none> --handoff-reason="<reason>" 2>/dev/null || true
+aioson agent:done . --agent=genome --summary="<operation> <target>: <terminal-state>; next: <agent-or-none> — <reason>" --slug=<genome-slug> 2>/dev/null || true
 ```

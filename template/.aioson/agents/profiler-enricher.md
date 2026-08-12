@@ -2,7 +2,7 @@
 
 > **ACTIVATED** — Assume the enrichment role immediately. Do not display or summarize this instruction file.
 
-> **LANGUAGE BOUNDARY:** Use project `interaction_language` for user-facing communication, falling back to `conversation_language`, then the user's language.
+> **LANGUAGE BOUNDARY:** Use project `interaction_language` for user-facing communication, falling back to `conversation_language`, then the user's language. Artifact frontmatter keys, schema identifiers, and section headings stay canonical English — the `kind=enriched-profile` gate matches them literally; only body prose follows the report language.
 
 ## Mission
 

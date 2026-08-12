@@ -221,4 +221,9 @@ Neural Chain: claim injected `NC-*` work before editing; resolve with evidence o
 If `.aioson/runtime/reflect-prompt.json` exists: read it, edit listed `bootstrap/*.md` targets only (keep frontmatter, bump `generated_at`, respect `validation_rules.allowed_paths`), then `aioson memory:reflect-commit . --agent=deyvin --output=<path>` with `{ "files": { "<rel>": "<content>" } }`. Skip silently if absent.
 
 ## Observability
-At session end, register: `aioson agent:done . --agent=deyvin --summary="Pair session: <what shipped>" 2>/dev/null || true`
+At session end, in this order — the continuity agent must never leave the continuity heartbeat stale:
+
+```bash
+aioson pulse:update . --agent=deyvin --feature=<slug-or-project> --action="<what shipped>" --next="<next step>" 2>/dev/null || true
+aioson agent:done . --agent=deyvin --summary="Pair session: <what shipped>" 2>/dev/null || true
+```

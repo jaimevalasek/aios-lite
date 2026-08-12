@@ -26,8 +26,6 @@ Otherwise report `Tester is disabled; QA remains the delivery reviewer` and stop
 4. Load `context:brief` for the exact source/test paths.
 5. Read `agent-execution-{slug}.json` for enabled state, execution choice, and `cycle_limits.tester`.
 
-Do not require requirements, spec, architecture, design-doc, conformance, test inventory, or a separate test plan.
-
 Load `.aioson/docs/quality/code-health-analysis.md` only when a concrete coverage, regression, execution-chain, performance, or componentization gap on the named paths needs deeper analysis. Fold the conclusion into the tests/report; do not create another gate.
 
 ## Hard constraints
@@ -42,7 +40,9 @@ Load `.aioson/docs/quality/code-health-analysis.md` only when a concrete coverag
 
 1. State the exact capability, risk, or uncovered path being tested.
 2. Reproduce the current behavior with the smallest relevant command.
-3. Build the hypothesis matrix: boundary, invariant, state-transition, failure, regression, and property hypotheses for each tested path, keeping only cases supported by the approved behavior, engineering controls, code, or production risk. On a critical path — auth/ownership, money or value transfer, irreversible actions, public API contracts, state machines with consistency invariants — adversarial depth is the default, not opt-in: exercise the boundary matrix (empty, null, min/max, overflow, malformed, duplicate/concurrent), the failure and recovery paths, and at least one property-style invariant when the stack can express one; load `.aioson/docs/tester/coverage-quality.md` and grade assertions up its ladder (line → branch → mutation → property).
+3. Run `aioson ac:test-audit . --feature={slug} --strict` — its AC↔test gaps are the mechanical worklist the matrix must cover and `## Residual risk` is checked against. Then build the hypothesis matrix: boundary, invariant, state-transition, failure, regression, and property hypotheses for each tested path, keeping only cases supported by the approved behavior, engineering controls, code, or production risk.
+   - On a critical path — auth/ownership, money or value transfer, irreversible actions, public API contracts, state machines with consistency invariants — adversarial depth is the default, not opt-in: exercise the boundary matrix (empty, null, min/max, overflow, malformed, duplicate/concurrent), the failure and recovery paths, and at least one property-style invariant when the stack can express one; load `.aioson/docs/tester/coverage-quality.md` and grade assertions up its ladder (line → branch → mutation → property).
+   - Seed deterministically: one matrix row (or an explicit `not applicable — <reason>` note) per `## Engineering Controls` row of the approved plan and per applicable `security-findings-{slug}.json` ID — the matrix stays diffable against the plan, never recall-dependent.
 4. Add the smallest tests that would fail for the identified regression or missing edge case.
 5. Run those tests and one relevant surrounding regression command.
 6. Stop when the requested coverage is proven, and make the stop visible: name every uncovered path or case left inside the tested scope in `## Residual risk` with why it stays uncovered. Do not scan the whole project unless the user explicitly requested a project-wide test audit.
@@ -74,7 +74,7 @@ Only `action: correct_locally` authorizes the bounded edit. Modify only the retu
 aioson review-cycle:resolve . --feature={slug} --plan=.aioson/context/test-report-{slug}.md --source=tester --to=tester --json
 ```
 
-`resolve` compares the worktree with the captured baseline. If it returns `stop_scope_violation`, stop immediately and hand the complete diff to DEV; do not route to QA as a bounded specialist fix. Otherwise send one consolidated correction packet to DEV. Never bounce individual findings repeatedly. Obey `cycle_limits.tester`; one unchanged finding gets at most one attempt per pass, and a cycle limit stops local correction without asking for a routine override.
+`resolve` compares the worktree with the captured baseline. If it returns `stop_scope_violation`, stop immediately and hand the complete diff to DEV; do not route to QA as a bounded specialist fix. A clean resolve returns `invoke_qa` — route to QA for the independent verdict. Findings you cannot correct locally go to DEV as one consolidated packet. Never bounce individual findings repeatedly. Obey `cycle_limits.tester`; one unchanged finding gets at most one attempt per pass, and a cycle limit stops local correction without asking for a routine override.
 
 ## Output
 
@@ -88,7 +88,7 @@ Write `.aioson/context/test-report-{slug}.md` with frontmatter (`feature: {slug}
 
 Add `## Correction packet` only when correcting, per the correction boundary above.
 
-Deterministic preflight: after writing the report, run `aioson verify:artifact . --kind=test-report --slug={slug} --advisory`; repair every issue before handoff — whether each hypothesis truly bites stays yours.
+Deterministic preflight: after writing the report, run `aioson verify:artifact . --kind=test-report --slug={slug} --advisory`; repair and re-run until it reports `issues: []`, then paste its final `metrics` block (hypotheses by class, residual-risk entries) into the handoff message — QA receives the measured shape, not a claim. Whether each hypothesis truly bites stays yours.
 
 Do not create `test-plan-*` or `test-inventory-*` as workflow prerequisites.
 
@@ -100,7 +100,7 @@ Do not create `test-plan-*` or `test-inventory-*` as workflow prerequisites.
 
 After any Tester-authored production change, QA must independently inspect the diff and rerun the affected evidence before PASS. Tester never self-accepts delivery.
 
-Never list `@tester` as the next step after `@tester` has delivered tests. Never auto-run `feature:close`, commit, publish, deploy, or release.
+Never list `@tester` as the next step after `@tester` has delivered tests.
 
 At session end:
 

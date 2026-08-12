@@ -69,6 +69,8 @@ Load `references/crossover-protocol.md` and complete Phase 2 with the user:
 - 3 pillars
 - optional modifier ownership
 
+Validate the chosen hybrid name against `references/naming-registry.md` — collision and family-shadowing check: the hybrid may not shadow a core skill or an already-installed skill name (benchmark and site-forge resolve skills with different precedence, so a shadowed name loads differently per agent).
+
 Produce the crossover summary before generating files.
 
 ## Step 3 — Crossover spec
@@ -100,6 +102,8 @@ The package must include:
 The metadata file must record author and model/provider information when the user or runtime makes it available, plus a `sources[]` array naming each parent/modifier's `type` (`local`/`external`); for external DESIGN.md sources also record `url`, `retrieved_at`, and `license: "unspecified — reference only"` (refero.design and similar publish these as references, not licensed templates).
 If a variation overlay was selected, persist it in `.skill-meta.json` and reflect it in the generated previews and final SKILL.md.
 After the hybrid skill is successfully generated, archive the active preset by moving or removing `.aioson/context/design-variation-preset.md`. Keep the history copy under `.aioson/context/history/design-variation-presets/`.
+
+Then load `references/quality-gates.md` and run its checks, including the quantitative floor (at least five expression modes and twenty components across the reference files, counted, not assumed); repair before Step 5.
 
 ## Step 5 — Distribution
 1. If `AGENTS.md` exists, register the new skill in the "Installed skills" section so Codex can invoke it via `@{hybrid-name}`.
@@ -150,7 +154,7 @@ Before ending your response, always append:
 ---
 ## Next Up
 - Hybrid skill package created
-- Next step: `@dev` (apply skill) or test with target agent
+- Next step: register `design_skill: {hybrid-name}` in `project.context.md` — that choice belongs to the user/`@product`/`@ux-ui`, and `@dev` never auto-selects a skill — then `@dev` applies it, or test with the target agent
 - `/compact` → recommended before continuing the same workflow
 - `/clear` → use only for a hard reset, feature switch, polluted context, or security-sensitive reset
 

@@ -103,7 +103,7 @@ Create a premium visual direction with one clear art concept. Tokenize color, ty
 
 For UI work, run `aioson brain:query . --agent=benchmark --tags=visual-quality --min-quality=4 2>/dev/null || true`.
 
-Apply returned `q >= 4` nodes; never implement `AVOID`. Without query results, still name the surface, decision, domain signature, hierarchy, and one signature move. Run the replaceability test; inspect evidence, mobile, states, accessibility, and reduced motion; rewrite repeated em-dash cadence. Honor the interaction contracts: masked validated forms, modal-confirmed status/destructive actions, drag-and-drop status flows, and a widget-led management home.
+Apply returned `q >= 4` nodes; never implement `AVOID`. Without query results, still name the surface, decision, domain signature, hierarchy, and one signature move. Run the replaceability test — if the UI still works with this product swapped out, add the domain-specific signature move. Inspect evidence, mobile, states, accessibility, and reduced motion; rewrite repeated em-dash cadence. Honor the interaction contracts where the product actually has that surface: masked validated forms where forms exist, modal-confirmed status/destructive actions where status objects exist, drag-and-drop for genuinely recurring status flows, and a widget-led home only for a management product — never bolt a management surface onto a product (a game, a toy, a visualizer) that has none.
 
 ### 6. Implement the real product path
 

@@ -173,6 +173,20 @@ const RULESETS = {
   // copy-{slug}.md while the actual script went unscanned. Only a slug with no
   // copy artifact at all is an issue.
   copy: (ctx) => {
+    // Mode 4 (squad executor) writes outside .aioson/context — under the squad's
+    // output/ tree per the genome-approve specimen contract. --file retargets the
+    // same scan at that exact deliverable so every mode stays measurable.
+    if (ctx.file) {
+      return {
+        label: 'copywriter copy document',
+        criteria: [{
+          id: `copy:${path.basename(ctx.file)}`,
+          files: [ctx.file],
+          must_match: [],
+          must_not_match: [...PLACEHOLDER_PATTERNS, ...TEMPLATE_TOKENS, ...COPY_CLICHES]
+        }]
+      };
+    }
     const candidates = [
       `.aioson/context/copy-${ctx.slug}.md`,
       `.aioson/context/copy-review-${ctx.slug}.md`,

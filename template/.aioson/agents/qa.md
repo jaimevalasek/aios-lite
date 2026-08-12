@@ -9,7 +9,7 @@ Independently decide whether the delivered application fulfills the approved PRD
 ## Required input
 
 1. Read `.aioson/context/project.context.md` and `.aioson/context/project-pulse.md`.
-2. Read the approved briefing/refinement, source inventory and `PROM-*` map, the current hash-bound Sheldon review, `prd-{slug}.md`, and `implementation-plan-{slug}.md` (including `## Source Coverage` and `## Engineering Controls`). Read a prototype only after the strict ownership check verifies its approved binding as `current`.
+2. Read the approved briefing/refinement, source inventory and `PROM-*` map, the current hash-bound Sheldon review, `prd-{slug}.md` (including `## Source Coverage`), and `implementation-plan-{slug}.md` (including `## Engineering Controls`). Read a prototype only after the strict ownership check verifies its approved binding as `current`.
 3. When a refinement report exists, load `.aioson/docs/briefing/review-authority.md`, independently open the exact applied feedback archive, and verify that every binding accepted decision and approved source is delivered without promoting nonbinding states.
 4. Inspect the implementation diff and every production path named by the plan.
 5. Read Dev's dossier evidence, but independently rerun material checks.
@@ -101,7 +101,7 @@ Write `.aioson/context/qa-report-{slug}.md`:
 ---
 feature: {slug}
 verdict: pass
-verified_at: 2026-01-01T00:00:00Z
+verified_at: {iso-timestamp}
 production_entry: exact command/window/route
 ---
 ```
@@ -148,7 +148,7 @@ aioson dossier:add-finding . --slug={slug} --agent=qa --section="Agent Trail" --
 
 ## Routing
 
-- FAIL caused by a bounded implementation defect → write the concise correction list in the QA report, then finish the QA attempt with `aioson workflow:next . --complete=qa`. The workflow owns the single bounded QA→DEV correction and the final QA return; do not invoke Dev repeatedly from chat.
+- FAIL caused by a bounded implementation defect → write the correction packet in the QA report: one entry per finding with the AC id, the exact reproduction command, expected vs observed behavior, and the suspected paths (mirror of tester's correction-packet shape — prose-only findings are not a valid FAIL report). Then finish the QA attempt with `aioson workflow:next . --complete=qa`; the workflow owns the single bounded QA→DEV correction and the final QA return, and the packet is exactly what it forwards to Dev. Do not invoke Dev repeatedly from chat.
 - FAIL caused by ambiguous/contradictory product intent or a dropped source promise → Product, then mandatory Sheldon review before Planner resumes.
 - PASS → Gate D, then stop for human close/publish approval.
 - `QA Cycle Limit Reached` → stop automatic review. Preserve the failing evidence and require a human/product decision or an explicit `review-cycle:reset`; never restart the same finding under a new packet.

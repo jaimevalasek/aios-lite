@@ -9,6 +9,7 @@ const {
 } = require('../squad/manifest-validator');
 const { inspectOutputPolicy } = require('../squad/output-policy');
 const { isValidSlug } = require('../dossier/schema');
+const { analyzeGenomeApprovals } = require('../lib/genome-approval-lint');
 
 async function pathExists(targetPath) {
   try { await fs.access(targetPath); return true; } catch { return false; }
@@ -430,6 +431,13 @@ async function runSquadValidate({ args = [], options = {}, logger = console } = 
   allErrors.push(...semanticDeep.errors);
   allWarnings.push(...semanticDeep.warnings);
 
+  // Layer 5: user genome-approval coherence. The freeze is user-owned, so a
+  // stale approval is surfaced with its exact re-approval command but never
+  // blocks validation (analyzeGenomeApprovals was previously dead code — the
+  // freeze was writable and readable but its staleness went unreported).
+  const approvals = analyzeGenomeApprovals({ targetDir: projectDir, squadSlug: slug });
+  allWarnings.push(...approvals.issues, ...approvals.warnings);
+
   const premium = strict
     ? await validatePremiumManifest(projectDir, slug, manifest, {
       skipEval: options.skipEval === true || options.skipEval === 'true'
@@ -453,6 +461,7 @@ async function runSquadValidate({ args = [], options = {}, logger = console } = 
     logger.log(`  Structure:        ${structure.errors.length === 0 ? '\u2705 PASS' : '\u274c FAIL'}`);
     logger.log(`  Semantics:        ${semantics.errors.length === 0 ? (semantics.warnings.length > 0 ? '\u26a0\ufe0f  WARNINGS' : '\u2705 PASS') : '\u274c FAIL'}`);
     logger.log(`  Semantic deep:    ${semanticDeep.errors.length === 0 ? (semanticDeep.warnings.length > 0 ? '\u26a0\ufe0f  WARNINGS' : '\u2705 PASS') : '\u274c FAIL'}`);
+    logger.log(`  Genome approvals: ${approvals.metrics.approvals === 0 ? '\u2014 none recorded' : (approvals.issues.length === 0 ? '\u2705 PASS' : `\u26a0\ufe0f  ${approvals.issues.length} finding(s), ${approvals.metrics.stale} stale`)}`);
     if (strict) {
       logger.log(`  Premium gate:     ${premium.errors.length === 0 ? (premium.warnings.length > 0 ? '\u26a0\ufe0f  WARNINGS' : '\u2705 PASS') : '\u274c FAIL'}`);
     }
@@ -487,6 +496,11 @@ async function runSquadValidate({ args = [], options = {}, logger = console } = 
       errors: canonicalSchema.errors
     },
     premium: strict ? premium : null,
+    approvals: {
+      count: approvals.metrics.approvals,
+      stale: approvals.metrics.stale,
+      findings: approvals.issues
+    },
     errors: allErrors,
     warnings: allWarnings,
     status

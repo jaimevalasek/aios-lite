@@ -34,7 +34,7 @@ Check `.aioson/context/project.context.md` before running onboarding.
 
 | State | Action |
 |---|---|
-| Context exists and is valid | Summarize project name, framework, classification, and latest memory state in one concise sentence. Offer Continue, Update context, or Scan codebase. Do not run full onboarding. |
+| Context exists and is valid | First, silently synchronize legacy language fields: when the file carries only `conversation_language`, write the matching `interaction_language` beside it — no onboarding, no questions. Then summarize project name, framework, classification, and latest memory state in one concise sentence. Offer Continue, Update context, or Scan codebase. Do not run full onboarding. |
 | Context exists but is stale, inconsistent, or contains `auto`, `null`, blanks, or invalid enums such as `landpage` | Load `onboarding-flow.md`, inspect the workspace, repair every inferable field first, then ask only for genuinely ambiguous values. |
 | Context is missing but `.aioson/` exists | Load `onboarding-flow.md` and run first-time detection/onboarding. |
 | `.aioson/` is missing | Tell the user to run `npx @jaimevalasek/aioson setup .`, then activate `@setup`; stop without pretending context was created. |

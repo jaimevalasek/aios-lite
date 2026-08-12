@@ -96,6 +96,9 @@ Then build `required_modules` using this deterministic map:
 | Request implies workflows, plans, 3+ phases, human gates, review loops, or 4+ executors | `.aioson/docs/squad/workflow-quality.md` |
 | Request implies ephemeral work, investigation, inter-squad routing, learnings, dashboard guidance, or recurring runs | `.aioson/docs/squad/session-operations.md` |
 | Request mentions genomes, existing `genomes` / `genomeBindings`, binding repair, or the create-phase genome pass (`squad-create` Step 5.5) | `.aioson/docs/squad/genome-bindings.md` |
+| `session-run` | `.aioson/docs/squad/session-operations.md`, plus `content-output.md` when the session produces content deliverables |
+| `session-run` on a squad whose manifest carries an approved `pilot` block | `.aioson/docs/squad/pilot-gate.md` — the approved pilot block and `docs/PILOT.md` load as the binding quality reference; a deliverable below the frozen signature is a finding, not a style choice |
+| `export` | the `.aioson/tasks/squad-export.md` task file (preflight rule 1); no deep modules by default |
 
 Preflight rules:
 
@@ -118,6 +121,11 @@ If the user includes a squad subcommand, route to the matching task:
 - `@squad repair <slug>` → `.aioson/tasks/squad-repair.md`
 - `@squad refresh <slug>` → `.aioson/tasks/squad-refresh.md` (breadth-aware update of existing executors — use when the user reports the squad acted narrow or refused legitimate adjacent requests)
 - `@squad export <slug>` → `.aioson/tasks/squad-export.md`
+- `@squad review <slug>` → `.aioson/tasks/squad-review.md`
+- `@squad profile <slug>` → `.aioson/tasks/squad-profile.md`
+- `@squad learning-review <slug>` → `.aioson/tasks/squad-learning-review.md`
+- `@squad task-decompose <slug>` → `.aioson/tasks/squad-task-decompose.md`
+- `@squad pipeline <slug>` → `.aioson/tasks/squad-pipeline.md`
 - `@squad --config=output --squad=<slug>` → `.aioson/tasks/squad-output-config.md`
 - `@squad investigate <domain>` → `.aioson/tasks/squad-investigate.md`
 - `@squad plan <slug>` → `.aioson/tasks/squad-execution-plan.md`
@@ -195,7 +203,7 @@ aioson squad:eval . --squad=<slug> --json
 aioson verify:artifact . --kind=squad-pilot --slug=<slug> --advisory
 ```
 
-Fix every strict validation error before declaring done. Require a current eval PASS for any persistent or regulated squad. An ephemeral Quick Scan may defer only through a concrete `evaluation.deferReason`. Only then register done.
+Fix every strict validation error before declaring done. `squad:validate` also surfaces stale user genome-approvals as warnings — relay each verbatim with its exact `genome:approve` re-approval command; never re-approve yourself. Require a current eval PASS for any persistent or regulated squad. An ephemeral Quick Scan may defer only through a concrete `evaluation.deferReason`. Only then register done.
 
 Apply proportional depth: Quick ends provisional after a routing smoke and explicit eval defer reason; Standard runs one eval with critical held-out PASS plus one representative end-to-end warm-up; Premium and Regulated require the full current PASS and specialist warm-up. Regulated can never defer current evidence.
 

@@ -43,7 +43,7 @@ Never load every module. Load only what the current state selects:
 
 | State | Load |
 |---|---|
-| Bare activation, source selection, conversational intake, continuation, or slug resolution | `.aioson/docs/briefing/activation-and-intake.md` |
+| Source selection, conversational intake, continuation, or slug resolution — after the fast-path stop, never during bare activation itself | `.aioson/docs/briefing/activation-and-intake.md` |
 | A `plans/{slug}/` pack is selected, including unorganized, mixed, or non-Markdown files | Run `briefing:sources --slug={slug}`; load `.aioson/docs/briefing/source-pack-intake.md` and each additional path in `load_modules` once |
 | The selected source pack contains SQL | `.aioson/docs/briefing/sql-as-documentation.md` after the generic source-pack module |
 | A source and slug are resolved and artifacts must be enriched/written | `.aioson/docs/briefing/exploration-and-artifacts.md` |
@@ -97,11 +97,11 @@ One activation should advance one coherent decision branch. Stop when a user-own
 7. `## Sources`
 8. `## Open questions`
 
-Use `TBD — not discussed in this session.` when evidence is absent. Number and classify open questions as `[research-able]`, `[testable]`, `[decision-required]`, or `[out-of-scope]`. Update `.aioson/briefings/config.md` with lifecycle `draft → approved → implemented`; create/update `draft` entries, never change status.
+Use `TBD — not discussed in this session.` when evidence is absent. Number and classify open questions as `[research-able]`, `[testable]`, `[decision-required]`, or `[out-of-scope]`. In `.aioson/briefings/config.md`, create/update `draft` entries only and never change status: `approved` is written exclusively by the user's `briefing:approve`, and the later markers (`prd_generated`, `implemented`) are reserved — no agent sets them.
 
 Inside `## Sources`, add:
 
-- `### Source Inventory`: one `SRC-*` row per inventoried file with project-relative path, current `sha256:` fingerprint, purpose, and no secret content; `Type`/`Role`/`Usage` columns preserve `consulted`, `metadata_only`, or `blocked`.
+- `### Source Inventory`: one `SRC-*` row per inventoried file with project-relative path, current `sha256:` fingerprint — copied verbatim from the `fingerprint` fields of `aioson briefing:sources . --slug={slug} --json`, never computed or invented by hand — purpose, and no secret content; `Type`/`Role`/`Usage` columns preserve `consulted`, `metadata_only`, or `blocked`.
 - `### Source Promise Map`: one stable `PROM-*` row per material user promise, citing `SRC-*` or an explicit conversational/research source, its approved intent, and `required`, `deferred`, or `not_applicable`.
 
 Every `plans/{slug}/` source named by `source_plans` must appear in the inventory; never silently drop a material promise.

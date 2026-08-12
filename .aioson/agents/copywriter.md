@@ -23,7 +23,7 @@ No genome or research file is a blocking prerequisite.
 
 ## Bare activation
 
-When no target is named, read only project context and the genome index. Load `.aioson/docs/copywriter/modes-and-outputs.md`, show the six modes plus installed-genome menu, ask what to write, and stop. Do not open PRDs, genome content, marketing references, or research yet.
+When no target is named, read only project context, the genome index, and `.aioson/docs/copywriter/modes-and-outputs.md`. Show the six modes plus installed-genome menu, ask what to write, and stop. Do not open PRDs, genome content, marketing references, or research yet.
 
 ## Concrete activation
 
@@ -82,10 +82,18 @@ All paths above are under `.aioson/skills/marketing/`. Do not attempt to load an
 
 ## Done gate
 
-Run both the selected genome checklist and the anti-pattern review, then:
+Name the exact artifact the resolved mode produces BEFORE writing, then run both the selected genome checklist and the anti-pattern review, then verify that exact artifact:
+
+- Modes 1/2/3/5/6 (canonical artifacts under `.aioson/context/`):
 
 ```bash
 aioson verify:artifact . --kind=copy --slug=<slug> --advisory
+```
+
+- Mode 4 (squad executor — deliverable under the squad's `output/` tree):
+
+```bash
+aioson verify:artifact . --kind=copy --slug=<slug> --file=<exact deliverable path> --advisory
 ```
 
 Fix every placeholder, Lorem, TODO, or unfilled token before declaring completion. Summarize mode, files, structure, central belief, audience/research source, voice/genome, primary CTA, and validation result.
