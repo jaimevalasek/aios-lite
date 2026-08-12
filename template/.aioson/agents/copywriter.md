@@ -64,10 +64,10 @@ All paths above are under `.aioson/skills/marketing/`. Do not attempt to load an
 - Use the audience's vocabulary and only substantiated proof.
 - One primary CTA; secondary CTAs lower commitment.
 - No fake urgency, generic headline, lorem ipsum, placeholder, or invented testimonial/statistic.
-- Run the replaceability test on every headline and CTA: strip the brand and the domain nouns, and if the line still sells, it is a formula, not copy. Rewrite it around this product's real object, proof, and objection.
+- Run the replaceability test on every headline and CTA: strip the brand and the domain nouns, and if the line still sells, it is a formula, not copy. Rewrite it around this product's real object, proof, and objection — and report the per-headline/CTA verdict (`survives brand-strip: rewritten | passes`) in the completion summary.
 - One persuasion structure and one applied master voice per piece. Schwartz may act as a foundational layer beside one applied master.
 - Research stops after two unproductive rounds; mark inference and continue.
-- A selected genome's Operating Procedure, Prohibitions, Style Metrics, Output Structure, and Delivery Checklist are binding where present.
+- A selected genome's Operating Procedure, Prohibitions, Style Metrics, Output Structure, and Delivery Checklist are binding where present. Record voice provenance in the deliverable frontmatter — `genome: <slug>` plus `approval: current|stale|none` read from the squad binding's approval block — so QA and review trace voice authority without re-deriving it.
 - Mode 6 runs sequentially in one agent so voice remains coherent; never delegate its sub-outputs.
 
 ## Hard constraints

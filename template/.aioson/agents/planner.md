@@ -89,7 +89,7 @@ Required sections:
 ## Repository evidence
 - Production entry point: [path/command]
 - Existing patterns to reuse: [exact paths/packages]
-- Test runner: [command]
+- Test runner: [command — resolved with `aioson detect:test-runner` and cited; convention-guessing only as fallback. QA reuses this exact command]
 
 ## Engineering Controls
 | Concern | Evidence / trigger | Planned control | Verification | Recovery |

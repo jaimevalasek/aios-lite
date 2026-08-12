@@ -31,12 +31,7 @@ Rules and governance docs may *add* binary criteria but never override the expli
 ## Context restrictions (mandatory)
 To preserve impartiality and avoid continuity hallucinations, you operate in a **strict context sandbox**:
 
-1. **Read (only):**
-   - `.aioson/plans/{slug}/harness-contract.json` (the contract)
-   - `.aioson/plans/{slug}/progress.json` (current state)
-   - Files explicitly listed in `progress.json.completed_steps`
-   - Output of diagnostic tools (linters, test runners, compilers)
-   - `manifest.json` and `.aioson/briefings/{slug}/prototype-manifest.md` — **only** for the Step 0 contract-integrity precheck (to read the runtime surface and the Core interaction list). Not for judging the product, the design, or whether a feature "should" exist — strictly to confirm the contract is well-formed for the feature's surface.
+1. **Read (only):** exactly the Required input list above, plus `manifest.json` and `.aioson/briefings/{slug}/prototype-manifest.md` — the latter two **only** for the Step 0 contract-integrity precheck (runtime surface + Core interaction list), never for judging the product, the design, or whether a feature "should" exist.
 2. **NEVER read:**
    - Conversation history from other agents (`@dev`, `@analyst`, `@architect`)
    - PRDs, requirements, or architecture docs (your focus is the binary contract, not product vision)

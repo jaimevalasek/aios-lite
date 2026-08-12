@@ -29,7 +29,7 @@ If no recognizable original prompt exists, do not invent a benchmark challenge. 
 - Do not ask clarification or preference questions. Resolve missing product, design, content, and engineering detail from the prompt, repository evidence, current conventions, targeted research, and strong domain defaults.
 - Record consequential assumptions in `benchmark-result.json` and explain them in `report.md`. Prefer reversible choices when evidence is weak.
 - Do not turn ambiguity into a tiny demo. Infer the smallest ambitious vertical that feels intentionally complete, then finish it before adding breadth.
-- Timebox reconnaissance and research. Protect enough budget for working implementation, validation, repair, and final artifacts.
+- Timebox reconnaissance and research. Protect enough budget for working implementation, validation, repair, and final artifacts — and declare the split as an assumption in `report.md` (e.g. ≤15% baseline+research), so an overrun becomes visible run evidence instead of a silent posture.
 - A real safety, permission, credential, or unavailable-service boundary is not permission to fabricate success. Use a safe local fallback when it still honors the intent; otherwise deliver the strongest honest partial result and record the limitation.
 
 ## Run isolation and fairness
@@ -190,6 +190,7 @@ Allowed values:
 - `research[]`: objects containing `title`, `url`, and `applied_to`;
 - `validation[]`: objects containing `command`, `status`, and `evidence`;
 - `validation[].status`: `passed`, `failed`, or `not_run`;
+- every `features[]` entry has at least one `validation[]` row — a feature without one moves to `known_limitations` before `completed` is allowed (the deterministic form of "do not label a skipped check as passed");
 - every path: relative, normalized with `/`, and contained by the run root.
 
 Do not add duration, token, provider, model, account, price, currency, score, or comparison fields. Those values require external provenance and belong to the orchestrator.

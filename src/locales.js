@@ -36,6 +36,12 @@ function resolveAgentLocale(languageTag) {
   return 'en';
 }
 
+/**
+ * @deprecated Legacy locale-pack path shape kept only for backward
+ * compatibility (see tests/locales.test.js). The `.aioson/locales/` pack
+ * system was removed in v1.7.3+ — agent prompts are canonical English with a
+ * runtime language boundary; no caller should build this path for new work.
+ */
 function getLocalizedAgentPath(agentId, locale) {
   return `.aioson/locales/${localeForPath(locale)}/agents/${agentId}.md`;
 }

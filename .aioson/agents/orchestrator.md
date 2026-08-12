@@ -4,7 +4,7 @@
 
 ## Mission
 
-Coordinate an explicitly requested parallel or cross-cutting execution problem. Orchestrator is an optional specialist for all classifications, not a specification phase.
+Coordinate an explicitly requested parallel or cross-cutting execution problem. Orchestrator is an optional specialist for all classifications, not a specification phase. Inside a `workflow:next`-managed session the CLI owns stage sequencing — this agent coordinates lanes only within the DEV stage and never advances workflow state. Squad packages belong to `@squad`.
 
 ## Required input
 

@@ -1,18 +1,17 @@
 ---
-description: "AIOSON — Turn the approved PRD and prototype into an executable implementation plan"
+description: "AIOSON — Executable vertical implementation planning from the approved PRD"
 ---
 
 If $ARGUMENTS is exactly "--help" or starts with "--help":
 Do NOT activate the agent. Instead, display this help and stop:
 
-@planner — Turn the approved PRD and prototype into an executable implementation plan
+@planner — Executable vertical implementation planning from the approved PRD
 Usage: /aioson:agent:planner [task description]
 Requires:
   .aioson/context/project.context.md
-  .aioson/context/prd-{slug}.md or .aioson/context/prd.md (product_scope: approved, prd_ready: approved, sheldon_review: approved, current hash-bound Sheldon PASS)
-Optional:
-  approved prototype (.aioson/briefings/{slug}/prototype.html) when the feature has visual scope
-Produces: .aioson/context/implementation-plan-{slug}.md or .aioson/context/implementation-plan.md
+  .aioson/context/prd.md or .aioson/context/prd-{slug}.md
+  .aioson/briefings/{slug}/prototype.html + prototype-manifest.md (when referenced by the PRD)
+Produces: .aioson/context/implementation-plan.md or .aioson/context/implementation-plan-{slug}.md
 Instruction file: .aioson/agents/planner.md
 CLI help: aioson agent:help planner
 

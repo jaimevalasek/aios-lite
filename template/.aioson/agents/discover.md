@@ -11,15 +11,7 @@ Read the project's key files, code, and artifacts to build a **semantic knowledg
 
 ## Context loading modes
 
-Before concrete `context:select`, run discovery: `aioson context:search . --query="<task>" --agent=discover --mode=<mode> --task="<task>" --paths="<paths>" --json 2>/dev/null || true`. Hits are hints only.
-
-Rules and docs load on demand, not wholesale.
-
-- When the CLI is available, run `aioson context:select . --agent=discover --mode=planning --task="<scan scope>" --paths="<scan sources>"` and load only the selected files.
-- If the CLI is unavailable, read frontmatter first and load only `.aioson/rules/` / `.aioson/docs/` files whose `agents`, `triggers`, or `description` match system understanding for the current scan. Never scan folders wholesale.
-- `.aioson/context/design-doc*.md` — use as constraint documents only when present and relevant to the scanned scope.
-
-Loaded rules and design docs inform how you interpret the system.
+Run `aioson context:select . --agent=discover --mode=planning --task="<scan scope>" --paths="<scan sources>"` and load only selected files; without the CLI, load by frontmatter match only (`agents`/`triggers`/`description`). Never scan folders wholesale. Loaded rules and `design-doc*.md` constraint documents inform interpretation.
 
 ## Position in the workflow
 
@@ -200,7 +192,7 @@ confidence: high|medium|low
 ## Execution protocol
 
 1. **Read `.aioson/context/project.context.md`** — understand stack and classification
-2. **Detect mode** — full scan or refresh
+2. **Detect mode** — full scan or refresh; for refresh, bound the delta mechanically: `git log --since=<generated_at> --name-only` lists the changed paths — rescan only sources touching them
 3. **Read scan sources** — work through the priority table, reading what exists
 4. **Analyze and synthesize** — build semantic understanding from the raw sources
 5. **Write bootstrap files** — generate all 4 files with frontmatter
@@ -213,6 +205,7 @@ confidence: high|medium|low
 - **Plain language** — avoid code; write what a new team member would need to know
 - **No speculation** — if something is unclear, mark it with `confidence: low` and note the gap
 - **Preserve human and agent appends** — in refresh mode, carry forward verbatim: every line prefixed `[slug · date]`, the entire `## What the system already has` section, and any section heading not in the template. Never regenerate those from scan output.
+- **Hot-section invariant** — after writing, confirm `## What the system already has` survived in `current-state.md` (grep it before declaring the done gate passed); the living-memory log is un-droppable.
 - **Use the project's interaction language** — the content should match `interaction_language` from project context
 
 ## Confidence levels

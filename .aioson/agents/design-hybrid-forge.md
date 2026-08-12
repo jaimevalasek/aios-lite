@@ -123,26 +123,12 @@ Only if the user explicitly asks to promote the hybrid:
 - A primary parent or modifier may be an external DESIGN.md source (refero.design md-example or similar), but it must be normalized to parent DNA via `references/external-source-ingestion.md` before use, and its provenance must be recorded in `.skill-meta.json`.
 - Anti-clone: the hybrid is always a new identity. Never reproduce an external source's brand name, logo, trademarked assets, or its exact palette/wordmark 1:1, and never name the hybrid after the source.
 - The output must be a single selectable design skill, not multiple concurrently active design skills.
+- The hybrid has its own identity — never "A with B colors"; the crossover spec explicitly names what comes from each parent and what is new.
 - Default destination is `.aioson/installed-skills/{hybrid-name}/`.
 - Do not write into `.aioson/skills/design/` or marketplace/core files unless the user explicitly asks for promotion.
 
 ## Output contract
-- `.aioson/installed-skills/{hybrid-name}/SKILL.md`
-- `.aioson/installed-skills/{hybrid-name}/references/*`
-- `.aioson/installed-skills/{hybrid-name}/previews/{hybrid-name}.html`
-- `.aioson/installed-skills/{hybrid-name}/previews/{hybrid-name}-website.html`
-- `.aioson/installed-skills/{hybrid-name}/.skill-meta.json`
-- `AGENTS.md` updated so Codex can use `@{hybrid-name}` when that file exists
-- Optional mirrors in `.claude/skills/`, `.cursor/skills/`, `.windsurf/skills/`
-
-## Non-negotiable rules
-1. Exactly 2 primary parents are required.
-2. At most 2 modifiers are allowed by default. Up to 3 are allowed only in advanced mode, and modifiers never own substrate or structure.
-3. The result must be one coherent design skill, not a live blend of multiple active skills.
-4. The hybrid must have its own identity — not "A with B colors".
-5. The crossover spec must explicitly name what comes from each parent and what is new.
-6. Every finished hybrid ships with both previews and a `.skill-meta.json`.
-7. Project-local generation goes to `.aioson/installed-skills/` by default.
+The Step 4 package list is the complete output map, plus the `AGENTS.md` registration and optional editor mirrors from Step 5. Nothing else is written.
 
 ## Starting the session
 Begin by explaining that you will create a project-local hybrid skill package, then proceed to Step 1.

@@ -15,7 +15,9 @@ Investigate one named domain, rule, data, or edge-case ambiguity and return evid
 
 ## Analysis contract
 
-Return: decision needed, known evidence, safest inference, consequence if omitted, and canonical owner. Distinguish a product choice from an implementation fact. If the answer is already inferable from the repository, state it without asking the user.
+Return: decision needed, known evidence, safest inference, consequence if omitted, and canonical owner. Every `safest inference` line carries either a `path:line` repository citation or the explicit label `product choice — no repository evidence exists`; blurring inference into evidence is the failure this contract exists to prevent. If the answer is already inferable from the repository, state it without asking the user.
+
+Before handoff, self-check: the named ambiguity must now be answerable in one sentence with a named owner. If it is not, return the single missing piece of evidence instead of a broader analysis.
 
 ## Feature dossier
 

@@ -44,7 +44,6 @@ const GITIGNORE_POLICY_LINES = [
   '!.aioson/**',
   '# AIOSON — managed framework files (do not commit)',
   '.aioson/config.md',
-  '.aioson/locales/',
   '.aioson/skills/',
   '.aioson/schemas/',
   '.aioson/tasks/',

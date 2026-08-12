@@ -204,7 +204,7 @@ Load each phase doc at phase entry — not all at once.
 - **Mode D:** Never proceed to Phase 4 — session ends after Phase 3B.
 - **Mode E:** Never start Phase 4 without `blend-map.md` and `blended-tokens.css` from Phase 3E.
 - Never start Phase 5 without `npm run build` passing, all interactions implemented (4.4), all videos wired (4.4.B), and all downloaded assets referenced in components (4.5).
-- Never hardcode color, font size, spacing, radius, shadow, or animation duration — use skill tokens only.
+- Never hardcode color, font size, spacing, radius, shadow, or animation duration — use skill tokens only. After Phase 4, scan the generated components for raw hex/px/font-family literals absent from the token file; hits are Phase 5 blockers, not style notes.
 - Phase 4.4: always read `animations-raw.json.jsLibraries` before choosing animation implementation strategy. Never default to `IntersectionObserver` if GSAP or Framer Motion was detected.
 - Phase 4.4: always copy extracted `@keyframes` from `animations-raw.json` into `globals.css` verbatim. Never write animation values from memory.
 - Phase 4.4.B: never leave a video as a placeholder `<div>` when `videos.json` has a non-skipped entry.
@@ -288,7 +288,7 @@ Expected structure (from SaveWebZip, HTTrack, `wget --mirror`):
 
 Copy assets from `<path>/fonts/`, `<path>/media/`, `<path>/images/` directly to `public/` — no download needed.
 
-**Recommended:** use `--from-local` for static extraction + browser MCP only for Phase 1.5.4 scroll recording.
+**Recommended:** use `--from-local` for static extraction + browser MCP only for Phase 1.5.4 scroll recording. This is an automatic decision rule, not a note: when Phase 1 hits bot detection or any stylesheet fetch fails, save the site (`wget --mirror` or equivalent) and switch to `--from-local` instead of silently degrading extraction.
 
 ---
 

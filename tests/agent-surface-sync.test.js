@@ -66,6 +66,10 @@ test('every AGENT_DEFINITIONS entry has a wrapper pointing at its instruction fi
       body.includes(def.path),
       `${def.id}: wrapper does not reference its instruction file ${def.path}`
     );
+    assert.ok(
+      body.startsWith(`---\ndescription: "AIOSON — ${def.description}"`),
+      `${def.id}: wrapper description drifted from AGENT_DEFINITIONS — regenerate it ("AIOSON — ${def.description}")`
+    );
   }
 });
 

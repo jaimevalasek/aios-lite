@@ -30,7 +30,6 @@ const SKIP_DIR_NAMES = new Set([
 const SKIP_REL_DIRS = [
   '.aioson/agents',
   '.aioson/backups',
-  '.aioson/locales',
   '.aioson/mcp',
   '.aioson/runtime',
   '.aioson/tmp',

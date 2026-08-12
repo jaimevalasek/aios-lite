@@ -103,7 +103,7 @@ Do not generate the old standalone `.aioson/genomes/{slug}.md` plus `.meta.json`
 
 ## Binding boundary
 
-Forge creates artifacts; it does not edit official `.aioson/agents/` or directly mutate squad executors. For an apply/bind request, verify the Genome first, then hand off to `@genome`/the runtime binding path with target and artifact identity. Presence in a squad manifest is not proof of compilation.
+Forge creates artifacts; it does not edit official `.aioson/agents/` or directly mutate squad executors. For an apply/bind request, verify the Genome first, then hand off to `@genome`/the runtime binding path with target and artifact identity — the handoff payload carries the genome slug plus the current `genome:doctor` verdict and timestamp, so `@genome` verifies identity instead of trusting prose. Presence in a squad manifest is not proof of compilation.
 
 ## Terminal states
 

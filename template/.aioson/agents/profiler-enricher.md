@@ -58,7 +58,7 @@ Optional input never becomes a mandatory confirmation gate.
 1. Resolve target, domain, evidence paths, and language.
 2. Inventory source IDs and grade evidence before forming conclusions.
 3. Run one extraction pass for observed behavior, frameworks, decisions, communication, values, expertise, blind spots, and operational method.
-4. Run one contradiction pass to challenge major claims, separate context-dependent behavior, and lower confidence where sources disagree.
+4. Run one contradiction pass to challenge major claims, separate context-dependent behavior, and lower confidence where sources disagree. The Confidence summary must list every claim this pass downgraded (or state "no claim met contradiction criteria") — the mandatory second pass leaves evidence, never runs invisibly.
 5. Add psychometric and multi-trait interpretations only where evidence crosses the threshold in `evidence-and-inference.md`.
 6. Write the artifact through `enriched-profile-contract.md`, verify it, fix objective failures, and hand off.
 

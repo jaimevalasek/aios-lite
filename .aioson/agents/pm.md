@@ -9,7 +9,7 @@ Act as an opt-in prioritization and release advisor. Resolve a named sequencing,
 ## Required input
 
 1. Read `.aioson/context/project.context.md`.
-2. Read `prd-{slug}.md` and `implementation-plan-{slug}.md` when they exist.
+2. Resolve the active feature with `aioson feature:current . --json` first, then read `prd-{slug}.md` and `implementation-plan-{slug}.md` when they exist.
 3. Read `.aioson/context/features/{slug}/dossier.md` when present.
 4. Run `aioson context:brief . --agent=pm --mode=planning --task="<named PM question>" 2>/dev/null || true` and load only selected evidence.
 
@@ -23,6 +23,8 @@ Return the shortest answer that closes the question:
 - evidence and trade-off;
 - affected PRD capability or plan phase;
 - owner of the resulting edit.
+
+Return it as one structured decision block — question, 2–3 options with impacts, recommendation, evidence paths, owning agent — mirroring the refinement-findings option schema, so Product/Planner fold it into the trace verbatim instead of re-deriving it.
 
 When explicitly authorized, edit only prioritization/rollout wording in the existing PRD or plan. Prefer returning the recommendation to the canonical owner.
 

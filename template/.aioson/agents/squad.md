@@ -25,25 +25,10 @@ package contract under `.aioson/squads/{slug}/`.
 - `.aioson/context/project.context.md` (if present) — `interaction_language` for user-facing communication
 
 ## Context loading modes
-Before concrete `context:select`, run `aioson context:search . --query="<operation>" --agent=squad --mode=planning --paths="<squad paths>" --json 2>/dev/null || true`; hits are hints.
-
-When the CLI is available, run `aioson context:select . --agent=squad --mode=planning --task="<operation>" --paths="<squad paths>"` and load only the selected files. Without the CLI, load by frontmatter match only: `.aioson/rules/` (project-wide), `.aioson/rules/squad/*.md` (squad overrides), relevant `.aioson/docs/`, and `.aioson/context/design-doc*.md` when an initiative already has technical context. Never scan folders wholesale. Rules override defaults.
+Before concrete `context:select`, run `aioson context:search . --query="<operation>" --agent=squad --mode=planning --paths="<squad paths>" --json 2>/dev/null || true`; hits are hints. With the CLI, `aioson context:select . --agent=squad --mode=planning --task="<operation>" --paths="<squad paths>"` and load only selected files; without it, load by frontmatter match only. Never scan folders wholesale. Rules override defaults.
 
 ## Built-in squad modules
-The detailed squad protocol is split into on-demand framework docs:
-
-- `.aioson/docs/squad/package-contract.md`
-- `.aioson/docs/squad/creation-flow.md`
-- `.aioson/docs/squad/domain-classification.md`
-- `.aioson/docs/squad/domain-breadth.md`
-- `.aioson/docs/squad/research-loop.md`
-- `.aioson/docs/squad/quality-lens.md`
-- `.aioson/docs/squad/workflow-quality.md`
-- `.aioson/docs/squad/content-output.md`
-- `.aioson/docs/squad/session-operations.md`
-- `.aioson/docs/squad/genome-bindings.md`
-
-These docs are part of the canonical framework. Load only the modules required by the current request.
+The detailed squad protocol lives in on-demand framework docs under `.aioson/docs/squad/`; the deterministic preflight map below is the loading authority — load only what it selects.
 
 ## Built-in squad skills
 The squad framework also ships an on-demand skill router:
@@ -172,20 +157,7 @@ If no subcommand is provided, run the default fast path:
 - Do not approve a pilot or run `squad:pilot-approve`; the freeze belongs exclusively to the user.
 
 ## Output contract
-- Package root: `.aioson/squads/{squad-slug}/`
-- Text manifest: `.aioson/squads/{squad-slug}/agents/agents.md`
-- JSON manifest: `.aioson/squads/{squad-slug}/squad.manifest.json`
-- Squad metadata: `.aioson/squads/{squad-slug}/squad.md`
-- Workflows: `.aioson/squads/{squad-slug}/workflows/`
-- Checklists: `.aioson/squads/{squad-slug}/checklists/`
-- Skills: `.aioson/squads/{squad-slug}/skills/`
-- Templates: `.aioson/squads/{squad-slug}/templates/`
-- Docs: `.aioson/squads/{squad-slug}/docs/`
-- Session HTML: `output/{squad-slug}/{session-id}.html`
-- Structured content: `output/{squad-slug}/{content-key}/content.json` + `output/{squad-slug}/{content-key}/index.html`
-- Latest HTML: `output/{squad-slug}/latest.html`
-- Logs: `aioson-logs/{squad-slug}/`
-- Media: `media/{squad-slug}/`
+The kernel invariant paths above are the complete output map, plus the package subtrees `workflows/`, `checklists/`, `skills/`, `templates/`, and `docs/` under the squad root and the metadata pair `squad.md` + `agents/agents.md`. No squad artifact is ever written outside them.
 
 ## Done gate
 A squad does not close until it is proven well-formed. Three layers, all part of the default `validate` step — not opt-in (the third applies to deliverable-class squads):

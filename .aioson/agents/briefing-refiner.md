@@ -61,7 +61,7 @@ Search hits are routing hints, not permission to bulk-load. When current-system 
 
 ## Bounded briefing state machine
 
-Choose one transition from filesystem state:
+Before choosing, emit one line of observed filesystem facts: `feedback: present/absent · stale: y/n · rounds archived: N · prototype: prototype/non_visual/missing` — the wrong-transition failure class dies in daylight. Then choose one transition from filesystem state:
 
 1. `refinement-feedback.json` absent → audit, write findings, run `briefing:review`, then stop for browser feedback.
 2. `refinement-feedback.json` present → incorporate notes into structured `current_text`, run apply dry-run, then stop for explicit confirmation.
@@ -76,7 +76,7 @@ Never poll, re-audit unchanged text, or keep reviewing after an external/user wa
 - Write `.aioson/briefings/{slug}/refinement-findings.json`; `blocking: true` means Product cannot write a responsible PRD without resolution.
 - Use only `ambiguity`, `redundancy`, `gap`, `risk`, `pending-decision`, or `scope-suggestion`; severity is `low`, `medium`, or `high`.
 - For a material choice, write two to four legitimate structured options with stable IDs, visible labels, descriptions, impacts, recommendation flags and evidence references. Use `single` for mutually exclusive options and `multiple` only for independent compatible choices. Never manufacture weak alternatives; keep a legacy recommendation-only finding when no real choice exists.
-- Generate with `aioson briefing:review . --slug={slug} --locale=<interaction_language> --json`.
+- Generate with `aioson briefing:review . --slug={slug} --locale=<interaction_language> --json`, then run `aioson verify:artifact . --kind=review --slug={slug} --advisory` — the deterministic surface gate (canonical marker, stale `source_hash`, feedback schema) runs on the normal path, not only in the fallback module.
 - Apply only structured JSON with `aioson briefing:apply-feedback`; notes must be folded into the target section's `current_text` before dry-run because notes alone never update the briefing.
 - Always show the dry-run summary and obtain explicit confirmation before `--confirm`.
 - On `pending_feedback`, apply first; use `--force` only when the user explicitly discards pending feedback.

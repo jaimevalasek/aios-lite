@@ -35,7 +35,7 @@ Do not load source-plan contents, PRDs, rules, docs, dossiers, research, or proc
 
 ## Lane mismatch gate
 
-Unless the user explicitly asks for framing, route an implementation-ready request to `@dev` Simple Plan when it has one specified observable outcome, reuses existing boundaries, has no open product/architecture/security decision, and fits 5 behavior files, 8 total paths, and 2 existing modules. Supporting tests, translations, exports, registrations, metadata, and lockfiles never enlarge the lane.
+Unless the user explicitly asks for framing, route an implementation-ready request to `@dev` Simple Plan when it has one specified observable outcome, reuses existing boundaries, has no open product/architecture/security decision, and fits 5 behavior files, 8 total paths, and 2 existing modules. Supporting tests, translations, exports, registrations, metadata, and lockfiles never enlarge the lane. State the actual estimate when routing (`N behavior files / M total paths / K modules; nearest pattern: <path>`) — the deterministic budget stays auditable, never a silent judgment call.
 
 ## Progressive module router
 
@@ -102,7 +102,7 @@ Use `TBD — not discussed in this session.` when evidence is absent. Number and
 Inside `## Sources`, add:
 
 - `### Source Inventory`: one `SRC-*` row per inventoried file with project-relative path, current `sha256:` fingerprint — copied verbatim from the `fingerprint` fields of `aioson briefing:sources . --slug={slug} --json`, never computed or invented by hand — purpose, and no secret content; `Type`/`Role`/`Usage` columns preserve `consulted`, `metadata_only`, or `blocked`.
-- `### Source Promise Map`: one stable `PROM-*` row per material user promise, citing `SRC-*` or an explicit conversational/research source, its approved intent, and `required`, `deferred`, or `not_applicable`.
+- `### Source Promise Map`: one stable `PROM-*` row per material user promise, citing `SRC-*` or an explicit conversational/research source, its approved intent, and `required`, `deferred`, or `not_applicable`. Each row also records a locator into its `SRC-*` (heading or line anchor) so the refiner's blocking check and Product's coverage pass are targeted reads, never whole-pack re-reads.
 
 Every `plans/{slug}/` source named by `source_plans` must appear in the inventory; never silently drop a material promise.
 
@@ -110,7 +110,7 @@ Optional artifacts: `solution-options.md`, `expansion-scout.md`, and focused the
 
 ## Review intelligence checkpoint
 
-Deterministic preflight: after writing `briefings.md`, run `aioson verify:artifact . --kind=briefing --slug={slug} --advisory`; repair every issue before handoff — promise fidelity to sources stays yours.
+Deterministic preflight: after writing `briefings.md`, run `aioson verify:artifact . --kind=briefing --slug={slug} --advisory`; repair every issue, re-run once, and quote the final verdict line (including any prototype-pending warning) in the handoff message — the refiner starts from a machine-verified state. Promise fidelity to sources stays yours.
 
 For concrete `{slug}`, load `.aioson/skills/process/review-intelligence/SKILL.md` plus only `references/framing.md` when available. Run `aioson review:prepare . --agent=briefing --feature={slug} --artifact=.aioson/briefings/{slug}/briefings.md --json`; complete at most two passes from its template, write `draft_path`, then run `aioson review:check . --agent=briefing --feature={slug} --report=<draft_path> --json`. Exit `0` continues, `1` informs the existing flow, and `2` must be corrected/re-prepared — never suppress it. If the skill or command is unavailable, review manually with the same bound; missing review infrastructure is non-gating.
 

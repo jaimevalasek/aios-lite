@@ -138,7 +138,10 @@ const RULESETS = {
       must_match: [
         '## D1', '## D2', '## D3', '## D4', '## D5', '## D6', '## D7',
         '## Impact Analysis',
-        '\\*\\*Source:\\*\\*'
+        // A legitimate empty-yield investigation records the explicit
+        // no-novel-finding line per dimension instead of a Source block —
+        // honesty about a dry run must not fail its own done gate.
+        '\\*\\*Source:\\*\\*|No novel externally verified finding'
       ],
       must_not_match: [...PLACEHOLDER_PATTERNS, '\\{where discovered\\}']
     }]

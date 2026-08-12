@@ -43,12 +43,7 @@ If the user already supplied all four items, do not ask again.
 Search systematically across these source categories. Use multiple search angles per category and prefer primary sources over summaries.
 
 ### Category A - Interviews and conversations
-Search patterns:
-- `"[person name]" interview`
-- `"[person name]" podcast transcript`
-- `"[person name]" conversation`
-- `"[person name]" Q&A`
-- `"[person name]" fireside chat`
+Search: quoted name + interview / podcast transcript / conversation / Q&A / fireside chat.
 
 Extract:
 - direct reasoning quotes
@@ -57,13 +52,7 @@ Extract:
 - signature stories repeated across appearances
 
 ### Category B - Authored content
-Search patterns:
-- `"[person name]" blog post`
-- `"[person name]" article`
-- `"[person name]" newsletter`
-- `"[person name]" twitter thread`
-- `"[person name]" X thread`
-- `"[person name]" linkedin post`
+Search: quoted name + blog post / article / newsletter / twitter-X thread / linkedin post.
 
 Extract:
 - recurring topics and themes
@@ -72,12 +61,7 @@ Extract:
 - frameworks or principles taught directly
 
 ### Category C - Speeches and presentations
-Search patterns:
-- `"[person name]" keynote`
-- `"[person name]" presentation`
-- `"[person name]" talk transcript`
-- `"[person name]" conference`
-- `"[person name]" masterclass`
+Search: quoted name + keynote / presentation / talk transcript / conference / masterclass.
 
 Extract:
 - argument structure
@@ -86,12 +70,7 @@ Extract:
 - how they answer audience questions
 
 ### Category D - Work samples
-Search patterns:
-- `"[person name]" case study`
-- `"[person name]" example` plus domain keyword
-- `"[person name]" portfolio`
-- `"[person name]" breakdown`
-- `"[person name]" before after`
+Search: quoted name + case study / example (plus domain keyword) / portfolio / breakdown / before-after.
 
 Extract:
 - concrete work outputs
@@ -100,11 +79,7 @@ Extract:
 - before/after transformations
 
 ### Category E - Biography and context
-Search patterns:
-- `"[person name]" biography`
-- `"[person name]" journey`
-- `"[person name]" about page`
-- `"[person name]" background`
+Search: quoted name + biography / journey / about page / background.
 
 Extract:
 - turning points
@@ -113,12 +88,7 @@ Extract:
 - failures discussed openly
 
 ### Category F - Criticism and disagreement
-Search patterns:
-- `"[person name]" criticism`
-- `"[person name]" review` plus domain keyword
-- `"[person name]" controversy`
-- `"[person name]" problems`
-- `"[person name]" vs`
+Search: quoted name + criticism / review (plus domain keyword) / controversy / problems / vs.
 
 Extract:
 - common criticisms
@@ -127,13 +97,7 @@ Extract:
 - blind spots named by peers or critics
 
 ### Category G - Methodology and frameworks
-Search patterns:
-- `"[person name]" framework`
-- `"[person name]" methodology`
-- `"[person name]" system`
-- `"[person name]" process`
-- `"[person name]" principles`
-- `"[person name]" rules`
+Search: quoted name + framework / methodology / system / process / principles / rules.
 
 Extract:
 - named frameworks
@@ -142,14 +106,7 @@ Extract:
 - borrowed mental models they use often
 
 ### Category H - Honesty-Humility signals (HEXACO-H)
-Search patterns:
-- `"[person name]" ethics`
-- `"[person name]" integrity`
-- `"[person name]" transparency`
-- `"[person name]" manipulation` OR `"[person name]" honest`
-- `"[person name]" ego` OR `"[person name]" humble` OR `"[person name]" credit`
-- `"[person name]" money` OR `"[person name]" wealth` OR `"[person name]" status`
-- `"[person name]" fairness` OR `"[person name]" fair`
+Search: quoted name + ethics / integrity / transparency / manipulation-honest / ego-humble-credit / money-wealth-status / fairness.
 
 Extract signals for each dimension:
 - **Sincerity vs manipulation**: does this person state intentions honestly or obscure them for gain?
@@ -201,7 +158,7 @@ status: raw-research
 - who this person is
 - what domain focus was used
 - how much material was found
-- whether the evidence base is strong enough for profiling
+- sufficiency verdict against the numeric floor: ≥2 high-value sources spanning ≥3 categories, including ≥1 DECISION and ≥1 WORK-SAMPLE item. Below the floor, state `insufficient for enrichment` and recommend more research in Next Up instead of `@profiler-enricher` — never hand a vibes-based "strong enough" downstream.
 
 ## Source Inventory
 
@@ -218,6 +175,8 @@ status: raw-research
 |---|------|--------|-----|------|---------|
 
 ## Extracted Material by Category
+
+Every extracted item's `Source:` cites the stable inventory ID `S<#>` from the tables above (e.g. `S3`) — the enricher's claim contract and the forge's Generation Handoff consume those IDs; free-text source names break the provenance chain.
 
 ### FRAMEWORKS
 #### Framework: [Name]

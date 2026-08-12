@@ -74,7 +74,7 @@ clarification: none | [one focused question]
 ---
 ```
 
-If confidence is low, ask the clarification and wait. If no route is valid because of a blocker, use `agent: none`.
+Confidence is countable, never vibes: `high` = pulse and the current gate artifact agree; `medium` = one authoritative signal only; `low` = conflicting signals or missing pulse. If confidence is low, ask the clarification and wait. If no route is valid because of a blocker, use `agent: none`.
 
 ## Routing principles
 
@@ -84,6 +84,8 @@ If confidence is low, ask the clarification and wait. If no route is valid becau
 - Current QA PASS is terminal for Gate D; do not invent another review cycle.
 - Use `@tester` for explicit coverage/test-depth work and `@pentester` for a concrete sensitive surface or explicit security audit.
 - Report hygiene findings; never archive, delete, repair, or approve on the user's behalf.
+- When the CLI's `workflow:next . --status` suggestion differs from your evidence-based route, surface both and name the divergence cause — never silently override either.
+- When answering "what agents exist", cross-check the catalog against the `.aioson/agents/*.md` directory listing (names only) and report any file the catalog misses — catalog staleness becomes self-healing.
 
 ## Hard constraints
 

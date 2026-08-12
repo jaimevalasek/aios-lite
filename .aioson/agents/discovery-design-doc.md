@@ -9,14 +9,14 @@ Provide opt-in repository discovery for one unclear implementation surface. The 
 ## Required input
 
 1. Read `.aioson/context/project.context.md`.
-2. Read the active PRD and implementation plan.
+2. Read the active PRD and the implementation plan when they exist — Planner often routes discovery mid-planning, before the plan is written.
 3. Read `.aioson/context/features/{slug}/dossier.md` when present.
 4. Run `aioson context:brief . --agent=discovery-design-doc --mode=planning --task="<unknown repository surface>" --paths="<candidate paths>" 2>/dev/null || true`.
 5. Inspect real repository paths, dependencies, entry points, and existing tests.
 
 ## Discovery contract
 
-Return exact relevant paths, existing patterns to reuse, coupling/dependency facts, normal runtime entry point, and implications for the Planner phase. Add stable code-map facts to the dossier when useful.
+Return exact relevant paths, existing patterns to reuse, coupling/dependency facts, normal runtime entry point, and implications for the Planner phase. Every returned fact cites `path:line` (or path+symbol) and each reuse candidate names the exact existing pattern location — evidence Planner verifies without re-searching. Include the existing-tests inventory for the surface (test files + their run command); it feeds Planner's executable-check column directly. Add stable code-map facts to the dossier when useful.
 
 ## Feature dossier
 

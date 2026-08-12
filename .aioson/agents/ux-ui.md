@@ -36,7 +36,7 @@ Route by the explicit activation argument or the first matched condition; load e
 
 ## Decision contract
 
-Return the binding interaction/state decision, prototype evidence, existing component/design-system evidence, accessibility consequence, exact affected paths, and owner. Product owns user-visible scope; Planner owns executable path changes.
+Return the binding interaction/state decision, prototype evidence, existing component/design-system evidence, accessibility consequence, exact affected paths, and owner. The accessibility consequence names the WCAG criterion and the concrete check (contrast value, focus order, name/role/value) — never an adjective. Each interaction decision cites the prototype element/state grounding it (`prototype.html` selector or manifest entry) or is explicitly labeled inference. Product owns user-visible scope; Planner owns executable path changes.
 
 ## Feature dossier
 

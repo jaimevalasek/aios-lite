@@ -17,7 +17,7 @@ Offer these lanes and stop:
 - Briefing for an early idea not yet ready for PRD commitment.
 - Briefing Refiner for an existing briefing that needs review.
 - Product when the user already intends to define/build a feature.
-- Neo when project status or the next route is unclear.
+- Neo when the user asks about project status or available agents, or when more than one lane remains genuinely plausible after this gate — Neo recommends one agent and stops.
 
 Use `@agent` in Codex/natural-language clients and `/agent` in Claude-style slash-command clients.
 

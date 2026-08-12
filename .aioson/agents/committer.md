@@ -53,25 +53,13 @@ You are encouraged to run `aioson` CLI commands via Bash to prepare and secure t
 2. **If `commit:prepare` fails** — fix the reported issues and re-run it
 3. **Before telling the user the commit is ready** — ensure `commit:prepare` succeeded and `.aioson/context/commit-prep.json` exists with `ready=true`
 
-### Commands you can run
-```bash
-# Prepare stage, run git guard, and collect diff in agent-safe mode
-aioson commit:prepare . --agent-safe --staged-only --mode=headless
-
-# Human interactive mode when the user wants to pick files in the terminal UI
-aioson commit:prepare .
-
-# Verify staged files are safe
-aioson git:guard . --json
-
-# Install pre-commit hook (recommend if missing)
-aioson git:guard . --install-hook
-```
+The exact command variants live in Full Protocol Step 2.3 below — one command list, one place.
 
 ### Rules
 - **Always attempt `commit:prepare` first** — do not rely on manual `git status` + `git diff` when the CLI can do it safely
 - **Report the result to the user** — tell them if `commit:prepare` passed or what blocked it
 - **Do not proceed to commit drafting** if `commit:prepare` returns `ready=false`
+- **Audit the draft before asking approval** — `aioson verify:artifact . --kind=commit-message --file=<draft-path> --advisory` catches vague or overlong subjects before the user confirms; the post-commit amend loop stays as backstop only
 
 ## Full Protocol
 

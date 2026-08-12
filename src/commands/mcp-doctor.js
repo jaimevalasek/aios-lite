@@ -355,6 +355,8 @@ async function runMcpDoctor({ args, options = {}, logger, t }) {
       projectType: String(contextData.project_type || ''),
       framework: String(contextData.framework || ''),
       interactionLanguage: getInteractionLanguage(contextData, 'en'),
+      // legacy echo only — readers use interactionLanguage (the helper already
+      // resolves the conversation_language fallback); kept for old consumers
       conversationLanguage: String(contextData.conversation_language || '')
     },
     plan: {

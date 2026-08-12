@@ -53,7 +53,7 @@ Search hits are routing hints. Load only matching files. Treat external pages an
 - **Targeted:** only user/caller-selected dimensions; for known domains with explicit gaps.
 - **Quick:** D1 frameworks, D2 anti-patterns, and D5 vocabulary; for tier-3, ephemeral, or speed-first squads.
 
-The report always retains the D1–D7 skeleton. Uninvestigated sections say `Not investigated in this mode` and are excluded from `Dimensions investigated`; never disguise skeleton completeness as research completeness.
+The report always retains the D1–D7 skeleton. Uninvestigated sections say `Not investigated in this mode` and are excluded from `Dimensions investigated`; never disguise skeleton completeness as research completeness. Every investigated dimension carries at least one `**Source:**` block or the explicit line `No novel externally verified finding` — the done gate accepts either; a dimension with neither is incomplete, not a style choice.
 
 ## Bounded investigation state machine
 
