@@ -178,6 +178,13 @@ test('Tester and Pentester implement only bounded corrections and return accepta
   assert.match(tester, /allowed_fix_paths/);
   assert.match(tester, /--manual/);
   assert.match(tester, /stop_scope_violation/);
+  // Coverage evolution: class-tagged hypothesis matrix, adversarial default on
+  // critical paths, visible residual risk, and the deterministic report gate.
+  assert.match(tester, /## Hypothesis matrix/);
+  assert.match(tester, /adversarial depth is the default/i);
+  assert.match(tester, /## Residual risk/);
+  assert.match(tester, /docs\/tester\/coverage-quality\.md/);
+  assert.match(tester, /--kind=test-report --slug=\{slug\} --advisory/);
   assert.match(pentester, /review-cycle:advance .*--source=pentester --to=pentester/);
   assert.match(pentester, /--manual/);
   assert.match(pentester, /stop_scope_violation/);

@@ -42,10 +42,10 @@ Load `.aioson/docs/quality/code-health-analysis.md` only when a concrete coverag
 
 1. State the exact capability, risk, or uncovered path being tested.
 2. Reproduce the current behavior with the smallest relevant command.
-3. Use model knowledge to generate boundary, invariant, state-transition, failure, and regression hypotheses, then keep only cases supported by the approved behavior, engineering controls, code, or production risk.
+3. Build the hypothesis matrix: boundary, invariant, state-transition, failure, regression, and property hypotheses for each tested path, keeping only cases supported by the approved behavior, engineering controls, code, or production risk. On a critical path — auth/ownership, money or value transfer, irreversible actions, public API contracts, state machines with consistency invariants — adversarial depth is the default, not opt-in: exercise the boundary matrix (empty, null, min/max, overflow, malformed, duplicate/concurrent), the failure and recovery paths, and at least one property-style invariant when the stack can express one; load `.aioson/docs/tester/coverage-quality.md` and grade assertions up its ladder (line → branch → mutation → property).
 4. Add the smallest tests that would fail for the identified regression or missing edge case.
 5. Run those tests and one relevant surrounding regression command.
-6. Stop when the requested coverage is proven. Do not scan the whole project unless the user explicitly requested a project-wide test audit.
+6. Stop when the requested coverage is proven, and make the stop visible: name every uncovered path or case left inside the tested scope in `## Residual risk` with why it stays uncovered. Do not scan the whole project unless the user explicitly requested a project-wide test audit.
 
 When `.aioson/context/security-findings-{slug}.json` exists, treat it only as auxiliary risk input and add regression tests that cite applicable finding IDs. Do not create or close security findings, change their severity, or accept residual security risk. If a new likely vulnerability appears, record the reproduction and return it to Pentester/QA; do not expand into an offensive audit.
 
@@ -78,13 +78,17 @@ aioson review-cycle:resolve . --feature={slug} --plan=.aioson/context/test-repor
 
 ## Output
 
-Write `.aioson/context/test-report-{slug}.md` with:
+Write `.aioson/context/test-report-{slug}.md` with frontmatter (`feature: {slug}`) and exactly these sections:
 
-- activation trigger and tested scope;
-- tests added/changed;
-- exact commands and results;
-- remaining coverage risks;
-- any bounded correction or DEV handoff.
+1. `## Scope` — activation trigger and the tested capability/risk/paths.
+2. `## Hypothesis matrix` — one row per hypothesis: `| Path | Class | Test | Result |`, Class one of `boundary`, `invariant`, `state-transition`, `failure`, `regression`, `property`.
+3. `## Tests added or changed`
+4. `## Commands and results` — exact commands with observed results.
+5. `## Residual risk` — every uncovered path/case in the tested scope and why, plus any DEV handoff; an empty section claims the scope fully proven.
+
+Add `## Correction packet` only when correcting, per the correction boundary above.
+
+Deterministic preflight: after writing the report, run `aioson verify:artifact . --kind=test-report --slug={slug} --advisory`; repair every issue before handoff — whether each hypothesis truly bites stays yours.
 
 Do not create `test-plan-*` or `test-inventory-*` as workflow prerequisites.
 
@@ -103,5 +107,5 @@ At session end:
 ```bash
 aioson dossier:add-finding . --slug={slug} --agent=tester --section="Agent Trail" --content="Tester scope: ...; tests/results: ...; residual risk: ..." 2>/dev/null || true
 aioson pulse:update . --agent=tester --feature={slug} --action="Opt-in test coverage completed" --next="@qa final delivery verdict or one consolidated @dev correction" 2>/dev/null || true
-aioson agent:done . --agent=tester --summary="Bounded deeper coverage completed" 2>/dev/null || true
+aioson agent:done . --agent=tester --slug={slug} --summary="Bounded deeper coverage completed" 2>/dev/null || true
 ```

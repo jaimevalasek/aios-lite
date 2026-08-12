@@ -200,7 +200,7 @@ const RULESETS = {
 
 // Kinds whose target file path is keyed by --slug; without it we cannot resolve
 // the artifact, so fail with a clear usage error instead of a `null/` path.
-const REQUIRES_SLUG = new Set(['genome', 'research-report', 'enriched-profile', 'hybrid-skill', 'copy', 'review', 'sources', 'briefing']);
+const REQUIRES_SLUG = new Set(['genome', 'research-report', 'enriched-profile', 'hybrid-skill', 'copy', 'review', 'sources', 'briefing', 'test-report']);
 
 // Kinds whose artifact has a date-stamped / caller-known path — resolved via
 // --file=<path> rather than derived from a slug.
@@ -689,6 +689,32 @@ const ADAPTERS = {
       warnings,
       checks: [{ id: 'briefing', ok, detail: issues.join('; ') || null }],
       metrics
+    };
+  },
+
+  // The deterministic half of the Tester contract: report identity, the
+  // class-tagged hypothesis matrix, executed-command evidence, and named
+  // residual risk — so stopping short of full coverage is a visible decision,
+  // never a silent default. Whether each hypothesis actually bites, and the
+  // delivery verdict itself, stay with the agent and with QA.
+  'test-report': async (ctx) => {
+    const rel = `.aioson/context/test-report-${ctx.slug}.md`;
+    let reportText;
+    try {
+      reportText = fs.readFileSync(path.resolve(ctx.targetDir, rel), 'utf8');
+    } catch {
+      return { ok: false, issues: [`test report not found: ${rel}`], warnings: [], checks: [] };
+    }
+
+    const { analyzeTestReport } = require('../lib/test-report-lint');
+    const result = analyzeTestReport({ report: reportText, slug: ctx.slug });
+    const ok = result.issues.length === 0;
+    return {
+      ok,
+      issues: result.issues,
+      warnings: result.warnings,
+      checks: [{ id: 'test-report', ok, detail: result.issues.join('; ') || null }],
+      metrics: { ...result.metrics, file: rel }
     };
   },
 

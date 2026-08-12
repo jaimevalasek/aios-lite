@@ -31,7 +31,8 @@ const AGENT_ARTIFACT_KIND = {
   orache: { kind: 'orache-report', needs: 'file' },
   'site-forge': { kind: 'site', needs: 'dir', opts: { noBuild: true } },
   'briefing-refiner': { kind: 'review', needs: 'slug' },
-  briefing: { kind: 'briefing', needs: 'slug' }
+  briefing: { kind: 'briefing', needs: 'slug' },
+  tester: { kind: 'test-report', needs: 'slug' }
 };
 
 const NEEDS_FLAG = { slug: '--slug=<slug>', file: '--file=<path>', dir: '--dir=<dir>' };
