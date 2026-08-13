@@ -149,3 +149,38 @@ describe('dossier-bootstrap — initFromExisting', () => {
     assert.equal(result.classification, 'MICRO');
   });
 });
+
+// ───────────── A6: feature arquivada sintetiza do PRÓPRIO PRD, nunca do global ─────────────
+// Repro tinta-ouro: re-close depois do archive lia prd.md global (outro produto)
+// e gravava um dossiê com Problem/Escopo de feature alheia.
+
+describe('dossier-bootstrap — archived feature (A6 fallback)', () => {
+  let ctxDir, tmp;
+
+  beforeEach(async () => {
+    ({ tmp, ctxDir } = await makeCtxDir());
+  });
+  afterEach(async () => {
+    await fs.rm(tmp, { recursive: true, force: true });
+  });
+
+  it('reads prd-{slug}.md from done/{slug}/ before falling back to the global prd.md', async () => {
+    const doneDir = path.join(ctxDir, 'done', 'test-feat');
+    await fs.mkdir(doneDir, { recursive: true });
+    await fs.writeFile(path.join(doneDir, 'prd-test-feat.md'), PRD_CONTENT, 'utf8');
+    await fs.writeFile(
+      path.join(ctxDir, 'prd.md'),
+      '# PRD global\n\n## Problem\n\nUnrelated monetization overhaul of another product.\n',
+      'utf8'
+    );
+
+    const result = await initFromExisting({ slug: 'test-feat', contextDir: ctxDir, targetDir: tmp });
+    assert.equal(result.created, true);
+    assert.ok(result.artifactsFound.includes('prd'), JSON.stringify(result.artifactsFound));
+    assert.ok(!result.artifactsFound.includes('prdGlobal'));
+    const dossier = await fs.readFile(result.path, 'utf8');
+    assert.match(dossier, /track features/);
+    assert.doesNotMatch(dossier, /monetization/);
+    assert.match(dossier, /status: closed/);
+  });
+});

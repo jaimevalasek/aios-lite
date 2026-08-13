@@ -137,10 +137,10 @@ describe('feature:archive — dossier dir extension (AC-F1-08)', () => {
     assert.equal(result.noop, true);
   });
 
-  it('skips dossier dir when target already archived', async () => {
+  it('reconciles a diverged live dossier with the archive instead of freezing it forever', async () => {
     await seedFeaturesMd('done');
     await seedDossierDir();
-    // pre-seed an existing archived dossier
+    // pre-seed an existing archived dossier with DIFFERENT content
     const archivedDir = path.join(root, '.aioson', 'context', 'done', 'feature-x', 'dossier');
     await fs.mkdir(archivedDir, { recursive: true });
     await fs.writeFile(path.join(archivedDir, 'dossier.md'), '# preexisting\n');
@@ -148,13 +148,78 @@ describe('feature:archive — dossier dir extension (AC-F1-08)', () => {
     const result = await runFeatureArchive({
       args: ['.'], options: { feature: 'feature-x', json: true }, logger: silentLogger()
     });
-    assert.equal(result.ok, true);
-    assert.equal(result.dossier?.action, 'skipped');
-    // source dir still present (we did not overwrite)
+    // divergente = erro acionável, nunca sobrescrito em silêncio
+    assert.equal(result.ok, false);
+    assert.equal(result.dossier?.action, 'merge_conflict');
+    assert.ok((result.errors || []).some((e) => e.code === 'archive_merge_conflict'));
     assert.equal(
-      fssync.existsSync(path.join(root, '.aioson', 'context', 'features', 'feature-x')),
+      fssync.existsSync(path.join(root, '.aioson', 'context', 'features', 'feature-x', 'dossier.md')),
       true
     );
+    // arquivo ausente no archive foi mesclado; a cópia viva saiu
+    assert.equal(
+      fssync.existsSync(path.join(root, '.aioson', 'context', 'done', 'feature-x', 'dossier', 'revisions.json')),
+      true
+    );
+    assert.equal(
+      fssync.existsSync(path.join(root, '.aioson', 'context', 'features', 'feature-x', 'revisions.json')),
+      false
+    );
+  });
+
+  it('dedups an identical live dossier and prunes the emptied source dir', async () => {
+    await seedFeaturesMd('done');
+    await seedDossierDir();
+    const liveDir = path.join(root, '.aioson', 'context', 'features', 'feature-x');
+    const archivedDir = path.join(root, '.aioson', 'context', 'done', 'feature-x', 'dossier');
+    await fs.mkdir(archivedDir, { recursive: true });
+    for (const name of ['dossier.md', 'revisions.json']) {
+      await fs.copyFile(path.join(liveDir, name), path.join(archivedDir, name));
+    }
+
+    const result = await runFeatureArchive({
+      args: ['.'], options: { feature: 'feature-x', json: true }, logger: silentLogger()
+    });
+    assert.equal(result.ok, true, JSON.stringify(result.errors));
+    assert.equal(result.dossier?.action, 'merged');
+    assert.equal(result.dossier?.source_removed, true);
+    assert.equal(fssync.existsSync(liveDir), false);
+  });
+
+  it('cleans an empty leftover briefings dir when the archive already has content (repro tinta-ouro)', async () => {
+    await seedFeaturesMd('done');
+    await fs.mkdir(path.join(root, '.aioson', 'briefings', 'feature-x'), { recursive: true });
+    const archivedBriefings = path.join(root, '.aioson', 'context', 'done', 'feature-x', 'briefings');
+    await fs.mkdir(archivedBriefings, { recursive: true });
+    await fs.writeFile(path.join(archivedBriefings, 'prototype.html'), '<html></html>');
+
+    const result = await runFeatureArchive({
+      args: ['.'], options: { feature: 'feature-x', json: true }, logger: silentLogger()
+    });
+    assert.equal(result.ok, true, JSON.stringify(result.errors));
+    const briefings = (result.dirs || []).find((d) => d.label === 'briefings');
+    assert.equal(briefings?.action, 'cleaned');
+    assert.equal(fssync.existsSync(path.join(root, '.aioson', 'briefings', 'feature-x')), false);
+  });
+
+  it('archives mappings/{slug} continuity into done/{slug}/mappings/', async () => {
+    await seedFeaturesMd('done');
+    await seedRootArtifacts();
+    const mappingsDir = path.join(root, '.aioson', 'mappings', 'feature-x');
+    await fs.mkdir(mappingsDir, { recursive: true });
+    await fs.writeFile(path.join(mappingsDir, 'continuity.md'), '# continuity\n');
+
+    const result = await runFeatureArchive({
+      args: ['.'], options: { feature: 'feature-x', json: true }, logger: silentLogger()
+    });
+    assert.equal(result.ok, true, JSON.stringify(result.errors));
+    const mappings = (result.dirs || []).find((d) => d.label === 'mappings');
+    assert.equal(mappings?.action, 'moved');
+    assert.equal(
+      fssync.existsSync(path.join(root, '.aioson', 'context', 'done', 'feature-x', 'mappings', 'continuity.md')),
+      true
+    );
+    assert.equal(fssync.existsSync(mappingsDir), false);
   });
 
   it('dry-run reports planned dossier move', async () => {

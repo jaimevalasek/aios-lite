@@ -116,7 +116,7 @@ async function initFromExisting({ slug, contextDir, classification, targetDir, n
     const fmParse = raw ? parseFrontmatter(raw) : { ok: false };
     if (fmParse.ok && fmParse.data.bootstrap_hash) {
       // Re-compute hash to detect changes
-      const artifacts = await gatherArtifacts(slug, contextDir, targetDir);
+      const artifacts = await gatherArtifacts(slug, contextDir);
       const newHash = artifactHash(artifacts);
       if (newHash === fmParse.data.bootstrap_hash) {
         return { created: false, reason: 'unchanged', path: p };
@@ -128,7 +128,7 @@ async function initFromExisting({ slug, contextDir, classification, targetDir, n
     throw err;
   }
 
-  const artifacts = await gatherArtifacts(slug, contextDir, targetDir);
+  const artifacts = await gatherArtifacts(slug, contextDir);
 
   // Must have at least one artifact to synthesize from
   const hasAny = Object.values(artifacts).some(Boolean);
@@ -184,23 +184,28 @@ async function initFromExisting({ slug, contextDir, classification, targetDir, n
   return { created: true, path: p, classification: cls, artifactsFound: Object.keys(artifacts).filter(k => artifacts[k]) };
 }
 
-async function gatherArtifacts(slug, contextDir, targetDir) {
-  const base = targetDir || path.join(contextDir, '..', '..');
+async function gatherArtifacts(slug, contextDir) {
   const artifacts = {};
 
-  // Per-slug artifacts
-  artifacts.prd = await readText(path.join(contextDir, `prd-${slug}.md`));
-  artifacts.spec = await readText(path.join(contextDir, `spec-${slug}.md`));
-  artifacts.sheldonEnrichment = await readText(path.join(contextDir, `sheldon-enrichment-${slug}.md`));
-  artifacts.requirements = await readText(path.join(contextDir, `requirements-${slug}.md`));
-  artifacts.architecture = await readText(path.join(contextDir, `architecture-${slug}.md`));
-
-  // Global PRD fallback
-  artifacts.prdGlobal = !artifacts.prd ? await readText(path.join(contextDir, 'prd.md')) : null;
-
-  // done/ directory (feature already closed)
+  // done/ directory (feature already closed / partially archived)
   const doneDir = path.join(contextDir, 'done', slug);
   artifacts.done = await fileExists(doneDir) ? doneDir : null;
+
+  // Per-slug artifacts — live first, then the archive (A6). A re-close of an
+  // already archived feature must synthesize from the feature's OWN PRD; the
+  // global prd.md fallback describes a different product entirely.
+  const readSlugArtifact = async (name) =>
+    await readText(path.join(contextDir, name))
+    || await readText(path.join(doneDir, name));
+
+  artifacts.prd = await readSlugArtifact(`prd-${slug}.md`);
+  artifacts.spec = await readSlugArtifact(`spec-${slug}.md`);
+  artifacts.sheldonEnrichment = await readSlugArtifact(`sheldon-enrichment-${slug}.md`);
+  artifacts.requirements = await readSlugArtifact(`requirements-${slug}.md`);
+  artifacts.architecture = await readSlugArtifact(`architecture-${slug}.md`);
+
+  // Global PRD fallback — only when the feature has no PRD anywhere
+  artifacts.prdGlobal = !artifacts.prd ? await readText(path.join(contextDir, 'prd.md')) : null;
 
   return artifacts;
 }

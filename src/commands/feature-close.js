@@ -201,6 +201,16 @@ async function ensureDossier({ targetDir, ctxDir, slug }) {
     // proceed to create
   }
 
+  // Re-close of an archived feature: the dossier guarantee is already met by
+  // done/{slug}/dossier/ — synthesizing a fresh live one would strand a
+  // duplicate the archive step then skips forever.
+  try {
+    await fs.access(path.join(ctxDir, 'done', slug, 'dossier', 'dossier.md'));
+    return { mode: 'present-archived' };
+  } catch {
+    // proceed to create
+  }
+
   try {
     await dossierBootstrap.initFromExisting({
       slug,
@@ -685,7 +695,9 @@ async function runFeatureClose({ args, options = {}, logger }) {
   // 0. Dossier guarantee — verdict-agnostic; ensures every closed feature has a dossier
   // for archive + audit trail. Telemetry is silent on failure.
   const dossierResult = await ensureDossier({ targetDir, ctxDir: dir, slug });
-  if (dossierResult.mode === 'from-existing' || dossierResult.mode === 'minimal-fallback') {
+  if (dossierResult.mode === 'present-archived') {
+    updates.push(`dossier: already archived at .aioson/context/done/${slug}/dossier/`);
+  } else if (dossierResult.mode === 'from-existing' || dossierResult.mode === 'minimal-fallback') {
     updates.push(`dossier: ${dossierResult.mode === 'from-existing' ? 'synthesized from existing artifacts' : 'minimal fallback (no artifacts found)'}`);
     await emitDossierEvent(targetDir, {
       agent: 'feature-close',
@@ -793,8 +805,19 @@ async function runFeatureClose({ args, options = {}, logger }) {
         updates.push(`archive: moved ${archive.moved.length} file(s) to ${archive.archiveDir}/`);
         updates.push(`archive: manifest updated at .aioson/context/done/MANIFEST.md`);
       }
+      for (const d of (archive && archive.dirs) || []) {
+        if (d.action === 'merged') {
+          updates.push(`archive: ${d.label} dir merged into ${d.target}/ (${d.merged} file(s)${d.source_removed ? ', empty source removed' : ''})`);
+        } else if (d.action === 'cleaned') {
+          updates.push(`archive: ${d.label} dir — empty leftover removed (already archived)`);
+        }
+      }
       if (archive && archive.ok && archive.noop) {
         updates.push('archive: nothing to move (already clean)');
+      } else if (archive && archive.ok && (!archive.moved || archive.moved.length === 0)) {
+        // Re-close idempotente: tudo já mora em done/{slug}. Silêncio aqui
+        // lia-se como "não arquivou" — o estado precisa ser dito.
+        updates.push(`archive: nothing to move — feature already archived at ${archive.archiveDir}/ (${archive.totalArchived} file(s))`);
       } else if (archive && !archive.ok && archive.reason === 'archive_incomplete') {
         for (const e of archive.errors || []) {
           closeErrors.push(`archive: ${e.item}${e.code ? ` [${e.code}]` : ''}: ${e.message}`);

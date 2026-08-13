@@ -171,7 +171,8 @@ async function collectFeatureArtifacts({ ctxDir, targetDir, slug, includeDone = 
   const slugDirCandidates = [
     { label: 'dossier', sourceDir: path.join(ctxDir, 'features', slug) },
     { label: 'plans', sourceDir: path.join(targetDir, '.aioson', 'plans', slug) },
-    { label: 'briefings', sourceDir: path.join(targetDir, '.aioson', 'briefings', slug) }
+    { label: 'briefings', sourceDir: path.join(targetDir, '.aioson', 'briefings', slug) },
+    { label: 'mappings', sourceDir: path.join(targetDir, '.aioson', 'mappings', slug) }
   ];
   const dirs = [];
   for (const d of slugDirCandidates) {
@@ -272,6 +273,66 @@ async function updateManifest(manifestPath, entry, mode) {
   await fs.writeFile(manifestPath, renderManifest(rows), 'utf8');
 }
 
+/**
+ * O antigo `skip` congelava a sobra viva para sempre: um close interrompido
+ * deixa `briefings/{slug}/` vazio, ou um dossiê recém-sintetizado, ao lado de
+ * um arquivo morto já populado — e cada re-close pulava o diretório de novo.
+ * Reconcilia sem nunca perder conteúdo: arquivo ausente no destino é movido;
+ * cópia viva idêntica é removida (dedup); conteúdo divergente fica no lugar e
+ * vira erro acionável — jamais sobrescrito em silêncio. Diretórios esvaziados
+ * (inclusive a própria origem) são podados.
+ */
+async function mergeSkippedDir(sourceDir, archiveTargetDir) {
+  const merged = [];
+  const conflicts = [];
+  const residues = [];
+
+  async function walk(relBase) {
+    const abs = relBase ? path.join(sourceDir, relBase) : sourceDir;
+    let entries;
+    try { entries = await fs.readdir(abs, { withFileTypes: true }); } catch { return; }
+    for (const entry of entries) {
+      const rel = relBase ? path.join(relBase, entry.name) : entry.name;
+      if (entry.isDirectory()) { await walk(rel); continue; }
+      if (!entry.isFile()) continue;
+      const from = path.join(sourceDir, rel);
+      const to = path.join(archiveTargetDir, rel);
+      let existing = null;
+      try { existing = await fs.readFile(to); } catch { /* absent in archive */ }
+      if (existing === null) {
+        await fs.mkdir(path.dirname(to), { recursive: true });
+        const mv = await moveFileResilient(from, to);
+        merged.push(rel);
+        if (mv.sourceResidue) residues.push({ rel, detail: mv.residueError });
+      } else {
+        const live = await fs.readFile(from);
+        if (existing.equals(live)) {
+          try { await fs.rm(from, { force: true }); merged.push(rel); } catch (err) {
+            residues.push({ rel, detail: (err && err.message) || String(err) });
+          }
+        } else {
+          conflicts.push(rel);
+        }
+      }
+    }
+  }
+  await walk('');
+
+  async function prune(dirAbs) {
+    let entries;
+    try { entries = await fs.readdir(dirAbs, { withFileTypes: true }); } catch { return false; }
+    for (const entry of entries) {
+      if (entry.isDirectory()) await prune(path.join(dirAbs, entry.name));
+    }
+    try { entries = await fs.readdir(dirAbs); } catch { return false; }
+    if (entries.length > 0) return false;
+    try { await fs.rmdir(dirAbs); return true; } catch { return false; }
+  }
+  const sourceRemoved = await prune(sourceDir);
+
+  return { merged, conflicts, residues, sourceRemoved };
+}
+
 async function runFeatureArchive({ args = [], options = {}, logger }) {
   const targetDir = path.resolve(process.cwd(), args[0] || '.');
   const slug = options.feature ? String(options.feature) : (options.slug ? String(options.slug) : null);
@@ -331,7 +392,10 @@ async function runFeatureArchive({ args = [], options = {}, logger }) {
   const SLUG_DIRS = [
     { label: 'dossier', sourceBase: path.join(ctxDir, 'features'), archiveLabel: 'dossier' },
     { label: 'plans', sourceBase: path.join(targetDir, '.aioson', 'plans'), archiveLabel: 'plans' },
-    { label: 'briefings', sourceBase: path.join(targetDir, '.aioson', 'briefings'), archiveLabel: 'briefings' }
+    { label: 'briefings', sourceBase: path.join(targetDir, '.aioson', 'briefings'), archiveLabel: 'briefings' },
+    // continuity.md e afins: contexto temporário de sessão que vira peso morto
+    // vivo depois do fechamento — arquiva junto para o tree ficar limpo.
+    { label: 'mappings', sourceBase: path.join(targetDir, '.aioson', 'mappings'), archiveLabel: 'mappings' }
   ];
 
   const dirPlans = [];
@@ -424,7 +488,7 @@ async function runFeatureArchive({ args = [], options = {}, logger }) {
       if (d.action === 'move') {
         log(`  would move ${d.label} dir: ${path.relative(targetDir, d.sourceDir)}/ → ${path.relative(targetDir, d.targetDir)}/`);
       } else if (d.action === 'skip') {
-        log(`  would skip ${d.label} dir: already archived at ${path.relative(targetDir, d.targetDir)}/`);
+        log(`  would reconcile ${d.label} dir with the archive at ${path.relative(targetDir, d.targetDir)}/ (merge missing, dedup identical, flag divergent)`);
       }
     }
     log(`  manifest entry: | ${slug} | ${completed} | ${toMove.length + alreadyArchived.length} | ${summary || '—'} |`);
@@ -495,10 +559,34 @@ async function runFeatureArchive({ args = [], options = {}, logger }) {
         });
       }
     } else if (d.action === 'skip') {
+      const merge = await mergeSkippedDir(d.sourceDir, d.targetDir);
+      for (const c of merge.conflicts) {
+        errors.push({
+          item: path.relative(targetDir, path.join(d.sourceDir, c)),
+          kind: 'file',
+          label: d.label,
+          code: 'archive_merge_conflict',
+          message: `live copy differs from archived ${path.relative(targetDir, path.join(d.targetDir, c))} — reconcile manually (never overwritten silently)`
+        });
+      }
+      for (const r of merge.residues) {
+        residue.push({
+          item: path.relative(targetDir, path.join(d.sourceDir, r.rel)),
+          kind: 'file',
+          detail: r.detail
+        });
+      }
       dirResults.push({
         label: d.label,
-        action: 'skipped',
+        action: merge.conflicts.length > 0 ? 'merge_conflict'
+          : merge.merged.length > 0 ? 'merged'
+            : merge.sourceRemoved ? 'cleaned'
+              : 'skipped',
         reason: d.reason,
+        merged: merge.merged.length,
+        conflicts: merge.conflicts.length,
+        source_removed: merge.sourceRemoved,
+        source: path.relative(targetDir, d.sourceDir),
         target: path.relative(targetDir, d.targetDir)
       });
     }
@@ -552,6 +640,12 @@ async function runFeatureArchive({ args = [], options = {}, logger }) {
   for (const d of dirResults) {
     if (d.action === 'moved') {
       log(`  moved ${d.label} dir: ${d.source}/ → ${d.target}/`);
+    } else if (d.action === 'merged') {
+      log(`  merged ${d.label} dir into ${d.target}/ (${d.merged} file(s)${d.source_removed ? ', empty source removed' : ''})`);
+    } else if (d.action === 'cleaned') {
+      log(`  cleaned ${d.label} dir: empty leftover removed (archive already at ${d.target}/)`);
+    } else if (d.action === 'merge_conflict') {
+      log(`  ✗ ${d.label} dir: ${d.conflicts} file(s) differ from the archive at ${d.target}/ — reconcile manually`);
     } else if (d.action === 'skipped') {
       log(`  skipped ${d.label} dir: already archived at ${d.target}/`);
     } else if (d.action === 'failed') {
