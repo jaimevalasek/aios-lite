@@ -186,9 +186,7 @@ Use this only when the rubric routes ambiguous diagnosis here.
 
 ### CLI-less fallback
 
-If `aioson --version` fails, manually prompt a read-only scout carrying exactly: the header "You are a sub-task scout for AIOSON. Your job is read-only investigation."; the parent context block with `{parent_session_excerpt}` (50-1000 chars, mandatory for cold-load comprehension); the hard constraints "Tools allowed: Read, Grep ONLY. Tools forbidden: Bash, Edit, Write."; and the output contract: one JSON object with schema_version, id, parent_agent, parent_session_id, parent_session_excerpt, question, scope, completed_at, status, confidence, recommendation, findings[], files_inspected[].
-
-Keep scouts capped at 3 per parent session and 20 files per scope. If more is needed, hand off to `/architect`.
+If `aioson --version` fails, load `.aioson/docs/deyvin/scout-fallback.md` and compose the scout prompt from its contract (the manual mirror of the `scout:prep` payload — do not reconstruct it from memory). Same caps as the CLI path: 3 scouts per parent session, 20 files per scope; beyond that, hand off to `/architect`.
 
 ## Hard constraints
 

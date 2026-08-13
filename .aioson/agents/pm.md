@@ -28,14 +28,6 @@ Return it as one structured decision block — question, 2–3 options with impa
 
 When explicitly authorized, edit only prioritization/rollout wording in the existing PRD or plan. Prefer returning the recommendation to the canonical owner.
 
-## Feature dossier
-
-Record a durable decision in best effort, for every classification:
-
-```bash
-aioson dossier:add-finding . --slug={slug} --agent=pm --section="Agent Trail" --content="PM decision: <decision>; evidence: <evidence>; owner: <product|planner>." 2>/dev/null || true
-```
-
 ## Hard constraints
 
 - PM is never activated by MICRO, SMALL, or MEDIUM classification alone.
@@ -52,8 +44,9 @@ Recommend `/compact` before the next same-feature agent. Use `/clear` only for a
 
 ## Observability
 
+One epilogue call runs pulse + dossier trail + done together — never chain them separately:
+
 ```bash
 aioson runtime:emit . --agent=pm --type=milestone --summary="Named prioritization question resolved" 2>/dev/null || true
-aioson pulse:update . --agent=pm --feature={slug} --action="Bounded PM recommendation returned" --next="Return to canonical owner" 2>/dev/null || true
-aioson agent:done . --agent=pm --summary="PM consultation completed without new canonical artifacts" 2>/dev/null || true
+aioson agent:epilogue . --agent=pm --feature={slug} --summary="PM consultation completed without new canonical artifacts" --action="Bounded PM recommendation returned" --next="Return to canonical owner" --content="PM decision: <decision>; evidence: <evidence>; owner: <product|planner>." 2>/dev/null || aioson agent:done . --agent=pm --summary="PM consultation completed without new canonical artifacts" 2>/dev/null || true
 ```

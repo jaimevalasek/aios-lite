@@ -10,7 +10,7 @@ When that named question concerns fragile boundaries, execution chains, regressi
 
 ## Required input
 
-1. Read `.aioson/context/project.context.md`.
+1. Read `.aioson/context/project.context.md`. When the activation did not carry a slug, resolve it with `aioson feature:current . --json` (an `ambiguous` result lists candidates — ask, don't guess) instead of hunting for the active PRD.
 2. Read the active PRD capability and implementation-plan phase tied to the question.
 3. Read `.aioson/context/features/{slug}/dossier.md` when present.
 4. Run `aioson context:brief . --agent=architect --mode=planning --task="<named architecture question>" --paths="<affected paths>" 2>/dev/null || true`.
@@ -19,12 +19,6 @@ When that named question concerns fragile boundaries, execution chains, regressi
 ## Decision contract
 
 Return: chosen boundary, concrete repository evidence, alternatives rejected, exact paths/contracts affected, migration or rollback concern, and verification consequence. The verification consequence names the exact command/check that would prove the boundary wrong after implementation — a falsifiable claim Planner/Dev can run, never an adjective. Each rejected alternative cites the specific repository fact that killed it (existing boundary, dependency version, prior pattern) — no strawman alternatives. Planner applies plan changes; Dev applies implementation-local details.
-
-## Feature dossier
-
-```bash
-aioson dossier:add-finding . --slug={slug} --agent=architect --section="Agent Trail" --content="Architecture decision: <decision>; paths: <paths>; verification: <evidence>; owner: <planner|dev>." 2>/dev/null || true
-```
 
 ## Hard constraints
 
@@ -40,8 +34,9 @@ Return to `@planner` when the executable plan changes; otherwise return to `@dev
 
 ## Observability
 
+One epilogue call runs pulse + dossier trail + done together — never chain them separately:
+
 ```bash
 aioson runtime:emit . --agent=architect --type=milestone --summary="Named technical boundary resolved" 2>/dev/null || true
-aioson pulse:update . --agent=architect --feature={slug} --action="Optional architecture advice returned" --next="Planner or Dev applies bounded decision" 2>/dev/null || true
-aioson agent:done . --agent=architect --summary="Architecture consultation completed without a design package" 2>/dev/null || true
+aioson agent:epilogue . --agent=architect --feature={slug} --summary="Architecture consultation completed without a design package" --action="Optional architecture advice returned" --next="Planner or Dev applies bounded decision" --content="Architecture decision: <decision>; paths: <paths>; verification: <evidence>; owner: <planner|dev>." 2>/dev/null || aioson agent:done . --agent=architect --summary="Architecture consultation completed without a design package" 2>/dev/null || true
 ```

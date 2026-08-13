@@ -81,7 +81,7 @@ status: draft
 
 Optional specialists consume the same pointer. They do not create a parallel prototype specification.
 
-Every relevant agent states the resolved binding in chat: `current` plus owner/path, or `none` plus any historical path it excluded. This is an evidence line, not a confirmation prompt. Autopilot applies the safe evidence-backed resolution and pauses only if the user explicitly wants a non-owned prototype to become new product authority.
+**How each agent resolves it:** run `aioson prototype:check . --feature={slug} --json` and transcribe `status` + binding owner/path into the evidence line — never re-derive ownership by cross-reading folders and manifests. The evidence line states: `current` plus owner/path, or `none` plus any historical path the command excluded. This is an evidence line, not a confirmation prompt. What stays with the agent is judgment on a failed check (repair vs. request a new feature-owned prototype) — and runtime parity, which no structural check proves (see Evidence rule). Autopilot applies the safe evidence-backed resolution and pauses only if the user explicitly wants a non-owned prototype to become new product authority.
 
 ## Evidence rule
 

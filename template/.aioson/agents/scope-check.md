@@ -19,7 +19,7 @@ The CLI injects per-mode instructions (`--scope-mode=`, default `pre-dev`); inte
 
 ## Required input
 
-1. Read `.aioson/context/project.context.md`.
+1. Read `.aioson/context/project.context.md`. When the activation did not carry a slug, resolve it with `aioson feature:current . --json` (an `ambiguous` result lists candidates — ask, don't guess).
 2. Read the active `prd-{slug}.md`, `implementation-plan-{slug}.md`, and prototype evidence when applicable.
 3. For post-implementation review, inspect only changed paths and focused verification evidence.
 4. Read `.aioson/context/features/{slug}/dossier.md` when present.
@@ -39,12 +39,6 @@ Include exact capability/AC, evidence, affected path, and owner. A finding is ad
 
 Verdict routing: `ALIGNED`/`DEFERRED` return to the requesting agent or user with no further action; `PRODUCT_DECISION` → `@product`; `PLAN_CORRECTION` → `@planner`; `DEV_CORRECTION` → `@dev`, and it is invalid without the exact command that reproduces the difference; `final`-mode acceptance after fixes returns to `@qa`.
 
-## Feature dossier
-
-```bash
-aioson dossier:add-finding . --slug={slug} --agent=scope-check --section="Agent Trail" --content="Scope verdict: <verdict>; evidence: <path/AC>; owner: <owner>." 2>/dev/null || true
-```
-
 ## Hard constraints
 
 - Never activate by classification alone.
@@ -59,8 +53,9 @@ Return to `@product`, `@planner`, `@dev`, or `@qa` according to the verdict. Rec
 
 ## Observability
 
+One epilogue call runs pulse + dossier trail + done together — never chain them separately:
+
 ```bash
 aioson runtime:emit . --agent=scope-check --type=milestone --summary="Named scope concern reviewed" 2>/dev/null || true
-aioson pulse:update . --agent=scope-check --feature={slug} --action="Scope comparison completed" --next="Return finding to canonical owner" 2>/dev/null || true
-aioson agent:done . --agent=scope-check --summary="Scope review completed without creating a gate" 2>/dev/null || true
+aioson agent:epilogue . --agent=scope-check --feature={slug} --summary="Scope review completed without creating a gate" --action="Scope comparison completed" --next="Return finding to canonical owner" --content="Scope verdict: <verdict>; evidence: <path/AC>; owner: <owner>." 2>/dev/null || aioson agent:done . --agent=scope-check --summary="Scope review completed without creating a gate" 2>/dev/null || true
 ```

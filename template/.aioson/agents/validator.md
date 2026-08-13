@@ -11,10 +11,9 @@ Verify whether the binary criteria defined in `harness-contract.json` have been 
 
 These directories are optional. Check them silently — if absent or empty, continue without mentioning them. Load by frontmatter match only; never scan folders wholesale.
 
-1. `.aioson/rules/` — if `.md` files exist, read YAML frontmatter:
-   - if `agents:` is absent or `[]` → load the rule as additional binary criteria
-   - if `agents:` includes `validator` → load the rule as additional binary criteria
-   - otherwise skip it
+1. `.aioson/rules/` — resolve the applicable rules with one call instead of reading frontmatter file-by-file:
+   `aioson context:brief . --agent=validator --mode=executing --task="validate {slug} harness contract" --json 2>/dev/null`
+   Open ONLY the rule paths it returns (`must_load` is binding, `related` is recall) and load them as additional binary criteria. CLI unavailable → fall back to reading YAML frontmatter of `.aioson/rules/*.md` (load when `agents:` is absent, `[]`, or includes `validator`).
 2. `.aioson/design-docs/*.md` — load only when a contract criterion explicitly references structural governance.
 
 Rules and governance docs may *add* binary criteria but never override the explicit contract. They never expand the validator's sandbox — do not use them as an excuse to read other agents' artefacts.
@@ -50,45 +49,36 @@ fail through is worthless: a feature can pass every unit test while its migratio
 never wired, and the process never booted. This precheck is the one thing that lets a blind executor catch
 that class of failure — it checks the **contract's shape**, never the product's merit.
 
-1. Determine whether the feature is a **runtime feature**: read `manifest.json` — `has_api: true`, a declared
-   server/process, or a Play runtime ⇒ yes. A Prisma schema / migrations folder in `completed_steps` ⇒ yes. A
-   `## Prototype reference` (a `prototype-manifest.md` with Core interactions) ⇒ yes.
-2. If it **is** a runtime feature, the contract MUST contain at least the runtime-gate criteria from
-   `harness-contract.md` §2c — `RG-build`, `RG-migrate`, `RG-boot`, `RG-smoke` (or equivalents whose
-   `verification` actually builds, applies migrations to a real DB, boots the process, and drives the Core
-   happy-path end to end). Also reject the contract if **two binary criteria share an identical `verification`
-   command** (padding) or if every criterion is a unit/component test (`*.test.*` only).
-3. **If the contract is missing the runtime gate (or is padded), STOP.** Do not score the unit criteria green.
+1. **Run the deterministic precheck first — never re-derive what it proves:**
+
+   ```bash
+   aioson harness:check . --slug={slug} --json
+   ```
+
+   Its `integrity` block detects the runtime surface (prototype-manifest, migration steps) and returns
+   `missing_runtime_gate` / `duplicate_verification` with `ok: false`. Copy a deterministic integrity failure
+   straight into your verdict (entry shape in item 3).
+2. Your judgment covers **only** the two cases the CLI declares it cannot prove: (a) a Play `has_api` runtime
+   whose `manifest.json` is not framework-locatable — read `manifest.json` and
+   `.aioson/briefings/{slug}/prototype-manifest.md` for this determination alone; (b) whether an `RG-smoke`
+   criterion *actually* drives the Core happy-path end to end rather than being a unit test wearing the
+   `RG-` id.
+3. **If integrity fails (either source), STOP.** Do not score the unit criteria green.
    Emit the verdict with `overall_score: 0`, `ready_for_done_gate: false`, and a `results` entry:
    `{ "id": "contract-integrity", "passed": false, "reason": "Runtime feature but harness-contract has no RG-build/RG-migrate/RG-boot/RG-smoke (or contains duplicate/all-unit verification). The app's build, migrations, boot and Core happy-path are unverified. Route back to @sheldon to repair §2c runtime-gate criteria per .aioson/docs/sheldon/harness-contract.md, then re-run @dev." }`.
    This is not a product judgment — it is a statement that the contract cannot prove the feature runs.
 4. If the feature is **not** a runtime feature, or the runtime gate is present and non-duplicated, continue to
-   Step 1 normally.
-
-> **Deterministic backstop.** `aioson harness:check . --slug={slug} --json` already enforces the detectable
-> subset of this precheck: its `integrity` block returns `missing_runtime_gate` / `duplicate_verification` and
-> sets `ok: false` whenever it can locate the runtime surface (prototype-manifest or a migration step). Read it
-> and copy a deterministic integrity failure straight into your verdict. Your judgment is still required for the
-> two things the CLI cannot prove: a Play `has_api` runtime whose `manifest.json` is not framework-locatable,
-> and whether an `RG-smoke` criterion *actually* drives the Core happy-path rather than being a unit test
-> wearing the `RG-` id.
+   Step 1 normally (the same `harness:check` output is reused in Step 2 — do not run it twice).
 
 ### Step 1 — Load
 Locate `harness-contract.json` for the current feature. If `.aioson/plans/{slug}/harness-contract.json` does not exist, report "no harness contract for {slug} — QA owns the delivery verdict (Gate D)" and stop without creating artifacts or emitting a verdict JSON. Otherwise identify criteria with `binary: true`.
 
 ### Step 2 — Deterministic verification
-First, run the executable checks declared in the contract:
+Reuse the `harness:check` output from Step 0 (persisted at `.aioson/plans/{slug}/last-check-output.json` — allowed reading; it is diagnostic tool output).
 
-```bash
-aioson harness:check . --slug={slug} --json
-```
+For every criterion that has a `verification` command or a static `must_match`/`must_not_match` declaration, the check's result **is** the verdict — copy `ok` into `passed` verbatim (reason = the check's stderr first line on failure). Never override a deterministic result with judgment.
 
-For every criterion that has a `verification` command, the check's exit code **is** the verdict — copy `ok` into `passed` verbatim (reason = the check's stderr first line on failure). Never override a deterministic result with judgment. The report is also persisted at `.aioson/plans/{slug}/last-check-output.json` (allowed reading — it is diagnostic tool output).
-
-For criteria **without** `verification` that are still mechanically checkable, run (or request execution of) local tools yourself — portable `node -e` assertions, per the harness-contract's own verification-command rules (no POSIX-only utilities):
-- `node -e "process.exit(require('fs').existsSync('{path}') ? 0 : 1)"` for file existence.
-- `node -e` read-and-match assertions for content/shape patterns.
-- `npm test` or the stack's equivalent for execution criteria.
+For a criterion **without** `verification` that is still mechanically checkable (file existence, content/shape pattern): it should have been declared as a static SG-style `must_match`/`must_not_match` or given a `verification` command — `harness:check` evaluates those for free. Score it with one portable `node -e` assertion when trivial, **and report the missing declaration as a contract defect** in that criterion's `reason` (owner: @sheldon/@dev) so the next compile carries it instead of relying on manual verification again. Criteria that genuinely require understanding go to Step 3.
 
 If the `aioson` CLI is unavailable, fall back to running each criterion's `verification` command directly and use its exit code.
 
@@ -96,7 +86,11 @@ If the `aioson` CLI is unavailable, fall back to running each criterion's `verif
 Only for criteria with no `verification` command that require understanding (e.g., "API follows REST conventions"): analyze the delivered code strictly against what the contract requires — nothing more.
 
 ### Step 4 — Verdict generation
-Your output must be **EXCLUSIVELY** a structured JSON object designed to be parsed by a machine. Do not add preambles or explanations outside the JSON.
+Persist the verdict and let the engine apply it — never leave the JSON only in the chat:
+
+1. Write the JSON object below to `.aioson/plans/{slug}/last-validator-output.json`.
+2. Run `aioson harness:apply-validation . --slug={slug} --json` — it validates the schema, updates `progress.json`, and archives the output. A schema rejection means your JSON is malformed: fix and re-run.
+3. The verdict message is the same JSON, **exclusively** — no preambles or explanations outside it (machine contract for the isolated-context flow).
 
 ## Output format (JSON)
 

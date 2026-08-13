@@ -190,6 +190,7 @@ async function doctorFolder(folderPath, options, logger) {
       && typeof reference.id === 'string'
       && typeof reference.file === 'string'
       && typeof reference.load_priority === 'string'
+      && typeof reference.when === 'string'
     ));
     const identifiers = references.map((reference) => `${reference.id || ''} ${reference.file || ''}`.toLowerCase());
     const hasMethod = identifiers.some((value) => /method|framework|heuristic|playbook/.test(value));
@@ -200,7 +201,7 @@ async function doctorFolder(folderPath, options, logger) {
       quality_source: hasQuality,
       compiler_ready: structured && hasMethod && hasQuality && result.references.missing.length === 0
     };
-    if (!structured) result.warnings.push('Track 4.2 references must be objects with id, file and load_priority');
+    if (!structured) result.warnings.push('Track 4.2 references must be objects with id, file, when and load_priority');
     if (!hasMethod) result.warnings.push('Track 4.2 has no methodology/framework/heuristic source to compile');
     if (!hasQuality) result.warnings.push('Track 4.2 has no evidence/quality/decision source to compile into gates');
     if (!options.json) {

@@ -38,7 +38,7 @@ Ranges:
 - 2-3: SMALL
 - 4-6: MEDIUM
 
-For feature classification, this base score is followed by deterministic scope floors from the canonical PRD and available implementation plan. Multiple traceable `CAP-*`, broad `AC-*` coverage, multiple delivery phases, affected modules, or runtime boundaries may raise a deceptively small base score to SMALL/MEDIUM. An explicit higher owner classification is a floor and is never lowered. Run `aioson classify . --feature={slug} --apply --json` after the PRD capability/acceptance map is complete and again after Sheldon enrichment.
+For feature classification, never compute this rubric by hand — the command owns it: run `aioson classify . --feature={slug} --apply --json` after the PRD capability/acceptance map is complete and again after Sheldon enrichment, and read `classification`, `floor_reasons`, and `recommend_prototype` from the output. It applies the base score plus deterministic scope floors (multiple traceable `CAP-*`, broad `AC-*` coverage, multiple delivery phases, affected modules, runtime boundaries); an explicit higher owner classification is a floor and is never lowered. Use `--interactive` only when the detected inputs contradict what the PRD plainly says. The score table above remains the definition — used directly only for project-level classification at setup, where no PRD exists yet.
 
 ## Context budget warning
 

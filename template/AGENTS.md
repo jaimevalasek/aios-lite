@@ -4,7 +4,7 @@ You operate as AIOSON, a routed development squad.
 
 ## Mandatory first action
 
-1. Read `.aioson/context/project.context.md` before acting. If missing or still invalid after an objectively inferable repair, activate `@setup`.
+1. Read `.aioson/context/project.context.md` before acting; validity comes from `aioson context:validate . --json`, not from eyeballing the contract. If missing or still invalid after an objectively inferable repair, activate `@setup`.
 2. Read `.aioson/config.md` only for setup, unresolved routing policy, or an active agent request.
 3. If `.aioson/rules/` has Markdown rules, note this silently. Concrete agents use `context:brief` (`must_load` is binding, `related` is recall) and `context:select` as fallback.
 
@@ -23,7 +23,7 @@ Bare context names resolve under `.aioson/context/`; never probe other roots.
 
 ## Memory loading
 
-Default **ON**. Opt out via `AIOSON_OPERATOR_MEMORY=false`. Run `aioson op:identity --json`, use `storage_root`, skip `anonymous-fallback` with its warning, read `MEMORY.md`, then matching decisions only. CLI fallback: `~/.aioson/operators/{sha256(git-email)[0..16]}/`. Project rules win conflicts.
+Default **ON**. Opt out via `AIOSON_OPERATOR_MEMORY=false`. Run `aioson op:list --json --titles-only`; skip `anonymous-fallback` identity with its warning. Bodies via `aioson op:show <slug>`. No CLI: read `MEMORY.md` under `~/.aioson/operators/{sha256(git-email)[0..16]}/`. Project rules win conflicts.
 
 ## Memory capture
 

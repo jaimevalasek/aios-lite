@@ -325,10 +325,16 @@ async function installFromLocal(targetDir, slug, filePath, logger) {
     await fs.copyFile(absPath, path.join(destDir, 'SKILL.md'));
   }
 
-  // Write meta
+  // Write meta. A self-install (samePath) re-distributes an artifact that already
+  // owns its provenance — preserve an existing `source` (e.g. `generated`, which
+  // the hybrid-forge quality gate requires) instead of stamping it `local`.
+  const existingMeta = samePath ? await readJsonIfExists(path.join(destDir, '.skill-meta.json')) : null;
+  const preservedSource = existingMeta && typeof existingMeta.source === 'string' && existingMeta.source
+    ? existingMeta.source
+    : null;
   await writeSkillMeta(destDir, {
-    source: 'local',
-    sourcePath: filePath,
+    source: preservedSource || 'local',
+    ...(preservedSource ? {} : { sourcePath: filePath }),
     installedAt: new Date().toISOString()
   });
 

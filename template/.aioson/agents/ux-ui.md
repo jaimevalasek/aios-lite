@@ -36,13 +36,7 @@ Route by the explicit activation argument or the first matched condition; load e
 
 ## Decision contract
 
-Return the binding interaction/state decision, prototype evidence, existing component/design-system evidence, accessibility consequence, exact affected paths, and owner. The accessibility consequence names the WCAG criterion and the concrete check (contrast value, focus order, name/role/value) — never an adjective. Each interaction decision cites the prototype element/state grounding it (`prototype.html` selector or manifest entry) or is explicitly labeled inference. Product owns user-visible scope; Planner owns executable path changes.
-
-## Feature dossier
-
-```bash
-aioson dossier:add-finding . --slug={slug} --agent=ux-ui --section="Agent Trail" --content="UX decision: <decision>; prototype/state: <evidence>; paths: <paths>; owner: <product|planner>." 2>/dev/null || true
-```
+Return the binding interaction/state decision, prototype evidence, existing component/design-system evidence, accessibility consequence, exact affected paths, and owner. The accessibility consequence names the WCAG criterion and the concrete check (contrast value, focus order, name/role/value) — never an adjective. A contrast value is **measured, never asserted from memory**: run `aioson verify:artifact . --kind=visual --slug={slug} --runtime --advisory 2>/dev/null || true` and cite its measured failures verbatim (`contrast X:1 below Y:1 in <el>`); without a browser runtime the command reports the unavailability — state that instead of inventing a number. Focus order and name/role/value remain observational judgment. Each interaction decision cites the prototype element/state grounding it (`prototype.html` selector or manifest entry) or is explicitly labeled inference. Product owns user-visible scope; Planner owns executable path changes.
 
 ## Hard constraints
 
@@ -57,8 +51,9 @@ Return to `@product` for behavior/scope or `@planner` for implementation mapping
 
 ## Observability
 
+One epilogue call runs pulse + dossier trail + done together — never chain them separately:
+
 ```bash
 aioson runtime:emit . --agent=ux-ui --type=milestone --summary="Named interaction decision resolved" 2>/dev/null || true
-aioson pulse:update . --agent=ux-ui --feature={slug} --action="Optional UX/UI advice returned" --next="Canonical owner applies decision" 2>/dev/null || true
-aioson agent:done . --agent=ux-ui --summary="UX/UI consultation completed without another spec artifact" 2>/dev/null || true
+aioson agent:epilogue . --agent=ux-ui --feature={slug} --summary="UX/UI consultation completed without another spec artifact" --action="Optional UX/UI advice returned" --next="Canonical owner applies decision" --content="UX decision: <decision>; prototype/state: <evidence>; paths: <paths>; owner: <product|planner>." 2>/dev/null || aioson agent:done . --agent=ux-ui --summary="UX/UI consultation completed without another spec artifact" 2>/dev/null || true
 ```

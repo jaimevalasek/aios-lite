@@ -56,7 +56,7 @@ Do not ask for psychometric summaries or facts already present in the enriched p
 
 ## Bounded forge state machine
 
-1. Load and structurally inspect the enriched profile.
+1. Gate the enriched profile structurally with `aioson verify:artifact . --kind=enriched-profile --slug={slug} --json 2>/dev/null` — a structural failure is `HANDOFF_REQUIRED` before any expensive read; on pass, load only what step 3 needs. Structural validity never raises evidentiary confidence.
 2. Resolve output route and stable artifact slug.
 3. Extract only Generation Handoff claims with their source IDs, confidence, contradictions, and unsupported fields.
 4. For a Genome, load `forge-package-contract.md` and generate/update `.aioson/genomes/{genome-slug}/`.

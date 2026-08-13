@@ -56,7 +56,13 @@ test('orchestrator coordinates only justified plan phases without a spec package
 
   const promptChecks = [
     'explicitly requested parallel or cross-cutting execution problem',
-    'Give each lane explicit file ownership',
+    // Ownership/conflicts/ledger are engine-materialized since the token-economy
+    // wave: assign writes the ownership map, guard refuses conflicts, status is
+    // the ledger. The invariant (explicit disjoint ownership per lane) survives
+    // as the reviewed orchestrator:assign map.
+    'orchestrator:assign',
+    'orchestrator:guard',
+    'orchestrator:status',
     'Use specialists only for a concrete trigger',
     'do not create a second plan or spec package',
     'Never activate because a feature is MEDIUM'

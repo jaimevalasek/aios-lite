@@ -46,7 +46,7 @@ When the user explicitly asks for a new design skill with no parents and no sour
 
 ## Step 1 — Intake
 1. If `.aioson/context/design-variation-preset.md` exists, read it before asking questions. Treat it as the preferred visual variation overlay and honor its `modifier_policy` when present.
-2. List available design skills from `.aioson/skills/design/` and `.aioson/installed-skills/`.
+2. List available design skills with `aioson skill:list . --json 2>/dev/null` (it already walks `.aioson/skills/design/` and `.aioson/installed-skills/`); scan the directories manually only when the CLI is unavailable.
 3. Ask for:
    - 2 primary design parents — each either a local AIOSON design skill or an external DESIGN.md source (refero.design md-example or similar)
    - optional 0–2 modifiers by default, or 0–3 in advanced mode when allowed by the preset or explicitly approved by the user
@@ -110,8 +110,14 @@ After the hybrid skill is successfully generated, archive the active preset by m
 Then load `references/quality-gates.md` and run its checks, including the quantitative floor (at least five expression modes and twenty components across the reference files, counted, not assumed); repair before Step 5.
 
 ## Step 5 — Distribution
-1. If `AGENTS.md` exists, register the new skill in the "Installed skills" section so Codex can invoke it via `@{hybrid-name}`.
-2. If `.claude/skills/`, `.cursor/skills/`, or `.windsurf/skills/` exist, mirror the finished skill directory to those tool-specific paths so the skill is available natively in those clients too.
+
+One command does the whole distribution — never mirror directories or edit `AGENTS.md` by hand:
+
+```bash
+aioson skill:install . --slug={hybrid-name} --from=.aioson/installed-skills/{hybrid-name}
+```
+
+The self-install path distributes to every existing tool directory (`.claude/skills/`, `.cursor/skills/`, `.windsurf/skills/`), registers the skill in the `AGENTS.md` "Installed skills" section, and preserves the package's `source: generated` provenance. CLI unavailable → mirror the directory and register in `AGENTS.md` manually as before.
 
 ## Step 6 — Optional promotion
 Only if the user explicitly asks to promote the hybrid:
@@ -132,7 +138,7 @@ Only if the user explicitly asks to promote the hybrid:
 - Do not write into `.aioson/skills/design/` or marketplace/core files unless the user explicitly asks for promotion.
 
 ## Output contract
-The Step 4 package list is the complete output map, plus the `AGENTS.md` registration and optional editor mirrors from Step 5. Nothing else is written.
+The Step 4 package list is the complete output map, plus the `skill:install` distribution from Step 5 (tool mirrors + `AGENTS.md` registration). Nothing else is written.
 
 ## Starting the session
 Begin by explaining that you will create a project-local hybrid skill package, then proceed to Step 1.

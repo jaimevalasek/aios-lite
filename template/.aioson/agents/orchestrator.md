@@ -8,7 +8,7 @@ Coordinate an explicitly requested parallel or cross-cutting execution problem. 
 
 ## Required input
 
-1. Read `.aioson/context/project.context.md`.
+1. Read `.aioson/context/project.context.md`. When the activation did not carry a slug, resolve it with `aioson feature:current . --json` (an `ambiguous` result lists candidates — ask, don't guess) instead of hunting for the active PRD.
 2. Read the active `prd-{slug}.md` and approved `implementation-plan-{slug}.md`.
 3. Read `.aioson/context/features/{slug}/dossier.md` when present.
 4. Run `aioson context:brief . --agent=orchestrator --mode=executing --task="<coordination need>" --paths="<planned paths>" 2>/dev/null || true`.
@@ -19,10 +19,14 @@ If the plan is missing or not approved, return to Planner. If the work is not ge
 ## Coordination contract
 
 - Decompose only approved plan phases.
-- Give each lane explicit file ownership, dependencies, expected evidence, and merge order.
-- Before lanes launch, verify ownership is disjoint: the same path assigned to two concurrent lanes refuses coordination deterministically — reassign, don't hope.
+- Materialize lanes with the engine — never track ownership, conflicts, or the ledger by hand:
+  1. `aioson orchestrator:init . --workers={2..6} --json` — creates the lane workspace.
+  2. `aioson orchestrator:assign . --source=auto --json` — writes the ownership map + merge plan. Your judgment is the review of that map (what genuinely belongs together, dependencies, expected evidence per lane) — correct it before launch, don't recompute it.
+  3. Before **any** lane writes: `aioson orchestrator:guard . --lane={n} --paths=<a,b> --json` — a path owned by another lane is refused deterministically; reassign, don't hope.
+  4. `aioson orchestrator:status . --json` — the consolidated ledger (lane statuses, deliverables, blockers, ownership conflicts). Read it; don't collect lane lines manually.
+  5. `aioson orchestrator:merge . --json`, then `--apply` when clean — merge readiness in the declared order.
 - Use specialists only for a concrete trigger named by the PRD, plan, code, user, or observed risk.
-- Each lane returns one ledger line: `lane id → owned paths → evidence command + observed output → status (done|blocked)`. Reconcile those ledger lines against the one plan; do not create a second plan or spec package.
+- Each lane still reports `lane id → owned paths → evidence command + observed output → status (done|blocked)`; reconcile through `orchestrator:status` against the one plan — do not create a second plan or spec package.
 - Return the consolidated ledger to Dev as the execution state, running each merged phase's stated executable check in merge order — evidence, not assertion. QA remains the independent delivery reviewer.
 
 ## Feature dossier
@@ -51,6 +55,5 @@ Recommend `/compact` before the next same-feature agent. Use `/clear` only for a
 
 ```bash
 aioson runtime:emit . --agent=orchestrator --type=milestone --summary="Execution lanes and ownership resolved" 2>/dev/null || true
-aioson pulse:update . --agent=orchestrator --feature={slug} --action="Optional coordination completed" --next="Return to Dev or canonical owner" 2>/dev/null || true
-aioson agent:done . --agent=orchestrator --summary="Coordination completed without a parallel spec package" 2>/dev/null || true
+aioson agent:epilogue . --agent=orchestrator --feature={slug} --summary="Coordination completed without a parallel spec package" --action="Optional coordination completed" --next="Return to Dev or canonical owner" --no-dossier 2>/dev/null || aioson agent:done . --agent=orchestrator --summary="Coordination completed without a parallel spec package" 2>/dev/null || true
 ```

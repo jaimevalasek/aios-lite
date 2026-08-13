@@ -1069,7 +1069,7 @@ test('verify:artifact kind=review proves the canonical surface and rejects a han
 });
 
 test('briefing-refiner auto-fires the review gate at agent:done', async () => {
-  assert.deepEqual(AGENT_ARTIFACT_KIND['briefing-refiner'], { kind: 'review', needs: 'slug' });
+  assert.deepEqual(AGENT_ARTIFACT_KIND['briefing-refiner'], { kind: 'review', needs: 'slug', featureSlugged: true });
 
   const dir = await makeProject();
   const logger = { log() {}, error() {} };

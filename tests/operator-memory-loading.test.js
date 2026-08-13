@@ -164,6 +164,22 @@ test('AC-P3-03 runOpList shows active decisions in table format', async () => {
   assert.ok(logger.lines.some((l) => l.includes('decision(s) for')));
 });
 
+test('runOpList --titles-only strips decision bodies from the JSON items (session-start recall shape)', async () => {
+  seedDecision(TEST_IDENTITY, `titles-test-${Date.now()}`, 'authorization', 'titles-only shape decision');
+  const full = await runOpList({ args: [], options: { json: true }, logger: silentLogger() });
+  assert.equal(full.ok, true);
+  assert.ok(full.items.length >= 1);
+  assert.ok(full.items.some((i) => 'body' in i || 'quotes' in i || 'proposal' in i), 'full listing should carry decision content');
+
+  const titles = await runOpList({ args: [], options: { json: true, 'titles-only': true }, logger: silentLogger() });
+  assert.equal(titles.ok, true);
+  assert.equal(titles.items.length, full.items.length);
+  for (const item of titles.items) {
+    assert.ok(item.slug, 'titles-only item keeps slug');
+    assert.ok(!('body' in item) && !('quotes' in item) && !('proposal' in item), 'titles-only item must not carry decision content');
+  }
+});
+
 test('AC-P3-03 runOpList --format=json returns structured', async () => {
   const logger = silentLogger();
   const result = await runOpList({ args: [], options: { json: true }, logger });

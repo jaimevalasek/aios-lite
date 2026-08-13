@@ -82,7 +82,7 @@ Follow `generation-flow.md`. Produce compiler-ready effects for:
 4. communication/style rules that affect delivery;
 5. output structure and budgets.
 
-For modular artifacts, every `manifest.json.references[]` entry has `id`, `file`, `when`, and `load_priority`; every declared file exists. Enrichment names the evidence delta and updates only affected modules.
+For modular artifacts, close the route with `aioson genome:doctor .aioson/genomes/<slug> --json` — it verifies the `manifest.json.references[]` invariants (`id`, `file`, `when`, `load_priority`, every declared file exists) deterministically; fix what it reports instead of re-checking the manifest by eye. Your remaining judgment is whether the compiled method is actually executable, not the manifest shape. Enrichment names the evidence delta and updates only affected modules.
 
 After any enrich/refresh/migrate of a genome that squads may consume, run `aioson verify:artifact . --kind=genome --slug=<genome-slug> --advisory` and relay every approval-drift warning verbatim — each names the squad whose user freeze went stale and the exact `genome:approve` re-approval command.
 

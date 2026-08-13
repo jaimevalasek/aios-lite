@@ -30,7 +30,13 @@ Load every `must_load` result. Immediately before writing or repairing project c
 
 ## Entry router
 
-Check `.aioson/context/project.context.md` before running onboarding.
+Resolve the entry state deterministically — as the **first action**, run:
+
+```bash
+aioson verify:artifact . --kind=project-context --json 2>/dev/null || true
+```
+
+Map its output (existence, parse, per-field issues) onto the table below; read the file body only to repair a field the validator named or to summarize the narrative. Only the last row (no `.aioson/` at all — the command itself is unavailable or reports no context dir) still needs a direct directory check.
 
 | State | Action |
 |---|---|

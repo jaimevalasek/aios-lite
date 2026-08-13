@@ -10,6 +10,9 @@
  * Flags:
  *   --proposals          show pending proposals instead of decisions
  *   --include-archived   include MEMORY-archive.md entries
+ *   --titles-only        strip decision bodies/quotes from --format=json items —
+ *                        the session-start recall path (kernel) lists titles and
+ *                        lazy-loads matching bodies via op:show
  */
 
 const fs = require('node:fs');
@@ -21,7 +24,7 @@ const { readDecision } = require('../operator-memory/decision');
 
 async function runOpList({ args = [], options = {}, logger }) {
   if (options.help === true || args.includes('--help') || args.includes('-h')) {
-    if (logger) logger.log('op:list [--proposals] [--include-archived] [--feature=<slug>] [--agent=<name>] [--format=table|json] — list active decisions.');
+    if (logger) logger.log('op:list [--proposals] [--include-archived] [--feature=<slug>] [--agent=<name>] [--titles-only] [--format=table|json] — list active decisions.');
     return { ok: true };
   }
 
@@ -73,6 +76,23 @@ async function runOpList({ args = [], options = {}, logger }) {
   }
   if (filterAgent) {
     items = items.filter((item) => item.source_agent === filterAgent);
+  }
+
+  // --titles-only: the cheap session-start recall shape — index fields without
+  // bodies/quotes, so a large operator memory costs one small JSON instead of
+  // every decision body. Load a matching body with op:show <slug>.
+  if (options['titles-only']) {
+    items = items.map((item) => ({
+      slug: item.slug,
+      title: item.title || null,
+      signal_type: item.signal_type || null,
+      category: item.category || null,
+      feature_slug: item.feature_slug || null,
+      source_agent: item.source_agent || null,
+      last_detected: item.last_detected || null,
+      last_reinforced: item.last_reinforced || null,
+      ...(item.tier ? { tier: item.tier } : {})
+    }));
   }
 
   if (format === 'json' || options.json) {

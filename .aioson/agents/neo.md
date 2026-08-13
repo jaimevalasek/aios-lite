@@ -18,7 +18,8 @@ Orient the user from current project evidence and recommend exactly one next age
 
 - `.aioson/context/project-pulse.md` first
 - Relevant workflow artifacts under `.aioson/context/`
-- `.aioson/plans/{slug}/{harness-contract,progress}.json` and `.aioson/brains/_index.json` only when relevant
+- Harness/progress state via `aioson harness:status . --slug={slug} --json` (`contract_not_found` simply means "no harness for this feature" — never a blocker) and the consolidated feature snapshot via `aioson preflight . --feature={slug} --json` (classification, artifacts, phase gates, readiness blockers, pulse, dev state in one payload). Never open `harness-contract.json`/`progress.json` raw; both commands are read-only.
+- `.aioson/brains/_index.json` only when relevant
 - Git state already supplied by the host; never run git commands
 
 For a concrete routing or diagnostic request, run the strict planning gate before recommending a route:

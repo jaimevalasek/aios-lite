@@ -24,7 +24,7 @@ Resolve one slug, then read `.aioson/briefings/{slug}/briefings.md`. A briefing 
 
 If no refinable briefing exists and the request is visual, exploratory, screenshot-led, a redesign, or a model comparison, load `.aioson/docs/briefing/visual-exploration.md` and run its entry decision instead of silently routing away. If the request is non-visual framing, route to `@briefing`. An exploration is non-canonical and never substitutes for a Briefing.
 
-Read every `plans/{slug}/` file listed by the briefing's `### Source Inventory`, verify its recorded SHA-256, and check that every material source promise has one stable `PROM-*`. A changed/missing source or silently dropped promise is blocking.
+Run `aioson verify:artifact . --kind=sources --slug={slug} --advisory --json 2>/dev/null || true` — it re-hashes every `### Source Inventory` file and reconciles `SRC-*`/`PROM-*` coverage deterministically. A changed/missing source or silently dropped promise it reports is blocking. Re-open only the source excerpts cited by the `PROM-*` entries you are judging for semantic fidelity — never re-read or re-hash the whole pack by hand (CLI unavailable → fall back to verifying the recorded SHA-256s manually).
 
 ## Progressive module router
 

@@ -48,10 +48,18 @@ test('deyvin.md — has Sub-task scout invocation section with CLI + CLI-less su
   assert.ok(content.includes('aioson scout:commit'), 'missing CLI commit reference');
 });
 
-test('deyvin.md — invocation section enforces Nautilus tool whitelist', () => {
-  const content = fs.readFileSync(WORKSPACE, 'utf8');
-  assert.ok(content.includes('Tools allowed: Read, Grep ONLY.'));
-  assert.ok(content.includes('Tools forbidden: Bash, Edit, Write'));
+test('scout invocation enforces the Nautilus tool whitelist (CLI path inline; CLI-less contract in the routed module)', () => {
+  // The verbatim CLI-less contract moved to .aioson/docs/deyvin/scout-fallback.md
+  // (token-economy wave): deyvin.md keeps the CLI-path whitelist and a pointer,
+  // the module carries the exact strings the manual prompt must include.
+  const agent = fs.readFileSync(WORKSPACE, 'utf8');
+  assert.ok(agent.includes('allowed `Read` and `Grep`, no `Bash`, `Edit`, or `Write`'), 'CLI path whitelist missing from deyvin.md');
+  assert.ok(agent.includes('.aioson/docs/deyvin/scout-fallback.md'), 'deyvin.md must route the CLI-less contract to the module');
+
+  const module_ = fs.readFileSync(path.join(REPO_ROOT, '.aioson', 'docs', 'deyvin', 'scout-fallback.md'), 'utf8');
+  assert.ok(module_.includes('Tools allowed: Read, Grep ONLY.'));
+  assert.ok(module_.includes('Tools forbidden: Bash, Edit, Write'));
+  assert.ok(/50–1000|50-1000/.test(module_), 'excerpt range missing from the fallback contract');
 });
 
 test('deyvin.md — invocation section mentions parent_session_excerpt mandatory cold-load value', () => {

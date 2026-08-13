@@ -139,7 +139,7 @@ Do not declare completion unless every required `PROM-*` maps through a required
 
 Pre-handoff self-audit: run `aioson ac:test-audit . --feature={slug} --strict 2>/dev/null || true` — QA's own first preflight — and close every missing AC-cited test it reports before handing off; each gap closed here is one QA FAIL→correction cycle saved.
 
-Update `dev-state.md`, then register the stage in a tracked session: `aioson workflow:next . --complete=dev 2>/dev/null || true` (direct-mode activations own this call; runner-injected prompts already carry it). Then hand off to `@qa`. QA is the single default reviewer. Tester, Pentester, and Validator run only when explicitly enabled in `agent-execution-{slug}.json` and their trigger applies.
+Write the checkpoint via `aioson dev:state:write . --feature={slug} --phase={n} --next="{next step}" 2>/dev/null || true` (never hand-edit `dev-state.md`), then register the stage in a tracked session: `aioson workflow:next . --complete=dev 2>/dev/null || true` (direct-mode activations own this call; runner-injected prompts already carry it). Then hand off to `@qa`. QA is the single default reviewer. Tester, Pentester, and Validator run only when explicitly enabled in `agent-execution-{slug}.json` and their trigger applies.
 
 ```text
 Implementation completed: [phases/CAPs]
