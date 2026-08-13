@@ -779,6 +779,26 @@ const ADAPTERS = {
     };
   },
 
+  // The deterministic half of the @benchmark output contract: schema v1 shape,
+  // status/validation enums, research/validation row shapes, path containment
+  // and existence, forbidden provenance fields, and the "completed needs
+  // entrypoints + validation coverage" rule. Whether the delivery is honest and
+  // ambitious stays with the agent (and the external orchestrator).
+  'benchmark-result': async (ctx) => {
+    const rel = ctx.file || 'benchmark-result.json';
+    const abs = path.resolve(ctx.targetDir, rel);
+    const { analyzeBenchmarkResult } = require('../lib/benchmark-result-lint');
+    const result = analyzeBenchmarkResult({ file: abs });
+    const ok = result.issues.length === 0;
+    return {
+      ok,
+      issues: result.issues,
+      warnings: result.warnings,
+      checks: [{ id: 'benchmark-result', ok, detail: result.issues.join('; ') || null }],
+      metrics: { ...result.metrics, file: rel }
+    };
+  },
+
   // The deterministic half of the Shakedown contract: frontmatter identity and
   // enums, Coverage-table arithmetic against the declared {visited}/{inventoried},
   // punch-list row discipline (SHK ids, class/lane enums, per-class evidence),

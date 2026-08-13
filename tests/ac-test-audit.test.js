@@ -303,3 +303,54 @@ test('ac:test-audit --json emits report', async () => {
   const parsed = JSON.parse(logger.lines.join('\n'));
   assert.equal(parsed.summary.covered, 1);
 });
+
+test('ac:test-audit --seed emits the deterministic matrix seed list (ACs + controls + open findings)', async () => {
+  const dir = await makeTmpDir();
+  await writeFile(dir, '.aioson/context/prd-seeded.md', [
+    '---', 'feature: seeded', '---', '# Seeded',
+    '## Feature Capability Map',
+    '| CAP | Promised outcome | Actor / trigger | Scope decision | Rationale |',
+    '|---|---|---|---|---|',
+    '| CAP-1 | order saved | user clicks save | required | core |',
+    '## Acceptance Criteria',
+    '| AC | CAP | Observable behavior | Evidence |',
+    '|---|---|---|---|',
+    '| AC-1 | CAP-1 | order persists | save test |'
+  ].join('\n'));
+  await writeFile(dir, '.aioson/context/implementation-plan-seeded.md', [
+    '---', 'feature: seeded', 'status: approved', '---', '# Plan',
+    '## Capability Delivery Plan',
+    '| CAP | Phase | Files | Verification |',
+    '|---|---|---|---|',
+    '| CAP-1 | 1 | src/save.js | node --test tests/save.test.js |',
+    '## Engineering Controls',
+    '| Concern | Evidence / trigger | Planned control | Verification | Recovery |',
+    '|---|---|---|---|---|',
+    '| double submit | save endpoint mutates state | idempotency key | node --test tests/idem.test.js | delete duplicate row |'
+  ].join('\n'));
+  await writeFile(dir, '.aioson/context/security-findings-seeded.json', JSON.stringify({
+    review_contract: { run_id: 'r1' },
+    findings: [
+      { id: 'SEC-1', title: 'open redirect', status: 'needs_validation' },
+      { id: 'SEC-2', title: 'fixed one', status: 'fixed' }
+    ]
+  }));
+
+  const result = await runAcTestAudit({
+    args: [dir],
+    options: { feature: 'seeded', seed: true, json: true },
+    logger: makeLogger()
+  });
+
+  assert.ok(Array.isArray(result.seeds), 'seeds[] missing');
+  const bySource = (source) => result.seeds.filter((seed) => seed.source === source);
+  assert.ok(bySource('ac').some((seed) => seed.id === 'AC-1'));
+  assert.ok(bySource('engineering-control').some((seed) => seed.id === 'EC-1' && /double submit/.test(seed.label)));
+  assert.ok(bySource('security-finding').some((seed) => seed.id === 'SEC-1'));
+  // closed findings never seed the matrix
+  assert.ok(!result.seeds.some((seed) => seed.id === 'SEC-2'));
+
+  // without --seed the payload keeps its old shape
+  const plain = await runAcTestAudit({ args: [dir], options: { feature: 'seeded', json: true }, logger: makeLogger() });
+  assert.ok(!('seeds' in plain));
+});

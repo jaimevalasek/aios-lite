@@ -138,7 +138,7 @@ Before ending:
 1. Ensure implementation files are inside the delivery root and every entrypoint is inside the run root.
 2. Write `report.md` with outcome, interpretation, assumptions, expansion decisions, research and its application, architecture, run instructions, validation evidence, and known limitations.
 3. Write valid UTF-8 `benchmark-result.json` using schema version `1` and paths relative to the run root.
-4. Parse the JSON after writing it and verify every referenced path exists.
+4. Prove the artifact deterministically (best-effort — this run never requires the CLI): `aioson verify:artifact . --kind=benchmark-result --file=benchmark-result.json --advisory 2>/dev/null || true`. It checks the parse, enums, row shapes, path existence/containment, forbidden provenance fields, and completed-status coverage. Fix every issue it names; without the CLI, run the same checklist manually (parse the JSON and verify every referenced path exists).
 
 ## Hard constraints
 

@@ -1,7 +1,46 @@
 'use strict';
 
+const fs = require('node:fs');
 const path = require('node:path');
 const { auditAcceptanceCriteriaTests } = require('../lib/ac-test-audit');
+
+const CLOSED_FINDING_STATUSES = new Set(['fixed', 'false_positive', 'accepted_risk']);
+
+/**
+ * --seed: the deterministic seed list for the Tester's hypothesis matrix — AC
+ * ids (already enumerated by the audit), Engineering Controls rows from the
+ * approved plan, and open security-finding ids. The tester used to cross-read
+ * plan and findings artifacts by hand to build the same list; deciding WHICH
+ * hypotheses bite stays entirely with the agent.
+ */
+async function buildMatrixSeeds(targetDir, slug, report) {
+  const seeds = report.items.map((item) => ({ id: item.ac, source: 'ac', label: null }));
+
+  try {
+    const { analyzeFeatureCompleteness } = require('../lib/feature-completeness');
+    const analysis = await analyzeFeatureCompleteness(targetDir, slug, {});
+    const rows = (analysis.engineering_controls && analysis.engineering_controls.rows) || [];
+    rows.forEach((row, index) => {
+      seeds.push({
+        id: `EC-${index + 1}`,
+        source: 'engineering-control',
+        label: [row.concern, row.control].filter(Boolean).join(' — ') || null
+      });
+    });
+  } catch { /* no plan / analysis unavailable — AC seeds still stand */ }
+
+  try {
+    const artifactPath = path.join(targetDir, '.aioson', 'context', `security-findings-${slug}.json`);
+    const artifact = JSON.parse(fs.readFileSync(artifactPath, 'utf8'));
+    for (const finding of Array.isArray(artifact.findings) ? artifact.findings : []) {
+      if (CLOSED_FINDING_STATUSES.has(String(finding?.status || '').toLowerCase())) continue;
+      const id = String(finding?.id || finding?.finding_id || '').trim();
+      if (id) seeds.push({ id, source: 'security-finding', label: finding.title || null });
+    }
+  } catch { /* no security artifact for this feature */ }
+
+  return seeds;
+}
 
 // --strict additionally requires at least one AC and an assertion signal near
 // each test-file AC reference. Executable harness criteria remain strong proof.
@@ -22,6 +61,10 @@ async function runAcTestAudit({ args, options = {}, logger }) {
     requireAssertions: strict
   });
 
+  if (options.seed) {
+    report.seeds = await buildMatrixSeeds(targetDir, slug, report);
+  }
+
   if (options.json) {
     logger.log(JSON.stringify(report, null, 2));
     return report;
@@ -41,6 +84,14 @@ async function runAcTestAudit({ args, options = {}, logger }) {
         ? ` — ${item.evidence.map((e) => e.file).join(', ')}`
         : '';
       logger.log(`  ${mark} ${item.ac}: ${item.status}${evidence}`);
+    }
+  }
+
+  if (report.seeds) {
+    logger.log('');
+    logger.log(`Matrix seeds (${report.seeds.length}):`);
+    for (const seed of report.seeds) {
+      logger.log(`  [${seed.source}] ${seed.id}${seed.label ? ` — ${seed.label}` : ''}`);
     }
   }
 
