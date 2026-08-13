@@ -233,6 +233,8 @@ module.exports = {
       'aioson setup:detect [ruta] [--json] [--locale=es]',
     help_genome_apply:
       'aioson genome:apply [ruta] --genome=<slug> --squad=<slug> [--executor=<slug>] [--json] [--locale=es]',
+    help_profiler_coverage:
+      'aioson profiler:coverage [ruta] --slug=<slug> [--file=<ruta>] [--json] [--locale=es]',
     help_harness_check:
       'aioson harness:check [path] --slug=<slug> [--criteria=C1,C2] [--timeout=<ms>] [--json] [--locale=es]',
     help_harness_retro:

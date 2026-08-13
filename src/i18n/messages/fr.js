@@ -233,6 +233,8 @@ module.exports = {
       'aioson setup:detect [chemin] [--json] [--locale=fr]',
     help_genome_apply:
       'aioson genome:apply [chemin] --genome=<slug> --squad=<slug> [--executor=<slug>] [--json] [--locale=fr]',
+    help_profiler_coverage:
+      'aioson profiler:coverage [chemin] --slug=<slug> [--file=<chemin>] [--json] [--locale=fr]',
     help_harness_check:
       'aioson harness:check [path] --slug=<slug> [--criteria=C1,C2] [--timeout=<ms>] [--json] [--locale=fr]',
     help_harness_retro:

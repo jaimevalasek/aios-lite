@@ -43,7 +43,7 @@ Never load every module.
 
 ## Intake contract
 
-Load the research report and count source/evidence coverage. Accept user-provided excerpts, links, transcripts, files, or observations when already supplied and tag them `user-provided`.
+Get the counts from `aioson profiler:coverage . --slug={person-slug} --json 2>/dev/null` — tier totals, tag histogram, available `S<#>` inventory IDs, orphan refs (`parsed: false` or no CLI → count from the report manually). Open the report itself only for the excerpts you will actually cite: the counts inventory what exists; grading the evidence still requires reading it. Accept user-provided excerpts, links, transcripts, files, or observations when already supplied and tag them `user-provided`.
 
 Do not pause merely to solicit optional material. When the user invoked enrichment with an existing report and did not say more material is coming, proceed. Ask one compact question only when:
 

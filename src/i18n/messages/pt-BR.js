@@ -245,6 +245,8 @@ module.exports = {
       'aioson setup:detect [caminho] [--json] [--locale=pt-BR]',
     help_genome_apply:
       'aioson genome:apply [caminho] --genome=<slug> --squad=<slug> [--executor=<slug>] [--json] [--locale=pt-BR]',
+    help_profiler_coverage:
+      'aioson profiler:coverage [caminho] --slug=<slug> [--file=<caminho>] [--json] [--locale=pt-BR]',
     help_harness_init:
       'aioson harness:init [path] --slug=<slug> [--mode=balanced|safe|builder|autopilot] [--locale=pt-BR]',
     help_harness_validate:

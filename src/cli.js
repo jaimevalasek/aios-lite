@@ -225,6 +225,7 @@ const { runFeatureDiff } = require('./commands/feature-diff');
 const { runWorkflowMode } = require('./commands/workflow-mode');
 const { runGenomeApply } = require('./commands/genome-apply');
 const { runSetupDetect } = require('./commands/setup-detect');
+const { runProfilerCoverage } = require('./commands/profiler-coverage');
 const { runFeatureExport } = require('./commands/feature-export');
 const { runFeatureCurrent } = require('./commands/feature-current');
 const { runFeatureList } = require('./commands/feature-list');
@@ -399,6 +400,8 @@ const JSON_SUPPORTED_COMMANDS = new Set([
   'genome-apply',
   'setup:detect',
   'setup-detect',
+  'profiler:coverage',
+  'profiler-coverage',
   'web:map',
   'web-map',
   'web:scrape',
@@ -1089,6 +1092,7 @@ function printHelp(t, logger) {
   logHelpLine(t, logger, 'cli.help_feature_diff');
   logHelpLine(t, logger, 'cli.help_setup_detect');
   logHelpLine(t, logger, 'cli.help_genome_apply');
+  logHelpLine(t, logger, 'cli.help_profiler_coverage');
   logHelpLine(t, logger, 'cli.help_feature_close');
   logHelpLine(t, logger, 'cli.help_feature_archive');
   logHelpLine(t, logger, 'cli.help_gate_check');
@@ -1985,6 +1989,8 @@ async function main() {
       result = await runSetupDetect({ args, options, logger: commandLogger });
     } else if (command === 'pentester:coverage' || command === 'pentester-coverage') {
       result = await runPentesterCoverage({ args, options, logger: commandLogger, t });
+    } else if (command === 'profiler:coverage' || command === 'profiler-coverage') {
+      result = await runProfilerCoverage({ args, options, logger: commandLogger });
     } else if (command === 'feature:list' || command === 'feature-list') {
       result = await runFeatureList({ args, options, logger: commandLogger, t });
     } else if (command === 'dossier:init' || command === 'dossier-init') {

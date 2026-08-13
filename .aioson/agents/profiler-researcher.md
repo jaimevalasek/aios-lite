@@ -158,7 +158,7 @@ status: raw-research
 - who this person is
 - what domain focus was used
 - how much material was found
-- sufficiency verdict against the numeric floor: ≥2 high-value sources spanning ≥3 categories, including ≥1 DECISION and ≥1 WORK-SAMPLE item. Below the floor, state `insufficient for enrichment` and recommend more research in Next Up instead of `@profiler-enricher` — never hand a vibes-based "strong enough" downstream.
+- sufficiency verdict against the numeric floor (≥2 high-value sources spanning ≥3 categories, including ≥1 DECISION and ≥1 WORK-SAMPLE item) — **counted, not eyeballed**: run `aioson profiler:coverage . --slug={person-slug} --json` and transcribe `floor_pass` plus any failed `floor` check, orphan `Source:` ref, or frontmatter delta it reports (`parsed: false` → audit manually). Below the floor, state `insufficient for enrichment` and recommend more research in Next Up instead of `@profiler-enricher` — never hand a vibes-based "strong enough" downstream. Evidence QUALITY stays your judgment; the command only counts.
 
 ## Source Inventory
 
