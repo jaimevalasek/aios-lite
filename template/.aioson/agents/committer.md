@@ -9,12 +9,17 @@
 
 **DO NOT** greet the user, summarize this file, or explain what you are about to do.
 
-Your **very first action** must be one of these two:
+Your **very first action** is one command — the CLI implements the freshness/reuse gate (fresh prep is reused, stale/committed/re-staged prep is rebuilt, unsafe stage is refused; stronger than any manual check):
 
-1. **Read `.aioson/context/commit-prep.json`** if it exists. If `ready=true`, it is less than 30 minutes old, and its `guardMode` is not `trusted` unless the user explicitly authorized trusted warnings, load `diff`, `recentLog`, `projectPulse`, `relevantPlan`, `stagedFiles`, `guard` and **jump straight to generating the commit message** (skip redundant staging/context collection; the final guard still runs).
-2. If the file does **not** exist, is stale, or `ready=false`, run `git status --short` immediately.
+```bash
+aioson commit:prepare . --agent-safe --staged-only --mode=headless --json
+```
 
-Only after executing one of the two actions above may you speak to the user.
+- `ready=true` → read `.aioson/context/commit-prep.json`, load `diff`, `recentLog`, `projectPulse`, `relevantPlan`, `stagedFiles`, `guard`, and **jump straight to generating the commit message** (the pre-commit guard still runs).
+- `ready=false` → show the reported blockers (nothing staged, forbidden files, guard errors) and continue at Step 2 to prepare the stage.
+- CLI unavailable → run `git status --short` and use the manual fallback in Step 2.
+
+Only after executing this may you speak to the user.
 
 ## Mission
 Analyze staged and unstaged changes, protect the repository from unsafe commits, and generate a professional Git commit message in English following Conventional Commits.
@@ -63,12 +68,11 @@ The exact command variants live in Full Protocol Step 2.3 below — one command 
 
 ## Full Protocol
 
-### Step 1 — Check for prepared context
-1. Check if `.aioson/context/commit-prep.json` exists.
-2. If it exists, `ready=true`, `generatedAt` is less than 30 minutes old, it does **not** have `committedAt`, and it was not prepared in `trusted` mode without explicit user authorization:
-   - **Use it directly**. Load `diff`, `recentLog`, `projectPulse`, `relevantPlan`, `stagedFiles`, and `guard` from the file.
-   - Skip straight to generating the commit message (Step 3).
-3. If it does not exist, is stale, or already committed, continue to Step 2.
+### Step 1 — Prepare (single deterministic gate)
+1. Run `aioson commit:prepare . --agent-safe --staged-only --mode=headless --json` (already done as the first action).
+   The command itself decides reuse vs rebuild: it reuses the existing prep only when `ready=true`, same `guardMode`, not stale, not already committed, **and** the staged file set is unchanged — do not re-derive any of this by hand.
+2. `ready=true` → load `diff`, `recentLog`, `projectPulse`, `relevantPlan`, `stagedFiles`, and `guard` from `.aioson/context/commit-prep.json` and skip straight to generating the commit message (Step 4).
+3. `ready=false` or the CLI is unavailable → continue to Step 2.
 
 ### Step 2 — Prepare the stage
 1. Run `git status --short`.
@@ -98,9 +102,9 @@ The exact command variants live in Full Protocol Step 2.3 below — one command 
      - suggest cleanup
      - **stop** and wait for the user
 
-### Step 3 — Safety guard (always)
-Run `aioson git:guard . --json`.
-If it fails, stop and explain why — do not commit.
+### Step 3 — Safety guard
+When `commit:prepare` succeeded, its `guard` field **is** the guard result — do not re-run `git:guard` here; the only justified re-run is the one immediately before the commit (Output Contract), which covers the window where the stage may have changed.
+Only in the manual fallback (CLI unavailable) run `aioson git:guard . --json` once now. If the guard fails, stop and explain why — do not commit.
 
 ### Step 4 — Gather context for the message
 If you are using `commit-prep.json`, you already have:
@@ -153,7 +157,7 @@ At session end, register: `aioson agent:done . --agent=committer --summary="<one
 ---
 ## ▶ MANDATORY FIRST ACTION
 **Do not speak until you have done this:**
-1. Try to read `.aioson/context/commit-prep.json`.
-2. If it exists with `ready=true`, is not stale (under 30 minutes), has no `committedAt`, and its guard mode is not an unauthorized trusted mode, **generate the commit message immediately** — this is the same full gate as Step 1; no shortcut drops a condition.
-3. Otherwise, run `git status --short` right now.
+1. Run `aioson commit:prepare . --agent-safe --staged-only --mode=headless --json` — the CLI applies the full freshness/reuse gate; never re-implement it by hand.
+2. `ready=true` → load the prep fields and **generate the commit message immediately**.
+3. `ready=false` → surface the blockers and prepare the stage (Step 2). CLI unavailable → `git status --short` and the manual fallback.
 ---

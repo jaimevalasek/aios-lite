@@ -779,6 +779,35 @@ const ADAPTERS = {
     };
   },
 
+  // The deterministic half of the Shakedown contract: frontmatter identity and
+  // enums, Coverage-table arithmetic against the declared {visited}/{inventoried},
+  // punch-list row discipline (SHK ids, class/lane enums, per-class evidence),
+  // and the "Not visited empty ⇔ complete run" invariant. Whether an absence is
+  // a real gap — and the walkthrough itself — stay with the agent.
+  shakedown: async (ctx) => {
+    const rel = ctx.file || (ctx.slug ? `.aioson/context/shakedown-${ctx.slug}.md` : null);
+    if (!rel) {
+      return { ok: false, issues: ['kind=shakedown requires --file=<path> or --slug=<target>'], warnings: [], checks: [] };
+    }
+    let reportText;
+    try {
+      reportText = fs.readFileSync(path.resolve(ctx.targetDir, rel), 'utf8');
+    } catch {
+      return { ok: false, issues: [`shakedown report not found: ${rel}`], warnings: [], checks: [] };
+    }
+
+    const { analyzeShakedown } = require('../lib/shakedown-lint');
+    const result = analyzeShakedown({ report: reportText, slug: ctx.slug || null });
+    const ok = result.issues.length === 0;
+    return {
+      ok,
+      issues: result.issues,
+      warnings: result.warnings,
+      checks: [{ id: 'shakedown', ok, detail: result.issues.join('; ') || null }],
+      metrics: { ...result.metrics, file: rel }
+    };
+  },
+
   // The deterministic half of the squad pilot contract: pilot-block coherence,
   // entrypoint containment, the PILOT.md evidence doc, placeholder hygiene,
   // lane-proportional deferral, and fingerprint freshness. The taste verdict —

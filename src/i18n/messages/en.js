@@ -38,7 +38,7 @@ module.exports = {
     help_agent_invoke:
       'aioson agent:invoke <agent> [path] [--tool=codex|claude|opencode] [--mode=framework_target|app_target] [--feature=<slug>] [--scope=<area>] [--lang=<bcp47-tag>] [--locale=en]',
     help_agent_epilogue:
-      'aioson agent:epilogue [path] --agent=<agent> --summary=<text> [--feature=<slug>] [--approve-gate=A|B|C|D] [--json] [--locale=en]',
+      'aioson agent:epilogue [path] --agent=<agent> --summary=<text> [--feature=<slug>] [--slug=<slug>] [--file=<path>] [--dir=<dir>] [--approve-gate=A|B|C|D] [--json] [--locale=en]',
     help_rule_new:
       'aioson rule:new [path] --name=<kebab-name> [--description=<text>] [--agents=a,b] [--paths=glob,glob] [--triggers=t,t] [--task-types=t,t] [--priority=0-100] [--load-tier=trigger|always] [--force] [--json] [--locale=en]',
     rule_new: {

@@ -1,6 +1,6 @@
 ---
 description: "Artifact done-gates (verify:artifact) — build-free, model-agnostic completeness/integrity checks for the non-code artifacts the specialized agents produce before they register done."
-agents: [setup, genome, profiler-researcher, profiler-enricher, profiler-forge, discover, orache, design-hybrid-forge, site-forge, copywriter, committer, squad, briefing, briefing-refiner, product, sheldon, tester, dev]
+agents: [setup, genome, profiler-researcher, profiler-enricher, profiler-forge, discover, orache, design-hybrid-forge, site-forge, copywriter, committer, squad, briefing, briefing-refiner, product, sheldon, tester, dev, shakedown]
 task_types: [verification, configuration]
 triggers: [verify:artifact, artifact gate, done gate, artifact done-gate, placeholder gate, kind=]
 ---
@@ -48,6 +48,7 @@ done-gate line, not a bespoke implementation.
 | `visual` | `@dev` / design flows | visual-quality measurement over the delivered surface | advisory |
 | `test-report` | `@tester` | test-report lint (mandatory sections, hypothesis classes, correction packet) | blocking done gate |
 | `squad-pilot` | `@squad` | squad-pilot lint (pilot block, fingerprint, deliverable + builder drift) | blocking — `squad:pilot-approve` refuses while issues remain |
+| `shakedown` | `@shakedown` | shakedown lint (frontmatter enums, coverage arithmetic, punch-list evidence, `## Not visited` ⇔ complete-run invariant), resolved via `--file` or `--slug` | advisory |
 | `rule` | any rule author (`rule:new` hint) | ruleset (`.aioson/rules/` frontmatter and shape) | advisory |
 
 ## Contract
@@ -76,7 +77,12 @@ end (and rides on `agent:epilogue`, which wraps `agent:done`):
 - **Locator-keyed kinds** run when the agent threads its locator into that same
   call (`--slug` / `--file` / `--dir`, which the agent's Observability line now
   carries); without it, `agent:done` surfaces a one-line hint naming the exact
-  command, so the gate is visible rather than silently skipped.
+  command, so the gate is visible rather than silently skipped. `agent:epilogue`
+  forwards the same three locator flags to the `agent:done` it wraps.
+- **Feature-slugged kinds** (`tester`→`test-report`, `briefing`→`briefing`,
+  `briefing-refiner`→`review`) fall back to `--feature` as the slug when no
+  explicit `--slug` was threaded — those artifacts are keyed by the feature slug,
+  so a plain `agent:done --feature={slug}` already fires them.
 
 Always advisory at this layer: a failed or skipped check is surfaced but never
 flips the session-end result. The explicit per-agent `## Done gate` stays as the

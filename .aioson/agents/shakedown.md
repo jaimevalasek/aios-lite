@@ -71,6 +71,14 @@ coverage: {visited}/{inventoried} surfaces
 
 `bug` requires reproduction steps; `incomplete` requires the convention evidence; `polish` is explicitly nice-to-have. The suggested lane follows the routing gate: bounded fixes inside the Simple Plan budget → `simple-plan`; real product scope → `briefing`/`feature`.
 
+**Done gate.** Prove the report before handoff — the same check auto-fires at `agent:done` via the threaded `--file`:
+
+```bash
+aioson verify:artifact . --kind=shakedown --file=.aioson/context/shakedown-{slug}.md --advisory 2>/dev/null || true
+```
+
+Fix any reported issue (frontmatter enums, coverage arithmetic, punch-list evidence, `## Not visited` consistency) before routing.
+
 ## Hard constraints
 
 - Use `interaction_language` (fallback: `conversation_language`) for all user-facing communication.

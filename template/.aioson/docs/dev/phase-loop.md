@@ -17,10 +17,10 @@ After finishing each phase:
 
 1. Run the focused automated command and production-path check declared by the phase.
 2. Fix a failing check locally before advancing. Stop only after the configured retry limit or for a genuine product/security decision.
-3. Update the non-blocking dossier evidence and write the cold-start checkpoint:
+3. Update the non-blocking dossier evidence and write the cold-start checkpoint (`--feature` and `--next` are required — a bare call fails with `missing_feature`):
 
    ```bash
-   aioson dev:state:write
+   aioson dev:state:write . --feature={slug} --phase={n} --next="{next concrete step}" --context=prd,impl-plan 2>/dev/null || true
    ```
 
 4. Continue immediately. The checkpoint exists for crash recovery, not as a handoff or approval gate.

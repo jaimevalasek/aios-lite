@@ -55,6 +55,13 @@ async function runAgentEpilogue({ args, options = {}, logger, t }) {
     : null;
   const verdict = options.verdict ? String(options.verdict).trim().toUpperCase() : null;
   const artifacts = normalizeList(options.artifacts);
+  // Artifact done-gate locators — forwarded verbatim to agent:done so the
+  // advisory verify:artifact auto-fire works for locator-keyed kinds too
+  // (test-report/review/orache-report/shakedown/…), not only when the agent
+  // calls agent:done directly.
+  const slug = options.slug ? String(options.slug).trim() : null;
+  const file = options.file ? String(options.file).trim() : null;
+  const dir = options.dir ? String(options.dir).trim() : null;
   const strict = Boolean(options.strict);
   const steps = [];
   const errors = [];
@@ -147,6 +154,9 @@ async function runAgentEpilogue({ args, options = {}, logger, t }) {
       ...(feature ? { feature } : {}),
       ...(verdict ? { verdict } : {}),
       ...(artifacts.length > 0 ? { artifacts: artifacts.join(',') } : {}),
+      ...(slug ? { slug } : {}),
+      ...(file ? { file } : {}),
+      ...(dir ? { dir } : {}),
       json: true
     },
     logger: silentLogger,

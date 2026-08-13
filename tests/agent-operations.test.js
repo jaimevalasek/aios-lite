@@ -65,6 +65,43 @@ test('agent:epilogue updates pulse and registers agent completion', async () => 
   assert.match(pulse, /Requirements mapped/);
 });
 
+test('agent:epilogue forwards artifact locators (--file/--slug/--dir) to the agent:done done-gate', async () => {
+  const dir = await makeTempDir();
+  const { t } = createTranslator('en');
+
+  // Without a locator the auto-fire surfaces the hint (skipped, never failing).
+  const noLocator = await runAgentEpilogue({
+    args: [dir],
+    options: { json: true, agent: 'shakedown', summary: 'walkthrough done', 'no-dossier': true },
+    logger: makeLogger(),
+    t
+  });
+  const hintStep = noLocator.steps.find((s) => s.name === 'verify:artifact');
+  assert.ok(hintStep, 'verify:artifact step missing from epilogue');
+  assert.equal(hintStep.skipped, true);
+  assert.match(String(hintStep.reason), /--file=<path>/);
+
+  // With --file threaded, the real advisory check runs (report missing -> not ok,
+  // but the epilogue itself stays ok: the gate is advisory by contract).
+  const withFile = await runAgentEpilogue({
+    args: [dir],
+    options: {
+      json: true,
+      agent: 'shakedown',
+      summary: 'walkthrough done',
+      file: '.aioson/context/shakedown-demo.md',
+      'no-dossier': true
+    },
+    logger: makeLogger(),
+    t
+  });
+  const realStep = withFile.steps.find((s) => s.name === 'verify:artifact');
+  assert.ok(realStep, 'verify:artifact step missing from epilogue');
+  assert.equal(realStep.skipped, false);
+  assert.equal(realStep.ok, false);
+  assert.equal(withFile.ok, true, 'advisory artifact gate must never flip the epilogue result');
+});
+
 test('agent:prompt keeps Sheldon PRD-only even when a legacy config routes it to Dev', async () => {
   const dir = await makeTempDir();
   const { runAgentPrompt } = require('../src/commands/agents');

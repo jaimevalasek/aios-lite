@@ -11,6 +11,10 @@
  *   needs: 'dir'   — a generated-site root, via --dir (advisory static floor only
  *                    at agent:done; the full `npm run build` stays in the agent's
  *                    explicit Done gate).
+ *   featureSlugged — the artifact slug IS the feature slug; when no explicit
+ *                    --slug was threaded, fall back to --feature so the gate
+ *                    still auto-fires from `agent:done`/`agent:epilogue` calls
+ *                    that only carry the feature.
  *
  * This is the bridge that makes the periphery's done-gates AUTO-FIRE: instead of
  * relying on each agent to remember its `## Done gate` line, `agent:done` runs the
@@ -30,10 +34,11 @@ const AGENT_ARTIFACT_KIND = {
   copywriter: { kind: 'copy', needs: 'slug' },
   orache: { kind: 'orache-report', needs: 'file' },
   'site-forge': { kind: 'site', needs: 'dir', opts: { noBuild: true } },
-  'briefing-refiner': { kind: 'review', needs: 'slug' },
-  briefing: { kind: 'briefing', needs: 'slug' },
-  tester: { kind: 'test-report', needs: 'slug' },
-  squad: { kind: 'squad-pilot', needs: 'slug' }
+  'briefing-refiner': { kind: 'review', needs: 'slug', featureSlugged: true },
+  briefing: { kind: 'briefing', needs: 'slug', featureSlugged: true },
+  tester: { kind: 'test-report', needs: 'slug', featureSlugged: true },
+  squad: { kind: 'squad-pilot', needs: 'slug' },
+  shakedown: { kind: 'shakedown', needs: 'file' }
 };
 
 const NEEDS_FLAG = { slug: '--slug=<slug>', file: '--file=<path>', dir: '--dir=<dir>' };
@@ -61,7 +66,10 @@ async function verifyAgentArtifact({ targetDir, agent, options = {} }) {
   const mapping = resolveAgentArtifact(agent);
   if (!mapping) return null;
   const { kind, needs } = mapping;
-  const slug = options.slug ? String(options.slug).trim() : null;
+  const feature = options.feature ? String(options.feature).trim() : null;
+  const slug = options.slug
+    ? String(options.slug).trim()
+    : (mapping.featureSlugged && feature ? feature : null);
   const file = options.file ? String(options.file).trim() : null;
   const dir = options.dir ? String(options.dir).trim() : null;
 

@@ -90,6 +90,41 @@ test('verifyAgentArtifact runs the real check for a self-resolving kind (discove
   assert.equal(missingRes.ok, false);
 });
 
+test('feature-slugged kinds fall back to --feature when no --slug was threaded', async () => {
+  // tester/test-report is keyed by the feature slug: a plain
+  // `agent:done --feature={slug}` must fire the real check, not the hint.
+  const dir = tmpDir();
+  const viaFeature = await verifyAgentArtifact({ targetDir: dir, agent: 'tester', options: { feature: 'demo' } });
+  assert.equal(viaFeature.skipped, false);
+  assert.equal(viaFeature.ok, false); // no report written -> a real (advisory) failure
+  assert.equal(viaFeature.kind, 'test-report');
+
+  // an explicit --slug still wins over --feature
+  const explicit = await verifyAgentArtifact({ targetDir: dir, agent: 'tester', options: { slug: 'other', feature: 'demo' } });
+  assert.equal(explicit.skipped, false);
+
+  // non-feature-slugged kinds do NOT inherit the fallback (genome slug != feature)
+  const genome = await verifyAgentArtifact({ targetDir: dir, agent: 'genome', options: { feature: 'demo' } });
+  assert.equal(genome.skipped, true);
+  assert.match(genome.reason, /--slug=<slug>/);
+});
+
+test('shakedown maps to kind=shakedown via --file (hint without it, real check with it)', async () => {
+  const dir = tmpDir();
+  const hint = await verifyAgentArtifact({ targetDir: dir, agent: 'shakedown' });
+  assert.equal(hint.skipped, true);
+  assert.match(hint.reason, /--file=<path>/);
+  assert.match(hint.reason, /--kind=shakedown/);
+
+  const rel = '.aioson/context/shakedown-demo.md';
+  fs.mkdirSync(path.join(dir, '.aioson', 'context'), { recursive: true });
+  fs.writeFileSync(path.join(dir, rel), '# not a shakedown report\n', 'utf8');
+  const real = await verifyAgentArtifact({ targetDir: dir, agent: 'shakedown', options: { file: rel } });
+  assert.equal(real.skipped, false);
+  assert.equal(real.ok, false);
+  assert.equal(real.kind, 'shakedown');
+});
+
 test('verifyAgentArtifact flags a missing project.context.md for setup', async () => {
   const res = await verifyAgentArtifact({ targetDir: tmpDir(), agent: 'setup' });
   assert.equal(res.skipped, false);
