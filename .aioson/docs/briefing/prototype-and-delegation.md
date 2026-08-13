@@ -37,7 +37,7 @@ Read the briefing and its operational surface from `solution-options.md` or `exp
 Resolve `design_skill` from project context:
 
 - For `interface-design` with specific reference images, ask for identity references in `.aioson/briefings/{slug}/references/identity/` and structural/component references in `.aioson/briefings/{slug}/references/structure/`.
-- When the user points at a reference/inspiration **site URL** (effects, motion, layout), do not read it through harness web tools — they strip CSS/JS. Run `aioson web:save . --url=<url> --slug=<ref-slug>` then `aioson web:extract . --slug=<ref-slug>`, and use `researchs/<ref-slug>/extract.md` (fonts, palette, keyframes, transitions, libraries) as the identity/effects evidence; pull targeted snippets with `--query=<text>` instead of bulk-reading saved HTML/CSS/JS. Saved originals are local reference only and are never shipped in the prototype.
+- When the user points at a reference/inspiration **site URL** (effects, motion, layout), load `.aioson/docs/web-capture.md` on demand and apply its capture-route decision; on the AIOSON route, `researchs/<ref-slug>/extract.md` is the identity/effects evidence.
 - Load `.aioson/skills/process/reference-identity-extract/SKILL.md`, extract once to `.aioson/briefings/{slug}/identity.md`, then run:
 
 ```bash

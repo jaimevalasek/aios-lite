@@ -288,9 +288,9 @@ Expected structure (from `aioson web:save`, SaveWebZip, HTTrack, `wget --mirror`
 
 Copy assets from `<path>/fonts/`, `<path>/media/`, `<path>/images/` directly to `public/` — no download needed.
 
-**Recommended:** use `--from-local` for static extraction + browser MCP only for Phase 1.5.4 scroll recording. This is an automatic decision rule, not a note: when Phase 1 hits bot detection or any stylesheet fetch fails, save the site with `aioson web:save . --url=<url> --slug=<slug>` (writes the expected structure to `researchs/<slug>/site/`; fall back to `wget --mirror`/HTTrack only if it is blocked) and switch to `--from-local` instead of silently degrading extraction.
+**Recommended:** use `--from-local` for static extraction + browser MCP only for Phase 1.5.4 scroll recording. This is an automatic decision rule, not a note: when Phase 1 hits bot detection or any stylesheet fetch fails, save the site with `aioson web:save . --url=<url> --slug=<slug>` (writes the expected structure to `researchs/<slug>/site/`) and switch to `--from-local` instead of silently degrading extraction.
 
-After saving, run `aioson web:extract . --slug=<slug>` once: it writes `researchs/<slug>/extract.md` with the deterministic version of Phases 1.2/1.3/1.5.1/1.5.2/1.5.5 (fonts, palette, keyframes, transitions, breakpoints, JS libraries, parallax signals). Read `extract.md` first and open raw CSS/JS only for targeted follow-ups via `aioson web:extract . --slug=<slug> --query=<text>` — never bulk-read saved bundles into context.
+Capture-route options, budgets, fallbacks, and reading discipline live in `.aioson/docs/web-capture.md` — load it before the first fetch. After saving, `aioson web:extract . --slug=<slug>` writes `researchs/<slug>/extract.md`, the deterministic version of Phases 1.2/1.3/1.5.1/1.5.2/1.5.5; read it first and open raw CSS/JS only through `--query=<text>` follow-ups.
 
 ---
 

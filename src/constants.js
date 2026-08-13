@@ -111,6 +111,7 @@ const MANAGED_FILES = [
   '.aioson/docs/prototype-contract.md',
   '.aioson/docs/model-delegation.md',
   '.aioson/docs/reference-identity.md',
+  '.aioson/docs/web-capture.md',
   '.aioson/rules/visual-exploration-contract.md',
   '.aioson/docs/product/conversation-playbook.md',
   '.aioson/docs/product/research-loop.md',

@@ -86,14 +86,7 @@ verdict: confirmed | has-alternatives | outdated | deprecated
 
 ## Site captures (full-fidelity sources)
 
-Harness web tools (WebFetch and equivalents) convert pages to markdown and drop CSS/JS — fine for reading content, lossy for design, effects, or motion. When a discovered source is a **visual/design reference** (or its extraction is blocked/lossy), persist it deterministically instead of re-fetching through the model:
-
-```bash
-aioson web:save . --url=<url> --slug={slug}      # mirrors HTML + CSS + JS + fonts/images to researchs/{slug}/site/
-aioson web:extract . --slug={slug}               # distills researchs/{slug}/extract.md (fonts, palette, keyframes, transitions, libraries)
-```
-
-The hybrid rule: **search with harness tools, capture with the CLI, read locally.** After capture, read `extract.md` — never bulk-load saved HTML/CSS/JS bundles into context; for targeted evidence use `aioson web:extract . --slug={slug} --query=<text>`. `web:save` seeds `summary.md` when absent. Saved originals are local reference only and must never be redistributed or shipped in builds. If the capture is blocked by bot protection, save with an external mirror tool into the same `site/` layout and continue.
+When a discovered source is a **visual/design reference** (or its extraction is blocked/lossy), load `.aioson/docs/web-capture.md` on demand — it owns the capture-route decision (`aioson web:save`/`web:extract` vs harness web tools), budgets, fallbacks, and reading discipline. The hybrid rule: **search with harness tools, capture with the CLI, read locally.** `web:save` seeds `summary.md` when absent; record the chosen route as `captured_via` in the summary frontmatter.
 
 ## Step 4 — Surface only what is actionable
 
