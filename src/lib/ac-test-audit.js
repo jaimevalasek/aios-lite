@@ -239,40 +239,62 @@ function harnessEvidenceFor(acId, contract, report) {
     }));
 }
 
-async function readHarnessContract(targetDir, slug) {
-  const contractPath = path.join(targetDir, '.aioson', 'plans', slug, 'harness-contract.json');
-  const raw = await readText(contractPath);
-  if (!raw) return null;
-  try {
-    return JSON.parse(raw);
-  } catch {
-    return null;
+// A6: depois do feature:archive os artefatos moram em
+// `.aioson/context/done/{slug}/` (raiz) e `done/{slug}/plans/` (plan dir).
+// Cada leitura tenta o caminho vivo e cai para o arquivado — auditoria
+// retroativa de feature fechada deixa de reportar "0/0 covered".
+async function readJsonFirst(paths) {
+  for (const filePath of paths) {
+    const raw = await readText(filePath);
+    if (!raw) continue;
+    try {
+      return JSON.parse(raw);
+    } catch {
+      return null;
+    }
   }
+  return null;
+}
+
+async function readHarnessContract(targetDir, slug) {
+  return readJsonFirst([
+    path.join(targetDir, '.aioson', 'plans', slug, 'harness-contract.json'),
+    path.join(targetDir, '.aioson', 'context', 'done', slug, 'plans', 'harness-contract.json')
+  ]);
 }
 
 async function readHarnessReport(targetDir, slug) {
-  const reportPath = path.join(targetDir, '.aioson', 'plans', slug, 'last-check-output.json');
-  const raw = await readText(reportPath);
-  if (!raw) return null;
-  try {
-    return JSON.parse(raw);
-  } catch {
-    return null;
-  }
+  return readJsonFirst([
+    path.join(targetDir, '.aioson', 'plans', slug, 'last-check-output.json'),
+    path.join(targetDir, '.aioson', 'context', 'done', slug, 'plans', 'last-check-output.json')
+  ]);
 }
 
 async function collectAcceptanceCriteria(targetDir, slug) {
   const contextDir = path.join(targetDir, '.aioson', 'context');
+  const archivedDir = path.join(contextDir, 'done', slug);
   const sources = [
-    { kind: 'requirements', path: path.join(contextDir, `requirements-${slug}.md`) },
-    { kind: 'prd', path: path.join(contextDir, `prd-${slug}.md`) },
-    { kind: 'conformance', path: path.join(contextDir, `conformance-${slug}.yaml`) }
-  ];
+    { kind: 'requirements', file: `requirements-${slug}.md` },
+    { kind: 'prd', file: `prd-${slug}.md` },
+    { kind: 'conformance', file: `conformance-${slug}.yaml` }
+  ].map((source) => ({
+    kind: source.kind,
+    candidates: [path.join(contextDir, source.file), path.join(archivedDir, source.file)]
+  }));
 
   const byId = new Map();
   for (const source of sources) {
-    const content = await readText(source.path);
+    let content = null;
+    let sourcePath = null;
+    for (const candidate of source.candidates) {
+      content = await readText(candidate);
+      if (content) {
+        sourcePath = candidate;
+        break;
+      }
+    }
     if (!content) continue;
+    source.path = sourcePath;
     for (const id of extractAcIds(content)) {
       if (!byId.has(id)) {
         byId.set(id, { id, sources: [] });

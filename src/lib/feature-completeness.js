@@ -687,7 +687,17 @@ function hasCompletenessSection(inputs) {
 }
 
 async function readFeatureInputs(targetDir, slug, artifacts) {
+  // A6: feature:archive move briefings/{slug} → done/{slug}/briefings e
+  // features/{slug} → done/{slug}/dossier; leituras caem para o arquivado.
   const briefingRoot = path.join(targetDir, '.aioson', 'briefings', slug);
+  const archivedRoot = path.join(targetDir, '.aioson', 'context', 'done', slug);
+  const dossierRoot = path.join(targetDir, '.aioson', 'context', 'features', slug);
+  const readBriefingFile = async (name) =>
+    (await readFileSafe(path.join(briefingRoot, name)))
+    || (await readFileSafe(path.join(archivedRoot, 'briefings', name)));
+  const readDossierFile = async (name) =>
+    (await readFileSafe(path.join(dossierRoot, name)))
+    || (await readFileSafe(path.join(archivedRoot, 'dossier', name)));
   return {
     prd: artifacts.prd.content || '',
     requirements: artifacts.requirements.content || '',
@@ -696,12 +706,12 @@ async function readFeatureInputs(targetDir, slug, artifacts) {
     readiness: artifacts.readiness?.content || '',
     plan: artifacts.implementation_plan.content || '',
     qaReport: artifacts.qa_report?.content || '',
-    briefing: await readFileSafe(path.join(briefingRoot, 'briefings.md')),
-    refinementReport: await readFileSafe(path.join(briefingRoot, 'refinement-report.md')),
-    scopeExpansion: await readFileSafe(path.join(targetDir, '.aioson', 'context', 'features', slug, 'scope-expansion.md')),
-    expansionAudit: await readFileSafe(path.join(targetDir, '.aioson', 'context', 'features', slug, 'expansion-audit.md')),
-    expansionScout: await readFileSafe(path.join(briefingRoot, 'expansion-scout.md')),
-    solutionOptions: await readFileSafe(path.join(briefingRoot, 'solution-options.md'))
+    briefing: await readBriefingFile('briefings.md'),
+    refinementReport: await readBriefingFile('refinement-report.md'),
+    scopeExpansion: await readDossierFile('scope-expansion.md'),
+    expansionAudit: await readDossierFile('expansion-audit.md'),
+    expansionScout: await readBriefingFile('expansion-scout.md'),
+    solutionOptions: await readBriefingFile('solution-options.md')
   };
 }
 

@@ -222,8 +222,24 @@ async function scanActiveManifest(targetDir, slug) {
 
 // ─── Artifact scanner ─────────────────────────────────────────────────────────
 
+// A6: feature:archive move os artefatos slug-scoped para
+// `.aioson/context/done/{slug}/`. Todo resolvedor lê a raiz e cai para o done/
+// — sem isso, auditoria retroativa de feature fechada (ac:test-audit,
+// gate:check, completeness) reporta "0/0" para artefatos que existem.
+function featureDoneDir(targetDir, slug) {
+  return path.join(contextDir(targetDir), 'done', String(slug));
+}
+
+async function readFeatureArtifactSafe(targetDir, slug, fileName) {
+  const primary = await readFileSafe(path.join(contextDir(targetDir), fileName));
+  if (primary) return primary;
+  if (!slug) return null;
+  return readFileSafe(path.join(featureDoneDir(targetDir, slug), fileName));
+}
+
 async function scanArtifacts(targetDir, slug) {
   const dir = contextDir(targetDir);
+  const archivedDir = slug ? featureDoneDir(targetDir, slug) : null;
 
   async function check(name, filePath) {
     const stat = await fileStat(filePath);
@@ -249,26 +265,30 @@ async function scanArtifacts(targetDir, slug) {
     return { exists: false };
   }
 
+  const withDoneFallback = (fileName) => archivedDir
+    ? [path.join(dir, fileName), path.join(archivedDir, fileName)]
+    : [path.join(dir, fileName)];
+
   const designDocCandidates = slug
-    ? [path.join(dir, `design-doc-${slug}.md`), path.join(dir, 'design-doc.md')]
+    ? [...withDoneFallback(`design-doc-${slug}.md`), path.join(dir, 'design-doc.md')]
     : [path.join(dir, 'design-doc.md')];
   const readinessCandidates = slug
-    ? [path.join(dir, `readiness-${slug}.md`), path.join(dir, 'readiness.md')]
+    ? [...withDoneFallback(`readiness-${slug}.md`), path.join(dir, 'readiness.md')]
     : [path.join(dir, 'readiness.md')];
 
   const results = {
     project_context: await check('project.context', path.join(dir, 'project.context.md')),
-    prd: slug ? await check('prd', path.join(dir, `prd-${slug}.md`)) : { exists: false },
-    sheldon_enrichment: slug ? await check('sheldon', path.join(dir, `sheldon-enrichment-${slug}.md`)) : { exists: false },
-    sheldon_validation: slug ? await check('sheldon-validation', path.join(dir, `sheldon-validation-${slug}.md`)) : { exists: false },
-    requirements: slug ? await check('requirements', path.join(dir, `requirements-${slug}.md`)) : { exists: false },
-    spec: slug ? await check('spec', path.join(dir, `spec-${slug}.md`)) : await check('spec', path.join(dir, 'spec.md')),
+    prd: slug ? await checkFirst('prd', withDoneFallback(`prd-${slug}.md`)) : { exists: false },
+    sheldon_enrichment: slug ? await checkFirst('sheldon', withDoneFallback(`sheldon-enrichment-${slug}.md`)) : { exists: false },
+    sheldon_validation: slug ? await checkFirst('sheldon-validation', withDoneFallback(`sheldon-validation-${slug}.md`)) : { exists: false },
+    requirements: slug ? await checkFirst('requirements', withDoneFallback(`requirements-${slug}.md`)) : { exists: false },
+    spec: slug ? await checkFirst('spec', withDoneFallback(`spec-${slug}.md`)) : await check('spec', path.join(dir, 'spec.md')),
     architecture: await check('architecture', path.join(dir, 'architecture.md')),
     design_doc: await checkFirst('design-doc', designDocCandidates),
     readiness: await checkFirst('readiness', readinessCandidates),
-    implementation_plan: slug ? await check('impl-plan', path.join(dir, `implementation-plan-${slug}.md`)) : { exists: false },
-    qa_report: slug ? await check('qa-report', path.join(dir, `qa-report-${slug}.md`)) : { exists: false },
-    conformance: slug ? await check('conformance', path.join(dir, `conformance-${slug}.yaml`)) : { exists: false },
+    implementation_plan: slug ? await checkFirst('impl-plan', withDoneFallback(`implementation-plan-${slug}.md`)) : { exists: false },
+    qa_report: slug ? await checkFirst('qa-report', withDoneFallback(`qa-report-${slug}.md`)) : { exists: false },
+    conformance: slug ? await checkFirst('conformance', withDoneFallback(`conformance-${slug}.yaml`)) : { exists: false },
     dev_state: await check('dev-state', path.join(dir, 'dev-state.md')),
     features: await check('features', path.join(dir, 'features.md'))
   };
@@ -326,19 +346,16 @@ function parseGatesFromSpec(content) {
 }
 
 async function readPhaseGates(targetDir, slug) {
-  const specFile = slug
-    ? path.join(contextDir(targetDir), `spec-${slug}.md`)
-    : path.join(contextDir(targetDir), 'spec.md');
-
-  const content = await readFileSafe(specFile);
+  const content = slug
+    ? await readFeatureArtifactSafe(targetDir, slug, `spec-${slug}.md`)
+    : await readFileSafe(path.join(contextDir(targetDir), 'spec.md'));
   const gates = content ? parseGatesFromSpec(content) : {};
   if (!slug) return gates;
 
-  const dir = contextDir(targetDir);
   const [prd, plan, qaReport] = await Promise.all([
-    readFileSafe(path.join(dir, `prd-${slug}.md`)),
-    readFileSafe(path.join(dir, `implementation-plan-${slug}.md`)),
-    readFileSafe(path.join(dir, `qa-report-${slug}.md`))
+    readFeatureArtifactSafe(targetDir, slug, `prd-${slug}.md`),
+    readFeatureArtifactSafe(targetDir, slug, `implementation-plan-${slug}.md`),
+    readFeatureArtifactSafe(targetDir, slug, `qa-report-${slug}.md`)
   ]);
 
   if (prd) {
@@ -398,14 +415,14 @@ async function detectClassification(targetDir, slug) {
   // gated as SMALL; the project value is only the fallback.
   if (slug) {
     // 1. Try spec frontmatter
-    const specContent = await readFileSafe(path.join(contextDir(targetDir), `spec-${slug}.md`));
+    const specContent = await readFeatureArtifactSafe(targetDir, slug, `spec-${slug}.md`);
     if (specContent) {
       const fm = parseFrontmatter(specContent);
       if (fm.classification) return fm.classification.toUpperCase();
     }
 
     // 2. Try PRD frontmatter
-    const prdContent = await readFileSafe(path.join(contextDir(targetDir), `prd-${slug}.md`));
+    const prdContent = await readFeatureArtifactSafe(targetDir, slug, `prd-${slug}.md`);
     if (prdContent) {
       const fm = parseFrontmatter(prdContent);
       if (fm.classification) return fm.classification.toUpperCase();
@@ -750,6 +767,8 @@ function extractLastCheckpoint(artifact) {
 module.exports = {
   parseFrontmatter,
   readFileSafe,
+  readFeatureArtifactSafe,
+  featureDoneDir,
   fileExists,
   fileStat,
   detectFramework,

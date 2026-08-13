@@ -21,6 +21,8 @@ const {
 const {
   contextDir,
   readFileSafe,
+  readFeatureArtifactSafe,
+  featureDoneDir,
   fileExists,
   parseFrontmatter,
   readPhaseGates,
@@ -57,8 +59,8 @@ const GATE_DESCRIPTIONS = {
 
 async function checkGate(targetDir, slug, gateLetter) {
   const dir = contextDir(targetDir);
-  const specFile = path.join(dir, `spec-${slug}.md`);
-  const specContent = await readFileSafe(specFile);
+  // A6: artefatos de feature fechada caem para .aioson/context/done/{slug}/
+  const specContent = await readFeatureArtifactSafe(targetDir, slug, `spec-${slug}.md`);
   const gates = await readPhaseGates(targetDir, slug);
   const classification = await detectClassification(targetDir, slug);
 
@@ -156,10 +158,12 @@ async function checkGate(targetDir, slug, gateLetter) {
     }
   }
 
-  // Check required artifacts
+  // Check required artifacts (raiz com fallback para done/{slug} — A6)
   const requiredFiles = GATE_REQUIRED_ARTIFACTS[gateLetter](slug, classification);
   for (const fileName of requiredFiles) {
-    const filePath = path.join(dir, fileName);
+    const rootPath = path.join(dir, fileName);
+    const archivedPath = path.join(featureDoneDir(targetDir, slug), fileName);
+    const filePath = (await fileExists(rootPath)) ? rootPath : archivedPath;
     const exists = await fileExists(filePath);
     if (exists) {
       let detail = null;
@@ -201,7 +205,7 @@ async function checkGate(targetDir, slug, gateLetter) {
   // Gate D: QA report is the canonical delivery verdict. Legacy spec sign-off
   // remains accepted only when no QA report was produced.
   if (gateLetter === 'D') {
-    const qaReport = await readFileSafe(path.join(dir, `qa-report-${slug}.md`));
+    const qaReport = await readFeatureArtifactSafe(targetDir, slug, `qa-report-${slug}.md`);
     if (!qaReport && specContent && specContent.includes('## QA Sign-off')) {
       // Check verdict
       const passMatch = specContent.match(/\*\*Verdict:\*\*\s*(PASS|FAIL)/i);

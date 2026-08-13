@@ -60,6 +60,37 @@ test('ac:test-audit passes when no AC ids exist', async () => {
   assert.equal(result.summary.acs_total, 0);
 });
 
+test('ac:test-audit enxerga o PRD arquivado em done/{slug} (A6 — repro do "0/0 covered")', async () => {
+  const dir = await makeTmpDir();
+  // feature fechada: artefatos movidos pelo feature:archive para done/{slug}/
+  await writeFile(dir, '.aioson/context/done/checkout/prd-checkout.md',
+    '# PRD\n\n| AC | CAP |\n|---|---|\n| AC-checkout-01 | CAP-checkout-01 |\n');
+  await writeFile(dir, 'tests/checkout.test.js',
+    "// AC-checkout-01\nconst assert = require('node:assert');\ntest('AC-checkout-01', () => { assert.equal(1, 1); });\n");
+
+  const result = await auditAcceptanceCriteriaTests(dir, 'checkout', {
+    requireCriteria: true,
+    requireAssertions: true
+  });
+
+  assert.equal(result.summary.acs_total, 1, 'AC do PRD arquivado deve ser encontrado');
+  assert.equal(result.ok, true, JSON.stringify(result.missing));
+  assert.ok(result.items[0].sources.some((s) => s.file.includes('done/checkout/')));
+});
+
+test('ac:test-audit prefere o artefato vivo quando raiz e done/ coexistem', async () => {
+  const dir = await makeTmpDir();
+  await writeFile(dir, '.aioson/context/prd-checkout.md',
+    '# PRD vivo\n| AC | CAP |\n|---|---|\n| AC-checkout-01 | CAP-x |\n');
+  await writeFile(dir, '.aioson/context/done/checkout/prd-checkout.md',
+    '# PRD velho\n| AC | CAP |\n|---|---|\n| AC-checkout-99 | CAP-x |\n');
+
+  const result = await auditAcceptanceCriteriaTests(dir, 'checkout');
+  const ids = result.items.map((i) => i.ac);
+  assert.ok(ids.includes('AC-checkout-01'));
+  assert.ok(!ids.includes('AC-checkout-99'), 'done/ não pode vazar quando o vivo existe');
+});
+
 test('ac:test-audit strict mode rejects zero acceptance criteria', async () => {
   const dir = await makeTmpDir();
   await writeFile(dir, '.aioson/context/requirements-checkout.md', '# Requirements\nNo explicit ids yet.');
