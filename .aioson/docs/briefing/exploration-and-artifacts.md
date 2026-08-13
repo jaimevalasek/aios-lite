@@ -99,6 +99,13 @@ All eight sections are mandatory. Use `TBD — not discussed in this session.` r
 
 Complex themes may use `.aioson/briefings/{slug}/{theme}.md`; register each under `## Additional files`.
 
+## Sources subsection schemas
+
+Inside `## Sources`, add:
+
+- `### Source Inventory`: one `SRC-*` row per inventoried file with project-relative path, current `sha256:` fingerprint — copied verbatim from the `fingerprint` fields of `aioson briefing:sources . --slug={slug} --json`, never computed or invented by hand — purpose, and no secret content; `Type`/`Role`/`Usage` columns preserve `consulted`, `metadata_only`, or `blocked`.
+- `### Source Promise Map`: one stable `PROM-*` row per material user promise, citing `SRC-*` or an explicit conversational/research source, its approved intent, and `required`, `deferred`, or `not_applicable`. Each row also records a locator into its `SRC-*` (heading or line anchor) so the refiner's blocking check and Product's coverage pass are targeted reads, never whole-pack re-reads.
+
 ## Registry schema
 
 Create/update `.aioson/briefings/config.md` with valid YAML and a readable table:

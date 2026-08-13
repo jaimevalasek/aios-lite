@@ -23,10 +23,27 @@ function deriveSlug(url) {
   }
 }
 
+// Deterministic route stamp: the capture route comparison (aioson vs harness)
+// must not depend on the model remembering to write the field.
+async function ensureCapturedVia(summaryPath, value) {
+  let content;
+  try {
+    content = await fsp.readFile(summaryPath, 'utf8');
+  } catch {
+    return false;
+  }
+  if (/^captured_via:/m.test(content)) return false;
+  const patched = content.replace(/^(---\r?\n[\s\S]*?)(\r?\n---)/, `$1\ncaptured_via: ${value}$2`);
+  if (patched === content) return false;
+  await fsp.writeFile(summaryPath, patched);
+  return true;
+}
+
 async function seedSummary(researchDir, slug, url, result) {
   const summaryPath = path.join(researchDir, 'summary.md');
   try {
     await fsp.access(summaryPath);
+    await ensureCapturedVia(summaryPath, 'aioson');
     return summaryPath;
   } catch {
     // absent — seed it below
@@ -39,6 +56,7 @@ async function seedSummary(researchDir, slug, url, result) {
     'prd: null',
     `query: "${String(url).replace(/"/g, '')}"`,
     'verdict: confirmed',
+    'captured_via: aioson',
     '---',
     '',
     `# Research: site capture — ${slug}`,
@@ -124,5 +142,6 @@ async function runWebSave({ args, options = {}, logger, t }) {
 
 module.exports = {
   runWebSave,
-  deriveSlug
+  deriveSlug,
+  ensureCapturedVia
 };

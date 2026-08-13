@@ -136,7 +136,51 @@ test('web:save --json mirrors page, assets, and rewrites references', async () =
 
     const summary = await fs.readFile(path.join(dir, 'researchs', 'fx-site', 'summary.md'), 'utf8');
     assert.equal(summary.includes('agent: web-save'), true);
+    assert.equal(summary.includes('captured_via: aioson'), true);
     assert.equal(summary.includes(`http://127.0.0.1:${port}/`), true);
+  } finally {
+    await close();
+  }
+});
+
+test('web:save stamps captured_via into a pre-existing summary without clobbering it', async () => {
+  const dir = await makeTempDir();
+  const routes = buildRoutes();
+  const { port, close } = await startLocalServer((req, res) => {
+    const route = routes[req.url.split('?')[0]];
+    if (!route) {
+      res.writeHead(404, { 'Content-Type': 'text/plain' });
+      res.end('not found');
+      return;
+    }
+    res.writeHead(200, { 'Content-Type': route.type });
+    res.end(route.body);
+  });
+
+  const researchDir = path.join(dir, 'researchs', 'stamp');
+  await fs.mkdir(researchDir, { recursive: true });
+  const priorSummary = [
+    '---',
+    'searched_at: 2026-08-01T00:00:00.000Z',
+    'agent: sheldon',
+    'prd: null',
+    'query: "reference motion"',
+    'verdict: confirmed',
+    '---',
+    '',
+    '## Findings',
+    '- prior finding stays untouched',
+    ''
+  ].join('\n');
+  await fs.writeFile(path.join(researchDir, 'summary.md'), priorSummary);
+
+  try {
+    const cli = await runCli(['web:save', dir, `--url=http://127.0.0.1:${port}/`, '--slug=stamp', '--json']);
+    assert.equal(cli.code, 0, cli.stderr);
+    const summary = await fs.readFile(path.join(researchDir, 'summary.md'), 'utf8');
+    assert.equal(summary.includes('captured_via: aioson'), true);
+    assert.equal(summary.includes('agent: sheldon'), true);
+    assert.equal(summary.includes('- prior finding stays untouched'), true);
   } finally {
     await close();
   }

@@ -9,6 +9,10 @@ triggers: [generate briefing review, pending refinement feedback, apply briefing
 
 Filesystem state chooses the operation. A generated browser review or explicit-confirmation request is a terminal state for the activation; never spin while waiting.
 
+## Eligibility probe
+
+A briefing is refinable when `status: draft`, or when `status: approved` and no PRD exists for the slug. Check both the registry marker (`prd_generated`) and the filesystem — `.aioson/context/prd-{slug}.md`, or `prd.md` naming the slug; the file check is authoritative because the registry marker has no automatic writer. Refining after a PRD exists would silently desync briefing and PRD, which is why post-PRD changes route through `@product` with the mandatory `@sheldon` re-review.
+
 ## Generate a review
 
 Use when `refinement-feedback.json` is absent or the user explicitly requests regeneration.

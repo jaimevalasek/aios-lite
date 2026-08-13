@@ -3,6 +3,7 @@
 const fsp = require('node:fs/promises');
 const path = require('node:path');
 const { extractSite, searchSavedSite } = require('../web-extract');
+const { ensureCapturedVia } = require('./web-save');
 
 function parseInteger(value, fallback) {
   const parsed = Number.parseInt(String(value ?? ''), 10);
@@ -61,7 +62,17 @@ async function runWebExtract({ args, options = {}, logger, t }) {
     await fsp.mkdir(path.dirname(outFile), { recursive: true });
     await fsp.writeFile(outFile, markdown);
 
-    const output = { ok: true, mode: 'extract', dir: siteDir, file: outFile, ...data };
+    // Self-heal the route stamp for pre-existing or externally mirrored captures:
+    // manifest.json is web:save's signature; a conforming dir without one came
+    // from an external mirror tool.
+    let capturedVia = null;
+    if (!dirOption) {
+      const hasManifest = await fsp.access(path.join(siteDir, 'manifest.json')).then(() => true, () => false);
+      capturedVia = hasManifest ? 'aioson' : 'external-mirror';
+      await ensureCapturedVia(path.join(targetDir, 'researchs', slug, 'summary.md'), capturedVia);
+    }
+
+    const output = { ok: true, mode: 'extract', dir: siteDir, file: outFile, capturedVia, ...data };
     if (options.json) return output;
     logger.log(t('web_extract.written', { file: path.relative(process.cwd(), outFile) || outFile }));
     logger.log(t('web_extract.done'));

@@ -35,7 +35,7 @@ Do not load source-plan contents, PRDs, rules, docs, dossiers, research, or proc
 
 ## Lane mismatch gate
 
-Unless the user explicitly asks for framing, route an implementation-ready request to `@dev` Simple Plan when it has one specified observable outcome, reuses existing boundaries, has no open product/architecture/security decision, and fits 5 behavior files, 8 total paths, and 2 existing modules. Supporting tests, translations, exports, registrations, metadata, and lockfiles never enlarge the lane. State the actual estimate when routing (`N behavior files / M total paths / K modules; nearest pattern: <path>`) — the deterministic budget stays auditable, never a silent judgment call.
+Unless the user explicitly asks for framing, route an implementation-ready request to `@dev` Simple Plan when it has one specified observable outcome, reuses existing boundaries, has no open product/architecture/security decision, and fits 5 behavior files, 8 total paths, and 2 existing modules. Supporting tests, translations, exports, registrations, metadata, and lockfiles never enlarge the lane; state the actual estimate when routing (`N behavior files / M total paths / K modules; nearest pattern: <path>`).
 
 ## Progressive module router
 
@@ -69,7 +69,7 @@ aioson context:select . --agent=briefing --mode=executing --task="<task>" --path
 
 Load only selected files. Semantic recall is Markdown-only; `briefing:sources` is physical truth for mixed packs — read only files whose `load_policy` permits it. If a current-system assumption affects the idea, inspect the nearest implementation, tests, manifest, and production entry point before asking. Check `researchs/` before web search; at most four queries, persisting fresh evidence there.
 
-For a visible/rich surface, run `aioson brain:query . --agent=briefing --tags=spec-quality --min-quality=4 --format=compact 2>/dev/null || true`; treat its nodes and matching `.aioson/rules/` as binding: apply the replaceability test to Problem and Proposed solution, and record the surface's interaction contracts (masks/validation, status-change confirmation, recurring-flow drag-and-drop, decision widgets) as promises or classified open questions.
+For a visible/rich surface, run `aioson brain:query . --agent=briefing --tags=spec-quality --min-quality=4 --format=compact 2>/dev/null || true`; treat its nodes and matching `.aioson/rules/` as binding: apply the replaceability test to Problem and Proposed solution, and record the surface's interaction contracts as promises or classified open questions.
 
 ## Execution contract
 
@@ -77,7 +77,7 @@ For a visible/rich surface, run `aioson brain:query . --agent=briefing --tags=sp
 2. For a directory source pack, inspect it with `briefing:sources --slug={slug}`, keep its physical layout unchanged, and organize evidence only through the returned logical roles.
 3. Mine evidence before asking. Ask only a user-owned question whose answer changes need, scope, boundary, risk, success, terminology, trade-off, or next artifact.
 4. For multiple viable solution shapes or a rich operational surface, retain 3–5 materially different options and their management surfaces; a user-fixed complete solution takes one concise alternatives-considered note.
-5. When `plans/{slug}/visual-exploration.md` exists, verify every recorded path and SHA-256 before use. Separate preserved visual direction from proposed interactions or product scope; map each accepted promise to its source.
+5. When `plans/{slug}/visual-exploration.md` exists, verify every recorded path and SHA-256 before use; separate preserved visual direction from proposed interactions or scope and map each accepted promise to its source.
 6. Derive a kebab-case slug and obtain explicit confirmation before the first write; never overwrite an existing slug without confirmation.
 7. Write the canonical artifacts to disk; chat-only output is not delivery.
 8. Run the review checkpoint, report unresolved decisions, and hand off without changing status.
@@ -99,12 +99,7 @@ One activation should advance one coherent decision branch. Stop when a user-own
 
 Use `TBD — not discussed in this session.` when evidence is absent. Number and classify open questions as `[research-able]`, `[testable]`, `[decision-required]`, or `[out-of-scope]`. In `.aioson/briefings/config.md`, create/update `draft` entries only and never change status: `approved` is written exclusively by the user's `briefing:approve`, and the later markers (`prd_generated`, `implemented`) are reserved — no agent sets them.
 
-Inside `## Sources`, add:
-
-- `### Source Inventory`: one `SRC-*` row per inventoried file with project-relative path, current `sha256:` fingerprint — copied verbatim from the `fingerprint` fields of `aioson briefing:sources . --slug={slug} --json`, never computed or invented by hand — purpose, and no secret content; `Type`/`Role`/`Usage` columns preserve `consulted`, `metadata_only`, or `blocked`.
-- `### Source Promise Map`: one stable `PROM-*` row per material user promise, citing `SRC-*` or an explicit conversational/research source, its approved intent, and `required`, `deferred`, or `not_applicable`. Each row also records a locator into its `SRC-*` (heading or line anchor) so the refiner's blocking check and Product's coverage pass are targeted reads, never whole-pack re-reads.
-
-Every `plans/{slug}/` source named by `source_plans` must appear in the inventory; never silently drop a material promise.
+Inside `## Sources`, add `### Source Inventory` (one `SRC-*` row per inventoried file, `sha256:` fingerprint copied verbatim from `briefing:sources --json`) and `### Source Promise Map` (one stable `PROM-*` row per material user promise with its `SRC-*` locator and `required`/`deferred`/`not_applicable` state); exact row schemas live in `exploration-and-artifacts.md`. Every `plans/{slug}/` source named by `source_plans` must appear in the inventory; never silently drop a material promise.
 
 Optional artifacts: `solution-options.md`, `expansion-scout.md`, and focused theme files under `## Additional files`; exact schemas live in `exploration-and-artifacts.md`.
 
@@ -112,15 +107,15 @@ Optional artifacts: `solution-options.md`, `expansion-scout.md`, and focused the
 
 Deterministic preflight: after writing `briefings.md`, run `aioson verify:artifact . --kind=briefing --slug={slug} --advisory`; repair every issue, re-run once, and quote the final verdict line (including any prototype-pending warning) in the handoff message — the refiner starts from a machine-verified state. Promise fidelity to sources stays yours.
 
-For concrete `{slug}`, load `.aioson/skills/process/review-intelligence/SKILL.md` plus only `references/framing.md` when available. Run `aioson review:prepare . --agent=briefing --feature={slug} --artifact=.aioson/briefings/{slug}/briefings.md --json`; complete at most two passes from its template, write `draft_path`, then run `aioson review:check . --agent=briefing --feature={slug} --report=<draft_path> --json`. Exit `0` continues, `1` informs the existing flow, and `2` must be corrected/re-prepared — never suppress it. If the skill or command is unavailable, review manually with the same bound; missing review infrastructure is non-gating.
+For concrete `{slug}`, load `.aioson/skills/process/review-intelligence/SKILL.md` plus only `references/framing.md` when available. Run `aioson review:prepare . --agent=briefing --feature={slug} --artifact=.aioson/briefings/{slug}/briefings.md --json`, complete at most two passes, write `draft_path`, then run `aioson review:check . --agent=briefing --feature={slug} --report=<draft_path> --json`. Exit `2` must be corrected/re-prepared — never suppress it. If the skill or command is unavailable, review manually with the same bound; missing review infrastructure is non-gating.
 
 ## Rules
 
 - Source plans are read-only.
 - Keep user source packs feature-owned under `plans/{slug}/`; never mix files from sibling slugs.
-- Never ask the user to reorganize a pack or provide a manifest; derive logical groups without moving, renaming, executing, or rewriting sources.
+- Never ask the user to reorganize a pack; derive logical groups without moving, renaming, executing, or rewriting sources.
 - Treat detected structure as evidence: separate observed facts, inferences, hypotheses, and unknowns; never convert inferred behavior into approved scope.
-- Treat promoted visual exploration as evidence: selection means “use this direction as source,” never Briefing approval.
+- Treat promoted visual exploration as evidence, never Briefing approval.
 - Use evidence rather than asking the user to repeat observable project facts.
 - Preserve uncertainty explicitly; do not silently turn exploratory options into scope.
 - Research claims need consulted pages or fresh cached summaries, never snippets alone.
@@ -129,7 +124,7 @@ For concrete `{slug}`, load `.aioson/skills/process/review-intelligence/SKILL.md
 
 ## Responsibility boundary
 
-Briefing owns synthesis, structured discovery, exploratory research, gaps/risks, and briefing artifacts. Product owns PRD and scope. Dev owns implementation. The user owns approval and subjective product choices.
+Briefing owns synthesis, discovery, exploratory research, gaps/risks, and briefing artifacts; Product owns PRD and scope; Dev owns implementation; the user owns approval and subjective product choices.
 
 ## Hard constraints
 
@@ -144,11 +139,11 @@ Briefing owns synthesis, structured discovery, exploratory research, gaps/risks,
 
 ## Handoff
 
-After creation/update, state what changed, which questions remain, and the canonical path. The route is:
+After creation/update, state what changed, which questions remain, and the canonical path:
 
 `briefing draft → @briefing-refiner → user runs aioson briefing:approve . --slug={slug} → @product`
 
-Before recommending `/compact`, update `mappings/{slug}/continuity.md` only when material same-feature context is not already in canonical artifacts; per `.aioson/docs/feature-continuity-mapping.md` it is temporary, non-canonical, never a gate. Recommend `/compact` before continuing in Briefing Refiner. Use `/clear` only for a feature switch, polluted context, or a hard/security reset.
+Recommend `/compact` before continuing in Briefing Refiner, updating `mappings/{slug}/continuity.md` first only when material same-feature context is not already canonical — per `.aioson/docs/feature-continuity-mapping.md` it is temporary, never a gate. Use `/clear` only for a feature switch, polluted context, or a hard reset.
 
 ## Observability
 

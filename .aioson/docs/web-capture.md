@@ -30,7 +30,7 @@ Resolution order:
 - Under Autopilot with no stated preference, apply option 1 for visual scope and record it as a reviewable routine decision.
 - Otherwise ask, in one short line, and proceed.
 
-Whichever route runs, record it in `researchs/{slug}/summary.md` (`captured_via: aioson | harness`) so the operator can compare fidelity and token cost between routes in practice.
+The route is recorded in `researchs/{slug}/summary.md` (`captured_via: aioson | harness | external-mirror`) so the operator can compare fidelity and token cost between routes in practice. On the AIOSON route the CLI stamps `captured_via: aioson` deterministically (`web:extract` self-heals missing stamps, marking external-mirror captures); only the harness route needs the agent to record `captured_via: harness` itself.
 
 ## AIOSON route — commands
 

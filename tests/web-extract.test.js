@@ -149,6 +149,47 @@ test('web:extract --query returns bounded source snippets', async () => {
   }
 });
 
+test('web:extract self-heals a missing captured_via stamp', async () => {
+  const dir = await makeTempDir();
+  const { port, close } = await startLocalServer((req, res) => {
+    const route = ROUTES[req.url.split('?')[0]];
+    if (!route) {
+      res.writeHead(404, { 'Content-Type': 'text/plain' });
+      res.end('not found');
+      return;
+    }
+    res.writeHead(200, { 'Content-Type': route.type });
+    res.end(route.body);
+  });
+
+  const summaryPath = path.join(dir, 'researchs', 'neon', 'summary.md');
+  const stripStamp = async () => {
+    const summary = await fs.readFile(summaryPath, 'utf8');
+    await fs.writeFile(summaryPath, summary.replace(/^captured_via:.*\r?\n/m, ''));
+  };
+
+  try {
+    await saveFixtureSite(dir, port);
+
+    // manifest.json present (web:save signature) -> re-stamped as aioson
+    await stripStamp();
+    let cli = await runCli(['web:extract', dir, '--slug=neon', '--json']);
+    assert.equal(cli.code, 0, cli.stderr);
+    assert.equal(JSON.parse(cli.stdout).capturedVia, 'aioson');
+    assert.equal((await fs.readFile(summaryPath, 'utf8')).includes('captured_via: aioson'), true);
+
+    // no manifest -> conforming dir came from an external mirror tool
+    await stripStamp();
+    await fs.rm(path.join(dir, 'researchs', 'neon', 'site', 'manifest.json'));
+    cli = await runCli(['web:extract', dir, '--slug=neon', '--json']);
+    assert.equal(cli.code, 0, cli.stderr);
+    assert.equal(JSON.parse(cli.stdout).capturedVia, 'external-mirror');
+    assert.equal((await fs.readFile(summaryPath, 'utf8')).includes('captured_via: external-mirror'), true);
+  } finally {
+    await close();
+  }
+});
+
 test('web:extract fails cleanly when the saved site is missing', async () => {
   const dir = await makeTempDir();
   const cli = await runCli(['web:extract', dir, '--slug=ghost', '--json']);

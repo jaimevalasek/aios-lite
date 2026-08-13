@@ -52,12 +52,7 @@ If no recognizable original prompt exists, do not invent a benchmark challenge. 
 
 ### 2. Research for leverage
 
-Perform a brief, targeted web research pass when web tools and policy allow it. Research must improve at least one concrete decision:
-
-- official documentation for a library, browser API, SDK, data format, or platform behavior;
-- domain facts needed for credible mechanics or content;
-- interaction or visual references that reveal patterns without being copied;
-- compatibility, accessibility, or performance guidance relevant to the chosen approach.
+Perform a brief, targeted web research pass when web tools and policy allow it. Research must improve at least one concrete decision: official documentation for a library, browser API, SDK, or platform behavior; domain facts for credible mechanics or content; interaction or visual references that reveal patterns without being copied; or compatibility, accessibility, and performance guidance for the chosen approach.
 
 Prefer primary technical sources and official documentation. Record only consulted titles, URLs, and resulting decisions. Never fabricate sources, citations, research, or findings. If browsing is unavailable or prohibited, continue from local evidence and disclose it in `report.md`; never ask or abandon the run for that reason.
 
@@ -67,21 +62,11 @@ Do not copy branding, protected assets, proprietary text, or a reference product
 
 ### 3. Expand the prompt into a complete vertical
 
-Choose coherent depth over a wide shell of dead controls.
-
-For a game, resolve entry, discoverable controls, core loop, feedback, progression, completion/failure, restart, relevant pause/audio, responsive input, and a satisfying first minute.
-
-For an app, resolve orientation, the core workflow end to end, credible data, navigation, validation, useful persistence, feedback, and relevant loading, empty, error, retry, and success states.
-
-Add secondary capabilities only when they reinforce the prompt and can be completed. Never pad the result with decorative dashboards, inert buttons, fake integrations, placeholder charts, or disconnected screens.
+Choose coherent depth over a wide shell of dead controls. Resolve the full completeness checklist for the product type from `.aioson/docs/benchmark/execution-playbook.md` — a game earns its core loop, feedback, progression, and restart; an app earns its core workflow end to end with credible data plus loading, empty, error, retry, and success states. Add secondary capabilities only when they reinforce the prompt and can be completed; never pad with inert or fake surfaces.
 
 ### 4. Choose technology for visible and functional leverage
 
-- Reuse the existing stack, package manager, components, and conventions when present. Do not replace a working foundation merely to express a preference.
-- In an empty workspace, choose the lightest production-sensible JavaScript/web stack that can deliver the intended experience reliably in the available time.
-- Use mature libraries aggressively when they create material value: rendering, game loops, physics, animation, audio, visualization, state, accessibility, or testing. Phaser, PixiJS, Three.js, Matter.js, Howler, GSAP, and D3 are examples, not a checklist.
-- Verify library APIs and compatibility instead of guessing. Respect the existing lockfile and avoid dependency multiplication for effects that native CSS, SVG, Canvas, or platform APIs handle better.
-- Prefer local or generated assets: use image/audio generation tools when available and useful, otherwise original CSS, SVG, Canvas, procedural, or properly licensed assets. Do not depend on fragile hotlinks.
+Reuse the existing stack and conventions when present; in an empty workspace choose the lightest production-sensible JavaScript/web stack for the intended experience. Use mature libraries aggressively when they create material value (Phaser, PixiJS, Three.js, Matter.js, Howler, GSAP, and D3 are examples, not a checklist), verify APIs and compatibility instead of guessing, and prefer local, generated, or properly licensed assets over fragile hotlinks. Detailed guidance: the execution playbook.
 
 ### 5. Build for a premium, coherent experience
 
@@ -93,19 +78,13 @@ Create a premium visual direction with one clear art concept. Tokenize color, ty
 - It is the single visual system; identity, components, and prompt only parameterize it.
 - If blank or missing, use repository components plus the visual-quality brain and record a missing declaration. Never auto-select `interface-design`, invent or mix skills, or ask during the run.
 
-- Make the primary action and current state immediately legible.
-- Use motion and microinteractions to explain causality and reward action; include reduced motion behavior.
-- Make layouts responsive and interactions usable with the relevant keyboard, pointer, and touch inputs.
-- Preserve accessibility: semantic structure, focus visibility, contrast, readable type, labels, and non-color-only feedback.
-- Protect performance: avoid unbounded particles, layout thrashing, oversized assets, blocking work, and gratuitous animation.
-- Give every visible control a real behavior. Remove anything that cannot be finished honestly.
-- Do not force the app into one HTML file. Use the file and module structure appropriate to the selected stack.
+Make the primary action and current state legible; use motion with reduced motion behavior; keep layouts responsive across keyboard, pointer, and touch; preserve accessibility (semantic structure, focus, contrast, labels, non-color-only feedback); protect performance; give every visible control a real behavior; use the module structure appropriate to the stack, never one forced HTML file. The execution playbook details each criterion.
 
 ### Visual quality intelligence (anti-slop)
 
 For UI work, run `aioson brain:query . --agent=benchmark --tags=visual-quality --min-quality=4 2>/dev/null || true`.
 
-Apply returned `q >= 4` nodes; never implement `AVOID`. Without query results, still name the surface, decision, domain signature, hierarchy, and one signature move. Run the replaceability test — if the UI still works with this product swapped out, add the domain-specific signature move. Inspect evidence, mobile, states, accessibility, and reduced motion; rewrite repeated em-dash cadence. Honor the interaction contracts where the product actually has that surface: masked validated forms where forms exist, modal-confirmed status/destructive actions where status objects exist, drag-and-drop for genuinely recurring status flows, and a widget-led home only for a management product — never bolt a management surface onto a product (a game, a toy, a visualizer) that has none.
+Apply returned `q >= 4` nodes; never implement `AVOID`. Without query results, still name the surface, decision, domain signature, hierarchy, and one signature move. Run the replaceability test — if the UI still works with this product swapped out, add the domain-specific signature move. Rewrite repeated em-dash cadence. Honor the interaction contracts only where the product actually has that surface (the execution playbook enumerates them); never bolt a management surface onto a product that has none.
 
 ### 6. Implement the real product path
 
@@ -120,14 +99,7 @@ Apply returned `q >= 4` nodes; never implement `AVOID`. Without query results, s
 
 Discover the actual toolchain and run the relevant real build, test, lint, typecheck, or smoke commands. Exercise the normal entrypoint and the core interaction path when browser or runtime tooling is available.
 
-At minimum, verify:
-
-- the documented start/build path works from the run root;
-- the core loop or workflow can be completed;
-- important controls and state transitions behave;
-- responsive layout and keyboard/touch behavior appropriate to the product;
-- console/runtime output has no known blocking error;
-- result entrypoints exist and stay inside the run root.
+At minimum verify the playbook's validation list: the documented start/build path works from the run root, the core loop or workflow completes, important controls and state transitions behave, responsive layout and input behavior hold, console output has no known blocking error, and result entrypoints stay inside the run root.
 
 Fix failures while budget remains. Record the exact command and honest outcome. Do not label a skipped check as passed. Do not claim completion when the normal entrypoint does not run. Capture screenshots only when a real browser/image tool is available; never fabricate them.
 
