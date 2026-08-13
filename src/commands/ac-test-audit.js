@@ -58,7 +58,8 @@ async function runAcTestAudit({ args, options = {}, logger }) {
   const strict = Boolean(options.strict);
   const report = await auditAcceptanceCriteriaTests(targetDir, slug, {
     requireCriteria: strict,
-    requireAssertions: strict
+    requireAssertions: strict,
+    acceptQaEvidence: Boolean(options['accept-qa-evidence'] || options.acceptQaEvidence)
   });
 
   if (options.seed) {

@@ -48,7 +48,15 @@ async function evaluateContractIntegrityGate(targetDir, slug, options = {}) {
   const contractRead = readJsonSafe(contractPath);
   if (!contractRead.exists) {
     if (!runtime.isRuntimeFeature) {
-      return { ok: true, slug, has_contract: false, runtime, errors: [], warnings: [] };
+      // Tree-only evidence (advisorySignals) is not attributable to this
+      // feature in a shared working tree — surface it, never block on it.
+      const warnings = (runtime.advisorySignals || []).length > 0
+        ? [{
+          code: 'unattributed_runtime_churn',
+          message: `uncommitted working-tree files match runtime paths (${runtime.advisorySignals.join(', ')}) but none are attributable to feature "${slug}" (no matching progress step, no prototype manifest). If this feature ships that work, author .aioson/plans/${slug}/harness-contract.json (aioson harness:init . --slug=${slug}); otherwise it is parallel work and safe to ignore.`
+        }]
+        : [];
+      return { ok: true, slug, has_contract: false, runtime, errors: [], warnings };
     }
     return {
       ok: false,
@@ -92,8 +100,13 @@ async function evaluateContractIntegrityGate(targetDir, slug, options = {}) {
     };
   }
 
+  // With a contract present the feature opted into harness governance — tree
+  // evidence keeps git-parity strictness (an untracked migration must not
+  // dodge the RG-* requirement just because progress.json missed it). Only
+  // the missing-contract path above treats tree-only evidence as advisory.
+  const governedRuntime = runtime.isRuntimeFeature || (runtime.advisorySignals || []).length > 0;
   const integrity = checkContractIntegrity(contractRead.value, {
-    isRuntimeFeature: runtime.isRuntimeFeature
+    isRuntimeFeature: governedRuntime
   });
   const errors = [...integrity.errors];
   const warnings = [...integrity.warnings];
@@ -107,7 +120,7 @@ async function evaluateContractIntegrityGate(targetDir, slug, options = {}) {
       options: {
         slug,
         json: true,
-        strict: Boolean(options.strict || runtime.isRuntimeFeature)
+        strict: Boolean(options.strict || governedRuntime)
       },
       logger: makeSilentLogger(),
       t: () => undefined

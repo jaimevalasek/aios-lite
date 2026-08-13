@@ -359,3 +359,68 @@ test('evaluateContractIntegrityGate: missing runtime contract error is actionabl
   assert.ok(err, 'expected missing_runtime_contract');
   assert.match(err.message, /harness:init/);
 });
+
+// ───────────── atribuição de sinais: tree compartilhado vs feature ─────────────
+// Repro tinta-ouro: migrations sujas de OUTRA feature no working tree
+// compartilhado não podem transformar um close visual em "runtime feature".
+
+test('detectRuntimeFeature: migração só no working tree é advisory, não atribuível', async () => {
+  const tmp = await fs.mkdtemp(path.join(os.tmpdir(), 'aioson-detect-adv-'));
+  const r = detectRuntimeFeature(tmp, 'skin-redesign', {
+    completedSteps: ['src/pages/pricing.tsx'],
+    changedFiles: ['prisma/migrations/20260810_other_feature/migration.sql', 'prisma/schema.prisma']
+  });
+  assert.equal(r.isRuntimeFeature, false);
+  assert.deepEqual(r.signals, []);
+  assert.deepEqual(r.advisorySignals, ['migrations']);
+});
+
+test('detectRuntimeFeature: migração em completed_steps segue atribuível (não advisory)', async () => {
+  const tmp = await fs.mkdtemp(path.join(os.tmpdir(), 'aioson-detect-adv-'));
+  const r = detectRuntimeFeature(tmp, 'billing', {
+    completedSteps: ['prisma/migrations/001/migration.sql'],
+    changedFiles: ['prisma/migrations/001/migration.sql']
+  });
+  assert.equal(r.isRuntimeFeature, true);
+  assert.ok(r.signals.includes('migrations'));
+  assert.deepEqual(r.advisorySignals, []);
+});
+
+test('detectRuntimeFeature: prototype-manifest arquivado em done/{slug}/briefings ainda sinaliza runtime', async () => {
+  const tmp = await fs.mkdtemp(path.join(os.tmpdir(), 'aioson-detect-arch-'));
+  const archived = path.join(tmp, '.aioson', 'context', 'done', 'flow-deck', 'briefings');
+  await fs.mkdir(archived, { recursive: true });
+  await fs.writeFile(path.join(archived, 'prototype-manifest.md'), '# Core interactions\n', 'utf8');
+  const r = detectRuntimeFeature(tmp, 'flow-deck', { completedSteps: [] });
+  assert.equal(r.isRuntimeFeature, true);
+  assert.ok(r.signals.includes('prototype-manifest'));
+});
+
+test('evaluateContractIntegrityGate: sem contrato + evidência só de tree → ok com warning, não bloqueia', async () => {
+  const tmp = await fs.mkdtemp(path.join(os.tmpdir(), 'aioson-gate-adv-'));
+  const result = await evaluateContractIntegrityGate(tmp, 'skin-redesign', {
+    runChecks: false,
+    changedFiles: ['prisma/migrations/20260810_other_feature/migration.sql']
+  });
+  assert.equal(result.ok, true);
+  assert.equal(result.errors.length, 0);
+  const warn = result.warnings.find((w) => w.code === 'unattributed_runtime_churn');
+  assert.ok(warn, 'expected unattributed_runtime_churn warning');
+  assert.match(warn.message, /harness:init/);
+});
+
+test('evaluateContractIntegrityGate: sem contrato + migração em progress → segue bloqueando', async () => {
+  const tmp = await fs.mkdtemp(path.join(os.tmpdir(), 'aioson-gate-adv-'));
+  const planDir = path.join(tmp, '.aioson', 'plans', 'billing');
+  await fs.mkdir(planDir, { recursive: true });
+  await fs.writeFile(path.join(planDir, 'progress.json'), JSON.stringify({
+    feature: 'billing',
+    completed_steps: ['prisma/migrations/001/migration.sql']
+  }), 'utf8');
+  const result = await evaluateContractIntegrityGate(tmp, 'billing', {
+    runChecks: false,
+    changedFiles: []
+  });
+  assert.equal(result.ok, false);
+  assert.ok(result.errors.some((e) => e.code === 'missing_runtime_contract'));
+});

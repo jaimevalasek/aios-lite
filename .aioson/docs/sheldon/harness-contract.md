@@ -21,9 +21,12 @@ Within an explicitly routed harness engagement, run **after** the PRD is enriche
 
 A **runtime feature** (`has_api` / DB / migrations / `## Prototype reference`) therefore carries the `RG-*`
 runtime gate at **every** classification. The CLI deterministically blocks the subset it can locate on disk
-(prototype manifests and migration/Prisma paths from progress/git evidence) when the runtime contract is missing
-or has no `RG-*`; the Play `has_api` case still requires the `@validator` Step 0 judgment because that flag lives
-inside the target app. Non-runtime MICRO/SMALL keep the lightweight path (no contract).
+(prototype manifests — live or archived under `context/done/{slug}/briefings/` — and migration/Prisma paths from
+the feature's own progress steps) when the runtime contract is missing or has no `RG-*`. Migration paths seen only
+in the shared git working tree are **advisory** when no contract exists (in a multi-feature tree they may belong to
+parallel work), but keep full git-parity strictness once a contract is present. The Play `has_api` case still
+requires the `@validator` Step 0 judgment because that flag lives inside the target app. Non-runtime MICRO/SMALL
+keep the lightweight path (no contract).
 
 ## Steps
 

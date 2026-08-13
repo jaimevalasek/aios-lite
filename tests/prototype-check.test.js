@@ -429,3 +429,30 @@ test('prototype:check — pt-BR interactions match folded ACs (accents ignored)'
   assert.equal(r.status, 'ok');
   assert.equal(r.interactions.covered, 2);
 });
+
+// ─────────────── arquivo morto (feature:archive) — repro tinta-ouro ───────────────
+// Um close interrompido move `.aioson/briefings/{slug}/` para
+// `.aioson/context/done/{slug}/briefings/` antes de os gates rodarem de novo.
+// O binding do PRD continua canônico; a leitura cai para o arquivo morto em vez
+// de reportar o par contraditório dangling_prototype + missing_manifest.
+
+test('prototype:check — resolve protótipo e manifest arquivados em done/{slug}/briefings', async () => {
+  const dir = await makeTmpDir();
+  await writeFile(dir, `.aioson/context/prd-${SLUG}.md`, prdWithAcceptance(
+    'AC-01: add card persists and re-renders.\nAC-02: create board seeds default lists.\nAC-03: archive workspace hides it.'
+  ));
+  await writeFile(dir, `.aioson/context/done/${SLUG}/briefings/prototype.html`, '<html></html>');
+  await writeFile(dir, `.aioson/context/done/${SLUG}/briefings/prototype-manifest.md`, MANIFEST);
+  const r = await run(dir);
+  assert.equal(r.ok, true, r.message);
+  assert.notEqual(r.reason, 'dangling_prototype');
+});
+
+test('prototype:check — dangling continua quando o arquivo não existe nem no arquivo morto', async () => {
+  const dir = await makeTmpDir();
+  await writeFile(dir, `.aioson/context/prd-${SLUG}.md`, PRD_WITH_REF);
+  await writeFile(dir, `.aioson/context/done/${SLUG}/briefings/prototype-manifest.md`, MANIFEST);
+  const r = await run(dir);
+  assert.equal(r.ok, false);
+  assert.equal(r.reason, 'dangling_prototype');
+});

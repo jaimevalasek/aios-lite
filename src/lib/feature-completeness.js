@@ -44,7 +44,8 @@ const {
   parseFirstMarkdownTable,
   mapColumns,
   finding,
-  missingSection
+  missingSection,
+  genericEvidence
 } = require('./feature-completeness-format');
 
 function validateProductCapabilityMap(content, artifact) {
@@ -512,12 +513,6 @@ function labeledSmokeField(section, aliases) {
   return match ? cleanCell(match[1]) : '';
 }
 
-function genericEvidence(value) {
-  const normalized = normalizeLabel(value);
-  return !normalized
-    || /^(pass|passed|done|works|working|ok|green|tests-passed|testes-passaram|all-tests-pass)$/.test(normalized)
-    || /^tests?-\d+-(?:pass|passed)$/.test(normalized);
-}
 
 async function validateExecutionEvidence(
   targetDir,

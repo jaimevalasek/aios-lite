@@ -345,6 +345,16 @@ function missingSection(stage, check, heading, artifact) {
   return finding(stage, check, `feature completeness requires ## ${heading}`, artifact);
 }
 
+// Shared "concrete evidence" floor: a bare verdict word ("pass", "works",
+// "tests passed") proves nothing. Both the completeness execution gate and the
+// close-time AC audit consume this so one QA row meets one standard.
+function genericEvidence(value) {
+  const normalized = normalizeLabel(value);
+  return !normalized
+    || /^(pass|passed|done|works|working|ok|green|tests-passed|testes-passaram|all-tests-pass)$/.test(normalized)
+    || /^tests?-\d+-(?:pass|passed)$/.test(normalized);
+}
+
 module.exports = {
   REQ_ID_RE,
   AC_ID_RE,
@@ -374,5 +384,6 @@ module.exports = {
   parseFirstMarkdownTable,
   mapColumns,
   finding,
-  missingSection
+  missingSection,
+  genericEvidence
 };

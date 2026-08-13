@@ -354,3 +354,80 @@ test('ac:test-audit --seed emits the deterministic matrix seed list (ACs + contr
   const plain = await runAcTestAudit({ args: [dir], options: { feature: 'seeded', json: true }, logger: makeLogger() });
   assert.ok(!('seeds' in plain));
 });
+
+// ───────────── canal QA (close-time) gated por evidência declarada no PRD ─────────────
+// Repro tinta-ouro: AC visual cuja evidência declarada é smoke/medição manual,
+// verificada com PASS concreto pelo QA, não pode exigir arquivo de teste ritual.
+// AC que PROMETEU teste automatizado continua devendo o teste.
+
+function prdComEvidencia(slug, rows) {
+  const body = rows.map((r) => `| ${r.ac} | CAP-${slug}-01 | ${r.behavior} | ${r.evidence} |`).join('\n');
+  return `# PRD\n\n## Acceptance Criteria\n\n| AC | CAP | Observable behavior | Evidence |\n|---|---|---|---|\n${body}\n`;
+}
+
+function qaComTabela(slug, rows) {
+  const body = rows.map((r) => `| CAP-${slug}-01 | ${r.ac} | ${r.result} | ${r.evidence} |`).join('\n');
+  return `# QA Report\n\n## CAP/AC evidence table\n\n| CAP | AC | Result | Evidence |\n|---|---|---|---|\n${body}\n`;
+}
+
+test('ac:test-audit — AC com evidência declarada manual + QA PASS concreto cobre no modo acceptQaEvidence', async () => {
+  const dir = await makeTmpDir();
+  await writeFile(dir, '.aioson/context/prd-skin.md', prdComEvidencia('skin', [
+    { ac: 'AC-skin-01', behavior: 'CTA na dobra em 1366x768', evidence: 'Smoke visual nos dois idiomas' }
+  ]));
+  await writeFile(dir, '.aioson/context/qa-report-skin.md', qaComTabela('skin', [
+    { ac: 'AC-skin-01', result: 'PASS', evidence: 'CTA medido em 749px, dentro da dobra em 4 viewports' }
+  ]));
+
+  const strict = await auditAcceptanceCriteriaTests(dir, 'skin', {
+    requireCriteria: true,
+    requireAssertions: true
+  });
+  assert.equal(strict.ok, false, 'sem o canal QA o AC segue missing');
+
+  const close = await auditAcceptanceCriteriaTests(dir, 'skin', {
+    requireCriteria: true,
+    requireAssertions: true,
+    acceptQaEvidence: true
+  });
+  assert.equal(close.ok, true, JSON.stringify(close.missing));
+  assert.ok(close.items[0].evidence.some((e) => /QA report records concrete PASS/.test(e.evidence)));
+});
+
+test('ac:test-audit — AC que declara teste automatizado continua devendo o teste mesmo com QA PASS', async () => {
+  const dir = await makeTmpDir();
+  await writeFile(dir, '.aioson/context/prd-skin.md', prdComEvidencia('skin', [
+    { ac: 'AC-skin-02', behavior: 'redirects respondem 301', evidence: 'Teste focado do mapa de redirects + smoke HTTP' }
+  ]));
+  await writeFile(dir, '.aioson/context/qa-report-skin.md', qaComTabela('skin', [
+    { ac: 'AC-skin-02', result: 'PASS', evidence: 'curl -I nas 12 rotas legadas, todas 301 para o destino correto' }
+  ]));
+
+  const close = await auditAcceptanceCriteriaTests(dir, 'skin', {
+    requireCriteria: true,
+    requireAssertions: true,
+    acceptQaEvidence: true
+  });
+  assert.equal(close.ok, false, 'evidência declarada automatizada exige o teste prometido');
+  assert.deepEqual(close.missing, ['AC-skin-02']);
+});
+
+test('ac:test-audit — evidência QA genérica ou FAIL não conta; qa-report arquivado em done/ conta', async () => {
+  const dir = await makeTmpDir();
+  await writeFile(dir, '.aioson/context/done/skin/prd-skin.md', prdComEvidencia('skin', [
+    { ac: 'AC-skin-03', behavior: 'banda em 366px', evidence: 'Medicao visual' },
+    { ac: 'AC-skin-04', behavior: 'contraste AA', evidence: 'Inspecao manual' }
+  ]));
+  await writeFile(dir, '.aioson/context/done/skin/qa-report-skin.md', qaComTabela('skin', [
+    { ac: 'AC-skin-03', result: 'PASS', evidence: 'pass' },
+    { ac: 'AC-skin-04', result: 'FAIL', evidence: 'contraste medido 3.9:1 abaixo do AA' }
+  ]));
+
+  const close = await auditAcceptanceCriteriaTests(dir, 'skin', {
+    requireCriteria: true,
+    requireAssertions: true,
+    acceptQaEvidence: true
+  });
+  assert.equal(close.ok, false);
+  assert.deepEqual(close.missing.sort(), ['AC-skin-03', 'AC-skin-04']);
+});

@@ -98,6 +98,13 @@ Acceptance criteria:
 | AC-{slug}-01 | CAP-{slug}-main | production-path behavior | focused test + real app smoke |
 ```
 
+The `Evidence` cell is a binding declaration, not decoration. An AC that declares an automated check
+(test, spec, e2e, automated check) must be cited inside an asserting test to close — the close-time
+`ac:test-audit` enforces exactly what was promised. An AC whose verification is genuinely manual
+(visual smoke, measurement, inspection) should say so; at close it is then satisfied by a concrete QA
+PASS row in the CAP/AC evidence table instead of a ritual test file. Declare honestly per row —
+"smoke visual" on a behavior a test could cover trades durable regression coverage for one manual pass.
+
 ## Prototype contract
 
 Resolve prototype ownership before using it:

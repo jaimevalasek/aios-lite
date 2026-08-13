@@ -21,6 +21,14 @@
 
 const fs = require('node:fs/promises');
 const path = require('node:path');
+const {
+  extractSection,
+  parseFirstMarkdownTable,
+  mapColumns,
+  cleanCell,
+  normalizeLabel,
+  genericEvidence
+} = require('./feature-completeness-format');
 
 const AC_ID_RE = /\bAC(?:-[A-Za-z0-9]+)+\b/g;
 const JS_TEST_FILE_RE = /(?:^|[\\/])(?:tests?|__tests__)[\\/].+\.(?:test|spec)\.(?:js|cjs|mjs|ts|tsx|jsx)$|(?:^|[\\/])[^\\/]+\.(?:test|spec)\.(?:js|cjs|mjs|ts|tsx|jsx)$/i;
@@ -270,6 +278,98 @@ async function readHarnessReport(targetDir, slug) {
   ]);
 }
 
+// Third evidence channel (opt-in, close-time): the QA CAP/AC evidence table.
+// A visual/measured AC verified live by QA must not demand a ritual test file
+// that only re-cites the id — but the channel is NOT a blanket bypass. It only
+// applies to ACs whose PRD `Evidence` column declares manual verification
+// (smoke, measurement, inspection); an AC that PROMISED an automated test
+// still owes that test, so the "cite the AC in an asserting test" convention
+// keeps its teeth. Rows count only with result PASS and non-generic evidence,
+// exactly mirroring validateExecutionEvidence. Keyed lowercase; reads live
+// then archived (A6).
+const AUTOMATED_EVIDENCE_RE = /test|spec|assert|automat|unit|integra|e2e|playwright|cypress|vitest|jest|check/i;
+
+async function readTextFirst(paths) {
+  for (const filePath of paths) {
+    const content = await readText(filePath);
+    if (content) return { content, path: filePath };
+  }
+  return { content: null, path: null };
+}
+
+// AC id → declared evidence text from the PRD Acceptance Criteria table.
+// Same section/column aliases as validatePrdAcceptanceCriteria — one contract.
+async function collectDeclaredEvidence(targetDir, slug) {
+  const byAc = new Map();
+  const { content: prd } = await readTextFirst([
+    path.join(targetDir, '.aioson', 'context', `prd-${slug}.md`),
+    path.join(targetDir, '.aioson', 'context', 'done', slug, `prd-${slug}.md`)
+  ]);
+  if (!prd) return byAc;
+  const section = extractSection(prd, ['Acceptance Criteria', 'Criterios de Aceite']);
+  if (!section) return byAc;
+  const table = parseFirstMarkdownTable(section);
+  if (!table) return byAc;
+  const columns = mapColumns(table, {
+    ac: ['AC', 'Acceptance criterion', 'Criterio de aceite'],
+    evidence: ['Evidence', 'Verification', 'Evidencia', 'Verificacao']
+  });
+  if (columns.missing.length > 0) return byAc;
+  for (const row of table.rows) {
+    const evidence = cleanCell(row[columns.indexes.evidence]);
+    if (!evidence) continue;
+    for (const ac of extractAcIds(String(row[columns.indexes.ac] || ''))) {
+      const key = ac.toLowerCase();
+      if (!byAc.has(key)) byAc.set(key, evidence);
+    }
+  }
+  return byAc;
+}
+
+async function collectQaEvidence(targetDir, slug) {
+  const candidates = [
+    path.join(targetDir, '.aioson', 'context', `qa-report-${slug}.md`),
+    path.join(targetDir, '.aioson', 'context', 'done', slug, `qa-report-${slug}.md`)
+  ];
+  const byAc = new Map();
+  let report = null;
+  let file = null;
+  for (const candidate of candidates) {
+    report = await readText(candidate);
+    if (report) {
+      file = toRel(targetDir, candidate);
+      break;
+    }
+  }
+  if (!report) return byAc;
+  const section = extractSection(report, [
+    'CAP/AC evidence table',
+    'Capability acceptance evidence',
+    'Evidencias CAP/AC'
+  ]);
+  if (!section) return byAc;
+  const table = parseFirstMarkdownTable(section);
+  if (!table) return byAc;
+  const columns = mapColumns(table, {
+    cap: ['CAP', 'Capability', 'Capacidade'],
+    ac: ['AC', 'Acceptance criterion', 'Criterio de aceite'],
+    result: ['Result', 'Verdict', 'Resultado', 'Veredito'],
+    evidence: ['Evidence', 'Proof', 'Evidencia', 'Prova']
+  });
+  if (columns.missing.length > 0) return byAc;
+  for (const row of table.rows) {
+    const result = normalizeLabel(row[columns.indexes.result]);
+    if (result !== 'pass' && result !== 'passed') continue;
+    const evidence = cleanCell(row[columns.indexes.evidence]);
+    if (genericEvidence(evidence)) continue;
+    for (const ac of extractAcIds(String(row[columns.indexes.ac] || ''))) {
+      const key = ac.toLowerCase();
+      if (!byAc.has(key)) byAc.set(key, { file, evidence });
+    }
+  }
+  return byAc;
+}
+
 async function collectAcceptanceCriteria(targetDir, slug) {
   const contextDir = path.join(targetDir, '.aioson', 'context');
   const archivedDir = path.join(contextDir, 'done', slug);
@@ -312,6 +412,7 @@ async function collectAcceptanceCriteria(targetDir, slug) {
 async function auditAcceptanceCriteriaTests(targetDir, slug, options = {}) {
   const requireCriteria = Boolean(options.requireCriteria);
   const requireAssertions = Boolean(options.requireAssertions);
+  const acceptQaEvidence = Boolean(options.acceptQaEvidence);
   const criteria = await collectAcceptanceCriteria(targetDir, slug);
   const testFiles = await listTestFiles(targetDir);
   const testContents = [];
@@ -324,6 +425,12 @@ async function auditAcceptanceCriteriaTests(targetDir, slug, options = {}) {
 
   const contract = await readHarnessContract(targetDir, slug);
   const harnessReport = await readHarnessReport(targetDir, slug);
+  const qaEvidence = acceptQaEvidence
+    ? await collectQaEvidence(targetDir, slug)
+    : new Map();
+  const declaredEvidence = acceptQaEvidence
+    ? await collectDeclaredEvidence(targetDir, slug)
+    : new Map();
   const items = criteria.map((criterion) => {
     const testEvidence = testEvidenceFor(criterion.id, testContents, { requireAssertions });
     const weakEvidence = requireAssertions ? weakTestEvidenceFor(criterion.id, testContents) : [];
@@ -331,7 +438,16 @@ async function auditAcceptanceCriteriaTests(targetDir, slug, options = {}) {
       ...e,
       file: e.file.replace('{slug}', slug)
     }));
-    const evidence = [...testEvidence, ...harnessEvidence];
+    const declared = declaredEvidence.get(criterion.id.toLowerCase());
+    const manualDeclared = Boolean(declared) && !AUTOMATED_EVIDENCE_RE.test(declared);
+    const qaRow = manualDeclared ? qaEvidence.get(criterion.id.toLowerCase()) : undefined;
+    const qaRowEvidence = qaRow
+      ? [{
+        file: qaRow.file,
+        evidence: `QA report records concrete PASS evidence for ${criterion.id} (PRD declares manual verification: ${declared})`
+      }]
+      : [];
+    const evidence = [...testEvidence, ...harnessEvidence, ...qaRowEvidence];
     return {
       ac: criterion.id,
       status: evidence.length > 0 ? 'covered' : (weakEvidence.length > 0 ? 'weak' : 'missing'),
@@ -350,6 +466,7 @@ async function auditAcceptanceCriteriaTests(targetDir, slug, options = {}) {
     weak: items.filter((item) => item.status === 'weak').length,
     criteria_required: requireCriteria,
     assertion_signals_required: requireAssertions,
+    qa_evidence_accepted: acceptQaEvidence,
     test_files_scanned: testContents.length
   };
 
@@ -357,7 +474,11 @@ async function auditAcceptanceCriteriaTests(targetDir, slug, options = {}) {
     ok: !noCriteria && missingItems.length === 0,
     feature: slug,
     audited_at: new Date().toISOString(),
-    policy: { require_criteria: requireCriteria, require_assertions: requireAssertions },
+    policy: {
+      require_criteria: requireCriteria,
+      require_assertions: requireAssertions,
+      accept_qa_evidence: acceptQaEvidence
+    },
     summary,
     items,
     missing: noCriteria

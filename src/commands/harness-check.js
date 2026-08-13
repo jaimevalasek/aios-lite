@@ -98,10 +98,18 @@ async function runHarnessCheck({ args, options = {}, logger, t }) {
   // criteria with duplicate verification commands, cannot prove the app runs.
   // Detection only fires on signals the framework locates reliably (prototype
   // manifest, migration steps); the Play has_api trigger stays with @validator.
-  const runtime = detectRuntimeFeature(targetDir, slug, {
+  const detected = detectRuntimeFeature(targetDir, slug, {
     completedSteps: readProgressSignals(planDir),
     changedFiles: gitChangedFiles(targetDir)
   });
+  // harness:check always runs against an existing contract, so tree evidence
+  // keeps git-parity strictness here (merged with attributable signals); the
+  // advisory split only softens the gate's missing-contract path.
+  const runtime = {
+    ...detected,
+    isRuntimeFeature: detected.isRuntimeFeature || detected.advisorySignals.length > 0,
+    signals: [...detected.signals, ...detected.advisorySignals]
+  };
   const integrity = checkContractIntegrity(contract, { isRuntimeFeature: runtime.isRuntimeFeature });
   for (const err of integrity.errors) {
     await emitGuardEvent(targetDir, {

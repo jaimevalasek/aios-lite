@@ -235,7 +235,10 @@ async function checkGate(targetDir, slug, gateLetter) {
 
     const acAudit = await auditAcceptanceCriteriaTests(targetDir, slug, {
       requireCriteria: completeness.applicable,
-      requireAssertions: completeness.applicable
+      requireAssertions: completeness.applicable,
+      // Mirrors feature:close so a close-readiness check and the close itself
+      // apply one evidence standard.
+      acceptQaEvidence: true
     });
     evidence.push({
       type: 'ac_test_audit',

@@ -85,6 +85,22 @@ async function readFileSafe(filePath) {
   }
 }
 
+// feature:archive moves `.aioson/briefings/{slug}/` under
+// `.aioson/context/done/{slug}/briefings/`. A partially archived feature
+// (interrupted close, retroactive audit) must not read as a dangling binding:
+// the binding path in the PRD stays canonical, only the read falls back.
+async function readFeatureOwnedFile(targetDir, feature, primaryPath, fileName) {
+  const live = await readFileSafe(primaryPath);
+  if (live !== null || !feature) return { content: live, archived: false };
+  const fallback = resolveInsideRoot(
+    targetDir,
+    `.aioson/context/done/${feature}/briefings/${fileName}`
+  );
+  if (!fallback.ok) return { content: null, archived: false };
+  const content = await readFileSafe(fallback.path);
+  return { content, archived: content !== null };
+}
+
 async function validatePrototypeBinding({
   targetDir,
   slug,
@@ -369,13 +385,22 @@ async function validatePrototypeBinding({
   );
 
   let prototypeContent = null;
+  let prototypeArchived = false;
   if (prototypeSafe.ok && checks.feature_owned_paths) {
-    prototypeContent = await readFileSafe(prototypeSafe.path);
+    const read = await readFeatureOwnedFile(targetDir, feature, prototypeSafe.path, 'prototype.html');
+    prototypeContent = read.content;
+    prototypeArchived = read.archived;
     checks.prototype_exists = prototypeContent !== null;
     if (!checks.prototype_exists) {
       issues.push(issue(
         'dangling_prototype',
-        `Prototype binding points to \`${prototypePath}\`, but that file is missing.`,
+        `Prototype binding points to \`${prototypePath}\`, but that file is missing (checked the live briefing and \`.aioson/context/done/${feature}/briefings/\`).`,
+        'prototype'
+      ));
+    } else if (prototypeArchived) {
+      warnings.push(issue(
+        'prototype_archived',
+        `Prototype resolved from the feature archive \`.aioson/context/done/${feature}/briefings/prototype.html\`; the live briefing was already archived.`,
         'prototype'
       ));
     }
@@ -385,12 +410,15 @@ async function validatePrototypeBinding({
   let manifestFeature = null;
   let manifestStatus = null;
   if (manifestSafe.ok && checks.feature_owned_paths) {
-    manifest = await readFileSafe(manifestSafe.path);
+    const read = await readFeatureOwnedFile(targetDir, feature, manifestSafe.path, 'prototype-manifest.md');
+    manifest = read.content;
     checks.manifest_exists = manifest !== null;
     if (!checks.manifest_exists) {
       issues.push(issue(
         'missing_manifest',
-        `Prototype exists but its manifest \`${sectionManifest}\` is missing.`,
+        checks.prototype_exists
+          ? `Prototype exists but its manifest \`${sectionManifest}\` is missing.`
+          : `Prototype manifest \`${sectionManifest}\` is missing.`,
         'manifest'
       ));
     } else {
@@ -647,7 +675,12 @@ async function validateIdentityBinding({
   }
 
   if (checks.path_owned) {
-    const content = await readFileSafe(identitySafe.path);
+    // Project-scope identity lives outside the briefing and is never archived
+    // per-feature; only the feature-owned record gets the done/ fallback.
+    const read = status === IDENTITY_PROJECT
+      ? { content: await readFileSafe(identitySafe.path), archived: false }
+      : await readFeatureOwnedFile(targetDir, feature, identitySafe.path, 'identity.md');
+    const content = read.content;
     checks.identity_exists = content !== null;
     if (!checks.identity_exists) {
       issues.push(issue(
@@ -656,6 +689,13 @@ async function validateIdentityBinding({
         'identity'
       ));
     } else {
+      if (read.archived) {
+        warnings.push(issue(
+          'identity_archived',
+          `Identity resolved from the feature archive \`.aioson/context/done/${feature}/briefings/identity.md\`; the live briefing was already archived.`,
+          'identity'
+        ));
+      }
       const recordFrontmatter = parseFrontmatter(content);
       const kind = scalar(recordFrontmatter.kind);
       const scope = String(scalar(recordFrontmatter.scope) || '').toLowerCase();

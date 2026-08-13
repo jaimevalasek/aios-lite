@@ -81,7 +81,15 @@ async function runHarnessInit({ args, options = {}, logger, t }) {
   }
 
   const { detectRuntimeFeature, gitChangedFiles } = require('../harness/detect-runtime-feature');
-  const runtime = detectRuntimeFeature(targetDir, slug, { changedFiles: gitChangedFiles(targetDir) });
+  const detected = detectRuntimeFeature(targetDir, slug, { changedFiles: gitChangedFiles(targetDir) });
+  // For init, seeding is deliberately generous: tree-wide (advisory) signals
+  // still produce RG-* stubs — the human asked for a harness, so err on
+  // scaffolding runtime criteria they can delete.
+  const runtime = {
+    ...detected,
+    isRuntimeFeature: detected.isRuntimeFeature || detected.advisorySignals.length > 0,
+    signals: [...detected.signals, ...detected.advisorySignals]
+  };
 
   const contract = {
     feature: slug,

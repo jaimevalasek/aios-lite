@@ -546,7 +546,10 @@ async function runFeatureClose({ args, options = {}, logger }) {
       const completenessFindings = findingsThroughStage(completeness, 'execution');
       const acAudit = await auditAcceptanceCriteriaTests(targetDir, slug, {
         requireCriteria: true,
-        requireAssertions: true
+        requireAssertions: true,
+        // Close runs after QA: a concrete QA PASS row is the same executed
+        // proof the completeness gate above accepts for the capability.
+        acceptQaEvidence: true
       });
       if (completenessFindings.length > 0 || !acAudit.ok) {
         const errors = [
