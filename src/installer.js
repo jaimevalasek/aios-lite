@@ -2,7 +2,6 @@
 
 const fs = require('node:fs/promises');
 const path = require('node:path');
-const { MANAGED_FILES } = require('./constants');
 const { getCliVersion, getGitBuildInfoSync } = require('./version');
 const { exists, ensureDir, copyFileWithDir, nowStamp, toRelativeSafe } = require('./utils');
 const { ensureProjectRuntime } = require('./execution-gateway');
@@ -22,7 +21,11 @@ const PROJECT_LOCAL_FILES = new Set([
   '.aioson/design-docs/file-size.md',
   '.aioson/design-docs/folder-structure.md',
   '.aioson/design-docs/naming.md',
-  '.aioson/git-guard.json'
+  '.aioson/git-guard.json',
+  // Mutable project state the template only seeds: @squad session memory and the
+  // project's genome registry. Overwriting them on update wipes accumulated state.
+  '.aioson/squads/memory.md',
+  '.aioson/genomes/INDEX.md'
 ]);
 // Baseline blockPaths merged into every project's git-guard.json on install and update.
 // These are never removed — only added if missing. Project-specific entries are preserved.
@@ -313,7 +316,7 @@ async function readInstalledTemplateVersion(targetDir) {
   }
 }
 
-async function backupManagedFile(targetDir, relPath, backupRoot) {
+async function backupExistingFile(targetDir, relPath, backupRoot) {
   const source = path.join(targetDir, relPath);
   if (!(await exists(source))) return null;
 
@@ -449,17 +452,29 @@ async function installTemplate(targetDir, options = {}) {
       continue;
     }
 
-    if (destExists && mode === 'update' && backupOnOverwrite && MANAGED_FILES.includes(rel)) {
-      if (!dryRun) {
+    // Rollback safety: any existing file about to be overwritten with different
+    // content is backed up to `.aioson/backups/{ts}/` first — framework-shipped or
+    // not, so a project file that collides with a name the template later ships is
+    // recoverable instead of silently lost. Identical content skips the backup so a
+    // routine update does not snapshot the whole framework-owned tree.
+    if (destExists && mode === 'update' && backupOnOverwrite) {
+      let contentDiffers = true;
+      try {
+        const [srcBuf, destBuf] = await Promise.all([fs.readFile(absPath), fs.readFile(dest)]);
+        contentDiffers = !srcBuf.equals(destBuf);
+      } catch {
+        // Unreadable side — assume it differs so the backup still runs.
+      }
+      if (contentDiffers && !dryRun) {
         try {
-          const backupPath = await backupManagedFile(targetDir, rel, backupRoot);
+          const backupPath = await backupExistingFile(targetDir, rel, backupRoot);
           if (backupPath) backedUp.push(toRelativeSafe(targetDir, backupPath));
         } catch (err) {
           // Backup failed — do not block the update, but surface the loss of rollback safety.
           failedBackups.push({ path: rel, error: err && err.message ? err.message : String(err) });
           console.warn(`[aioson update] backup of ${rel} failed; update proceeding without rollback for this file: ${err && err.message ? err.message : err}`);
         }
-      } else {
+      } else if (contentDiffers) {
         backedUp.push(toRelativeSafe(targetDir, path.join(backupRoot, rel)));
       }
     }

@@ -66,6 +66,66 @@ test('update mode creates backups for managed files', async () => {
   assert.equal(await fileExists(backupsDir), true);
 });
 
+test('update backs up any shipped file the project edited, not only managed files', async () => {
+  const dir = await makeTempDir();
+  await installTemplate(dir, { mode: 'install' });
+
+  // security-baseline.md is shipped by the template but is NOT in MANAGED_FILES.
+  const rel = '.aioson/rules/security-baseline.md';
+  const target = path.join(dir, rel);
+  const edited = '# project-edited rule body\n';
+  await fs.writeFile(target, edited, 'utf8');
+
+  const result = await installTemplate(dir, {
+    mode: 'update',
+    overwrite: true,
+    backupOnOverwrite: true
+  });
+
+  const backupRel = result.backedUp.find((file) => file.endsWith('security-baseline.md'));
+  assert.ok(backupRel, 'edited non-managed rule must be backed up before overwrite');
+  assert.equal(await fs.readFile(path.join(dir, backupRel), 'utf8'), edited);
+  assert.notEqual(await fs.readFile(target, 'utf8'), edited, 'template content must win after backup');
+});
+
+test('update skips backup for files whose content is unchanged', async () => {
+  const dir = await makeTempDir();
+  await installTemplate(dir, { mode: 'install' });
+
+  const result = await installTemplate(dir, {
+    mode: 'update',
+    overwrite: true,
+    backupOnOverwrite: true
+  });
+
+  assert.equal(
+    result.backedUp.some((file) => file.endsWith('security-baseline.md')),
+    false,
+    'unchanged file must not be snapshotted on every update'
+  );
+});
+
+test('squad memory and genome index are project state and survive update', async () => {
+  const dir = await makeTempDir();
+  await installTemplate(dir, { mode: 'install' });
+
+  const memoryPath = path.join(dir, '.aioson/squads/memory.md');
+  const indexPath = path.join(dir, '.aioson/genomes/INDEX.md');
+  const memory = '# Squad Memory\n\nSession notes accumulated by @squad.\n';
+  const index = '# Genome Index\n\nProject genomes registered here.\n';
+  await fs.writeFile(memoryPath, memory, 'utf8');
+  await fs.writeFile(indexPath, index, 'utf8');
+
+  await installTemplate(dir, {
+    mode: 'update',
+    overwrite: true,
+    backupOnOverwrite: true
+  });
+
+  assert.equal(await fs.readFile(memoryPath, 'utf8'), memory, 'squad memory must never be reset by update');
+  assert.equal(await fs.readFile(indexPath, 'utf8'), index, 'genome index must never be reset by update');
+});
+
 test('context folder is preserved during update', async () => {
   const dir = await makeTempDir();
   await installTemplate(dir, { mode: 'install' });
