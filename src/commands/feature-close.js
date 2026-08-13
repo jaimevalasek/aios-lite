@@ -393,6 +393,10 @@ async function runFeatureClose({ args, options = {}, logger }) {
   const today = nowDate();
   const dir = contextDir(targetDir);
   const updates = [];
+  // Falhas reais do fechamento (ex.: arquivamento incompleto). Diferente de
+  // updates[]: uma entrada aqui zera `ok` e o exit code — o registro do
+  // projeto nunca diverge do disco em silêncio (A2).
+  const closeErrors = [];
 
   // 0a. Harness Done Gate (AC-HD-11 refined)
   // Only enforced on PASS — FAIL means QA already rejected and we want the
@@ -650,16 +654,23 @@ async function runFeatureClose({ args, options = {}, logger }) {
         options: { feature: slug, json: true },
         logger: null
       });
-      if (archive && archive.ok && archive.moved && archive.moved.length > 0) {
+      if (archive && archive.moved && archive.moved.length > 0) {
         updates.push(`archive: moved ${archive.moved.length} file(s) to ${archive.archiveDir}/`);
         updates.push(`archive: manifest updated at .aioson/context/done/MANIFEST.md`);
-      } else if (archive && archive.ok && archive.noop) {
+      }
+      if (archive && archive.ok && archive.noop) {
         updates.push('archive: nothing to move (already clean)');
+      } else if (archive && !archive.ok && archive.reason === 'archive_incomplete') {
+        for (const e of archive.errors || []) {
+          closeErrors.push(`archive: ${e.item}${e.code ? ` [${e.code}]` : ''}: ${e.message}`);
+        }
+        closeErrors.push(`archive incomplete — feature registrada como done, mas artefatos ficaram para trás. Re-rode: aioson feature:archive . --feature=${slug}`);
       } else if (archive && !archive.ok) {
+        // Recusa de guarda (ex.: features.md ausente) — não é meio-movido; registra sem falhar o close.
         updates.push(`archive: skipped (${archive.reason || 'unknown'})`);
       }
     } catch (err) {
-      updates.push(`archive: failed (${err.message || err})`);
+      closeErrors.push(`archive: failed (${(err && err.message) || err}) — re-rode: aioson feature:archive . --feature=${slug}`);
     }
   }
 
@@ -765,12 +776,15 @@ async function runFeatureClose({ args, options = {}, logger }) {
   }
 
   const result = {
-    ok: true,
+    ok: closeErrors.length === 0,
+    ...(closeErrors.length > 0 ? { reason: 'completed_with_errors' } : {}),
+    closed: true,
     feature: slug,
     verdict,
     date: today,
     residual: residual || notes || null,
     updates,
+    errors: closeErrors.length > 0 ? closeErrors : undefined,
     archive,
     scoutArchive,
     distillation
@@ -780,6 +794,7 @@ async function runFeatureClose({ args, options = {}, logger }) {
 
   logger.log(`Feature closure — ${slug}:`);
   for (const u of updates) logger.log(`  ${u}`);
+  for (const e of closeErrors) logger.log(`  ✗ ${e}`);
 
   return result;
 }

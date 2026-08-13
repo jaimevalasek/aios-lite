@@ -17,6 +17,7 @@
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const { contextDir, readFileSafe } = require('../preflight-engine');
+const { moveFileResilient, moveDirResilient } = require('../lib/fs-move');
 
 const ARCHIVED_EXTENSIONS = ['md', 'yaml', 'yml', 'json'];
 
@@ -425,29 +426,67 @@ async function runFeatureArchive({ args = [], options = {}, logger }) {
 
   await fs.mkdir(archiveDir, { recursive: true });
 
+  // Cada unidade (arquivo ou diretório) move de forma resiliente — rename com
+  // fallback copy+remove para EPERM/EXDEV (Windows com handle aberto). Uma
+  // falha não aborta as demais: coleta em errors[] e o resultado sai ok:false,
+  // nunca meio-movido silenciosamente reportado como sucesso (A2/A3).
   const moved = [];
+  const errors = [];
+  const residue = [];
   for (const name of toMove) {
     const from = path.join(ctxDir, name);
     const to = path.join(archiveDir, name);
-    await fs.rename(from, to);
-    moved.push(name);
+    try {
+      const mv = await moveFileResilient(from, to);
+      moved.push(name);
+      if (mv.sourceResidue) {
+        residue.push({ item: path.relative(targetDir, from), kind: 'file', detail: mv.residueError });
+      }
+    } catch (err) {
+      errors.push({
+        item: path.relative(targetDir, from),
+        kind: 'file',
+        code: (err && err.code) || null,
+        message: (err && err.message) || String(err)
+      });
+    }
   }
 
   const dirResults = [];
   for (const d of dirPlans) {
     if (d.action === 'move') {
       await fs.mkdir(path.dirname(d.targetDir), { recursive: true });
-      await fs.rename(d.sourceDir, d.targetDir);
-      dirResults.push({
-        label: d.label,
-        action: 'moved',
-        source: path.relative(targetDir, d.sourceDir),
-        target: path.relative(targetDir, d.targetDir)
-      });
       try {
-        const remaining = await fs.readdir(d.sourceBase);
-        if (remaining.length === 0) await fs.rmdir(d.sourceBase);
-      } catch { /* parent missing or non-empty */ }
+        const mv = await moveDirResilient(d.sourceDir, d.targetDir);
+        dirResults.push({
+          label: d.label,
+          action: 'moved',
+          method: mv.method,
+          source: path.relative(targetDir, d.sourceDir),
+          target: path.relative(targetDir, d.targetDir)
+        });
+        if (mv.sourceResidue) {
+          residue.push({ item: path.relative(targetDir, d.sourceDir), kind: 'dir', detail: mv.residueError });
+        }
+        try {
+          const remaining = await fs.readdir(d.sourceBase);
+          if (remaining.length === 0) await fs.rmdir(d.sourceBase);
+        } catch { /* parent missing or non-empty */ }
+      } catch (err) {
+        errors.push({
+          item: path.relative(targetDir, d.sourceDir),
+          kind: 'dir',
+          label: d.label,
+          code: (err && err.code) || null,
+          message: (err && err.message) || String(err)
+        });
+        dirResults.push({
+          label: d.label,
+          action: 'failed',
+          source: path.relative(targetDir, d.sourceDir),
+          target: path.relative(targetDir, d.targetDir)
+        });
+      }
     } else if (d.action === 'skip') {
       dirResults.push({
         label: d.label,
@@ -456,6 +495,18 @@ async function runFeatureArchive({ args = [], options = {}, logger }) {
         target: path.relative(targetDir, d.targetDir)
       });
     }
+  }
+
+  // Sobra de origem após cópia completa: o archive está íntegro, mas a cópia
+  // antiga continua no lugar de origem e voltaria a divergir se editada.
+  // Tratada como erro acionável (remoção manual), não como sucesso silencioso.
+  for (const r of residue) {
+    errors.push({
+      item: r.item,
+      kind: r.kind,
+      code: 'source_residue',
+      message: `archived copy is complete but the stale source could not be removed (${r.detail}) — delete ${r.item} manually`
+    });
   }
 
   const totalArchived = (await findArchivedFiles(archiveDir)).length;
@@ -468,13 +519,15 @@ async function runFeatureArchive({ args = [], options = {}, logger }) {
   await updateManifest(manifestPath, entry, 'upsert');
 
   const result = {
-    ok: true,
+    ok: errors.length === 0,
+    ...(errors.length > 0 ? { reason: 'archive_incomplete' } : {}),
     slug,
     completed,
     archiveDir: path.relative(targetDir, archiveDir),
     moved,
     skipped: toSkip,
     totalArchived,
+    errors: errors.length > 0 ? errors : undefined,
     dirs: dirResults.length > 0 ? dirResults : undefined,
     dossier: dirResults.find((d) => d.label === 'dossier') || null,
     manifestEntry: entry
@@ -494,7 +547,14 @@ async function runFeatureArchive({ args = [], options = {}, logger }) {
       log(`  moved ${d.label} dir: ${d.source}/ → ${d.target}/`);
     } else if (d.action === 'skipped') {
       log(`  skipped ${d.label} dir: already archived at ${d.target}/`);
+    } else if (d.action === 'failed') {
+      log(`  ✗ failed to move ${d.label} dir: ${d.source}/ → ${d.target}/`);
     }
+  }
+  if (errors.length > 0) {
+    log(`  ✗ archive incomplete — ${errors.length} error(s):`);
+    for (const e of errors) log(`    ✗ ${e.item}${e.code ? ` [${e.code}]` : ''}: ${e.message}`);
+    log(`  Fix the cause (close editors/watchers holding the folder) and re-run: aioson feature:archive . --feature=${slug}`);
   }
   log(`  manifest updated: .aioson/context/done/MANIFEST.md`);
   return result;
@@ -554,14 +614,14 @@ async function runRestore({ slug, ctxDir, archiveDir, manifestPath, dryRun, json
   for (const name of toRestore) {
     const from = path.join(archiveDir, name);
     const to = path.join(ctxDir, name);
-    await fs.rename(from, to);
+    await moveFileResilient(from, to);
     restored.push(name);
   }
 
   let dossierRestored = null;
   if (hasDossierToRestore) {
     await fs.mkdir(path.dirname(dossierSourceDir), { recursive: true });
-    await fs.rename(dossierTargetDir, dossierSourceDir);
+    await moveDirResilient(dossierTargetDir, dossierSourceDir);
     dossierRestored = path.relative(ctxDir, dossierSourceDir);
   }
 

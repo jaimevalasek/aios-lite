@@ -175,6 +175,86 @@ describe('feature:archive — dossier dir extension (AC-F1-08)', () => {
   });
 });
 
+describe('feature:archive — resiliência a EPERM no Windows (A2/A3)', () => {
+  function failRenameFor(prefix, code = 'EPERM') {
+    const original = fs.rename;
+    fs.rename = async (from, to) => {
+      if (String(from).startsWith(prefix)) {
+        const err = new Error(`${code}: operation not permitted, rename '${from}' -> '${to}'`);
+        err.code = code;
+        throw err;
+      }
+      return original.call(fs, from, to);
+    };
+    return () => { fs.rename = original; };
+  }
+
+  it('EPERM no rename do dossiê cai para copy+remove e o archive completa (ok:true)', async () => {
+    await seedFeaturesMd('done');
+    await seedRootArtifacts();
+    await seedDossierDir();
+
+    const dossierSource = path.join(root, '.aioson', 'context', 'features', 'feature-x');
+    const restore = failRenameFor(dossierSource);
+    let result;
+    try {
+      result = await runFeatureArchive({
+        args: ['.'], options: { feature: 'feature-x', json: true }, logger: silentLogger()
+      });
+    } finally {
+      restore();
+    }
+
+    assert.equal(result.ok, true, JSON.stringify(result.errors || null));
+    assert.equal(result.dossier?.action, 'moved');
+    assert.equal(result.dossier?.method, 'copy');
+    assert.equal(fssync.existsSync(dossierSource), false);
+    assert.equal(
+      fssync.existsSync(path.join(root, '.aioson', 'context', 'done', 'feature-x', 'dossier', 'dossier.md')),
+      true
+    );
+  });
+
+  it('falha total no dossiê não aborta os demais moves e sai ok:false com errors[]', async () => {
+    await seedFeaturesMd('done');
+    await seedRootArtifacts();
+    await seedDossierDir();
+
+    const dossierSource = path.join(root, '.aioson', 'context', 'features', 'feature-x');
+    const restoreRename = failRenameFor(dossierSource);
+    const originalCp = fs.cp;
+    fs.cp = async (from, ...rest) => {
+      if (String(from).startsWith(dossierSource)) {
+        const err = new Error('EBUSY: simulated');
+        err.code = 'EBUSY';
+        throw err;
+      }
+      return originalCp.call(fs, from, ...rest);
+    };
+    let result;
+    try {
+      result = await runFeatureArchive({
+        args: ['.'], options: { feature: 'feature-x', json: true }, logger: silentLogger()
+      });
+    } finally {
+      fs.cp = originalCp;
+      restoreRename();
+    }
+
+    assert.equal(result.ok, false);
+    assert.equal(result.reason, 'archive_incomplete');
+    assert.ok(result.errors.some((e) => e.kind === 'dir'));
+    // os arquivos de raiz moveram mesmo assim
+    assert.ok(result.moved.includes('prd-feature-x.md'));
+    // a origem do dossiê continua intacta (nem parcial no destino)
+    assert.equal(fssync.existsSync(path.join(dossierSource, 'dossier.md')), true);
+    assert.equal(
+      fssync.existsSync(path.join(root, '.aioson', 'context', 'done', 'feature-x', 'dossier')),
+      false
+    );
+  });
+});
+
 describe('feature:archive --restore — dossier dir', () => {
   it('restores done/{slug}/dossier/ → features/{slug}/', async () => {
     await seedFeaturesMd('done');

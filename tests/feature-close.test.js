@@ -222,6 +222,54 @@ test('feature:close: idempotent rerun does not duplicate identical recent activi
   assert.equal(lines.length, 1);
 });
 
+test('feature:close: arquivamento incompleto sai em errors[] com ok:false e closed:true (A2)', async () => {
+  const tmpDir = await makeTmpDir();
+  await writeFile(tmpDir, '.aioson/context/features.md',
+    '| slug | status | started | completed |\n|---|---|---|---|\n| checkout | in_progress | 2026-01-01 | |\n');
+  await writeFile(tmpDir, '.aioson/context/prd-checkout.md', '## Vision\nA thing.\n');
+  await writeFile(tmpDir, '.aioson/context/features/checkout/dossier.md',
+    '---\nfeature_slug: checkout\n---\n# dossier\n');
+
+  const dossierSource = path.join(tmpDir, '.aioson', 'context', 'features', 'checkout');
+  const originalRename = fs.rename;
+  const originalCp = fs.cp;
+  fs.rename = async (from, to) => {
+    if (String(from).startsWith(dossierSource)) {
+      const err = new Error(`EPERM: operation not permitted, rename '${from}' -> '${to}'`);
+      err.code = 'EPERM';
+      throw err;
+    }
+    return originalRename.call(fs, from, to);
+  };
+  fs.cp = async (from, ...rest) => {
+    if (String(from).startsWith(dossierSource)) {
+      const err = new Error('EBUSY: simulated');
+      err.code = 'EBUSY';
+      throw err;
+    }
+    return originalCp.call(fs, from, ...rest);
+  };
+
+  let result;
+  try {
+    result = await runFeatureClose({
+      args: [tmpDir],
+      options: { json: true, feature: 'checkout', verdict: 'PASS' },
+      logger: makeLogger()
+    });
+  } finally {
+    fs.rename = originalRename;
+    fs.cp = originalCp;
+  }
+
+  assert.equal(result.ok, false);
+  assert.equal(result.reason, 'completed_with_errors');
+  assert.equal(result.closed, true);
+  assert.ok(result.errors.some((e) => e.includes('archive')));
+  // a falha NÃO fica escondida em updates[] como linha de sucesso
+  assert.ok(!result.updates.some((u) => u.startsWith('archive: failed')));
+});
+
 test('feature:close: works when spec file missing (skips gracefully)', async () => {
   const tmpDir = await makeTmpDir();
   const result = await runFeatureClose({
