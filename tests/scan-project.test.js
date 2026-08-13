@@ -241,7 +241,7 @@ test('scan:project runs in local-only mode by default and writes folder-specific
     assert.match(indexContent, /spec-history\.md/);
     assert.match(indexContent, /module-src\.md/);
     assert.doesNotMatch(gitignoreContent, /\.aioson\/agents\//, 'agents/ must NOT be gitignored (Codex @ resolution)');
-    assert.match(gitignoreContent, /\.aioson\/locales\//);
+    assert.doesNotMatch(gitignoreContent, /\.aioson\/locales\//, 'locales policy removed with the deprecated locale packs (868ba451)');
     assert.match(gitignoreContent, /\.aioson\/skills\//);
     assert.match(gitignoreContent, /\.aioson\/config\.md/);
     assert.match(indexContent, /### package\.json/);
@@ -302,7 +302,7 @@ test('scan:project refreshes gitignore policy for existing projects installed be
 
     assert.equal(result.ok, true);
     assert.doesNotMatch(gitignore, /\.aioson\/agents\//, 'agents/ must NOT be gitignored (Codex @ resolution)');
-    assert.match(gitignore, /\.aioson\/locales\//);
+    assert.doesNotMatch(gitignore, /\.aioson\/locales\//, 'locales policy removed with the deprecated locale packs (868ba451)');
     assert.match(gitignore, /\.aioson\/skills\//);
     assert.equal(
       logger.lines.some((line) => line.includes('policy updated') || line.includes('framework-managed files')),

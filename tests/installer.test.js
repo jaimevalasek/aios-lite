@@ -137,7 +137,7 @@ test('installTemplate writes Forge metadata and gitignore entry', async () => {
   assert.equal(gitignore.includes('!.aioson/**'), true);
   assert.equal(gitignore.includes('.aioson/agents/'), false, 'agents/ must NOT be gitignored (Codex @ resolution)');
   assert.equal(gitignore.includes('.aioson/squads/'), false, 'project squads must remain versionable');
-  assert.equal(gitignore.includes('.aioson/locales/'), true);
+  assert.equal(gitignore.includes('.aioson/locales/'), false, 'locales policy removed with the deprecated locale packs (868ba451)');
   assert.equal(gitignore.includes('.aioson/skills/'), true);
   assert.equal(gitignore.includes('.aioson/config.md'), true);
   assert.equal(gitignore.includes('.aioson/runtime/'), true);
@@ -214,7 +214,7 @@ test('installTemplate appends keep rules for shared AIOS files even when project
   assert.equal(gitignore.includes('.aioson/\n'), true);
   assert.equal(gitignore.includes('!.aioson/**'), true);
   assert.equal(gitignore.includes('.aioson/agents/'), false, 'agents/ must NOT be gitignored (Codex @ resolution)');
-  assert.equal(gitignore.includes('.aioson/locales/'), true);
+  assert.equal(gitignore.includes('.aioson/locales/'), false, 'locales policy removed with the deprecated locale packs (868ba451)');
   assert.equal(gitignore.includes('!.claude/**'), true);
   assert.equal(gitignore.includes('!.codex/**'), true);
   assert.equal(gitignore.includes('!AGENTS.md'), true);
