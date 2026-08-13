@@ -36,16 +36,56 @@ function git(targetDir, gitArgs) {
   });
 }
 
+/** Hash da árvore vazia do git (SHA-1) — diff contra ela cobre o repo inteiro. */
+const EMPTY_TREE = '4b825dc642cb6eb9a060e54bf8d69288fbee4904';
+
+/**
+ * A7: o fluxo normal é commitar e SÓ DEPOIS validar/fechar — num repo de
+ * branch única o merge-base vira HEAD e o payload sai vazio ("no changes
+ * detected"), transformando a validação obrigatória em ritual. A base honesta
+ * é o estado do repo imediatamente ANTES da feature começar: o pai do primeiro
+ * commit que tocou qualquer artefato da feature.
+ *
+ * @returns {{ base: string, source: string }|null}
+ */
+function featureStartBase(targetDir, slug) {
+  if (!slug) return null;
+  const probePaths = [
+    `.aioson/plans/${slug}`,
+    `.aioson/briefings/${slug}`,
+    `.aioson/context/features/${slug}`,
+    `.aioson/context/prd-${slug}.md`,
+    `.aioson/context/requirements-${slug}.md`,
+    `.aioson/context/spec-${slug}.md`,
+    `.aioson/context/implementation-plan-${slug}.md`
+  ];
+  try {
+    const output = git(targetDir, ['log', '--reverse', '--format=%H', '--', ...probePaths]);
+    const first = output.split('\n').map((line) => line.trim()).filter(Boolean)[0];
+    if (!first) return null;
+    try {
+      const parent = git(targetDir, ['rev-parse', `${first}^`]).trim();
+      if (parent) return { base: parent, source: `parent of first feature commit (${first.slice(0, 8)})` };
+    } catch {
+      // primeiro commit da feature é o commit raiz do repo
+      return { base: EMPTY_TREE, source: `empty tree (feature starts at root commit ${first.slice(0, 8)})` };
+    }
+  } catch { /* sem git ou log falhou — segue o fallback */ }
+  return null;
+}
+
 /**
  * Resolve a ref base do diff, na ordem:
  * 1. `baseRef` explícito (--base)
  * 2. `baseline.json` do plan dir (HEAD capturado no preflight do self:loop)
  * 3. merge-base de HEAD com main/master (local)
- * 4. 'HEAD' (apenas mudanças não commitadas)
+ * 4. pai do primeiro commit que tocou os artefatos da feature (A7 — trabalho
+ *    já commitado em branch única deixa de gerar payload vazio)
+ * 5. 'HEAD' (apenas mudanças não commitadas)
  *
  * @returns {{ base: string, source: string }}
  */
-function resolveBase(targetDir, planDir, baseRef) {
+function resolveBase(targetDir, planDir, baseRef, slug = null) {
   if (baseRef) return { base: String(baseRef), source: 'explicit --base' };
 
   try {
@@ -61,10 +101,13 @@ function resolveBase(targetDir, planDir, baseRef) {
       const mergeBase = git(targetDir, ['merge-base', 'HEAD', branch]).trim();
       const head = git(targetDir, ['rev-parse', 'HEAD']).trim();
       // merge-base === HEAD significa que estamos NO branch (ou atrás dele):
-      // o diff vs base seria vazio; cai para HEAD (mudanças não commitadas).
+      // o diff vs base seria vazio; segue para a base de início da feature.
       if (mergeBase && mergeBase !== head) return { base: mergeBase, source: `merge-base with ${branch}` };
     } catch { /* branch ausente — tenta o próximo */ }
   }
+
+  const featureBase = featureStartBase(targetDir, slug || path.basename(planDir || ''));
+  if (featureBase) return featureBase;
 
   return { base: 'HEAD', source: 'fallback (uncommitted changes only)' };
 }
@@ -155,7 +198,7 @@ function buildReviewPayload(targetDir, planDir, opts = {}) {
   let diffResult = { diff: '', truncated: false, bytes: 0 };
 
   try {
-    const resolved = resolveBase(targetDir, planDir, opts.baseRef);
+    const resolved = resolveBase(targetDir, planDir, opts.baseRef, opts.slug || null);
     base = resolved.base;
     baseSource = resolved.source;
 
@@ -225,6 +268,7 @@ function buildReviewPayload(targetDir, planDir, opts = {}) {
 module.exports = {
   DEFAULT_MAX_DIFF_BYTES,
   resolveBase,
+  featureStartBase,
   truncateDiff,
   buildReviewPayload
 };

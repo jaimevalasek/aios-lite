@@ -148,6 +148,45 @@ test('resolveBase: fallback final é HEAD em repo de branch única', async () =>
   assert.match(source, /fallback/);
 });
 
+test('A7: trabalho commitado em branch única deriva base do início da feature (payload não-vazio)', async () => {
+  const dir = await makeGitRepo();
+  const preFeatureSha = git(dir, ['rev-parse', 'HEAD']).trim();
+
+  // a feature inteira commitada (artefatos + código), árvore limpa — o fluxo
+  // normal de quem commita e depois valida/fecha
+  const planDir = await writePlan(dir, 'feat-x');
+  await fs.mkdir(path.join(dir, '.aioson', 'context'), { recursive: true });
+  await fs.writeFile(path.join(dir, '.aioson', 'context', 'prd-feat-x.md'), '# PRD\n', 'utf8');
+  await fs.writeFile(path.join(dir, 'app.js'), 'module.exports = 2;\n', 'utf8');
+  git(dir, ['add', '.']);
+  git(dir, ['commit', '-m', 'feat: feat-x implementation']);
+
+  const payload = buildReviewPayload(dir, planDir, { slug: 'feat-x' });
+  assert.strictEqual(payload.ok, true);
+  assert.strictEqual(payload.base, preFeatureSha, 'base deve ser o estado pré-feature');
+  assert.match(payload.baseSource, /first feature commit/);
+  assert.ok(payload.changedFiles.some((f) => f.path === 'app.js'),
+    'o diff deve conter o trabalho commitado — não mais "(no changes detected)"');
+  assert.match(payload.text, /module.exports = 2;/);
+});
+
+test('A7: feature no commit raiz usa a árvore vazia como base', async () => {
+  const dir = await makeTmpDir();
+  git(dir, ['init', '-b', 'main']);
+  git(dir, ['config', 'user.email', 'test@aioson.local']);
+  git(dir, ['config', 'user.name', 'AIOSON Test']);
+  const planDir = path.join(dir, '.aioson', 'plans', 'feat-x');
+  await fs.mkdir(planDir, { recursive: true });
+  await fs.writeFile(path.join(planDir, 'progress.json'), '{}', 'utf8');
+  await fs.writeFile(path.join(dir, 'app.js'), 'module.exports = 1;\n', 'utf8');
+  git(dir, ['add', '.']);
+  git(dir, ['commit', '-m', 'root: everything including feat-x']);
+
+  const payload = buildReviewPayload(dir, planDir, { slug: 'feat-x' });
+  assert.match(payload.baseSource, /empty tree/);
+  assert.ok(payload.changedFiles.some((f) => f.path === 'app.js'));
+});
+
 test('harness:validate: prompt gerado contém o review payload com diff e instrução de saída', async () => {
   const dir = await makeGitRepo();
   const slug = 'fresh-review';
