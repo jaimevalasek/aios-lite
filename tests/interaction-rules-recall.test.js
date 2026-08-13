@@ -19,14 +19,16 @@ const RULE_FILES = [
   'form-fields-masks-and-validation.md',
   'status-change-confirmation.md',
   'status-flow-drag-and-drop.md',
-  'management-home-widgets.md'
+  'management-home-widgets.md',
+  'crud-surface-integrity.md'
 ];
 
 const CASES = [
   { rule: 'form-fields-masks-and-validation', task: 'implementar cadastro de cliente com CPF, CNPJ, telefone e CEP' },
   { rule: 'status-change-confirmation', task: 'cancelar uma OS pelo quadro antes de remover do fluxo' },
   { rule: 'status-flow-drag-and-drop', task: 'quadro kanban de ordens de serviço com etapas que vão e voltam' },
-  { rule: 'management-home-widgets', task: 'home do dashboard de gestão com indicadores do dia' }
+  { rule: 'management-home-widgets', task: 'home do dashboard de gestão com indicadores do dia' },
+  { rule: 'crud-surface-integrity', task: 'na listagem de clientes a edição de uma linha salva os dados no registro vizinho' }
 ];
 
 async function makeRulesProject() {
