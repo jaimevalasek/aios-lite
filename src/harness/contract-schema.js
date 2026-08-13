@@ -99,6 +99,16 @@ function isPlainObject(v) {
   return v !== null && typeof v === 'object' && !Array.isArray(v);
 }
 
+/**
+ * Um `verification` que começa com "TODO" é um placeholder deliberado — o stub
+ * do `harness:init` nasce com os RG-* assim para que o contrato seja VÁLIDO
+ * pelo schema mas inexecutável até o autor preencher o comando real. Runners
+ * (harness:check) nunca executam um placeholder; reportam "preencha o comando".
+ */
+function isTodoPlaceholder(verification) {
+  return typeof verification === 'string' && /^\s*TODO\b/i.test(verification);
+}
+
 function isPositiveInt(v) {
   return Number.isInteger(v) && v > 0;
 }
@@ -373,5 +383,6 @@ module.exports = {
   DEFAULT_THEME_PATHS,
   CONTRACT_PRESETS,
   validateContract,
-  resolveContract
+  resolveContract,
+  isTodoPlaceholder
 };

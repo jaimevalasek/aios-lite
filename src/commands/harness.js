@@ -3,15 +3,68 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { createCircuitBreaker } = require('../harness/circuit-breaker');
-const { validateContract } = require('../harness/contract-schema');
+const { validateContract, isTodoPlaceholder } = require('../harness/contract-schema');
 
 /**
  * aioson harness:init — Inicializa o contrato e progresso da feature.
+ *
+ * Runtime feature detectada (prototype-manifest / migrações) ⇒ o stub nasce
+ * com os quatro RG-* como placeholders TODO, cada um com um `verification`
+ * único a preencher — assim `harness:check` aponta "preencha o comando" em vez
+ * de reprovar o contrato oficial por `missing_runtime_gate` (§2c).
+ *
+ * `--dry-run` apenas reporta o que seria criado (`would_create`) — nunca toca
+ * o disco.
  */
+function buildStubCriteria(runtime) {
+  const criteria = [
+    {
+      id: 'C1',
+      description: 'Estrutura de arquivos e sintaxe básica',
+      assertion: 'all files exist and parse',
+      binary: true
+    }
+  ];
+  if (runtime && runtime.isRuntimeFeature) {
+    criteria.push(
+      {
+        id: 'RG-build',
+        description: 'Build/compile do app real passa',
+        assertion: 'build exits 0',
+        binary: true,
+        verification: 'TODO(RG-build): replace with the real build command (e.g. npm run build)'
+      },
+      {
+        id: 'RG-migrate',
+        description: 'Migrações aplicam do zero em banco limpo',
+        assertion: 'migrations apply cleanly',
+        binary: true,
+        verification: 'TODO(RG-migrate): replace with the migration command (e.g. npx prisma migrate deploy) — delete this criterion if the feature has no DB migrations'
+      },
+      {
+        id: 'RG-boot',
+        description: 'App sobe sem crash',
+        assertion: 'app boots and responds',
+        binary: true,
+        verification: 'TODO(RG-boot): replace with a boot/health check command (e.g. a script that starts the app and curls /health)'
+      },
+      {
+        id: 'RG-smoke',
+        description: 'Fluxo Core feliz funciona no stack real',
+        assertion: 'core happy-path e2e passes',
+        binary: true,
+        verification: 'TODO(RG-smoke): replace with the core happy-path smoke command (e.g. npx playwright test smoke)'
+      }
+    );
+  }
+  return criteria;
+}
+
 async function runHarnessInit({ args, options = {}, logger, t }) {
   const targetDir = path.resolve(process.cwd(), args[0] || '.');
-  const slug = String(options.slug || '').trim();
+  const slug = String(options.slug || options.feature || '').trim();
   const mode = String(options.mode || 'BALANCED').toUpperCase();
+  const dryRun = Boolean(options['dry-run'] || options.dryRun);
 
   if (!slug) {
     logger.error(t('errors.missing_slug') || 'Error: --slug is required');
@@ -24,12 +77,11 @@ async function runHarnessInit({ args, options = {}, logger, t }) {
 
   if (fs.existsSync(contractPath) || fs.existsSync(progressPath)) {
     logger.log(t('harness.init_exists', { path: path.relative(targetDir, planDir) }) || `Harness already initialized in ${path.relative(targetDir, planDir)}`);
-    return { ok: true, skipped: true };
+    return { ok: true, skipped: true, dryRun: dryRun || undefined };
   }
 
-  if (!fs.existsSync(planDir)) {
-    fs.mkdirSync(planDir, { recursive: true });
-  }
+  const { detectRuntimeFeature, gitChangedFiles } = require('../harness/detect-runtime-feature');
+  const runtime = detectRuntimeFeature(targetDir, slug, { changedFiles: gitChangedFiles(targetDir) });
 
   const contract = {
     feature: slug,
@@ -48,14 +100,7 @@ async function runHarnessInit({ args, options = {}, logger, t }) {
     forbidden_files: [],
     // human_gate ausente = nenhum gate (retrocompat). Exemplo:
     // "human_gate": { "required_for": ["payment_logic_change", "publish"] }
-    criteria: [
-      {
-        id: "C1",
-        description: "Estrutura de arquivos e sintaxe básica",
-        assertion: "all files exist and parse",
-        binary: true
-      }
-    ]
+    criteria: buildStubCriteria(runtime)
   };
 
   const schemaResult = validateContract(contract);
@@ -65,13 +110,43 @@ async function runHarnessInit({ args, options = {}, logger, t }) {
     return { ok: false, error: 'contract_schema_invalid', errors: schemaResult.errors };
   }
 
+  const todoIds = contract.criteria
+    .filter((c) => isTodoPlaceholder(c.verification))
+    .map((c) => c.id);
+
+  if (dryRun) {
+    const wouldCreate = [contractPath, progressPath].map((p) => path.relative(targetDir, p).replace(/\\/g, '/'));
+    logger.log(`[dry-run] harness:init — ${slug}:`);
+    for (const rel of wouldCreate) logger.log(`  would create: ${rel}`);
+    if (runtime.isRuntimeFeature) {
+      logger.log(`  runtime feature detected (${runtime.signals.join(', ')}) — stub would include RG-build/RG-migrate/RG-boot/RG-smoke as TODO placeholders`);
+    }
+    return {
+      ok: true,
+      dryRun: true,
+      slug,
+      would_create: wouldCreate,
+      runtime,
+      todo_placeholders: todoIds,
+      contract
+    };
+  }
+
+  if (!fs.existsSync(planDir)) {
+    fs.mkdirSync(planDir, { recursive: true });
+  }
+
   const cb = createCircuitBreaker(contractPath, progressPath);
   fs.writeFileSync(contractPath, JSON.stringify(contract, null, 2), 'utf8');
   await cb.load();
   await cb._save();
 
   logger.log(t('harness.init_success', { slug }) || `Harness initialized for feature: ${slug}`);
-  return { ok: true, slug, path: planDir };
+  if (todoIds.length > 0) {
+    logger.log(`  ${todoIds.length} TODO placeholder(s) to fill in criteria[].verification: ${todoIds.join(', ')}`);
+    logger.log(`  Edit ${path.relative(targetDir, contractPath)} with the real commands, then run: aioson harness:check . --slug=${slug}`);
+  }
+  return { ok: true, slug, path: planDir, runtime, todo_placeholders: todoIds };
 }
 
 /**

@@ -233,6 +233,29 @@ test('harness:check: auto-descobre o contrato ativo quando --slug é omitido', a
   assert.strictEqual(result.slug, slug);
 });
 
+test('harness:check: TODO placeholder nunca executa e reporta "preencha o comando"', async () => {
+  const tmpDir = await makeTmpDir();
+  const slug = 'todo-stub';
+  await writeContract(tmpDir, slug, baseContract(slug, [
+    { id: 'C1', description: 'passa', binary: true, verification: 'node -e "process.exit(0)"' },
+    { id: 'RG-build', description: 'build', binary: true, verification: 'TODO(RG-build): replace with the real build command' }
+  ]));
+  const result = await runHarnessCheck({
+    args: [tmpDir],
+    options: { slug },
+    logger: makeLogger(),
+    t: mockT
+  });
+  assert.strictEqual(result.ok, false);
+  assert.deepStrictEqual(result.todo_placeholders, ['RG-build']);
+  assert.ok(result.placeholder_errors[0].message.includes('TODO placeholder'));
+  // o placeholder não vira check executado — só o C1 real roda
+  assert.strictEqual(result.checks.length, 1);
+  assert.strictEqual(result.checks[0].id, 'C1');
+  assert.strictEqual(result.executable_total, 1);
+  assert.strictEqual(result.skipped_no_verification, 0);
+});
+
 test('harness:check: --json emite o relatório completo no logger', async () => {
   const tmpDir = await makeTmpDir();
   const slug = 'json-mode';

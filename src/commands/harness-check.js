@@ -19,7 +19,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 
-const { validateContract, resolveContract } = require('../harness/contract-schema');
+const { validateContract, resolveContract, isTodoPlaceholder } = require('../harness/contract-schema');
 const { runCriteria, DEFAULT_CHECK_TIMEOUT_MS } = require('../harness/criteria-runner');
 const { evaluateStaticCriteria, isStaticCriterion } = require('../harness/static-criteria');
 const { emitGuardEvent } = require('../harness/guard-events');
@@ -130,14 +130,19 @@ async function runHarnessCheck({ args, options = {}, logger, t }) {
     ? Number(options.timeout)
     : DEFAULT_CHECK_TIMEOUT_MS;
 
+  // TODO placeholders (harness:init stub) are valid-by-schema but unfilled:
+  // never execute them as shell commands — each one is reported as an explicit
+  // "fill in the command" failure below.
+  const todoCriteria = criteria.filter((c) => c && isTodoPlaceholder(c.verification));
   const executable = criteria.filter(
     (c) => c && typeof c.verification === 'string' && c.verification.trim()
+      && !isTodoPlaceholder(c.verification)
   );
   // Static (SG-*) criteria are deterministically checkable too — they are NOT
   // "skipped / @validator-judged", so exclude them from that count and from the
   // strict-mode verification-debt checks below.
   const staticCriteria = criteria.filter((c) => isStaticCriterion(c));
-  const skipped = criteria.length - executable.length - staticCriteria.length;
+  const skipped = criteria.length - executable.length - staticCriteria.length - todoCriteria.length;
   const strict = Boolean(options.strict);
   const binaryWithoutVerification = criteria.filter(
     (c) => c && c.binary === true && !(typeof c.verification === 'string' && c.verification.trim()) && !isStaticCriterion(c)
@@ -150,8 +155,17 @@ async function runHarnessCheck({ args, options = {}, logger, t }) {
     strictErrors.push(`strict mode requires verification for binary criteria: ${binaryWithoutVerification.map((c) => c.id).join(', ')}`);
   }
 
-  const checks = await runCriteria({ criteria, cwd: targetDir, timeoutMs });
+  const checks = await runCriteria({
+    criteria: criteria.filter((c) => !(c && isTodoPlaceholder(c.verification))),
+    cwd: targetDir,
+    timeoutMs
+  });
   const failed = checks.filter((c) => !c.ok);
+
+  const placeholderErrors = todoCriteria.map((c) => ({
+    id: c.id,
+    message: `${c.id}: verification is a TODO placeholder — replace it with the real command in .aioson/plans/${slug}/harness-contract.json (or delete the criterion if it does not apply)`
+  }));
 
   // SG-* static criteria — build-independent (fs + RegExp + parse), evaluated on
   // every run (cheap). They gate the report just like executable criteria.
@@ -174,9 +188,18 @@ async function runHarnessCheck({ args, options = {}, logger, t }) {
       payload: { slug, criterion_id: check.id, kind: 'static' }
     });
   }
+  for (const todo of placeholderErrors) {
+    await emitGuardEvent(targetDir, {
+      eventType: 'criteria_check_failed',
+      agent: 'harness-check',
+      message: todo.message,
+      payload: { slug, criterion_id: todo.id, kind: 'todo_placeholder' }
+    });
+  }
 
   const report = {
-    ok: failed.length === 0 && staticFailed.length === 0 && strictErrors.length === 0 && integrity.ok,
+    ok: failed.length === 0 && staticFailed.length === 0 && strictErrors.length === 0
+      && placeholderErrors.length === 0 && integrity.ok,
     slug,
     checked_at: new Date().toISOString(),
     strict,
@@ -185,6 +208,8 @@ async function runHarnessCheck({ args, options = {}, logger, t }) {
     passed: checks.length - failed.length,
     failed: failed.length,
     skipped_no_verification: skipped,
+    todo_placeholders: placeholderErrors.map((p) => p.id),
+    placeholder_errors: placeholderErrors,
     static_total: staticResult.total,
     static_passed: staticResult.total - staticFailed.length,
     static_failed: staticFailed.length,
@@ -226,6 +251,9 @@ async function runHarnessCheck({ args, options = {}, logger, t }) {
   }
   for (const error of strictErrors) {
     logger.log(`  ✗ ${error}`);
+  }
+  for (const todo of placeholderErrors) {
+    logger.log(`  ✗ ${todo.message}`);
   }
   // SG-* static criteria render on every run — they are build-independent.
   for (const check of staticResult.checks) {
