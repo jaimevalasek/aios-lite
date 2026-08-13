@@ -308,6 +308,36 @@ async function runForgeCompile({ args, options = {}, logger }) {
     adversarial_votes: ADVERSARIAL_VOTES
   };
 
+  // Persist the compile report and derive the recompilation delta from the
+  // previous one — @forge-run used to reconstruct "what changed since the last
+  // compile" from session memory. The refusal paths above never touch the
+  // previous report, so a failed compile keeps the delta chain intact.
+  const reportPath = path.join(planDir, 'forge-run.report.json');
+  let previous = null;
+  try { previous = JSON.parse(fs.readFileSync(reportPath, 'utf8')); } catch { previous = null; }
+  if (previous && Array.isArray(previous.waves)) {
+    const flatten = (r) => r.waves.flatMap((w) => (w.phases || []).map((p) => `W${w.wave}:${p}`));
+    const before = new Set(flatten(previous));
+    const after = new Set(flatten(report));
+    report.delta = {
+      previous_compiled_at: previous.compiled_at || null,
+      waves: {
+        added: [...after].filter((key) => !before.has(key)),
+        removed: [...before].filter((key) => !after.has(key))
+      },
+      executable_criteria: { from: previous.executable_criteria ?? null, to: report.executable_criteria },
+      judged_criteria: { from: previous.judged_criteria ?? null, to: report.judged_criteria },
+      max_fix_rounds: { from: previous.max_fix_rounds ?? null, to: report.max_fix_rounds }
+    };
+  } else {
+    report.delta = null;
+  }
+  report.compiled_at = new Date().toISOString();
+  try {
+    fs.writeFileSync(reportPath, `${JSON.stringify(report, null, 2)}\n`, 'utf8');
+    report.reportPath = path.relative(targetDir, reportPath);
+  } catch { /* best-effort persist — the compile itself already succeeded */ }
+
   if (options.json) {
     logger.log(JSON.stringify(report, null, 2));
     return report;
@@ -318,6 +348,10 @@ async function runForgeCompile({ args, options = {}, logger }) {
   logger.log(`  Waves: ${waves.map((w) => `W${w.wave}[${w.phases.length}]`).join(' → ')} (${rows.length} phases)`);
   logger.log(`  Criteria: ${execCriteria.length} executable + ${judgedCriteria.length} adversarially judged`);
   logger.log(`  Governor: fix loop capped at ${maxFixRounds} rounds`);
+  if (report.delta) {
+    const w = report.delta.waves;
+    logger.log(`  Delta vs previous compile: +${w.added.length}/-${w.removed.length} wave-phase(s), executable ${report.delta.executable_criteria.from}→${report.delta.executable_criteria.to}, judged ${report.delta.judged_criteria.from}→${report.delta.judged_criteria.to}`);
+  }
   logger.log('');
   logger.log('Next steps:');
   logger.log('  1. Review the script and commit it with the spec (it is the execution plan as code).');

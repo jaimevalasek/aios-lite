@@ -73,16 +73,13 @@ At most one repair pass and one clarification pass are allowed before surfacing 
 
 ## Detection contract
 
-Inspect before asking installation questions:
+Detect before asking installation questions — one read-only call, never file-by-file sniffing:
 
-- Laravel: `artisan` or `composer.json` with `laravel/framework`;
-- Rails: `config/application.rb` or Rails in `Gemfile`;
-- Django: `manage.py` or matching Python dependencies;
-- Next.js/Nuxt: framework config or dependency;
-- Node.js: `package.json`;
-- Web3: Hardhat, Foundry, Truffle, Anchor, Solana Web3, or Cardano signals.
+```bash
+aioson setup:detect . --json
+```
 
-When detected, confirm it and skip bootstrap questions. When not detected, record the user's described framework as-is instead of forcing it into a list. In a monorepo, confirm the primary framework and record the structure.
+It returns `framework`, `installed`, `evidence`, `confidence`, `monorepo`, and every secondary match (Laravel/CodeIgniter/Symfony/Rails/Django/Next/Nuxt/SvelteKit/Remix/Adonis/Node plus Hardhat/Foundry/Truffle/Anchor/Solana/Cardano signals). Detection is evidence, not a decision: confirm the result with the user and skip bootstrap questions. `framework: null` → record the user's described framework as-is instead of forcing it into a list. `monorepo: true` → confirm the primary framework and record the structure. CLI unavailable → inspect manifests near the root manually.
 
 ## Decision and evidence rules
 

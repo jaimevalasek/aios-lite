@@ -31,7 +31,7 @@ The compiler refuses on: missing/invalid contract, no executable criteria, plan 
 
 ### Step 2 — Review with the user
 
-Present the compile report: waves and phases, executable vs judged criteria counts, fix-loop cap. On a recompile, keep the previous report JSON beside the workflow script and present only the delta (waves/criteria/cap changes) — the resume loop stays reviewable without re-reading the whole plan. The script at `.aioson/plans/{slug}/forge-run.workflow.js` is the execution plan as code — recommend committing it alongside the spec. Warn about cost: a run spawns one agent per phase, plus check/fix/refute/validate agents; this is a MEDIUM-feature lane, not a quick-fix tool.
+Present the compile report: waves and phases, executable vs judged criteria counts, fix-loop cap. The compiler itself persists `.aioson/plans/{slug}/forge-run.report.json` and, on a recompile, returns a ready `delta` block (waves added/removed, criteria and cap changes) — present that delta verbatim instead of reconstructing "what changed" from memory; the resume loop stays reviewable without re-reading the whole plan. The script at `.aioson/plans/{slug}/forge-run.workflow.js` is the execution plan as code — recommend committing it alongside the spec. Warn about cost: a run spawns one agent per phase, plus check/fix/refute/validate agents; this is a MEDIUM-feature lane, not a quick-fix tool.
 
 ### Step 3 — Execute via the workflow runtime
 

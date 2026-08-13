@@ -66,15 +66,60 @@ async function resolveActiveFeature(targetDir) {
   return { slug: '', source: 'none', ambiguous: false, candidates: [] };
 }
 
+const SUMMARY_GOAL_HEADINGS = ['Goal', 'Objetivo', 'Objective'];
+
+/**
+ * --with-summary: the routing-relevance inputs, pre-extracted — PRD H1 title,
+ * first line under ## Goal/Objetivo/Objective, and which canonical artifacts
+ * exist. The workflow-relevance gate compares "is this request the same work?"
+ * against title+goal without opening the PRD; a malformed PRD yields nulls, and
+ * a null title means "open the PRD" — never decide on a blank field.
+ */
+async function buildFeatureSummary(targetDir, slug) {
+  const prdRel = `prd-${slug}.md`;
+  const planRel = `implementation-plan-${slug}.md`;
+  const qaRel = `qa-report-${slug}.md`;
+  const prd = await readFileSafe(path.join(contextDir(targetDir), prdRel));
+  let title = null;
+  let goal = null;
+  if (prd) {
+    const h1 = prd.match(/^#\s+(.+?)\s*$/m);
+    title = h1 ? h1[1].trim() : null;
+    for (const heading of SUMMARY_GOAL_HEADINGS) {
+      const re = new RegExp(`^##\\s+${heading}\\s*\\r?\\n+\\s*([^#\\s][^\\r\\n]*)`, 'm');
+      const match = prd.match(re);
+      if (match) { goal = match[1].trim(); break; }
+    }
+  }
+  const existsRel = async (rel) => Boolean(await readFileSafe(path.join(contextDir(targetDir), rel)));
+  return {
+    title,
+    goal,
+    artifact_paths: {
+      prd: prd ? `.aioson/context/${prdRel}` : null,
+      implementation_plan: (await existsRel(planRel)) ? `.aioson/context/${planRel}` : null,
+      qa_report: (await existsRel(qaRel)) ? `.aioson/context/${qaRel}` : null
+    }
+  };
+}
+
 async function runFeatureCurrent({ args = [], options = {}, logger = console } = {}) {
   const targetDir = args[0] || options.dir || '.';
   const resolved = await resolveActiveFeature(targetDir);
   const payload = { ok: true, ...resolved };
 
+  if ((options['with-summary'] || options.withSummary) && resolved.slug) {
+    payload.summary = await buildFeatureSummary(targetDir, resolved.slug);
+  }
+
   if (!options.json) {
     // Plain mode prints ONLY the slug so `$(aioson feature:current .)` is
     // directly usable in shell substitution; ambiguous/none print nothing.
     if (resolved.slug) logger.log(resolved.slug);
+    if (payload.summary && resolved.slug) {
+      if (payload.summary.title) logger.log(`title: ${payload.summary.title}`);
+      if (payload.summary.goal) logger.log(`goal: ${payload.summary.goal}`);
+    }
   }
   return payload;
 }

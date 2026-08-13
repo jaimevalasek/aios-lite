@@ -98,7 +98,13 @@ Separate structural validity, evidence quality, fidelity claims, and runtime rea
 
 ### Apply, bind, repair, or execute
 
-Follow `runtime-application.md`. Compile through the runtime binding service, inspect the actual executor delta, and require:
+Follow `runtime-application.md`. Compile through the binding service with one command — never narrate the bind by hand:
+
+```bash
+aioson genome:apply . --genome=<slug> --squad=<slug> [--executor=<slug>] --json
+```
+
+It merges bindings, compiles the managed executor blocks, and writes `squad.manifest.json`, the blueprint, and `docs/readiness.md`, returning the compilation reports and written paths. Then inspect the actual executor delta and require:
 
 - target squad/executor identity;
 - selected genome version and source hash;

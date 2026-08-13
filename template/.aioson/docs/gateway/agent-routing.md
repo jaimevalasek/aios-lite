@@ -38,7 +38,7 @@ Do not inflate scope with optional edge cases. If execution must exceed the chos
 Persisted workflow state is evidence about prior work, not proof that the current request belongs to it. Before calling `workflow:next` for a request that was not already activated by that command:
 
 1. State the current requested outcome in one sentence.
-2. Compare it with the active `featureSlug` and its PRD/dossier or implementation plan.
+2. Run `aioson feature:current . --with-summary --json` — it returns the active slug plus the PRD title, goal line, and artifact paths, so no artifact needs to be opened for this comparison. Compare the requested outcome against `summary.title`/`summary.goal` (a null title means the PRD is malformed: open it — never decide on a blank field).
 3. If it is the same work, continue with `workflow:next --expect-feature=<active-slug>`.
 4. If it is unrelated bounded implementation, preserve the active workflow unchanged and route to Dev Simple Plan without calling `workflow:next`.
 5. If it is an unrelated feature, do not reuse the old feature's agents or artifacts; obtain only the feature-switch decision that is genuinely required.

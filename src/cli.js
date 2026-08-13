@@ -56,7 +56,7 @@ const { runQaInit } = require('./commands/qa-init');
 const { runQaRun } = require('./commands/qa-run');
 const { runQaScan } = require('./commands/qa-scan');
 const { runQaReport } = require('./commands/qa-report');
-const { runPentesterReport } = require('./commands/pentester-report');
+const { runPentesterReport, runPentesterCoverage } = require('./commands/pentester-report');
 const { runWebMap } = require('./commands/web-map');
 const { runWebScrape } = require('./commands/web-scrape');
 const { runScanProject } = require('./commands/scan-project');
@@ -220,6 +220,11 @@ const { runOpReinforce } = require('./commands/op-reinforce');
 const { runOpMigrate } = require('./commands/op-migrate');
 const { runFeatureClose } = require('./commands/feature-close');
 const { runFeatureArchive, runFeatureSweep } = require('./commands/feature-archive');
+const { runFeatureTrace } = require('./commands/feature-trace');
+const { runFeatureDiff } = require('./commands/feature-diff');
+const { runWorkflowMode } = require('./commands/workflow-mode');
+const { runGenomeApply } = require('./commands/genome-apply');
+const { runSetupDetect } = require('./commands/setup-detect');
 const { runFeatureExport } = require('./commands/feature-export');
 const { runFeatureCurrent } = require('./commands/feature-current');
 const { runFeatureList } = require('./commands/feature-list');
@@ -382,6 +387,18 @@ const JSON_SUPPORTED_COMMANDS = new Set([
   'qa-report',
   'pentester:report',
   'pentester-report',
+  'pentester:coverage',
+  'pentester-coverage',
+  'feature:trace',
+  'feature-trace',
+  'feature:diff',
+  'feature-diff',
+  'workflow:mode',
+  'workflow-mode',
+  'genome:apply',
+  'genome-apply',
+  'setup:detect',
+  'setup-detect',
   'web:map',
   'web-map',
   'web:scrape',
@@ -1044,6 +1061,7 @@ function printHelp(t, logger) {
   logHelpLine(t, logger, 'cli.help_workflow_plan');
   logHelpLine(t, logger, 'cli.help_workflow_next');
   logHelpLine(t, logger, 'cli.help_workflow_status');
+  logHelpLine(t, logger, 'cli.help_workflow_mode');
   logHelpLine(t, logger, 'cli.help_workflow_execute');
   logHelpLine(t, logger, 'cli.help_review_cycle');
   logHelpLine(t, logger, 'cli.help_review_feature');
@@ -1064,7 +1082,13 @@ function printHelp(t, logger) {
   logHelpLine(t, logger, 'cli.help_qa_scan');
   logHelpLine(t, logger, 'cli.help_qa_report');
   logHelpLine(t, logger, 'cli.help_pentester_report');
+  logHelpLine(t, logger, 'cli.help_pentester_coverage');
   logHelpLine(t, logger, 'cli.help_feature_list');
+  logHelpLine(t, logger, 'cli.help_feature_current');
+  logHelpLine(t, logger, 'cli.help_feature_trace');
+  logHelpLine(t, logger, 'cli.help_feature_diff');
+  logHelpLine(t, logger, 'cli.help_setup_detect');
+  logHelpLine(t, logger, 'cli.help_genome_apply');
   logHelpLine(t, logger, 'cli.help_feature_close');
   logHelpLine(t, logger, 'cli.help_feature_archive');
   logHelpLine(t, logger, 'cli.help_gate_check');
@@ -1949,6 +1973,18 @@ async function main() {
       result = await runFeatureExport({ args, options, logger: commandLogger });
     } else if (command === 'feature:current' || command === 'feature-current') {
       result = await runFeatureCurrent({ args, options, logger: commandLogger });
+    } else if (command === 'feature:trace' || command === 'feature-trace') {
+      result = await runFeatureTrace({ args, options, logger: commandLogger });
+    } else if (command === 'feature:diff' || command === 'feature-diff') {
+      result = await runFeatureDiff({ args, options, logger: commandLogger });
+    } else if (command === 'workflow:mode' || command === 'workflow-mode') {
+      result = await runWorkflowMode({ args, options, logger: commandLogger });
+    } else if (command === 'genome:apply' || command === 'genome-apply') {
+      result = await runGenomeApply({ args, options, logger: commandLogger });
+    } else if (command === 'setup:detect' || command === 'setup-detect') {
+      result = await runSetupDetect({ args, options, logger: commandLogger });
+    } else if (command === 'pentester:coverage' || command === 'pentester-coverage') {
+      result = await runPentesterCoverage({ args, options, logger: commandLogger, t });
     } else if (command === 'feature:list' || command === 'feature-list') {
       result = await runFeatureList({ args, options, logger: commandLogger, t });
     } else if (command === 'dossier:init' || command === 'dossier-init') {

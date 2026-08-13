@@ -11,7 +11,7 @@ Turn the approved source chain, hash-bound Sheldon-reviewed PRD, approved protot
 1. Read `.aioson/context/project.context.md`.
 2. Read the matching briefing/refinement and the approved `prd-{slug}.md` or `prd.md`; require `product_scope: approved`, `prd_ready: approved`, `sheldon_review: approved`, and a current hash-bound Sheldon PASS from `aioson review:status`.
 3. When a refinement report exists, load `.aioson/docs/briefing/review-authority.md`, verify the exact applied feedback archive, and carry only valid accepted decision IDs and approved source references into phases and verification.
-4. Verify that every briefing `PROM-*` has one PRD Source Coverage decision before planning any `CAP-*`.
+4. Verify that every briefing `PROM-*` has one PRD Source Coverage decision before planning any `CAP-*` — read it from `aioson feature:trace . --feature={slug} --json` (`promises[]` with `covered`/`decision`, `caps[]` with ACs; `gaps[]` names dropped promises), never by cross-reading briefing and PRD tables by hand.
 5. Run the strict prototype ownership check. Read the prototype and manifest only when it returns a verified `current` binding with an approved manifest; when it returns `none`, use the PRD plus inspected current repository behavior.
 6. For every required capability, inspect the nearest existing implementation, framework conventions, package versions, test runner, production entry point, dependency contracts, and every path cited by the PRD's `## Current System Fit`.
 7. Load `.aioson/skills/process/aioson-spec-driven/SKILL.md` and `references/planner.md` only.

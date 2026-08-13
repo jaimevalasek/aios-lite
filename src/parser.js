@@ -41,6 +41,10 @@ const BOOLEAN_FLAGS = new Set([
   'allow-downgrade',
   // pentester:report — pure boolean; `--list .` must not swallow the path.
   'list',
+  // workflow:mode / feature:diff / feature:current — pure booleans;
+  // `--auto .` / `--paths-only .` / `--with-summary .` must not swallow the
+  // path positional. (`--step` is already boolean above.)
+  'auto', 'paths-only', 'with-summary', 'titles-only',
   // feature:close / feature:archive — pure booleans; `--preflight .`,
   // `--restore .`, `--no-archive .` etc. must not swallow the path positional.
   'preflight', 'explain', 'restore', 'sweep', 'no-archive', 'no-distill', 'no-trim',

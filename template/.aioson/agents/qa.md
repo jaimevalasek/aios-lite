@@ -76,10 +76,16 @@ For a delivery with a visual or rich operational surface, run `aioson brain:quer
 
 The goal is a fast trustworthy verdict. Small work should normally receive a small verification pass.
 
-For every required `PROM-*`, follow its Product decision to the mapped required `CAP-*`/`AC-*`; then, for each required `CAP-*`:
+Get the PROM→CAP→AC→phase→files chain precomputed — never re-derive it by re-reading briefing+PRD+plan:
 
-1. Map its `AC-*` rows from the PRD.
-2. Inspect the implementing files and tests named by the plan.
+```bash
+aioson feature:trace . --feature={slug} --json
+```
+
+It returns every promise with its decision/caps, every capability with its ACs, delivery phases, files and verification, plus `gaps[]` for anything the artifacts left malformed (treat gaps as findings, not as license to skip). Then, for each required `CAP-*` in the trace:
+
+1. Take its `AC-*` rows from the trace (open the PRD only to judge wording, not to rebuild the map).
+2. Inspect the implementing files and tests the trace names.
 3. Run the focused test command.
 4. Verify each applicable engineering control with the plan's check or a more direct stack-native equivalent; exercise recovery when the change can leave persistent or externally visible state.
 5. Launch the normal application entry point.

@@ -189,6 +189,8 @@ module.exports = {
       'aioson workflow:next [path] [--expect-feature=<slug|none>] [--complete[=<agente>]] [--agent=<agente>] [--skip=<agente>] [--status] [--suggest] [--tool=codex|claude|opencode] [--json] [--locale=pt-BR]',
     help_workflow_status:
       'aioson workflow:status [path] [--suggest] [--tool=codex|claude|opencode] [--json] [--locale=pt-BR]',
+    help_workflow_mode:
+      'aioson workflow:mode [caminho] [--feature=<slug>] [--auto] [--step] [--json] [--locale=pt-BR]',
     help_workflow_execute:
       'aioson workflow:execute [path] [--feature=<slug>] [--agentic] [--max-dev-qa-cycles=<n>] [--max-tester-cycles=<n>] [--max-pentester-cycles=<n>] [--dry-run] [--lane=<n>] [--json] [--locale=pt-BR]',
     help_review_cycle:
@@ -229,8 +231,20 @@ module.exports = {
       'aioson qa:report [path] [--html] [--json] [--locale=pt-BR]',
     help_pentester_report:
       'aioson pentester:report [caminho] [--feature=<slug>] [--list] [--json] [--locale=pt-BR]',
+    help_pentester_coverage:
+      'aioson pentester:coverage [caminho] --feature=<slug> [--json] [--locale=pt-BR]',
     help_feature_list:
       'aioson feature:list [caminho] [--status=<status[,status2]>] [--limit=N] [--json] [--locale=pt-BR]',
+    help_feature_current:
+      'aioson feature:current [caminho] [--with-summary] [--json] [--locale=pt-BR]',
+    help_feature_trace:
+      'aioson feature:trace [caminho] --feature=<slug> [--json] [--locale=pt-BR]',
+    help_feature_diff:
+      'aioson feature:diff [caminho] --feature=<slug> [--base=<ref>] [--paths-only] [--json] [--locale=pt-BR]',
+    help_setup_detect:
+      'aioson setup:detect [caminho] [--json] [--locale=pt-BR]',
+    help_genome_apply:
+      'aioson genome:apply [caminho] --genome=<slug> --squad=<slug> [--executor=<slug>] [--json] [--locale=pt-BR]',
     help_harness_init:
       'aioson harness:init [path] --slug=<slug> [--mode=balanced|safe|builder|autopilot] [--locale=pt-BR]',
     help_harness_validate:
@@ -260,7 +274,7 @@ module.exports = {
     help_prototype_check:
       'aioson prototype:check [path] --feature=<slug> [--json] [--locale=pt-BR]',
     help_ac_test_audit:
-      'aioson ac:test-audit [path] --feature=<slug> [--strict] [--json] [--locale=pt-BR]',
+      'aioson ac:test-audit [path] --feature=<slug> [--strict] [--seed] [--json] [--locale=pt-BR]',
     help_preflight:
       'aioson preflight [path] [--agent=<nome>] [--feature=<slug>] [--json] [--locale=pt-BR]',
     help_pulse_update:

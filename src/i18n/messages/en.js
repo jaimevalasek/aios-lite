@@ -187,6 +187,8 @@ module.exports = {
       'aioson workflow:next [path] [--expect-feature=<slug|none>] [--complete[=<agent>]] [--agent=<agent>] [--skip=<agent>] [--status] [--suggest] [--tool=codex|claude|opencode] [--json] [--locale=en]',
     help_workflow_status:
       'aioson workflow:status [path] [--suggest] [--tool=codex|claude|opencode] [--json] [--locale=en]',
+    help_workflow_mode:
+      'aioson workflow:mode [path] [--feature=<slug>] [--auto] [--step] [--json] [--locale=en]',
     help_workflow_execute:
       'aioson workflow:execute [path] [--feature=<slug>] [--agentic] [--max-dev-qa-cycles=<n>] [--max-tester-cycles=<n>] [--max-pentester-cycles=<n>] [--dry-run] [--lane=<n>] [--json] [--locale=en]',
     help_review_cycle:
@@ -227,8 +229,20 @@ module.exports = {
       'aioson qa:report [path] [--html] [--json] [--locale=en]',
     help_pentester_report:
       'aioson pentester:report [path] [--feature=<slug>] [--list] [--json] [--locale=en]',
+    help_pentester_coverage:
+      'aioson pentester:coverage [path] --feature=<slug> [--json] [--locale=en]',
     help_feature_list:
       'aioson feature:list [path] [--status=<status[,status2]>] [--limit=N] [--json] [--locale=en]',
+    help_feature_current:
+      'aioson feature:current [path] [--with-summary] [--json] [--locale=en]',
+    help_feature_trace:
+      'aioson feature:trace [path] --feature=<slug> [--json] [--locale=en]',
+    help_feature_diff:
+      'aioson feature:diff [path] --feature=<slug> [--base=<ref>] [--paths-only] [--json] [--locale=en]',
+    help_setup_detect:
+      'aioson setup:detect [path] [--json] [--locale=en]',
+    help_genome_apply:
+      'aioson genome:apply [path] --genome=<slug> --squad=<slug> [--executor=<slug>] [--json] [--locale=en]',
     help_harness_init:
       'aioson harness:init [path] --slug=<slug> [--mode=balanced|safe|builder|autopilot] [--locale=en]',
     help_harness_validate:
@@ -258,7 +272,7 @@ module.exports = {
     help_prototype_check:
       'aioson prototype:check [path] --feature=<slug> [--json] [--locale=en]',
     help_ac_test_audit:
-      'aioson ac:test-audit [path] --feature=<slug> [--strict] [--json] [--locale=en]',
+      'aioson ac:test-audit [path] --feature=<slug> [--strict] [--seed] [--json] [--locale=en]',
     help_preflight:
       'aioson preflight [path] [--agent=<name>] [--feature=<slug>] [--json] [--locale=en]',
     help_pulse_update:

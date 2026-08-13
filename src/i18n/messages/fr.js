@@ -217,8 +217,22 @@ module.exports = {
       'aioson qa:report [path] [--html] [--json] [--locale=fr]',
     help_pentester_report:
       'aioson pentester:report [chemin] [--feature=<slug>] [--list] [--json] [--locale=fr]',
+    help_pentester_coverage:
+      'aioson pentester:coverage [chemin] --feature=<slug> [--json] [--locale=fr]',
+    help_workflow_mode:
+      'aioson workflow:mode [chemin] [--feature=<slug>] [--auto] [--step] [--json] [--locale=fr]',
     help_feature_list:
       'aioson feature:list [chemin] [--status=<status[,status2]>] [--limit=N] [--json] [--locale=fr]',
+    help_feature_current:
+      'aioson feature:current [chemin] [--with-summary] [--json] [--locale=fr]',
+    help_feature_trace:
+      'aioson feature:trace [chemin] --feature=<slug> [--json] [--locale=fr]',
+    help_feature_diff:
+      'aioson feature:diff [chemin] --feature=<slug> [--base=<ref>] [--paths-only] [--json] [--locale=fr]',
+    help_setup_detect:
+      'aioson setup:detect [chemin] [--json] [--locale=fr]',
+    help_genome_apply:
+      'aioson genome:apply [chemin] --genome=<slug> --squad=<slug> [--executor=<slug>] [--json] [--locale=fr]',
     help_harness_check:
       'aioson harness:check [path] --slug=<slug> [--criteria=C1,C2] [--timeout=<ms>] [--json] [--locale=fr]',
     help_harness_retro:
