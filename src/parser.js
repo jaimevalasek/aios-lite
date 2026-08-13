@@ -41,6 +41,9 @@ const BOOLEAN_FLAGS = new Set([
   'allow-downgrade',
   // pentester:report — pure boolean; `--list .` must not swallow the path.
   'list',
+  // feature:close — pure booleans; `--preflight .` / `--explain .` must not
+  // swallow the path positional.
+  'preflight', 'explain',
   // briefing:apply-feedback — pure booleans; `--confirm .` / `--declined .`
   // / `--allow-stale .` must not swallow the path positional.
   'confirm', 'declined', 'allow-stale',

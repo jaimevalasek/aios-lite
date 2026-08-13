@@ -614,6 +614,137 @@ test('feature:close (T5): corrupted progress.json fails safe (warns and proceeds
     'must record the parse error in updates');
 });
 
+// ---------- Close gates A9/A11: todos os bloqueios de uma vez + preflight + force enumerado ----------
+
+async function setupMultiBlockedFeature(tmpDir, slug) {
+  // bloqueio 1: runtime (prototype-manifest) sem harness-contract
+  await writeFile(tmpDir, `.aioson/briefings/${slug}/prototype-manifest.md`, '# Core interactions\n');
+  // bloqueio 2: completude aplicável (SMALL + promessa significativa) sem CAP map
+  await writeFile(tmpDir, '.aioson/context/project.context.md', '---\nclassification: SMALL\n---\n');
+  await writeFile(tmpDir, `.aioson/context/prd-${slug}.md`,
+    '# PRD\nA user submits a durable request, receives its result, and can retry a failed operation safely.\n');
+  await writeFile(tmpDir, `.aioson/context/requirements-${slug}.md`,
+    `# Requirements\nREQ-${slug}-01 and AC-${slug}-01 define the promised result.\n`);
+  await writeFile(tmpDir, `.aioson/context/spec-${slug}.md`, '---\nversion: 1\n---\n# Spec\n');
+}
+
+test('feature:close: lista TODOS os bloqueios de uma vez (A9), não um por rodada', async () => {
+  const tmpDir = await makeTmpDir();
+  await setupMultiBlockedFeature(tmpDir, 'multi');
+
+  const result = await runFeatureClose({
+    args: [tmpDir],
+    options: { json: true, feature: 'multi', verdict: 'PASS' },
+    logger: makeLogger()
+  });
+
+  assert.equal(result.ok, false);
+  // compat: reason continua sendo o primeiro gate na ordem legada
+  assert.equal(result.reason, 'harness_contract_gate_blocked');
+  assert.ok(Array.isArray(result.blockers), 'result.blockers deve existir');
+  const gates = result.blockers.map((b) => b.gate);
+  assert.ok(gates.includes('harness_contract'), gates.join(','));
+  assert.ok(gates.includes('feature_completeness'), gates.join(','));
+  assert.equal(result.forceable, true);
+  assert.match(result.hint, /--force/);
+  assert.match(result.hint, /--preflight/);
+});
+
+test('feature:close: --preflight lista tudo sem executar nem mutar nada (A9)', async () => {
+  const tmpDir = await makeTmpDir();
+  await setupMultiBlockedFeature(tmpDir, 'pre');
+  const specPath = path.join(tmpDir, '.aioson', 'context', 'spec-pre.md');
+  const specBefore = await fs.readFile(specPath, 'utf8');
+
+  const result = await runFeatureClose({
+    args: [tmpDir],
+    options: { json: true, feature: 'pre', verdict: 'PASS', preflight: true },
+    logger: makeLogger()
+  });
+
+  assert.equal(result.ok, false);
+  assert.equal(result.preflight, true);
+  assert.ok(result.blockers.length >= 2);
+  assert.ok(result.notes.some((n) => n.includes('NOT run')));
+
+  // nada mutado: spec intacto, sem features.md criado, sem plan dir
+  assert.equal(await fs.readFile(specPath, 'utf8'), specBefore);
+  const featuresExists = await fs.access(path.join(tmpDir, '.aioson', 'context', 'features.md'))
+    .then(() => true).catch(() => false);
+  assert.equal(featuresExists, false);
+});
+
+test('feature:close: --preflight com verdict FAIL não tem gates', async () => {
+  const tmpDir = await makeTmpDir();
+  const result = await runFeatureClose({
+    args: [tmpDir],
+    options: { json: true, feature: 'x', verdict: 'FAIL', preflight: true },
+    logger: makeLogger()
+  });
+  assert.equal(result.ok, true);
+  assert.equal(result.preflight, true);
+  assert.deepEqual(result.blockers, []);
+});
+
+test('feature:close: --force enumera cada bloqueio pulado e persiste force-bypass-findings.json (A11)', async () => {
+  const tmpDir = await makeTmpDir();
+  await writeFile(tmpDir, '.aioson/context/project.context.md', '---\nclassification: SMALL\n---\n');
+  await writeFile(tmpDir, '.aioson/context/prd-forced.md',
+    '# PRD\nA user submits a durable request, receives its result, and can retry a failed operation safely.\n');
+  await writeFile(tmpDir, '.aioson/context/requirements-forced.md',
+    '# Requirements\nREQ-forced-01 and AC-forced-01 define the promised result.\n');
+  await writeFile(tmpDir, '.aioson/context/spec-forced.md', '---\nversion: 1\n---\n# Spec\n');
+
+  const result = await runFeatureClose({
+    args: [tmpDir],
+    options: { json: true, feature: 'forced', verdict: 'PASS', force: true },
+    logger: makeLogger()
+  });
+
+  assert.equal(result.ok, true);
+  // cabeçalho legado preservado + findings enumerados (não mais "10 finding(s)" sem lista)
+  assert.ok(result.updates.some((u) => u.includes('feature completeness gate: BYPASSED via --force')));
+  assert.ok(result.updates.some((u) => u.trim().startsWith('bypassed: ')),
+    'cada finding pulado deve aparecer enumerado nos updates');
+
+  const recordPath = path.join(tmpDir, '.aioson', 'context', 'done', 'forced', 'force-bypass-findings.json');
+  const record = JSON.parse(await fs.readFile(recordPath, 'utf8'));
+  assert.equal(record.feature, 'forced');
+  assert.equal(record.source, '--force');
+  assert.ok(record.blockers.some((b) => b.gate === 'feature_completeness'));
+  assert.ok(record.blockers[0].findings.length > 0, 'os findings ficam auditáveis no registro');
+  assert.equal(result.forceBypass.source, '--force');
+});
+
+test('feature:close: publish gate continua não-forçável mesmo com --force', async () => {
+  const tmpDir = await makeTmpDir();
+  const planDir = path.join(tmpDir, '.aioson', 'plans', 'pub');
+  await fs.mkdir(planDir, { recursive: true });
+  await fs.writeFile(path.join(planDir, 'harness-contract.json'), JSON.stringify({
+    feature: 'pub',
+    contract_mode: 'BALANCED',
+    governor: {},
+    human_gate: { required_for: ['publish'] },
+    criteria: [{ id: 'C1', description: 'x', assertion: 'y', binary: true }]
+  }), 'utf8');
+  await fs.writeFile(path.join(planDir, 'progress.json'), JSON.stringify({
+    feature: 'pub', status: 'in_progress', circuit_state: 'CLOSED',
+    iterations: 0, consecutive_errors: 0, ready_for_done_gate: true, completed_steps: []
+  }), 'utf8');
+  await writeFile(tmpDir, '.aioson/context/spec-pub.md', '---\nversion: 1\n---\n# Spec\n');
+
+  const result = await runFeatureClose({
+    args: [tmpDir],
+    options: { json: true, feature: 'pub', verdict: 'PASS', force: true },
+    logger: makeLogger()
+  });
+
+  assert.equal(result.ok, false);
+  assert.equal(result.reason, 'publish_gate_pending');
+  assert.equal(result.forceable, false);
+  assert.match(result.error, /harness:approve/);
+});
+
 const DEV_STATE = (slug) =>
   `---\nlast_updated: 2026-07-01\nactive_feature: ${slug}\nactive_phase: 5\n` +
   `next_step: "aioson feature:close"\nstatus: in_progress\n---\n\n# Dev State\n\n**Feature:** ${slug}\n`;

@@ -127,9 +127,16 @@ async function findSlugFiles(ctxDir, slug, otherSlugs = []) {
     .filter((name) => !belongsToOtherSlug(name, slug, otherSlugs));
 }
 
+// Metadados do próprio archive (registro de force-bypass do feature:close) não
+// contam como artefato da feature: ficam fora do manifest count e do --restore.
+const ARCHIVE_METADATA_FILES = new Set(['force-bypass-findings.json']);
+
 async function findArchivedFiles(archiveDir) {
   const entries = await readDirSafe(archiveDir);
-  return entries.filter((e) => e.isFile()).map((e) => e.name);
+  return entries
+    .filter((e) => e.isFile())
+    .map((e) => e.name)
+    .filter((name) => !ARCHIVE_METADATA_FILES.has(name));
 }
 
 async function removeEmptyDirBestEffort(dir) {

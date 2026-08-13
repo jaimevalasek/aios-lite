@@ -371,6 +371,22 @@ async function retireWorkflowStateForClosedFeature(ctxDir, slug) {
   return retired;
 }
 
+// Confirmação de fechamento bloqueado — só chega aqui em TTY interativo (nunca
+// em --json, hooks ou CI). Aceita s/sim (pt) e y/yes (en); default é NÃO.
+async function promptCloseAnyway(blockerCount) {
+  const readline = require('node:readline/promises');
+  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+  try {
+    const answer = await rl.question(
+      `\n${blockerCount} gate(s) are blocking this close. Close anyway and record a force-bypass? [y/N] `
+    );
+    const normalized = String(answer || '').trim().toLowerCase();
+    return ['y', 'yes', 's', 'sim'].includes(normalized);
+  } finally {
+    rl.close();
+  }
+}
+
 async function runFeatureClose({ args, options = {}, logger }) {
   const targetDir = path.resolve(process.cwd(), args[0] || '.');
   const slug = options.feature ? String(options.feature) : null;
@@ -398,11 +414,27 @@ async function runFeatureClose({ args, options = {}, logger }) {
   // projeto nunca diverge do disco em silêncio (A2).
   const closeErrors = [];
 
-  // 0a. Harness Done Gate (AC-HD-11 refined)
+  // 0a. Close gates (AC-HD-11 refined + A9/A11)
   // Only enforced on PASS — FAIL means QA already rejected and we want the
   // closure to record that. Runtime features the CLI can detect (prototype or
   // migration/Prisma evidence) must have a valid contract even on MICRO/SMALL;
   // non-runtime features without a contract keep the historical lightweight path.
+  //
+  // Todos os gates são avaliados numa passada e reportados JUNTOS (A9) — um
+  // bloqueio por rodada era o maior atrito do fechamento. Quando algo bloqueia:
+  //   - `--preflight`/`--explain` lista tudo sem executar nem mutar nada;
+  //   - em TTY o próprio comando pergunta "fechar mesmo assim?" (s/N);
+  //   - `--force` (ou a confirmação) enumera cada bloqueio pulado e persiste
+  //     done/{slug}/force-bypass-findings.json para auditoria (A11).
+  // Exceção deliberada: o publish human gate (REQ-13) nunca é bypassável —
+  // a aprovação humana registrada É o propósito do gate.
+  const preflight = options.preflight === true || options.explain === true;
+  if (preflight && verdict === 'FAIL') {
+    const report = { ok: true, preflight: true, feature: slug, verdict, blockers: [], notes: ['FAIL closes record the QA rejection — close gates only apply to PASS'] };
+    if (!options.json) logger.log(`feature:close --preflight — ${slug}: no gates on FAIL verdict.`);
+    return report;
+  }
+  let forceBypass = null;
   if (verdict === 'PASS') {
     const planDir = path.join(targetDir, '.aioson', 'plans', slug);
     const contractPath = path.join(planDir, 'harness-contract.json');
@@ -410,32 +442,28 @@ async function runFeatureClose({ args, options = {}, logger }) {
     const contractContent = await readFileSafe(contractPath);
     const progressContent = await readFileSafe(progressPath);
     const force = options.force === true;
+    const blockers = [];
 
+    // Gate 1 — harness contract integrity (§2c). No preflight os RG-* não
+    // executam (runChecks=false): avaliação estática apenas, zero side effects.
     const integrityGate = await evaluateContractIntegrityGate(targetDir, slug, {
-      runChecks: Boolean(contractContent)
+      runChecks: Boolean(contractContent) && !preflight
     });
     if (!integrityGate.ok) {
-      if (!force) {
-        const errMsg = formatContractIntegrityGateError(integrityGate);
-        if (options.json) {
-          return {
-            ok: false,
-            reason: 'harness_contract_gate_blocked',
-            feature: slug,
-            error: errMsg,
-            errors: integrityGate.errors
-          };
-        }
-        logger.log(errMsg);
-        return { ok: false, reason: 'harness_contract_gate_blocked' };
-      }
-      updates.push('harness contract gate: BYPASSED via --force');
+      blockers.push({
+        gate: 'harness_contract',
+        code: 'harness_contract_gate_blocked',
+        forceable: true,
+        message: formatContractIntegrityGateError(integrityGate),
+        bypassLabel: (via) => 'harness contract gate: BYPASSED via ' + via,
+        findings: (integrityGate.errors || []).map((e) => `${e.code}: ${e.message}`),
+        legacy: { errors: integrityGate.errors }
+      });
     }
 
-    // REQ-13 (loop-guardrails): tema `publish` é gate de COMANDO — intercepta
-    // o feature:close quando o contrato ativo o exige e não há gate publish
-    // aprovado. Nunca detectado por diff. `--force` NÃO bypassa: a aprovação
-    // humana é o propósito do gate (decisão registrada no spec da feature).
+    // Gate 2 — REQ-13 (loop-guardrails): tema `publish` é gate de COMANDO —
+    // intercepta o feature:close quando o contrato ativo o exige e não há gate
+    // publish aprovado. Nunca detectado por diff. `--force` NÃO bypassa.
     if (contractContent) {
       try {
         const contract = JSON.parse(contractContent);
@@ -447,7 +475,7 @@ async function runFeatureClose({ args, options = {}, logger }) {
           const { emitGuardEvent } = require('../harness/guard-events');
           if (!hasApprovedPublishGate(planDir)) {
             let gate = pendingGates(planDir).find((g) => g.theme === 'publish');
-            if (!gate) {
+            if (!gate && !preflight) {
               gate = createGate(planDir, {
                 theme: 'publish',
                 attempt: 0,
@@ -461,17 +489,20 @@ async function runFeatureClose({ args, options = {}, logger }) {
                 payload: { slug, gate_id: gate.id, theme: 'publish' }
               });
             }
-            const errMsg = `[Publish Gate BLOCKED] Feature "${slug}" requires human approval before closing (human_gate.required_for includes "publish"). Approve with: aioson harness:approve . --slug=${slug} --gate=${gate.id}`;
-            if (options.json) {
-              return { ok: false, reason: 'publish_gate_pending', feature: slug, gate: gate.id, error: errMsg };
-            }
-            logger.log(errMsg);
-            return { ok: false };
+            const gateRef = gate ? gate.id : '<created on real close>';
+            blockers.push({
+              gate: 'publish',
+              code: 'publish_gate_pending',
+              forceable: false,
+              message: `[Publish Gate BLOCKED] Feature "${slug}" requires human approval before closing (human_gate.required_for includes "publish"). Approve with: aioson harness:approve . --slug=${slug} --gate=${gateRef}`,
+              legacy: { gate: gate ? gate.id : null }
+            });
           }
         }
-      } catch { /* contrato ilegível — o done gate abaixo lida com o estado */ }
+      } catch { /* contrato ilegível — o integrity gate acima reporta o estado */ }
     }
 
+    // Gate 3 — Harness Done Gate (veredito binário do @validator)
     if (contractContent && progressContent) {
       let progress = null;
       try {
@@ -485,33 +516,26 @@ async function runFeatureClose({ args, options = {}, logger }) {
       }
 
       if (progress && progress.ready_for_done_gate !== true) {
-        if (!force) {
-          const pendingHint = progress.last_error
-            ? ` Pending: ${progress.last_error}.`
-            : '';
-          const errMsg = `[Harness Done Gate BLOCKED] Feature "${slug}" did not pass the binary contract (ready_for_done_gate=false).${pendingHint} Run 'aioson harness:validate' and 'aioson harness:apply-validation' until overall_score=1, or pass --force for an emergency override.`;
-          if (options.json) {
-            return {
-              ok: false,
-              reason: 'harness_done_gate_blocked',
-              feature: slug,
-              error: errMsg,
-              last_error: progress.last_error || null,
-              ready_for_done_gate: false
-            };
-          }
-          logger.log(errMsg);
-          return { ok: false, reason: 'harness_done_gate_blocked' };
-        }
-        updates.push(`harness done gate: BYPASSED via --force (ready_for_done_gate=false at close time; last_error=${progress.last_error || 'none'})`);
+        const pendingHint = progress.last_error
+          ? ` Pending: ${progress.last_error}.`
+          : '';
+        const lastError = progress.last_error || null;
+        blockers.push({
+          gate: 'harness_done',
+          code: 'harness_done_gate_blocked',
+          forceable: true,
+          message: `[Harness Done Gate BLOCKED] Feature "${slug}" did not pass the binary contract (ready_for_done_gate=false).${pendingHint} Run 'aioson harness:validate' and 'aioson harness:apply-validation' until overall_score=1, or pass --force for an emergency override.`,
+          bypassLabel: (via) => `harness done gate: BYPASSED via ${via} (ready_for_done_gate=false at close time; last_error=${lastError || 'none'})`,
+          legacy: { last_error: lastError, ready_for_done_gate: false }
+        });
       } else if (progress && progress.ready_for_done_gate === true) {
         updates.push('harness done gate: PASSED (ready_for_done_gate=true)');
       }
     }
 
-    // Feature completeness closes on fresh executable proof, not on ledger
-    // status strings. The harness gate above deliberately runs first so its
-    // persisted report is the evidence consumed here.
+    // Gate 4 — Feature completeness closes on fresh executable proof, not on
+    // ledger status strings. The harness gate above deliberately runs first so
+    // its persisted report is the evidence consumed here.
     const completeness = await analyzeFeatureCompleteness(targetDir, slug, {
       includeExecution: true
     });
@@ -526,23 +550,128 @@ async function runFeatureClose({ args, options = {}, logger }) {
           ...completenessFindings.map((item) => `${item.stage}/${item.check}: ${item.message}`),
           ...(!acAudit.ok ? [`AC test audit failed: ${acAudit.missing.join(', ')}`] : [])
         ];
-        if (!force) {
-          const errMsg = `[Feature Completeness BLOCKED] Feature "${slug}" lacks fresh executable closure:\n- ${errors.join('\n- ')}`;
-          if (options.json) {
-            return {
-              ok: false,
-              reason: 'feature_completeness_gate_blocked',
-              feature: slug,
-              error: errMsg,
-              errors
-            };
-          }
-          logger.log(errMsg);
-          return { ok: false, reason: 'feature_completeness_gate_blocked' };
-        }
-        updates.push(`feature completeness gate: BYPASSED via --force (${errors.length} finding(s))`);
+        blockers.push({
+          gate: 'feature_completeness',
+          code: 'feature_completeness_gate_blocked',
+          forceable: true,
+          message: `[Feature Completeness BLOCKED] Feature "${slug}" lacks fresh executable closure:\n- ${errors.join('\n- ')}`,
+          bypassLabel: (via) => `feature completeness gate: BYPASSED via ${via} (${errors.length} finding(s))`,
+          findings: errors,
+          legacy: { errors }
+        });
       } else {
         updates.push('feature completeness gate: PASSED (fresh CAP/AC executable evidence)');
+      }
+    }
+
+    const publicBlockers = blockers.map(({ legacy, bypassLabel, ...pub }) => pub);
+    const unforceable = blockers.filter((b) => !b.forceable);
+
+    // ── --preflight / --explain: o mapa completo, sem executar nem mutar ──
+    if (preflight) {
+      const report = {
+        ok: blockers.length === 0,
+        preflight: true,
+        feature: slug,
+        verdict,
+        blockers: publicBlockers,
+        forceable: blockers.length > 0 ? unforceable.length === 0 : undefined,
+        notes: [
+          'nothing was executed or mutated (RG-* runtime checks were NOT run in preflight)',
+          ...(blockers.length === 0 ? [] : [unforceable.length === 0
+            ? 'all blockers are forceable: re-run with --force (the bypass is recorded in done/{slug}/force-bypass-findings.json)'
+            : 'the publish gate requires human approval (aioson harness:approve) and is never bypassed by --force'])
+        ]
+      };
+      if (options.json) return report;
+      logger.log(`feature:close --preflight — ${slug}:`);
+      if (blockers.length === 0) {
+        logger.log('  ✓ no blockers — close would proceed');
+      } else {
+        for (const b of blockers) {
+          logger.log('');
+          logger.log(`  ✗ [${b.gate}]${b.forceable ? '' : ' (not forceable)'}`);
+          for (const line of b.message.split('\n')) logger.log(`    ${line}`);
+        }
+      }
+      for (const note of report.notes) logger.log(`  note: ${note}`);
+      return report;
+    }
+
+    if (blockers.length > 0) {
+      let proceed = force && unforceable.length === 0;
+      let bypassSource = force ? '--force' : null;
+
+      // Confirmação interativa: só em TTY, fora do modo json, e apenas quando
+      // todos os bloqueios são bypassáveis (publish gate nunca é).
+      const interactive = !options.json && !force
+        && unforceable.length === 0
+        && process.stdin.isTTY === true
+        && process.stdout.isTTY === true;
+
+      if (interactive) {
+        logger.log(`Feature "${slug}" is blocked by ${blockers.length} gate(s):`);
+        for (const b of blockers) {
+          logger.log('');
+          logger.log(b.message);
+        }
+        const confirmed = await promptCloseAnyway(blockers.length);
+        if (confirmed) {
+          proceed = true;
+          bypassSource = 'interactive_confirmation';
+        }
+      }
+
+      if (!proceed) {
+        const first = force && unforceable.length > 0 ? unforceable[0] : blockers[0];
+        const combined = blockers.map((b) => b.message).join('\n\n');
+        const hint = unforceable.length === 0
+          ? 'Re-run with --force to close anyway (the bypass is recorded), or use --preflight to list all blockers without executing anything.'
+          : null;
+        if (options.json) {
+          return {
+            ok: false,
+            reason: first.code,
+            feature: slug,
+            error: combined,
+            blockers: publicBlockers,
+            forceable: unforceable.length === 0,
+            ...(hint ? { hint } : {}),
+            ...(first.legacy || {})
+          };
+        }
+        if (!interactive) {
+          for (const b of blockers) {
+            logger.log(b.message);
+            logger.log('');
+          }
+        }
+        if (hint) logger.log(hint);
+        return { ok: false, reason: first.code };
+      }
+
+      // Bypass autorizado: enumera cada bloqueio pulado (A11) e persiste o
+      // registro auditável ANTES de qualquer mutação — mesmo que o archive
+      // falhe depois, a decisão fica gravada.
+      const via = bypassSource === '--force' ? '--force' : 'interactive confirmation';
+      forceBypass = { source: bypassSource, blockers: publicBlockers };
+      for (const b of blockers) {
+        updates.push(b.bypassLabel ? b.bypassLabel(via) : `${b.gate} gate: BYPASSED via ${via}`);
+        for (const f of b.findings || []) updates.push(`  bypassed: ${f}`);
+      }
+      try {
+        const recordDir = path.join(dir, 'done', slug);
+        await fs.mkdir(recordDir, { recursive: true });
+        const recordPath = path.join(recordDir, 'force-bypass-findings.json');
+        await fs.writeFile(recordPath, JSON.stringify({
+          feature: slug,
+          bypassed_at: nowTimestamp(),
+          source: bypassSource,
+          blockers: publicBlockers
+        }, null, 2) + '\n', 'utf8');
+        updates.push(`force bypass recorded: .aioson/context/done/${slug}/force-bypass-findings.json`);
+      } catch (err) {
+        updates.push(`force bypass record failed (${(err && err.message) || err}) — findings listed above`);
       }
     }
   }
@@ -785,6 +914,7 @@ async function runFeatureClose({ args, options = {}, logger }) {
     residual: residual || notes || null,
     updates,
     errors: closeErrors.length > 0 ? closeErrors : undefined,
+    forceBypass: forceBypass || undefined,
     archive,
     scoutArchive,
     distillation
