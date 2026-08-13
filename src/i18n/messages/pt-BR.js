@@ -316,6 +316,10 @@ module.exports = {
       'aioson web:map [path] --url=<url> [--depth=<N>] [--max-pages=<N>] [--include-external] [--json] [--locale=pt-BR]',
     help_web_scrape:
       'aioson web:scrape [path] --url=<url> [--format=markdown|text|html|links] [--json] [--locale=pt-BR]',
+    help_web_save:
+      'aioson web:save [path] --url=<url> [--slug=<slug>] [--dir=<dir>] [--max-files=<N>] [--max-bytes=<N>] [--json] [--locale=pt-BR]',
+    help_web_extract:
+      'aioson web:extract [path] --slug=<slug>|--dir=<dir> [--query=<text>] [--context=<N>] [--max-matches=<N>] [--out=<file>] [--json] [--locale=pt-BR]',
     help_scan_project:
       'aioson scan:project [path] --folder=<pasta[,pasta2]> [--summary-mode=titles|summaries|raw] [--context-mode=merge|rewrite] [--with-llm] [--provider=<name>] [--llm-model=<name>] [--dry-run] [--json] [--locale=pt-BR]',
     help_config:
@@ -1317,6 +1321,23 @@ module.exports = {
     status_line: 'Status: {status} | Content-Type: {type}',
     done: 'Web scrape concluido ({format}).',
     failed: 'Falha no web scrape: {error}'
+  },
+  web_save: {
+    url_missing: 'Opcao obrigatoria ausente: --url=<url>.',
+    fetching: 'Salvando site: {url}',
+    saved: 'Salvos {count} arquivos ({kb} KB) em {dir}.',
+    failures: '{count} asset(s) nao puderam ser baixados — veja manifest.json.',
+    done: 'Web save concluido. Aponte --from-local / leituras locais para o diretorio salvo.',
+    failed: 'Falha no web save: {error}'
+  },
+  web_extract: {
+    target_missing: 'Opcao obrigatoria ausente: --slug=<slug> ou --dir=<dir>.',
+    dir_missing: 'Diretorio de site salvo nao encontrado: {dir}. Rode aioson web:save primeiro.',
+    extracting: 'Extraindo inteligencia de design de {dir}',
+    written: 'Extract gravado em {file}.',
+    matches: '{count} ocorrencia(s) para "{query}".',
+    done: 'Web extract concluido. Leia extract.md em vez do HTML/CSS/JS bruto.',
+    failed: 'Falha no web extract: {error}'
   },
   config: {
     usage_error:

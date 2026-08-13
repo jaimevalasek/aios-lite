@@ -59,6 +59,8 @@ const { runQaReport } = require('./commands/qa-report');
 const { runPentesterReport, runPentesterCoverage } = require('./commands/pentester-report');
 const { runWebMap } = require('./commands/web-map');
 const { runWebScrape } = require('./commands/web-scrape');
+const { runWebSave } = require('./commands/web-save');
+const { runWebExtract } = require('./commands/web-extract');
 const { runScanProject } = require('./commands/scan-project');
 const { runSecurityScan } = require('./commands/security-scan');
 const { runSecurityAudit } = require('./commands/security-audit');
@@ -406,6 +408,10 @@ const JSON_SUPPORTED_COMMANDS = new Set([
   'web-map',
   'web:scrape',
   'web-scrape',
+  'web:save',
+  'web-save',
+  'web:extract',
+  'web-extract',
   'scan:project',
   'scan-project',
   'security:scan',
@@ -1119,6 +1125,8 @@ function printHelp(t, logger) {
   logHelpLine(t, logger, 'cli.help_delegation_run');
   logHelpLine(t, logger, 'cli.help_web_map');
   logHelpLine(t, logger, 'cli.help_web_scrape');
+  logHelpLine(t, logger, 'cli.help_web_save');
+  logHelpLine(t, logger, 'cli.help_web_extract');
   logHelpLine(t, logger, 'cli.help_scan_project');
   logHelpLine(t, logger, 'cli.help_config');
   logHelpLine(t, logger, 'cli.help_genome_doctor');
@@ -1540,6 +1548,10 @@ async function main() {
       result = await runWebMap({ args, options, logger: commandLogger, t });
     } else if (command === 'web:scrape' || command === 'web-scrape') {
       result = await runWebScrape({ args, options, logger: commandLogger, t });
+    } else if (command === 'web:save' || command === 'web-save') {
+      result = await runWebSave({ args, options, logger: commandLogger, t });
+    } else if (command === 'web:extract' || command === 'web-extract') {
+      result = await runWebExtract({ args, options, logger: commandLogger, t });
     } else if (command === 'scan:project' || command === 'scan-project') {
       result = await runScanProject({ args, options, logger: commandLogger, t });
     } else if (command === 'security:scan' || command === 'security-scan') {

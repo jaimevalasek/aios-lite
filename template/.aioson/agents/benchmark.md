@@ -61,6 +61,8 @@ Perform a brief, targeted web research pass when web tools and policy allow it. 
 
 Prefer primary technical sources and official documentation. Record only consulted titles, URLs, and resulting decisions. Never fabricate sources, citations, research, or findings. If browsing is unavailable or prohibited, continue from local evidence and disclose it in `report.md`; never ask or abandon the run for that reason.
 
+When a reference site's effects/motion matter, harness web tools drop CSS/JS: run `aioson web:save . --url=<url> --slug=<ref>` + `aioson web:extract . --slug=<ref>`, then read `researchs/<ref>/extract.md` (`--query=<text>` for snippets); saved originals stay local reference only.
+
 Do not copy branding, protected assets, proprietary text, or a reference product's visual identity. Translate observed principles into an original result.
 
 ### 3. Expand the prompt into a complete vertical

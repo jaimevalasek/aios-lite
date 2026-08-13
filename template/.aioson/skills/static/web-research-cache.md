@@ -84,6 +84,17 @@ verdict: confirmed | has-alternatives | outdated | deprecated
 
 **`researchs/{slug}/files/{source-slug}.md`:** raw content from each URL consulted.
 
+## Site captures (full-fidelity sources)
+
+Harness web tools (WebFetch and equivalents) convert pages to markdown and drop CSS/JS — fine for reading content, lossy for design, effects, or motion. When a discovered source is a **visual/design reference** (or its extraction is blocked/lossy), persist it deterministically instead of re-fetching through the model:
+
+```bash
+aioson web:save . --url=<url> --slug={slug}      # mirrors HTML + CSS + JS + fonts/images to researchs/{slug}/site/
+aioson web:extract . --slug={slug}               # distills researchs/{slug}/extract.md (fonts, palette, keyframes, transitions, libraries)
+```
+
+The hybrid rule: **search with harness tools, capture with the CLI, read locally.** After capture, read `extract.md` — never bulk-load saved HTML/CSS/JS bundles into context; for targeted evidence use `aioson web:extract . --slug={slug} --query=<text>`. `web:save` seeds `summary.md` when absent. Saved originals are local reference only and must never be redistributed or shipped in builds. If the capture is blocked by bot protection, save with an external mirror tool into the same `site/` layout and continue.
+
 ## Step 4 — Surface only what is actionable
 
 Show the user **only** findings with verdict `has-alternatives`, `outdated`, or `deprecated`:

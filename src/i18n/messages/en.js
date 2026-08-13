@@ -314,6 +314,10 @@ module.exports = {
       'aioson web:map [path] --url=<url> [--depth=<N>] [--max-pages=<N>] [--include-external] [--json] [--locale=en]',
     help_web_scrape:
       'aioson web:scrape [path] --url=<url> [--format=markdown|text|html|links] [--json] [--locale=en]',
+    help_web_save:
+      'aioson web:save [path] --url=<url> [--slug=<slug>] [--dir=<dir>] [--max-files=<N>] [--max-bytes=<N>] [--json] [--locale=en]',
+    help_web_extract:
+      'aioson web:extract [path] --slug=<slug>|--dir=<dir> [--query=<text>] [--context=<N>] [--max-matches=<N>] [--out=<file>] [--json] [--locale=en]',
     help_scan_project:
       'aioson scan:project [path] --folder=<path[,path2]> [--summary-mode=titles|summaries|raw] [--context-mode=merge|rewrite] [--with-llm] [--provider=<name>] [--llm-model=<name>] [--dry-run] [--json] [--locale=en]',
     help_config:
@@ -1291,6 +1295,23 @@ module.exports = {
     status_line: 'Status: {status} | Content-Type: {type}',
     done: 'Web scrape complete ({format}).',
     failed: 'Web scrape failed: {error}'
+  },
+  web_save: {
+    url_missing: 'Missing required option: --url=<url>.',
+    fetching: 'Saving site: {url}',
+    saved: 'Saved {count} files ({kb} KB) to {dir}.',
+    failures: '{count} asset(s) could not be downloaded — see manifest.json.',
+    done: 'Web save complete. Point --from-local / local reads at the saved directory.',
+    failed: 'Web save failed: {error}'
+  },
+  web_extract: {
+    target_missing: 'Missing required option: --slug=<slug> or --dir=<dir>.',
+    dir_missing: 'Saved site directory not found: {dir}. Run aioson web:save first.',
+    extracting: 'Extracting design intelligence from {dir}',
+    written: 'Extract written to {file}.',
+    matches: '{count} match(es) for "{query}".',
+    done: 'Web extract complete. Read extract.md instead of raw HTML/CSS/JS.',
+    failed: 'Web extract failed: {error}'
   },
   config: {
     usage_error:

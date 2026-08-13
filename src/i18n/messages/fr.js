@@ -268,6 +268,10 @@ module.exports = {
       'aioson web:map [path] --url=<url> [--depth=<N>] [--max-pages=<N>] [--include-external] [--json] [--locale=fr]',
     help_web_scrape:
       'aioson web:scrape [path] --url=<url> [--format=markdown|text|html|links] [--json] [--locale=fr]',
+    help_web_save:
+      'aioson web:save [path] --url=<url> [--slug=<slug>] [--dir=<dir>] [--max-files=<N>] [--max-bytes=<N>] [--json] [--locale=fr]',
+    help_web_extract:
+      'aioson web:extract [path] --slug=<slug>|--dir=<dir> [--query=<text>] [--context=<N>] [--max-matches=<N>] [--out=<file>] [--json] [--locale=fr]',
     help_scan_project:
       'aioson scan:project [path] --folder=<chemin[,chemin2]> [--summary-mode=titles|summaries|raw] [--context-mode=merge|rewrite] [--with-llm] [--provider=<name>] [--llm-model=<name>] [--dry-run] [--json] [--locale=fr]',
     help_config:
@@ -1166,6 +1170,23 @@ module.exports = {
     status_line: 'Statut : {status} | Content-Type : {type}',
     done: 'Web scrape termine ({format}).',
     failed: 'Echec du web scrape : {error}'
+  },
+  web_save: {
+    url_missing: 'Option obligatoire manquante : --url=<url>.',
+    fetching: 'Sauvegarde du site : {url}',
+    saved: '{count} fichiers sauvegardes ({kb} Ko) dans {dir}.',
+    failures: '{count} asset(s) n\'ont pas pu etre telecharges — voir manifest.json.',
+    done: 'Web save termine. Pointez --from-local / les lectures locales vers le repertoire sauvegarde.',
+    failed: 'Echec du web save : {error}'
+  },
+  web_extract: {
+    target_missing: 'Option obligatoire manquante : --slug=<slug> ou --dir=<dir>.',
+    dir_missing: 'Repertoire de site sauvegarde introuvable : {dir}. Lancez aioson web:save d\'abord.',
+    extracting: 'Extraction de l\'intelligence design depuis {dir}',
+    written: 'Extract ecrit dans {file}.',
+    matches: '{count} occurrence(s) pour "{query}".',
+    done: 'Web extract termine. Lisez extract.md au lieu du HTML/CSS/JS brut.',
+    failed: 'Echec du web extract : {error}'
   },
   config: {
     usage_error:

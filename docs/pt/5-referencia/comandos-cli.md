@@ -156,6 +156,8 @@ O mesmo resolver é usado por `verification:plan`; nomes como `GPT 5.6 Terra`, `
 |---|---|---|
 | `web:map` | Descobre URLs internas de um site por crawl simples | Quando quer mapear docs, páginas públicas ou áreas navegáveis sem serviço externo |
 | `web:scrape` | Extrai conteúdo principal de uma página em markdown, text, html ou links | Quando quer transformar HTML em contexto utilizável para agentes |
+| `web:save` | Espelha uma página com CSS, JS, fontes e imagens em `researchs/{slug}/site/` (referências reescritas para caminhos locais + `manifest.json`) | Quando um site é referência visual/efeitos e o fetch via modelo perderia CSS/JS; alimenta `--from-local` do site-forge |
+| `web:extract` | Destila um site salvo em `extract.md` (fontes, paleta, keyframes, transitions, breakpoints, libs JS) ou busca trechos com `--query` | Quando quer que o modelo leia inteligência de design compacta em vez de HTML/CSS/JS brutos — economia de tokens |
 
 ### Genomes e squads
 
