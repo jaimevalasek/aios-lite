@@ -83,12 +83,12 @@ function updateFrontmatterField(content, field, value) {
 
 async function runGateApprove({ args, options = {}, logger }) {
   const targetDir = path.resolve(process.cwd(), args[0] || '.');
-  const slug = options.feature ? String(options.feature) : null;
+  const slug = options.feature ? String(options.feature) : (options.slug ? String(options.slug) : null);
   let gateLetter = options.gate ? String(options.gate).toUpperCase() : null;
 
   if (!slug) {
     if (options.json) return { ok: false, reason: 'missing_feature' };
-    logger.log('--feature=<slug> is required.');
+    logger.log('--feature=<slug> is required (--slug is accepted as an alias).');
     return { ok: false };
   }
 

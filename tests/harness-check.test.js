@@ -66,6 +66,19 @@ test('harness:check: erro quando contrato não existe para o slug', async () => 
   assert.strictEqual(result.error, 'contract_not_found');
 });
 
+test('harness:check: aceita --feature como alias de --slug (A10)', async () => {
+  const tmpDir = await makeTmpDir();
+  const result = await runHarnessCheck({
+    args: [tmpDir],
+    options: { feature: 'aliased-feature' },
+    logger: makeLogger(),
+    t: mockT
+  });
+  // passa da validação de slug e falha adiante por contrato ausente — com o slug resolvido
+  assert.strictEqual(result.error, 'contract_not_found');
+  assert.strictEqual(result.slug, 'aliased-feature');
+});
+
 test('harness:check: contrato com schema inválido é rejeitado', async () => {
   const tmpDir = await makeTmpDir();
   const slug = 'bad-schema';

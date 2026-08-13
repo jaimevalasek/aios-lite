@@ -389,14 +389,17 @@ async function promptCloseAnyway(blockerCount) {
 
 async function runFeatureClose({ args, options = {}, logger }) {
   const targetDir = path.resolve(process.cwd(), args[0] || '.');
-  const slug = options.feature ? String(options.feature) : null;
+  // A10: --slug e --feature são aliases em todo o CLI — metade dos comandos
+  // usava um, metade o outro, e o erro "missing_feature" sugeria que a feature
+  // não existia quando só a flag estava trocada.
+  const slug = options.feature ? String(options.feature) : (options.slug ? String(options.slug) : null);
   const verdict = options.verdict ? String(options.verdict).toUpperCase() : null;
   const residual = options.residual ? String(options.residual) : null;
   const notes = options.notes ? String(options.notes) : null;
 
   if (!slug) {
     if (options.json) return { ok: false, reason: 'missing_feature' };
-    logger.log('--feature=<slug> is required.');
+    logger.log('--feature=<slug> is required (--slug is accepted as an alias).');
     return { ok: false };
   }
 

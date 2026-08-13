@@ -40,6 +40,8 @@ test('gate:check validates required CLI arguments', async () => {
   assert.equal((await runGateCheck({ args: [root], options: { json: true, gate: 'A' }, logger })).reason, 'missing_feature');
   assert.equal((await runGateCheck({ args: [root], options: { json: true, feature: 'demo' }, logger })).reason, 'missing_gate');
   assert.equal((await runGateCheck({ args: [root], options: { json: true, feature: 'demo', gate: 'Z' }, logger })).reason, 'invalid_gate');
+  // A10: --slug é alias de --feature — passa da validação de feature
+  assert.equal((await runGateCheck({ args: [root], options: { json: true, slug: 'demo' }, logger })).reason, 'missing_gate');
 });
 
 test('Gate A validates product capability scope in the PRD', async () => {

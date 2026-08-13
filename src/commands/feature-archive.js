@@ -274,7 +274,7 @@ async function updateManifest(manifestPath, entry, mode) {
 
 async function runFeatureArchive({ args = [], options = {}, logger }) {
   const targetDir = path.resolve(process.cwd(), args[0] || '.');
-  const slug = options.feature ? String(options.feature) : null;
+  const slug = options.feature ? String(options.feature) : (options.slug ? String(options.slug) : null);
   const dryRun = Boolean(options['dry-run'] || options.dryRun);
   const restore = Boolean(options.restore);
   const force = Boolean(options.force);
@@ -284,7 +284,7 @@ async function runFeatureArchive({ args = [], options = {}, logger }) {
 
   if (!slug) {
     if (jsonOut) return { ok: false, reason: 'missing_feature' };
-    log('--feature=<slug> is required.');
+    log('--feature=<slug> is required (--slug is accepted as an alias).');
     return { ok: false };
   }
 

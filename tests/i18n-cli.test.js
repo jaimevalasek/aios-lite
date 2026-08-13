@@ -77,6 +77,39 @@ test('help exposes review intelligence commands in every supported locale', asyn
   }
 });
 
+test('help expõe os comandos essenciais do ciclo de fechamento (A8)', async () => {
+  // A ausência destes no help levou à conclusão errada de que feature:close
+  // não existia (relatório A8) — cada um deve aparecer no help de en e pt-BR.
+  const commands = [
+    'feature:close',
+    'feature:archive',
+    'harness:init',
+    'harness:validate',
+    'harness:apply-validation',
+    'harness:approve',
+    'harness:reject',
+    'harness:status',
+    'gate:check',
+    'gate:approve',
+    'prototype:check',
+    'ac:test-audit',
+    'preflight',
+    'pulse:update',
+    'agent:done',
+    'dossier:add-finding',
+    'detect:test-runner',
+    'dev:resume-data'
+  ];
+
+  for (const locale of ['en', 'pt-BR']) {
+    const cli = await runCli(['help', `--locale=${locale}`]);
+    assert.equal(cli.code, 0, `help failed for ${locale}`);
+    for (const command of commands) {
+      assert.equal(cli.stdout.includes(`aioson ${command}`), true, `${command} missing from ${locale} help`);
+    }
+  }
+});
+
 test('help exposes the pentester scope pickers in every supported locale', async () => {
   for (const locale of ['en', 'pt-BR', 'es', 'fr']) {
     const cli = await runCli(['help', `--locale=${locale}`]);

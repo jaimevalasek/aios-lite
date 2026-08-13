@@ -202,7 +202,7 @@ function translateValidatorOutputToLastError(output) {
  */
 async function runHarnessApplyValidation({ args, options = {}, logger, t }) {
   const targetDir = path.resolve(process.cwd(), args[0] || '.');
-  const slug = String(options.slug || '').trim();
+  const slug = String(options.slug || options.feature || '').trim();
 
   if (!slug) {
     logger.error(t('errors.missing_slug') || 'Error: --slug is required');
@@ -311,7 +311,7 @@ function archiveValidatorOutput(planDir, inputPath) {
  */
 async function runHarnessValidate({ args, options = {}, logger, t }) {
   const targetDir = path.resolve(process.cwd(), args[0] || '.');
-  const slug = String(options.slug || '').trim();
+  const slug = String(options.slug || options.feature || '').trim();
 
   if (!slug) {
     logger.error(t('errors.missing_slug') || 'Error: --slug is required');

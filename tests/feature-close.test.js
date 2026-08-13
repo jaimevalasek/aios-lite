@@ -40,6 +40,18 @@ test('feature:close: requires --feature', async () => {
   assert.equal(result.reason, 'missing_feature');
 });
 
+test('feature:close: aceita --slug como alias de --feature (A10)', async () => {
+  const tmpDir = await makeTmpDir();
+  await writeFile(tmpDir, '.aioson/context/spec-checkout.md', '---\nversion: 1\n---\n# Spec\n');
+  const result = await runFeatureClose({
+    args: [tmpDir],
+    options: { json: true, slug: 'checkout', verdict: 'PASS' },
+    logger: makeLogger()
+  });
+  assert.equal(result.ok, true);
+  assert.equal(result.feature, 'checkout');
+});
+
 test('feature:close: requires valid --verdict', async () => {
   const tmpDir = await makeTmpDir();
   const result = await runFeatureClose({

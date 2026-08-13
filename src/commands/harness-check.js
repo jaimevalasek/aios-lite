@@ -43,7 +43,7 @@ function readProgressSignals(planDir) {
 }
 
 function resolveSlug(targetDir, options) {
-  const explicit = String(options.slug || '').trim();
+  const explicit = String(options.slug || options.feature || '').trim();
   if (explicit) return explicit;
   try {
     const active = findActiveContract(targetDir);

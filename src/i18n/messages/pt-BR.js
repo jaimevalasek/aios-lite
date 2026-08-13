@@ -241,6 +241,38 @@ module.exports = {
       'aioson harness:retro [path] --feature=<slug> | --last=<N> [--json] [--locale=pt-BR]',
     help_harness_preview:
       'aioson harness:preview <file> [--max-bytes=8192] [--json] [--locale=pt-BR]',
+    help_harness_apply_validation:
+      'aioson harness:apply-validation [path] --slug=<slug> [--input=<arquivo>] [--json] [--locale=pt-BR]',
+    help_harness_approve:
+      'aioson harness:approve [path] --slug=<slug> --gate=<gate-id> [--json] [--locale=pt-BR]',
+    help_harness_reject:
+      'aioson harness:reject [path] --slug=<slug> --gate=<gate-id> [--reason=<texto>] [--json] [--locale=pt-BR]',
+    help_harness_status:
+      'aioson harness:status [path] [--slug=<slug>] [--json] [--locale=pt-BR]',
+    help_feature_close:
+      'aioson feature:close [path] --feature=<slug> --verdict=PASS|FAIL [--residual=<texto>] [--preflight|--explain] [--force] [--no-archive] [--no-distill] [--json] [--locale=pt-BR]',
+    help_feature_archive:
+      'aioson feature:archive [path] --feature=<slug> [--dry-run] [--restore] [--sweep] [--force] [--json] [--locale=pt-BR]',
+    help_gate_check:
+      'aioson gate:check [path] --feature=<slug> --gate=A|B|C|D [--json] [--locale=pt-BR]',
+    help_gate_approve:
+      'aioson gate:approve [path] --feature=<slug> --gate=A|B|C|D [--json] [--locale=pt-BR]',
+    help_prototype_check:
+      'aioson prototype:check [path] --feature=<slug> [--json] [--locale=pt-BR]',
+    help_ac_test_audit:
+      'aioson ac:test-audit [path] --feature=<slug> [--strict] [--json] [--locale=pt-BR]',
+    help_preflight:
+      'aioson preflight [path] [--agent=<nome>] [--feature=<slug>] [--json] [--locale=pt-BR]',
+    help_pulse_update:
+      'aioson pulse:update [path] --agent=<nome> [--feature=<slug>] [--gate=<texto>] [--verdict=<texto>] [--locale=pt-BR]',
+    help_agent_done:
+      'aioson agent:done [path] --agent=<nome> --summary=<texto> [--title=<texto>] [--status=completed|failed] [--json] [--locale=pt-BR]',
+    help_dossier_add_finding:
+      'aioson dossier:add-finding [path] --slug=<slug> --agent=<nome> --section=<nome> --content=<texto> [--json] [--locale=pt-BR]',
+    help_detect_test_runner:
+      'aioson detect:test-runner [path] [--json] [--locale=pt-BR]',
+    help_dev_resume_data:
+      'aioson dev:resume-data [path] [--json] [--locale=pt-BR]',
     help_verification_plan:
       'aioson verification:plan [path] [--feature=<slug>] [--trigger=per-phase|end-of-feature|sensitive-surface] [--host=claude|codex|opencode] [--classification=MICRO|SMALL|MEDIUM] [--sensitive] [--json] [--locale=pt-BR]',
     help_delegation_plan:
