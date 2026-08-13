@@ -147,6 +147,8 @@ When the feature will run the compiled harness lane (`.aioson/plans/{slug}/harne
 - `Wave` is a positive integer execution group. Waves run in ascending order; phases sharing a wave run in parallel and must have disjoint `Files` — `spec:analyze` blocks compilation on `wave_file_overlap`.
 - Keep waves few; a wave with a single phase is valid. Shared integration files belong to a later solo wave, never to two phases of the same wave.
 
+When the feature has a detectable runtime surface (`.aioson/briefings/{slug}/prototype-manifest.md` exists, or the plan includes DB migrations), the harness contract is mandatory, not a deliberate opt-in: include one delivery step where DEV authors `.aioson/plans/{slug}/harness-contract.json` with the four `RG-*` runtime-gate criteria (`aioson harness:init . --slug={slug}` seeds TODO placeholders). `gate:check --gate=C`, `workflow:next --complete=dev|qa`, and `feature:close` enforce the same §2c gate — omitting the step surfaces the block at Gate C instead of at close.
+
 ## Feature dossier
 
 Read the active dossier when present and add the production entry point, reused boundaries, phases, and exact plan path in best effort. It is not a planning artifact or gate.

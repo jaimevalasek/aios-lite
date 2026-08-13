@@ -72,6 +72,29 @@ test('Gate C requires one complete implementation plan for SMALL and MEDIUM', as
   assert.match(result.recommendation, /@dev/);
 });
 
+test('Gate C bloqueia feature runtime detectável sem harness-contract (A5)', async () => {
+  const root = await tmp();
+  await seed(root, { status: 'pending' });
+  await write(root, '.aioson/briefings/demo/prototype-manifest.md', '# Core interactions\n');
+
+  const result = await runGateCheck({ args: [root], options: { json: true, feature: 'demo', gate: 'C' }, logger });
+  assert.equal(result.result, 'BLOCKED');
+  assert.ok(
+    result.missing.some((m) => m.includes('missing_runtime_contract')),
+    result.missing.join('\n')
+  );
+  const harnessEvidence = result.evidence.find((e) => e.type === 'harness_contract');
+  assert.equal(harnessEvidence.ok, false);
+  assert.ok(harnessEvidence.runtime_signals.includes('prototype-manifest'));
+
+  // com o contrato presente (stub RG-*) o gate de harness deixa de bloquear
+  const { runHarnessInit } = require('../src/commands/harness');
+  await runHarnessInit({ args: [root], options: { slug: 'demo' }, logger: { log() {}, error() {} }, t: () => undefined });
+  const after = await runGateCheck({ args: [root], options: { json: true, feature: 'demo', gate: 'C' }, logger });
+  const afterEvidence = after.evidence.find((e) => e.type === 'harness_contract');
+  assert.equal(afterEvidence.ok, true, JSON.stringify(afterEvidence.errors));
+});
+
 // AC-lineage-014
 test('Gate C routes review and lineage failures to their causal owners', async () => {
   const reviewRoot = await tmp();

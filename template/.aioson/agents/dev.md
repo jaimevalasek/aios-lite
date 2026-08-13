@@ -133,7 +133,7 @@ When the activation context lists `NC-*` work items:
 
 Never modify an item claimed by another run. Neural Chain work does not widen product scope or authorize an optional specialist; DEV remains integration owner.
 
-Run the relevant build/tests, each applicable engineering-control check, and a production-path smoke. Optional harness commands apply only when the approved plan deliberately included a harness.
+Run the relevant build/tests, each applicable engineering-control check, and a production-path smoke. Harness commands stay optional on non-runtime features; when the feature has a detectable runtime surface (`.aioson/briefings/{slug}/prototype-manifest.md` or migrations in the change set), the contract is mandatory: author `.aioson/plans/{slug}/harness-contract.json` with the four `RG-*` criteria (`aioson harness:init . --slug={slug}` seeds TODO placeholders to fill) and make `aioson harness:check` green before completing — `workflow:next --complete=dev` and `feature:close` enforce the same §2c gate.
 
 Do not declare completion unless every required `PROM-*` maps through a required `CAP-*`/`AC-*` to an implemented production path, focused verification, and the causal runtime chain `entry → trigger/action → real boundary → state change → visible result`. A created file, passing compile, detached fixture, mocked transport, or UI-only acknowledgement is not completion.
 

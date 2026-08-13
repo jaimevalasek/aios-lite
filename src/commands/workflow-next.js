@@ -1195,18 +1195,21 @@ async function finalizeCurrentStage(targetDir, config, state, stageName) {
         state.featureSlug,
         'harness-contract.json'
       );
-      // Harnesses are optional specialist evidence. If a feature deliberately
-      // declares one, keep enforcing it; never require a harness merely because
-      // the feature is SMALL/MEDIUM or has a prototype.
-      if (await exists(harnessContractPath)) {
-        const integrityGate = await evaluateContractIntegrityGate(targetDir, state.featureSlug, {
-          runChecks: true
-        });
-        if (!integrityGate.ok) {
-          const errMsg = formatContractIntegrityGateError(integrityGate, normalizedStage);
-          await logError(targetDir, normalizedStage, errMsg, 'harness-contract');
-          throw new Error(errMsg);
-        }
+      // Harnesses are optional specialist evidence on NON-runtime features.
+      // But when the framework detects a runtime surface deterministically
+      // (prototype-manifest / migrations), §2c makes the contract mandatory —
+      // and feature:close enforces exactly that. Evaluate the same gate here,
+      // missing-contract case included, so the block lands at @dev-done with
+      // an actionable message instead of surfacing four gates later at close
+      // (A5: the close-time discovery was the root cause of the rework).
+      const hasHarnessContract = await exists(harnessContractPath);
+      const integrityGate = await evaluateContractIntegrityGate(targetDir, state.featureSlug, {
+        runChecks: hasHarnessContract
+      });
+      if (!integrityGate.ok) {
+        const errMsg = formatContractIntegrityGateError(integrityGate, normalizedStage);
+        await logError(targetDir, normalizedStage, errMsg, 'harness-contract');
+        throw new Error(errMsg);
       }
 
       // ── Scope drift gate (absorbs @scope-check's deterministic spec:analyze) ──

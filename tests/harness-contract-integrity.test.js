@@ -267,6 +267,55 @@ test('workflow finalize blocks dev when runtime contract-integrity fails even if
   );
 });
 
+test('workflow finalize blocks dev when a detectable runtime feature has NO contract at all (A5)', async () => {
+  const tmp = await fs.mkdtemp(path.join(os.tmpdir(), 'aioson-hc-workflow-'));
+  const slug = 'runtime-missing';
+  // prototype-manifest presente, mas NENHUM harness-contract.json — antes desta
+  // correção o finalize só avaliava o gate quando o contrato existia, e o
+  // bloqueio só aparecia no feature:close, depois de tudo commitado.
+  const briefing = path.join(tmp, '.aioson', 'briefings', slug);
+  await fs.mkdir(briefing, { recursive: true });
+  await fs.writeFile(path.join(briefing, 'prototype-manifest.md'), '# Core\n- create board\n', 'utf8');
+
+  await fs.mkdir(path.join(tmp, '.aioson', 'context'), { recursive: true });
+  await fs.writeFile(
+    path.join(tmp, '.aioson', 'context', `prd-${slug}.md`),
+    `---\nclassification: MICRO\nproduct_scope: approved\nprd_ready: approved\n---\n# PRD\n\n## Feature Capability Map\n\n| CAP | Promised outcome | Actor / trigger | Scope decision | Rationale |\n|---|---|---|---|---|\n| CAP-${slug}-01 | Runtime result appears | User triggers action | required | Core promise |\n\n## Acceptance Criteria\n\n| AC | CAP | Observable behavior | Evidence |\n|---|---|---|---|\n| AC-${slug}-01 | CAP-${slug}-01 | Runtime result appears | focused test |\n`,
+    'utf8'
+  );
+  await fs.writeFile(
+    path.join(tmp, '.aioson', 'context', `implementation-plan-${slug}.md`),
+    `---\nstatus: approved\n---\n# Plan\n\n## Capability Delivery Plan\n\n| CAP | Phase | Files | Verification |\n|---|---|---|---|\n| CAP-${slug}-01 | 1 | src/runtime.js, tests/runtime.test.js | node --test tests/runtime.test.js |\n`,
+    'utf8'
+  );
+  await fs.writeFile(path.join(tmp, '.aioson', 'context', 'project-pulse.md'), 'pulse', 'utf8');
+  await fs.writeFile(path.join(tmp, '.aioson', 'context', 'dev-state.md'), 'state', 'utf8');
+  await fs.mkdir(path.join(tmp, 'src'), { recursive: true });
+  await fs.mkdir(path.join(tmp, 'tests'), { recursive: true });
+  await fs.writeFile(path.join(tmp, 'src', 'runtime.js'), 'module.exports = () => true;\n', 'utf8');
+  await fs.writeFile(
+    path.join(tmp, 'tests', 'runtime.test.js'),
+    `// AC-${slug}-01\nconst assert = require('node:assert/strict');\nassert.equal(require('../src/runtime')(), true);\n`,
+    'utf8'
+  );
+
+  const state = {
+    mode: 'feature',
+    featureSlug: slug,
+    classification: 'MICRO',
+    sequence: ['product', 'planner', 'dev', 'qa'],
+    completed: ['product', 'planner'],
+    skipped: [],
+    current: 'dev',
+    next: 'dev'
+  };
+
+  await assert.rejects(
+    () => finalizeCurrentStage(tmp, buildDefaultWorkflowConfig(), state, 'dev'),
+    /Harness Contract Gate BLOCKED[\s\S]*missing_runtime_contract/
+  );
+});
+
 // ───────────────────────── git-parity runtime detection ─────────────────────────
 
 test('gitChangedFiles: [] in a non-git dir, lists untracked files in a git repo', async () => {

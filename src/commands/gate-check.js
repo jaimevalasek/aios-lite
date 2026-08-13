@@ -123,6 +123,25 @@ async function checkGate(targetDir, slug, gateLetter) {
       reason: sheldonReview.reason || null
     });
     if (!sheldonReview.ok) missing.push(`Sheldon review: ${sheldonReview.message}`);
+
+    // §2c no plano (A5): uma feature runtime detectável (prototype-manifest /
+    // migrações) precisa do harness-contract com RG-* — descobrir isso só no
+    // feature:close custa o retrabalho inteiro. Avaliação estática apenas
+    // (runChecks:false): nada é executado no gate de plano.
+    const { evaluateContractIntegrityGate } = require('../harness/contract-integrity-gate');
+    const harnessGate = await evaluateContractIntegrityGate(targetDir, slug, { runChecks: false });
+    evidence.push({
+      type: 'harness_contract',
+      ok: harnessGate.ok,
+      has_contract: harnessGate.has_contract,
+      runtime_signals: (harnessGate.runtime && harnessGate.runtime.signals) || [],
+      errors: harnessGate.errors
+    });
+    if (!harnessGate.ok) {
+      for (const err of harnessGate.errors || []) {
+        missing.push(`harness contract [${err.code}]: ${err.message}`);
+      }
+    }
   }
 
   // Check prerequisites
@@ -375,10 +394,14 @@ async function runGateCheck({ args, options = {}, logger }) {
     }
   }
 
-  const qaEvidence = check.evidence.filter((e) => e.type === 'qa_signoff' || e.type === 'checkpoint' || e.type === 'gate_field' || e.type === 'ac_test_audit' || e.type === 'technical_gate');
+  const qaEvidence = check.evidence.filter((e) => e.type === 'qa_signoff' || e.type === 'checkpoint' || e.type === 'gate_field' || e.type === 'ac_test_audit' || e.type === 'technical_gate' || e.type === 'harness_contract');
   if (qaEvidence.length > 0) {
     for (const q of qaEvidence) {
       const icon = q.ok ? '  ✓' : '  ✗';
+      if (q.type === 'harness_contract') {
+        const signals = q.runtime_signals && q.runtime_signals.length ? ` (runtime: ${q.runtime_signals.join(', ')})` : '';
+        logger.log(`${icon} Harness contract: ${q.ok ? (q.has_contract ? 'valid' : 'not required') : 'blocking'}${signals}`);
+      }
       if (q.type === 'qa_signoff') logger.log(`${icon} QA sign-off: ${q.exists === false ? 'missing' : `verdict ${q.verdict || 'unclear'}`}`);
       if (q.type === 'checkpoint') logger.log(`  ✓ last_checkpoint: "${q.value}"`);
       if (q.type === 'gate_field') logger.log(`${icon} gate_execution: ${q.value}`);
