@@ -1,0 +1,5 @@
+# Markdown is measured (kernel/prompt budgets via content.length) and mirrored
+# byte-for-byte (template/ -> .aioson/ sync + parity tests). CRLF working
+# copies silently inflate those measurements and made stale-workspace masking
+# possible, so markdown is pinned to LF everywhere — index and checkout.
+*.md text eol=lf
