@@ -9,7 +9,7 @@
 
 ## Para que serve
 
-Sem processo explícito, cada sessão de IA inventa o seu próprio fluxo. O `@dev` começa a implementar antes de ter spec. O `@qa` testa antes de entender os ACs. O `@architect` decide stack sem ter visto os requisitos. O resultado é código que responde à pergunta errada, ou responde certo mas de um jeito que ninguém mais vai conseguir manter.
+Sem processo explícito, cada sessão de IA inventa o seu próprio fluxo. O `@dev` começa a implementar antes de ter PRD. O `@qa` testa antes de entender os ACs. A stack é escolhida antes de alguém ter olhado o que o produto precisa fazer. O resultado é código que responde à pergunta errada, ou responde certo mas de um jeito que ninguém mais vai conseguir manter.
 
 O SDD (Spec-Driven Development) é a metodologia que o AIOSON adota para garantir que cada agente trabalha na ordem certa, com o artefato certo, antes de prosseguir. Não é burocracia — é a estrutura mínima que evita retrabalho.
 
@@ -59,7 +59,7 @@ Specify → Research → Requirements → Design → Tasks → Execute → State
 O SDD escala a profundidade, não o número de documentos nem a cadeia:
 
 ```text
-[fontes → @briefing → @briefing-refiner → aprovação] → @product → @sheldon → @planner → @dev → @qa
+@briefing → @briefing-refiner → @product → @sheldon → @planner → @dev → @qa → @tester → @pentester
 ```
 
 - Briefing e Briefing Refiner são enquadramento opcional antes do PRD.

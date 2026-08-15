@@ -49,7 +49,7 @@ Estes agentes **não são etapas da esteira**. Você os chama para uma dúvida n
 | [@validator](./validator.md) | Verificação binária extra contra o contrato de sucesso, depois do QA | veredicto do harness |
 | [@discovery-design-doc](./discovery-design-doc.md) | Discovery + design doc, quando isso é o objetivo em si | `design-doc*.md` + `readiness*.md` |
 | [@forge-run](./forge-run.md) | Lane B: compila e roda o workflow de verificação executável de uma feature MEDIUM com contrato `verification` | `forge-run.workflow.js` |
-| **@shakedown** | Pente-fino pós-entrega, independente da spec *(ficha em construção)* | relatório de achados |
+| [@shakedown](./shakedown.md) | "O que está faltando que ninguém pensou em pedir?" — caminhada pós-entrega cega para a spec | `shakedown-{slug}.md` (punch list) |
 
 ---
 
@@ -79,7 +79,7 @@ Estes agentes **não são etapas da esteira**. Você os chama para uma dúvida n
 | [@design-hybrid-forge](./design-hybrid-forge.md) | Combina dois design skills num híbrido | Quer visual que não existe nos padrões | novo design skill |
 | [@orache](./orache.md) | Investigação de domínio e pesquisa estratégica | Antes de entrar num mercado novo | relatório de domínio |
 | [@copywriter](./copywriter.md) | Copy de conversão: landing pages, emails | Quando precisa de texto que converte | copy entregável |
-| **@benchmark** | Constrói, valida e pontua um app/jogo isolado de benchmark com prompt congelado *(ficha em construção)* | Comparar modelos ou versões do framework | run de benchmark |
+| [@benchmark](./benchmark.md) | Constrói e valida um app/jogo isolado a partir de um prompt congelado, sem fazer perguntas | Comparar modelos, harnesses ou versões do framework | app rodável + `benchmark-result.json` + `report.md` |
 
 ---
 

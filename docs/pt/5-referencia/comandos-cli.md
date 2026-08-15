@@ -515,7 +515,7 @@ Veja [Exploração visual e arena entre modelos](../3-receitas/arena-de-explorac
 |---|---|---|
 | `preflight` | Coleta modo, classificação, framework, test runner, artefatos, gates e prontidão em uma chamada | No início de qualquer sessão de agente |
 | `classify` | Detecta classificação MICRO/SMALL/MEDIUM por scoring automático do PRD ou entrada interativa | Antes de decidir o fluxo de agentes |
-| `sizing` | Determina modelo de sizing: `inplace`, `phased_inplace` ou `phased_external` | Quando o `@architect` ou `@analyst` precisa decidir a estrutura de entrega |
+| `sizing` | Determina modelo de sizing: `inplace`, `phased_inplace` ou `phased_external` | Quando o `@sheldon` ou o `@planner` precisa decidir a estrutura de entrega |
 | `detect:test-runner` | Detecta PHPUnit, Jest, Vitest, Pytest, RSpec, Forge e node:test via arquivos de config | Quando `@dev` ou `@tester` precisa saber como rodar os testes |
 | `pulse:update` | Atualiza `project-pulse.md` com agente, feature, gate e próximo passo | Ao final de cada sessão de agente |
 | `state:save` | Salva ponto de continuação em `dev-state.md` (fase, status, spec-version, histórico) | Durante `@dev` ao fim de cada fase ou antes de encerrar |
@@ -857,8 +857,8 @@ Importante:
 - `scan:project` sozinho nao gera `discovery.md`
 - `scan:project` nunca gera `architecture.md`
 - se `discovery.md` e `skeleton-system.md` ja existirem e voce rodar com `--with-llm`, o scanner agora entra em modo de atualizacao por padrao: usa os arquivos atuais como memoria base, gera a nova versao consolidada e cria backup automatico em `.aioson/backups/` antes de sobrescrever
-- em projetos SMALL brownfield, o fluxo tipico depois do scan completo e `@analyst` -> `@scope-check` -> `@architect` -> `@dev`
-- sem API LLM configurada, o fluxo local tambem e valido: `scan:project --folder=...` -> `@analyst` no seu Codex/Claude -> `@scope-check` -> `@architect` -> `@dev`
+- em projetos SMALL brownfield, o fluxo tipico depois do scan completo e `@product` -> `@sheldon` -> `@planner` -> `@dev`
+- sem API LLM configurada, o fluxo local tambem e valido: `scan:project --folder=...` -> `@discover` no seu Codex/Claude -> `@product` -> `@sheldon` -> `@planner` -> `@dev`
 
 O parâmetro `--folder` agora é obrigatório. Ele define quais pastas do projeto devem ganhar um mapa completo com pastas e arquivos. Você pode informar uma pasta ou várias separadas por vírgula.
 
@@ -910,10 +910,10 @@ Quando usar cada modo:
 
 Fluxos recomendados:
 
-- **Com API no aioson:** `scan:project --folder=src --with-llm --provider=...` -> `@analyst` -> `@scope-check` -> `@architect` -> `@dev`
-- **Sem API no aioson:** `scan:project --folder=src` -> abrir seu AI CLI -> `@analyst` -> `@scope-check` -> `@architect` -> `@dev`
+- **Com API no aioson:** `scan:project --folder=src --with-llm --provider=...` -> `@product` -> `@sheldon` -> `@planner` -> `@dev`
+- **Sem API no aioson:** `scan:project --folder=src` -> abrir seu AI CLI -> `@discover` -> `@product` -> `@sheldon` -> `@planner` -> `@dev`
 - **Com contexto mínimo para tarefa específica:** `scan:project --folder=src` -> `context:pack --agent=dev --goal="..." --module=src`
-- Se o seu cliente nao entender `@analyst`, gere um prompt pronto com `aioson agent:prompt analyst --tool=codex` ou troque `--tool` para o cliente correto
+- Se o seu cliente nao entender `@product`, gere um prompt pronto com `aioson agent:prompt product --tool=codex` ou troque `--tool` para o cliente correto
 
 Exemplo prático para reduzir carga no provider:
 
@@ -2050,7 +2050,7 @@ aioson gate:check . --feature=checkout --gate=C
 aioson gate:check . --feature=checkout --gate=plan --json
 ```
 
-Valida pré-requisitos e artefatos. Retorna PASS ou BLOCKED com lista de evidências. Use antes de acionar `@dev` após `@analyst`.
+Valida pré-requisitos e artefatos. Retorna PASS ou BLOCKED com lista de evidências. Use antes de acionar `@dev`, depois do plano aprovado pelo `@planner`.
 
 ### 47. Validar cadeia de artefatos
 
@@ -2120,7 +2120,7 @@ aioson workflow:execute . --feature=checkout --tool=claude
 # (o limite customizado vale somente se o manifesto da feature ainda não existir)
 aioson workflow:execute . --feature=checkout --tool=codex --agentic --max-dev-qa-cycles=2
 
-# Retomar do dev (pular product e analyst)
+# Retomar do dev (pular product, sheldon e planner)
 aioson workflow:execute . \
   --feature=checkout \
   --tool=claude \

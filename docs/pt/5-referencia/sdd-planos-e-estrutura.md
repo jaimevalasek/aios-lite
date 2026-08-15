@@ -34,13 +34,15 @@ projeto/
     │   ├── project.context.md      ← @setup
     │   ├── project-pulse.md        ← estado global (atualizado a cada sessão)
     │   ├── prd.md                  ← @product (projeto novo)
-    │   ├── prd-{slug}.md           ← @product (feature específica)
-    │   ├── sheldon-enrichment.md   ← @sheldon (histórico de enriquecimento)
-    │   ├── architecture.md         ← @analyst + @architect
-    │   ├── design-doc.md           ← @ux-ui
-    │   ├── tasks.md                ← @pm
+    │   ├── prd-{slug}.md           ← @product, selado pelo @sheldon
+    │   ├── implementation-plan-{slug}.md ← @planner
     │   ├── dev-state.md            ← @dev (continuidade de sessão)
-    │   ├── qa-report-{slug}.md      ← @qa
+    │   ├── qa-report-{slug}.md      ← @qa (Gate D)
+    │   ├── test-report-{slug}.md    ← @tester
+    │   ├── security-findings-*.json ← @pentester
+    │   ├── architecture.md          ← @architect (consultoria opt-in, só se pedida)
+    │   ├── design-doc-{slug}.md     ← @ux-ui (consultoria opt-in, só se pedida)
+    │   ├── tasks.md                ← @pm (consultoria opt-in, só se pedida)
     │   ├── features.md             ← registro de features (status por slug)
     │   └── parallel/               ← @orchestrator (lanes paralelas)
     │       ├── lane-backend.md

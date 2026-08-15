@@ -35,7 +35,7 @@ aioson dossier:init . --slug=checkout-stripe
            │
            ▼
 Agentes leem dossier antes de qualquer ação:
-@dev → @qa → @validator → @committer
+@dev → @qa → @committer
 ```
 
 O dossier é **auto-inicializado** quando você roda `aioson feature:close` ou `aioson workflow:next` — se ainda não existir para a feature em andamento, o sistema cria. Você também pode criar manualmente para features novas.

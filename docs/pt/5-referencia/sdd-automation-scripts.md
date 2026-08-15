@@ -22,7 +22,7 @@ Coleta todos os dados de pré-voo em uma chamada só: modo do projeto, classific
 
 | Flag | Descrição |
 |---|---|
-| `--agent=<name>` | Filtra prontidão para o agente específico (dev, qa, analyst…) |
+| `--agent=<name>` | Filtra prontidão para o agente específico (product, sheldon, planner, dev, qa…) |
 | `--feature=<slug>` | Slug da feature para procurar artefatos e gates |
 | `--json` | Saída estruturada JSON |
 
@@ -66,7 +66,7 @@ Detecta a classificação da feature (MICRO / SMALL / MEDIUM) automaticamente a 
 - **2–3:** SMALL — mesma rota, profundidade padrão
 - **4–6:** MEDIUM — mesma rota, mais detalhe nos riscos e integrações
 
-Rota: `[fontes → @briefing → @briefing-refiner → aprovação] → @product → @sheldon → @planner → @dev → @qa`.
+Esteira: `@briefing → @briefing-refiner → @product → @sheldon → @planner → @dev → @qa → @tester → @pentester`. A cadeia automática vai até o QA (Gate D); Tester e Pentester são o endurecimento habilitado por feature.
 
 **Flags:**
 
@@ -439,7 +439,8 @@ aioson workflow:execute . \
   },
   "steps": [
     { "agent": "product", "skip": false, "reason": "prd not found" },
-    { "agent": "analyst", "skip": false },
+    { "agent": "sheldon", "skip": false },
+    { "agent": "planner", "skip": false },
     { "agent": "dev", "skip": false },
     { "agent": "qa", "skip": false }
   ]
@@ -449,7 +450,7 @@ aioson workflow:execute . \
 **Exemplo com retomada:**
 
 ```bash
-# Feature travada em dev — pular product e analyst
+# Feature travada em dev — pular product, sheldon e planner
 aioson workflow:execute . \
   --feature=checkout \
   --tool=claude \

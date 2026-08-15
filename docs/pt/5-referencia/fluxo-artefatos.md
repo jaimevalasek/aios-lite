@@ -9,19 +9,25 @@
 Cada agente produz arquivos que os agentes subsequentes leem. Nenhum agente lê tudo de uma vez — cada um carrega apenas o que precisa. Este documento mapeia o que é criado, onde é salvo e quem consome o quê.
 
 ```
-@product → prd.md / prd-{slug}.md
+@briefing → briefing.md (fontes com hash + promessas PROM-*)
                ↓
-@sheldon (N rodadas) → enriquece PRD + gera sheldon-enrichment-{slug}.md
-                       pode criar .aioson/plans/{slug}/manifest.md + plan-{fase}.md
+@briefing-refiner → prototype.html (aprovado por você) + refinement-report.md
                ↓
-@analyst → lê sheldon-enrichment → discovery.md / requirements-{slug}.md + spec-{slug}.md
+@product → prd-{slug}.md (capacidades CAP-* + ACs observáveis + exclusões)
                ↓
-@scope-check → confronta intenção, plano e artefatos antes do código
-               roda spec:analyze (consistência cruzada) no preflight
-               gera scope-check-{slug}.md quando a feature é nomeada
+@sheldon → enriquece o MESMO prd-{slug}.md in-place e sela
+           (sheldon_review: approved + PASS vinculado ao hash)
                ↓
-@dev → carrega minimum context package → implementa fase por fase
+@planner → implementation-plan-{slug}.md (etapas verticais, arquivos, checks)
+               ↓
+@dev → carrega o minimum context package → implementa etapa por etapa
+               ↓
+@qa → qa-report-{slug}.md (Gate D)
+               ↓
+@tester → test-report-{slug}.md      @pentester → security-findings-*.json
 ```
+
+> **Dois artefatos mandam.** O PRD selado e o plano aprovado são suficientes para o handoff ao DEV. Não existe uma cadeia paralela de `requirements-*`, `spec-*`, `architecture.md`, `design-doc-*` ou `readiness-*`: o `@sheldon` é explicitamente proibido de criá-los, e a ausência deles não bloqueia nada.
 
 ---
 
@@ -38,48 +44,34 @@ O PRD produzido pelo @product é o **documento base vivo** — nenhum agente dow
 
 ---
 
-## O que @sheldon gera (pode rodar N vezes)
+## O que @sheldon gera
 
-@sheldon avalia o escopo total do PRD e decide como organizar o trabalho com base em um **score de complexidade**:
+Quase nada de novo — e isso é intencional. O `@sheldon` **edita o próprio `prd-{slug}.md`** e o sela:
 
-| Score | Decisão | O que é criado |
-|---|---|---|
-| 0–3 | Enriquecimento in-place | Expande o próprio `prd-{slug}.md` diretamente |
-| 4–6 | In-place + Delivery plan | Expande o PRD e adiciona `## Delivery plan` com fases numeradas dentro do arquivo |
-| 7+ | Plano externo | Cria `.aioson/plans/{slug}/manifest.md` + `plan-{slug-fase}.md` por fase |
+| Ação | Onde |
+|---|---|
+| Corrige ambiguidade e contradição | dentro do próprio `prd-{slug}.md` |
+| Preenche lacuna encontrada no confronto com fonte, protótipo e repositório | dentro do próprio `prd-{slug}.md` |
+| Recusa escopo especulativo | não escreve — devolve a decisão a você |
+| Sela a revisão | `sheldon_review: approved` + PASS vinculado ao hash atual do PRD |
 
-**Em todos os casos**, @sheldon gera:
-- `sheldon-enrichment-{slug}.md` (ou `sheldon-enrichment.md`) em `.aioson/context/` — log de cada rodada, decisões de gray areas, score e readiness
+**Pesquisas web** ficam em `researchs/{slug}/summary.md` — cache compartilhado com outros agentes.
 
-**No Modo C (validação completa)**, gera adicionalmente:
-- `sheldon-validation-{slug}.md` (projeto: `sheldon-validation.md`) — relatório de auditoria com gate por agente (🟢/🟡/🔴)
-- `.aioson/plans/{slug}/checklist.md` — checklist de implementação por fase
+> **O que o @sheldon nunca cria:** `requirements-*`, `spec-*`, `architecture.md`, `design-doc-*`, `readiness-*`, `implementation-plan-*`, `conformance-*` ou `.aioson/plans/{slug}/`. Isso é regra do agente, não convenção. A única exceção é reparar um `harness-contract.json` já existente quando o `@validator` reporta falha de integridade de contrato.
 
-**Pesquisas web (RF-WEB)** ficam em:
-- `researchs/{slug}/summary.md` — cache de 7 dias, compartilhado com outros agentes
-
-O campo `readiness` em `sheldon-enrichment-{slug}.md` define se o PRD está pronto:
-- `ready_for_downstream` → pode avançar para @analyst
-- `needs_work` → itens bloqueantes ainda abertos
-- `needs_enrichment` → sessão iniciada mas não concluída
+O selo é **vinculado ao hash**: se o PRD for editado depois da revisão, o PASS fica stale e o Sheldon precisa revisar de novo antes de o `@planner` seguir.
 
 ---
 
-## Como @analyst consome esses artefatos
+## O que @planner gera
 
-@analyst lê o arquivo de enrichment **silenciosamente** antes de iniciar qualquer pergunta:
+Um único `implementation-plan-{slug}.md`, lido a partir do PRD selado, do protótipo aprovado e do código atual. Cada etapa é **vertical** — entrega comportamento observável pelo usuário, não uma camada técnica — e nomeia:
 
-```
-Se sheldon-enrichment-{slug}.md existir:
-  → ler — não re-perguntar o que já está documentado
-  → se plan_path estiver setado: ler manifest e scopar discovery para Fase 1 primeiro
-```
+- os arquivos exatos que serão tocados;
+- o risco daquela etapa;
+- o check executável que prova que ela terminou.
 
-**Em modo feature**, @analyst produz:
-- `requirements-{slug}.md` — regras de negócio com IDs (`REQ-{slug}-N`), acceptance criteria verificáveis (`AC-{slug}-N`), edge cases e out-of-scope explícito
-- `spec-{slug}.md` — esqueleto de memória da feature com `phase_gates` no frontmatter
-
-O `spec-{slug}.md` é o **artefato de handoff para @dev** — ele inclui as decisões já tomadas, dependências e o status de cada gate (`requirements`, `design`, `plan`).
+É esse plano aprovado (Gate C) que autoriza o primeiro código.
 
 ---
 
@@ -89,22 +81,12 @@ O `spec-{slug}.md` é o **artefato de handoff para @dev** — ele inclui as deci
 
 | Modo | O que @dev carrega |
 |---|---|
-| Feature MICRO | `project.context.md` + `prd-{slug}.md` |
-| Feature SMALL/MEDIUM | `project.context.md` + `spec-{slug}.md` + `scope-check-{slug}.md` + `implementation-plan-{slug}.md` |
-| Feature com plano do Sheldon | `project.context.md` + `spec-{slug}.md` + `.aioson/plans/{slug}/manifest.md` + arquivo da fase atual |
-| Modo projeto | `project.context.md` + `spec.md` + `skeleton-system.md` |
+| Feature MICRO | `project.context.md` + `prd-{slug}.md` + `implementation-plan-{slug}.md` |
+| Feature SMALL/MEDIUM | `project.context.md` + `prd-{slug}.md` selado + `implementation-plan-{slug}.md` |
+| Feature com escopo visual | os anteriores + o protótipo aprovado e sua `## Visual direction` |
+| Simple Plan (rota curta) | `project.context.md` + o plano mínimo registrado pelo `@deyvin` |
 
-### Como o plano do Sheldon chega ao @dev
-
-Quando @sheldon criou um plano externo (score 7+):
-
-1. @dev detecta `.aioson/plans/*/manifest.md` antes de qualquer implementação
-2. Lê o `manifest.md` para saber qual fase está com `status: pending`
-3. Carrega **apenas o arquivo dessa fase** (ex: `plan-autenticacao.md`)
-4. Implementa a fase, marca como `done` no manifest
-5. Na próxima sessão, pega a próxima fase
-
-Decisões marcadas como `pre-tomadas` no manifest são **finais** — @dev não re-discute. Decisões `adiadas` são dele para tomar e registrar em `spec-{slug}.md`.
+Além disso, o DEV lê o briefing/refinamento aprovado e a revisão corrente do Sheldon para checar cobertura de fontes e delta de implementação.
 
 ### O controlador de estado entre sessões: `dev-state.md`
 
@@ -113,13 +95,11 @@ Decisões marcadas como `pre-tomadas` no manifest são **finais** — @dev não 
 ```markdown
 ---
 active_feature: {slug}
-active_phase: 2
-active_plan: .aioson/plans/{slug}/manifest.md
+active_stage: 2
 context_package:
   - .aioson/context/project.context.md
-  - .aioson/context/spec-{slug}.md
-  - .aioson/plans/{slug}/manifest.md
-  - .aioson/plans/{slug}/plan-autenticacao.md
+  - .aioson/context/features/{slug}/prd-{slug}.md
+  - .aioson/context/features/{slug}/implementation-plan-{slug}.md
 next_step: "Implementar migration da tabela users + teste RED"
 status: in_progress
 ---
@@ -134,9 +114,9 @@ Se `dev-state.md` existe, @dev carrega **exatamente** o `context_package` listad
 Regras duras — sem exceções:
 
 - Qualquer arquivo em `.aioson/agents/` — arquivos de agente nunca são contexto de @dev
-- `spec-{outro-slug}.md` — specs de features que não são a ativa
+- PRDs ou planos de features que não são a ativa
 - PRDs de features marcadas como `done` em `features.md`
-- `discovery.md` ou `architecture.md` a menos que estejam explicitamente no plano ou no `dev-state.md`
+- Pareceres de consultoria (`architecture.md`, `discovery.md`, `design-doc-*`) a menos que estejam explicitamente no plano ou no `dev-state.md`
 - Mais de 5 arquivos antes do primeiro código (auto-verificação: se leu 5 arquivos sem escrever nada → para e reporta)
 
 ---
@@ -157,18 +137,15 @@ Esta é a lista completa de arquivos que @dev pode consultar em qualquer sessão
 |---|---|
 | `project.context.md` | Sempre |
 | `dev-state.md` | Sempre (se existir — define o restante) |
+| `prd-{slug}.md` selado | Feature ativa |
+| `implementation-plan-{slug}.md` | Feature ativa |
 | `features.md` | Cold start apenas |
-| `spec-{slug}.md` | Feature ativa |
-| `scope-check-{slug}.md` | Antes da primeira implementação e após fixes relevantes |
-| `implementation-plan-{slug}.md` | Se plano existe |
-| `.aioson/plans/{slug}/manifest.md` + fase atual | Se plano Sheldon existe |
+| `briefing.md` / `refinement-report.md` | Para conferir cobertura de fontes e promessas |
+| `prototype.html` + `## Visual direction` | Quando a etapa toca UI |
+| `identity.md` | Quando a etapa toca UI e o PRD vincula identidade |
+| `.aioson/plans/{slug}/harness-contract.json` | Lane B / verificação executável |
 | `skeleton-system.md` | Só ao navegar estrutura do projeto |
-| `design-doc.md` | Só se listado no plano |
-| `readiness.md` | Só na primeira sessão de uma feature nova |
-| `architecture.md` | SMALL/MEDIUM, só se listado no plano |
-| `discovery.md` | SMALL/MEDIUM, só se listado no plano |
-| `prd-{slug}.md` | Só na primeira sessão de uma feature nova |
-| `ui-spec.md` | Só ao implementar componentes de UI |
+| `architecture.md`, `discovery.md`, `design-doc-*`, `ui-spec.md` | Pareceres de consultoria — só se listados no plano |
 
 ---
 

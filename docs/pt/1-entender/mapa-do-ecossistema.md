@@ -112,7 +112,7 @@ Simple Plan termina no Dev e não vira feature rastreada silenciosamente.
 | **`@orchestrator`** | Coordenação de execução genuinamente paralela ou cross-cutting |
 | **`@validator`** | Verificação binária extra contra o contrato de sucesso |
 | **`@discovery-design-doc`** | Discovery + design doc, quando isso é o objetivo em si |
-| **`@shakedown`** | Pente-fino pós-entrega, independente da spec |
+| **`@shakedown`** | "O que está faltando que ninguém pensou em pedir?" — pente-fino pós-entrega, cego para a spec na primeira passada |
 
 ### 4. Continuidade e entrega
 

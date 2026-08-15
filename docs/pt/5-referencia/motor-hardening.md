@@ -171,36 +171,41 @@ Cada agente tem um **contrato de saída** que define:
 
 Antes de qualquer transição de estágio, o motor valida esse contrato.
 
-### Exemplo: @analyst → @architect
+### Exemplo: @sheldon → @planner
 
-Para `@analyst` finalizar, o motor verifica:
-- `requirements-{slug}.md` existe?
-- `spec-{slug}.md` existe?
-- Gate A (requirements) está `approved`?
+Para `@sheldon` finalizar, o motor verifica:
+- `sheldon_review: approved` no PRD?
+- Existe um PASS do Sheldon **vinculado ao hash atual** do PRD (isto é, emitido depois da última edição)?
 
 Se faltar algo, o erro é:
 
 ```
 [Handoff Contract BLOCKED]
-Stage: @analyst
+Stage: @sheldon
 Missing deliverables:
-  - gate A not approved (gate_requirements_not_approved)
+  - sheldon PASS is stale (PRD edited after review)
 
 Complete these items before finishing the stage.
 ```
 
 ### Tabela de contratos por agente
 
-| Agente | Artefatos obrigatórios | Gates |
+Estes são os contratos da esteira. Cada linha corresponde a uma fase de `@briefing → @briefing-refiner → @product → @sheldon → @planner → @dev → @qa → @tester → @pentester`.
+
+| Agente | Artefatos obrigatórios | Gate |
 |---|---|---|
 | `@setup` | `project.context.md` | — |
-| `@product` | `prd.md` ou `prd-{slug}.md` | — |
-| `@analyst` | `requirements-{slug}.md`, `spec-{slug}.md` | A |
-| `@architect` | `architecture.md` | B |
-| `@ux-ui` | `ui-spec.md` | B |
-| `@planner` | `implementation-plan-{slug}.md` | — |
-| `@dev` | — (código) | C |
-| `@qa` | — (testes/relatório) | D |
+| `@briefing` | `briefing.md` com fontes e `PROM-*` | — |
+| `@briefing-refiner` | `prototype.html` com `prototype_status: current` e aprovação sua | — |
+| `@product` | `prd-{slug}.md` com `CAP-*` e ACs observáveis | escopo/prontidão |
+| `@sheldon` | o mesmo PRD, enriquecido | `sheldon_review: approved` + PASS vinculado ao hash |
+| `@planner` | `implementation-plan-{slug}.md` com etapas verticais | C |
+| `@dev` | — (código pela rota de produção) + `dev-state.md` | — |
+| `@qa` | `qa-report-{slug}.md` com evidência por CAP/AC | **D** |
+| `@tester` | `test-report-{slug}.md` | — (não concede D) |
+| `@pentester` | `security-findings-*.json` | — (não concede D) |
+
+> **Nenhum documento de requirements, spec, design, readiness, conformance ou harness é pré-requisito canônico.** `requirements-{slug}.md`, `architecture.md`, `ui-spec.md` e `design-doc-{slug}.md` continuam sendo *reconhecidos* pelo seletor de contexto quando existem, mas são saídas opcionais de consultoria — a ausência deles não bloqueia estágio nenhum. As consultorias (`@analyst`, `@architect`, `@ux-ui`, `@pm`) não têm contrato de handoff porque não são estágios.
 
 ---
 
@@ -216,13 +221,13 @@ Agentes frequentemente criavam arquivos no lugar errado:
 
 O arquivo `.aioson/context/project-map.md` define os **caminhos canônicos** do projeto.
 
-Ele é carregado automaticamente nos prompts de agentes de implementação (`@dev`, `@architect`, `@ux-ui`, `@qa`, `@tester`, `@committer`).
+Ele é carregado automaticamente nos prompts de agentes de implementação (`@dev`, `@qa`, `@tester`, `@pentester`, `@committer`).
 
 ### Exemplo de project-map.md
 
 ```markdown
 ---
-agents: [dev, architect, ux-ui, qa, tester, committer]
+agents: [dev, qa, tester, pentester, committer]
 ---
 
 # Canonical Project Map

@@ -62,10 +62,11 @@ São os artefatos que os agentes criam ao longo do workflow. São a "memória of
 |---|---|---|
 | `project.context.md` | `@setup` | Stack, classificação, idioma, framework |
 | `project-pulse.md` | todos (atualizado a cada sessão) | Estado global vivo do projeto |
-| `architecture.md` | `@analyst`, `@architect` | Entidades de domínio + decisões técnicas |
-| `prd.md` / `spec.md` | `@product` | Escopo, ACs, fora-de-escopo |
-| `design-doc.md` | `@ux-ui` | Specs de componentes, design tokens |
-| `tasks.md` | `@pm` | Backlog, user stories |
+| `prd-{slug}.md` | `@product`, selado pelo `@sheldon` | Capacidades `CAP-*`, ACs, fora-de-escopo |
+| `implementation-plan-{slug}.md` | `@planner` | Etapas verticais, arquivos, checks |
+| `architecture.md` | `@architect` (consultoria opt-in) | Decisões técnicas de uma dúvida nomeada |
+| `design-doc-{slug}.md` | `@ux-ui` (consultoria opt-in) | Specs de componentes, design tokens |
+| `tasks.md` | `@pm` (consultoria opt-in) | Backlog, user stories |
 | `dev-state.md` | `@dev` | O que foi implementado, status |
 | `qa-report-{slug}.md` | `@qa` | Veredito, evidência executável e smoke pelo caminho real |
 | `test-report-{slug}.md` | `@tester` (opt-in) | Cobertura adicional, correções limitadas e riscos residuais |
