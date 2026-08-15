@@ -139,6 +139,16 @@ const CARD_CLASS = /\b(card|panel|tile|widget)\b/i;
 const EMOJI_GLYPH = /[\u{1F1E6}-\u{1F1FF}\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu;
 const EMOJI_ALLOWED = new Set(['✓', '✔', '✕', '✖', '✗', '✘', '★', '☆']);
 
+// Spaced em dashes in prose position — the most recognizable model-writing
+// cadence. Scattered microcopy (toasts, placeholders, tour steps, seeded mock
+// data) hides it from sentence-level review: each instance reads as one
+// deliberate em dash while the corpus saturates, so the check counts the whole
+// surface. Code punctuation never spaces an em dash, which keeps the lexical
+// count near-zero false positive. Warning tier with a threshold: a couple of
+// deliberate interruptions are legitimate typography.
+const EM_DASH_PROSE = /\s—\s/g;
+const EM_DASH_PROSE_THRESHOLD = 4;
+
 // Prototype affordance markers. `data-aioson-id` is the build contract's anchor
 // attribute, so its presence identifies an AIOSON prototype; only then are the
 // tour and primary-feature markers expected.
@@ -311,6 +321,29 @@ function emojiGlyphs(text) {
 }
 
 /**
+ * Spaced em dashes across the visible corpus, with short context samples.
+ * Styles are removed first (CSS is never user-visible prose) and HTML/JS
+ * comments are stripped (commented-out text is not on the surface); script
+ * string/template content stays in — that is where SPA copy and seed data live.
+ */
+function emDashProse(html) {
+  const noComments = stripHtmlComments(html);
+  const noStyles = noComments.replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, '\n');
+  const corpus = noStyles.replace(
+    /(<script\b[^>]*>)([\s\S]*?)(<\/script>)/gi,
+    (all, open, body, close) => `${open}${stripJsComments(body)}${close}`
+  );
+  const count = (corpus.match(EM_DASH_PROSE) || []).length;
+  const samples = [];
+  const sampleRe = /([^\s—][^\n—]{0,21})?\s—\s(?:([^\n—]{0,21}[^\s—]))?/g;
+  let m;
+  while (samples.length < 3 && (m = sampleRe.exec(corpus))) {
+    samples.push(`${m[1] || ''} — ${m[2] || ''}`.replace(/\s+/g, ' ').trim());
+  }
+  return { count, samples };
+}
+
+/**
  * Measure one HTML+CSS corpus.
  *
  * @param {{html?: string, css?: string}} sources
@@ -388,6 +421,7 @@ function analyzeVisualSources({ html = '', css = '' } = {}) {
   const mediaElements = (markup.match(/<(img|video|canvas|picture)\b/gi) || []).length;
   const cardWall = maxCardSiblingRun(markup);
   const emoji = emojiGlyphs(markup);
+  const emDash = emDashProse(markup);
 
   // ── prototype affordances ────────────────────────────────────────────────
   const isPrototype = PROTOTYPE_ANCHOR.test(markup);
@@ -442,6 +476,7 @@ function analyzeVisualSources({ html = '', css = '' } = {}) {
     max_card_sibling_run: cardWall.run,
     card_sibling_class: cardWall.className,
     emoji_glyphs: emoji,
+    em_dash_prose: emDash.count,
     prototype_anchors: isPrototype,
     primary_marker: hasPrimaryMarker,
     tour_marker: hasTourMarker,
@@ -508,6 +543,10 @@ function analyzeVisualSources({ html = '', css = '' } = {}) {
     const sample = emoji.slice(0, 6).join(' ');
     warnings.push(`${emoji.length} emoji glyph(s) in the UI corpus (${sample}${emoji.length > 6 ? ' …' : ''}) — emoji standing in for icons is a slop marker; use the icon set. Emoji inside seeded mock content is fine — judge in context`);
   }
+  if (emDash.count >= EM_DASH_PROSE_THRESHOLD) {
+    const sample = emDash.samples.map((s) => `"${s}"`).join(', ');
+    warnings.push(`${emDash.count} spaced em dash(es) across UI copy and mock content (${sample}${emDash.count > emDash.samples.length ? ', …' : ''}) — repeated em-dash cadence is a model-writing tell; keep a deliberate few and rewrite the rest with periods, colons, or shorter sentences. Quotations stay verbatim — judge in context`);
+  }
   if (cardWall.run >= 8) {
     warnings.push(`${cardWall.run} consecutive sibling cards share class "${cardWall.className}" — a uniform card wall is the replaceability test failing in markup; vary the composition or collapse to rows`);
   }
@@ -532,6 +571,7 @@ module.exports = {
   maxCardNesting,
   maxCardSiblingRun,
   emojiGlyphs,
+  emDashProse,
   stripComments,
   stripHtmlComments,
   stripJsComments,

@@ -6,7 +6,7 @@ const fs = require('node:fs/promises');
 const os = require('node:os');
 const path = require('node:path');
 
-const { analyzeVisualSources, maxCardNesting } = require('../src/lib/visual-telemetry');
+const { analyzeVisualSources, maxCardNesting, emDashProse } = require('../src/lib/visual-telemetry');
 const { runVerifyArtifact, availableKinds } = require('../src/commands/verify-artifact');
 const { runPrototypeCheck } = require('../src/commands/prototype-check');
 
@@ -407,6 +407,40 @@ test('emoji-as-icon, uniform card walls, and prototype affordance markers are me
     )
   });
   assert.doesNotMatch(complete.warnings.join('\n'), /data-aioson-primary|data-aioson-tour/);
+});
+
+test('em-dash cadence: copy and seed strings are counted; CSS, comments, and code punctuation are not', () => {
+  const html = `<!doctype html><html><head><style>
+  /* Tokens — brand section */ .a { color: #fff; }
+  </style></head><body>
+  <!-- layout — rationale note -->
+  <p>Deck vazio — sem resgates</p>
+  <input placeholder="Ex.: Live #44 — Perguntas">
+  <script>
+  // comment — not copy
+  const url = 'https://x.test/a—b';
+  const seed = [{ t: 'Abertura — o que é' }, { n: 'Falar devagar — é o coração' }];
+  </script></body></html>`;
+  const { count, samples } = emDashProse(html);
+  assert.equal(count, 4, 'two markup instances plus two seed strings; CSS/HTML/JS comments and the unspaced URL stay out');
+  assert.equal(samples.length, 3);
+  assert.match(samples[0], /Deck vazio — sem resgates/);
+});
+
+test('em-dash cadence: the corpus threshold warns on saturation and stays silent on deliberate use', () => {
+  const withCopy = (copy) => CLEAN.replace('Aprovar pedido', copy);
+
+  // Three spaced em dashes: legitimate typographic territory — no warning.
+  const deliberate = analyzeVisualSources({ html: withCopy('a — b</button><p>c — d</p><p>e — f</p><button>ok') });
+  assert.equal(deliberate.metrics.em_dash_prose, 3);
+  assert.doesNotMatch(deliberate.warnings.join('\n'), /em dash/);
+
+  // Four and up: the scattered-microcopy saturation the sentence-level rule
+  // can never see, reported with samples so the rewrite is directed.
+  const saturated = analyzeVisualSources({ html: withCopy('a — b</button><p>c — d</p><p>e — f</p><p>g — h</p><button>ok') });
+  assert.equal(saturated.metrics.em_dash_prose, 4);
+  assert.match(saturated.warnings.join('\n'), /4 spaced em dash\(es\) across UI copy and mock content/);
+  assert.match(saturated.warnings.join('\n'), /model-writing tell/);
 });
 
 test('kind=visual scans a front-end directory and skips vendored trees', async () => {

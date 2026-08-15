@@ -272,6 +272,20 @@
       "see": ["vq-003", "vq-016"]
     },
     {
+      "id": "vq-019",
+      "title": "Copy cadence is budgeted across the whole surface, not per sentence",
+      "tags": ["visual-quality", "anti-slop", "ui", "copy", "prototype"],
+      "q": 5,
+      "v": "AVOID",
+      "s": "Microcopy is where em-dash cadence hides from sentence-level review: toasts, placeholders, empty states, tour steps, and seeded mock data each read as one deliberate em dash while the surface accumulates dozens. Budget the aggregate — the telemetry's em_dash_prose metric is the whole-corpus count — and rewrite with periods, colons, or two short sentences. Seed content must read like something a real user typed, which almost never carries the em-dash aside.",
+      "p": "judge the corpus count (em_dash_prose), never each sentence in isolation; seed data sounds like a user, not like the model",
+      "src": "AIOSON supervised briefing session: a prototype cleared every visual gate carrying sixty em dashes across its copy and seed data",
+      "date": "2026-08-15",
+      "not": "Excusing each toast, placeholder, and seed title as an occasional em dash with intent while the corpus count reads saturation",
+      "warn": "Quotations, code, commands, and established brand punctuation stay verbatim. vq-002 owns the sentence-level rhythm test; this node owns the corpus budget.",
+      "see": ["vq-002", "vq-016"]
+    },
+    {
       "id": "sq-001",
       "title": "Replaceability test for a generic specification and prose",
       "tags": ["spec-quality", "anti-slop", "prd", "specification"],
