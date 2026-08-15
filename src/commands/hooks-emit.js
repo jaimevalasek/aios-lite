@@ -15,6 +15,7 @@
 const path = require('node:path');
 const fs = require('node:fs/promises');
 const { execFileSync } = require('node:child_process');
+const { resolveProjectRoot } = require('../lib/project-root');
 const {
   openRuntimeDb,
   resolveRuntimePaths,
@@ -50,14 +51,35 @@ function readStdin() {
   return new Promise((resolve) => {
     let data = '';
     if (process.stdin.isTTY) { resolve(null); return; }
-    process.stdin.setEncoding('utf8');
-    process.stdin.on('data', (chunk) => { data += chunk; });
-    process.stdin.on('end', () => {
-      try { resolve(JSON.parse(data)); }
-      catch { resolve(null); }
-    });
+
+    let settled = false;
+    const onData = (chunk) => { data += chunk; };
+
+    // Settle once, then stop holding the event loop open: a flowing stdin with
+    // live listeners keeps the process alive after the hook is done, which
+    // strands the harness (and hangs any in-process caller, such as a test).
+    const finish = (value) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      process.stdin.off('data', onData);
+      process.stdin.off('end', onEnd);
+      process.stdin.pause();
+      resolve(value);
+    };
+
+    function onEnd() {
+      try { finish(JSON.parse(data)); }
+      catch { finish(null); }
+    }
+
     // Timeout: don't block if stdin is empty
-    setTimeout(() => resolve(null), 500);
+    const timer = setTimeout(() => finish(null), 500);
+    if (typeof timer.unref === 'function') timer.unref();
+
+    process.stdin.setEncoding('utf8');
+    process.stdin.on('data', onData);
+    process.stdin.on('end', onEnd);
   });
 }
 
@@ -194,7 +216,17 @@ async function appendLiveEventFile(runtimeDir, runKey, event) {
 }
 
 async function runHooksEmit({ args, options = {} }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  // The hook fires with the SHELL's cwd, which any `cd` during the session
+  // moves — it is a starting point for discovery, never the project root
+  // itself. Walk up to the real root so telemetry lands in one store.
+  const startDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveProjectRoot(startDir);
+
+  // Hooks attach to an existing project; they never scaffold one. Outside any
+  // AIOSON project this is a silent no-op instead of a new `.aioson/runtime/`
+  // in whatever directory happened to be current.
+  if (!targetDir) return { ok: true, skipped: true, reason: 'no-project-root' };
+
   const agentName = options.agent ? String(options.agent).replace(/^@/, '') : 'dev';
   const source = options.source ? String(options.source).trim() : 'claude';
 

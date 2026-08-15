@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { buildGuardResponse } = require('../context-guard');
 const { normalizeAgentName } = require('../agents');
+const { resolveProjectRootOrSelf } = require('../lib/project-root');
 
 // `aioson context:guard [path] --tool=claude [--json]`
 //
@@ -12,7 +13,9 @@ const { normalizeAgentName } = require('../agents');
 // payload (or an empty object when no project rule is salient). Always exits 0 —
 // it is advisory and must never block the host harness.
 async function runContextGuard({ args, options = {}, logger }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  // `$PWD` from the hook is a starting point, not the project root — resolve
+  // upward so rules are read from the project that actually owns the edit.
+  const targetDir = resolveProjectRootOrSelf(path.resolve(process.cwd(), args[0] || '.'));
   const event = await resolveEvent(args, options);
 
   let response;

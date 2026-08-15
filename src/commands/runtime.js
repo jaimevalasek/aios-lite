@@ -2,6 +2,7 @@
 
 const fs = require('node:fs/promises');
 const path = require('node:path');
+const { resolveProjectRootOrSelf } = require('../lib/project-root');
 const {
   resolveRuntimePaths,
   openRuntimeDb,
@@ -35,8 +36,13 @@ const {
 const ALLOWED_LAYOUTS = new Set(['document', 'tabs', 'accordion', 'stack', 'mixed']);
 const DEFAULT_TEXT_FIELDS = ['content', 'text', 'body', 'lyrics', 'markdown'];
 
+// Runtime commands are invoked both by the user (cwd is usually the project
+// root) and by harness hooks passing `$PWD` (cwd is wherever the session last
+// `cd`-ed). Resolving `.aioson/` relative to a subdirectory forks the runtime
+// store, so walk up to the real root first; outside any project the resolved
+// directory stands, keeping scaffolding-from-scratch legitimate.
 function resolveTargetDir(args) {
-  return path.resolve(process.cwd(), args[0] || '.');
+  return resolveProjectRootOrSelf(path.resolve(process.cwd(), args[0] || '.'));
 }
 
 function requireOption(options, key, t) {

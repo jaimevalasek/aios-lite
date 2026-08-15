@@ -50,8 +50,12 @@ function shellQuote(value) {
   return `'${String(value).replace(/'/g, `'\\''`)}'`;
 }
 
+// `$PWD` is the SHELL's working directory when the hook fires — NOT the project
+// directory. Any `cd` during the session moves it, so every command below treats
+// it as a starting point and walks up to the nearest `.aioson/` (see
+// `src/lib/project-root.js`). Commands that write refuse to run outside a
+// project rather than scaffolding a store in whatever directory was current.
 function makeEmitCommand(agentName, source) {
-  // $PWD is the project directory at hook execution time
   return `aioson hooks:emit "$PWD" --agent=${shellQuote(agentName)} --source=${shellQuote(source)} 2>/dev/null || true`;
 }
 
