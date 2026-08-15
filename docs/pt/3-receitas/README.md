@@ -6,19 +6,27 @@ Cada receita é um guia end-to-end com diálogos simulados, exemplos rodáveis e
 
 Estas três trilhas mostram **como features chegam ao desenvolvimento** no AIOSON. Você quase sempre cai em uma delas.
 
-| Trilha | Quando usar | Agentes-chave |
+A esteira completa é sempre a mesma — o que muda é por onde você entra nela:
+
+```text
+@briefing → @briefing-refiner → @product → @sheldon → @planner → @dev → @qa → @tester → @pentester
+```
+
+| Trilha | Quando usar | Onde você entra |
 |---|---|---|
-| **[Feature completa com revisão do @sheldon](./feature-completa-com-sheldon.md)** | Você tem uma direção de produto e quer a rota canônica | `@product → @sheldon → @planner → @dev → @qa` |
-| [Da ideia ao PRD via @briefing](./da-ideia-ao-prd-via-briefing.md) | Sua ideia ainda é vaga, várias anotações soltas | `[@briefing → @briefing-refiner] → @product` |
-| [Plans externos para @product](./plans-externos-para-product.md) | Você já planejou em outro chat (ChatGPT, Claude.io Web) | @product (lê `/plans/`) |
+| [Da ideia ao PRD via @briefing](./da-ideia-ao-prd-via-briefing.md) | Sua ideia ainda é vaga, várias anotações soltas | Do começo: `@briefing → @briefing-refiner → @product` |
+| **[Feature completa com revisão do @sheldon](./feature-completa-com-sheldon.md)** | Você tem uma direção de produto clara | Direto no PRD: `@product → @sheldon → @planner → @dev → @qa` |
+| [Plans externos para @product](./plans-externos-para-product.md) | Você já planejou em outro chat (ChatGPT, Claude.io Web) | `@product` lendo `/plans/` |
+
+> **E para uma mudança pequena?** Não puxe a esteira. Chame `@deyvin` — a rota curta (Simple Plan) confirma o escopo, registra um plano mínimo, implementa e verifica. Ver [Continuidade entre sessões](./continuidade-entre-sessoes.md).
 
 ## Receitas por cenário
 
 | Receita | Cenário | Agentes principais |
 |---|---|---|
-| [Landing page](./landing-page.md) | Criar página de apresentação com copy e design | @product, @copywriter, @ux-ui, @dev, @qa |
-| [App SaaS do zero](./app-saas-do-zero.md) | SaaS completo: auth, billing Stripe, admin | Workflow canônico em profundidade MEDIUM |
-| [Integração em codebase grande](./integracao-em-codebase-grande.md) | Instalar AIOSON em legado de 10k–100k linhas | @discover, @analyst |
+| [Landing page](./landing-page.md) | Criar página de apresentação com copy e design | @briefing-refiner, @copywriter, @product, @dev, @qa |
+| [App SaaS do zero](./app-saas-do-zero.md) | SaaS completo: auth, billing Stripe, admin | Esteira completa em profundidade MEDIUM |
+| [Integração em codebase grande](./integracao-em-codebase-grande.md) | Instalar AIOSON em legado de 10k–100k linhas | @discover + esteira |
 | [Refatoração grande](./refatoracao-grande.md) | Reescrever módulo crítico sem quebrar nada | @sheldon, @tester, @dev, @qa |
 | [Auditoria de segurança](./auditoria-seguranca.md) | Revisar vulnerabilidades antes de produção | @pentester |
 | [Publicar no aioson.com](./publicar-no-aioson-com.md) | Distribuir squad, skill ou genome | system:package, system:publish |

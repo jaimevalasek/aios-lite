@@ -40,12 +40,12 @@ Você > @neo
        dev-state.md: 3/6 steps concluídos, próximo: implementar webhook Stripe
 
        Estado:
-       ✓ product — spec criada
-       ✓ analyst — domain map OK
-       ✓ architect — decisões registradas
+       ✓ product — PRD criado (4 capacidades CAP-*)
+       ✓ sheldon — PRD selado, PASS vinculado ao hash
+       ✓ planner — plano vertical em 6 etapas, Gate C aprovado
        → dev — EM ANDAMENTO (retomar com @deyvin)
-       · qa — pendente
-       · validator — pendente
+       · qa — pendente (Gate D)
+       · tester / pentester — só depois do PASS, se habilitados
 
        Recomendação: @deyvin para retomar a implementação.
        Alternativas: @sheldon (revisar spec antes), @pentester (audit antecipado).

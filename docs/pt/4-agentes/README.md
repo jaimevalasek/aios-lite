@@ -4,41 +4,62 @@
 > Cada agente tem sua ficha — clique no nome para detalhes.
 > `@pair` é alias de `@deyvin` e não possui ficha separada.
 
-> **As colunas "Quando invocar" descrevem capacidades, não a ordem obrigatória.** A rota de feature é `[fontes → @briefing → @briefing-refiner → aprovação] → @product → @sheldon → @planner → @dev → @qa`. O bloco entre colchetes é opcional; quando iniciado, precisa ser concluído e aprovado. MICRO, SMALL e MEDIUM mudam profundidade e orçamento, não a cadeia. Especialistas entram somente sob pedido explícito ou por uma necessidade nomeada. Veja [Autopilot Handoff](../5-referencia/autopilot-handoff.md).
+> **As colunas "Quando invocar" descrevem capacidades, não a ordem obrigatória.**
 
 ---
 
-## Núcleo de desenvolvimento (neste diretório)
+## A esteira principal
 
-| Agente | Para que serve | Quando invocar | Saída principal |
+```text
+@briefing → @briefing-refiner → @product → @sheldon → @planner → @dev → @qa → @tester → @pentester
+```
+
+Esta é a cadeia que constrói feature, em ciclo. MICRO, SMALL e MEDIUM percorrem a mesma ordem — a classificação muda profundidade, orçamento e cobertura de risco, não a sequência.
+
+| # | Agente | Para que serve | Saída principal |
 |---|---|---|---|
-| [@product](./product.md) | Define visão, PRD e escopo da feature | Início de projeto ou nova feature | `prd-{slug}.md` |
-| [@analyst](./analyst.md) | Descobre domínio, entidades, fluxos | Consultoria explícita quando há dúvida de domínio | análise no PRD ou artefato consultivo |
-| [@scope-check](./scope-check.md) | Confronta intenção, plano e entrega como parecer consultivo | Somente sob pedido explícito; checks determinísticos não ativam o agente | `scope-check.md` |
-| [@architect](./architect.md) | Decide stack, estrutura, integração técnica | Consultoria explícita para uma decisão arquitetural aberta | registro da decisão ou parecer |
-| [@ux-ui](./ux-ui.md) | Design system e specs de componentes | Detour opt-in para specs UI-heavy | `design-doc.md`, `discovery.md` |
-| [@pm](./pm.md) | Consultoria de backlog e priorização | Sob pedido explícito; não substitui `@planner` | parecer ou backlog consultivo |
-| [@sheldon](./sheldon.md) | Revisa criticamente e sela o PRD em vigor | Obrigatório após `@product` e antes de `@planner` | o mesmo `prd-{slug}.md` + PASS atual vinculado ao hash |
-| [@planner](./planner.md) | Transforma o PRD aprovado em etapas verticais executáveis | Sempre antes de implementação significativa | `implementation-plan-{slug}.md` |
-| [@orchestrator](./orchestrator.md) | Coordena uma sessão ou especialistas quando solicitado | Somente sob pedido explícito | coordenação e handoffs |
-| [@dev](./dev.md) | Implementa e integra a feature | Após o plano aprovado | código + `dev-state.md` |
-| [@qa](./qa.md) | Revisão final proporcional e independente | Após `@dev` | `qa-report-{slug}.md` |
-| [@validator](./validator.md) | Verifica contrato binário quando habilitado | Especialista opt-in após QA | veredicto do harness |
-| [@forge-run](./forge-run.md) | Lane B opt-in: compila e roda o workflow de verificação executável de uma feature MEDIUM | MEDIUM com contrato `verification` + plano com Wave | `forge-run.workflow.js` |
-| [@tester](./tester.md) | Engenharia de testes para apps já existentes | Especialista opt-in para cobertura adicional | `test-report-{slug}.md` |
-| [@pentester](./pentester.md) | Revisão adversarial de segurança | Especialista opt-in, por pedido ou risco concreto | `security-findings-*.json` |
+| 1 | [@briefing](./briefing.md) | Transforma fontes cruas em briefing pré-PRD, com fontes preservadas e promessas `PROM-*` numeradas | `briefing.md` |
+| 2 | [@briefing-refiner](./briefing-refiner.md) | Audita as lacunas em achados estruturados e monta o protótipo navegável que você aprova. O CLI renderiza a revisão (`briefing:review`) e aplica o feedback confirmado (`briefing:apply-feedback`) | `prototype.html`, `refinement-findings.json`, `review.html`, `refinement-report.md` |
+| 3 | [@product](./product.md) | Define capacidades `CAP-*`, critérios observáveis e o que fica explicitamente fora | `prd-{slug}.md` |
+| 4 | [@sheldon](./sheldon.md) | Confronta o PRD com fonte, protótipo e repositório; corrige no próprio arquivo e sela | o mesmo `prd-{slug}.md` + PASS vinculado ao hash |
+| 5 | [@planner](./planner.md) | Transforma o PRD selado em etapas verticais com arquivos exatos e check por etapa | `implementation-plan-{slug}.md` |
+| 6 | [@dev](./dev.md) | Implementa etapa por etapa pela rota real de produção | código + `dev-state.md` |
+| 7 | [@qa](./qa.md) | Veredito independente contra o PRD, com evidência — **este é o Gate D** | `qa-report-{slug}.md` |
+| 8 | [@tester](./tester.md) | Cobertura que protege o comportamento já aprovado: regressão, borda, defeito reproduzido | `test-report-{slug}.md` |
+| 9 | [@pentester](./pentester.md) | Sonda a superfície como adversário autorizado, corrige e re-sonda | `security-findings-*.json` |
+
+**Onde o automático para.** O encadeamento automático (Autopilot) vai de `@product` até `@qa`. Briefing e Refiner são a entrada de fonte crua — opcionais quando a direção já está clara, mas se iniciados precisam ser concluídos e aprovados; escopo visual exige o protótipo aprovado antes do Product. `@tester` e `@pentester` são o endurecimento pós-veredito, habilitados por feature, e **não concedem o Gate D**. `feature:close` e publicação são sempre seus. Veja [Autopilot Handoff](../5-referencia/autopilot-handoff.md).
+
+**A rota curta.** Para uma mudança bounded, o Simple Plan vai direto ao [@deyvin](./deyvin.md) — escopo, plano curto, implementação, verificação — sem passar pela esteira, e escala para ela se o escopo crescer.
 
 ---
 
-## Boot e roteamento
+## Consultorias opt-in
+
+Estes agentes **não são etapas da esteira**. Você os chama para uma dúvida nomeada e concreta; o parecer volta para o PRD ou para o plano. Nenhum deles cria documento obrigatório ou gate extra.
+
+| Agente | Para qual dúvida nomeada | Saída principal |
+|---|---|---|
+| [@analyst](./analyst.md) | Quais entidades, regras e fluxos já existem no domínio | análise no PRD ou artefato consultivo |
+| [@architect](./architect.md) | Qual opção de estrutura, integração ou fronteira técnica escolher | registro da decisão ou parecer |
+| [@ux-ui](./ux-ui.md) | Uma decisão de interação que o protótipo aprovado não resolveu | parecer; `design-doc.md` só se você pedir o entregável |
+| [@pm](./pm.md) | Prioridade, dependência ou ordem de rollout; não substitui `@planner` | parecer ou backlog consultivo |
+| [@scope-check](./scope-check.md) | "O que foi entregue confere com o que foi pedido?" | `scope-check.md` |
+| [@orchestrator](./orchestrator.md) | Coordenação de execução genuinamente paralela ou cross-cutting | coordenação e handoffs |
+| [@validator](./validator.md) | Verificação binária extra contra o contrato de sucesso, depois do QA | veredicto do harness |
+| [@discovery-design-doc](./discovery-design-doc.md) | Discovery + design doc, quando isso é o objetivo em si | `design-doc*.md` + `readiness*.md` |
+| [@forge-run](./forge-run.md) | Lane B: compila e roda o workflow de verificação executável de uma feature MEDIUM com contrato `verification` | `forge-run.workflow.js` |
+| **@shakedown** | Pente-fino pós-entrega, independente da spec *(ficha em construção)* | relatório de achados |
+
+---
+
+## Boot, roteamento e continuidade
 
 | Agente | Para que serve | Quando invocar | Saída principal |
 |---|---|---|---|
 | [@setup](./setup.md) | Onboarding: detecta stack, classifica projeto | Sempre primeiro num projeto novo | `project.context.md` |
 | [@neo](./neo.md) | Roteador: diz qual agente é o próximo | Quando você está perdido | Orientação verbal |
-| [@briefing](./briefing.md) | Transforma anotações soltas em briefing pré-PRD | Antes de `@product`, quando ideia ainda vaga | `briefing.md` |
-| [@briefing-refiner](./briefing-refiner.md) | Loop de refino de briefing: audita em achados estruturados, o CLI renderiza a revisão (`briefing:review`) e aplica o feedback confirmado (`briefing:apply-feedback`) | Após `@briefing`, antes de `@product` | `refinement-findings.json`, `review.html` (CLI), `refinement-feedback.json`, `refinement-report.md` |
-| [@deyvin](./deyvin.md) | Pair-programming e continuidade de sessão | Retomar feature interrompida | continuação do trabalho |
+| [@deyvin](./deyvin.md) | Pair-programming, continuidade de sessão e a rota curta (Simple Plan) | Retomar feature interrompida ou fazer uma mudança pequena | continuação do trabalho |
 | [@pair](./deyvin.md) | Alias de `@deyvin` | — | — |
 | [@committer](./committer.md) | Gera mensagem de commit profissional | Após implementar, antes de commitar | mensagem de commit |
 | [@discover](./discover.md) | Constrói cache semântico do projeto | Onboarding em codebase grande | `.aioson/context/bootstrap/` |
@@ -58,7 +79,7 @@
 | [@design-hybrid-forge](./design-hybrid-forge.md) | Combina dois design skills num híbrido | Quer visual que não existe nos padrões | novo design skill |
 | [@orache](./orache.md) | Investigação de domínio e pesquisa estratégica | Antes de entrar num mercado novo | relatório de domínio |
 | [@copywriter](./copywriter.md) | Copy de conversão: landing pages, emails | Quando precisa de texto que converte | copy entregável |
-| [@discovery-design-doc](./discovery-design-doc.md) | Consolida discovery e design quando isso é o objetivo | Consultoria explícita; não é gate canônico | `design-doc*.md` + `readiness*.md` |
+| **@benchmark** | Constrói, valida e pontua um app/jogo isolado de benchmark com prompt congelado *(ficha em construção)* | Comparar modelos ou versões do framework | run de benchmark |
 
 ---
 
@@ -67,6 +88,6 @@
 Se você não sabe qual agente invocar, use `@neo` — ele lê o estado do projeto e te orienta.
 
 Veja também:
-- [Mapa do ecossistema](../1-entender/mapa-do-ecossistema.md) — diagrama visual do ciclo de vida
+- [Mapa do ecossistema](../1-entender/mapa-do-ecossistema.md) — a esteira fase a fase e o time completo
 - [Decisões iniciais](../2-comecar/decisoes-iniciais.md) — MICRO, SMALL ou MEDIUM?
-- [Glossário](../1-entender/glossario.md) — definições de termos como Dossier, Handoff, Constitution
+- [Glossário](../1-entender/glossario.md) — definições de termos como Esteira, Gate D, Simple Plan, Protótipo

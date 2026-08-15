@@ -28,7 +28,7 @@ O hybrid resultante é local ao seu projeto (em `.aioson/installed-skills/`) por
 
 - Um skill nativo já cobre — criar hybrid sem necessidade gera overhead de manutenção
 - Você quer clonar o visual de um site real — use `@site-forge` (modo D ou B)
-- Você não sabe quais skills usar — peça ajuda ao `@ux-ui` antes
+- Você tem imagens de referência do visual que quer — a rota melhor é extrair uma identidade delas com o motor `interface-design`, não combinar presets
 
 ---
 
@@ -105,12 +105,12 @@ aioson design-hybrid:options
 
 ## Handoff típico
 
-- **Vem de:** `@ux-ui` (quando nenhum skill nativo serve) ou pedido direto
-- **Vai para:** `@dev` ou `@site-forge` — o skill híbrido é usado como design system nas implementações
+- **Vem de:** `@setup`/`@site-forge` (quando nenhum skill nativo serve) ou pedido direto
+- **Vai para:** `@briefing-refiner` (o skill vira insumo do protótipo) e depois `@dev` — o híbrido é o design system das implementações
 
 ---
 
 ## Próximo passo
 
 - Para clonar design de um site real: [site-forge.md](./site-forge.md)
-- Para aplicar o skill num build: ficha `ux-ui.md` (em construção)
+- Para aplicar o skill num build: [Decisões iniciais — design system](../2-comecar/decisoes-iniciais.md#escolhendo-o-design-system)

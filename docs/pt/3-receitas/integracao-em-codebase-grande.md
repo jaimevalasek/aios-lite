@@ -98,8 +98,7 @@ Você > Sim — cálculo de frete por região, comissão por tier de vendedor, r
 @setup > Score: 2 + 2 + 2 = 6 → MEDIUM.
 @setup > project.context.md criado. Como o projeto já tem código, recomendo:
          1. @discover → cache semântico
-         2. @analyst → domínio mapeado
-         Depois o fluxo normal de features.
+         2. Depois a esteira normal, começando em @product.
 ```
 
 ---
@@ -141,50 +140,47 @@ Você > @discover
 
 ---
 
-## Passo 5 — `@analyst` usa o cache para mapear o domínio
+## Passo 5 — Primeira feature com contexto completo
 
-```
-Você > @analyst
+A partir daqui a esteira é idêntica à de qualquer projeto: `@product → @sheldon → @planner → @dev → @qa` (e `@tester`/`@pentester` depois do PASS, se quiser endurecer). O diferencial é que todos eles lêem o cache antes de agir — as respostas são muito mais precisas.
 
-@analyst > [lê bootstrap/entities.md, bootstrap/flows.md]
-            Não preciso reler os 80k arquivos — o cache tem o que preciso.
-
-@analyst > Domínio identificado:
-            Core: Customer, Order, Product, Payment
-            Logística: Shipment, Region, Supplier
-            Financeiro: Commission, Payment (relação n:1 com Order)
-            Gaps: OrderItem sem validação de estoque (campo qty_reserved inexistente)
-
-@analyst > Achado importante: migration 87 adicionou fraud_score mas nenhum
-            controller o usa. Possível feature abandonada ou A/B desligado.
-
-@analyst > architecture.md atualizado. Pronto para a primeira feature.
-```
-
-> **A surpresa:** agentes lendo o cache conseguem detectar inconsistências (como o `fraud_score` órfão) que você só acharia relendo tudo manualmente.
-
----
-
-## Passo 6 — Primeira feature com contexto completo
-
-A partir daqui, o fluxo é idêntico a qualquer projeto. O diferencial é que o `@product`, `@dev` e `@qa` lêm o cache antes de agir — as respostas são muito mais precisas.
+Não existe um "passo de mapeamento de domínio" separado. O domínio entra pelo cache do `@discover` e é confrontado com o código real pelo `@sheldon`.
 
 ```
 Você > @product
 
-@product > [lê bootstrap/ + architecture.md]
+@product > [lê bootstrap/entities.md, bootstrap/flows.md]
             Já sei que Customer tem endereço simples (uma linha).
             Qual feature você quer?
 
 Você > Adicionar suporte a múltiplos endereços por cliente
 
-@product > Entendido. Existe uma tabela CustomerAddress? Não encontrei no cache.
-           Vou criar spec prevendo migration nova.
-           [...]
-           Spec em features/multi-address/spec.md.
+@product > Entendido. Não existe tabela CustomerAddress no cache.
+           PRD prevendo migration nova, com 3 capacidades CAP-*.
+           prd-multi-address.md gravado. Próximo: @sheldon.
 ```
 
 O `@product` já sabia que `CustomerAddress` não existia porque o `@discover` catalogou as entidades.
+
+E aí o `@sheldon` faz o que só ele faz — confronta o PRD com o repositório de verdade:
+
+```
+Você > @sheldon
+
+@sheldon > [PRD × bootstrap/ × código real]
+            - Order.shipping_address hoje é string denormalizada em 3 controllers:
+              a migration precisa de backfill, o PRD não dizia → lacuna preenchida
+            - migration 87 adicionou fraud_score e nenhum controller o usa.
+              Fora do escopo desta feature, mas registrado como achado.
+            - "endereço padrão" não tinha critério observável → AC-02 reescrito
+
+@sheldon > Correções aplicadas no próprio PRD. sheldon_review: approved.
+@sheldon > Próximo: @planner.
+```
+
+> **A surpresa:** agentes lendo o cache detectam inconsistências (como o `fraud_score` órfão) que você só acharia relendo tudo manualmente.
+>
+> **Consultoria pontual:** se sobrar uma dúvida nomeada de domínio ou de fronteira técnica, chame `@analyst` ou `@architect` para *aquela* pergunta. O parecer volta ao PRD ou ao plano — não é uma etapa da esteira.
 
 ---
 
@@ -195,7 +191,7 @@ O `@product` já sabia que `CustomerAddress` não existia porque o `@discover` c
 ├── project.context.md           ← stack detectada, MEDIUM
 ├── scan-index.md                ← mapa de diretórios (do scan)
 ├── scan-src.md                  ← estatísticas por pasta
-├── architecture.md              ← domínio mapeado (@analyst)
+├── features/multi-address/      ← PRD selado + plano da primeira feature
 └── bootstrap/
     ├── entities.md              ← 10 entidades com campos (@discover)
     ├── api-surface.md           ← 67 rotas agrupadas
@@ -218,7 +214,7 @@ O `@product` já sabia que `CustomerAddress` não existia porque o `@discover` c
 
 | Situação | Ajuste |
 |---|---|
-| Legado sem testes | Rode `@tester` após o `@analyst`. Ele mapeia coverage e propõe teste por módulo crítico. |
+| Legado sem testes | Rode `@tester` direto sobre o cache, fora do ciclo de uma feature. Ele mapeia coverage e propõe teste por módulo crítico. |
 | Codebase Python (Django, FastAPI) | O `@discover` detecta automaticamente; scan procura `models.py`, `urls.py`, `views.py`. |
 | Quer atualizar o cache semanalmente | Rode `@discover` manualmente depois de merges grandes, ou integre no CI. |
 | Time grande, cada dev instala AIOSON local | O `.aioson/context/bootstrap/` pode ser commitado para compartilhar o cache. |
@@ -231,7 +227,7 @@ O `@product` já sabia que `CustomerAddress` não existia porque o `@discover` c
 |---|---|
 | `@discover` ficou lento | É esperado na primeira vez. Futuras rodadas são incremental. |
 | Cache está desatualizado | Reative `@discover` — ele compara com `bootstrap/` existente. |
-| `@analyst` faz perguntas que o cache já responde | Verifique se o cache foi gerado e se `bootstrap/` existe. Pode ter sido excluído do `.gitignore` por engano. |
+| Os agentes fazem perguntas que o cache já responde | Verifique se o cache foi gerado e se `bootstrap/` existe. Pode ter sido excluído do `.gitignore` por engano. |
 | `scan:project` não detectou a stack certa | Edite `framework` no `project.context.md` manualmente e reative `@setup`. |
 
 ---

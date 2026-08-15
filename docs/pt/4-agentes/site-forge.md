@@ -27,7 +27,7 @@ Além de clonar, ele aprende: cada projeto que usa o `@site-forge` pode registra
 
 ## Quando NÃO invocar
 
-- Você quer criar um design system do zero — use `@ux-ui` ou `@design-hybrid-forge`
+- Você quer criar um design system do zero — use imagens de referência com o motor `interface-design` (ver [Decisões iniciais](../2-comecar/decisoes-iniciais.md#escolhendo-o-design-system)) ou `@design-hybrid-forge`
 - O site que você quer clonar está atrás de login (o forge só acessa conteúdo público)
 
 ---

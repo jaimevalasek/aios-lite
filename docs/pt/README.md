@@ -64,9 +64,12 @@ Cada etapa existe para impedir que uma decisão cara seja tomada cedo demais, co
 4. **`@sheldon` depois do `@product`** porque revisão técnica precisa de algo concreto para criticar; revisar uma intenção não produz achado.
 5. **`@planner` depois do PRD selado** porque plano feito sobre escopo instável é replanejado a cada mudança.
 6. **`@dev` depois do plano** porque implementar sem fases verticais leva a "90% pronto" indefinidamente.
-7. **`@qa` por último e independente** porque quem implementou não é a melhor pessoa para achar o que ficou faltando.
+7. **`@qa` independente** porque quem implementou não é a melhor pessoa para achar o que ficou faltando. O PASS do QA é o Gate D.
+8. **`@tester` e `@pentester` depois do veredito** porque cobertura e endurecimento protegem um comportamento já aprovado — eles não decidem se a feature está pronta.
 
-O bloco `@briefing → @briefing-refiner → aprovação` é **opcional**: se a feature já está clara, comece direto no `@product`. Mas se você começar, precisa terminar — um briefing pela metade não vira PRD. MICRO, SMALL e MEDIUM percorrem a mesma rota; a classificação muda profundidade e orçamento, não a ordem. Especialistas (`@analyst`, `@architect`, `@ux-ui`, `@tester`, `@pentester`) entram somente sob pedido explícito ou por uma dúvida nomeada.
+Esteira completa: `@briefing → @briefing-refiner → @product → @sheldon → @planner → @dev → @qa → @tester → @pentester`.
+
+O bloco `@briefing → @briefing-refiner → aprovação` é **opcional**: se a feature já está clara, comece direto no `@product`. Mas se você começar, precisa terminar — um briefing pela metade não vira PRD, e escopo visual exige o protótipo aprovado. MICRO, SMALL e MEDIUM percorrem a mesma esteira; a classificação muda profundidade e orçamento, não a ordem. As consultorias (`@analyst`, `@architect`, `@ux-ui`, `@pm`) **não são etapas** — entram sob pedido explícito, para uma dúvida nomeada. E para uma mudança pequena existe a rota curta, o Simple Plan via `@deyvin`.
 
 ### Exemplo curto de ponta a ponta
 
@@ -170,17 +173,17 @@ Comece por aqui se você nunca usou. São 15 minutos.
 
 **As trilhas canônicas — como uma feature chega ao código:**
 
-1. [Feature completa com revisão do `@sheldon`](./3-receitas/feature-completa-com-sheldon.md) — a rota única `@product → @sheldon → @planner → @dev → @qa`
-2. [Da ideia ao PRD via `@briefing`](./3-receitas/da-ideia-ao-prd-via-briefing.md) — quando a ideia ainda é vaga
+1. [Da ideia ao PRD via `@briefing`](./3-receitas/da-ideia-ao-prd-via-briefing.md) — entra pelo começo da esteira, quando a ideia ainda é vaga ou tem tela nova
+2. [Feature completa com revisão do `@sheldon`](./3-receitas/feature-completa-com-sheldon.md) — entra no PRD: `@product → @sheldon → @planner → @dev → @qa`
 3. [Plans externos para `@product`](./3-receitas/plans-externos-para-product.md) — quando você planejou em outra ferramenta e quer trazer
 
 **Por cenário:**
 
 | Receita | Cenário |
 |---|---|
-| [Landing page](./3-receitas/landing-page.md) | Página de conversão, com `@copywriter` opcional |
-| [App SaaS do zero](./3-receitas/app-saas-do-zero.md) | Workflow MEDIUM completo: auth, billing, admin |
-| [Integração em codebase grande](./3-receitas/integracao-em-codebase-grande.md) | `install` + `@discover` + `@analyst` em legado |
+| [Landing page](./3-receitas/landing-page.md) | Página de conversão: protótipo aprovado + `@copywriter` |
+| [App SaaS do zero](./3-receitas/app-saas-do-zero.md) | Esteira MEDIUM completa: auth, billing, admin |
+| [Integração em codebase grande](./3-receitas/integracao-em-codebase-grande.md) | `install` + `@discover` + esteira em legado |
 | [Refatoração grande](./3-receitas/refatoracao-grande.md) | `@sheldon` antes do `@dev` |
 | [Auditoria de segurança](./3-receitas/auditoria-seguranca.md) | `@pentester` de ponta a ponta |
 | [Continuidade entre sessões](./3-receitas/continuidade-entre-sessoes.md) | Dossier, dev-resume, detecção de drift |

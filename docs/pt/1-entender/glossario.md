@@ -42,7 +42,7 @@ Termos em ordem alfabética. Cada um tem **definição curta** + **exemplo concr
 
 **Exemplos:**
 - `.aioson/context/project.context.md` — contexto do projeto (criado por `@setup`)
-- `.aioson/context/features/<slug>/spec.md` — especificação de uma feature (criada por `@product`/`@analyst`)
+- `.aioson/context/features/<slug>/prd-<slug>.md` — o PRD da feature (criado por `@product`, selado por `@sheldon`)
 - `.aioson/context/dossier/<slug>/` — dossier de feature (criado pelo agent-chain)
 
 **Por que importa:** Artigo III da Constitution diz que trabalho importante deixa artefato. Sem artefato, o trabalho "não aconteceu" oficialmente.
@@ -61,9 +61,11 @@ Termos em ordem alfabética. Cada um tem **definição curta** + **exemplo concr
 
 ## Briefing
 
-**Definição:** documento pré-PRD que enquadra um problema antes de virar feature. Saída do agente `@briefing` (antigo `@cypher`).
+**Definição:** documento pré-PRD que enquadra um problema antes de virar feature. Saída do agente `@briefing` (antigo `@cypher`) — a primeira fase da esteira.
 
-**Exemplo:** você tem 5 anotações soltas sobre uma ideia. O `@briefing` as transforma num briefing estruturado com problema, hipóteses e *frames* de discovery.
+**Exemplo:** você tem 5 anotações soltas sobre uma ideia. O `@briefing` as transforma num briefing estruturado com fontes preservadas, promessas numeradas (`PROM-*`) e o que ainda é dúvida declarada.
+
+**O que vem depois:** o `@briefing-refiner` audita as lacunas e monta o **protótipo navegável** que você aprova antes de o PRD existir. Escopo visual ou rico exige esse protótipo aprovado antes do `@product`.
 
 ---
 
@@ -71,7 +73,7 @@ Termos em ordem alfabética. Cada um tem **definição curta** + **exemplo concr
 
 **Definição:** o tamanho do projeto, calculado a partir de 3 fatores (tipos de usuário, integrações externas, regras de negócio). Define quanta cerimônia o workflow vai aplicar.
 
-**Como funciona:** 0–1 ponto → MICRO; 2–3 → SMALL; 4–6 → MEDIUM. Todos usam a mesma rota `[fontes → @briefing → @briefing-refiner → aprovação] → @product → @sheldon → @planner → @dev → @qa`; o nível muda profundidade, orçamento e cobertura de risco.
+**Como funciona:** 0–1 ponto → MICRO; 2–3 → SMALL; 4–6 → MEDIUM. Todos usam a mesma esteira `@briefing → @briefing-refiner → @product → @sheldon → @planner → @dev → @qa → @tester → @pentester`; o nível muda profundidade, orçamento e cobertura de risco, não a ordem.
 
 **Onde aparece:** `classification:` no frontmatter do `project.context.md`.
 
@@ -140,6 +142,25 @@ Termos em ordem alfabética. Cada um tem **definição curta** + **exemplo concr
 
 ---
 
+## Esteira
+
+**Definição:** o nome informal do pipeline principal de features. Ver **Pipeline / Workflow**.
+
+---
+
+## Gate (Gate C, Gate D)
+
+**Definição:** um ponto da esteira onde a feature só avança com prova concreta.
+
+- **Gate de produto** — o PRD tem ACs concretos e escopo aprovado.
+- **Gate do Sheldon** — `sheldon_review: approved` com PASS vinculado ao hash do PRD final.
+- **Gate C** — um plano de implementação aprovado, com etapas verticais pelo caminho de produção.
+- **Gate D** — PASS do `@qa`, com evidência para cada CAP/AC exercitado pela rota normal de produção.
+
+**Detalhe importante:** `@tester`, `@pentester` e `@validator` **não** concedem Gate D. Eles endurecem a entrega depois dele.
+
+---
+
 ## Genome
 
 **Definição:** "DNA cognitivo" de uma persona — um YAML estruturado com traços de personalidade (DISC, Enneagram, Big Five, MBTI, HEXACO-H), estilo, tom, e instruções de advisor.
@@ -194,9 +215,15 @@ Termos em ordem alfabética. Cada um tem **definição curta** + **exemplo concr
 
 ## Pipeline / Workflow
 
-**Definição:** a sequência ordenada de agentes que o AIOSON aplica para uma feature, baseada na classificação.
+**Definição:** a esteira — a sequência ordenada de agentes que o AIOSON aplica para construir uma feature.
+
+**A esteira principal:** `@briefing → @briefing-refiner → @product → @sheldon → @planner → @dev → @qa → @tester → @pentester`. Ela é a mesma em MICRO, SMALL e MEDIUM; a classificação muda profundidade e orçamento, não a ordem. O encadeamento automático vai de Product até QA (Gate D); Tester e Pentester são o endurecimento pós-veredito, habilitados por feature.
+
+**A rota curta:** para uma mudança bounded, o **Simple Plan** vai direto ao `@deyvin` (escopo → plano curto → implementação → verificação) e nunca vira feature rastreada silenciosamente.
 
 **Comando central:** `aioson workflow:next .` — mostra qual agente é o próximo.
+
+**Onde ver mais:** [Mapa do ecossistema](./mapa-do-ecossistema.md#a-esteira-principal).
 
 ---
 
@@ -215,6 +242,14 @@ Termos em ordem alfabética. Cada um tem **definição curta** + **exemplo concr
 1. `@profiler-researcher` — coleta material bruto.
 2. `@profiler-enricher` — analisa cognitivamente.
 3. `@profiler-forge` — gera o Genome 4.0 e o advisor.
+
+---
+
+## Protótipo (aprovado)
+
+**Definição:** o `prototype.html` autocontido que o `@briefing-refiner` monta com as telas, os estados e as interações reais da feature — antes de existir PRD ou código.
+
+**Por que importa:** você navega, testa e devolve o feedback na própria tela. Escopo visual ou rico só passa para o `@product` com o protótipo marcado `prototype_status: current` e aprovado por você. Depois disso, ele vira autoridade visual para o `@dev`.
 
 ---
 
@@ -246,6 +281,16 @@ Termos em ordem alfabética. Cada um tem **definição curta** + **exemplo concr
 
 ---
 
+## Simple Plan
+
+**Definição:** a rota curta. Quando a mudança é bounded — um resultado observável, reusando fronteiras existentes, sem decisão aberta de produto, arquitetura ou segurança — o AIOSON pula a esteira e vai direto ao `@deyvin`: escopo → plano curto → implementação → verificação.
+
+**Limite típico:** até 5 arquivos de comportamento, 8 caminhos no total, 2 módulos existentes. Se o escopo estourar, a rota escala para a esteira em vez de inflar em silêncio.
+
+**O que ele não faz:** não vira feature rastreada silenciosamente, e termina no Dev.
+
+---
+
 ## Squad
 
 **Definição:** um grupo de agentes customizados — feito sob medida para um domínio que o time padrão não cobre bem.
@@ -258,7 +303,9 @@ Termos em ordem alfabética. Cada um tem **definição curta** + **exemplo concr
 
 ## Tester
 
-**Definição:** agente `@tester` — engenharia de testes sistemática para apps já implementados. Usa quando o `@qa` regular não basta (legacy, brownfield, lacunas em 3+ módulos).
+**Definição:** agente `@tester` — a fase de cobertura da esteira, depois do veredito do `@qa`. Projeta e implementa teste com significado sobre o comportamento já aprovado: regressão, caso de borda e reprodução de defeito antes da correção.
+
+**Também serve para:** legacy e brownfield sem cobertura, fora do ciclo de uma feature.
 
 **Recente:** ganhou *coverage quality tier* e *test smell audit*.
 
@@ -282,4 +329,4 @@ Ver **Pipeline / Workflow**.
 
 ---
 
-Não achou um termo? Procure no [Mapa do ecossistema](./mapa-do-ecossistema.md) ou no [guia de agentes](../agentes.md).
+Não achou um termo? Procure no [Mapa do ecossistema](./mapa-do-ecossistema.md) ou no [guia de agentes](../4-agentes/README.md).

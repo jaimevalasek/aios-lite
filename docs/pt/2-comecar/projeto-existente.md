@@ -103,9 +103,9 @@ Você > Sim — política de descontos por tier de cliente, regras de comissão
 
 @setup > project.context.md criado com classificação MEDIUM.
 @setup > Como você já tem código rodando, recomendo:
-        - Rodar @discover para criar o cache semântico
-        - Depois @analyst para mapear o domínio existente
-        - Só então começar a próxima feature via @product
+        - Rodar @discover para criar o cache semântico do codebase
+        - Só então começar a próxima feature via @product (ou @briefing,
+          se a ideia ainda estiver crua)
 ```
 
 ---
@@ -125,42 +125,41 @@ Você > @discover
 
 Esse passo é **opcional para projetos pequenos**, mas crítico em codebases médios e grandes (>5k arquivos).
 
----
-
-## Passo 5 — `@analyst` mapeia o domínio que já existe
-
-```
-Você > @analyst
-
-@analyst > [lê scan + cache do @discover]
-        Identifiquei:
-        - Customer, Supplier, Order, OrderItem, Payment, Discount, Commission
-        - Auth via NextAuth
-        - Webhook Stripe ativo
-        - Tabela de tiers em customer.tier (free|pro|enterprise)
-@analyst > Domain map gravado em architecture.md.
-@analyst > Pronto para a próxima feature.
-```
-
-> **Por que isso importa:** quando você criar a próxima feature com `@product`, ela já vai nascer com **contexto**. O agente sabe que já existe Customer, não vai sugerir criar de novo.
+> **Por que isso importa:** o cache é lido pelos agentes da esteira. Quando você criar a próxima feature, o `@product` e o `@sheldon` já sabem que `Customer`, `Order` e `Payment` existem — não vão sugerir criar de novo. Não existe um "passo de mapeamento de domínio" separado: o domínio entra pelo cache e pelo confronto que o `@sheldon` faz com o código real.
 
 ---
 
-## Passo 6 — Primeira feature da nova era
+## Passo 5 — Primeira feature da nova era
 
 ```
 Você > @product
 
-@product > Já temos a base mapeada. Qual feature?
+@product > Já temos a base indexada. Qual feature?
 Você > "cancelamento-pedido" — permitir cancelar pedido em até 1h
 
 @product > Critérios de aceitação?
 Você > [...]
 
-@product > Spec gravada. Próximo: @analyst.
+@product > prd-cancelamento-pedido.md gravado com 3 capacidades CAP-*.
+@product > Próximo: @sheldon.
 ```
 
-A partir daí o fluxo é o mesmo do [primeiro-projeto.md](./primeiro-projeto.md).
+E o `@sheldon` é exatamente onde o legado aparece:
+
+```
+Você > @sheldon
+
+@sheldon > Confrontando o PRD com o código real (via cache do @discover)...
+        - Order já tem status ENUM com 'cancelled' — reusar, não criar campo novo
+        - Existe webhook Stripe que precisa de refund; o PRD não dizia nada → lacuna preenchida
+        - "1h" precisa de âncora: created_at ou paid_at? → decisão levada a você
+@sheldon > Correções aplicadas no PRD. sheldon_review: approved.
+@sheldon > Próximo: @planner.
+```
+
+A partir daí o fluxo é o mesmo do [primeiro-projeto.md](./primeiro-projeto.md): `@planner → @dev → @qa`, e depois `@tester`/`@pentester` se quiser endurecer.
+
+> **Precisa de uma consultoria pontual?** Se sobrar uma dúvida nomeada — "quais entidades existem mesmo?", "monolito ou serviço separado para o refund?" — chame `@analyst` ou `@architect` para *aquela* pergunta. O parecer volta para o PRD ou para o plano. Eles não são etapas da esteira e não criam documento obrigatório.
 
 ---
 

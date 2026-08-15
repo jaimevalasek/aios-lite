@@ -31,7 +31,7 @@ Quando a fatia toca UI, layout, protótipo ou polish, `@deyvin` resolve a direç
 ## Quando NÃO invocar
 
 - Feature nova, greenfield, ou que mistura produto + UX + implementação → `@product` primeiro.
-- Sessão de planejamento ampla → `@analyst` ou `@architect`.
+- Sessão de planejamento ampla → `@briefing` (ideia crua) ou `@product` (direção já clara).
 - Você não sabe o que fazer → `@neo`.
 - A feature precisa de testes sistemáticos completos → `@qa` ou `@tester`.
 

@@ -1,22 +1,34 @@
 # @ux-ui — Consultoria de interface
 
-> **Para quem é:** quem quer uma especificação explícita de UI/UX antes ou durante o planejamento.
+> **Para quem é:** quem tem uma dúvida de interação concreta que o protótipo aprovado não resolveu.
+
+> ⚠️ **Não é uma etapa da esteira.** O visual da feature é decidido antes, no protótipo navegável que você aprova no `@briefing-refiner`. O `@ux-ui` é um desvio opt-in para uma pergunta nomeada. Ver [a esteira principal](../1-entender/mapa-do-ecossistema.md#a-esteira-principal).
+
+## Onde mora a autoridade visual
+
+O `@dev` resolve a direção visual nesta ordem, parando no primeiro acerto:
+
+1. a identidade vinculada no PRD (`identity` / `identity_status`);
+2. o protótipo aprovado (`prototype_status: current`) e sua `## Visual direction`;
+3. a `design_skill` selecionada do projeto;
+4. a linguagem de componentes que já existe no repositório.
+
+Se depois disso a direção continuar sem resolução, isso é **pergunta de produto** — volta para o `@product`. Nem o `@dev` nem o `@deyvin` encaminham automaticamente para o `@ux-ui`.
 
 ## Para que serve
 
-`@ux-ui` transforma decisões de experiência em fluxos, componentes, estados, tokens e critérios que Product, Planner e DEV podem usar. Ele respeita o design skill configurado e não inventa outro sistema visual.
+`@ux-ui` transforma uma decisão de experiência ainda em aberto em fluxo, componente, estado, token e critério que Product, Planner e DEV podem usar. Ele respeita a identidade e o design skill configurados e não inventa outro sistema visual.
 
 É consultivo em qualquer classificação. MEDIUM não o ativa automaticamente.
 
 ## Quando invocar
 
-- O usuário pede uma especificação de interface.
-- Um fluxo tem estados, acessibilidade ou comportamento responsivo ainda indefinidos.
-- O PRD precisa de critérios visuais/operacionais mais concretos.
-- Planner precisa delimitar componentes e caminhos antes do código.
-- Você quer auditar uma UI existente.
+- Uma interação, estado ou comportamento de acessibilidade ficou genuinamente indefinido depois do protótipo aprovado.
+- Você quer explicitamente o entregável de spec de UI (`ui-spec` só existe quando você o pede).
+- Você quer auditar uma UI existente (`@ux-ui audit`).
+- Você quer o contrato de tokens ou o mapa de componentes de uma UI já construída.
 
-Não invoque para backend puro nem quando PRD, referências e design skill já deixam a implementação clara.
+Não invoque para backend puro, nem quando protótipo, identidade e design skill já deixam a implementação clara — nesse caso o `@dev` implementa direto.
 
 ## Saídas possíveis
 

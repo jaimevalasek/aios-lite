@@ -23,7 +23,7 @@ Anteriormente chamado de `@cypher`, foi renomeado e enriquecido com frameworks d
 
 ## Quando NÃO invocar
 
-- A feature já tem spec definida — vá direto para `@product` ou `@analyst`.
+- A direção de produto já está clara — vá direto para `@product`.
 - A ideia é simples e óbvia (MICRO) — não precisa de briefing.
 - Você quer apenas verificar o estado do projeto — use `@neo`.
 

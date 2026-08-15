@@ -3,11 +3,13 @@
 > **Cenário:** SaaS com autenticação, cobrança, área do cliente e administração.
 > **Classificação típica:** MEDIUM pela quantidade de integrações, usuários e regras.
 
-MEDIUM aumenta a profundidade. Não cria uma cadeia diferente:
+MEDIUM aumenta a profundidade. Não cria uma esteira diferente:
 
 ```text
-[fontes → @briefing → @briefing-refiner → aprovação] → @product → @sheldon → @planner → @dev → @qa
+@briefing → @briefing-refiner → @product → @sheldon → @planner → @dev → @qa → @tester → @pentester
 ```
+
+Briefing e Refiner são a entrada de fonte crua (obrigatórios quando há superfície visual nova, via protótipo aprovado). QA é o Gate D; Tester e Pentester endurecem depois dele — num SaaS com auth e cobrança, quase sempre vale habilitar os dois.
 
 ## 1. Enquadre o produto
 

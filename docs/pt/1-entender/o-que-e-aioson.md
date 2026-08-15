@@ -18,19 +18,27 @@ Imagine que você quer construir uma casa.
 
 **Com AIOSON:** você tem uma equipe.
 
-- O **Briefing** ouve sua ideia ainda crua (a "conversa de bar") e devolve um briefing estruturado, com riscos e perguntas em aberto, *antes* de virar projeto.
-- O **Product** entende o que você quer construir e por quê — e escreve o PRD.
-- O **Sheldon** revisa o PRD como um arquiteto sênior que já viu de tudo: aponta lacunas, pesquisa o que está obsoleto, lê o seu código real e decide se enriquece o PRD ou cria um plano em fases. Pode revisar várias vezes.
-- O **Analyst** descobre o que já existe no terreno (codebase) e o que precisa.
-- O **Architect** projeta a estrutura.
-- O **UX-UI** desenha como o morador vai viver lá.
-- O **Dev** constrói.
-- O **Deyvin** é o empreiteiro que retoma a obra quando você volta de viagem: lê o que está confirmado, marca o que é só inferência, e segue um passo pequeno de cada vez sem você precisar re-explicar nada.
-- O **QA** vistoria.
-- O **Pentester** testa as fechaduras (segurança).
-- O **Committer** escreve a ata da reforma (mensagem de commit).
+A esteira principal é sempre a mesma, e cada fase só entrega quando tem prova:
+
+- O **Briefing** ouve sua ideia ainda crua (a "conversa de bar") e devolve um briefing estruturado, com fontes preservadas, promessas numeradas e o que ainda é dúvida — *antes* de virar projeto.
+- O **Briefing Refiner** monta a maquete: um protótipo navegável com as telas e os estados reais. Você caminha por ele e só então aprova. A planta chega antes do concreto.
+- O **Product** converte o que você aprovou no PRD: o que o morador precisa poder fazer, com critério verificável e o que fica explicitamente fora.
+- O **Sheldon** revisa o PRD como um arquiteto sênior que já viu de tudo: confronta com as fontes, com o protótipo e com o seu código real, corrige lacuna e contradição no próprio arquivo, e sela.
+- O **Planner** corta a obra em etapas verticais — arquivos exatos, risco e check em cada uma.
+- O **Dev** constrói, etapa por etapa, pela rota real do produto.
+- O **QA** vistoria — e o veredito é independente de quem construiu.
+- O **Tester** amplia a cobertura para proteger o que já foi entregue.
+- O **Pentester** testa as fechaduras: ataca a superfície com autorização, corrige e ataca de novo.
+
+Fora da esteira ficam os consultores que você chama quando precisa: **Analyst** (o que já existe no terreno), **Architect** (qual estrutura escolher), **UX-UI** (uma decisão de interação que o protótipo não resolveu). Eles respondem uma pergunta nomeada e vão embora — não são etapas obrigatórias.
+
+E ainda tem o **Deyvin**, o empreiteiro que retoma a obra quando você volta de viagem: lê o que está confirmado, marca o que é só inferência, e segue um passo pequeno de cada vez sem você precisar re-explicar nada. Para mudanças pequenas, ele resolve sozinho pela rota curta. No fim, o **Committer** escreve a ata da reforma (mensagem de commit).
 
 Cada um sabe quando entrar, quando sair, e que documento entregar para o próximo. Você fala com qualquer um deles digitando `@nome` no seu cliente AI.
+
+> Esteira completa, em uma linha:
+> `@briefing → @briefing-refiner → @product → @sheldon → @planner → @dev → @qa → @tester → @pentester`
+> Detalhe fase a fase no [Mapa do ecossistema](./mapa-do-ecossistema.md#a-esteira-principal).
 
 ## O que isso muda na prática
 
@@ -85,7 +93,7 @@ Os agentes são *prompts*, não plugins. Eles vivem em arquivos `.md` e o client
 - **Você quer experimentar livremente** uma ideia em 5 minutos. AIOSON pede setup primeiro.
 - **Você não vai abrir o projeto de novo.** O valor está justamente em sessões repetidas.
 
-Para esses casos, o próprio AIOSON tem um caminho leve — a classificação **MICRO** (`@setup → @product → @dev`). Mas se nem isso for adequado, não force.
+Para esses casos, o próprio AIOSON tem um caminho leve — o **Simple Plan**, em que o `@deyvin` confirma o escopo, registra um plano mínimo, implementa a menor fatia útil e fecha com a verificação combinada. Sem PRD, sem esteira. Se o escopo crescer no meio, a rota escala sozinha para a esteira completa. Mas se nem o Simple Plan for adequado, não force.
 
 ## Próximo passo
 

@@ -75,7 +75,7 @@ AIOSON é governado por seis artigos que **nenhum agente pode sobrescrever**. El
 **Tradução prática:** AIOSON luta o tempo todo contra a tentação de adicionar burocracia. **"Small project, small solution"** é o lema oficial.
 
 ### Artigo VII — Zero Trust by Default
-> Segurança é baseline, não feature. Todo agente técnico (`@analyst`, `@architect`, `@dev`, `@qa`) consome o baseline declarado em `.aioson/rules/security-baseline.md`, com controles ID-versionados (`SEC-SBD-01..08`) que ninguém pode silenciosamente enfraquecer.
+> Segurança é baseline, não feature. Todo agente técnico (`@planner`, `@dev`, `@qa`, `@tester`, `@pentester`) consome o baseline declarado em `.aioson/rules/security-baseline.md`, com controles ID-versionados (`SEC-SBD-01..08`) que ninguém pode silenciosamente enfraquecer.
 
 **Tradução prática:** o `@dev` automaticamente sabe que precisa sanitizar input, validar autorização, redijir secrets. Não é um pedido extra seu — é o padrão.
 

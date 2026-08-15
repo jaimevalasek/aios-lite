@@ -28,13 +28,15 @@ Soma de três fatores (cada um vale 0, 1 ou 2 pontos):
 
 ### O que muda em cada uma
 
-A rota rastreada é a mesma nos três níveis:
+A esteira é a mesma nos três níveis:
 
 ```text
-[fontes → @briefing → @briefing-refiner → aprovação] → @product → @sheldon → @planner → @dev → @qa
+@briefing → @briefing-refiner → @product → @sheldon → @planner → @dev → @qa → @tester → @pentester
 ```
 
-Briefing e Briefing Refiner são opcionais quando a direção já está clara; quando o Briefing é iniciado, Refiner e aprovação fecham essa entrada. Sheldon é a revisão independente obrigatória do mesmo PRD. A classificação regula profundidade, orçamento de arquivos, cobertura de risco e quantidade de evidência — não cria outra cadeia de agentes.
+Briefing e Briefing Refiner são a entrada de fonte crua — opcionais quando a direção já está clara, mas se iniciados precisam ser concluídos e aprovados (escopo visual exige o protótipo aprovado). Sheldon é a revisão independente obrigatória do mesmo PRD. QA é o Gate D; Tester e Pentester são o endurecimento que vem depois, habilitados por feature. A classificação regula profundidade, orçamento de arquivos, cobertura de risco e quantidade de evidência — não cria outra cadeia de agentes.
+
+Para uma mudança bounded, a rota curta (**Simple Plan**, via `@deyvin`) existe em qualquer classificação e não passa pela esteira.
 
 #### MICRO
 
@@ -67,7 +69,7 @@ Briefing e Briefing Refiner são opcionais quando a direção já está clara; q
 - Usa o mesmo PRD, o mesmo plano e o mesmo veredito QA, com mais detalhe nos riscos nomeados.
 - Analyst, Architect, PM, UX/UI e Discovery Design Doc continuam disponíveis por pedido explícito, sem virar pré-requisitos.
 - O DEV pode usar faixas de desenvolvimento declaradas por host, modelo, prompt e `write_paths`; executa-as sequencialmente e integra o resultado.
-- Tester, Pentester e Validator continuam desligados até serem explicitamente habilitados e disparados.
+- Tester e Pentester (as duas últimas fases da esteira) e o Validator opt-in ficam desligados por padrão: entram depois do PASS do QA, quando você os habilita para a feature. Em MEDIUM eles quase sempre valem a pena.
 - Threshold de contexto mais agressivo (55% — alerta cedo).
 
 **Exemplos típicos:**
@@ -108,7 +110,7 @@ Você pode marcar **mais de um** no wizard — eles convivem no mesmo projeto.
 
 ### Development (padrão)
 
-Inclui os 29 agentes oficiais (product, analyst, dev, qa, etc.). Suficiente para 95% dos projetos.
+Inclui os 34 agentes oficiais — a esteira inteira (briefing, briefing-refiner, product, sheldon, planner, dev, qa, tester, pentester), o boot e roteamento (setup, neo), a continuidade (deyvin, committer, discover) e as consultorias opt-in. Suficiente para 95% dos projetos.
 
 ### Development + Squads
 
@@ -157,7 +159,7 @@ Presets disponíveis no wizard:
 | **Neo Brutalist UI** | Contornos pretos, cores fortes, sem sombra | Marcas marcantes |
 
 **Pular** é uma opção legítima. Você pode:
-- Escolher depois com `@ux-ui` — ele oferece as mesmas duas rotas (imagens de referência ou preset)
+- Escolher depois com `@setup` — ele oferece as mesmas duas rotas (imagens de referência ou preset), sempre com confirmação explícita
 - Clonar o design de um site real com `@site-forge`
 - Criar um híbrido com `@design-hybrid-forge` (ex: clean-saas + neo-brutalist)
 
@@ -196,7 +198,7 @@ npx @jaimevalasek/aioson install --no-interactive
 |---|---|
 | Adicionar Codex ao mesmo projeto | `aioson install --reconfigure` |
 | Ativar Squads | `aioson install --reconfigure` (e marque) |
-| Trocar design skill | `@ux-ui` no cliente AI ou `aioson install --reconfigure` |
+| Trocar design skill ou identidade visual | `@setup` no cliente AI ou `aioson install --reconfigure` |
 | Mudar idioma de interação | Edite `interaction_language:` em `project.context.md` ou rode `@setup` de novo |
 | Mudar a classificação | Edite `classification:` em `project.context.md`. Próximas sessões respeitam. |
 

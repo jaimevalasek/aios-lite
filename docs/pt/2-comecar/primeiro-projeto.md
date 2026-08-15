@@ -4,7 +4,15 @@
 > **Tempo de execução:** 30–45 min.
 > **O que você vai ter no fim:** um app web simples (lista de tarefas) com spec, código, testes e dossier — todos rastreáveis em disco.
 
-Vamos construir um **mini-app de TODO** usando o ciclo SMALL. Você verá cada agente entrar, fazer sua parte, e passar para o próximo.
+Vamos construir um **mini-app de TODO** percorrendo a esteira principal num projeto SMALL. Você verá cada agente entrar, fazer sua parte, e passar para o próximo.
+
+A esteira completa é:
+
+```text
+@briefing → @briefing-refiner → @product → @sheldon → @planner → @dev → @qa → @tester → @pentester
+```
+
+Neste tutorial a ideia já está clara, então começamos direto no `@product` e pulamos o bloco de briefing. (Se a sua ideia ainda estivesse crua, entraria pelo `@briefing`; e se ela tivesse tela, o `@briefing-refiner` montaria um protótipo navegável para você aprovar antes de qualquer PRD — ver [Da ideia ao PRD via briefing](../3-receitas/da-ideia-ao-prd-via-briefing.md).)
 
 ---
 
@@ -100,6 +108,7 @@ Você > Sim
 
 @setup > project.context.md criado.
 @setup > Próximo agente: @product (para definir a feature inicial).
+        Se a ideia ainda estivesse vaga, eu recomendaria @briefing primeiro.
 ```
 
 Olha o que apareceu em disco:
@@ -138,70 +147,85 @@ Você > Permitir ao usuário criar e marcar tarefas como concluídas
 @product > Quais critérios de aceitação?
 Você > Criar tarefa com texto. Marcar como concluída. Listar pendentes e concluídas separadas. Persistir em SQLite.
 
-@product > [...detalhes...] Spec gravada em
-        .aioson/context/features/lista-todos/spec.md
-@product > Próximo: @analyst.
+@product > [...detalhes...] PRD gravado em
+        .aioson/context/features/lista-todos/prd-lista-todos.md
+        4 capacidades CAP-* com critério observável, e o que fica fora do escopo.
+@product > Próximo: @sheldon (revisão independente antes do plano).
 ```
 
 ```bash
-cat .aioson/context/features/lista-todos/spec.md
+cat .aioson/context/features/lista-todos/prd-lista-todos.md
 ```
 
-Você verá uma spec estruturada com escopo, ACs e fora-de-escopo.
+Você verá o PRD estruturado: capacidades `CAP-*`, ACs verificáveis e exclusões explícitas.
+
+> **A regra aqui:** o PRD diz o que o usuário precisa poder fazer. Ele **não** decide implementação — isso é do `@planner` e do `@dev`.
 
 ---
 
-## Passo 5 — `@analyst` mapeia o domínio
+## Passo 5 — `@sheldon` desafia o PRD antes de virar plano
 
 ```
-Você > @analyst
+Você > @sheldon
 
-@analyst > Lendo spec... domínio: tarefas pessoais.
-@analyst > Entidades:
-        - Task { id, text, completed, created_at }
-@analyst > Não há outras entidades no escopo.
-@analyst > Domain map gravado em context/architecture.md.
-@analyst > Próximo: @architect.
+@sheldon > Confrontando o PRD com project.context.md e com o código atual...
+@sheldon > 3 achados:
+        - AC-03 ("listar separados") não define o comportamento sem filtro → corrigido no PRD
+        - "Persistir" não dizia o que acontece ao reiniciar o processo → AC-04 tornado observável
+        - Escopo especulativo recusado: "tags" não foi pedido, fica fora
+@sheldon > Correções aplicadas no próprio prd-lista-todos.md (sem criar arquivo paralelo).
+@sheldon > sheldon_review: approved — PASS vinculado ao hash atual do PRD.
+@sheldon > Próximo: @planner.
 ```
+
+> **O que o `@sheldon` não faz:** ele não escreve uma spec paralela. Ele corrige o mesmo arquivo e sela. Se o PRD for editado depois, o PASS cai e ele revisa de novo.
 
 ---
 
-## Passo 6 — `@architect` decide a estrutura
+## Passo 6 — `@planner` corta em etapas verificáveis
 
 ```
-Você > @architect
+Você > @planner
 
-@architect > Stack confirmado: Node + Express + SQLite.
-@architect > Decisões:
-        - Estrutura: src/{routes,db,server}.js
-        - Persistência: better-sqlite3 (SQLite síncrono, simples)
-        - Validação: pequena, manual (sem libs extras — Article VI)
-        - Sem framework de teste pesado: usar `node:test` (built-in)
-@architect > Decisões registradas em architecture.md.
-@architect > Próximo: @dev.
+@planner > Lendo o PRD selado. Plano vertical em 3 etapas:
+
+        Etapa 1 — persistência
+          arquivos: package.json, src/db.js
+          check:    node -e "require('./src/db')" cria o schema
+        Etapa 2 — escrita de tarefa (CAP-01, CAP-02)
+          arquivos: src/routes.js, src/server.js
+          check:    POST /tasks → 201 com id; PATCH alterna completed
+        Etapa 3 — leitura separada e persistência (CAP-03, CAP-04)
+          arquivos: src/routes.js
+          check:    GET /tasks?status=pending|done; reiniciar processo mantém dados
+
+@planner > Sem libs extras: better-sqlite3 para persistência e `node:test` embutido
+        para os checks (Artigo VI — Simplicity Over Ceremony).
+@planner > implementation-plan-lista-todos.md gravado. Gate C aprovado?
+Você > Sim
+@planner > Próximo: @dev.
 ```
 
-> **Atenção ao Artigo VI ("Simplicity Over Ceremony"):** o `@architect` evitou puxar libs desnecessárias.
+> **Cada etapa entrega comportamento observável pelo usuário** — não "camada de banco" numa etapa e "camada de rota" na outra. É isso que "vertical" quer dizer.
 
 ---
 
-## Passo 7 — `@dev` implementa
+## Passo 7 — `@dev` implementa etapa por etapa
 
 ```
 Você > @dev
 
-@dev > [lê spec, architecture, project.context]
-@dev > Vou criar:
-        package.json
-        src/db.js          (init schema)
-        src/routes.js      (POST /tasks, PATCH /tasks/:id, GET /tasks)
-        src/server.js
-        tests/tasks.test.js (placeholder — @qa cobre)
+@dev > [lê PRD selado, plano e project.context]
+@dev > Etapa 1/3 — persistência
+        package.json, src/db.js criados. Check ✓
+@dev > Etapa 2/3 — escrita de tarefa
+        src/routes.js, src/server.js criados. Check ✓
+@dev > Etapa 3/3 — leitura separada e persistência
+        src/routes.js atualizado. Check ✓
 
-@dev > [implementa]
-@dev > Implementação OK. Rodando smoke:
+@dev > Smoke pelo caminho real:
         $ node src/server.js → escutando na 3000 ✓
-@dev > dev-state.md atualizado.
+@dev > 3/3 etapas completas. dev-state.md atualizado.
 @dev > Próximo: @qa.
 ```
 
@@ -217,32 +241,61 @@ cat .aioson/context/dev-state.md
 
 ---
 
-## Passo 8 — `@qa` testa
+## Passo 8 — `@qa` dá o veredito (Gate D)
 
 ```
 Você > @qa
 
-@qa > Lendo spec... 4 ACs identificados.
-@qa > Plano de teste:
+@qa > Lendo o PRD... 4 ACs identificados.
+@qa > Exercitando cada critério no app real:
         AC-01: criar tarefa → POST retorna 201 e id
         AC-02: marcar concluída → PATCH altera completed
         AC-03: listar separados → GET /tasks?status=pending|done
         AC-04: persistência → reiniciar processo, dados persistem
-@qa > Escrevendo tests/tasks.test.js... rodando...
 
-[Algum teste falhou? Ciclo autônomo QA→Dev (até 2 iterações):]
+[Algum critério falhou? Ciclo QA→Dev, limitado:]
 @qa > AC-03 falhou: GET sem filtro retorna mistura.
-        Repassando para @dev (iteração 1/2)...
+        Repassando para @dev (correção 1/1)...
 @dev > Corrigindo... done.
-@qa > Re-rodando... 4/4 OK.
-@qa > qa-report-tasks.md gravado com PASS. A feature está pronta para o gate humano de fechamento.
+@qa > Re-verificando... 4/4 OK.
+@qa > Veredito PASS gravado em qa-report-lista-todos.md, com evidência por AC.
+@qa > Feature pronta. Rode `aioson feature:close` quando quiser fechar.
 ```
 
-> **A novidade:** o ciclo QA→Dev devolve correções pequenas com evidência reproduzível e investigação limitada. Sob autopilot, o padrão é DEV→QA; `@tester`, `@pentester` e `@validator` só entram quando habilitados e explicitamente justificados. Veja [Autopilot Handoff](../5-referencia/autopilot-handoff.md).
+> **O `@qa` é o Gate D.** O veredito é independente de quem implementou e vale contra o PRD, exercitado pelo caminho normal de produção — nunca por mock. Uma falha permite uma correção do Dev e um passe final; ela não negocia o critério.
+>
+> Sob autopilot, o encadeamento automático é `@product → @sheldon → @planner → @dev → @qa` e **para aqui**: nem o workflow nem o autopilot fecham ou publicam uma feature. Veja [Autopilot Handoff](../5-referencia/autopilot-handoff.md).
 
 ---
 
-## Passo 9 — Commit limpo com `@committer`
+## Passo 9 — Endurecer com `@tester` e `@pentester` (opcional)
+
+As duas últimas fases da esteira entram **depois** do PASS e são habilitadas por feature. Elas não concedem o Gate D — elas protegem o que ele aprovou.
+
+```
+Você > @tester
+
+@tester > O comportamento aprovado vira suíte executável.
+        tests/tasks.test.js — 4 ACs + 3 casos de borda
+          · texto vazio → 400
+          · PATCH em id inexistente → 404
+          · reinício com o arquivo SQLite bloqueado
+@tester > test-report-lista-todos.md gravado. Cobertura onde há risco, não onde é fácil.
+
+Você > @pentester
+
+@pentester > Sondando a superfície dentro do escopo autorizado (só este workspace).
+        - MEDIUM: POST /tasks aceita texto sem limite de tamanho
+        - LOW: erro de SQLite vaza o caminho absoluto do arquivo
+@pentester > Os dois são determinísticos: corrigidos no mesmo pacote e re-sondados ✓
+@pentester > security-findings-lista-todos.json gravado. Publicar continua sendo decisão sua.
+```
+
+> **Alvo público, produção e sistema de terceiro ficam fora por contrato.** O `@pentester` só ataca o que é seu e está no escopo autorizado.
+
+---
+
+## Passo 10 — Commit limpo com `@committer`
 
 ```
 Você > @committer
@@ -269,14 +322,15 @@ Você > [Enter para aceitar]
 
 ```
 .aioson/context/
-├── project.context.md         ← visão do projeto (passo 3)
-├── architecture.md            ← decisões (passos 5+6)
-├── dev-state.md               ← o que o @dev fez (passo 7)
-├── qa-report-tasks.md         ← veredito do @qa (passo 8)
-├── qa-report-test-coverage.md ← relatório de QA
+├── project.context.md                    ← visão do projeto (passo 3)
+├── dev-state.md                          ← o que o @dev fez (passo 7)
+├── qa-report-lista-todos.md              ← veredito do @qa (passo 8)
+├── test-report-lista-todos.md            ← cobertura do @tester (passo 9)
+├── security-findings-lista-todos.json    ← sondagem do @pentester (passo 9)
 └── features/
     └── lista-todos/
-        └── spec.md            ← spec original (passo 4)
+        ├── prd-lista-todos.md                    ← PRD selado (passos 4+5)
+        └── implementation-plan-lista-todos.md    ← plano vertical (passo 6)
 ```
 
 Daqui a três meses, alguém (você ou outra IA) pode abrir esse projeto e entender **tudo** lendo só esses arquivos. Sem precisar do histórico de chat.
@@ -285,7 +339,9 @@ Daqui a três meses, alguém (você ou outra IA) pode abrir esse projeto e enten
 
 ## E quando eu quiser uma feature nova?
 
-Volte para o passo 4. Toda feature rastreada segue `[fontes → @briefing → @briefing-refiner → aprovação] → @product → @sheldon → @planner → @dev → @qa`; MICRO, SMALL e MEDIUM mudam a profundidade, não a cadeia. O `@setup` não precisa rodar de novo (já tem o contexto).
+Volte para o passo 4 — a esteira é um ciclo. Toda feature rastreada segue `@briefing → @briefing-refiner → @product → @sheldon → @planner → @dev → @qa → @tester → @pentester`; MICRO, SMALL e MEDIUM mudam a profundidade, não a ordem. O `@setup` não precisa rodar de novo (já tem o contexto).
+
+**E se for só um ajuste pequeno?** Não puxe a esteira inteira. Chame o `@deyvin`: ele confirma que a mudança cabe numa frase, registra um plano mínimo, implementa a menor fatia útil e fecha com o check combinado. Se o escopo crescer no meio, ele escala para a esteira em vez de inflar em silêncio.
 
 Se você se perder no meio, lembre:
 

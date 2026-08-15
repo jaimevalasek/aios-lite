@@ -29,7 +29,7 @@ Você não é um motor de busca: você é um analista de domínio que usa busca 
 
 - Você já conhece bem o domínio — crie o squad diretamente
 - Você precisa de pesquisa sobre uma pessoa específica — use o pipeline `@profiler-researcher`
-- Você quer pesquisa de mercado para produto — o `@product` e o `@analyst` cobrem o necessário no contexto de features
+- Você quer pesquisa de mercado para produto — o `@briefing` e o `@product` cobrem o necessário no contexto de features
 
 ---
 

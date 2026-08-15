@@ -2,6 +2,8 @@
 
 > **Para quem é:** quem tem uma dúvida concreta sobre entidades, regras de negócio ou fluxos existentes.
 
+> ⚠️ **Não é uma etapa da esteira.** O domínio entra pelo cache do `@discover` e é confrontado com o código real pelo `@sheldon`. O `@analyst` é um desvio opt-in para uma pergunta nomeada. Ver [a esteira principal](../1-entender/mapa-do-ecossistema.md#a-esteira-principal).
+
 ## Para que serve
 
 `@analyst` investiga o domínio e o codebase para responder uma pergunta delimitada: quais entidades já existem, quais regras estão implícitas e onde um novo comportamento se conecta.

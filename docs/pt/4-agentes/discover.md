@@ -8,7 +8,7 @@
 
 ## Para que serve
 
-Num projeto com 500+ arquivos, quando você invoca `@analyst` ou `@dev`, eles precisam entender o sistema antes de agir. Sem cache, eles varrem o codebase inteiro — consome janela de contexto, é lento, e pode perder coisas.
+Num projeto com 500+ arquivos, quando você invoca `@product`, `@sheldon` ou `@dev`, eles precisam entender o sistema antes de agir. Sem cache, eles varrem o codebase inteiro — consome janela de contexto, é lento, e pode perder coisas.
 
 O `@discover` resolve isso de vez: ele lê o projeto uma vez, extrai as informações semânticas relevantes (entidades, rotas, fluxos, dependências, estado atual), e salva tudo em `.aioson/context/bootstrap/`. Na próxima vez que qualquer agente precisar entender o sistema, ele lê o cache em vez de varrer tudo.
 
@@ -106,7 +106,7 @@ Uma ativação com `--help` (`/discover --help`) imprime um resumo rápido — o
 ## Handoff típico
 
 - **Vem de:** `@setup` (primeira vez) ou qualquer ponto quando o cache está stale.
-- **Vai para:** `@analyst`, `@dev`, `@deyvin` — qualquer agente que precise entender o sistema.
+- **Vai para:** `@product`, `@sheldon`, `@dev`, `@deyvin` — qualquer agente que precise entender o sistema.
 
 ## Diferença entre @discover e scan:project
 

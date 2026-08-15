@@ -225,7 +225,7 @@ Duas linhas divisórias valem para todos:
 
 ## Veja também
 
-- [Fichas dos 29 agentes](../4-agentes/README.md) — quando usar cada agente e o que ele entrega
+- [Fichas dos agentes](../4-agentes/README.md) — a esteira fase a fase, as consultorias opt-in e o que cada agente entrega
 - [Receitas práticas](../3-receitas/README.md) — exemplos end-to-end por cenário
 - [Continuidade entre sessões](../3-receitas/continuidade-entre-sessoes.md) — feature dossier, dev-resume, drift detection
 - [Feature Archive](./feature-archive.md) — o que acontece com os artefatos quando a feature fecha

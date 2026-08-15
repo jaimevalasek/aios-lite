@@ -6,10 +6,10 @@
 
 `@orchestrator` continua disponível, mas não faz parte da rota canônica por classificação. MEDIUM não o ativa automaticamente e não existe uma “lane maestro” obrigatória.
 
-A rota rastreada permanece:
+A esteira rastreada permanece:
 
 ```text
-[fontes → @briefing → @briefing-refiner → aprovação] → @product → @sheldon → @planner → @dev → @qa
+@briefing → @briefing-refiner → @product → @sheldon → @planner → @dev → @qa → @tester → @pentester
 ```
 
 Use Orchestrator quando o próprio objetivo é coordenação: decompor uma investigação, sincronizar especialistas explicitamente solicitados ou acompanhar uma sessão com várias dependências.

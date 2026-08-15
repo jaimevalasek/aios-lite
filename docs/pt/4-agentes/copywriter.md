@@ -23,7 +23,7 @@ A grande diferença em relação a um "prompt de copy genérico" é que ele tem 
 ## Quando invocar
 
 - Você precisa de copy para landing page, página de vendas, email ou campanha
-- O `@ux-ui` detectou que o projeto `project_type=site` e o copy ainda está faltando (copy gate dispara automático)
+- O protótipo da feature já foi aprovado e agora precisa do texto real que vai dentro dele
 - Você precisa de VSL (Video Sales Letter) — Mode 5
 - Você precisa de anúncios para Facebook/Instagram (CPGC)
 - Um executor de squad precisa de copy especializado num domínio
@@ -34,7 +34,7 @@ A grande diferença em relação a um "prompt de copy genérico" é que ele tem 
 ## Quando NÃO invocar
 
 - Você precisa de documentação técnica — use `@dev` ou o próprio agente de domínio
-- Você quer microcopy de UI (labels, tooltips, error messages) — o `@ux-ui` cobre isso dentro do design system
+- Você quer microcopy de UI (labels, tooltips, error messages) — isso já vem resolvido no protótipo aprovado e é implementado pelo `@dev`
 - Você quer pesquisa de mercado profunda sem copy — use `@orache`
 
 ---
@@ -190,7 +190,7 @@ Você > 5-Act
               [...]
 
 @copywriter > Copy completo salvo em .aioson/context/copy-finwise.md.
-              Próximo: @ux-ui para encaixar no layout.
+              Próximo: @product, para transformar isso em capacidades e ACs no PRD.
 ```
 
 ---
@@ -251,8 +251,10 @@ O `@copywriter` carrega references somente quando precisa, para economizar conte
 
 ## Handoff típico
 
-- **Vem de:** `@ux-ui` (copy gate automático para `project_type=site`), `@product` (handoff para `project_type=site`), ou pedido direto
-- **Vai para:** `@ux-ui` (encaixar no layout) → `@dev` (implementar no frontend) → `@qa` (validar)
+- **Vem de:** `@briefing-refiner` (protótipo aprovado, agora falta o texto real) ou pedido direto
+- **Vai para:** `@product` (o copy vira capacidade e AC no PRD) → `@sheldon` → `@planner` → `@dev` → `@qa`
+
+O `@copywriter` é uma especialização, não uma fase da esteira: nada trava esperando por ele. Se você já tem o texto, pule-o.
 
 ---
 

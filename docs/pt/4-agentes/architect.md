@@ -1,5 +1,7 @@
 # @architect — Consultoria de arquitetura
 
+> ⚠️ **Não é uma etapa da esteira.** As decisões técnicas da feature saem do PRD selado (`@sheldon`) e do plano vertical (`@planner`). O `@architect` é um desvio opt-in para uma fronteira técnica nomeada. Ver [a esteira principal](../1-entender/mapa-do-ecossistema.md#a-esteira-principal).
+
 > **Para quem é:** quem precisa resolver uma decisão técnica material antes ou durante o planejamento.
 
 ## Para que serve

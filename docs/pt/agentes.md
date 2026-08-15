@@ -2,6 +2,8 @@
 
 > **Versão tabular alternativa (legado).** Para fichas individuais detalhadas com diálogos, saídas em disco e handoff, veja [`4-agentes/README.md`](./4-agentes/README.md).
 
+> ⚠️ **A ordem de agentes mostrada nesta página está desatualizada.** A esteira atual é `@briefing → @briefing-refiner → @product → @sheldon → @planner → @dev → @qa → @tester → @pentester`, e `@analyst`/`@architect`/`@ux-ui` são consultorias opt-in, não etapas. Use [4-agentes/README.md](./4-agentes/README.md) e o [Mapa do ecossistema](./1-entender/mapa-do-ecossistema.md#a-esteira-principal) como referência.
+
 > `@pair` é alias de `@deyvin` e não possui ficha separada.
 
 > Quando usar cada agente, o que ele entrega e como ativá-lo.

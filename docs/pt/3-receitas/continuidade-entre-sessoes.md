@@ -26,7 +26,7 @@ O **Feature Dossier** (sistema de agent-chain continuity, implementado em 8 fase
 
 ## Como um dossier é criado
 
-O dossier é inicializado automaticamente quando você começa uma feature via o workflow normal (`@product` → `@analyst` → `@dev`). Mas você também pode criá-lo manualmente:
+O dossier é inicializado automaticamente quando você começa uma feature pela esteira normal (`@product` → `@sheldon` → `@planner` → `@dev` → `@qa`). Mas você também pode criá-lo manualmente:
 
 ```bash
 npx @jaimevalasek/aioson dossier:init --slug=checkout-stripe
@@ -55,7 +55,7 @@ O arquivo tem seções padronizadas:
 slug: checkout-stripe
 status: in_progress
 classification: SMALL
-agents_trail: [@product, @analyst, @architect, @dev]
+agents_trail: [@product, @sheldon, @planner, @dev]
 last_agent: @dev
 last_updated: 2026-05-06T14:32:00Z
 
@@ -84,10 +84,10 @@ last_updated: 2026-05-06T14:32:00Z
 
 ## Agent Trail
 [o que cada agente fez]
-@product: spec criada em 2026-05-05
-@analyst: Payment, Order mapeados
-@architect: Stripe Checkout escolhido, estrutura definida
-@dev: 3/5 passos do plano concluídos
+@product: PRD criado em 2026-05-05 (4 capacidades CAP-*)
+@sheldon: 2 lacunas corrigidas no PRD; sheldon_review: approved
+@planner: plano vertical em 5 etapas, Stripe Checkout como caminho
+@dev: 3/5 etapas do plano concluídas
 ```
 
 ---
@@ -196,8 +196,8 @@ npx @jaimevalasek/aioson dossier:show --slug=checkout-stripe
 ```
 FEATURE: checkout-stripe
 Status: in_progress
-Agentes: @product, @analyst, @architect, @dev, @deyvin
-Progresso: 4/5 passos concluídos (80%)
+Agentes: @product, @sheldon, @planner, @dev, @deyvin
+Progresso: 4/5 etapas concluídas (80%)
 Arquivos: 5 (3 criados, 2 pendentes)
 Pesquisas: 1 (stripe webhooks)
 Última atualização: 2026-05-07 10:15
