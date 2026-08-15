@@ -159,6 +159,12 @@ test('active Briefing modules retain the high-value contracts removed from kerne
   assert.match(refinement, /blocking.*Product cannot responsibly write the PRD/is);
   assert.match(prototype, /native_dispatch\.model/);
   assert.match(prototype, /mock-only/i);
+  // Runtime telemetry off is a user decision, never a default discovered later;
+  // a gate-passing rejection feeds the learnings loop instead of only a rebuild.
+  assert.match(prototype, /surface the enable decision to the user once per feature/i);
+  assert.match(prototype, /--route=<hash>/);
+  assert.match(prototype, /## Rejection closes the loop/);
+  assert.match(prototype, /\.aioson\/learnings\//);
   assert.match(visualExploration, /single.*sequential.*arena/is);
   assert.match(visualExploration, /targeted repository scan/i);
   assert.match(visualExploration, /reusable prompts are always retained/i);

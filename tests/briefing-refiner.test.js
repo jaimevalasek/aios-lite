@@ -1069,7 +1069,13 @@ test('verify:artifact kind=review proves the canonical surface and rejects a han
 });
 
 test('briefing-refiner auto-fires the review gate at agent:done', async () => {
-  assert.deepEqual(AGENT_ARTIFACT_KIND['briefing-refiner'], { kind: 'review', needs: 'slug', featureSlugged: true });
+  const mapping = AGENT_ARTIFACT_KIND['briefing-refiner'];
+  assert.equal(mapping.kind, 'review');
+  assert.equal(mapping.needs, 'slug');
+  assert.equal(mapping.featureSlugged, true);
+  // The prototype's craft fires at the same session end (skipped when the
+  // feature has no prototype.html — see verify-artifact-gate.test.js).
+  assert.deepEqual(mapping.also.map((entry) => entry.kind), ['visual']);
 
   const dir = await makeProject();
   const logger = { log() {}, error() {} };

@@ -918,6 +918,30 @@ const ADAPTERS = {
     const warnings = [...result.warnings];
     const metrics = { ...result.metrics, files: sources.files };
 
+    // Slug mode resolves the feature-owned prototype, whose contract is the
+    // prototype.html + prototype-manifest.md PAIR. A manifest without a
+    // `## Visual direction` (register, thesis, anti-goals, signature) means the
+    // composition was never decided in writing — the exact gap that lets an
+    // identity re-skin ship over the default generative layout.
+    if (ctx.slug && !ctx.file && !ctx.dir) {
+      const manifestPath = path.resolve(ctx.targetDir, '.aioson', 'briefings', ctx.slug, 'prototype-manifest.md');
+      let manifest = null;
+      try { manifest = fs.readFileSync(manifestPath, 'utf8'); } catch { /* handled below */ }
+      if (manifest === null) {
+        issues.push('prototype-manifest.md not found next to prototype.html — the manifest (with its `## Visual direction`) is half of the prototype artifact');
+      } else {
+        // Line-anchored capture: the section body is every following line that
+        // does not open another `##` section, so an empty section cannot
+        // swallow its neighbor's content and read as filled.
+        const section = manifest.match(/(?:^|\n)##\s+Visual direction[^\n]*((?:\n(?!##\s)[^\n]*)*)/i);
+        const body = section ? section[1].trim() : '';
+        if (body.length === 0) {
+          issues.push('prototype-manifest.md has no filled `## Visual direction` — register, thesis, anti-goals, and the composition signature must be written before layout; an identity record supplies tokens, never the composition decision');
+        }
+        metrics.manifest_visual_direction = body.length > 0;
+      }
+    }
+
     // Opt-in runtime pass. Static telemetry reads what was written; this reads
     // what the browser did with it — overflow, clipping, real computed contrast.
     // A missing browser is a reported state, never a silent pass.
@@ -926,6 +950,7 @@ const ADAPTERS = {
       const { pathToFileURL } = require('node:url');
       const collected = await collectRuntimeMeasurements({
         fileUrl: pathToFileURL(path.resolve(ctx.targetDir, sources.entry)).href,
+        route: ctx.route || null,
         launcher: ctx.browserLauncher || null
       });
       if (!collected.available) {
@@ -1016,9 +1041,10 @@ async function runVerifyArtifact({ args, options = {}, logger }) {
   }
 
   const runtime = Boolean(options.runtime);
+  const route = options.route ? String(options.route).trim() : null;
   const result = await evaluateKind(kind, {
     slug, targetDir, file, dir, noBuild, buildTimeout, buildCommand,
-    runtime, browserLauncher: options.browserLauncher || null
+    runtime, route, browserLauncher: options.browserLauncher || null
   }, logger);
 
   if (result === null) {

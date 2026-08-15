@@ -1,6 +1,6 @@
 # Aesthetic Registers — Interface Design
 
-Load in **origination mode only**, when no identity record, prototype, or established component language resolves. That is the cold start — the exact moment a generative system reverts to the statistical average, because "clean modern SaaS" is what the average looks like.
+Load in **origination mode only** — and composition is an origination act whenever no approved prototype or established component language answers the layout question. An identity record resolves tokens, not composition, so an identity-parameterized build still commits to a register here before laying out new screens. That is the cold start — the exact moment a generative system reverts to the statistical average, because "clean modern SaaS" is what the average looks like — and a token re-skin over the average composition is still the average.
 
 `design-directions.md` answers *what the product needs* (density, warmth, trust, dark platform). This file answers *what the product sounds like*. Pick one register **and** one direction: the register sets posture, the direction sets the token math. Never mix two registers — that is style soup with extra steps.
 

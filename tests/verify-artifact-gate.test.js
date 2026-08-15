@@ -46,7 +46,34 @@ test('every mapped kind exists in the verify:artifact registry', () => {
   const kinds = new Set(availableKinds());
   for (const [agent, m] of Object.entries(AGENT_ARTIFACT_KIND)) {
     assert.equal(kinds.has(m.kind), true, `${agent} -> kind "${m.kind}" not registered in verify:artifact`);
+    for (const extra of m.also || []) {
+      assert.equal(kinds.has(extra.kind), true, `${agent} -> secondary kind "${extra.kind}" not registered in verify:artifact`);
+    }
   }
+});
+
+test('briefing-refiner auto-fires the visual gate next to the review gate — and stays quiet without a prototype', async () => {
+  // Non-visual feature: no prototype.html, so the secondary visual check is a
+  // skipped hint, never an advisory failure nagging every text-only briefing.
+  const nonVisual = tmpDir();
+  const quiet = await verifyAgentArtifact({ targetDir: nonVisual, agent: 'briefing-refiner', options: { feature: 'texto' } });
+  assert.equal(quiet.kind, 'review');
+  const quietVisual = (quiet.also || []).find((entry) => entry.kind === 'visual');
+  assert.ok(quietVisual, 'the visual gate must ride along with the review gate');
+  assert.equal(quietVisual.skipped, true);
+  assert.match(quietVisual.reason, /prototype\.html not present/);
+
+  // Visual feature: the prototype exists, so the visual check actually runs
+  // (and fails here — no manifest, no measurable system — proving it is live).
+  const visual = tmpDir();
+  fs.mkdirSync(path.join(visual, '.aioson', 'briefings', 'painel'), { recursive: true });
+  fs.writeFileSync(path.join(visual, '.aioson', 'briefings', 'painel', 'prototype.html'), '<style>.a{padding:7px;margin:3px;color:#123;gap:5px;border-radius:3px;font-size:13px;background:#fff;border:1px solid #eee;box-shadow:none;fill:#123}</style><div class="a">x</div>', 'utf8');
+  const live = await verifyAgentArtifact({ targetDir: visual, agent: 'briefing-refiner', options: { feature: 'painel' } });
+  const liveVisual = (live.also || []).find((entry) => entry.kind === 'visual');
+  assert.ok(liveVisual);
+  assert.equal(liveVisual.skipped, false);
+  assert.equal(liveVisual.ok, false);
+  assert.match(liveVisual.reason, /verify-artifact-visual\.json/);
 });
 
 test('verifyAgentArtifact returns null for an agent with no artifact', async () => {

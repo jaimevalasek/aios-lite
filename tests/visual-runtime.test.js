@@ -103,6 +103,66 @@ test('summarize turns raw layout facts into findings, and silence into silence',
   assert.match(broken.warnings.join('\n'), /extends outside the viewport/);
 });
 
+test('the fold check: a visible primary below the viewport is an issue, an invisible one a routing hint', () => {
+  const base = {
+    scroll_width: 360, viewport_width: 360, viewport_height: 740,
+    clipped: [], offscreen: [], small_targets: [], text_samples: []
+  };
+
+  // The exact shipped-invisible defect class: the #1 differentiator starts
+  // below the first viewport and every static gate stays green.
+  const below = summarizeRuntime([{
+    viewport: VIEWPORT_MOBILE,
+    raw: { ...base, primary: [{ el: 'section.energy', hidden: false, top: 812, height: 200 }] }
+  }]);
+  assert.equal(below.issues.length, 1);
+  assert.match(below.issues[0], /primary feature `section\.energy` starts 72px below the fold/);
+  assert.equal(below.metrics.viewports[0].primary_below_fold, 1);
+
+  // Above the fold: silence.
+  const above = summarizeRuntime([{
+    viewport: VIEWPORT_MOBILE,
+    raw: { ...base, primary: [{ el: 'section.energy', hidden: false, top: 320, height: 200 }] }
+  }]);
+  assert.deepEqual(above.issues, []);
+  assert.equal(above.metrics.viewports[0].primary_visible, 1);
+
+  // Marker present but hidden on the loaded route (hash router on another
+  // screen): a hint to re-run with --route, never a fabricated fold verdict.
+  const hidden = summarizeRuntime([{
+    viewport: VIEWPORT_MOBILE,
+    raw: { ...base, primary: [{ el: 'section.energy', hidden: true, top: 0, height: 0 }] }
+  }]);
+  assert.deepEqual(hidden.issues, []);
+  assert.match(hidden.warnings.join('\n'), /no \[data-aioson-primary\] element is visible on the loaded route/);
+
+  // No marker at all: the static half already warns; runtime stays silent.
+  const none = summarizeRuntime([{ viewport: VIEWPORT_MOBILE, raw: { ...base } }]);
+  assert.deepEqual(none.issues, []);
+  assert.deepEqual(none.warnings, []);
+});
+
+test('--route appends the hash so an inner screen can be measured', async () => {
+  const urls = [];
+  const launcher = async () => ({
+    newContext: async () => ({
+      newPage: async () => ({
+        goto: async (url) => { urls.push(url); },
+        waitForTimeout: async () => {},
+        evaluate: async () => ({ scroll_width: 360, viewport_width: 360, viewport_height: 740, clipped: [], offscreen: [], small_targets: [], text_samples: [], primary: [] })
+      }),
+      close: async () => {}
+    }),
+    close: async () => {}
+  });
+
+  await collectRuntimeMeasurements({ fileUrl: 'file:///proto.html', route: '#/bancada/1', launcher });
+  assert.equal(urls[0], 'file:///proto.html#/bancada/1');
+
+  await collectRuntimeMeasurements({ fileUrl: 'file:///proto.html', route: '/palco/2', launcher });
+  assert.equal(urls[urls.length - 1], 'file:///proto.html#/palco/2', 'a bare route gains its # prefix');
+});
+
 test('a missing browser is reported, never treated as a pass', async () => {
   const collected = await collectRuntimeMeasurements({
     fileUrl: 'file:///nowhere.html',

@@ -3,7 +3,7 @@
   "agent": "dev,deyvin,briefing-refiner,benchmark,product,sheldon",
   "domain": "visual-quality",
   "desc": "Quality-scored visual patterns and anti-patterns for producing specific, usable interfaces instead of generic AI-looking layouts, plus the specification-lens nodes that keep the product authority from going generic upstream.",
-  "updated": "2026-08-11",
+  "updated": "2026-08-15",
   "nodes": [
     {
       "id": "vq-000",
@@ -228,6 +228,48 @@
       "not": "Shipping value-reassignment masking as complete while mid-field edits teleport the caret",
       "warn": "Deleting a literal separator must consume the digit before it, or backspace loops the separator back forever; test deletion paths, not only forward typing.",
       "see": ["vq-009"]
+    },
+    {
+      "id": "vq-016",
+      "title": "A briefing prototype explains itself on first open",
+      "tags": ["visual-quality", "ui", "ux", "prototype"],
+      "q": 5,
+      "v": "BEST_PRACTICE",
+      "s": "The prototype's one job is letting the owner validate how the app will work. Overlay the first open with a 3-5 step tour in lay language translated from the briefing promises, each step anchored to a `data-aioson-tour` region with a visible highlight, dismissible and reopenable via a persistent `?` control. An owner forced to ask \"how would I use this?\" is a failed prototype, not a feedback round.",
+      "p": "tour steps = PROM-* promises rewritten for a first-time viewer; `?` reopens; `data-aioson-tour` anchors each step",
+      "src": "AIOSON supervised briefing session: the owner opened the prototype and could not tell what the product did until it was explained in chat",
+      "date": "2026-08-15",
+      "not": "Handing off screens that only make sense to whoever built them, then writing the lay explanation in chat after the owner asks",
+      "warn": "The tour explains regions and outcomes, not UI mechanics; five steps maximum — a tour that needs more is reporting an over-complex surface, which is its own finding.",
+      "see": ["vq-003", "vq-018"]
+    },
+    {
+      "id": "vq-017",
+      "title": "Identity tokens never substitute for a composition decision",
+      "tags": ["visual-quality", "anti-slop", "layout", "design", "interface"],
+      "q": 5,
+      "v": "AVOID",
+      "s": "Applying an identity record's palette and typography over the default generative composition is a re-skin, not a design: the token gates go green while the screen still fails the replaceability test. Composition is decided per build — commit to one aesthetic register and write the manifest `## Visual direction` (register, thesis, anti-goals, composition signature in one sentence) before layout, in identity mode exactly as in cold start.",
+      "p": "identity = token math; register + signature = composition; both decided and written before layout",
+      "src": "AIOSON supervised briefing session: a design-system swap re-skinned the same generic composition and every token gate passed",
+      "not": "Treating \"the identity is applied\" as proof the screen is designed while rows of cards, a pill topbar, and a uniform grid survive underneath",
+      "date": "2026-08-15",
+      "warn": "Conformance mode is the one exception: an approved prototype transfers its composition — do not re-decide it.",
+      "see": ["vq-001", "vq-002"]
+    },
+    {
+      "id": "vq-018",
+      "title": "The #1 differentiator starts inside the first viewport of its screen",
+      "tags": ["visual-quality", "layout", "ui", "prototype"],
+      "q": 5,
+      "v": "BEST_PRACTICE",
+      "s": "Mark the region rendering the briefing's #1 differentiator with `data-aioson-primary` and prove it starts above the fold on the screen that owns it, at desktop and mobile. A differentiator below the fold is invisible: the owner judges the product without ever seeing the one thing it does differently. Source text cannot prove this — the runtime fold check anchors on the marker (`verify:artifact --kind=visual --runtime`, with `--route=<hash>` for inner screens).",
+      "p": "`data-aioson-primary` on the differentiator; runtime fold check green on its own route before handoff",
+      "src": "AIOSON supervised briefing session: a missing `min-height:0` in a flex chain pushed the core visualization below the fold and every static gate stayed green",
+      "date": "2026-08-15",
+      "not": "Validating layout only at the entry route, or only by reading source — flexbox collapse is a rendered fact, not an authored one",
+      "warn": "vq-003 owns the marketing first viewport; this node owns the product's working screens and is only proven by the runtime measurement.",
+      "see": ["vq-003", "vq-016"]
     },
     {
       "id": "sq-001",

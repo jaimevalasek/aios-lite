@@ -22,6 +22,8 @@ Before visual decisions, resolve authority in this order and stop at the first h
 
 An identity record is extracted design data: apply its palette, typography, spacing/layout, radius/depth, motion, pillars, signature moves, and `## Component structure notes`. It parameterizes this skill; it is not a second skill and never overrides accessibility or quality gates. Do not fabricate `identity.md`.
 
+An identity record answers the token question, never the composition question. Unless conformance mode transfers an approved layout, laying out a new screen is still an origination act: load `references/aesthetic-registers.md`, commit to one register, and write the composition signature before layout — with the identity supplying the token math. Swapping identity tokens over the default generative composition is a re-skin, and a re-skin fails the replaceability test no matter how good the tokens are.
+
 ## Conformance mode
 
 When an approved prototype or an established component language already answers the visual question, this skill does not re-decide direction — it transfers one. Re-deciding is how an approved surface silently becomes a different product.

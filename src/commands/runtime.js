@@ -1183,8 +1183,10 @@ async function runRuntimeLog({ args, options = {}, logger, t }) {
  */
 function logVerifyArtifactLine(logger, va) {
   if (!va) return;
-  const marker = va.skipped ? 'hint' : va.ok ? 'ok' : 'advisory';
-  logger.log(`agent:done — verify:artifact (${va.kind}): ${marker}${va.reason ? ` — ${va.reason}` : ''}`);
+  for (const entry of [va, ...(Array.isArray(va.also) ? va.also : [])]) {
+    const marker = entry.skipped ? 'hint' : entry.ok ? 'ok' : 'advisory';
+    logger.log(`agent:done — verify:artifact (${entry.kind}): ${marker}${entry.reason ? ` — ${entry.reason}` : ''}`);
+  }
 }
 
 async function runAgentDone({ args, options = {}, logger, t }) {

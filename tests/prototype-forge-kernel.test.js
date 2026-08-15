@@ -24,4 +24,16 @@ test('Prototype Forge keeps a compact phased router and preserves enforceable bu
   assert.match(build, /loading, empty, error, populated, and permission-denied/i);
   assert.match(quality, /exactly one surgical polish pass/i);
   assert.match(quality, /## Core interactions/i);
+
+  // Supervised-briefing feedback contracts: the prototype explains itself, the
+  // #1 differentiator is fold-checkable, composition is decided before layout
+  // in every mode, and a fresh-eyes walkthrough gates the handoff.
+  assert.match(build, /## First-open explainer/);
+  assert.match(build, /data-aioson-tour/);
+  assert.match(build, /data-aioson-primary/);
+  assert.match(quality, /## Visual direction`? first/i);
+  assert.match(quality, /identity record supplies tokens/i);
+  assert.match(quality, /first-contact walkthrough/i);
+  assert.match(quality, /microinteractions bound to the signature move/i);
+  assert.match(kernel, /first-open explainer[\s\S]*data-aioson-primary[\s\S]*first-contact walkthrough/i);
 });

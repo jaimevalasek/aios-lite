@@ -32,7 +32,7 @@ test('the layout lens stays exactly with the implementation-oriented agents', as
 
     assert.ok(entry, `visual quality brain missing from ${root}`);
     assert.deepEqual(entry.agents, INDEXED_AGENTS);
-    assert.equal(entry.nodes, 19);
+    assert.equal(entry.nodes, 22);
     assert.equal(entry.path, BRAIN_RELATIVE_PATH);
 
     for (const agent of AGENTS) {
@@ -45,11 +45,20 @@ test('the layout lens stays exactly with the implementation-oriented agents', as
 
       assert.equal(result.ok, true);
       assert.deepEqual(result.warnings, []);
-      assert.equal(result.nodes.length, 16);
+      assert.equal(result.nodes.length, 19);
       const replaceability = result.nodes.find((node) => node.id === 'vq-002');
       assert.equal(replaceability.v, 'AVOID');
       assert.match(replaceability.s, /repeated em dashes/i);
       assert.match(replaceability.warn, /quotations, code, commands/i);
+      // The three supervised-briefing feedback nodes: self-explaining prototype,
+      // identity-tokens-are-not-composition, and the primary-feature fold check.
+      const reskin = result.nodes.find((node) => node.id === 'vq-017');
+      assert.equal(reskin.v, 'AVOID');
+      assert.match(reskin.s, /re-skin/i);
+      const fold = result.nodes.find((node) => node.id === 'vq-018');
+      assert.match(fold.s, /data-aioson-primary/);
+      const tour = result.nodes.find((node) => node.id === 'vq-016');
+      assert.match(tour.s, /data-aioson-tour/);
     }
   }
 });

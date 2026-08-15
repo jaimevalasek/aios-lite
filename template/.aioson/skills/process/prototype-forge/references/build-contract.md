@@ -19,6 +19,11 @@ In `canonical-briefing`, the artifact belongs to `.aioson/briefings/{slug}/`. In
 - Every Core object has reachable list/index, detail, and management surface.
 - Authenticated products include functional account/user navigation and implied persistent chrome.
 - Assign stable `data-aioson-id` anchors to meaningful regions and Core actions.
+- Mark the one region rendering the briefing's #1 differentiator with `data-aioson-primary`. It must start inside the first viewport of its screen at desktop and mobile — the runtime fold check anchors on this marker, and a differentiator below the fold is a feature the owner never sees.
+
+## First-open explainer
+
+The prototype exists so the owner can validate how the app works; an owner who has to ask "how would I use this?" means the prototype failed its one job. Overlay the first open with a 3–5 step tour in lay language — each step translated from a briefing promise (`PROM-*`), anchored to a `data-aioson-tour` region with a visible highlight — dismissible, and reopenable through a persistent `?` control. The tour is part of the artifact, not polish.
 
 ## Behavior
 

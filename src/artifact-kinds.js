@@ -34,7 +34,13 @@ const AGENT_ARTIFACT_KIND = {
   copywriter: { kind: 'copy', needs: 'slug' },
   orache: { kind: 'orache-report', needs: 'file' },
   'site-forge': { kind: 'site', needs: 'dir', opts: { noBuild: true } },
-  'briefing-refiner': { kind: 'review', needs: 'slug', featureSlugged: true },
+  // The refiner's session end proves BOTH halves of its output: the review
+  // surface AND the prototype's measured craft. `skipIfMissing` keeps the
+  // visual gate quiet for genuinely non-visual features (no prototype.html).
+  'briefing-refiner': {
+    kind: 'review', needs: 'slug', featureSlugged: true,
+    also: [{ kind: 'visual', needs: 'slug', featureSlugged: true, skipIfMissing: '.aioson/briefings/{slug}/prototype.html' }]
+  },
   briefing: { kind: 'briefing', needs: 'slug', featureSlugged: true },
   tester: { kind: 'test-report', needs: 'slug', featureSlugged: true },
   squad: { kind: 'squad-pilot', needs: 'slug' },
@@ -65,58 +71,85 @@ function resolveAgentArtifact(agent) {
 async function verifyAgentArtifact({ targetDir, agent, options = {} }) {
   const mapping = resolveAgentArtifact(agent);
   if (!mapping) return null;
-  const { kind, needs } = mapping;
-  const feature = options.feature ? String(options.feature).trim() : null;
-  const slug = options.slug
-    ? String(options.slug).trim()
-    : (mapping.featureSlugged && feature ? feature : null);
-  const file = options.file ? String(options.file).trim() : null;
-  const dir = options.dir ? String(options.dir).trim() : null;
 
-  const missingLocator =
-    (needs === 'slug' && !slug) || (needs === 'file' && !file) || (needs === 'dir' && !dir);
-  if (missingLocator) {
-    const flag = NEEDS_FLAG[needs];
-    return {
-      kind,
-      ok: true,
-      skipped: true,
-      reason: `needs ${flag} — run: aioson verify:artifact . --kind=${kind} ${flag} --advisory`
-    };
-  }
+  const runOne = async (m) => {
+    const { kind, needs } = m;
+    const feature = options.feature ? String(options.feature).trim() : null;
+    const slug = options.slug
+      ? String(options.slug).trim()
+      : (m.featureSlugged && feature ? feature : null);
+    const file = options.file ? String(options.file).trim() : null;
+    const dir = options.dir ? String(options.dir).trim() : null;
 
-  try {
-    const { runVerifyArtifact } = require('./commands/verify-artifact');
-    const report = await runVerifyArtifact({
-      args: [targetDir],
-      options: {
+    const missingLocator =
+      (needs === 'slug' && !slug) || (needs === 'file' && !file) || (needs === 'dir' && !dir);
+    if (missingLocator) {
+      const flag = NEEDS_FLAG[needs];
+      return {
         kind,
-        slug,
-        file,
-        dir,
-        advisory: true,
-        suppressExitCode: true,
-        json: true,
-        ...(mapping.opts && mapping.opts.noBuild ? { 'no-build': true } : {})
-      },
-      logger: { log() {}, error() {}, warn() {} }
-    });
-    if (!report) return null;
-    const issues = report.issues || [];
-    const head = issues.slice(0, 3).join('; ');
-    const more = issues.length > 3 ? ` (+${issues.length - 3} more)` : '';
-    return {
-      kind,
-      ok: Boolean(report.ok),
-      skipped: false,
-      issues,
-      reason: report.ok
-        ? null
-        : `${head}${more} — advisory; see .aioson/context/verify-artifact-${kind}.json`
-    };
-  } catch {
-    return null;
+        ok: true,
+        skipped: true,
+        reason: `needs ${flag} — run: aioson verify:artifact . --kind=${kind} ${flag} --advisory`
+      };
+    }
+
+    // A secondary kind may only apply when its artifact exists at all (e.g. the
+    // visual gate for a non-visual feature with no prototype) — absence is a
+    // legitimate state there, not a failure to nag about.
+    if (m.skipIfMissing) {
+      const rel = m.skipIfMissing.replace('{slug}', slug || '');
+      const fs = require('node:fs');
+      const path = require('node:path');
+      if (!fs.existsSync(path.resolve(targetDir, rel))) {
+        return { kind, ok: true, skipped: true, reason: `${rel} not present — nothing to measure` };
+      }
+    }
+
+    try {
+      const { runVerifyArtifact } = require('./commands/verify-artifact');
+      const report = await runVerifyArtifact({
+        args: [targetDir],
+        options: {
+          kind,
+          slug,
+          file,
+          dir,
+          advisory: true,
+          suppressExitCode: true,
+          json: true,
+          ...(m.opts && m.opts.noBuild ? { 'no-build': true } : {})
+        },
+        logger: { log() {}, error() {}, warn() {} }
+      });
+      if (!report) return null;
+      const issues = report.issues || [];
+      const head = issues.slice(0, 3).join('; ');
+      const more = issues.length > 3 ? ` (+${issues.length - 3} more)` : '';
+      return {
+        kind,
+        ok: Boolean(report.ok),
+        skipped: false,
+        issues,
+        reason: report.ok
+          ? null
+          : `${head}${more} — advisory; see .aioson/context/verify-artifact-${kind}.json`
+      };
+    } catch {
+      return null;
+    }
+  };
+
+  const primary = await runOne(mapping);
+  if (!primary) return null;
+  if (Array.isArray(mapping.also) && mapping.also.length > 0) {
+    const secondary = [];
+    for (const m of mapping.also) {
+      const res = await runOne(m);
+      if (res) secondary.push(res);
+    }
+    if (secondary.length > 0) primary.also = secondary;
   }
+  return primary;
 }
 
 module.exports = { AGENT_ARTIFACT_KIND, resolveAgentArtifact, verifyAgentArtifact };

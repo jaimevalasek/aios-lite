@@ -131,6 +131,21 @@ function bareStructuredInputs(html) {
 const CARD_TAG = /^(div|section|article|li|aside)$/i;
 const CARD_CLASS = /\b(card|panel|tile|widget)\b/i;
 
+// Emoji standing in for icons. The range covers pictographs, symbols and
+// dingbats; the allowlist removes the handful of dingbats UI text uses
+// deliberately (checkmarks, crosses, stars), because those are typography,
+// not icon-faking. Warning tier: emoji inside seeded mock CONTENT (a chat
+// message, a reaction) is legitimate and only a reviewer can tell.
+const EMOJI_GLYPH = /[\u{1F1E6}-\u{1F1FF}\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu;
+const EMOJI_ALLOWED = new Set(['✓', '✔', '✕', '✖', '✗', '✘', '★', '☆']);
+
+// Prototype affordance markers. `data-aioson-id` is the build contract's anchor
+// attribute, so its presence identifies an AIOSON prototype; only then are the
+// tour and primary-feature markers expected.
+const PROTOTYPE_ANCHOR = /data-aioson-id\s*=/i;
+const PRIMARY_MARKER = /data-aioson-primary\b/i;
+const TOUR_MARKER = /data-aioson-tour\b/i;
+
 /** Strip CSS comments so commented-out code never counts as a measurement. */
 function stripComments(css) {
   return String(css || '').replace(/\/\*[\s\S]*?\*\//g, '');
@@ -240,6 +255,62 @@ function maxCardNesting(html) {
 }
 
 /**
+ * Longest run of consecutive sibling card-like elements sharing one class
+ * attribute — the "uniform card wall" every generative default converges on.
+ * Same lexical tag walker as `maxCardNesting`; a run is broken by any sibling
+ * tag with a different (or no) card class. Restricted to card classes on
+ * purpose: twenty `.row` siblings are a list, eight identical `.card` siblings
+ * are the replaceability test failing in markup.
+ *
+ * @returns {{run: number, className: string|null}}
+ */
+function maxCardSiblingRun(html) {
+  const re = /<(\/?)([a-zA-Z][a-zA-Z0-9-]*)\b([^>]*)>/g;
+  const rootFrame = { tag: null, lastKey: null, run: 0 };
+  const stack = [rootFrame];
+  let best = { run: 0, className: null };
+  let m;
+  while ((m = re.exec(String(html || '')))) {
+    const closing = m[1] === '/';
+    const tag = m[2].toLowerCase();
+    const attrs = m[3] || '';
+    if (VOID_OR_OPAQUE.has(tag)) {
+      // A void sibling (hr, img) still separates two cards visually.
+      stack[stack.length - 1].lastKey = null;
+      stack[stack.length - 1].run = 0;
+      continue;
+    }
+    if (closing) {
+      const idx = stack.map((frame) => frame.tag).lastIndexOf(tag);
+      if (idx > 0) stack.length = idx; // unwind to (and drop) the matching frame
+      continue;
+    }
+    const parent = stack[stack.length - 1];
+    const classAttr = attrs.match(/\bclass\s*=\s*["']([^"']*)["']/i);
+    const classValue = classAttr ? classAttr[1].trim().replace(/\s+/g, ' ') : '';
+    const key = CARD_TAG.test(tag) && CARD_CLASS.test(classValue) ? `${tag}.${classValue}` : null;
+    if (key && key === parent.lastKey) {
+      parent.run += 1;
+    } else {
+      parent.lastKey = key;
+      parent.run = key ? 1 : 0;
+    }
+    if (parent.run > best.run) best = { run: parent.run, className: classValue };
+    if (!/\/\s*$/.test(attrs)) stack.push({ tag, lastKey: null, run: 0 });
+  }
+  return best;
+}
+
+/** Unique emoji glyphs in the corpus, minus the deliberate-typography allowlist. */
+function emojiGlyphs(text) {
+  const out = new Set();
+  for (const hit of String(text || '').matchAll(EMOJI_GLYPH)) {
+    if (!EMOJI_ALLOWED.has(hit[0])) out.add(hit[0]);
+  }
+  return [...out];
+}
+
+/**
  * Measure one HTML+CSS corpus.
  *
  * @param {{html?: string, css?: string}} sources
@@ -315,6 +386,13 @@ function analyzeVisualSources({ html = '', css = '' } = {}) {
   // ── structure ────────────────────────────────────────────────────────────
   const cardNesting = maxCardNesting(markup);
   const mediaElements = (markup.match(/<(img|video|canvas|picture)\b/gi) || []).length;
+  const cardWall = maxCardSiblingRun(markup);
+  const emoji = emojiGlyphs(markup);
+
+  // ── prototype affordances ────────────────────────────────────────────────
+  const isPrototype = PROTOTYPE_ANCHOR.test(markup);
+  const hasPrimaryMarker = PRIMARY_MARKER.test(markup);
+  const hasTourMarker = TOUR_MARKER.test(markup);
 
   // ── interaction contracts ────────────────────────────────────────────────
   const scriptText = stripJsComments(extractScriptText(markup));
@@ -361,6 +439,12 @@ function analyzeVisualSources({ html = '', css = '' } = {}) {
     states_missing: statesMissing,
     interactive_surface: interactive,
     max_card_nesting: cardNesting,
+    max_card_sibling_run: cardWall.run,
+    card_sibling_class: cardWall.className,
+    emoji_glyphs: emoji,
+    prototype_anchors: isPrototype,
+    primary_marker: hasPrimaryMarker,
+    tour_marker: hasTourMarker,
     media_elements: mediaElements,
     native_dialog_calls: nativeDialogs,
     structured_inputs_without_semantics: unmaskedInputs,
@@ -420,6 +504,19 @@ function analyzeVisualSources({ html = '', css = '' } = {}) {
   if (managementSurface && !hasWidgetMarkers) {
     warnings.push('management surface with no widget/KPI/chart markers — a management home opens with decision-driving widgets (management-home-widgets rule)');
   }
+  if (emoji.length > 0) {
+    const sample = emoji.slice(0, 6).join(' ');
+    warnings.push(`${emoji.length} emoji glyph(s) in the UI corpus (${sample}${emoji.length > 6 ? ' …' : ''}) — emoji standing in for icons is a slop marker; use the icon set. Emoji inside seeded mock content is fine — judge in context`);
+  }
+  if (cardWall.run >= 8) {
+    warnings.push(`${cardWall.run} consecutive sibling cards share class "${cardWall.className}" — a uniform card wall is the replaceability test failing in markup; vary the composition or collapse to rows`);
+  }
+  if (isPrototype && !hasPrimaryMarker) {
+    warnings.push('prototype has `data-aioson-id` anchors but no `data-aioson-primary` marker — mark the one region rendering the briefing\'s #1 differentiator so the runtime fold check can prove it is visible without scrolling');
+  }
+  if (isPrototype && !hasTourMarker) {
+    warnings.push('prototype has no first-open explainer (`data-aioson-tour`) — a briefing prototype must explain itself to the owner: 3–5 lay steps from the briefing promises, reopenable via a persistent `?` control');
+  }
 
   return { applicable: true, metrics, issues, warnings };
 }
@@ -433,6 +530,8 @@ module.exports = {
   declarations,
   ruleBlocks,
   maxCardNesting,
+  maxCardSiblingRun,
+  emojiGlyphs,
   stripComments,
   stripHtmlComments,
   stripJsComments,

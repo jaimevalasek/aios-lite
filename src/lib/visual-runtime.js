@@ -113,10 +113,12 @@ function pageProbe() {
   const out = {
     scroll_width: root.scrollWidth,
     viewport_width: window.innerWidth,
+    viewport_height: window.innerHeight,
     clipped: [],
     offscreen: [],
     small_targets: [],
-    text_samples: []
+    text_samples: [],
+    primary: []
   };
 
   const label = (el) => {
@@ -169,6 +171,23 @@ function pageProbe() {
         text: ownText.slice(0, 40)
       });
     }
+  }
+
+  // The build contract marks the briefing's #1 differentiator with
+  // `data-aioson-primary`. Raw geometry only — the fold verdict is formed in
+  // `summarizeRuntime` where it can be unit-tested.
+  const primaries = doc.querySelectorAll('[data-aioson-primary]');
+  for (let i = 0; i < primaries.length && i < 10; i++) {
+    const el = primaries[i];
+    const style = getComputedStyle(el);
+    const rect = el.getBoundingClientRect();
+    out.primary.push({
+      el: label(el),
+      hidden: style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0'
+        || (rect.width === 0 && rect.height === 0),
+      top: Math.round(rect.top),
+      height: Math.round(rect.height)
+    });
   }
   return out;
 }
@@ -232,6 +251,27 @@ function summarizeRuntime(runs) {
     if (smallTargets.length > 0 && viewport.width <= 480) {
       warnings.push(`${viewport.name}: ${smallTargets.length} tap target(s) under ${MIN_TAP_TARGET}px (${smallTargets.slice(0, 3).join(', ')})`);
     }
+
+    // The fold check: the marked #1 differentiator must start inside the first
+    // viewport of the route it lives on. This is the exact defect class where a
+    // product's core feature ships invisible and every static gate stays green.
+    const primaries = raw.primary || [];
+    const visiblePrimary = primaries.filter((p) => !p.hidden);
+    const viewportHeight = raw.viewport_height || viewport.height;
+    let belowFold = 0;
+    for (const p of visiblePrimary) {
+      if (p.top >= viewportHeight) {
+        belowFold += 1;
+        issues.push(`${viewport.name}: primary feature \`${p.el}\` starts ${p.top - viewportHeight}px below the fold — the product's #1 differentiator is invisible without scrolling`);
+      }
+    }
+    if (primaries.length > 0 && visiblePrimary.length === 0) {
+      warnings.push(`${viewport.name}: no [data-aioson-primary] element is visible on the loaded route — re-run with --route=<hash> pointing at the screen that carries the primary feature`);
+    }
+    const lastViewport = metrics.viewports[metrics.viewports.length - 1];
+    lastViewport.primary_markers = primaries.length;
+    lastViewport.primary_visible = visiblePrimary.length;
+    lastViewport.primary_below_fold = belowFold;
   }
 
   return { metrics, issues, warnings };
@@ -245,9 +285,13 @@ function loadPlaywright() {
  * Drive a real browser over `fileUrl` at each viewport and return the summary.
  * Never throws for a missing browser — that is a reported state, not an error.
  *
- * @param {{fileUrl: string, viewports?: Array, timeout?: number, launcher?: Function}} options
+ * `route` appends a hash route to the file URL so a prototype's inner screen
+ * (where the primary feature usually lives) can be measured, not only the
+ * entry route.
+ *
+ * @param {{fileUrl: string, viewports?: Array, timeout?: number, launcher?: Function, route?: string|null}} options
  */
-async function collectRuntimeMeasurements({ fileUrl, viewports = DEFAULT_VIEWPORTS, timeout = 20000, launcher = null } = {}) {
+async function collectRuntimeMeasurements({ fileUrl, viewports = DEFAULT_VIEWPORTS, timeout = 20000, launcher = null, route = null } = {}) {
   const playwright = launcher ? { chromium: { launch: launcher } } : loadPlaywright();
   if (!playwright) {
     return {
@@ -257,6 +301,10 @@ async function collectRuntimeMeasurements({ fileUrl, viewports = DEFAULT_VIEWPOR
     };
   }
 
+  const targetUrl = route
+    ? `${fileUrl}${String(route).startsWith('#') ? '' : '#'}${route}`
+    : fileUrl;
+
   let browser = null;
   try {
     browser = await playwright.chromium.launch({ headless: true });
@@ -264,7 +312,9 @@ async function collectRuntimeMeasurements({ fileUrl, viewports = DEFAULT_VIEWPOR
     for (const viewport of viewports) {
       const context = await browser.newContext({ viewport: { width: viewport.width, height: viewport.height } });
       const page = await context.newPage();
-      await page.goto(fileUrl, { waitUntil: 'load', timeout });
+      await page.goto(targetUrl, { waitUntil: 'load', timeout });
+      // Hash routers render after `load`; give the route a short settle.
+      if (route) await page.waitForTimeout(250);
       const raw = await page.evaluate(pageProbe);
       runs.push({ viewport, raw });
       await context.close();

@@ -69,9 +69,15 @@ The manifest declares `feature: {slug}`, `status: draft`, and the `identity:` re
 aioson verify:artifact . --kind=visual --slug={slug} --advisory --runtime 2>/dev/null || true
 ```
 
-Repair the blocking findings (decorative blob, animation with no `prefers-reduced-motion`, cards three deep) in the prototype itself. Threshold warnings — token adherence, off-grid spacing, depth strategies, font count, missing states — become structured findings only when this surface cannot justify them.
+When the `data-aioson-primary` marker lives on an inner screen, re-run with `--route=<hash>` pointing at that screen — the fold check only proves what the loaded route renders.
 
-`--runtime` is always attempted, never assumed: with Playwright present it measures what only a browser sees (horizontal overflow at 360px, clipped text, off-screen elements, tap targets, computed contrast); absent, the report says so and the gate stays static-only. Either way, record the outcome in the manifest's Quality evidence — "runtime measured, N findings repaired" or the report's own not-available reason. A silent skip is the one forbidden state.
+Repair the blocking findings (decorative blob, animation with no `prefers-reduced-motion`, cards three deep, missing/empty manifest `## Visual direction`, primary feature below the fold) in the prototype itself. Threshold warnings — token adherence, off-grid spacing, depth strategies, font count, missing states, emoji-as-icon, uniform card walls, missing tour/primary markers — become structured findings only when this surface cannot justify them.
+
+`--runtime` is always attempted, never assumed: with Playwright present it measures what only a browser sees (horizontal overflow at 360px, clipped text, off-screen elements, tap targets, computed contrast, the primary-feature fold check); absent, the report says so and the gate stays static-only. When it is absent, do not just record the fact: surface the enable decision to the user once per feature — "runtime telemetry is off; enable with `npm i -D playwright && npx playwright install chromium`?" — and record their answer in the manifest's Quality evidence alongside the outcome ("runtime measured, N findings repaired" or the report's own not-available reason plus the user's decision). A silent skip is the one forbidden state, and a permanently static-only gate is a decision the user makes, never a default they discover after shipping.
 5. Give the exact paths and state that the prototype models the final visual/interaction contract but does not prove backend integration: mock-only behavior is design evidence, never implementation proof, and refresh may reset mock state. Status remains draft until the user approves the briefing, then Product must preserve or explicitly document deviations from the approved binding.
+
+## Rejection closes the loop
+
+When the user rejects a visual that had passed every gate, the rejection is evidence of a harness miss, not just a rebuild order. Before rebuilding, append one learning under `.aioson/learnings/` (plus its `INDEX.md` line) naming: the pattern that slipped through, the gate that stayed green, and the cheapest check that would have caught it. A fingerprint that recurs across features graduates into a project rule via `aioson rule:new`. Then rebuild.
 
 Prototype work never edits `briefings.md`, never becomes canonical feedback, and never trades away a Core screen/action/state for visual polish.

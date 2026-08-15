@@ -312,9 +312,12 @@ test('verify:artifact exposes kind=visual and measures a file locator', async ()
   assert.deepEqual(report.metrics.files, ['ui/screen.html']);
 });
 
+const DIRECTION_MANIFEST = `---\nfeature: orders\nstatus: draft\n---\n\n## Visual direction\n\n- Register: Technical — the data is the composition.\n- Anti-goals: uniform card grid, pill topbar.\n`;
+
 test('kind=visual resolves the feature-owned prototype from --slug, and says so when it cannot', async () => {
   const dir = await makeTmpDir();
   await writeFile(dir, '.aioson/briefings/orders/prototype.html', CLEAN);
+  await writeFile(dir, '.aioson/briefings/orders/prototype-manifest.md', DIRECTION_MANIFEST);
 
   const found = await runVerifyArtifact({
     args: [dir],
@@ -324,6 +327,7 @@ test('kind=visual resolves the feature-owned prototype from --slug, and says so 
   assert.equal(found.ok, true);
   assert.deepEqual(found.issues, []);
   assert.equal(found.metrics.files[0], '.aioson/briefings/orders/prototype.html');
+  assert.equal(found.metrics.manifest_visual_direction, true);
 
   const missing = await runVerifyArtifact({
     args: [dir],
@@ -332,6 +336,77 @@ test('kind=visual resolves the feature-owned prototype from --slug, and says so 
   });
   assert.equal(missing.ok, false);
   assert.match(missing.issues[0], /--file=<path>, --dir=<front-end root>, or --slug=/);
+});
+
+test('slug mode demands the manifest and its filled ## Visual direction — file/dir modes do not', async () => {
+  const dir = await makeTmpDir();
+  await writeFile(dir, '.aioson/briefings/orders/prototype.html', CLEAN);
+
+  // No manifest at all: the pair is the artifact.
+  const noManifest = await runVerifyArtifact({
+    args: [dir],
+    options: { kind: 'visual', slug: 'orders', json: true, advisory: true, suppressExitCode: true },
+    logger: makeLogger()
+  });
+  assert.equal(noManifest.ok, false);
+  assert.match(noManifest.issues.join('\n'), /prototype-manifest\.md not found/);
+
+  // A manifest whose Visual direction is missing or empty: the composition was
+  // never decided in writing — the identity re-skin gap.
+  await writeFile(dir, '.aioson/briefings/orders/prototype-manifest.md', '---\nfeature: orders\n---\n\n## Visual direction\n\n## Quality evidence\n- ok\n');
+  const emptyDirection = await runVerifyArtifact({
+    args: [dir],
+    options: { kind: 'visual', slug: 'orders', json: true, advisory: true, suppressExitCode: true },
+    logger: makeLogger()
+  });
+  assert.equal(emptyDirection.ok, false);
+  assert.match(emptyDirection.issues.join('\n'), /no filled `## Visual direction`/);
+
+  // File mode points anywhere — no manifest expectation.
+  const fileMode = await runVerifyArtifact({
+    args: [dir],
+    options: { kind: 'visual', file: '.aioson/briefings/orders/prototype.html', json: true, suppressExitCode: true },
+    logger: makeLogger()
+  });
+  assert.deepEqual(fileMode.issues, []);
+});
+
+test('emoji-as-icon, uniform card walls, and prototype affordance markers are measured', () => {
+  // Emoji standing in for icons — the classic tell no check used to see.
+  const emojiUi = CLEAN.replace('Aprovar pedido', '📎 Anexar 👁 Ver');
+  const emoji = analyzeVisualSources({ html: emojiUi });
+  assert.deepEqual(emoji.metrics.emoji_glyphs.sort(), ['👁', '📎']);
+  assert.match(emoji.warnings.join('\n'), /emoji glyph\(s\) in the UI corpus/);
+  // Deliberate typography dingbats stay silent.
+  const check = analyzeVisualSources({ html: CLEAN.replace('Aprovar pedido', '✓ Aprovado ★') });
+  assert.deepEqual(check.metrics.emoji_glyphs, []);
+
+  // Eight identical sibling cards are a wall; seven stay a metric.
+  const cards = (n) => `<main>${Array.from({ length: n }, () => '<div class="card">x</div>').join('')}</main>`;
+  const wall = analyzeVisualSources({ html: CLEAN.replace('<main class="shell">', `${cards(8)}<main class="shell">`) });
+  assert.equal(wall.metrics.max_card_sibling_run, 8);
+  assert.match(wall.warnings.join('\n'), /uniform card wall/);
+  const short = analyzeVisualSources({ html: CLEAN.replace('<main class="shell">', `${cards(7)}<main class="shell">`) });
+  assert.equal(short.metrics.max_card_sibling_run, 7);
+  assert.doesNotMatch(short.warnings.join('\n'), /uniform card wall/);
+
+  // Affordance markers are only expected of an AIOSON prototype (data-aioson-id).
+  const bare = analyzeVisualSources({ html: CLEAN });
+  assert.equal(bare.metrics.prototype_anchors, false);
+  assert.doesNotMatch(bare.warnings.join('\n'), /data-aioson-primary|data-aioson-tour/);
+
+  const prototype = analyzeVisualSources({ html: CLEAN.replace('<main class="shell">', '<main class="shell" data-aioson-id="shell">') });
+  assert.equal(prototype.metrics.prototype_anchors, true);
+  assert.match(prototype.warnings.join('\n'), /no `data-aioson-primary` marker/);
+  assert.match(prototype.warnings.join('\n'), /no first-open explainer \(`data-aioson-tour`\)/);
+
+  const complete = analyzeVisualSources({
+    html: CLEAN.replace(
+      '<main class="shell">',
+      '<main class="shell" data-aioson-id="shell" data-aioson-primary><div data-aioson-tour="1">Passo 1</div>'
+    )
+  });
+  assert.doesNotMatch(complete.warnings.join('\n'), /data-aioson-primary|data-aioson-tour/);
 });
 
 test('kind=visual scans a front-end directory and skips vendored trees', async () => {
