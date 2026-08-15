@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.0] - 2026-08-15
+
+### Added
+- **`web:save` + `web:extract` — deterministic local capture of reference sites.** A reference URL becomes `researchs/{slug}/site/` (assets, manifest, fingerprints) plus a token-lean `extract.md`, captured by the CLI instead of narrated by the model. The capture route is the client's decision, taught by one shared on-demand module (`web-capture.md`) instead of per-agent recipes, and `captured_via` is stamped deterministically: `aioson` at save time, healed at extract time, `external-mirror` for foreign mirrors — the aioson-vs-harness comparison no longer depends on the model.
+- **`crud-surface-integrity` rule.** Generalizes defects that crossed a green QA in a consumer project into shipped template intelligence: row identity via the persisted ID, create/edit parity at three points, required fields enforced in the domain schema, tests that drive the real form, and a clean test database. pt-BR recall pinned in `interaction-rules-recall`.
+- **The briefing prototype explains itself and proves its differentiator (anti-slop backlog #1, fed by the supervised-briefing 3-complaint report).** First-open tour (`data-aioson-tour` + persistent `?` control) translated from the PROM-* promises in lay language; `data-aioson-primary` marks the briefing's #1 differentiator, with an opt-in runtime fold check (`--route=<hash>` for inner screens) that would have caught the real below-the-fold bug; a spec-blind first-contact walkthrough gates the handoff; a manifest without a filled `## Visual direction` is blocking in slug mode — an identity record answers tokens, never composition, in identity mode exactly as in cold start; emoji-as-icon and uniform card walls became measured warnings; `kind=visual` auto-fires at the refiner's `agent:done` via `also:` kinds (clean skip for non-visual features); post-gate rejections feed `.aioson/learnings/`; brain nodes vq-016/017/018.
+- **Copy cadence is measured (anti-slop backlog #1b, second complaint round).** A prototype had cleared every visual gate carrying 60 em dashes, because the cadence rule judged "neighboring sentences" — scattered microcopy (toasts, placeholders, tour steps, seeded mock data) is never neighboring — and the author graded itself. `visual-telemetry` now counts spaced em dashes across the visible corpus (styles and HTML/JS comments out, script string/template content in, which is where SPA copy and seed data live), reports `em_dash_prose` with context samples, and warns from 4 up; brain node vq-019 anchors judgment on the aggregate count instead of the sentence; the prototype-forge polish pass and handoff gate treat model-cadence copy as a defect. Live proof: the incident prototype measures 34.
+
+### Changed
+- **Kernel diet via on-demand docs.** The three standing kernel-budget failures were resolved by moving recipe out of the kernels into routed modules: benchmark 15294→13995 chars (new `docs/benchmark/execution-playbook.md`), briefing 12802→11983 (SRC/PROM row schemas → `exploration-and-artifacts.md`), briefing-refiner 13168→11977 (eligibility probe → `refinement-loop.md`), pentester 8835→7993 (compression; playbooks already existed). Every test-pinned phrase preserved.
+
+### Fixed
+- **`aioson update` never destroys project state.** Every existing file about to be overwritten with divergent content is snapshotted to `.aioson/backups/{ts}/` first — including name collisions between a project file and a new template file; identical content produces no snapshot. `squads/memory.md` and `genomes/INDEX.md` joined `PROJECT_LOCAL_FILES`: the template only seeds them, update never overwrites them, and intentional deletion is respected.
+
 ## [1.53.0] - 2026-08-13
 
 ### Added
