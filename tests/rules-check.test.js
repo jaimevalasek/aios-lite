@@ -251,6 +251,30 @@ enforcement: no-native-dialogs
   assert.equal(report.total, 0);
 });
 
+test('the naming rule reaches compiled languages, not just the web half of a project', async () => {
+  // A Tauri, mobile, or backend-heavy project keeps most of its source in a
+  // language audit:code has no scanners for. Exempting it would leave half the
+  // codebase outside a rule that is explicitly about every identifier.
+  const dir = await scaffold({
+    '.aioson/rules/source-code-language-convention.md': LANGUAGE_RULE,
+    'src-tauri/src/servidor.rs': [
+      'pub fn criar_bloco() -> i32 { 1 }',
+      'pub struct EstadoPalco { pub id: i32 }',
+      'pub fn create_block() -> i32 { 2 }'
+    ].join('\n'),
+    'android/app/Draft.kt': 'class GerenciadorDeRascunho { }\n',
+    'db/schema.sql': 'CREATE TABLE blocks (id INT);\n'
+  });
+
+  const report = await runRulesCheck({ args: [dir], options: { json: true, suppressExitCode: true }, logger: silent });
+
+  const flagged = report.findings.map((f) => f.message).join('\n');
+  assert.match(flagged, /criar_bloco/, 'Rust snake_case must be read');
+  assert.match(flagged, /EstadoPalco/, 'a Rust struct must be read');
+  assert.match(flagged, /Gerenciador/, 'Kotlin must be read');
+  assert.doesNotMatch(flagged, /create_block/, 'the English neighbour stays clean');
+});
+
 // ─── legacy projects ──────────────────────────────────────────────────────────
 
 const LEGACY_TREE = {

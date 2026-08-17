@@ -82,7 +82,9 @@ function isProdFile(rel) {
   );
 }
 
-function listSourceFiles(root) {
+// `exts` lets a caller widen the walk without widening audit:code itself —
+// rules:check scans compiled languages this file has no scanners for.
+function listSourceFiles(root, exts = CODE_EXTS) {
   const out = [];
   const stack = [root];
   while (stack.length) {
@@ -97,7 +99,7 @@ function listSourceFiles(root) {
       const full = path.join(dir, entry.name);
       if (entry.isDirectory()) {
         if (!IGNORE_DIRS.has(entry.name)) stack.push(full);
-      } else if (entry.isFile() && CODE_EXTS.has(path.extname(entry.name).toLowerCase())) {
+      } else if (entry.isFile() && exts.has(path.extname(entry.name).toLowerCase())) {
         out.push(full);
       }
     }

@@ -232,13 +232,23 @@ function resolveFileList(targetDir, options) {
   if (options.changed) {
     return gitChangedFiles(targetDir).map((rel) => path.resolve(targetDir, rel));
   }
-  return listSourceFiles(targetDir);
+  return listSourceFiles(targetDir, SOURCE_EXTS);
 }
+
+// audit:code's extension set plus the compiled/native languages it has no
+// scanners for. A rule about naming applies to every language a project writes
+// in, and a Tauri or mobile project would otherwise have half its source
+// silently exempt. Kept local so widening it here never widens audit:code.
+const SOURCE_EXTS = new Set([
+  ...CODE_EXTS,
+  '.rs', '.kt', '.kts', '.swift', '.cs', '.dart', '.scala', '.ex', '.exs',
+  '.c', '.h', '.cc', '.cpp', '.hpp', '.m', '.mm', '.sql', '.astro'
+]);
 
 function loadFiles(targetDir, absPaths) {
   const loaded = [];
   for (const abs of absPaths) {
-    if (!CODE_EXTS.has(path.extname(abs).toLowerCase())) continue;
+    if (!SOURCE_EXTS.has(path.extname(abs).toLowerCase())) continue;
     const content = readText(abs);
     if (content === null) continue;
     loaded.push({
@@ -363,7 +373,7 @@ async function runRulesCheck({ args, options = {}, logger }) {
   let divergence = null;
   if (blocking && !baseline && !options.baseline) {
     try {
-      const wholeTree = loadFiles(targetDir, listSourceFiles(targetDir));
+      const wholeTree = loadFiles(targetDir, listSourceFiles(targetDir, SOURCE_EXTS));
       const offenders = new Set();
       for (const [checkerId, documents] of byChecker) {
         if (!documents.some((doc) => doc.authority === 'binding')) continue;
