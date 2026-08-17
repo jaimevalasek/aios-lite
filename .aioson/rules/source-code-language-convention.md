@@ -32,7 +32,7 @@ Compliance is measured, not asserted: `aioson rules:check . --changed` verifies 
 ## Required Behavior
 
 - Use English for source code identifiers: classes, methods, functions, variables, enums, constants, routes, migrations, factories, seeders, tests, services, jobs, events, listeners, policies, resources, repositories, query objects, and component names.
-- Before inventing names, inspect nearby code and follow the project's naming pattern.
+- Before inventing names, inspect nearby code and follow the project's naming pattern — casing, prefixes, and layer suffixes. Pattern never means language: surrounding code written in another language is not a licence to add more of it, and matching it is the one way a project drifts further from this rule while looking consistent.
 - If the project pattern is unclear, inspect `.aioson/context/bootstrap/how-it-works.md` and `.aioson/context/bootstrap/current-state.md` when selected by `context:select`; otherwise use the framework's official naming conventions.
 - Keep framework-generated names conventional. For Laravel, prefer standard names such as `OrderController`, `StoreOrderRequest`, `OrderPolicy`, `OrderResource`, `CreateOrdersTable`, and `OrderFactory`.
 - Do not translate technical identifiers into the conversation language. Avoid names like `PedidoController`, `criarUsuario`, `valorTotalEmCentavos`, or `servicoPagamento` in source code.
