@@ -335,7 +335,71 @@ function isHardConstraintDoc(item, content) {
   return scope === 'hard' || scope === 'contract';
 }
 
-function constraintsFromDocuments(documents, selected) {
+// Framework names a rule may address a bullet to. A closed list on purpose:
+// inferring "For each request," or "For new features," as a stack scope would
+// silently delete ordinary guidance, which is a far worse failure than keeping
+// one irrelevant line.
+const STACK_WORDS = new Set([
+  'laravel', 'php', 'symfony', 'wordpress', 'react', 'next', 'nextjs', 'next.js',
+  'vue', 'nuxt', 'svelte', 'sveltekit', 'angular', 'astro', 'remix', 'solid',
+  'node', 'nodejs', 'node.js', 'express', 'nest', 'nestjs', 'deno',
+  'django', 'flask', 'fastapi', 'python', 'rails', 'ruby', 'spring', 'java',
+  'kotlin', 'swift', 'flutter', 'dart', 'go', 'golang', 'rust', 'tauri',
+  'electron', 'dotnet', '.net', 'csharp', 'elixir', 'phoenix'
+]);
+
+// "For Laravel, prefer FormRequest…" / "For non-Laravel stacks, translate…"
+function stackScopeOf(bullet) {
+  const match = /^-?\s*for\s+(non-)?([a-z][a-z0-9.+#-]{1,18})(?:\s+stacks?)?\s*[,:]/i.exec(String(bullet).trim());
+  if (!match) return null;
+  const stack = normalizeToken(match[2]);
+  if (!STACK_WORDS.has(stack)) return null;
+  return { negated: Boolean(match[1]), stack };
+}
+
+/**
+ * Scope a document's bullets to the project's stack.
+ *
+ * A bullet addressed to another framework is not merely noise: it arrives in
+ * `constraints`, which the agent reads as binding, and it spends a slot under a
+ * hard cap. A React project was being handed "For Laravel, prefer FormRequest".
+ * The same line is the single most actionable one in a Laravel project, so it
+ * sorts to the front there.
+ */
+function rankForStack(bullets, stack) {
+  const project = normalizeToken(stack || '');
+  const addressed = [];
+  const general = [];
+  for (const bullet of bullets) {
+    const scope = stackScopeOf(bullet);
+    if (!scope || !project) { general.push(bullet); continue; }
+    const namesProject = project.includes(scope.stack) || scope.stack.includes(project);
+    if (scope.negated) {
+      if (!namesProject) general.push(bullet);
+      continue;
+    }
+    if (namesProject) addressed.push(bullet);
+  }
+  return [...addressed, ...general];
+}
+
+// Every document contributes its first bullet before any document contributes
+// its second. Concatenating them instead made a cap truncate whole documents:
+// the first rule spent the budget and the second, third, and fourth rules in a
+// project contributed nothing at all — silently, since the package still looked
+// full.
+function interleave(groups) {
+  const out = [];
+  const depth = groups.reduce((max, group) => Math.max(max, group.length), 0);
+  for (let index = 0; index < depth; index += 1) {
+    for (const group of groups) {
+      if (index < group.length) out.push(group[index]);
+    }
+  }
+  return out;
+}
+
+function constraintsFromDocuments(documents, selected, stack = '') {
   const constraints = [];
   const forbidden = [];
   const checks = [];
@@ -344,15 +408,15 @@ function constraintsFromDocuments(documents, selected) {
     const content = documents.get(item.path) || '';
     if (!isHardConstraintDoc(item, content)) continue;
     const doc = extractDocConstraints(content);
-    constraints.push(...doc.constraints);
-    forbidden.push(...doc.forbidden_patterns);
-    checks.push(...doc.verification_hints);
+    constraints.push(rankForStack(doc.constraints, stack));
+    forbidden.push(doc.forbidden_patterns);
+    checks.push(doc.verification_hints);
   }
 
   return {
-    constraints: dedupe(constraints, 14),
-    forbidden_patterns: dedupe(forbidden, 10),
-    verification_hints: dedupe(checks, 10)
+    constraints: dedupe(interleave(constraints), 14),
+    forbidden_patterns: dedupe(interleave(forbidden), 10),
+    verification_hints: dedupe(interleave(checks), 10)
   };
 }
 
@@ -601,7 +665,7 @@ async function buildContextBrief(targetDir, options = {}) {
     if (!hard) return false;
     return mustLoadPaths.has(item.path) || item.surface === 'docs';
   });
-  const extracted = constraintsFromDocuments(documents, constraintSources);
+  const extracted = constraintsFromDocuments(documents, constraintSources, stack);
   const structure = suggestedStructure(concerns);
   const profileHints = profileVerificationHints(profile, concerns);
   const constraints = dedupe([...concernConstraints(concerns), ...extracted.constraints, ...structure], 18);
@@ -658,5 +722,6 @@ module.exports = {
   inferConcerns,
   suggestedStructure,
   extractDocConstraints,
+  rankForStack,
   classifyLoads
 };

@@ -83,8 +83,11 @@ function isProdFile(rel) {
 }
 
 // `exts` lets a caller widen the walk without widening audit:code itself —
-// rules:check scans compiled languages this file has no scanners for.
-function listSourceFiles(root, exts = CODE_EXTS) {
+// rules:check scans compiled languages this file has no scanners for. Widening
+// the extensions widens what counts as build output too, so `ignoreDirs` moves
+// with it: a Rust or .NET tree keeps its generated code somewhere this file
+// never had to know about.
+function listSourceFiles(root, exts = CODE_EXTS, ignoreDirs = IGNORE_DIRS) {
   const out = [];
   const stack = [root];
   while (stack.length) {
@@ -98,7 +101,7 @@ function listSourceFiles(root, exts = CODE_EXTS) {
     for (const entry of entries) {
       const full = path.join(dir, entry.name);
       if (entry.isDirectory()) {
-        if (!IGNORE_DIRS.has(entry.name)) stack.push(full);
+        if (!ignoreDirs.has(entry.name)) stack.push(full);
       } else if (entry.isFile() && exts.has(path.extname(entry.name).toLowerCase())) {
         out.push(full);
       }
@@ -345,6 +348,7 @@ module.exports = {
   listSourceFiles,
   readText,
   CODE_EXTS,
+  IGNORE_DIRS,
   // exported for tests
   scanDeadCode,
   scanDuplication

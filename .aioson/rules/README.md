@@ -116,7 +116,9 @@ aioson rules:check . --changed    # only what this session touched (cheap; run o
 aioson rules:check . --rule=source-code-language-convention --json
 ```
 
-`rules:lint` asks whether the rules are well-formed; `rules:check` asks whether the code obeys them. It reports `HIGH` for a provable violation and `MED` for a signal worth a second look, and it lists every document that has no checker under `unenforced` — a green summary must never imply coverage that does not exist.
+`rules:lint` asks whether the rules are well-formed; `rules:check` asks whether the code obeys them. It reports `HIGH` for a provable violation and `MED` for a signal worth a second look, and it lists every document that has no checker under `unenforced` — a green summary must never imply coverage that does not exist. A document naming a checker that does not exist (a typo in `enforcement:`) is called out separately: it would otherwise sit among the prose-only documents, believed to be enforced and quietly verifying nothing.
+
+An all-clear always means files were read. `--changed` narrows the check to the diff, but a diff is empty in two ordinary situations — the project has no git yet, and the work was committed before the handoff — so an empty scope widens to the whole tree and the report says it did (`scope_fallback`). Scanning nothing and printing OK is the one outcome this command must never produce. Build output and vendored dependencies are never read: `target/`, `obj/`, `vendor/`, `node_modules/`, `Pods/`, `_build/`, `.dart_tool/` and generated filenames (`*.min.js`, `*.g.dart`, `*.pb.go`) are not the project's naming.
 
 `.aioson/docs/` and `.aioson/skills/process/` can bind a checker the same way, but they do not carry the same weight, and the check does not pretend otherwise:
 

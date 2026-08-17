@@ -1,7 +1,7 @@
 'use strict';
 
 const path = require('node:path');
-const { buildContextBrief, extractDocConstraints } = require('./context-brief');
+const { buildContextBrief, extractDocConstraints, rankForStack } = require('./context-brief');
 const { parseFrontmatter, readFileSafe } = require('./preflight-engine');
 const { parseListValue, pathMatchesPattern } = require('./context-selector');
 
@@ -168,7 +168,7 @@ function normalizeRuleLine(value) {
 // Read each salient rule file and extract ITS OWN constraints — so the
 // injection is attributed per rule and never carries the generic concern-based
 // constraints the brief aggregates from the whole selection.
-async function buildRuleBlocks(targetDir, salient, gate, surfaceKinds = null, pathCandidates = null) {
+async function buildRuleBlocks(targetDir, salient, gate, surfaceKinds = null, pathCandidates = null, stack = '') {
   const blocks = [];
   for (const rule of salient) {
     const content = await readFileSafe(path.join(targetDir, rule.path));
@@ -176,7 +176,10 @@ async function buildRuleBlocks(targetDir, salient, gate, surfaceKinds = null, pa
     const frontmatter = parseFrontmatter(content);
     if (!ruleAllowsGuard(rule, frontmatter, surfaceKinds, pathCandidates)) continue;
     const extracted = extractDocConstraints(content);
-    const constraints = dedupeStrings(extracted.constraints).slice(0, gate.maxConstraints);
+    // An injection is even tighter than a brief — a handful of lines in front of
+    // an edit — so a bullet written for another framework is not just noise
+    // here, it displaces the one that applies.
+    const constraints = dedupeStrings(rankForStack(extracted.constraints, stack)).slice(0, gate.maxConstraints);
     const constraintSet = new Set(constraints.map(normalizeRuleLine));
     const forbidden = dedupeStrings(extracted.forbidden_patterns)
       .filter((item) => !constraintSet.has(normalizeRuleLine(item)))
@@ -239,7 +242,7 @@ async function buildGuardResponse(event, targetDir, options = {}) {
 
   const surfaceKinds = detectSurfaceKinds(filePath, content);
   const pathCandidates = guardPathCandidates(targetDir, filePath);
-  const ruleBlocks = await buildRuleBlocks(targetDir, ruled, gate, surfaceKinds, pathCandidates);
+  const ruleBlocks = await buildRuleBlocks(targetDir, ruled, gate, surfaceKinds, pathCandidates, brief.intent && brief.intent.stack);
   if (ruleBlocks.length === 0) return emptyResponse();
 
   const additionalContext = formatInjectionText(filePath, ruleBlocks);

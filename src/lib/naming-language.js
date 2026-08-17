@@ -34,9 +34,6 @@
  * named in English, which is what the rule says.
  */
 
-const path = require('node:path');
-const fs = require('node:fs');
-
 // ─── lexicon: translated technical scaffolding (HIGH confidence) ──────────────
 // Accent-folded, lowercase, singular AND plural where both occur in real code.
 // Every entry must fail this test to be admitted: "is this also an English
@@ -51,7 +48,10 @@ const ROLE_TOKENS = new Set([
   'pacote', 'pacotes', 'modulo', 'modulos', 'componente', 'componentes',
   'utilitario', 'utilitarios', 'ajudante', 'auxiliar', 'apoio', 'ajuda',
   'arquivo', 'arquivos', 'archivo', 'archivos', 'ficheiro', 'ficheiros',
-  'pasta', 'pastas', 'diretorio', 'diretorios', 'carpeta',
+  // `pasta` is deliberately absent: it is an ordinary English noun, and one
+  // recipe app named `pasta.ts` would be enough to teach a team that this check
+  // lies. `diretorio`/`carpeta`/`arquivo` already cover the same vocabulary.
+  'diretorio', 'diretorios', 'carpeta',
   'tipos', 'estado', 'estados', 'consulta', 'consultas',
   'requisicao', 'requisicoes', 'resposta', 'respostas', 'respuesta',
   'usuario', 'usuarios', 'senha', 'senhas', 'contrasena',
@@ -196,36 +196,27 @@ function scanPathSegments(rel) {
 
 // ─── public scan ──────────────────────────────────────────────────────────────
 
+// A report is read by a human, so one file does not get to fill it. But the cap
+// is a DISPLAY concern, and letting it leak into the baseline made partial
+// cleanup punishable: a baseline built from the first six violations of a
+// twelve-violation file goes quiet, and fixing three of them exposes three the
+// baseline never saw — blocking the slice that improved the code. Callers
+// recording debt lift the cap; callers reporting keep it.
 const MAX_PER_FILE = 6;
-
-/**
- * Is the convention armed for this project?
- *
- * The rule file is the client's override channel: a project that deliberately
- * wants native-language identifiers (a locale-scoped squad, a teaching repo)
- * removes or edits the rule, and the measurement goes quiet with it. Nothing
- * else can switch this off — which is exactly what "rules are supreme" means.
- */
-function conventionArmed(targetDir) {
-  const rulePath = path.join(targetDir, '.aioson', 'rules', 'source-code-language-convention.md');
-  try {
-    return fs.statSync(rulePath).isFile();
-  } catch {
-    return false;
-  }
-}
 
 /**
  * @param {{ rel: string, lines: string[] }} file
  * @param {(finding: object) => void} push
+ * @param {{ maxPerFile?: number }} [options]
  */
-function scanNamingLanguage(file, push) {
+function scanNamingLanguage(file, push, options = {}) {
   const { rel, lines } = file;
+  const limit = typeof options.maxPerFile === 'number' ? options.maxPerFile : MAX_PER_FILE;
   const seen = new Set();
   let emitted = 0;
 
   const emit = (finding) => {
-    if (emitted >= MAX_PER_FILE) return;
+    if (emitted >= limit) return;
     const key = `${finding.kind}:${finding.token}`;
     if (seen.has(key)) return;
     seen.add(key);
@@ -284,7 +275,6 @@ function scanNamingLanguage(file, push) {
 module.exports = {
   scanNamingLanguage,
   classifyIdentifier,
-  conventionArmed,
   splitWords,
   ROLE_TOKENS
 };

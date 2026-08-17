@@ -35,7 +35,7 @@ const fsp = require('node:fs/promises');
 
 const { parseFrontmatter } = require('../preflight-engine');
 const { gitChangedFiles } = require('../harness/detect-runtime-feature');
-const { listSourceFiles, readText, CODE_EXTS } = require('./audit-code');
+const { listSourceFiles, readText, CODE_EXTS, IGNORE_DIRS } = require('./audit-code');
 const { scanNamingLanguage } = require('../lib/naming-language');
 
 const VERSION = '1.0.0';
@@ -101,10 +101,13 @@ const ENFORCERS = Object.freeze({
      * @param {{ files: Array<{ rel: string, lines: string[] }> }} ctx
      * @returns {Array<object>} findings
      */
-    run({ files }) {
+    run({ files, uncapped }) {
       const findings = [];
       const push = (f) => findings.push(f);
-      for (const file of files) scanNamingLanguage(file, push);
+      // Recording debt reads every violation; reporting to a human reads the
+      // first few per file. See MAX_PER_FILE in the detector.
+      const scanOptions = uncapped ? { maxPerFile: Infinity } : undefined;
+      for (const file of files) scanNamingLanguage(file, push, scanOptions);
       return findings;
     }
   },
@@ -221,20 +224,6 @@ async function discoverGovernance(targetDir) {
 
 // ─── file scoping ─────────────────────────────────────────────────────────────
 
-function resolveFileList(targetDir, options) {
-  if (options.paths) {
-    return String(options.paths)
-      .split(',')
-      .map((p) => p.trim())
-      .filter(Boolean)
-      .map((p) => path.resolve(targetDir, p));
-  }
-  if (options.changed) {
-    return gitChangedFiles(targetDir).map((rel) => path.resolve(targetDir, rel));
-  }
-  return listSourceFiles(targetDir, SOURCE_EXTS);
-}
-
 // audit:code's extension set plus the compiled/native languages it has no
 // scanners for. A rule about naming applies to every language a project writes
 // in, and a Tauri or mobile project would otherwise have half its source
@@ -245,16 +234,66 @@ const SOURCE_EXTS = new Set([
   '.c', '.h', '.cc', '.cpp', '.hpp', '.m', '.mm', '.sql', '.astro'
 ]);
 
+// Reading a compiled language means meeting its build directory, and none of
+// audit:code's ignores knew about them. The cost was not noise: `divergence`
+// weighs offending files against all scanned files to decide whether a project
+// was BUILT against another convention, so a few thousand generated crates
+// under `target/` would have told a human their own code was the problem.
+//
+// `bin` stays absent on purpose — Node projects keep real source there.
+const SOURCE_IGNORE_DIRS = new Set([
+  ...IGNORE_DIRS,
+  'target', 'obj', 'Pods', 'Carthage', 'DerivedData', '.dart_tool', '.pub-cache',
+  '_build', 'deps', '.gradle', '.terraform', '.cargo', '.turbo', '.output',
+  '.parcel-cache', 'bower_components', 'jspm_packages'
+]);
+
+// Machine-written files that live INSIDE the source tree, where a directory
+// ignore cannot reach them. Their names are the project's convention only in
+// the sense that a generator chose them.
+const GENERATED_FILE = /\.(min|bundle|generated|freezed|g|designer|pb)\.[^.]+$|_pb2\.py$|\.pb\.go$/i;
+
+// `bin` is not in the ignore list above because Node projects keep real source
+// there — this CLI's own entry point lives in `bin/`. Only the .NET build
+// convention underneath it is machine-written.
+const GENERATED_PATH = /(^|\/)bin\/(Debug|Release)\//i;
+
+function expandPath(targetDir, abs) {
+  try {
+    if (fs.statSync(abs).isDirectory()) return listSourceFiles(abs, SOURCE_EXTS, SOURCE_IGNORE_DIRS);
+  } catch {
+    return [abs];
+  }
+  return [abs];
+}
+
+function resolveFileList(targetDir, options) {
+  if (options.paths) {
+    // A directory is the natural thing to pass, and expanding it here is the
+    // difference between checking it and reporting an all-clear over nothing.
+    return String(options.paths)
+      .split(',')
+      .map((p) => p.trim())
+      .filter(Boolean)
+      .flatMap((p) => expandPath(targetDir, path.resolve(targetDir, p)));
+  }
+  if (options.changed) {
+    return gitChangedFiles(targetDir).map((rel) => path.resolve(targetDir, rel));
+  }
+  return listSourceFiles(targetDir, SOURCE_EXTS, SOURCE_IGNORE_DIRS);
+}
+
 function loadFiles(targetDir, absPaths) {
   const loaded = [];
   for (const abs of absPaths) {
     if (!SOURCE_EXTS.has(path.extname(abs).toLowerCase())) continue;
+    const rel = path.relative(targetDir, abs).split(path.sep).join('/');
+    if (rel.startsWith('..')) continue;
+    if (rel.split('/').some((segment) => SOURCE_IGNORE_DIRS.has(segment))) continue;
+    if (GENERATED_FILE.test(path.basename(rel)) || GENERATED_PATH.test(rel)) continue;
     const content = readText(abs);
     if (content === null) continue;
-    loaded.push({
-      rel: path.relative(targetDir, abs).split(path.sep).join('/'),
-      lines: content.split('\n')
-    });
+    loaded.push({ rel, lines: content.split('\n') });
   }
   return loaded;
 }
@@ -272,8 +311,37 @@ async function runRulesCheck({ args, options = {}, logger }) {
     rule.enforcement && (!onlyRule || rule.name === onlyRule)
   );
 
-  const scope = options.paths ? 'paths' : (options.changed ? 'changed' : 'full');
-  const files = enforceable.length ? loadFiles(targetDir, resolveFileList(targetDir, options)) : [];
+  // Recording debt is a statement about the whole project, so it is never made
+  // from a partial view: a baseline written under `--changed` in a repository
+  // with a clean diff would accept nothing and report that it had accepted the
+  // project — right at the moment a human is following this tool's own advice.
+  const wantsBaseline = Boolean(options.baseline);
+  const scopeRequest = wantsBaseline
+    ? 'full'
+    : (options.paths ? 'paths' : (options.changed ? 'changed' : 'full'));
+
+  let files = [];
+  let scope = scopeRequest;
+  let scopeFallback = null;
+  if (enforceable.length) {
+    files = loadFiles(targetDir, resolveFileList(targetDir, wantsBaseline ? {} : options));
+    // An empty scope is not a clean project — it is an unexamined one, and the
+    // two are indistinguishable in every report that only prints a verdict.
+    // A diff is empty in two entirely ordinary situations: the project has no
+    // git yet, and the work was committed before the handoff. Both auto-fire
+    // seams run with `--changed`, so treating "nothing scanned" as "nothing
+    // wrong" switched the whole layer off exactly when it was being relied on.
+    // Widening to the full tree is the honest answer: it is what the caller
+    // meant, an accepted baseline keeps a legacy project quiet anyway, and the
+    // fallback is named in the report so nobody mistakes it for a scoped pass.
+    if (files.length === 0 && scopeRequest !== 'full') {
+      files = loadFiles(targetDir, listSourceFiles(targetDir, SOURCE_EXTS, SOURCE_IGNORE_DIRS));
+      if (files.length > 0) {
+        scope = 'full';
+        scopeFallback = `${scopeRequest}->full`;
+      }
+    }
+  }
 
   // Several documents may bind the same checker — a rule and the process skill
   // that restates it, for instance. Run each checker once and attribute its
@@ -291,7 +359,7 @@ async function runRulesCheck({ args, options = {}, logger }) {
     const enforcer = ENFORCERS[checkerId];
     let checkerFindings = [];
     try {
-      checkerFindings = enforcer.run({ targetDir, files, documents }) || [];
+      checkerFindings = enforcer.run({ targetDir, files, documents, uncapped: wantsBaseline }) || [];
     } catch {
       checkerFindings = []; // a broken checker must never block the session
     }
@@ -373,12 +441,17 @@ async function runRulesCheck({ args, options = {}, logger }) {
   let divergence = null;
   if (blocking && !baseline && !options.baseline) {
     try {
-      const wholeTree = loadFiles(targetDir, listSourceFiles(targetDir, SOURCE_EXTS));
+      const wholeTree = loadFiles(targetDir, listSourceFiles(targetDir, SOURCE_EXTS, SOURCE_IGNORE_DIRS));
       const offenders = new Set();
+      // Count offenders at whatever severity is actually refusing the stage.
+      // Under --strict a MED blocks, and measuring only HIGH meant a legacy
+      // tree was blocked without being offered the three ways out — which is
+      // how a human ends up deleting the rule instead of deciding about it.
+      const blocks = (finding) => finding.severity === 'HIGH' || (strict && finding.severity === 'MED');
       for (const [checkerId, documents] of byChecker) {
         if (!documents.some((doc) => doc.authority === 'binding')) continue;
         const all = ENFORCERS[checkerId].run({ targetDir, files: wholeTree, documents }) || [];
-        for (const finding of all) if (finding.severity === 'HIGH') offenders.add(finding.file);
+        for (const finding of all) if (blocks(finding)) offenders.add(finding.file);
       }
       const ratio = wholeTree.length ? offenders.size / wholeTree.length : 0;
       if (ratio >= 0.4 && offenders.size >= 3) {
@@ -396,6 +469,13 @@ async function runRulesCheck({ args, options = {}, logger }) {
 
   const unenforcedDocs = allRules.filter((rule) => !rule.enforcement);
   const unenforced = unenforcedDocs.map((rule) => rule.name);
+  // A document that names a checker nobody implements is the worst of both
+  // worlds: its author believes it is enforced, and it sits silently among the
+  // prose-only documents where nothing distinguishes a typo from a deliberate
+  // choice. One misspelled id disarms a rule in every project that inherits it.
+  const misdeclared = allRules
+    .filter((rule) => rule.declared_enforcement && !rule.enforcement)
+    .map((rule) => ({ name: rule.name, path: rule.path, declared: rule.declared_enforcement }));
   // Coverage is reported per surface on purpose. A green summary that silently
   // covers only the measurable governance would read as "all rules obeyed" when
   // most of them were never checked at all.
@@ -410,11 +490,13 @@ async function runRulesCheck({ args, options = {}, logger }) {
     generator: GENERATOR,
     root: targetDir,
     scope,
+    scope_fallback: scopeFallback,
     scanned_files: files.length,
     rules_total: allRules.length,
     coverage,
     rules_enforced: enforced,
     unenforced,
+    misdeclared,
     total: live.length,
     accepted_debt: debt,
     baseline: baseline ? { path: BASELINE_RELATIVE_PATH, accepted: baseline.size } : null,
@@ -478,7 +560,8 @@ async function runRulesCheck({ args, options = {}, logger }) {
     return report;
   }
 
-  logger.log(`Rules check — ${enforced.length}/${allRules.length} enforced (${coverageLine}) over ${files.length} file(s) (${scope}) — ${live.length} violation(s)`);
+  const scopeLabel = scopeFallback ? `${scope}; ${scopeRequest} scope was empty` : scope;
+  logger.log(`Rules check — ${enforced.length}/${allRules.length} enforced (${coverageLine}) over ${files.length} file(s) (${scopeLabel}) — ${live.length} violation(s)`);
   for (const rule of enforced) {
     const verdict = rule.ok ? 'OK  ' : (rule.authority === 'binding' ? 'FAIL' : 'WARN');
     logger.log(`  ${verdict} [${rule.governance_surface}] ${rule.name} — ${rule.summary}${rule.violations ? ` (${rule.violations})` : ''}`);
@@ -491,6 +574,10 @@ async function runRulesCheck({ args, options = {}, logger }) {
   }
   if (unenforced.length) {
     logger.log(`  Prose only, not machine-checked (${unenforced.length}): ${unenforced.slice(0, 8).join(', ')}${unenforced.length > 8 ? ', …' : ''}`);
+  }
+  for (const doc of misdeclared) {
+    logger.log(`  ! ${doc.path} declares enforcement "${doc.declared}", which no checker implements — the rule is NOT being verified.`);
+    logger.log(`    Available checkers: ${listEnforcerIds().join(', ')}`);
   }
   if (debt > 0) {
     logger.log(`  Accepted debt: ${debt} pre-existing violation(s) held in ${BASELINE_RELATIVE_PATH} — still owed, not forgiven.`);
