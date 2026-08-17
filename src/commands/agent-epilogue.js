@@ -232,6 +232,44 @@ async function runAgentEpilogue({ args, options = {}, logger, t }) {
     }
   }
 
+  // Deterministic rule-compliance signal (rules:check) over the CHANGED files.
+  // Fired here, at completion, because this is the last moment the agent still
+  // has the context to fix what it just wrote — the workflow stage gate will
+  // refuse the handoff for the same violation a few seconds later, and finding
+  // out then costs a whole re-entry. A rule violation is the project's own
+  // contract being broken, so this step reports FAIL rather than advice.
+  if (agent === 'dev' || agent === 'qa') {
+    let rulesReport = null;
+    try {
+      const { runRulesCheck } = require('./rules-check');
+      rulesReport = await runRulesCheck({
+        args: [targetDir],
+        options: { changed: true, json: true, suppressExitCode: true },
+        logger: silentLogger
+      });
+    } catch {
+      rulesReport = null;
+    }
+    if (rulesReport && rulesReport.rules_enforced && rulesReport.rules_enforced.length > 0) {
+      const high = rulesReport.by_severity.HIGH || 0;
+      const med = rulesReport.by_severity.MED || 0;
+      const broken = rulesReport.rules_enforced.filter((rule) => !rule.ok).map((rule) => rule.name);
+      if (high > 0) {
+        const samples = (rulesReport.findings || [])
+          .filter((finding) => finding.severity === 'HIGH')
+          .slice(0, 3)
+          .map((finding) => `${finding.file}:${finding.line}`)
+          .join(', ');
+        pushStep(steps, 'rules:check', {
+          ok: false,
+          reason: `${high} violation(s)${med ? ` / ${med} MED` : ''} of ${broken.join(', ')} in changed files (${samples}) — a rule outranks the PRD, the plan, and any recorded deviation. See .aioson/context/rules-check.json`
+        });
+      } else {
+        pushStep(steps, 'rules:check', { ok: true, reason: med ? `${med} MED worth a second look` : null });
+      }
+    }
+  }
+
   const ok = doneResult.ok && (strict ? errors.length === 0 : !errors.some((error) => error.step === 'agent:done'));
   const result = {
     ok,

@@ -21,6 +21,7 @@ When concrete evidence indicates fragile boundaries, test gaps, performance hots
 ## Hard constraints
 
 - Produce exactly one planning artifact: `implementation-plan-{slug}.md` or `implementation-plan.md`.
+- Every path and identifier the plan fixes must satisfy `.aioson/rules/`; rules outrank the PRD, so route a conflict back rather than planning around it.
 - Never create requirements, spec, architecture, design-doc, readiness, conformance, decision checkpoint, backlog, user-story, or harness artifacts.
 - Do not change product scope. Route a real contradiction back to Product through Sheldon; never bypass or overwrite the sealed review. Resolve ordinary technical choices from repository evidence.
 - Never plan recommendation-only, pending, rejected, deferred, stale or mismatched review content; those states remain nonbinding under the shared review-authority contract.

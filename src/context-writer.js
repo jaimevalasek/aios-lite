@@ -131,6 +131,7 @@ ${notes.length > 0 ? notes.map((note) => `- ${note}`).join('\n') : '- [none]'}
 ## Conventions
 - Language: ${language}
 - Code comments language: ${codeCommentLanguage}
+- Source code identifiers: English (paths, filenames, classes, functions, variables — product copy stays in the project language)
 - DB naming: snake_case
 - JS/TS naming: camelCase
 `;

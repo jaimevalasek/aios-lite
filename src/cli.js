@@ -316,6 +316,8 @@ const JSON_SUPPORTED_COMMANDS = new Set([
   'context-guard',
   'rules:lint',
   'rules-lint',
+  'rules:check',
+  'rules-check',
   'context:load',
   'context-load',
   'chain:audit',
@@ -1432,6 +1434,9 @@ async function main() {
       result = await runContextGuard({ args, options, logger: commandLogger, t });
     } else if (command === 'rules:lint' || command === 'rules-lint') {
       result = await runRulesLint({ args, options, logger: commandLogger, t });
+    } else if (command === 'rules:check' || command === 'rules-check') {
+      const { runRulesCheck } = require('./commands/rules-check');
+      result = await runRulesCheck({ args, options, logger: commandLogger, t });
     } else if (command === 'context:load' || command === 'context-load') {
       result = await runContextLoad({ args, options, logger: commandLogger, t });
     } else if (command === 'chain:audit' || command === 'chain-audit') {

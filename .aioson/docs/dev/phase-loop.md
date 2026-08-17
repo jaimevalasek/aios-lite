@@ -16,14 +16,21 @@ Auto-continue is the default. A clean phase checkpoint advances directly to the 
 After finishing each phase:
 
 1. Run the focused automated command and production-path check declared by the phase.
-2. Fix a failing check locally before advancing. Stop only after the configured retry limit or for a genuine product/security decision.
-3. Update the non-blocking dossier evidence and write the cold-start checkpoint (`--feature` and `--next` are required — a bare call fails with `missing_feature`):
+2. Verify the project's own rules against what the phase just wrote:
+
+   ```bash
+   aioson rules:check . --changed
+   ```
+
+   It is deterministic and scoped to the diff, so it costs almost nothing to repeat every phase — which is the point. A `HIGH` is a rule being broken, and a rule outranks the PRD, the plan, and any deviation recorded in the dossier: fix the code here, while the phase is still in hand, or stop and report the conflict for a human to resolve on the rule file. The same check runs again at DEV completion and blocks the stage gate, so a violation carried forward only costs a re-entry.
+3. Fix a failing check locally before advancing. Stop only after the configured retry limit or for a genuine product/security decision.
+4. Update the non-blocking dossier evidence and write the cold-start checkpoint (`--feature` and `--next` are required — a bare call fails with `missing_feature`):
 
    ```bash
    aioson dev:state:write . --feature={slug} --phase={n} --next="{next concrete step}" --context=prd,impl-plan 2>/dev/null || true
    ```
 
-4. Continue immediately. The checkpoint exists for crash recovery, not as a handoff or approval gate.
+5. Continue immediately. The checkpoint exists for crash recovery, not as a handoff or approval gate.
 
 After the last phase, run the full relevant build/tests and production-path smoke once, then hand off to QA:
 

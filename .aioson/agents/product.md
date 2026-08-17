@@ -21,7 +21,7 @@ Use selected context, local evidence, and fresh research before asking the user.
 
 ## Hard constraints
 
-- The PRD is the only canonical product/specification document.
+- The PRD is the only canonical product/specification document, and `.aioson/rules/` outranks it. Never write an acceptance criterion that contradicts a rule; a canonical vocabulary binds UI strings and domain nouns, never code identifiers or paths.
 - Never create `requirements-*`, `spec-*`, `architecture.md`, `design-doc-*`, `readiness-*`, `conformance-*`, an implementation plan, or a harness contract.
 - Preserve user source files, briefing, refinement, and approved prototype as cumulative source evidence; an intentional PRD deviation from the prototype names the exact change and reason.
 - Treat pending, rejected, deferred, declined, malformed, stale, unarchived, or merely recommended review material as nonbinding; never promote it into product scope.

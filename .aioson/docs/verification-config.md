@@ -69,6 +69,25 @@ This is deterministic (no LLM judgment) and runs at every tracked `@dev`/`@qa` c
 
 > **Periphery analog:** for the **non-code** artifacts the specialized agents produce (project context, genomes, profiler reports, the discovery cache, hybrid skills, generated sites, copy, commit subjects), the same build-free philosophy is applied by `aioson verify:artifact` — see **`verify-artifact-gates.md`**.
 
+## Rule-compliance gate (`rules_check`)
+
+Controls `aioson rules:check`, wired into the same tracked done-gate. Where `audit_code` asks whether the code is any good, this asks whether the code obeys the rules the project itself declared — the checkers bound by `enforcement:` in the frontmatter of a rule, doc, or process skill.
+
+```jsonc
+"rules_check": {
+  "tracked_gate": "block",     // "block" | "advisory" | "off"
+  "scope": "changed"           // "changed" (git diff, fast) | "full" (whole tree)
+}
+```
+
+- **`block`** (default) — a HIGH finding refuses the stage. The default differs from `audit_code` on purpose: a heuristic quality opinion should not gate, but a declared rule is the top of the authority chain, and a PRD, plan, or dossier deviation may never resolve a conflict in its own favour.
+- **`advisory`** — persist `.aioson/context/rules-check.json` and emit a guard event without blocking.
+- **`off`** — skip the step entirely.
+
+Only `.aioson/rules/` produces blocking HIGH findings. A checker declared solely by a doc or a process skill reports `MED`: those surfaces carry procedure and craft rather than law, so falling short of one is advice, not a refused handoff.
+
+The honest way to switch this off for a project is the rule file itself — edit its scope or remove it, once and in the open. That keeps the override channel visible instead of letting each feature quietly decide the rule does not apply this time.
+
 ## Examples
 
 Pin qa to the cheapest Claude tier per phase:

@@ -93,6 +93,8 @@ It returns every promise with its decision/caps, every capability with its ACs, 
 7. Observe the real state change and visible output.
 8. Record PASS/FAIL with exact evidence.
 
+Run `aioson rules:check . --changed`. A `HIGH` is a project rule being violated and is a FAIL on its own, whatever the PRD, the plan, or a dossier deviation says — route it back as a correction packet naming the rule. `MED` findings come from docs and process skills, which are craft rather than law: report them as advice, never as the blocker.
+
 Run broader regression tests proportional to the changed surface. Invoke `@pentester` only for triggered sensitive surfaces or suspicious findings; invoke `@tester` only when deeper coverage is enabled and useful.
 
 When a specialist trigger is concrete—from an engineering-control row, an observed finding, the approved plan, or an explicit user request—read `.aioson/context/agent-execution-{slug}.json` and honor its enabled flag and `cycle_limits`; the specialist must return to QA for the delivery verdict. After any bounded specialist correction, independently review that diff and rerun the relevant evidence before deciding. Absence of a specialist trigger must not delay the verdict.

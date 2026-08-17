@@ -1140,6 +1140,7 @@ async function finalizeCurrentStage(targetDir, config, state, stageName) {
     }
   }
   let auditCodeSummary = null;
+  let rulesCheckSummary = null;
 
   // ── Harness Done Gate ───────────────────────────────────────────────────
   if (state.mode === 'feature' && state.featureSlug) {
@@ -1292,6 +1293,50 @@ async function finalizeCurrentStage(targetDir, config, state, stageName) {
         if (auditErr && auditErr.message && auditErr.message.includes('[Code-Quality Gate]')) throw auditErr;
         // audit:code unavailable / non-git — non-blocking
       }
+
+      // ── Rule-compliance gate (deterministic rules:check) ───────────────────
+      // The gate above asks "is this code any good?"; this one asks "is this
+      // code obeying the rules the project itself declared?". That is why it
+      // defaults to BLOCK: a rule outranks every feature-scoped artifact, so a
+      // PRD, plan, or dossier deviation can never resolve a conflict in its own
+      // favour. The escape hatch is the rule file — edit it, scope it, or delete
+      // it — or relax verification.json rules_check.tracked_gate.
+      try {
+        const { readVerificationConfig, getRulesCheckPolicy } = require('../verification-policy');
+        const rulesPolicy = getRulesCheckPolicy(await readVerificationConfig(targetDir));
+        if (rulesPolicy.tracked_gate !== 'off') {
+          const { runRulesCheck } = require('./rules-check');
+          const rulesReport = await runRulesCheck({
+            args: [targetDir],
+            options: { changed: rulesPolicy.scope !== 'full', json: true, suppressExitCode: true },
+            logger: { log() {}, error() {} }
+          });
+          const high = rulesReport && rulesReport.by_severity ? (rulesReport.by_severity.HIGH || 0) : 0;
+          const med = rulesReport && rulesReport.by_severity ? (rulesReport.by_severity.MED || 0) : 0;
+          const broken = (rulesReport && rulesReport.rules_enforced || [])
+            .filter((rule) => !rule.ok).map((rule) => rule.name);
+          rulesCheckSummary = { gate: rulesPolicy.tracked_gate, scope: rulesPolicy.scope, high, med, rules: broken };
+          if (high > 0 && rulesPolicy.tracked_gate === 'block') {
+            const msg = `[Rule-Compliance Gate] @${normalizedStage} blocked — rules:check found ${high} violation(s) of ${broken.join(', ')} in the ${rulesPolicy.scope} files. A project rule outranks the PRD, the plan, and any recorded deviation: fix the code, or change the rule itself. See .aioson/context/rules-check.json`;
+            await logError(targetDir, normalizedStage, msg, 'rules-check');
+            throw new Error(msg);
+          }
+          if (high > 0 || med > 0) {
+            try {
+              const { emitGuardEvent } = require('../harness/guard-events');
+              await emitGuardEvent(targetDir, {
+                eventType: 'rules_check_violations',
+                agent: normalizedStage,
+                message: `${high} HIGH / ${med} MED against ${broken.join(', ') || 'enforced rules'} in ${rulesPolicy.scope} files`,
+                payload: { slug: state.featureSlug, high, med, scope: rulesPolicy.scope, rules: broken }
+              });
+            } catch { /* telemetry best-effort */ }
+          }
+        }
+      } catch (rulesErr) {
+        if (rulesErr && rulesErr.message && rulesErr.message.includes('[Rule-Compliance Gate]')) throw rulesErr;
+        // rules:check unavailable / non-git — non-blocking
+      }
     }
 
     const contractPath = path.join(targetDir, '.aioson', 'plans', state.featureSlug, 'harness-contract.json');
@@ -1417,7 +1462,8 @@ async function finalizeCurrentStage(targetDir, config, state, stageName) {
     technicalGate: techGate,
     ...(correctionCycleResolution ? { correctionCycleResolution } : {}),
     ...(correctionCycleReset ? { correctionCycleReset } : {}),
-    ...(auditCodeSummary ? { auditCode: auditCodeSummary } : {})
+    ...(auditCodeSummary ? { auditCode: auditCodeSummary } : {}),
+    ...(rulesCheckSummary ? { rulesCheck: rulesCheckSummary } : {})
   };
 }
 

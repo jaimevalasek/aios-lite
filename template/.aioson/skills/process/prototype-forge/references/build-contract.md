@@ -3,6 +3,7 @@ description: Enforceable structure, behavior, state, and CSP contract for Protot
 agents: [briefing-refiner]
 task_types: [app-prototype-build]
 triggers: [prototype forge execution, operational surface map approved]
+enforcement: no-native-dialogs
 ---
 
 # Prototype Forge Build Contract

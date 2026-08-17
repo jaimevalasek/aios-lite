@@ -20,8 +20,8 @@ Implement the approved PRD through the Planner's vertical stages and make the pr
 
 ## Hard constraints
 
-- The source inventory/promise map, approved briefing/refinement, approved prototype binding, Sheldon-reviewed PRD, implementation plan, and repository form one cumulative implementation authority. The PRD owns product decisions and the plan owns technical sequencing; neither may silently discard an upstream `PROM-*`. Do not require requirements, spec, architecture, design-doc, readiness, conformance, decision-checkpoint, ledger, or harness files.
-- Never suggest direct execution outside the workflow as a workaround for stale context. Repair objectively inferable context or route to Setup when it is genuinely uncertain.
+- `.aioson/rules/` outranks all of it — a rule conflict is a stop, never a deviation. The source inventory/promise map, approved briefing/refinement, approved prototype binding, Sheldon-reviewed PRD, implementation plan, and repository form one cumulative implementation authority. The PRD owns product decisions and the plan owns technical sequencing; neither may silently discard an upstream `PROM-*`. Do not require requirements, spec, architecture, design-doc, readiness, conformance, decision-checkpoint, ledger, or harness files.
+- Never suggest direct execution outside the workflow as a workaround for stale context. Repair objectively inferable context or route to Setup when genuinely uncertain.
 - Do not change product scope. Route a product contradiction to Product and Sheldon; never bypass a source promise or approved prototype interaction because a downstream artifact is quieter. Resolve normal technical details from repository evidence.
 - Do not infer implementation work from pending, rejected, deferred, declined, malformed, stale, unarchived or merely recommended review content.
 - Do not replace a referenced prototype with a generic layout or static mock.
@@ -31,7 +31,7 @@ Implement the approved PRD through the Planner's vertical stages and make the pr
 - Never weaken tests, assertions, or error handling merely to obtain green output.
 - Do not add dependencies, migrations, abstractions, or generic hardening that the approved plan and repository evidence do not justify.
 - Preserve unrelated user changes in a dirty worktree.
-- Never impersonate a requested external host/model with the current chat model. An unavailable CLI/model is a real pause unless that exact manifest entry declares an applicable fallback.
+- Never impersonate a requested external host/model with the current chat model. An unavailable CLI/model is a real pause unless that manifest entry declares an applicable fallback.
 
 ## Built-in dev modules
 
@@ -42,7 +42,7 @@ Load only when triggered:
 - `.aioson/docs/dev/execution-discipline.md` — risky or multi-phase execution.
 - `.aioson/docs/dev/phase-loop.md` — required for multi-phase plans; continue clean checkpoints automatically.
 - `.aioson/docs/dev/simple-plan-lane.md` — bounded technical work outside feature workflow.
-- `.aioson/docs/quality/code-health-analysis.md` — only when concrete evidence on planned paths indicates a regression, coverage, performance, or componentization risk; fold the conclusion into implementation or the dossier, never a new gate.
+- `.aioson/docs/quality/code-health-analysis.md` — only when planned-path evidence shows regression, coverage, performance, or componentization risk; fold the conclusion into implementation or the dossier, never a new gate.
 
 ## Session start protocol
 
@@ -53,7 +53,7 @@ aioson gate:check . --feature={slug} --gate=C
 aioson prototype:check . --feature={slug} --strict
 ```
 
-Then inspect the actual production entry point and the files named by the active phase before editing.
+Then inspect the production entry point and the files named by the active phase before editing.
 
 ## Context integrity
 
@@ -99,7 +99,7 @@ Implement one vertical phase at a time:
 
 ## Optional development execution lanes
 
-Load `.aioson/docs/dev/execution-lanes.md` only when `agent-execution-{slug}.json` declares `development_lanes.strategy: split` with at least one enabled lane; classification never enables them. It carries the dispatch protocol (`agent:execution:dispatch`), the declared-fallback rule, and the integration-ownership contract. Without an enabled lane, implement directly in this DEV session — never create frontend/backend lanes merely because both surfaces exist.
+Load `.aioson/docs/dev/execution-lanes.md` only when `agent-execution-{slug}.json` declares `development_lanes.strategy: split` with at least one enabled lane; classification never enables them. It carries the dispatch protocol (`agent:execution:dispatch`), the declared-fallback rule, and the integration-ownership contract. Without an enabled lane, implement directly here — never create frontend/backend lanes merely because both surfaces exist.
 
 ## Execution invariants
 
@@ -150,9 +150,9 @@ Next agent: @qa (independent verification against PRD, plan, prototype, and real
 Action: /qa
 ```
 
-When material session-only evidence could be compressed away, update `mappings/{slug}/continuity.md` using `.aioson/docs/feature-continuity-mapping.md` before recommending `/compact`. The mapping is temporary continuity only and never replaces canonical artifacts or implementation evidence.
+When material session-only evidence could be compressed away, update `mappings/{slug}/continuity.md` via `.aioson/docs/feature-continuity-mapping.md` before `/compact`. It is temporary continuity and never replaces canonical artifacts or implementation evidence.
 
-Recommend `/compact` before QA. Use `/clear` only for a hard reset, feature switch, polluted context, or security-sensitive reset. Do not perform QA's independent verdict.
+Recommend `/compact` before QA. Use `/clear` only for a hard reset, feature switch, polluted context, or security reset. Do not perform QA's independent verdict.
 
 Never auto-run `feature:close`, commit, or publish; QA produces the verdict and feature close remains a human gate.
 

@@ -19,6 +19,7 @@ Independently challenge every tracked feature PRD against the user source pack, 
 ## Hard constraints
 
 - Edit the existing PRD in place. Do not create a Sheldon enrichment artifact.
+- `.aioson/rules/` outranks the PRD. An acceptance criterion that contradicts a rule is a review failure, not a documented exception: rewrite it to fit the rule, or stop and report the conflict for a human to resolve on the rule file. Watch specifically for a vocabulary, naming, or copy promise quietly extended from UI strings to code identifiers, paths, or schema names.
 - Never create `requirements-*`, `spec-*`, `architecture.md`, `design-doc-*`, `readiness-*`, `implementation-plan-*`, `conformance-*`, `decision-checkpoint.json`, `.aioson/plans/{slug}/`, or a harness contract. One carve-out: when `@validator` reports a contract-integrity failure or the user explicitly routes harness-contract repair here, edit the existing `.aioson/plans/{slug}/harness-contract.json` following `.aioson/docs/sheldon/harness-contract.md` (§2c runtime-gate criteria) — repair only; a harness contract is still never a default deliverable.
 - Preserve the prototype's visible structure and interactions unless the PRD explicitly records an approved deviation.
 - Treat the approved prototype as binding for final layout, visible states, interactions, and element behavior; it is not proof of backend integration.

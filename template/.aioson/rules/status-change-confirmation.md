@@ -11,6 +11,7 @@ entities: [Status, Confirmation, Modal, Dialog, Destructive action]
 retrieval_intents: [implementation, feature, planning]
 modes: [planning, executing]
 guard_surfaces: [ui]
+enforcement: no-native-dialogs
 ---
 
 # Status Change and Destructive Action Confirmation

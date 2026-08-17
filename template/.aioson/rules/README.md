@@ -47,6 +47,7 @@ paths: [src/billing/**]                   # routing: matched against the files b
 | `entities` | no | Domain objects, tables, services, modules, or concepts governed by the rule |
 | `retrieval_intents` | no | Discovery intent labels such as `planning`, `implementation`, `database`, `memory`, `feature`, `security`, or `testing` |
 | `paths` | no | Glob patterns matched against `--paths` (files about to be touched) |
+| `enforcement` | no | Id of a deterministic checker that verifies compliance. Run by `aioson rules:check`; see below |
 
 ---
 
@@ -88,6 +89,46 @@ aioson rules:lint .
 ```
 
 It flags rules that are selector-invisible or missing required fields.
+
+---
+
+## Precedence
+
+Rules are the top of the authority chain. A briefing, PRD acceptance criterion, implementation plan, prototype, or dossier decision may add detail on top of a rule, but may never override it, narrow it, or spend it as an accepted deviation — being more specific or more recent does not promote a feature artifact above a project rule.
+
+When a feature artifact conflicts with a rule, the agent stops and reports the conflict. It does not choose. The only resolutions are a human editing the rule or a human changing the artifact.
+
+This makes the rule file itself the single on/off switch, which is what keeps the override channel honest: a project that genuinely needs different behavior edits or removes the rule, in the open, once — instead of a feature quietly deciding it does not apply this time.
+
+---
+
+## Machine-checked compliance
+
+Prose loses to model priors. A rule that no machine can verify degrades into a suggestion, so a rule may bind itself to a deterministic checker:
+
+```yaml
+enforcement: source-code-language
+```
+
+```bash
+aioson rules:check .              # every enforceable rule, whole tree
+aioson rules:check . --changed    # only what this session touched (cheap; run often)
+aioson rules:check . --rule=source-code-language-convention --json
+```
+
+`rules:lint` asks whether the rules are well-formed; `rules:check` asks whether the code obeys them. It reports `HIGH` for a provable violation and `MED` for a signal worth a second look, and it lists every document that has no checker under `unenforced` — a green summary must never imply coverage that does not exist.
+
+`.aioson/docs/` and `.aioson/skills/process/` can bind a checker the same way, but they do not carry the same weight, and the check does not pretend otherwise:
+
+| Surface | What it is | A violation |
+|---|---|---|
+| `.aioson/rules/` | hard law on how to implement and act | **blocks** — `HIGH`, refuses the stage gate |
+| `.aioson/docs/` | procedure — how the work is normally done | warns — `MED`, advisory |
+| `.aioson/skills/process/` | craft — ability, technique, quality | warns — `MED`, advisory |
+
+Breaking a rule is a contract violation; falling short of a skill is a competence gap worth surfacing, not a reason to refuse the handoff. When a rule and a skill declare the same checker, the rule's authority applies.
+
+The engine runs it automatically at DEV/QA completion and at the workflow stage gate, and agents re-run it during implementation. Removing the rule file removes its check with it; nothing else can switch it off.
 
 ---
 

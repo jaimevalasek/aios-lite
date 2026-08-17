@@ -8,6 +8,11 @@ const { withIndex } = require('./context-search');
 const CODE_AGENTS = new Set(['dev', 'deyvin', 'qa', 'tester', 'pentester']);
 const IMPLEMENTATION_AGENTS = new Set(['dev', 'deyvin']);
 const REVIEW_AGENTS = new Set(['qa', 'tester']);
+// Roles that name things — or approve the names someone else will write.
+const NAMING_ROLES = new Set([
+  'implementation', 'pair-implementation', 'implementation-planning',
+  'architecture', 'quality-review', 'test-design'
+]);
 
 // Recall only consumes markdown knowledge surfaces (rules, docs, features,
 // plans, prds, researchs). Indexing/returning .json/.txt is cost and noise.
@@ -224,7 +229,7 @@ function includesConcernTerm(haystack, rawTerm) {
   return haystack.includes(term);
 }
 
-function inferConcerns(selection, task) {
+function inferConcerns(selection, task, profile) {
   const haystack = normalizeToken([
     task,
     selection.paths ? selection.paths.join(' ') : '',
@@ -232,6 +237,15 @@ function inferConcerns(selection, task) {
   ].join(' '));
 
   const concerns = [];
+  // Naming is not a topic an implementation task opts into by mentioning it —
+  // every task that writes code invents identifiers. Keyword-gating this concern
+  // made it recall-dependent in exactly the wrong direction: an operator working
+  // in their own language never types "naming" or "identifier", so the projects
+  // most at risk of translated identifiers were the ones that never loaded the
+  // convention. Implementation and planning roles now always carry it.
+  if (profile && (IMPLEMENTATION_AGENTS.has(profile.agent) || NAMING_ROLES.has(profile.role))) {
+    concerns.push('english-code');
+  }
   for (const item of CONCERN_KEYWORDS) {
     if (item.terms.some((term) => includesConcernTerm(haystack, term))) concerns.push(item.concern);
   }
@@ -359,6 +373,9 @@ function profileVerificationHints(profile, concerns) {
   }
   if (concerns.includes('english-code')) {
     hints.push('Check new source identifiers are technical English while user-facing copy stays in project language.');
+  }
+  if (IMPLEMENTATION_AGENTS.has(profile.agent) || REVIEW_AGENTS.has(profile.agent)) {
+    hints.push('Run `aioson rules:check . --changed` as you go — it verifies the project rules deterministically instead of trusting recall.');
   }
 
   return hints;
@@ -576,7 +593,7 @@ async function buildContextBrief(targetDir, options = {}) {
   const profile = profileForAgent(selection.agent);
   const documents = await loadSelectedDocuments(targetDir, selection.selected || []);
   const stack = inferStack(selection, documents);
-  const concerns = inferConcerns(selection, task);
+  const concerns = inferConcerns(selection, task, profile);
   const { must_load: mustLoad, should_load: shouldLoad } = classifyLoads(selection, profile);
   const mustLoadPaths = new Set(mustLoad.map((item) => item.path));
   const constraintSources = (selection.selected || []).filter((item) => {

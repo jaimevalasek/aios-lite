@@ -101,6 +101,17 @@ function buildDefaultVerificationConfig() {
     audit_code: {
       tracked_gate: 'advisory',
       scope: 'changed'
+    },
+    // Deterministic rule-compliance check (`aioson rules:check`) wired into the
+    // same tracked done-gate. It defaults to 'block' where audit_code defaults
+    // to 'advisory', and the difference is deliberate: audit:code is a heuristic
+    // opinion about quality, while a rules:check HIGH means the project's own
+    // declared rule is being broken. Nothing outranks a rule — so the honest
+    // escape hatch is editing or removing the rule file, in the open, not a
+    // feature artifact quietly deciding the rule does not apply this time.
+    rules_check: {
+      tracked_gate: 'block',
+      scope: 'changed'
     }
   };
 }
@@ -216,6 +227,17 @@ function normalizeAuditCode(parsed) {
   };
 }
 
+function normalizeRulesCheck(parsed) {
+  const def = buildDefaultVerificationConfig().rules_check;
+  const raw = parsed && typeof parsed === 'object' ? parsed : {};
+  const gate = String(raw.tracked_gate || '').trim().toLowerCase();
+  const scope = String(raw.scope || '').trim().toLowerCase();
+  return {
+    tracked_gate: ['block', 'advisory', 'off'].includes(gate) ? gate : def.tracked_gate,
+    scope: ['changed', 'full'].includes(scope) ? scope : def.scope
+  };
+}
+
 function normalizeVerificationConfig(parsed) {
   const def = buildDefaultVerificationConfig();
   const raw = parsed && typeof parsed === 'object' ? parsed : {};
@@ -233,7 +255,8 @@ function normalizeVerificationConfig(parsed) {
     agents,
     budget: normalizeBudget(raw.budget),
     phase_loop: normalizePhaseLoop(raw.phase_loop),
-    audit_code: normalizeAuditCode(raw.audit_code)
+    audit_code: normalizeAuditCode(raw.audit_code),
+    rules_check: normalizeRulesCheck(raw.rules_check)
   };
 }
 
@@ -357,6 +380,11 @@ function getAuditCodePolicy(config) {
   return normalizeAuditCode(config && config.audit_code);
 }
 
+// rules:check tracked-gate policy: 'block' | 'advisory' | 'off' + 'changed' | 'full'.
+function getRulesCheckPolicy(config) {
+  return normalizeRulesCheck(config && config.rules_check);
+}
+
 // Composed decision: should `agentId` run for `context.trigger` right now?
 // Combines trigger membership + enabled resolution + the skip-on-micro budget
 // guard (per-phase verification is suppressed on MICRO to save tokens).
@@ -393,5 +421,6 @@ module.exports = {
   getBudget,
   getPhaseLoop,
   getAuditCodePolicy,
+  getRulesCheckPolicy,
   shouldRunForTrigger
 };

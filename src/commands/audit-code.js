@@ -338,6 +338,11 @@ module.exports = {
   scanCodeQuality,
   parseCategories,
   ALL_CATEGORIES,
+  // shared source-tree walk (reused by rules:check so both scanners agree on
+  // which files are "the project's code")
+  listSourceFiles,
+  readText,
+  CODE_EXTS,
   // exported for tests
   scanDeadCode,
   scanDuplication

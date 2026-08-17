@@ -209,6 +209,33 @@ test('agent:epilogue emits an advisory audit:code step for a dev completion with
   assert.ok(!result.errors.some((e) => e.step === 'audit:code'));
 });
 
+test('agent:epilogue fires rules:check on a dev completion and reports the broken rule', async () => {
+  // Wiring test, deliberately end-to-end: the whole point of this check is that
+  // it runs by itself. A version of it that only lives in a prompt would pass a
+  // prose review and fire nowhere.
+  const { execFileSync } = require('node:child_process');
+  const dir = await makeTempDir();
+  const { t } = createTranslator('en');
+  execFileSync('git', ['init', '-q'], { cwd: dir });
+  execFileSync('git', ['config', 'user.email', 'a@b.c'], { cwd: dir });
+  execFileSync('git', ['config', 'user.name', 'a'], { cwd: dir });
+  await writeFile(dir, '.aioson/rules/source-code-language-convention.md',
+    '---\nname: source-code-language-convention\ndescription: english identifiers\nenforcement: source-code-language\n---\n');
+  await writeFile(dir, 'servidor/rotas/blocos.ts', 'export function criarBloco() { return 1; }\n');
+
+  const result = await runAgentEpilogue({
+    args: [dir],
+    options: { json: true, agent: 'dev', feature: 'feat-x', summary: 'did the slice', 'no-dossier': true },
+    logger: makeLogger(),
+    t
+  });
+
+  const rules = result.steps.find((step) => step.name === 'rules:check');
+  assert.ok(rules, 'expected a rules:check step at dev completion');
+  assert.equal(rules.ok, false);
+  assert.match(String(rules.reason), /source-code-language-convention/);
+});
+
 test('agent:epilogue: a clean diff never yields a failing audit:code advisory', async () => {
   const { execFileSync } = require('node:child_process');
   const dir = await makeTempDir();

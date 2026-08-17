@@ -3,12 +3,14 @@ name: source-code-language-convention
 description: Source code identifiers and generated implementation code use technical English; user-facing copy still follows the project language.
 priority: 8
 version: 1.0.0
-agents: [architect, dev, deyvin, qa, tester]
+agents: [product, sheldon, planner, architect, dev, deyvin, qa, tester]
 modes: [planning, executing]
-task_types: [implementation, refactor, code-generation, naming, framework-implementation]
-load_tier: trigger
-triggers: [source code, code language, naming, variables, functions, classes, implement, refactor, Laravel, PHP, controller, service, repository, migration]
-paths: [app/**, src/**, lib/**, routes/**, database/**, tests/**, resources/**, config/**, template/**]
+task_types: [implementation, refactor, code-generation, naming, framework-implementation, prd, planning]
+load_tier: always
+enforcement: source-code-language
+triggers: [source code, code language, naming, variables, functions, classes, implement, refactor, Laravel, PHP, controller, service, repository, migration, criar, implementar, refatorar, nomear, componente, servico, rota, arquivo, pasta, classe, funcao, crear, implementar, nombrar]
+aliases: [nomenclatura, nomes de arquivo, idioma do codigo, vocabulario canonico, canonical vocabulary, naming convention]
+paths: [app/**, src/**, lib/**, routes/**, database/**, tests/**, resources/**, config/**, template/**, servidor/**, server/**, api/**, packages/**, apps/**]
 ---
 
 # Source Code Language Convention
@@ -16,6 +18,16 @@ paths: [app/**, src/**, lib/**, routes/**, database/**, tests/**, resources/**, 
 Source code is implementation interface. Write identifiers, filenames, classes, functions, variables, database artifacts, migrations, service names, comments that explain code behavior, and generated framework code in technical English.
 
 User-facing copy, documentation artifacts, PRDs, specs, CLI explanations, validation messages, and product text follow `interaction_language` from project context, falling back to `conversation_language`.
+
+## Precedence
+
+This rule outranks every feature-scoped artifact. A briefing promise, PRD acceptance criterion, implementation plan, prototype, or dossier decision cannot override it, narrow it, or spend it as an accepted deviation — not even when the upstream artifact is more specific or more recent.
+
+A product's canonical vocabulary binds **UI strings and domain nouns**. It never extends to technical scaffolding: directories, filenames, layers, framework artifacts, generic verbs, and plumbing identifiers stay English regardless of what a feature artifact says about naming.
+
+On conflict, stop and report it. The only legitimate resolution is a human editing this rule (or removing it for a genuinely locale-scoped project); an agent may never resolve it in favor of the feature artifact.
+
+Compliance is measured, not asserted: `aioson rules:check . --changed` verifies paths and declared identifiers deterministically. `HIGH` is a translated technical term; `MED` is a native-language morphology signal worth a second look.
 
 ## Required Behavior
 
