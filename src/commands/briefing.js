@@ -132,6 +132,13 @@ async function prepareApprovedPrototypeManifest(projectDir, slug, briefingConten
   if (resolution.state === 'missing') {
     return { ok: false, error: 'prototype_resolution_missing', prototypePath: resolution.prototypePath };
   }
+  // A measured benchmark traversal dispenses briefing approval entirely —
+  // nothing in the round root ever becomes product authority. Refusing here
+  // keeps that dispensation honest: the measured state can never be promoted
+  // into an approved briefing by calling the human gate inside the round.
+  if (resolution.state === 'skipped_measured_run') {
+    return { ok: false, error: 'prototype_skipped_measured_run', prototypePath: resolution.prototypePath };
+  }
 
   let manifest;
   try {
@@ -186,6 +193,9 @@ function logPrototypeGateError(logger, slug, failure, t) {
   } else if (failure.error === 'prototype_manifest_status_invalid') {
     logger.error(t('briefing_gate.status_invalid', { status: failure.status || '?' }));
     logger.error(t('briefing_gate.status_invalid_fix', { path: `${base}/prototype-manifest.md` }));
+  } else if (failure.error === 'prototype_skipped_measured_run') {
+    logger.error(t('briefing_gate.skipped_measured_run', { slug }));
+    logger.error(t('briefing_gate.skipped_measured_run_fix'));
   } else {
     logger.error(t('briefing_gate.generic', { slug, error: failure.error }));
   }

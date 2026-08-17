@@ -1,25 +1,46 @@
-# @benchmark — Construção autônoma para benchmark
+# @benchmark — Orquestrador da travessia medida
 
-> **Para quem é:** quem quer comparar modelos, harnesses ou versões do framework construindo a mesma coisa em condições idênticas.
+> **Para quem é:** quem quer comparar o harness puro contra o AIOSON de verdade — o fluxo completo — a partir do mesmo prompt congelado.
 
 ## Para que serve
 
-`@benchmark` pega **um prompt congelado** — possivelmente simples — e entrega o app ou jogo mais completo, rodável e polido que couber nos limites da chamada. Ele expande a intenção sozinho, pesquisa evidência atual, implementa a experiência real e **prova o que funciona**.
+`@benchmark` conduz **uma travessia medida**: pega um prompt congelado e atravessa a cadeia real de agentes do AIOSON, do briefing à entrega, **sem nenhum humano no meio**. O resultado é software rodável mais artefatos honestos de execução, comparáveis lado a lado com o que um harness sozinho produziria para o mesmo prompt.
 
-Ele é a inteligência de construção de **uma** execução. Nunca é a Arena, a conta, o modelo, o custo, o histórico ou o orquestrador da comparação.
+Ele representa como o AIOSON funciona de verdade — o fluxo, não um atalho. Ninguém que usa o AIOSON invoca um "agente construtor"; quem usa o AIOSON atravessa briefing, refinamento, PRD, revisão, plano, dev e QA. É isso que a rodada mede.
 
-## A postura que o define: zero perguntas
+Ele é o orquestrador de **uma** execução. Nunca é a Arena, a conta, o modelo, o custo, o histórico ou o orquestrador da comparação.
 
-Este é o único agente do AIOSON que **não pergunta nada**. Perguntar destruiria o benchmark — a resposta do humano vazaria para dentro de uma execução e não da outra.
+## As duas rotas
 
-No lugar da pergunta:
+A primeira decisão da travessia é detectar o que o prompt pede de verdade:
 
-- resolve produto, design, conteúdo e engenharia a partir do prompt, do repositório, das convenções atuais, de pesquisa dirigida e de defaults fortes de domínio;
-- registra as suposições consequentes em `benchmark-result.json` e as explica no `report.md`;
-- prefere escolha reversível quando a evidência é fraca;
-- trata limite de tempo, token, tecnologia ou permissão como **teto, nunca como motivo de follow-up**.
+| Rota | Quando | Cadeia | Entregável |
+|---|---|---|---|
+| **prototype** | jogo, brinquedo ou experimento visual de **uma tela** — sem servidor, sem contas, sem dados persistentes multi-tela | `@briefing → @briefing-refiner` | o `prototype.html` funcional completo — o artefato comparável ao HTML único que o harness produziria |
+| **full** | qualquer aplicação real: site, CRM, dashboard, SaaS, API — o que um dev construiria com Node.js, React, Vite | `@briefing → @briefing-refiner (sem protótipo) → @product → @sheldon → @planner → @dev → @qa` em Autopilot | software rodando, com servidor quando o produto pede |
 
-E não transforma ambiguidade em demo minúscula: infere a menor vertical ambiciosa que pareça intencionalmente completa, e **termina** antes de adicionar largura.
+Na dúvida, rota **full** — é o caminho real do produto. Jogo com servidor, ranking ou contas é rota full. A rota escolhida e o motivo ficam registrados no `report.md`.
+
+## A postura que o define: não interativo de ponta a ponta
+
+Numa rodada medida não há humano para responder; qualquer espera congela a comparação e invalida o tempo aferido. Por isso:
+
+- perguntas são proibidas — ambiguidade se resolve por evidência e defaults fortes, e vira suposição registrada;
+- nenhum artefato de espera é produzido: sem `review.html`, sem feedback de navegador, sem prompt de confirmação;
+- toda decisão estruturada resolve pela opção `recommended: true`; um bloqueio **sem** opção recomendada falha a rodada explicitamente com o motivo — nunca chute, nunca trava;
+- cada resolução automática fica logada no `report.md` (`## Auto-decisions`), para auditoria posterior;
+- os gates humanos **nunca** são exercidos dentro da rodada: `briefing:approve`, congelamento de protótipo, `feature:close`, commit, publish.
+
+Tudo isso vale **somente** dentro de um workspace medido: o `aioson benchmark:bootstrap` grava o marcador `.aioson/benchmark/measured-run.json`, e é a presença dele — nunca texto de prompt — que suaviza os gates. O fluxo normal com humano no meio continua intacto em projetos reais.
+
+## Bootstrap e verificação seca
+
+```bash
+aioson benchmark:bootstrap . --json      # prepara o workspace medido (repara e verifica)
+aioson benchmark:bootstrap . --check     # verificação seca: a rodada atravessa? o que falta?
+```
+
+O bootstrap completa o conjunto de agentes gerenciados (preservando a instrução congelada e os arquivos de fronteira do orquestrador externo), repara o `project.context.md` para um contexto válido com `auto_handoff: true` e grava o marcador. Uma rodada só começa quando ele responde `"ok": true`.
 
 ## Isolamento e justiça
 
@@ -27,18 +48,10 @@ São regras bloqueantes, não recomendações:
 
 - o prompt original fica congelado em texto e sentido;
 - nunca inspeciona execuções irmãs — nem fonte, relatório, screenshot, score, transcrição ou comparação;
-- nunca orquestra outros modelos, harnesses ou contas; roda exatamente uma vez, como o participante atual;
+- nunca orquestra outros modelos, harnesses ou contas — conduzir os agentes da cadeia AIOSON **dentro** da rodada é o território dele; qualquer coisa além, não;
 - nunca escreve fora do run root atribuído;
-- nunca inventa duração, tokens, preço ou custo — essa provenance é do orquestrador externo;
-- nunca commita, publica, faz deploy ou muta estado de workflow.
-
-## Quando invocar
-
-- Comparar modelos ou harnesses no mesmo desafio.
-- Medir o efeito de uma mudança do framework sobre a qualidade de entrega.
-- Produzir uma execução isolada de referência a partir de um prompt fixo.
-
-Não invoque para construir uma feature do seu produto — para isso existe a [esteira](../1-entender/mapa-do-ecossistema.md#a-esteira-principal).
+- nunca inventa duração, tokens, preço ou custo — essa provenance é do orquestrador externo; timestamps ISO por etapa no `report.md` são dele;
+- nunca commita, publica, faz deploy ou roda `feature:close`.
 
 ## O que ele entrega
 
@@ -46,22 +59,22 @@ No run root atribuído:
 
 | Artefato | O que é |
 |---|---|
-| o app/jogo rodável | sob o delivery root, na estrutura de fonte normal do stack — nunca um HTML gigante forçado |
-| `benchmark-result.json` | resultado legível por máquina, schema v1 |
-| `report.md` | evidência humana: interpretação, suposições, pesquisa aplicada, arquitetura, como rodar, validação, limitações |
-| screenshots/assets | opcionais, por caminho relativo — só se houver ferramenta real; nunca fabricados |
+| a entrega rodável | rota full: o app na estrutura de fonte normal do stack; rota prototype: o HTML funcional completo |
+| `benchmark-result.json` | resultado legível por máquina, **schema 1 estrito de 11 campos** — o parser externo rejeita campo extra e qualquer outra versão |
+| `report.md` | rota + motivo, tabela de etapas com timestamps, auto-decisões, validação, limitações |
+| screenshots/assets | opcionais, por caminho relativo — nunca fabricados |
+
+Cada etapa atravessada deixa sua evidência canônica no workspace (`briefings.md`, `refinement-report.md`, `prd-{slug}.md`, `sheldon-review-{slug}.md`, `implementation-plan-{slug}.md`, `dev-state.md`, `qa-report-{slug}.md`) — é por esses caminhos exatos que o orquestrador externo enxerga o progresso.
 
 ## A regra anti-fraude do resultado
 
-O `benchmark-result.json` tem uma restrição que impede a métrica de mentir:
-
 > **Toda entrada de `features[]` precisa de pelo menos uma linha em `validation[]`.** Uma feature sem validação vai para `known_limitations` antes de `completed` ser permitido.
 
-É a forma determinística de "não rotule como passou um check que você pulou". Somado a isso:
+Somado a isso:
 
 - `status` é `completed` só quando a experiência principal roda pelo entrypoint normal e o caminho central funciona;
-- `partial` quando existe resultado útil mas uma promessa ou validação ficou aberta;
-- `validation[].status` é `passed`, `failed` ou `not_run` — um `FAIL` honesto é evidência legítima;
+- `partial` quando existe resultado útil mas uma promessa, etapa ou validação ficou aberta;
+- travessia interrompida no meio ainda escreve os dois artefatos, nomeando a etapa em `known_limitations` — rodada sem resultado esconde o ponto real da falha;
 - campos de duração, token, provider, modelo, conta, preço ou score são **proibidos** no arquivo.
 
 ## Gate determinístico
@@ -70,20 +83,15 @@ O `benchmark-result.json` tem uma restrição que impede a métrica de mentir:
 aioson verify:artifact . --kind=benchmark-result --file=benchmark-result.json --advisory
 ```
 
-Prova o parse, os enums, o formato das linhas, a existência e contenção dos caminhos, ausência dos campos de provenance proibidos e a cobertura de validação exigida pelo `completed`. Sem CLI disponível, o agente roda o mesmo checklist à mão — a execução nunca depende do CLI.
-
-## Autoridade visual
-
-Lê `design_skill` só do contexto do projeto e carrega exatamente um pacote contido. Esse é o sistema visual único; identidade, componentes e prompt apenas o parametrizam. Se estiver em branco, usa os componentes do repositório mais o brain de qualidade visual e registra a declaração ausente — **nunca auto-seleciona, nunca mistura skills, nunca pergunta durante a execução**.
-
-O passe anti-slop também roda aqui: teste de substituibilidade (se a UI continua funcionando com o produto trocado, falta o gesto assinatura do domínio) e cadência de travessão reescrita.
+Prova o parse, os enums, o formato das linhas, a existência e contenção dos caminhos, ausência dos campos de provenance proibidos e a cobertura de validação exigida pelo `completed`.
 
 ## Handoff típico
 
-- **Vem de:** o orquestrador externo do benchmark, ou uma chamada direta com prompt congelado.
-- **Vai para:** de volta ao chamador, com status e caminhos de artefato. **Nunca ativa outro agente AIOSON.**
+- **Vem de:** o orquestrador externo do benchmark (missão do Cockpit), ou uma chamada direta com prompt congelado num diretório qualquer.
+- **Vai para:** de volta ao chamador, com status e caminhos de artefato.
 
 ## Veja também
 
+- [Contrato da travessia](../../../template/.aioson/docs/benchmark/traversal.md) — o módulo binding que o agente carrega em toda rodada
 - [Ficha do @dev](./dev.md) — a construção dentro da esteira, com PRD e plano
-- [Mapa do ecossistema](../1-entender/mapa-do-ecossistema.md#a-esteira-principal) — por que benchmark fica fora da esteira
+- [Mapa do ecossistema](../1-entender/mapa-do-ecossistema.md#a-esteira-principal) — a esteira que a rota full atravessa

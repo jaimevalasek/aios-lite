@@ -12,6 +12,8 @@ module.exports = {
     owner_mismatch_fix: '  Corrija o campo `feature:` em {path} — nunca reaproveite o protótipo de outro briefing.',
     status_invalid: 'O manifesto do protótipo tem status inválido "{status}" (prototype_manifest_status_invalid).',
     status_invalid_fix: '  Status aceitos: draft ou approved. Corrija {path}.',
+    skipped_measured_run: 'O briefing "{slug}" pertence a uma rodada medida de benchmark: a aprovação é dispensada nela (prototype_skipped_measured_run).',
+    skipped_measured_run_fix: '  Uma travessia medida nunca vira autoridade de produto. Remova .aioson/benchmark/measured-run.json apenas se este workspace for um projeto real.',
     generic: 'Não foi possível aprovar o protótipo de "{slug}": {error}.'
   },
   cli: {

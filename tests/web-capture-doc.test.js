@@ -47,8 +47,10 @@ test('web-capture doc is shipped, managed, byte-parity, and carries its contract
 });
 
 test('consumer kernels point at the shared module instead of restating it', async () => {
+  // benchmark left this list when it became the traversal orchestrator: web
+  // capture belongs to the building agents (refiner/dev routes), not to the
+  // conductor of a measured round.
   const consumers = [
-    { rel: '.aioson/agents/benchmark.md', tracked: true },
     { rel: '.aioson/agents/site-forge.md', tracked: true },
     { rel: '.aioson/docs/briefing/prototype-and-delegation.md', tracked: true },
     { rel: '.aioson/skills/static/web-research-cache.md', tracked: false }
@@ -58,14 +60,4 @@ test('consumer kernels point at the shared module instead of restating it', asyn
     const content = tracked ? await parityTracked(rel) : await readTemplate(rel);
     assert.equal(content.includes(DOC), true, `${rel} must point at ${DOC}`);
   }
-});
-
-test('benchmark kernel keeps only the pointer, not the inline capture recipe', async () => {
-  const kernel = await parityTracked('.aioson/agents/benchmark.md');
-  assert.equal(kernel.includes(DOC), true);
-  assert.equal(
-    kernel.includes('researchs/<ref>/extract.md'),
-    false,
-    'inline capture recipe must live in the shared doc, not the budgeted kernel'
-  );
 });

@@ -2,6 +2,7 @@
 
 const fs = require('node:fs');
 const { resolveBriefingPath } = require('./briefing-paths');
+const { isMeasuredRun } = require('../measured-run');
 
 // A briefing is explicitly non-visual only when it records the decision as a
 // machine-checkable line (frontmatter or body) or inside a Prototype contract
@@ -17,13 +18,17 @@ function declaresNonVisual(briefingContent) {
 // Deterministic prototype state shared by briefing:approve (the gate),
 // briefing:apply-feedback (next action), and verify:artifact --kind=briefing
 // (early warning):
-//   'prototype'  — prototype.html exists; manifest checks happen at approve time
-//   'non_visual' — the briefing explicitly records prototype: not_applicable
-//   'missing'    — neither; briefing:approve refuses with prototype_resolution_missing
+//   'prototype'            — prototype.html exists; manifest checks happen at approve time
+//   'non_visual'           — the briefing explicitly records prototype: not_applicable
+//   'skipped_measured_run' — no prototype AND the workspace carries the measured-run
+//                            marker: the traversal deliberately skips the prototype
+//                            stage without claiming the feature is non-visual
+//   'missing'              — neither; briefing:approve refuses with prototype_resolution_missing
 function resolvePrototypeState(projectDir, slug, briefingContent) {
   const prototypePath = resolveBriefingPath(projectDir, slug, 'prototype.html');
   if (fs.existsSync(prototypePath)) return { state: 'prototype', prototypePath };
   if (declaresNonVisual(briefingContent)) return { state: 'non_visual', prototypePath };
+  if (isMeasuredRun(projectDir)) return { state: 'skipped_measured_run', prototypePath };
   return { state: 'missing', prototypePath };
 }
 

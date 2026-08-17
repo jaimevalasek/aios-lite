@@ -10,7 +10,9 @@ const { queryBrains } = require('../src/brain-query');
 const ROOT = path.resolve(__dirname, '..');
 const TEMPLATE_ROOT = path.join(ROOT, 'template');
 const WORKSPACE_ROOT = ROOT;
-const AGENTS = ['dev', 'deyvin', 'briefing-refiner', 'benchmark'];
+// benchmark left this set when it became the traversal orchestrator: the
+// building (and the visual-quality lens with it) belongs to refiner/dev.
+const AGENTS = ['dev', 'deyvin', 'briefing-refiner'];
 // Product/Sheldon consume the same brain through the spec-quality lens only: the PRD
 // authority must not inherit layout nodes it has no right to decide.
 const SPEC_AGENTS = ['product', 'sheldon'];
@@ -256,7 +258,7 @@ test('the effect and asset vocabulary is framework-level, routed, and honest abo
   // Routing frontmatter is what makes it reachable at all; without load_tier it
   // would either never load or load for every non-visual feature.
   assert.match(template, /^load_tier: trigger$/m);
-  assert.match(template, /^agents: \[dev, deyvin, briefing-refiner, benchmark\]$/m);
+  assert.match(template, /^agents: \[dev, deyvin, briefing-refiner\]$/m);
 
   // The two contracts that make an effect shippable rather than merely pretty.
   assert.match(template, /prefers-reduced-motion/);

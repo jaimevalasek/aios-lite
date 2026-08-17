@@ -238,6 +238,7 @@ const { runDevResumeData } = require('./commands/dev-resume');
 const { runRevisionOpen, runRevisionList, runRevisionResolve } = require('./commands/revision');
 const { runAcTestAudit } = require('./commands/ac-test-audit');
 const { runSddBenchmark } = require('./commands/sdd-benchmark');
+const { runBenchmarkBootstrap } = require('./commands/benchmark-bootstrap');
 const { runGateCheck } = require('./commands/gate-check');
 const { runGateApprove } = require('./commands/gate-approve');
 const { runArtifactValidate } = require('./commands/artifact-validate');
@@ -888,6 +889,8 @@ const JSON_SUPPORTED_COMMANDS = new Set([
   'ac-test-audit',
   'sdd:benchmark',
   'sdd-benchmark',
+  'benchmark:bootstrap',
+  'benchmark-bootstrap',
   'gate:check',
   'gate-check',
   'gate:approve',
@@ -2038,6 +2041,8 @@ async function main() {
       result = await runAcTestAudit({ args, options, logger: commandLogger });
     } else if (command === 'sdd:benchmark' || command === 'sdd-benchmark') {
       result = await runSddBenchmark({ args, options, logger: commandLogger });
+    } else if (command === 'benchmark:bootstrap' || command === 'benchmark-bootstrap') {
+      result = await runBenchmarkBootstrap({ args, options, logger: commandLogger });
     } else if (command === 'gate:check' || command === 'gate-check') {
       result = await runGateCheck({ args, options, logger: commandLogger });
     } else if (command === 'gate:approve' || command === 'gate-approve') {

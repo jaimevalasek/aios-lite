@@ -20,6 +20,7 @@ test('benchmark is a managed, promptable official agent', () => {
   assert.ok(agent.dependsOn.includes('.aioson/context/project.context.md'));
   assert.match(agent.output, /benchmark-result\.json/);
   assert.match(agent.output, /report\.md/);
+  assert.match(agent.description, /traversal/i);
   assert.ok(MANAGED_FILES.includes('.aioson/agents/benchmark.md'));
   assert.ok(AGENT_DEFINITIONS.some((candidate) => candidate.id === 'benchmark'));
 
@@ -33,6 +34,25 @@ test('benchmark is a managed, promptable official agent', () => {
   assert.match(prompt, /benchmark-result\.json/);
 });
 
+test('benchmark wrapper carries the traversal orchestration exception', () => {
+  const agent = getAgentDefinition('benchmark');
+  const orchestrated = buildAgentPrompt(agent, 'grokbuild', {
+    instructionPath: agent.path,
+    interactionLanguage: 'pt-BR',
+    orchestration: 'benchmark-traversal'
+  });
+  assert.match(orchestrated, /measured benchmark traversal/);
+  assert.match(orchestrated, /benchmark:bootstrap/);
+  assert.match(orchestrated, /@briefing → @briefing-refiner → @product → @sheldon → @planner → @dev → @qa/);
+  assert.match(orchestrated, /\.aioson\/docs\/benchmark\/traversal\.md/);
+  assert.match(orchestrated, /never ask the user anything mid-round/i);
+
+  // Without the orchestration option the boundary keeps the manual stop.
+  const plain = buildAgentPrompt(agent, 'grokbuild', { instructionPath: agent.path });
+  assert.doesNotMatch(plain, /measured benchmark traversal/);
+  assert.match(plain, /operate exclusively as @benchmark/);
+});
+
 test('benchmark kernel has the structural contract and template parity', async () => {
   const [template, workspace] = await Promise.all([
     read('template/.aioson/agents/benchmark.md'),
@@ -44,6 +64,7 @@ test('benchmark kernel has the structural contract and template parity', async (
     'LANGUAGE BOUNDARY',
     '## Mission',
     '## Required input',
+    '## Traversal protocol',
     '## Hard constraints',
     '## Output contract',
     '## Observability'
@@ -60,30 +81,37 @@ test('benchmark kernel has the structural contract and template parity', async (
   assert.ok(template.length < 14000, 'benchmark kernel exceeded the compact prompt budget');
 });
 
-test('benchmark kernel forces autonomous expansion, research, implementation quality, and proof', async () => {
+test('benchmark kernel conducts the measured traversal instead of building alone', async () => {
   const kernel = await read('template/.aioson/agents/benchmark.md');
 
-  assert.match(kernel, /Do not ask clarification or preference questions/i);
-  assert.match(kernel, /record[^\n]*assumptions/i);
-  assert.match(kernel, /targeted web research/i);
-  assert.match(kernel, /Never fabricate sources, citations, research, or findings/i);
-  assert.match(kernel, /mature libraries/i);
-  assert.match(kernel, /premium visual direction/i);
-  assert.match(kernel, /Read `design_skill` only from project context/i);
-  assert.match(kernel, /load exactly one contained package/i);
-  assert.match(kernel, /\.aioson\/skills\/design\/\{design_skill\}\/SKILL\.md/i);
-  assert.match(kernel, /\.aioson\/installed-skills\/\{design_skill\}\/SKILL\.md/i);
-  assert.match(kernel, /single visual system/i);
-  assert.match(kernel, /Never auto-select `interface-design`/i);
-  assert.match(kernel, /repeated em-dash cadence/i);
-  assert.match(kernel, /responsive/i);
-  assert.match(kernel, /accessib/i);
-  assert.match(kernel, /reduced motion/i);
-  assert.match(kernel, /performance/i);
-  assert.match(kernel, /happy path/i);
-  assert.match(kernel, /loading, empty, error/i);
-  assert.match(kernel, /real build, test, lint, typecheck, or smoke commands/i);
-  assert.match(kernel, /Do not claim completion when the normal entrypoint does not run/i);
+  // Orchestrator identity.
+  assert.match(kernel, /traversal orchestrator for one run/i);
+  assert.match(kernel, /aioson benchmark:bootstrap \. --json/);
+  assert.match(kernel, /\.aioson\/docs\/benchmark\/traversal\.md/);
+  assert.doesNotMatch(kernel, /Never activate another AIOSON agent/);
+
+  // Route detection: prototype vs full chain.
+  assert.match(kernel, /prototype route/);
+  assert.match(kernel, /full route/);
+  assert.match(kernel, /`@briefing → @briefing-refiner`/);
+  assert.match(kernel, /`@briefing → @briefing-refiner \(no prototype\) → @product → @sheldon → @planner → @dev → @qa`/);
+  assert.match(kernel, /one self-contained screen/i);
+  assert.match(kernel, /When in doubt, take the full route/i);
+
+  // Unattended posture (M1).
+  assert.match(kernel, /questions are forbidden/i);
+  assert.match(kernel, /recommended: true/);
+  assert.match(kernel, /fails the round explicitly/i);
+  assert.match(kernel, /review\.html/);
+
+  // Human-only gates stay outside rounds.
+  assert.match(kernel, /briefing:approve/);
+  assert.match(kernel, /feature:close/);
+
+  // Failure protocol keeps the result honest.
+  assert.match(kernel, /known_limitations/);
+  assert.match(kernel, /Never leave the round without a result file/i);
+  assert.match(kernel, /Do not label a skipped check as passed/i);
 });
 
 test('benchmark kernel preserves run fairness and external orchestration ownership', async () => {
@@ -99,6 +127,42 @@ test('benchmark kernel preserves run fairness and external orchestration ownersh
   assert.match(kernel, /outside the assigned run root/i);
   assert.match(kernel, /external orchestrator owns/i);
   assert.match(kernel, /only handoff is back to the caller or external orchestrator/i);
+});
+
+test('traversal contract module is present, synchronized, and complete', async () => {
+  const [template, workspace] = await Promise.all([
+    read('template/.aioson/docs/benchmark/traversal.md'),
+    read('.aioson/docs/benchmark/traversal.md')
+  ]);
+
+  assert.equal(workspace, template);
+  assert.match(template, /agents: \[benchmark\]/);
+  assert.match(template, /\.aioson\/benchmark\/measured-run\.json/);
+  assert.match(template, /AIOSON_COCKPIT_BENCHMARK_V1/);
+  assert.match(template, /benchmark:bootstrap/);
+  assert.match(template, /prototype route/);
+  assert.match(template, /full route/);
+  assert.match(template, /recommended-or-fail|recommended option/i);
+  assert.match(template, /skipped_measured_run/);
+
+  // The stage-evidence table must name the exact artifacts the external
+  // observer watches — these paths are a public contract with the Cockpit.
+  for (const evidence of [
+    '.aioson/briefings/{slug}/briefings.md',
+    '.aioson/briefings/{slug}/refinement-report.md',
+    '.aioson/context/prd-{slug}.md',
+    '.aioson/context/sheldon-review-{slug}.md',
+    '.aioson/context/implementation-plan-{slug}.md',
+    '.aioson/context/dev-state.md',
+    '.aioson/context/qa-report-{slug}.md'
+  ]) {
+    assert.ok(template.includes(evidence), `traversal contract missing stage evidence ${evidence}`);
+  }
+
+  // Strict schema 1 stays the result contract — the external parser rejects
+  // unknown fields and other versions, so the doc must never promise schema 2.
+  assert.match(template, /strict schema 1/i);
+  assert.doesNotMatch(template, /schema_version.{0,12}2/);
 });
 
 test('benchmark result example is valid JSON and excludes orchestrator metrics', async () => {
@@ -122,12 +186,14 @@ test('benchmark result example is valid JSON and excludes orchestrator metrics',
   assert.ok(Array.isArray(example.validation));
   assert.ok(Array.isArray(example.known_limitations));
   assert.equal(example.artifacts.report, 'report.md');
+  assert.equal(Object.keys(example).length, 11, 'result example must carry exactly the 11 v1 fields');
   assert.doesNotMatch(kernel, /example\.com/);
   assert.match(kernel, /objects containing `title`, `url`, and `applied_to`/);
   assert.match(kernel, /objects containing `command`, `status`, and `evidence`/);
   assert.equal(Object.hasOwn(example, 'metrics'), false);
   assert.equal(Object.hasOwn(example, 'tokens'), false);
   assert.equal(Object.hasOwn(example, 'cost'), false);
+  assert.equal(Object.hasOwn(example, 'traversal'), false);
 });
 
 test('benchmark quick help is concise and synchronized', async () => {
@@ -142,5 +208,6 @@ test('benchmark quick help is concise and synchronized', async () => {
   assert.match(section[1], /without clarification questions/i);
   assert.match(section[1], /benchmark-result\.json/);
   assert.match(section[1], /external orchestrator/i);
+  assert.match(section[1], /prototype/i);
   assert.ok(section[1].length < 1200, 'benchmark help section is too long');
 });

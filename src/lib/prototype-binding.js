@@ -3,9 +3,15 @@
 const fs = require('node:fs/promises');
 const { parseFrontmatter } = require('../preflight-engine');
 const { resolveInsideRoot } = require('../verification/path-policy');
+const { isMeasuredRun } = require('./measured-run');
 
 const CURRENT_STATUS = 'current';
 const NONE_STATUS = 'none';
+// Third status, valid only inside a measured benchmark round (marker-gated):
+// the traversal skips the prototype stage without claiming the feature is
+// non-visual — `none` means "genuinely nonvisual", this means "deliberately
+// unmeasured visual contract". Outside a measured run it is a hard error.
+const SKIPPED_MEASURED_RUN_STATUS = 'skipped_measured_run';
 const NULL_TOKENS = new Set(['', 'null', 'none', '~']);
 
 const IDENTITY_CURRENT = 'current';
@@ -111,6 +117,10 @@ async function validatePrototypeBinding({
   const feature = String(slug || '').trim();
   const frontmatter = parseFrontmatter(String(prd || ''));
   const section = prototypeContractSection(prd);
+  const measuredRun = targetDir ? isMeasuredRun(targetDir) : false;
+  const allowedStatuses = measuredRun
+    ? [CURRENT_STATUS, NONE_STATUS, SKIPPED_MEASURED_RUN_STATUS]
+    : [CURRENT_STATUS, NONE_STATUS];
   const issues = [];
   const warnings = [];
   const checks = {
@@ -131,7 +141,7 @@ async function validatePrototypeBinding({
   const frontFeature = scalar(frontmatter.prototype_feature);
   const sectionFeature = parseContractField(section, 'feature');
   const sectionStatusValue = String(parseRawContractField(section, 'status') || '').toLowerCase();
-  const sectionStatus = [CURRENT_STATUS, NONE_STATUS].includes(sectionStatusValue)
+  const sectionStatus = allowedStatuses.includes(sectionStatusValue)
     ? sectionStatusValue
     : null;
   const frontStatus = String(frontmatter.prototype_status || '')
@@ -188,10 +198,12 @@ async function validatePrototypeBinding({
     };
   }
 
-  if (rawStatus && ![CURRENT_STATUS, NONE_STATUS].includes(rawStatus)) {
+  if (rawStatus && !allowedStatuses.includes(rawStatus)) {
     issues.push(issue(
       'invalid_prototype_status',
-      `prototype_status must be \`${CURRENT_STATUS}\` or \`${NONE_STATUS}\`, not \`${rawStatus}\`.`,
+      rawStatus === SKIPPED_MEASURED_RUN_STATUS
+        ? `prototype_status \`${SKIPPED_MEASURED_RUN_STATUS}\` is only valid inside a measured benchmark run (missing .aioson/benchmark/measured-run.json).`
+        : `prototype_status must be \`${CURRENT_STATUS}\` or \`${NONE_STATUS}\`, not \`${rawStatus}\`.`,
       'prototype_status'
     ));
   }
@@ -205,7 +217,7 @@ async function validatePrototypeBinding({
 
   const prototypePath = frontPrototype || sectionPrototype;
   const inferredStatus = prototypePath ? CURRENT_STATUS : NONE_STATUS;
-  const status = [CURRENT_STATUS, NONE_STATUS].includes(rawStatus) ? rawStatus : inferredStatus;
+  const status = allowedStatuses.includes(rawStatus) ? rawStatus : inferredStatus;
 
   if (frontPrototype && sectionPrototype
     && normalizeRelPath(frontPrototype).toLowerCase() !== normalizeRelPath(sectionPrototype).toLowerCase()) {
@@ -229,6 +241,58 @@ async function validatePrototypeBinding({
       `Prototype contract feature \`${sectionFeature}\` does not match active feature \`${feature}\`.`,
       'feature'
     ));
+  }
+
+  if (status === SKIPPED_MEASURED_RUN_STATUS) {
+    if (prototypePath || sectionManifest) {
+      issues.push(issue(
+        'prototype_binding_conflict',
+        'prototype_status is `skipped_measured_run`, but the PRD still carries a prototype or manifest path.',
+        prototypePath ? 'prototype' : 'manifest'
+      ));
+    }
+    if (strict && frontStatus !== SKIPPED_MEASURED_RUN_STATUS) {
+      issues.push(issue(
+        'prototype_status_missing',
+        'A measured-run PRD that skips the prototype must declare `prototype_status: skipped_measured_run` in PRD frontmatter.',
+        'prototype_status'
+      ));
+    }
+    if (strict && !hasPrototypeField) {
+      issues.push(issue(
+        'prototype_field_missing',
+        'A measured-run PRD that skips the prototype must declare `prototype: null` in PRD frontmatter.',
+        'prototype'
+      ));
+    }
+    if (strict && !hasFeatureField) {
+      issues.push(issue(
+        'prototype_feature_missing',
+        'A measured-run PRD that skips the prototype must declare `prototype_feature: null` in PRD frontmatter.',
+        'prototype_feature'
+      ));
+    } else if (strict && frontFeature) {
+      issues.push(issue(
+        'prototype_binding_conflict',
+        'prototype_status is `skipped_measured_run`, so PRD frontmatter must declare `prototype_feature: null`.',
+        'prototype_feature'
+      ));
+    }
+    checks.binding_consistent = issues.length === 0;
+    return {
+      ok: issues.length === 0,
+      applicable: false,
+      explicit: true,
+      measured_run: true,
+      status: SKIPPED_MEASURED_RUN_STATUS,
+      feature,
+      checks,
+      issues,
+      warnings,
+      message: issues.length === 0
+        ? 'Measured run: the prototype stage was deliberately skipped, and this PRD never becomes product authority.'
+        : firstIssue({ issues }).message
+    };
   }
 
   if (status === NONE_STATUS) {
@@ -765,6 +829,7 @@ async function validateIdentityBinding({
 module.exports = {
   CURRENT_STATUS,
   NONE_STATUS,
+  SKIPPED_MEASURED_RUN_STATUS,
   IDENTITY_CURRENT,
   IDENTITY_PROJECT,
   IDENTITY_NONE,

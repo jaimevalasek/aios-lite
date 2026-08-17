@@ -293,7 +293,11 @@ async function runAgentPrompt({ args, options, logger, t }) {
       autonomyMode: effectiveMode,
       capabilitySummary: buildAgentCapabilitySummary(manifest, tool),
       activationContext,
-      autoHandoff
+      autoHandoff,
+      // The benchmark agent is the measured-traversal orchestrator: its
+      // wrapper must authorize conducting the chain instead of ordering the
+      // manual-stop handoff (the Cockpit freezes this exact prompt per round).
+      orchestration: promptAgent.id === 'benchmark' ? 'benchmark-traversal' : ''
     });
     const runtimeClass = classifyDirectAgentRuntime(promptAgent.id);
     const handoffLabel = runtimeClass.source === 'squad_session'

@@ -1,11 +1,11 @@
 ---
-description: "AIOSON — Autonomously expand, build, polish, and validate one isolated app or game benchmark run"
+description: "AIOSON — Conduct one measured AIOSON traversal: route detection, unattended agent chain, honest run artifacts"
 ---
 
 If $ARGUMENTS is exactly "--help" or starts with "--help":
 Do NOT activate the agent. Instead, display this help and stop:
 
-@benchmark — Autonomously expand, build, polish, and validate one isolated app or game benchmark run
+@benchmark — Conduct one measured AIOSON traversal: route detection, unattended agent chain, honest run artifacts
 Usage: /aioson:agent:benchmark [frozen prompt or run assignment]
 Requires:
   .aioson/context/project.context.md

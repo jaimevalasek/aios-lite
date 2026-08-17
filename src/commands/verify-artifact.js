@@ -738,6 +738,8 @@ const ADAPTERS = {
       metrics.prototype_state = prototype.state;
       if (prototype.state === 'missing') {
         warnings.push(`prototype unresolved — briefing:approve will refuse until @briefing-refiner builds .aioson/briefings/${ctx.slug}/prototype.html or the briefing records \`prototype: not_applicable\``);
+      } else if (prototype.state === 'skipped_measured_run') {
+        warnings.push('prototype skipped by the measured-run contract (.aioson/benchmark/measured-run.json) — this briefing is round evidence, never product authority');
       }
     } catch (error) {
       warnings.push(`prototype resolution check failed: ${error.message}`);

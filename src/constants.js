@@ -113,6 +113,7 @@ const MANAGED_FILES = [
   '.aioson/docs/reference-identity.md',
   '.aioson/docs/web-capture.md',
   '.aioson/docs/benchmark/execution-playbook.md',
+  '.aioson/docs/benchmark/traversal.md',
   '.aioson/rules/visual-exploration-contract.md',
   '.aioson/docs/product/conversation-playbook.md',
   '.aioson/docs/product/research-loop.md',
@@ -593,7 +594,7 @@ const AGENT_DEFINITIONS = [
   {
     id: 'benchmark',
     displayName: 'Benchmark',
-    description: 'Autonomously expand, build, polish, and validate one isolated app or game benchmark run',
+    description: 'Conduct one measured AIOSON traversal: route detection, unattended agent chain, honest run artifacts',
     command: '@benchmark',
     path: '.aioson/agents/benchmark.md',
     dependsOn: ['.aioson/context/project.context.md'],

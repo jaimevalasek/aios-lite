@@ -136,7 +136,7 @@ Simple Plan termina no Dev e não vira feature rastreada silenciosamente.
 | **`@orache`** | Investigação de domínio e pesquisa estratégica |
 | **`@copywriter`** | Copy de conversão para landing pages, emails |
 | **`@forge-run`** | Lane B opt-in: compila e roda o harness de verificação de uma feature MEDIUM |
-| **`@benchmark`** | Constrói e valida um app/jogo isolado de benchmark, com prompt congelado |
+| **`@benchmark`** | Orquestra a travessia medida de um prompt congelado: joguinho de uma tela via `@briefing-refiner`, app real via cadeia completa em Autopilot |
 
 ---
 

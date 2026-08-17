@@ -136,11 +136,11 @@ Consumed by the `## Help (--help)` section of each agent kernel: a standalone `-
 
 ## @benchmark
 
-- **What:** expands one frozen prompt into a complete, polished, runnable app or game without clarification questions.
-- **When:** testing how much implementation quality a model can deliver with AIOSON as the reasoning layer.
-- **Options:** accepts an assigned run root and explicit runtime/technology constraints; otherwise uses the current directory for one standalone run.
+- **What:** conducts one measured AIOSON traversal for one frozen prompt without clarification questions — route detection, then the real agent chain unattended.
+- **When:** the AIOSON side of a measured comparison (Cockpit mission) or one standalone measured run.
+- **Routes:** a single-screen game/toy crosses `@briefing → @briefing-refiner` and delivers the working prototype HTML; any real app (site, CRM, dashboard) crosses the full chain `briefing → refiner → product → sheldon → planner → dev → qa` in Autopilot.
 - **Typical:** `/benchmark create a cozy underwater strategy game`.
-- **Produces:** the runnable delivery, `benchmark-result.json`, and `report.md`; it never creates Arena, model rankings, tokens, or cost data.
+- **Produces:** the runnable delivery, `benchmark-result.json` (strict schema 1), and `report.md` with stages and auto-decisions; it never creates Arena, model rankings, tokens, or cost data.
 - **Next:** an external orchestrator may collect the isolated result for comparison, or the user can run the standalone entrypoint directly.
 
 ## @shakedown
