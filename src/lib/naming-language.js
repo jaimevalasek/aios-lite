@@ -236,6 +236,11 @@ function scanNamingLanguage(file, push) {
       message: finding.message,
       file: rel,
       line: finding.line,
+      // `token` + `scope` are what make a finding identifiable across edits, so
+      // a baseline can tell pre-existing debt from a new violation without
+      // depending on line numbers that shift on every touch.
+      token: finding.token,
+      scope: finding.scope || 'file',
       snippet: finding.snippet.slice(0, 120)
     });
   };
@@ -244,6 +249,9 @@ function scanNamingLanguage(file, push) {
     emit({
       kind: hit.kind,
       token: hit.token,
+      // A directory violation belongs to the directory, not to each file under
+      // it: `servidor/` is one decision, not one per file inside.
+      scope: hit.where === 'directory' ? `dir:${hit.segment}` : 'file',
       line: 1,
       message: `non-English ${hit.where} "${hit.segment}" (technical paths and filenames are English — see .aioson/rules/source-code-language-convention.md)`,
       snippet: rel
@@ -263,7 +271,7 @@ function scanNamingLanguage(file, push) {
         if (!hit) continue;
         emit({
           kind: hit.kind,
-          token: hit.token,
+          token: name,
           line: i + 1,
           message: `non-English identifier "${name}" (declared name translated from the project language — see .aioson/rules/source-code-language-convention.md)`,
           snippet: stripped

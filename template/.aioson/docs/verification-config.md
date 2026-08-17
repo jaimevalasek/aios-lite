@@ -88,6 +88,8 @@ Only `.aioson/rules/` produces blocking HIGH findings. A checker declared solely
 
 The honest way to switch this off for a project is the rule file itself — edit its scope or remove it, once and in the open. That keeps the override channel visible instead of letting each feature quietly decide the rule does not apply this time.
 
+**Legacy codebases.** A project written against a different convention before the rule existed is not charged retroactively on every unrelated edit. When the gate is about to block and most of the tree already violates, the report carries `divergence` and the message offers the decision instead of demanding a migration mid-slice. `aioson rules:check . --baseline` records the existing violations in `.aioson/context/rules-baseline.json` as counted debt: they stay visible in every run, they never block, and every new violation still does. Commit that file — it is a recorded decision, not a generated report. Only a human runs it.
+
 ## Examples
 
 Pin qa to the cheapest Claude tier per phase:

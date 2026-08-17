@@ -27,9 +27,9 @@ const BOOLEAN_FLAGS = new Set([
   'flatten', 'no-index',
   // harness:validate — pure boolean; `--no-diff .` must not swallow the path.
   'no-diff',
-  // audit:code / harness:check — pure booleans; `--changed .` / `--strict .`
-  // must not swallow the trailing path positional.
-  'changed', 'strict',
+  // audit:code / harness:check / rules:check — pure booleans; `--changed .` /
+  // `--strict .` / `--baseline .` must not swallow the trailing path positional.
+  'changed', 'strict', 'baseline',
   // verify:artifact — pure booleans; `--advisory .` / `--no-build .` /
   // `--runtime .` must not swallow the path positional.
   'advisory', 'no-build', 'runtime',

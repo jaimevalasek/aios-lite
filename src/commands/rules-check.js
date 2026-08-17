@@ -48,6 +48,32 @@ function downgrade(severity) {
   return severity === 'HIGH' ? 'MED' : severity;
 }
 
+const BASELINE_RELATIVE_PATH = '.aioson/context/rules-baseline.json';
+
+/**
+ * Stable identity for a violation, independent of line numbers.
+ *
+ * A directory finding is keyed by the directory, not by each file inside it:
+ * `servidor/` is one decision the project made once, and charging it again for
+ * every file underneath is how a gate turns into noise people switch off.
+ */
+function findingKey(finding) {
+  const scope = finding.scope && finding.scope.startsWith('dir:')
+    ? finding.scope
+    : `file:${finding.file}`;
+  return [finding.rule, finding.category, scope, finding.token || finding.message].join('|');
+}
+
+async function readBaseline(targetDir) {
+  try {
+    const raw = await fsp.readFile(path.join(targetDir, BASELINE_RELATIVE_PATH), 'utf8');
+    const parsed = JSON.parse(raw);
+    return new Set(Array.isArray(parsed.accepted) ? parsed.accepted : []);
+  } catch {
+    return null;
+  }
+}
+
 // Blank out strings and regex literals so a checker sees code, not content. A
 // scanner that stores `/\balert\s*\(/` as its own pattern, or a test fixture
 // holding UI source as a string, must never be reported as the violation it is
@@ -294,11 +320,70 @@ async function runRulesCheck({ args, options = {}, logger }) {
     a.file.localeCompare(b.file) ||
     (a.line - b.line)
   );
+  for (const finding of findings) finding.key = findingKey(finding);
+
+  // An accepted baseline is debt, not forgiveness. A project that was already
+  // built against a convention — a tree written in another language, a legacy
+  // pattern predating the rule — cannot be charged retroactively for it on
+  // every unrelated edit; that is how a gate stops being read. So the rule is
+  // enforced in full on NEW violations, the pre-existing ones stay counted and
+  // visible in every report, and only a human clearing them (or editing the
+  // rule) makes them go away.
+  const baseline = await readBaseline(targetDir);
+  let debt = 0;
+  for (const finding of findings) {
+    finding.baselined = Boolean(baseline && baseline.has(finding.key));
+    if (finding.baselined) debt += 1;
+  }
+  const live = findings.filter((finding) => !finding.baselined);
+  // A rule's verdict is about what is still outstanding, so accepted debt does
+  // not keep it red forever.
+  for (const rule of enforced) {
+    rule.violations = live.filter((finding) => finding.declared_by.includes(rule.name)).length;
+    rule.accepted_debt = findings.filter((finding) => finding.baselined && finding.declared_by.includes(rule.name)).length;
+    rule.ok = rule.violations === 0;
+  }
 
   const bySeverity = { HIGH: 0, MED: 0, LOW: 0 };
-  for (const finding of findings) bySeverity[finding.severity] = (bySeverity[finding.severity] || 0) + 1;
+  for (const finding of live) bySeverity[finding.severity] = (bySeverity[finding.severity] || 0) + 1;
 
   const blocking = bySeverity.HIGH > 0 || (strict && bySeverity.MED > 0);
+
+  // Is this drift, or is it how the project has always been?
+  //
+  // The two look identical in a diff and could not be more different in
+  // meaning. New violations in an otherwise compliant tree are drift and should
+  // be fixed on the spot. A tree that was written this way from the first commit
+  // is an established convention that contradicts the rule — and resolving THAT
+  // is a decision about the whole project (migrate it, or accept it and scope
+  // the rule), which belongs to a human, once, not to an agent mid-slice.
+  //
+  // Measured only when we are about to block and no baseline exists, so the
+  // extra full-tree pass costs nothing on the happy path.
+  let divergence = null;
+  if (blocking && !baseline && !options.baseline) {
+    try {
+      const wholeTree = loadFiles(targetDir, listSourceFiles(targetDir));
+      const offenders = new Set();
+      for (const [checkerId, documents] of byChecker) {
+        if (!documents.some((doc) => doc.authority === 'binding')) continue;
+        const all = ENFORCERS[checkerId].run({ targetDir, files: wholeTree, documents }) || [];
+        for (const finding of all) if (finding.severity === 'HIGH') offenders.add(finding.file);
+      }
+      const ratio = wholeTree.length ? offenders.size / wholeTree.length : 0;
+      if (ratio >= 0.4 && offenders.size >= 3) {
+        divergence = {
+          established: true,
+          offending_files: offenders.size,
+          scanned_files: wholeTree.length,
+          ratio: Number(ratio.toFixed(2))
+        };
+      }
+    } catch {
+      divergence = null; // never let the diagnosis break the check
+    }
+  }
+
   const unenforcedDocs = allRules.filter((rule) => !rule.enforcement);
   const unenforced = unenforcedDocs.map((rule) => rule.name);
   // Coverage is reported per surface on purpose. A green summary that silently
@@ -320,12 +405,37 @@ async function runRulesCheck({ args, options = {}, logger }) {
     coverage,
     rules_enforced: enforced,
     unenforced,
-    total: findings.length,
+    total: live.length,
+    accepted_debt: debt,
+    baseline: baseline ? { path: BASELINE_RELATIVE_PATH, accepted: baseline.size } : null,
+    divergence,
     by_severity: bySeverity,
     ok: !blocking,
-    findings: findings.slice(0, 200)
+    findings: live.slice(0, 200)
   };
   if (blocking && !suppressExitCode) report.exitCode = 1;
+
+  // Writing the baseline is an explicit human act (`--baseline`), never a side
+  // effect of a failing run: a gate that silently accepts what it just found
+  // would forgive the very drift it exists to catch.
+  if (options.baseline) {
+    const accepted = findings.map((finding) => finding.key);
+    report.baseline = { path: BASELINE_RELATIVE_PATH, accepted: accepted.length, written: true };
+    report.ok = true;
+    delete report.exitCode;
+    try {
+      const ctxDir = path.join(targetDir, '.aioson', 'context');
+      fs.mkdirSync(ctxDir, { recursive: true });
+      fs.writeFileSync(path.join(targetDir, BASELINE_RELATIVE_PATH), JSON.stringify({
+        generator: GENERATOR,
+        note: 'Pre-existing rule violations accepted as debt. New violations still block. Clear an entry by fixing the code, or drop this file to enforce everywhere.',
+        scope,
+        accepted
+      }, null, 2), 'utf8');
+    } catch {
+      // best-effort — a baseline that cannot be written is not a failure
+    }
+  }
 
   try {
     const ctxDir = path.join(targetDir, '.aioson', 'context');
@@ -336,6 +446,12 @@ async function runRulesCheck({ args, options = {}, logger }) {
   }
 
   if (options.json) return report;
+
+  if (options.baseline) {
+    logger.log(`Rules baseline written — ${report.baseline.accepted} pre-existing violation(s) accepted as debt in ${BASELINE_RELATIVE_PATH}.`);
+    logger.log('  New violations still block. Fix code to clear an entry; delete the file to enforce everywhere again.');
+    return report;
+  }
 
   const coverageLine = GOVERNANCE_SURFACES
     .map((source) => `${source.surface} ${coverage[source.surface].enforced}/${coverage[source.surface].total}`)
@@ -352,20 +468,39 @@ async function runRulesCheck({ args, options = {}, logger }) {
     return report;
   }
 
-  logger.log(`Rules check — ${enforced.length}/${allRules.length} enforced (${coverageLine}) over ${files.length} file(s) (${scope}) — ${findings.length} violation(s)`);
+  logger.log(`Rules check — ${enforced.length}/${allRules.length} enforced (${coverageLine}) over ${files.length} file(s) (${scope}) — ${live.length} violation(s)`);
   for (const rule of enforced) {
     const verdict = rule.ok ? 'OK  ' : (rule.authority === 'binding' ? 'FAIL' : 'WARN');
-    logger.log(`  ${verdict} [${rule.governance_surface}] ${rule.name} — ${rule.summary}${rule.ok ? '' : ` (${rule.violations})`}`);
+    logger.log(`  ${verdict} [${rule.governance_surface}] ${rule.name} — ${rule.summary}${rule.violations ? ` (${rule.violations})` : ''}`);
   }
-  for (const finding of findings.slice(0, 40)) {
+  for (const finding of live.slice(0, 40)) {
     logger.log(`  [${finding.severity}] ${finding.file}:${finding.line} — ${finding.message}`);
   }
-  if (findings.length > 40) {
-    logger.log(`  … and ${findings.length - 40} more (see .aioson/context/rules-check.json)`);
+  if (live.length > 40) {
+    logger.log(`  … and ${live.length - 40} more (see .aioson/context/rules-check.json)`);
   }
   if (unenforced.length) {
     logger.log(`  Prose only, not machine-checked (${unenforced.length}): ${unenforced.slice(0, 8).join(', ')}${unenforced.length > 8 ? ', …' : ''}`);
   }
+  if (debt > 0) {
+    logger.log(`  Accepted debt: ${debt} pre-existing violation(s) held in ${BASELINE_RELATIVE_PATH} — still owed, not forgiven.`);
+  }
+
+  if (divergence) {
+    logger.log('');
+    logger.log(`  This is not drift: ${divergence.offending_files} of ${divergence.scanned_files} source files already break this rule.`);
+    logger.log('  The project was built against a different convention, and choosing between them is a decision');
+    logger.log('  about the whole codebase — it belongs to you, once, not to an agent in the middle of a slice:');
+    logger.log('');
+    logger.log('    1. Keep the rule and migrate   — rename the code, then this passes on its own.');
+    logger.log('    2. Keep the rule for new code  — `aioson rules:check . --baseline` accepts what exists as');
+    logger.log('                                     counted debt; every NEW violation still blocks.');
+    logger.log('    3. The project owns it         — edit or delete the rule file. It is the only switch,');
+    logger.log('                                     and editing it is a visible decision, not a silent bypass.');
+    logger.log('');
+    logger.log('  Nothing here is done for you: an agent must never pick one of these on your behalf.');
+  }
+
   if (blocking) {
     logger.log('  RULES=FAIL (a project rule is being violated)');
   } else if (bySeverity.MED > 0) {

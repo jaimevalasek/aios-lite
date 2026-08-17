@@ -1317,7 +1317,13 @@ async function finalizeCurrentStage(targetDir, config, state, stageName) {
             .filter((rule) => !rule.ok).map((rule) => rule.name);
           rulesCheckSummary = { gate: rulesPolicy.tracked_gate, scope: rulesPolicy.scope, high, med, rules: broken };
           if (high > 0 && rulesPolicy.tracked_gate === 'block') {
-            const msg = `[Rule-Compliance Gate] @${normalizedStage} blocked — rules:check found ${high} violation(s) of ${broken.join(', ')} in the ${rulesPolicy.scope} files. A project rule outranks the PRD, the plan, and any recorded deviation: fix the code, or change the rule itself. See .aioson/context/rules-check.json`;
+            // An established divergence is not this slice's fault, and the fix
+            // is a decision about the whole codebase. Say so, instead of asking
+            // the agent to migrate a tree it was never sent to migrate.
+            const legacy = rulesReport && rulesReport.divergence
+              ? ` This project already breaks the rule in ${rulesReport.divergence.offending_files} of ${rulesReport.divergence.scanned_files} source files, so it is an established convention, not this slice's drift — the human decides once: migrate, run \`aioson rules:check . --baseline\` to accept the existing code as counted debt while new violations still block, or edit the rule.`
+              : '';
+            const msg = `[Rule-Compliance Gate] @${normalizedStage} blocked — rules:check found ${high} violation(s) of ${broken.join(', ')} in the ${rulesPolicy.scope} files. A project rule outranks the PRD, the plan, and any recorded deviation: fix the code, or change the rule itself.${legacy} See .aioson/context/rules-check.json`;
             await logError(targetDir, normalizedStage, msg, 'rules-check');
             throw new Error(msg);
           }

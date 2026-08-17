@@ -251,6 +251,87 @@ enforcement: no-native-dialogs
   assert.equal(report.total, 0);
 });
 
+// ─── legacy projects ──────────────────────────────────────────────────────────
+
+const LEGACY_TREE = {
+  '.aioson/rules/source-code-language-convention.md': LANGUAGE_RULE,
+  'servidor/rotas/blocos.ts': 'export function criarBloco() { return 1; }\n',
+  'servidor/rotas/pautas.ts': 'export function salvarPauta() { return 2; }\n',
+  'servidor/rotas/acervo.ts': 'export function carregarAcervo() { return 3; }\n',
+  'servidor/rotas/trajeto.ts': 'export function gravarPasso() { return 4; }\n'
+};
+
+test('a tree built against another convention is diagnosed, not blamed on the slice', async () => {
+  const dir = await scaffold(LEGACY_TREE);
+
+  const report = await runRulesCheck({ args: [dir], options: { json: true, suppressExitCode: true }, logger: silent });
+
+  assert.equal(report.ok, false, 'it is still a violation');
+  assert.ok(report.divergence, 'a pervasive violation must be reported as an established convention');
+  assert.equal(report.divergence.established, true);
+  assert.equal(report.divergence.offending_files, 4);
+});
+
+test('a new violation in an otherwise clean tree is drift, not an established convention', async () => {
+  const dir = await scaffold({
+    '.aioson/rules/source-code-language-convention.md': LANGUAGE_RULE,
+    'src/server/routes/blocks.ts': 'export function createBlock() { return 1; }\n',
+    'src/server/routes/agendas.ts': 'export function saveAgenda() { return 2; }\n',
+    'src/server/routes/archive.ts': 'export function loadArchive() { return 3; }\n',
+    'src/server/routes/drafts.ts': 'export function criarRascunho() { return 4; }\n'
+  });
+
+  const report = await runRulesCheck({ args: [dir], options: { json: true, suppressExitCode: true }, logger: silent });
+
+  assert.equal(report.ok, false);
+  assert.equal(report.divergence, null, 'one bad file out of four is drift, not a project convention');
+});
+
+test('--baseline accepts existing debt while every new violation still blocks', async () => {
+  const dir = await scaffold(LEGACY_TREE);
+
+  const written = await runRulesCheck({ args: [dir], options: { json: true, suppressExitCode: true, baseline: true }, logger: silent });
+  assert.equal(written.ok, true);
+  assert.ok(written.baseline.written);
+  assert.ok(written.baseline.accepted > 0);
+
+  // The same legacy tree is now quiet — the debt is counted, not forgiven.
+  const quiet = await runRulesCheck({ args: [dir], options: { json: true, suppressExitCode: true }, logger: silent });
+  assert.equal(quiet.ok, true);
+  assert.equal(quiet.total, 0);
+  assert.ok(quiet.accepted_debt > 0, 'accepted debt stays visible in every report');
+  assert.equal(quiet.rules_enforced[0].ok, true);
+
+  // A new Portuguese identifier in the very same legacy file still blocks.
+  await fs.writeFile(
+    path.join(dir, 'servidor/rotas/blocos.ts'),
+    'export function criarBloco() { return 1; }\nexport function salvarRascunho() { return 5; }\n',
+    'utf8'
+  );
+  const regressed = await runRulesCheck({ args: [dir], options: { json: true, suppressExitCode: true }, logger: silent });
+  assert.equal(regressed.ok, false);
+  assert.equal(regressed.total, 1);
+  assert.match(regressed.findings[0].message, /salvarRascunho/);
+});
+
+test('baseline identity survives edits that move a line', async () => {
+  const dir = await scaffold({
+    '.aioson/rules/source-code-language-convention.md': LANGUAGE_RULE,
+    'servidor/api.ts': 'export function criarBloco() { return 1; }\n'
+  });
+  await runRulesCheck({ args: [dir], options: { json: true, suppressExitCode: true, baseline: true }, logger: silent });
+
+  // Same violation, three lines lower: a line-keyed baseline would call it new.
+  await fs.writeFile(
+    path.join(dir, 'servidor/api.ts'),
+    '// header\n// header\n// header\nexport function criarBloco() { return 1; }\n',
+    'utf8'
+  );
+  const report = await runRulesCheck({ args: [dir], options: { json: true, suppressExitCode: true }, logger: silent });
+
+  assert.equal(report.total, 0, 'moving a line must not resurrect accepted debt');
+});
+
 test('discovery reads every governance surface and every checker is well formed', async () => {
   const dir = await scaffold({
     '.aioson/rules/a.md': '---\nname: rule-a\nenforcement: source-code-language\n---\n',

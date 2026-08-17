@@ -128,6 +128,18 @@ aioson rules:check . --rule=source-code-language-convention --json
 
 Breaking a rule is a contract violation; falling short of a skill is a competence gap worth surfacing, not a reason to refuse the handoff. When a rule and a skill declare the same checker, the rule's authority applies.
 
+### A project that was already built against a different convention
+
+New violations in a compliant tree are drift, and an agent fixes them on the spot. A codebase written against a different convention from its first commit is something else: the tree is not wrong by accident, and choosing between it and the rule is a decision about the whole project. `rules:check` measures the difference and refuses to decide for you — when most of the tree already breaks the rule, it says so and lays out the three real options:
+
+```bash
+aioson rules:check . --baseline
+```
+
+That accepts what exists as **counted debt**, written to `.aioson/context/rules-baseline.json` (commit it — it is a decision, not a generated report). Every pre-existing violation stays visible in every run, and every **new** violation still blocks. The alternatives are migrating the code, or editing the rule so it matches what the project actually is.
+
+Debt is keyed by rule, file, and identifier — not by line — so it survives ordinary edits, and fixing the code clears the entry on its own. An agent may never write a baseline, edit a rule, or pick one of these options on the user's behalf.
+
 The engine runs it automatically at DEV/QA completion and at the workflow stage gate, and agents re-run it during implementation. Removing the rule file removes its check with it; nothing else can switch it off.
 
 ---
