@@ -52,7 +52,7 @@ Mobile is a recomposition, not a shrunken desktop: re-evaluate order, density, c
 
 ## 5. Adding an effect, a background, or a hero asset
 
-Load `.aioson/docs/design/visual-effects.md`. It carries the effect vocabulary plus the cost and asset contracts: an effect must explain state, reinforce the signature move, or carry the material — and it ships with reduced-motion, a mobile fallback, and no layout shift. AIOSON generates no imagery; meaningful assets come from the user, the product, or the repository, through the identity pipeline.
+Load `.aioson/docs/design/visual-effects.md`. It carries the effect vocabulary (display typography first, then atmosphere), the Modern baseline dialect, plus the cost and asset contracts: an effect must explain state, reinforce the signature move, or carry the material — and it ships with reduced-motion, a mobile fallback, and no layout shift. Meaningful assets come from the user, the product, or the repository through the identity pipeline; when none exists and the host offers image generation, generated imagery with provenance labeled `generated` is the sanctioned plan B — never presented as the client's real work.
 
 ## 6. Measure what you built
 
@@ -62,9 +62,11 @@ Before declaring visual work complete, run the telemetry over the front-end you 
 aioson verify:artifact . --kind=visual --dir=<front-end root> --advisory --runtime 2>/dev/null || true
 ```
 
-It returns arithmetic, not opinion: token adherence, spacing off the 4px grid, active depth strategies, font families, reduced-motion coverage, state coverage, card nesting. Repair the blocking findings — decorative blob, animation with no `prefers-reduced-motion`, cards three deep. Treat the threshold warnings as evidence for the decision you already owe: either fix the drift or name why this surface is the exception.
+It returns arithmetic, not opinion: token adherence, spacing off the 4px grid, active depth strategies, typeface delivery (`font_delivery` — a named face with no webfont link or `@font-face` silently renders the OS fallback), display scale, the craft levers (`craft N/5`), the CSS dialect (`modern_css`), reduced-motion coverage, state coverage, card nesting. Repair the blocking findings — decorative blob, animation with no `prefers-reduced-motion`, cards three deep. Treat the threshold warnings as evidence for the decision you already owe: either fix the drift or name why this surface is the exception.
 
-A utility-class codebase returns `applicable: false`; that is a scope statement, not a pass.
+In conformance mode the approved prototype's measured verdict is also the floor: an implementation whose craft regresses below it — the delivered face dropped for a system stack, the material, imagery, or reveals lost in translation, the dialect downgraded — is drift exactly like a layout deviation, and gets fixed or recorded in the PRD as an approved deviation. The real stack makes the craft easier, not harder: webfonts load natively, images are real files, and the Modern baseline features are all build-free.
+
+A utility-class codebase returns `applicable: false`; that is a scope statement, not a pass. The craft duties still bind there through conformance and the runtime pass — the prototype's delivered typeface, materials, and choreography survive the translation to utility classes even when the static telemetry cannot measure them.
 
 `--runtime` is part of the default invocation because it measures what only exists after layout — horizontal overflow at 360px, clipped text, elements pushed off-screen, undersized tap targets, and real computed contrast. Without Playwright installed it reports that it did not run (never a silent pass); state that outcome when declaring visual work complete, and `aioson doctor` shows how to enable it.
 
