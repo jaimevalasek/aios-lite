@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>O ecossistema AIOSON — checklist completo</title>
+<meta name="description" content="Tudo o que o AIOSON oferece em um checklist para leigos: 35 agentes, 182 comandos, 6 camadas de memoria, logs, portoes de qualidade e como ele sabe em que ponto o projeto esta." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+/* ════════════════════════════════════════════════════════════
+   AIOSON Design System — Tokens
+   ════════════════════════════════════════════════════════════ */
+:root {
+  --font-body:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --font-mono:'JetBrains Mono',ui-monospace,monospace;
+  --radius-sm:8px; --radius-md:12px; --radius-lg:18px; --radius-xl:22px; --radius-pill:999px;
+  --transition-fast:140ms ease; --transition:220ms ease;
+}
+[data-theme="dark"], :root:not([data-theme]) {
+  color-scheme:dark;
+  --bg:#07080c; --bg-deep:#0b0d12;
+  --panel:rgba(12,15,21,.88); --panel-strong:#12161d;
+  --surface-soft:rgba(255,255,255,.035); --border:rgba(142,162,194,.12);
+  --text:#edf1f5; --text-soft:#f7f9fb; --muted:#7f8796;
+  --accent:#5ec8ff; --accent-strong:#8fdcff; --accent-soft:rgba(94,200,255,.16);
+  --accent-2:#7a6cff; --accent-2-soft:rgba(122,108,255,.14);
+  --accent-3:#e8b05f; --accent-3-soft:rgba(232,176,95,.16);
+  --accent-4:#4dd5a6; --accent-4-soft:rgba(77,213,166,.14);
+  --shadow:0 18px 44px rgba(0,0,0,.38);
+  --shadow-glow:0 0 0 1px rgba(94,200,255,.05),0 10px 28px rgba(3,12,22,.42);
+  --shadow-dock-scrolled:0 22px 56px rgba(0,0,0,.5);
+}
+[data-theme="light"] {
+  color-scheme:light;
+  --bg:#f4f6fb; --bg-deep:#e8edf5;
+  --panel:rgba(255,255,255,.92); --panel-strong:#ffffff;
+  --surface-soft:rgba(15,23,42,.04); --border:rgba(15,23,42,.10);
+  --text:#0f172a; --text-soft:#1a2236; --muted:#5b6677;
+  --accent:#1f8aff; --accent-strong:#0066d6; --accent-soft:rgba(31,138,255,.12);
+  --accent-2:#5e4dff; --accent-2-soft:rgba(94,77,255,.12);
+  --accent-3:#c08233; --accent-3-soft:rgba(192,130,51,.14);
+  --accent-4:#0fa37a; --accent-4-soft:rgba(15,163,122,.12);
+  --shadow:0 14px 38px rgba(15,23,42,.10);
+  --shadow-glow:0 0 0 1px rgba(31,138,255,.10),0 12px 28px rgba(31,138,255,.10);
+  --shadow-dock-scrolled:0 16px 38px rgba(15,23,42,.14);
+}
+* { box-sizing:border-box; }
+html, body { margin:0; min-height:100%; }
+body { font-family:var(--font-body); color:var(--text);
+  background: radial-gradient(circle at 14% 0%, color-mix(in srgb, var(--accent-4) 14%, transparent), transparent 32%),
+    radial-gradient(circle at 82% 0%, color-mix(in srgb, var(--accent) 14%, transparent), transparent 28%),
+    linear-gradient(180deg, var(--bg) 0%, var(--bg-deep) 100%);
+  background-attachment:fixed;
+  -webkit-font-smoothing:antialiased; transition:background .4s ease, color .3s ease;
+}
+[data-theme="light"] body { background: radial-gradient(circle at 12% 0%, color-mix(in srgb, var(--accent-4) 14%, transparent), transparent 30%), radial-gradient(circle at 86% 0%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 28%), radial-gradient(circle at 50% 16%, color-mix(in srgb, var(--accent-2) 8%, transparent), transparent 30%), linear-gradient(180deg, #fff 0%, var(--bg) 60%, var(--bg-deep) 100%); background-attachment:fixed; }
+a { color:inherit; text-decoration:none; }
+button { cursor:pointer; font:inherit; }
+h1, h2, h3, h4, p { margin:0; }
+code { font-family:var(--font-mono); }
+
+.shell { width:min(1280px, calc(100% - 32px)); margin:0 auto; padding:0 0 60px; display:flex; flex-direction:column; }
+
+/* Command Dock */
+.dock-wrap { position:sticky; top:14px; z-index:60; padding-top:18px; margin-bottom:24px; }
+.cmd-dock { display:flex; align-items:center; gap:14px; padding:10px 14px; border-radius:20px; border:1px solid var(--border); background:color-mix(in srgb, var(--panel-strong) 92%, transparent); backdrop-filter:blur(18px) saturate(140%); -webkit-backdrop-filter:blur(18px) saturate(140%); box-shadow:var(--shadow); position:relative; overflow:hidden; transition:box-shadow .3s ease, border-color .3s ease; }
+.dock-wrap.is-scrolled .cmd-dock { box-shadow:var(--shadow-dock-scrolled); border-color:color-mix(in srgb, var(--accent) 18%, var(--border)); }
+.cmd-dock::after { content:''; position:absolute; inset:0; pointer-events:none; background-image:linear-gradient(color-mix(in srgb, var(--accent) 8%, transparent) 1px, transparent 1px),linear-gradient(90deg, color-mix(in srgb, var(--accent) 8%, transparent) 1px, transparent 1px); background-size:36px 36px; mask-image:radial-gradient(ellipse at 50% 50%, black 0%, transparent 70%); -webkit-mask-image:radial-gradient(ellipse at 50% 50%, black 0%, transparent 70%); opacity:.2; }
+.cmd-brand { display:flex; align-items:center; gap:10px; padding-right:14px; border-right:1px solid var(--border); position:relative; z-index:1; }
+.cmd-mark { width:36px; height:36px; border-radius:11px; display:inline-flex; align-items:center; justify-content:center; background:radial-gradient(circle at 30% 30%, color-mix(in srgb, var(--accent-4) 30%, transparent), transparent 60%), linear-gradient(160deg, var(--panel-strong), color-mix(in srgb, var(--bg) 50%, var(--panel-strong))); border:1px solid color-mix(in srgb, var(--accent-4) 30%, var(--border)); box-shadow:0 4px 14px -4px color-mix(in srgb, var(--accent-4) 50%, transparent); color:var(--accent-4); }
+.cmd-mark svg { width:18px; height:18px; }
+.cmd-brand-info { display:grid; gap:1px; }
+.cmd-brand-title { display:flex; align-items:baseline; gap:8px; font-size:.92rem; font-weight:700; letter-spacing:-.02em; color:var(--text); }
+.cmd-brand-version { display:inline-flex; align-items:center; font-family:var(--font-mono); font-size:.6rem; font-weight:600; letter-spacing:.06em; padding:2px 6px; border-radius:5px; background:var(--accent-2-soft); color:var(--accent-2); border:1px solid color-mix(in srgb, var(--accent-2) 30%, var(--border)); }
+.cmd-brand-sub { display:inline-flex; align-items:center; gap:6px; font-family:var(--font-mono); font-size:.62rem; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); }
+.cmd-status-dot { width:6px; height:6px; border-radius:50%; background:var(--accent-4); box-shadow:0 0 0 3px color-mix(in srgb, var(--accent-4) 22%, transparent); animation:pulse 1.8s ease-in-out infinite; }
+@keyframes pulse { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:.55; transform:scale(.85); } }
+.cmd-center { flex:1; display:flex; align-items:center; gap:10px; position:relative; z-index:1; }
+.cmd-nav { display:flex; gap:2px; padding:3px; border-radius:12px; background:var(--surface-soft); border:1px solid var(--border); }
+.cmd-nav-item { display:inline-flex; align-items:center; gap:6px; font-size:.8rem; font-weight:500; color:var(--muted); background:transparent; border:none; padding:6px 11px; border-radius:9px; text-decoration:none; transition:var(--transition-fast); }
+.cmd-nav-item:hover { color:var(--text); background:color-mix(in srgb, var(--panel-strong) 80%, transparent); }
+.cmd-nav-item[aria-current="page"] { color:var(--accent-4); background:var(--panel-strong); box-shadow:0 0 0 1px color-mix(in srgb, var(--accent-4) 28%, transparent), 0 4px 10px -4px color-mix(in srgb, var(--accent-4) 30%, transparent); }
+.cmd-nav-glyph { display:inline-flex; font-size:.86rem; color:var(--muted); }
+.cmd-nav-item[aria-current="page"] .cmd-nav-glyph { color:var(--accent-4); }
+.cmd-actions { display:flex; align-items:center; gap:8px; position:relative; z-index:1; }
+.cmd-actions > * { flex-shrink:0; }
+.cmd-icon-btn { width:34px; height:34px; border-radius:10px; background:var(--panel-strong); border:1px solid var(--border); color:var(--text-soft); display:inline-flex; align-items:center; justify-content:center; transition:var(--transition-fast); }
+.cmd-icon-btn:hover { background:color-mix(in srgb, var(--accent-soft) 30%, var(--panel-strong)); border-color:color-mix(in srgb, var(--accent) 30%, var(--border)); color:var(--accent-strong); }
+.cmd-divider { width:1px; height:20px; background:var(--border); }
+.cmd-cta { display:inline-flex; align-items:center; gap:6px; font-size:.8rem; font-weight:600; color:#fff; background:linear-gradient(135deg, var(--accent-4), var(--accent)); border:1px solid transparent; border-radius:10px; padding:7px 13px; box-shadow:0 1px 0 rgba(255,255,255,.25) inset, 0 6px 16px -6px color-mix(in srgb, var(--accent-4) 60%, transparent); transition:var(--transition-fast); }
+.cmd-cta:hover { transform:translateY(-1px); }
+
+/* Hero */
+.marketing-hero { border:1px solid var(--border); border-radius:26px; padding:42px 36px; overflow:hidden; position:relative;
+  background: radial-gradient(circle at top left, color-mix(in srgb, var(--accent-4) 14%, transparent), transparent 32%),
+    radial-gradient(circle at 88% 8%, color-mix(in srgb, var(--accent) 14%, transparent), transparent 26%),
+    linear-gradient(145deg, rgba(11,14,19,.96), rgba(7,9,13,.94));
+  box-shadow:var(--shadow); margin-bottom:18px; display:grid; grid-template-columns:minmax(0, 1.5fr) minmax(280px, 1fr); gap:32px; align-items:center;
+}
+[data-theme="light"] .marketing-hero { background:radial-gradient(circle at top left, color-mix(in srgb, var(--accent-4) 10%, transparent), transparent 36%),radial-gradient(circle at 88% 8%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 28%),linear-gradient(160deg, #fff 0%, #f7faff 100%); box-shadow:0 22px 48px -24px rgba(15,23,42,.18); }
+.marketing-hero::before { content:''; position:absolute; inset:0; pointer-events:none; background-image:linear-gradient(color-mix(in srgb, var(--accent-4) 4%, transparent) 1px, transparent 1px),linear-gradient(90deg, color-mix(in srgb, var(--accent-4) 4%, transparent) 1px, transparent 1px); background-size:48px 48px; mask-image:radial-gradient(ellipse at 30% 40%, black 0%, transparent 60%); -webkit-mask-image:radial-gradient(ellipse at 30% 40%, black 0%, transparent 60%); opacity:.5; }
+.hero-copy { position:relative; z-index:1; }
+.eyebrow { font-family:var(--font-mono); text-transform:uppercase; letter-spacing:.18em; font-size:.72rem; font-weight:600; color:var(--muted); }
+.hero-copy h1 { margin-top:14px; font-size:clamp(2rem, 3.2vw, 2.8rem); letter-spacing:-.04em; line-height:1.02; font-weight:700; color:var(--text); }
+.hero-copy h1 .accent-cyan { color:var(--accent); }
+.hero-copy h1 .accent-emerald { color:var(--accent-4); }
+.lede { max-width:54ch; margin-top:14px; color:color-mix(in srgb, var(--text) 78%, var(--muted)); font-size:.95rem; line-height:1.65; }
+.hero-actions { display:flex; flex-wrap:wrap; gap:10px; margin-top:18px; }
+.primary-button, .secondary-button { display:inline-flex; align-items:center; justify-content:center; gap:8px; min-height:38px; padding:0 16px; border-radius:12px; font-size:.84rem; font-weight:600; white-space:nowrap; transition:var(--transition-fast); }
+.primary-button { color:#fff; background:linear-gradient(135deg, var(--accent-4), var(--accent)); border:1px solid transparent; box-shadow:0 1px 0 rgba(255,255,255,.30) inset, 0 10px 22px -8px color-mix(in srgb, var(--accent-4) 60%, transparent); }
+.primary-button:hover { transform:translateY(-1px); }
+.secondary-button { background:var(--panel-strong); border:1px solid var(--border); color:var(--text); }
+.secondary-button:hover { background:color-mix(in srgb, var(--accent-soft) 50%, var(--panel-strong)); border-color:color-mix(in srgb, var(--accent) 28%, var(--border)); color:var(--accent-strong); transform:translateY(-1px); }
+.hero-rail { position:relative; z-index:1; display:grid; gap:10px; grid-template-columns:repeat(2, 1fr); }
+.stat-tile { border-radius:14px; padding:14px 16px; border:1px solid var(--border); background:color-mix(in srgb, var(--panel-strong) 70%, transparent); }
+[data-theme="light"] .stat-tile { background:rgba(255,255,255,.7); }
+.stat-tile span { font-family:var(--font-mono); font-size:.58rem; font-weight:600; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); }
+.stat-tile strong { display:block; margin-top:6px; font-size:1.5rem; line-height:1; letter-spacing:-.05em; color:var(--text); font-variant-numeric:tabular-nums; font-weight:700; }
+.stat-tile.blue   strong { color:var(--accent); }
+.stat-tile.green  strong { color:var(--accent-4); }
+.stat-tile.violet strong { color:var(--accent-2); }
+.stat-tile.gold   strong { color:var(--accent-3); }
+
+/* Compact callout */
+.compact-callout { margin:24px 0; border:1px solid color-mix(in srgb, var(--accent-4) 22%, var(--border)); background:color-mix(in srgb, var(--accent-4-soft) 24%, var(--panel-strong)); border-radius:14px; padding:18px 22px; display:flex; gap:14px; align-items:flex-start; }
+[data-theme="light"] .compact-callout { background:color-mix(in srgb, var(--accent-4-soft) 50%, #fff); }
+.compact-callout-icon { font-size:1.3rem; flex-shrink:0; }
+.compact-callout p { margin:0; color:var(--text-soft); font-size:.92rem; line-height:1.6; }
+.compact-callout strong { color:var(--accent-4); }
+
+/* Site Section */
+.site-section { padding:36px 0 12px; position:relative; }
+.site-section + .site-section { padding-top:24px; border-top:1px solid color-mix(in srgb, var(--border) 60%, transparent); }
+.site-section-header { display:flex; flex-direction:column; gap:6px; margin-bottom:22px; max-width:64ch; }
+.site-section-title { margin-top:6px; font-size:clamp(1.4rem, 2.2vw, 1.9rem); letter-spacing:-.035em; font-weight:700; line-height:1.1; }
+.site-section-title .accent-cyan { color:var(--accent); }
+.site-section-title .accent-emerald { color:var(--accent-4); }
+.site-section-title .accent-violet { color:var(--accent-2); }
+.site-section-title .accent-gold { color:var(--accent-3); }
+.site-section-subtitle { margin-top:6px; color:var(--muted); font-size:.9rem; line-height:1.6; max-width:60ch; }
+
+/* Terminal */
+.terminal-card { border-radius:14px; border:1px solid transparent; background:linear-gradient(180deg, #0e1320, #0a0f1c); box-shadow:0 10px 30px -10px rgba(0,0,0,.5); overflow:hidden; margin-top:16px; }
+.terminal-head { display:flex; align-items:center; gap:10px; padding:8px 12px; border-bottom:1px solid rgba(255,255,255,.06); background:#10182a; }
+.terminal-dots { display:flex; gap:5px; }
+.terminal-dots span { width:9px; height:9px; border-radius:999px; }
+.terminal-dots span:nth-child(1) { background:#ff6057; }
+.terminal-dots span:nth-child(2) { background:#febc2e; }
+.terminal-dots span:nth-child(3) { background:#28c840; }
+.terminal-title { font-family:var(--font-mono); font-size:.7rem; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:#a9b3c7; }
+.terminal-body { padding:14px 18px 16px; font-family:var(--font-mono); font-size:.78rem; line-height:1.7; color:#c8d8ee; overflow-x:auto; }
+.term-line { display:block; white-space:pre; }
+.term-prompt { color:#4dd5a6; }
+.term-cmd { color:#fff; }
+.term-flag { color:#e8b05f; }
+.term-comment { color:#7f8796; }
+.term-out-key { color:#5ec8ff; }
+.term-out-val { color:#e5c07b; }
+.term-ok { color:#4dd5a6; }
+.term-warn { color:#e8b05f; }
+
+/* CTA + Footer */
+.site-cta { border-radius:22px; border:1px solid color-mix(in srgb, var(--accent-4) 22%, var(--border)); background: radial-gradient(circle at 80% 0%, color-mix(in srgb, var(--accent) 18%, transparent), transparent 36%), radial-gradient(circle at 8% 100%, color-mix(in srgb, var(--accent-4) 16%, transparent), transparent 36%), color-mix(in srgb, var(--bg-deep) 86%, transparent); padding:34px 30px; display:grid; gap:18px; grid-template-columns:1.4fr 1fr; align-items:center; margin-top:24px; }
+[data-theme="light"] .site-cta { background:radial-gradient(circle at 80% 0%, color-mix(in srgb, var(--accent) 14%, transparent), transparent 36%),radial-gradient(circle at 8% 100%, color-mix(in srgb, var(--accent-4) 14%, transparent), transparent 36%),#fff; box-shadow:0 22px 48px -24px rgba(15,23,42,.18); }
+.site-cta-heading { font-size:clamp(1.4rem, 2.2vw, 1.8rem); letter-spacing:-.035em; font-weight:700; line-height:1.15; }
+.site-cta-heading .accent-emerald { color:var(--accent-4); }
+.site-cta-text { margin-top:10px; color:var(--muted); line-height:1.65; max-width:50ch; font-size:.9rem; }
+.site-cta-actions { display:flex; flex-direction:column; gap:10px; }
+.site-footer { display:grid; gap:18px; grid-template-columns:1.4fr 1fr 1fr 1fr; padding:42px 4px 8px; margin-top:30px; border-top:1px solid var(--border); }
+.site-footer-brand p { margin-top:10px; color:var(--muted); font-size:.82rem; line-height:1.6; max-width:32ch; }
+.footer-col-title { font-family:var(--font-mono); font-size:.58rem; font-weight:700; letter-spacing:.18em; text-transform:uppercase; color:var(--muted); margin-bottom:10px; }
+.footer-col ul { list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:6px; }
+.footer-col a { font-size:.84rem; color:var(--text-soft); transition:var(--transition-fast); }
+.footer-col a:hover { color:var(--accent-4); }
+.site-footer-base { margin-top:16px; padding:16px 4px 0; border-top:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap; color:var(--muted); font-size:.76rem; }
+
+/* Hero progress */
+.progress-wrap { margin-top:18px; max-width:44ch; }
+.progress-bar { height:6px; border-radius:999px; background:var(--surface-soft); border:1px solid var(--border); overflow:hidden; }
+.progress-fill { display:block; height:100%; width:0%; border-radius:999px; background:linear-gradient(90deg, var(--accent-4), var(--accent)); transition:width .35s ease; }
+.progress-label { display:block; margin-top:8px; font-family:var(--font-mono); font-size:.66rem; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); }
+.progress-reset { margin-left:10px; background:transparent; border:1px solid var(--border); color:var(--muted); font-family:var(--font-mono); font-size:.6rem; letter-spacing:.08em; text-transform:uppercase; border-radius:6px; padding:2px 8px; transition:var(--transition-fast); }
+.progress-reset:hover { color:var(--accent-strong); border-color:color-mix(in srgb, var(--accent) 30%, var(--border)); }
+
+/* Checklist */
+.checklist-grid { display:grid; gap:14px; grid-template-columns:repeat(2, 1fr); }
+.check-group { border:1px solid var(--border); border-radius:16px; background:var(--panel-strong); padding:18px 20px; display:flex; flex-direction:column; gap:10px; }
+[data-theme="light"] .check-group { box-shadow:0 8px 22px -16px rgba(15,23,42,.16); }
+.check-group-head { display:flex; align-items:center; gap:10px; }
+.check-group-icon { width:32px; height:32px; flex-shrink:0; border-radius:9px; display:inline-flex; align-items:center; justify-content:center; font-size:.95rem; background:var(--accent-soft); border:1px solid color-mix(in srgb, var(--accent) 26%, var(--border)); }
+.check-group[data-tone="emerald"] .check-group-icon { background:var(--accent-4-soft); border-color:color-mix(in srgb, var(--accent-4) 26%, var(--border)); }
+.check-group[data-tone="violet"] .check-group-icon { background:var(--accent-2-soft); border-color:color-mix(in srgb, var(--accent-2) 26%, var(--border)); }
+.check-group[data-tone="gold"] .check-group-icon { background:var(--accent-3-soft); border-color:color-mix(in srgb, var(--accent-3) 26%, var(--border)); }
+.check-group h3 { font-size:.95rem; font-weight:700; color:var(--text-soft); letter-spacing:-.01em; }
+.check-count { margin-left:auto; font-family:var(--font-mono); font-size:.64rem; font-weight:600; color:var(--muted); border:1px solid var(--border); border-radius:999px; padding:2px 9px; font-variant-numeric:tabular-nums; }
+.check-list { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:1px; }
+.check-item { display:flex; gap:10px; align-items:flex-start; width:100%; text-align:left; background:transparent; border:none; border-radius:9px; padding:7px 8px; font-size:.84rem; line-height:1.55; color:var(--muted); transition:var(--transition-fast); }
+.check-item:hover { background:var(--surface-soft); color:var(--text); }
+.check-box { flex-shrink:0; width:16px; height:16px; margin-top:2px; border-radius:5px; border:1.5px solid color-mix(in srgb, var(--accent-4) 40%, var(--border)); display:inline-flex; align-items:center; justify-content:center; font-size:.6rem; line-height:1; color:transparent; transition:var(--transition-fast); }
+.check-item[aria-pressed="true"] .check-box { background:var(--accent-4); border-color:var(--accent-4); color:#05130e; }
+.check-item[aria-pressed="true"] .check-text { color:color-mix(in srgb, var(--muted) 65%, transparent); text-decoration:line-through; }
+.check-text strong { color:var(--text-soft); font-weight:600; }
+.check-item[aria-pressed="true"] .check-text strong { color:inherit; }
+
+/* Size ladder */
+.ladder { display:grid; grid-template-columns:repeat(3, 1fr); gap:12px; }
+.ladder-step { border:1px solid var(--border); border-radius:14px; padding:16px 18px 14px; background:var(--panel-strong); display:flex; flex-direction:column; gap:6px; position:relative; overflow:hidden; }
+.ladder-step::before { content:""; position:absolute; left:0; top:0; bottom:0; width:3px; background:var(--accent-4); }
+.ladder-step[data-tone="cyan"]::before { background:var(--accent); }
+.ladder-step[data-tone="violet"]::before { background:var(--accent-2); }
+.ladder-step[data-tone="gold"]::before { background:var(--accent-3); }
+.ladder-rank { font-family:var(--font-mono); font-size:.6rem; font-weight:600; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); }
+.ladder-step h3 { font-size:.95rem; font-weight:700; color:var(--text-soft); letter-spacing:-.02em; }
+.ladder-step p { font-size:.8rem; color:var(--muted); line-height:1.55; margin:0; }
+.ladder-when { margin-top:auto; padding-top:10px; font-family:var(--font-mono); font-size:.65rem; color:var(--accent-4); }
+.ladder-step[data-tone="cyan"] .ladder-when { color:var(--accent); }
+.ladder-step[data-tone="violet"] .ladder-when { color:var(--accent-2); }
+.ladder-step[data-tone="gold"] .ladder-when { color:var(--accent-3); }
+
+/* Memory layers */
+.layer-stack { display:flex; flex-direction:column; gap:8px; }
+.layer-row { display:grid; grid-template-columns:34px 210px 1fr; gap:14px; align-items:center; border:1px solid var(--border); border-radius:12px; padding:12px 16px; background:var(--panel-strong); }
+.layer-num { width:28px; height:28px; border-radius:8px; display:inline-flex; align-items:center; justify-content:center; font-family:var(--font-mono); font-size:.72rem; font-weight:700; color:var(--accent-2); background:var(--accent-2-soft); border:1px solid color-mix(in srgb, var(--accent-2) 26%, var(--border)); }
+.layer-name { font-size:.88rem; font-weight:700; color:var(--text-soft); letter-spacing:-.01em; }
+.layer-name span { display:block; margin-top:3px; font-family:var(--font-mono); font-size:.63rem; font-weight:500; color:var(--muted); letter-spacing:-.01em; }
+.layer-desc { font-size:.82rem; color:var(--muted); line-height:1.55; }
+
+/* Agent roster */
+.roster-grid { display:grid; gap:12px; grid-template-columns:repeat(3, 1fr); }
+.roster-card { border:1px solid var(--border); border-radius:14px; padding:16px 18px; background:color-mix(in srgb, var(--panel) 50%, var(--panel-strong)); display:flex; flex-direction:column; gap:8px; }
+[data-theme="light"] .roster-card { background:#fff; box-shadow:0 6px 18px -14px rgba(15,23,42,.16); }
+.roster-role { font-family:var(--font-mono); font-size:.61rem; font-weight:600; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); }
+.roster-card h3 { font-size:.92rem; font-weight:700; color:var(--text-soft); letter-spacing:-.01em; }
+.roster-card p { font-size:.8rem; color:var(--muted); line-height:1.55; margin:0; }
+.agent-pills { display:flex; flex-wrap:wrap; gap:5px; margin-top:auto; padding-top:8px; }
+.agent-pill { font-family:var(--font-mono); font-size:.63rem; padding:2px 7px; border-radius:6px; background:var(--surface-soft); border:1px solid var(--border); color:var(--text-soft); }
+
+/* Fact table */
+.table-wrap { overflow-x:auto; border:1px solid var(--border); border-radius:14px; background:var(--panel-strong); }
+.fact-table { width:100%; border-collapse:collapse; font-size:.84rem; min-width:640px; }
+.fact-table th { text-align:left; font-family:var(--font-mono); font-size:.61rem; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); padding:12px 16px; border-bottom:1px solid var(--border); }
+.fact-table td { padding:12px 16px; border-bottom:1px solid color-mix(in srgb, var(--border) 55%, transparent); color:var(--muted); vertical-align:top; line-height:1.55; }
+.fact-table tr:last-child td { border-bottom:none; }
+.fact-table td:first-child { color:var(--text-soft); font-weight:600; }
+.fact-table code { font-family:var(--font-mono); font-size:.75rem; color:var(--accent); background:var(--accent-soft); border-radius:5px; padding:1px 6px; }
+
+/* Flow steps */
+.flow-steps { display:grid; grid-template-columns:repeat(3, 1fr); gap:12px; margin-top:18px; }
+.flow-step { border:1px solid var(--border); border-radius:14px; padding:15px 17px; background:var(--panel-strong); }
+.flow-num { font-family:var(--font-mono); font-size:.61rem; font-weight:600; letter-spacing:.14em; text-transform:uppercase; color:var(--accent); }
+.flow-step h4 { font-size:.88rem; font-weight:700; color:var(--text-soft); margin:5px 0; letter-spacing:-.01em; }
+.flow-step p { font-size:.79rem; color:var(--muted); line-height:1.55; margin:0; }
+
+/* Size tracks */
+.size-grid { display:grid; grid-template-columns:repeat(3, 1fr); gap:14px; }
+.size-card { border:1px solid var(--border); border-radius:18px; padding:20px; background:var(--panel-strong); display:flex; flex-direction:column; gap:10px; }
+.size-card[data-tone="emerald"] { background:linear-gradient(180deg, color-mix(in srgb, var(--accent-4-soft) 38%, transparent), transparent 55%), var(--panel-strong); }
+.size-card[data-tone="cyan"] { background:linear-gradient(180deg, color-mix(in srgb, var(--accent-soft) 38%, transparent), transparent 55%), var(--panel-strong); }
+.size-card[data-tone="violet"] { background:linear-gradient(180deg, color-mix(in srgb, var(--accent-2-soft) 38%, transparent), transparent 55%), var(--panel-strong); }
+.size-tag { font-family:var(--font-mono); font-size:.61rem; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); }
+.size-card h3 { font-size:1rem; font-weight:700; color:var(--text-soft); letter-spacing:-.02em; }
+.size-card > p { font-size:.82rem; color:var(--muted); line-height:1.55; margin:0; }
+.size-card ul { list-style:none; margin:6px 0 0; padding:0; display:flex; flex-direction:column; gap:7px; }
+.size-card li { position:relative; padding-left:17px; font-size:.8rem; color:var(--muted); line-height:1.5; }
+.size-card li::before { content:"\25B8"; position:absolute; left:0; color:var(--accent-4); }
+
+@media (max-width: 1024px) {
+  .marketing-hero { grid-template-columns:1fr; gap:24px; }
+  .checklist-grid { grid-template-columns:1fr; }
+  .ladder, .roster-grid, .flow-steps, .size-grid { grid-template-columns:1fr; }
+  .site-cta { grid-template-columns:1fr; }
+  .site-footer { grid-template-columns:repeat(2, 1fr); }
+}
+@media (max-width: 720px) {
+  .dock-wrap { padding-top:10px; }
+  .cmd-dock { gap:8px; padding:8px 10px; flex-wrap:wrap; }
+  .cmd-brand { padding-right:0; border-right:none; }
+  .cmd-center { order:3; width:100%; }
+  .cmd-nav { width:100%; overflow-x:auto; }
+  .marketing-hero { padding:24px 20px; }
+  .hero-copy h1 { font-size:1.8rem; }
+  .hero-rail { grid-template-columns:repeat(2, 1fr); }
+  .layer-row { grid-template-columns:28px 1fr; }
+  .layer-desc { grid-column:1 / -1; }
+  .site-footer { grid-template-columns:1fr; }
+}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration:.001ms !important; transition-duration:.001ms !important; } }
+</style>
+</head>
+<body>
+
+<main class="shell">
+
+  <div class="dock-wrap" id="dock-wrap">
+    <nav class="cmd-dock" aria-label="Topbar">
+      <div class="cmd-brand">
+        <span class="cmd-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a9 9 0 1 0 9 9"/><path d="M12 3v9l6 3"/></svg>
+        </span>
+        <div class="cmd-brand-info">
+          <span class="cmd-brand-title">AIOSON <span class="cmd-brand-version">v1.56.0</span></span>
+          <span class="cmd-brand-sub"><span class="cmd-status-dot"></span> ecossistema · visão geral</span>
+        </div>
+      </div>
+      <div class="cmd-center">
+        <div class="cmd-nav">
+          <a class="cmd-nav-item" href="../index.html"><span class="cmd-nav-glyph">⌂</span> Hub</a>
+          <a class="cmd-nav-item" href="./index.html" aria-current="page"><span class="cmd-nav-glyph">◉</span> Ecossistema</a>
+          <a class="cmd-nav-item" href="../sdd/index.html"><span class="cmd-nav-glyph">⚡</span> SDD</a>
+          <a class="cmd-nav-item" href="../living-memory/index.html"><span class="cmd-nav-glyph">◈</span> Living Memory</a>
+          <a class="cmd-nav-item" href="../squads/index.html"><span class="cmd-nav-glyph">⌬</span> Squads</a>
+        </div>
+      </div>
+      <div class="cmd-actions">
+        <button class="cmd-icon-btn" type="button" aria-label="Alternar tema" data-theme-toggle>
+          <svg class="cmd-theme-moon" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M13 9.2A5.5 5.5 0 1 1 6.8 3a4.4 4.4 0 0 0 6.2 6.2z"/></svg>
+          <svg class="cmd-theme-sun" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="display:none"><circle cx="8" cy="8" r="3"/><path d="M8 1.5v1.6M8 12.9v1.6M2.4 8H1M15 8h-1.4M3.6 3.6l1 1M11.4 11.4l1 1M3.6 12.4l1-1M11.4 4.6l1-1"/></svg>
+        </button>
+        <span class="cmd-divider"></span>
+        <a href="#saber" class="cmd-cta">Como ele lembra
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
+        </a>
+      </div>
+    </nav>
+  </div>
+
+  <!-- HERO -->
+  <section class="marketing-hero">
+    <div class="hero-copy">
+      <span class="eyebrow">Visão geral · para quem nunca usou</span>
+      <h1>Tudo o que o AIOSON faz, em um <span class="accent-emerald">checklist</span>.</h1>
+      <p class="lede">Do script de 200 linhas ao sistema com vários módulos, é o mesmo mecanismo: um time de agentes que se reveza, memória que fica em disco e portões que impedem entrega pela metade. Esta página lista tudo, em português simples. Clique nos itens para ir marcando.</p>
+      <div class="hero-actions">
+        <a class="primary-button" href="#checklists">Ir para os checklists
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
+        </a>
+        <a class="secondary-button" href="#escala">Do pequeno ao gigante</a>
+      </div>
+      <div class="progress-wrap">
+        <div class="progress-bar"><span class="progress-fill" id="progress-fill"></span></div>
+        <span class="progress-label"><span id="progress-label">0 de 0 itens marcados</span><button type="button" class="progress-reset" id="progress-reset">limpar</button></span>
+      </div>
+    </div>
+    <aside class="hero-rail">
+      <div class="stat-tile green"><span>agentes</span><strong>35</strong></div>
+      <div class="stat-tile blue"><span>comandos</span><strong>182</strong></div>
+      <div class="stat-tile violet"><span>camadas de memória</span><strong>6</strong></div>
+      <div class="stat-tile gold"><span>portões</span><strong>A-D</strong></div>
+    </aside>
+  </section>
+
+  <!-- 30 SECONDS -->
+  <section class="site-section" id="comeco">
+    <header class="site-section-header">
+      <span class="eyebrow">Em 30 segundos</span>
+      <h2 class="site-section-title">O que é isso, na prática.</h2>
+      <p class="site-section-subtitle">Três ideias explicam o resto da página.</p>
+    </header>
+    <div class="roster-grid">
+      <div class="roster-card">
+        <span class="roster-role">1 · conversa</span>
+        <h3>Você fala, ele executa</h3>
+        <p>Você descreve em português o que quer. Não existe linguagem especial para decorar, nem formulário para preencher antes.</p>
+      </div>
+      <div class="roster-card">
+        <span class="roster-role">2 · time</span>
+        <h3>Um time, não um assistente</h3>
+        <p>São 35 especialistas. Cada um faz sua parte e entrega para o próximo dizendo o porquê. Quem escreve o código não é quem aprova.</p>
+      </div>
+      <div class="roster-card">
+        <span class="roster-role">3 · memória</span>
+        <h3>Nada mora na conversa</h3>
+        <p>Todo passo vira arquivo dentro do projeto. Fechar o terminal, trocar de máquina ou voltar semanas depois não apaga o trabalho.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- SIZE LADDER -->
+  <section class="site-section" id="escala">
+    <header class="site-section-header">
+      <span class="eyebrow">Escala</span>
+      <h2 class="site-section-title">A mesma ferramenta muda de <span class="accent-cyan">marcha</span>.</h2>
+      <p class="site-section-subtitle">O sistema mede o tamanho do pedido e escolhe o caminho. Trabalho pequeno não paga o preço do trabalho grande, e trabalho grande não escapa das etapas.</p>
+    </header>
+    <div class="ladder">
+      <div class="ladder-step" data-tone="emerald">
+        <span class="ladder-rank">degrau 1</span>
+        <h3>Ajuste rápido</h3>
+        <p>Corrigir um botão, renomear um campo, ajustar uma consulta. Vai direto para o desenvolvedor, sem documento de produto.</p>
+        <span class="ladder-when">até ~5 arquivos de comportamento</span>
+      </div>
+      <div class="ladder-step" data-tone="emerald">
+        <span class="ladder-rank">degrau 2</span>
+        <h3>MICRO</h3>
+        <p>Pequeno, mas que precisa ser lembrado depois ou envolve uma decisão de produto miúda. Ganha memória própria.</p>
+        <span class="ladder-when">bounded + memória de feature</span>
+      </div>
+      <div class="ladder-step" data-tone="cyan">
+        <span class="ladder-rank">degrau 3</span>
+        <h3>SMALL</h3>
+        <p>Uma capacidade nova de verdade, ou um contrato novo entre partes do sistema. Cadeia enxuta, com verificação proporcional.</p>
+        <span class="ladder-when">cadeia curta e vertical</span>
+      </div>
+      <div class="ladder-step" data-tone="violet">
+        <span class="ladder-rank">degrau 4</span>
+        <h3>MEDIUM</h3>
+        <p>Cadeia completa: produto escreve, auditor critica, planejador fatia, desenvolvedor constrói, QA aprova ou reprova.</p>
+        <span class="ladder-when">produto → auditoria → plano → código → QA</span>
+      </div>
+      <div class="ladder-step" data-tone="gold">
+        <span class="ladder-rank">degrau 5</span>
+        <h3>Trilhas paralelas</h3>
+        <p>De 2 a 6 frentes trabalhando ao mesmo tempo, cada uma com sua fatia de arquivos, com trava para não colidirem e junção assistida no fim.</p>
+        <span class="ladder-when">2 a 6 trilhas simultâneas</span>
+      </div>
+      <div class="ladder-step" data-tone="gold">
+        <span class="ladder-rank">degrau 6</span>
+        <h3>Autopilot</h3>
+        <p>A feature caminha sozinha de ponta a ponta. Para quando existe uma decisão real para você tomar, e nunca publica sozinha.</p>
+        <span class="ladder-when">pausa só em decisão genuína</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- AGENT ROSTER -->
+  <section class="site-section" id="agentes">
+    <header class="site-section-header">
+      <span class="eyebrow">O time · 35 especialistas</span>
+      <h2 class="site-section-title">Quem faz o quê, sem você precisar decorar.</h2>
+      <p class="site-section-subtitle">Você não escolhe agente: descreve o objetivo e o sistema roteia. A lista abaixo existe para você entender quem apareceu e por quê.</p>
+    </header>
+    <div class="roster-grid">
+      <div class="roster-card">
+        <span class="roster-role">ideia</span>
+        <h3>Antes de existir escopo</h3>
+        <p>Transformam uma ideia crua em material pronto para virar decisão, com rodadas de refinamento e revisão registradas.</p>
+        <div class="agent-pills"><span class="agent-pill">briefing</span><span class="agent-pill">briefing-refiner</span><span class="agent-pill">orache</span></div>
+      </div>
+      <div class="roster-card">
+        <span class="roster-role">produto</span>
+        <h3>O que será construído</h3>
+        <p>Escrevem o documento do que fazer, auditam esse documento antes de qualquer linha de código e fatiam em passos executáveis.</p>
+        <div class="agent-pills"><span class="agent-pill">product</span><span class="agent-pill">sheldon</span><span class="agent-pill">planner</span></div>
+      </div>
+      <div class="roster-card">
+        <span class="roster-role">construção</span>
+        <h3>Quem escreve o código</h3>
+        <p>Implementam fatia por fatia. Deyvin é o modo dupla: retoma de onde parou, com o contexto já conhecido.</p>
+        <div class="agent-pills"><span class="agent-pill">dev</span><span class="agent-pill">deyvin</span><span class="agent-pill">forge-run</span></div>
+      </div>
+      <div class="roster-card">
+        <span class="roster-role">verificação</span>
+        <h3>Quem desconfia da entrega</h3>
+        <p>Conferem o que foi prometido, escrevem testes, atacam a superfície de segurança e fazem o pente-fino depois de pronto.</p>
+        <div class="agent-pills"><span class="agent-pill">qa</span><span class="agent-pill">tester</span><span class="agent-pill">pentester</span><span class="agent-pill">shakedown</span><span class="agent-pill">validator</span></div>
+      </div>
+      <div class="roster-card">
+        <span class="roster-role">consultores</span>
+        <h3>Só quando há dúvida real</h3>
+        <p>Entram para responder uma pergunta nomeada e saem. Nenhum deles cria etapa obrigatória no caminho.</p>
+        <div class="agent-pills"><span class="agent-pill">analyst</span><span class="agent-pill">architect</span><span class="agent-pill">pm</span><span class="agent-pill">ux-ui</span><span class="agent-pill">scope-check</span><span class="agent-pill">orchestrator</span></div>
+      </div>
+      <div class="roster-card">
+        <span class="roster-role">fábrica</span>
+        <h3>Quem cria mais capacidade</h3>
+        <p>Montam times, estilos visuais, personas e conhecimento de domínio. Neo é o roteador: diz onde você está e quem chamar agora.</p>
+        <div class="agent-pills"><span class="agent-pill">neo</span><span class="agent-pill">squad</span><span class="agent-pill">genome</span><span class="agent-pill">site-forge</span><span class="agent-pill">design-hybrid-forge</span><span class="agent-pill">profiler</span><span class="agent-pill">copywriter</span><span class="agent-pill">committer</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MEMORY -->
+  <section class="site-section" id="memoria">
+    <header class="site-section-header">
+      <span class="eyebrow">Memória · 6 camadas</span>
+      <h2 class="site-section-title">Seis memórias diferentes, cada uma com um <span class="accent-violet">papel</span>.</h2>
+      <p class="site-section-subtitle">Modelo de IA esquece a cada sessão. Estas seis camadas ficam gravadas no disco do projeto e da sua máquina, então a próxima sessão começa sabendo.</p>
+    </header>
+    <div class="layer-stack">
+      <div class="layer-row">
+        <span class="layer-num">1</span>
+        <div class="layer-name">Contexto do projeto<span>project.context.md</span></div>
+        <p class="layer-desc">A ficha permanente: stack, banco, idioma da conversa, tamanho do sistema e como rodar os testes.</p>
+      </div>
+      <div class="layer-row">
+        <span class="layer-num">2</span>
+        <div class="layer-name">Aprendizados<span>learnings/</span></div>
+        <p class="layer-desc">Armadilhas e receitas do projeto. O registro de "isso já quebrou uma vez, não repita".</p>
+      </div>
+      <div class="layer-row">
+        <span class="layer-num">3</span>
+        <div class="layer-name">Regras<span>rules/</span></div>
+        <p class="layer-desc">Contrato verificável, não sugestão. Bloqueia a entrega quando violado e vence até o documento de produto.</p>
+      </div>
+      <div class="layer-row">
+        <span class="layer-num">4</span>
+        <div class="layer-name">Brains<span>brains/</span></div>
+        <p class="layer-desc">Nós de conhecimento técnico e de qualidade visual que os agentes consultam antes de decidir.</p>
+      </div>
+      <div class="layer-row">
+        <span class="layer-num">5</span>
+        <div class="layer-name">Memória do operador<span>~/.aioson/operators/</span></div>
+        <p class="layer-desc">Seu jeito de trabalhar: autorizações, correções e preferências. Fica ligada ao seu e-mail, então acompanha você de projeto em projeto.</p>
+      </div>
+      <div class="layer-row">
+        <span class="layer-num">6</span>
+        <div class="layer-name">Memória da feature<span>features/{slug}/</span></div>
+        <p class="layer-desc">Dossiê, decisões e continuidade daquele trabalho específico, do briefing até o fechamento.</p>
+      </div>
+    </div>
+    <div class="compact-callout">
+      <span class="compact-callout-icon" aria-hidden="true">◈</span>
+      <p><strong>Nada disso é carregado de uma vez.</strong> O agente pergunta ao sistema o que interessa para a tarefa atual e recebe só esse recorte. É o que segura o custo quando o projeto fica grande.</p>
+    </div>
+  </section>
+
+  <!-- CHECKLISTS -->
+  <section class="site-section" id="checklists">
+    <header class="site-section-header">
+      <span class="eyebrow">Checklists · o inventário completo</span>
+      <h2 class="site-section-title">Tudo o que dá para ligar, por área.</h2>
+      <p class="site-section-subtitle">Clique em qualquer item para marcar. As marcações ficam salvas neste navegador, então dá para usar como lista de adoção ao longo das semanas.</p>
+    </header>
+    <div class="checklist-grid">
+
+      <div class="check-group" data-group="entrada" data-tone="emerald">
+        <div class="check-group-head">
+          <span class="check-group-icon" aria-hidden="true">⌂</span>
+          <h3>Começar o projeto</h3>
+          <span class="check-count" data-count>0/6</span>
+        </div>
+        <ul class="check-list">
+          <li><button type="button" class="check-item" aria-pressed="false"><span class="check-box" aria-hidden="true">✓</span><span class="check-text"><strong>Ficha do projeto</strong> criada sozinha: linguagem, stack, banco e tamanho do sistema.</span></button></li>
+          <li><button type="button" class="check-item" aria-pressed="false"><span class="check-box" aria-hidden="true">✓</span><span class="check-text"><strong>Detecção automática</strong> do framework e de como os testes rodam.</span></button></li>
+          <li><button type="button" class="check-item" aria-pressed="false"><span class="check-box" aria-hidden="true">✓</span><span class="check-text"><strong>Importar o que você já tem</strong>: documentos, notas e pastas viram contexto do projeto.</span></button></li>
+          <li><button type="button" class="check-item" aria-pressed="false"><span class="check-box" aria-hidden="true">✓</span><span class="check-text"><strong>Modo padrão</strong> para quem não sabe responder detalhe técnico no começo.</span></button></li>
+          <li><button type="button" class="check-item" aria-pressed="false"><span class="check-box" aria-hidden="true">✓</span><span class="check-text"><strong>Doctor</strong> aponta e conserta o que ficou inconsistente na instalação.</span></button></li>
+          <li><button type="button" class="check-item" aria-pressed="false"><span class="check-box" aria-hidden="true">✓</span><span class="check-text"><strong>Quatro idiomas</strong> de conversa: português, inglês, espanhol e francês.</span></button></li>
+        </ul>
+      </div>
+
+      <div class="check-group" data-group="logs" data-tone="cyan">
+        <div class="check-group-head">
+          <span class="check-group-icon" aria-hidden="true">▤</span>
+          <h3>Registro e histórico</h3>
+          <span class="check-count" data-count>0/7</span>
+        </div>
+        <ul class="check-list">
+          <li><button type="button" class="check-item" aria-pressed="false"><span class="check-box" aria-hidden="true">✓</span><span class="check-text"><strong>Linha do tempo de eventos</strong>: cada entrada e saída de agente fica gravada com data.</span></button></li>
+          <li><button type="button" class="check-item" aria-pressed="false"><span class="check-box" aria-hidden="true">✓</span><span class="check-text"><strong>Banco de telemetria</strong> com cerca de 40 tabelas: tarefas, execuções, artefatos e entregas.</span></button></li>
+          <li><button type="button" class="check-item" aria-pressed="false"><span class="check-box" aria-hidden="true">✓</span><span class="check-text"><strong>Pulso do projeto</strong>: uma página com último agente, último portão e próximo passo.</span></button></li>
+          <li><button type="button" class="check-item" aria-pressed="false"><span class="check-box" aria-hidden="true">✓</span><span class="check-text"><strong>Estado do desenvolvimento</strong> com histórico datado: em que fase o código parou.</span></button></li>
+          <li><button type="button" class="check-item" aria-pressed="false"><span class="check-box" aria-hidden="true">✓</span><span class="check-text"><strong>Ledger de promessas</strong>: o que a feature se comprometeu a entregar, item a item.</span></button></li>
+          <li><button type="button" class="check-item" aria-pressed="false"><span class="check-box" aria-hidden="true">✓</span><span class="check-text"><strong>Sessões ao vivo</strong>: o que está rodando agora, em qual terminal, com passagem de bastão.</span></button></li>
+          <li><button type="button" class="check-item" aria-pressed="false"><span class="check-box" aria-hidden="true">✓</span><span class="check-text"><strong>Arquivo de features concluídas</strong>: escopo, plano e relatórios guardados por entrega.</span></button></li>
+        </ul>
+      </div>
+
+      <div class="check-group" data-group="gates" data-tone="violet">
+        <div class="check-group-head">
+          <span class="check-group-icon" aria-hidden="true">✓</span>
+          <h3>Portões de qualidade</h3>
+          <span class="check-count" data-count>0/9</span>
+        </div>
+        <ul class="check-list">
+          <li><button type="button" class="check-item" aria-pressed="false"><span class="check-box" aria-hidden="true">✓</span><span class="check-text"><strong>Portões A, B, C e D</strong>: só avança quem passou pelo anterior.</span></button></li>
+          <li><button type="button" class="check-item" aria-pressed="false"><span class="check-box" aria-hidden="true">✓</span><span class="check-text"><strong>Portão de runtime</strong>: build, migração, boot e teste de fumaça. Compilar não é funcionar.</span></button></li>
+          <li><button type="button" class="check-item" aria-pressed="false"><span class="check-box" aria-hidden="true">✓</span><span class="check-text"><strong>Auditoria de código</strong> automática ao fim do desenvolvimento e do QA.</span></button></li>
+          <li><button type="button" class="check-item" aria-pressed="false"><span class="check-box" aria-hidden="true">✓</span><span class="check-text"><strong>Conferência por tipo de artefato</strong>: escopo, briefing, protótipo, commit e identidade visual.</span></button></li>
+          <li><button type="button" class="check-item" aria-pressed="false"><span class="check-box" aria-hidden="true">✓</span><span class="check-text"><strong>Regras verificadas por máquina</strong>, e elas ganham do documento de produto em caso de conflito.</span></button></li>
+          <li><button type="button" class="check-item" aria-pressed="false"><span class="check-box" aria-hidden="true">✓</span><span class="check-text"><strong>Critério de aceite × teste</strong>: cada promessa precisa ter um teste correspondente.</span></button></li>
+          <li><button type="button" class="check-item" aria-pressed="false"><span class="check-box" aria-hidden="true">✓</span><span class="check-text"><strong>QA de navegador</strong> com personas: leigo, hacker, usuário avançado e celular.</span></button></li>
+          <li><button type="button" class="check-item" aria-pressed="false"><span class="check-box" aria-hidden="true">✓</span><span class="check-text"><strong>Revisão de segurança</strong> com relatório de cobertura por feature.</span></button></li>
+          <li><button type="button" class="check-item" aria-pressed="false"><span class="check-box" aria-hidden="true">✓</span><span class="check-text"><strong>Conferência final antes de fechar</strong>: a feature só encerra com evidência, não com opinião.</span></button></li>
+        </ul>
+      </div>
+
+      <div class="check-group" data-group="design" data-tone="gold">
+        <div class="check-group-head">
+          <span class="check-group-icon" aria-hidden="true">◎</span>
+          <h3>Design e conteúdo</h3>
+          <span class="check-count" data-count>0/6</span>
+        </div>
+        <ul class="check-list">
+          <li><button type="button" class="check-item" aria-pressed="false"><span class="check-box" aria-hidden="true">✓</span><span class="check-text"><strong>Identidade a partir de imagens</strong>: você manda referências e elas viram um padrão reutilizável.</span></button></li>
+          <li><button type="button" class="check-item" aria-pressed="false"><span class="check-box" aria-hidden="true">✓</span><span class="check-text"><strong>Estilos visuais prontos</strong> e forja de estilo híbrido a partir de duas referências.</span></button></li>
+          <li><button type="button" class="check-item" aria-pressed="false"><span class="check-box" aria-hidden="true">✓</span><span class="check-text"><strong>Clonagem de estrutura visual</strong> a partir de qualquer endereço na web.</span></button></li>
+          <li><button type="button" class="check-item" aria-pressed="false"><span class="check-box" aria-hidden="true">✓</span><span class="check-text"><strong>Protótipo aprovado antes do código</strong> sempre que a feature tem tela.</span></button></li>
+          <li><button type="button" class="check-item" aria-pressed="false"><span class="check-box" aria-hidden="true">✓</span><span class="check-text"><strong>Medidor de cara de robô</strong>: aponta texto genérico, cacoete de escrita e composição repetida.</span></button></li>
+          <li><button type="button" class="check-item" aria-pressed="false"><span class="check-box" aria-hidden="true">✓</span><span class="check-text"><strong>Texto de venda</strong> escrito por um agente dedicado a conversão.</span></button></li>
+        </ul>
+      </div>
+
+      <div class="check-group" data-group="integracao" data-tone="emerald">
+        <div class="check-group-head">
+          <span class="check-group-icon" aria-hidden="true">⇄</span>
+          <h3>Reuso e integração</h3>
+          <span class="check-count" data-count>0/6</span>
+        </div>
+        <ul class="check-list">
+          <li><button type="button" class="check-item" aria-pressed="false"><span class="check-box" aria-hidden="true">✓</span><span class="check-text"><strong>Publicar e instalar</strong> skills, genomas e times prontos, em modo público, privado ou pago.</span></button></li>
+          <li><button type="button" class="check-item" aria-pressed="false"><span class="check-box" aria-hidden="true">✓</span><span class="check-text"><strong>Workspace</strong> para agrupar vários projetos do mesmo cliente.</span></button></li>
+          <li><button type="button" class="check-item" aria-pressed="false"><span class="check-box" aria-hidden="true">✓</span><span class="check-text"><strong>Três ferramentas</strong>: Claude, Codex e OpenCode compartilham o mesmo estado em disco.</span></button></li>
+          <li><button type="button" class="check-item" aria-pressed="false"><span class="check-box" aria-hidden="true">✓</span><span class="check-text"><strong>Conectores externos (MCP)</strong> com verificação de saúde antes do uso.</span></button></li>
+          <li><button type="button" class="check-item" aria-pressed="false"><span class="check-box" aria-hidden="true">✓</span><span class="check-text"><strong>Delegação a outro modelo</strong> quando você pedir de forma explícita.</span></button></li>
+          <li><button type="button" class="check-item" aria-pressed="false"><span class="check-box" aria-hidden="true">✓</span><span class="check-text"><strong>Times de agentes (squads)</strong> com painel, trabalhadores automáticos e acompanhamento de retorno.</span></button></li>
+        </ul>
+      </div>
+
+      <div class="check-group" data-group="pesquisa" data-tone="cyan">
+        <div class="check-group-head">
+          <span class="check-group-icon" aria-hidden="true">⌕</span>
+          <h3>Pesquisa e evidência</h3>
+          <span class="check-count" data-count>0/6</span>
+        </div>
+        <ul class="check-list">
+          <li><button type="button" class="check-item" aria-pressed="false"><span class="check-box" aria-hidden="true">✓</span><span class="check-text"><strong>Salvar sites dentro do projeto</strong> e extrair só os trechos que interessam.</span></button></li>
+          <li><button type="button" class="check-item" aria-pressed="false"><span class="check-box" aria-hidden="true">✓</span><span class="check-text"><strong>Investigação de domínio</strong> antes de fechar escopo em assunto que você não domina.</span></button></li>
+          <li><button type="button" class="check-item" aria-pressed="false"><span class="check-box" aria-hidden="true">✓</span><span class="check-text"><strong>Briefing refinado em rodadas</strong>, com o histórico de cada rodada guardado.</span></button></li>
+          <li><button type="button" class="check-item" aria-pressed="false"><span class="check-box" aria-hidden="true">✓</span><span class="check-text"><strong>Dúvida aberta vira pendência</strong> registrada, em vez de virar suposição silenciosa.</span></button></li>
+          <li><button type="button" class="check-item" aria-pressed="false"><span class="check-box" aria-hidden="true">✓</span><span class="check-text"><strong>Benchmark</strong> que mede uma travessia real do começo ao fim, sem maquiagem.</span></button></li>
+          <li><button type="button" class="check-item" aria-pressed="false"><span class="check-box" aria-hidden="true">✓</span><span class="check-text"><strong>Aprendizado destilado</strong> ao fechar cada feature, para a próxima começar melhor.</span></button></li>
+        </ul>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- HOW IT KNOWS -->
+  <section class="site-section" id="saber">
+    <header class="site-section-header">
+      <span class="eyebrow">A pergunta que todo mundo faz</span>
+      <h2 class="site-section-title">Como ele sabe tudo o que já foi feito?</h2>
+      <p class="site-section-subtitle">A resposta curta: ele não confia na memória do modelo. Ele escreve em disco e lê de volta. Cada pergunta abaixo tem um lugar exato que responde.</p>
+    </header>
+
+    <div class="table-wrap">
+      <table class="fact-table">
+        <thead>
+          <tr><th>Você pergunta</th><th>Quem responde</th><th>O que sai</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Onde eu parei?</td><td><code>workflow:status</code></td><td>A etapa atual, o que já foi concluído e qual é a próxima.</td></tr>
+          <tr><td>Qual trabalho está ativo?</td><td><code>feature:current</code></td><td>A feature ativa com título e objetivo, sem precisar abrir arquivo.</td></tr>
+          <tr><td>O que já foi entregue nela?</td><td><code>feature:trace</code></td><td>Promessa, critério de aceite, arquivos tocados e o teste que provou.</td></tr>
+          <tr><td>O que mudou no código?</td><td><code>feature:diff</code></td><td>A comparação real com o Git, não a lembrança do agente.</td></tr>
+          <tr><td>O que aconteceu antes?</td><td><code>runtime:status</code></td><td>Execuções, tarefas e eventos gravados com data e autor.</td></tr>
+          <tr><td>O que aprendemos aqui?</td><td><code>memory:search</code></td><td>Busca nas regras e nos aprendizados registrados do projeto.</td></tr>
+          <tr><td>Me dá o resumo?</td><td><code>project-pulse.md</code></td><td>Último agente, último portão aprovado e recomendação de próximo passo.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="terminal-card">
+      <div class="terminal-head">
+        <span class="terminal-dots"><span></span><span></span><span></span></span>
+        <span class="terminal-title">exemplo de leitura de estado</span>
+      </div>
+      <div class="terminal-body">
+<span class="term-line"><span class="term-comment"># em que ponto o projeto está, lido do disco e não da conversa</span></span>
+<span class="term-line"><span class="term-prompt">$</span> <span class="term-cmd">aioson feature:current .</span> <span class="term-flag">--with-summary</span></span>
+<span class="term-line">  <span class="term-out-key">active</span>     <span class="term-out-val">briefing-lineage-migration</span></span>
+<span class="term-line">  <span class="term-out-key">objetivo</span>   <span class="term-out-val">migrar briefings antigos sem alterar o ciclo de vida</span></span>
+<span class="term-line"></span>
+<span class="term-line"><span class="term-prompt">$</span> <span class="term-cmd">aioson workflow:status .</span></span>
+<span class="term-line">  <span class="term-out-key">concluído</span>  <span class="term-ok">product · sheldon · planner · dev</span></span>
+<span class="term-line">  <span class="term-out-key">próximo</span>    <span class="term-warn">qa</span></span>
+<span class="term-line">  <span class="term-out-key">portões</span>    <span class="term-ok">A ✓  B ✓  C ✓</span>  <span class="term-warn">D pendente</span></span>
+      </div>
+    </div>
+
+    <div class="flow-steps">
+      <div class="flow-step">
+        <span class="flow-num">passo 1</span>
+        <h4>Todo agente se anuncia</h4>
+        <p>Ao começar e ao terminar, ele registra o que fez. Isso vira evento com data, autor e resumo.</p>
+      </div>
+      <div class="flow-step">
+        <span class="flow-num">passo 2</span>
+        <h4>Todo artefato vira arquivo</h4>
+        <p>Escopo, plano e relatório de QA são arquivos do projeto, não mensagens perdidas no chat.</p>
+      </div>
+      <div class="flow-step">
+        <span class="flow-num">passo 3</span>
+        <h4>O fluxo é uma máquina de estado</h4>
+        <p>Existe uma lista de etapas com o que foi feito e o que falta. Ninguém precisa adivinhar de quem é a vez.</p>
+      </div>
+      <div class="flow-step">
+        <span class="flow-num">passo 4</span>
+        <h4>O Git é a testemunha</h4>
+        <p>O que foi prometido é comparado com o que realmente entrou no código, arquivo por arquivo.</p>
+      </div>
+      <div class="flow-step">
+        <span class="flow-num">passo 5</span>
+        <h4>Existe um porteiro de relevância</h4>
+        <p>Pedido novo não é tratado como continuação do anterior. O sistema compara objetivos antes de retomar algo.</p>
+      </div>
+      <div class="flow-step">
+        <span class="flow-num">passo 6</span>
+        <h4>O fim vira aprendizado</h4>
+        <p>Ao fechar, o material é arquivado e destilado em regra ou aprendizado que a próxima feature já encontra pronto.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- TRACKS BY SIZE -->
+  <section class="site-section" id="trilhas">
+    <header class="site-section-header">
+      <span class="eyebrow">Por tamanho de projeto</span>
+      <h2 class="site-section-title">O que ligar em cada <span class="accent-gold">caso</span>.</h2>
+      <p class="site-section-subtitle">Ligar tudo em um projeto pequeno é desperdício. Ligar pouco em um sistema grande é como o retrabalho começa. Use a coluna que descreve o seu caso.</p>
+    </header>
+    <div class="size-grid">
+      <div class="size-card" data-tone="emerald">
+        <span class="size-tag">pequeno</span>
+        <h3>Site, script ou uma tela</h3>
+        <p>O objetivo é entregar rápido sem perder rastro do que foi feito.</p>
+        <ul>
+          <li>Setup com a ficha do projeto</li>
+          <li>Ajuste rápido ou MICRO como caminho padrão</li>
+          <li>Portão de runtime: build e boot antes de dizer pronto</li>
+          <li>Commit com mensagem gerada a partir do que mudou</li>
+          <li>Aprendizados ligados desde o primeiro dia</li>
+        </ul>
+      </div>
+      <div class="size-card" data-tone="cyan">
+        <span class="size-tag">médio</span>
+        <h3>Produto com login e painel</h3>
+        <p>Aparecem várias telas, papéis de usuário e a primeira dívida técnica.</p>
+        <ul>
+          <li>Cadeia SMALL ou MEDIUM completa</li>
+          <li>Briefing refinado antes de fechar escopo</li>
+          <li>Protótipo aprovado antes de cada tela</li>
+          <li>QA de navegador com personas</li>
+          <li>Regras do projeto escritas e verificadas por máquina</li>
+          <li>Revisão de segurança nas superfícies sensíveis</li>
+        </ul>
+      </div>
+      <div class="size-card" data-tone="violet">
+        <span class="size-tag">grande</span>
+        <h3>Vários módulos, time e auditoria</h3>
+        <p>O risco deixa de ser escrever código e passa a ser coordenar e provar.</p>
+        <ul>
+          <li>Classificação MEDIUM com os quatro portões ativos</li>
+          <li>De 2 a 6 trilhas paralelas com trava de colisão</li>
+          <li>Squad com painel e acompanhamento de retorno</li>
+          <li>Genoma de domínio para o time de agentes</li>
+          <li>Benchmark medindo a travessia de ponta a ponta</li>
+          <li>Autopilot com pausa nas decisões reais</li>
+          <li>Histórico completo disponível para auditoria</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="site-cta">
+    <div>
+      <span class="eyebrow">Próximo passo</span>
+      <h2 class="site-cta-heading">Do primeiro comando ao sistema grande, o <span class="accent-emerald">mesmo mecanismo</span>.</h2>
+      <p class="site-cta-text">O que muda com o tamanho é quantas etapas e quantos portões entram na frente. A memória e o registro são sempre os mesmos.</p>
+    </div>
+    <div class="site-cta-actions">
+      <a class="primary-button" href="../sdd/index.html">Como uma feature flui →</a>
+      <a class="secondary-button" href="../living-memory/index.html">A camada de memória →</a>
+    </div>
+  </section>
+
+  <footer class="site-footer">
+    <div class="site-footer-brand">
+      <div class="cmd-brand-title" style="font-size:1.05rem">AIOSON <span class="cmd-brand-version">v1.56.0</span></div>
+      <p>Framework Node.js para desenvolvimento guiado por especificação, com agentes especializados, memória viva e portões de qualidade verificáveis.</p>
+    </div>
+    <div class="footer-col"><div class="footer-col-title">Esta página</div><ul><li><a href="#escala">Escala</a></li><li><a href="#agentes">O time</a></li><li><a href="#memoria">Memória</a></li><li><a href="#checklists">Checklists</a></li><li><a href="#saber">Como ele sabe</a></li></ul></div>
+    <div class="footer-col"><div class="footer-col-title">Tutoriais</div><ul><li><a href="../index.html">Hub</a></li><li><a href="../sdd/index.html">SDD básico</a></li><li><a href="../sdd/automation.html">Automation</a></li><li><a href="../squads/index.html">Squads</a></li><li><a href="../living-memory/index.html">Living Memory</a></li></ul></div>
+    <div class="footer-col"><div class="footer-col-title">Comunidade</div><ul><li><a href="https://github.com/jaimevalasek/aioson" target="_blank" rel="noopener">GitHub</a></li><li><a href="https://www.npmjs.com/package/@jaimevalasek/aioson" target="_blank" rel="noopener">npm</a></li></ul></div>
+    <div class="site-footer-base" style="grid-column:1 / -1">
+      <div>Ecossistema · 35 agentes · 182 comandos · 6 camadas de memória</div>
+      <div>AIOSON · inception mode</div>
+    </div>
+  </footer>
+
+</main>
+
+<script>
+  (function () {
+    const root = document.documentElement;
+    const toggle = document.querySelector('[data-theme-toggle]');
+    if (!toggle) return;
+    try { const s = localStorage.getItem('aioson-theme'); if (s === 'dark' || s === 'light') root.setAttribute('data-theme', s); } catch (e) {}
+    const sync = () => { const t = root.getAttribute('data-theme') || 'dark'; const m = toggle.querySelector('.cmd-theme-moon'); const s = toggle.querySelector('.cmd-theme-sun'); if (m) m.style.display = (t === 'dark') ? 'none' : ''; if (s) s.style.display = (t === 'dark') ? '' : 'none'; };
+    sync();
+    toggle.addEventListener('click', () => { const c = root.getAttribute('data-theme') || 'dark'; const n = c === 'light' ? 'dark' : 'light'; root.setAttribute('data-theme', n); try { localStorage.setItem('aioson-theme', n); } catch (e) {} sync(); });
+  })();
+  (function () { const w = document.getElementById('dock-wrap'); if (!w) return; const u = () => { if (window.scrollY > 8) w.classList.add('is-scrolled'); else w.classList.remove('is-scrolled'); }; u(); window.addEventListener('scroll', u, { passive: true }); })();
+  (function () {
+    const STORAGE_KEY = 'aioson-ecosystem-checklist';
+    const groups = Array.from(document.querySelectorAll('.check-group'));
+    const fill = document.getElementById('progress-fill');
+    const label = document.getElementById('progress-label');
+    const reset = document.getElementById('progress-reset');
+    if (!groups.length) return;
+
+    let state = {};
+    try { state = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}') || {}; } catch (e) { state = {}; }
+
+    const entries = [];
+    groups.forEach((group) => {
+      const name = group.dataset.group || 'grupo';
+      const items = Array.from(group.querySelectorAll('.check-item'));
+      items.forEach((item, index) => { entries.push({ key: name + ':' + index, item: item, group: group }); });
+    });
+
+    const persist = () => { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) {} };
+
+    const render = () => {
+      let done = 0;
+      entries.forEach((entry) => {
+        const checked = state[entry.key] === true;
+        entry.item.setAttribute('aria-pressed', checked ? 'true' : 'false');
+        if (checked) done += 1;
+      });
+      groups.forEach((group) => {
+        const items = Array.from(group.querySelectorAll('.check-item'));
+        const marked = items.filter((item) => item.getAttribute('aria-pressed') === 'true').length;
+        const counter = group.querySelector('[data-count]');
+        if (counter) counter.textContent = marked + '/' + items.length;
+      });
+      const total = entries.length;
+      if (fill) fill.style.width = total ? Math.round((done / total) * 100) + '%' : '0%';
+      if (label) label.textContent = done + ' de ' + total + ' itens marcados';
+    };
+
+    entries.forEach((entry) => {
+      entry.item.addEventListener('click', () => {
+        state[entry.key] = !(state[entry.key] === true);
+        persist();
+        render();
+      });
+    });
+
+    if (reset) reset.addEventListener('click', () => { state = {}; persist(); render(); });
+
+    render();
+  })();
+</script>
+
+</body>
+</html>
