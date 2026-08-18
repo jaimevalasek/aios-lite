@@ -5,6 +5,8 @@ The chosen direction defines spacing, typography, border strategy, depth, and mo
 
 The token specs below are starting math, not a signature. In origination mode pair the direction with one register from `aesthetic-registers.md`; the register decides the typographic posture and texture, and the families named here are examples of a class, not defaults to accept unexamined. A face chosen because it was printed in this file is the same regression to the average the register exists to prevent.
 
+**App ranges never cap a site.** The type ranges inside the app directions (Precision, Warmth, Sophistication, Premium Dark) size the *product UI*. The moment the surface argues — a marketing page, an institutional site, a hero, a section opener — display scale comes from the register's premium bar (56px+ where the argument lives, fluid via `clamp()`), and the typeface-delivery rule applies (a named face ships with a webfont link or embedded `@font-face`; see the build contract and brain node vq-020). Pairing "Warmth & Approachability" with a site and keeping its 24px ceiling is how a brand surface comes out looking like a settings page.
+
 ---
 
 ## Precision & Density
@@ -23,8 +25,10 @@ Components :
   Button   → 32px height, 8px/12px padding, 4px radius, 13px 500-weight
   Card     → 0.5px faint border, 12px padding, 6px radius, NO shadows
   Table    → 8px/12px cell padding, tabular-nums, 13px font, 1px bottom border
-Rationale  : borders-only maximizes density; compact sizing serves power users;
-             system fonts feel native and load instantly.
+Rationale  : borders-only maximizes density; compact sizing serves power users.
+             system-ui is legitimate for dense tool chrome ONLY — wherever this
+             product also argues aesthetically (marketing shell, brand moments),
+             the typeface-delivery rule still applies (vq-020).
 ```
 
 ---
@@ -116,6 +120,36 @@ Rationale  : the media carries the design; UI recedes and light replaces borders
 
 ---
 
+## Brand & Presence
+
+*For: institutional and brand sites — practices, studios, agencies, restaurants, portfolios — where the aesthetic IS the credibility argument. This is a site-class direction: it pairs with Editorial, Material, Quiet, or Constructed and executes at that register's premium bar, never at app scale.*
+
+```
+Foundation : identity-first — palette, faces, and material come from the extracted
+             identity when one exists; the register supplies them otherwise
+Spacing    : section rhythm 96/128px desktop, 48/64px mobile; 8px base inside components
+Colors     : tinted neutrals mixed from the identity/register (color-mix/OKLCH),
+             never flat gray; ONE accent with a real job
+Radius     : per register — sharp frames read editorial, soft reads warm; pick once
+Typography : one DELIVERED display face with personality (high-contrast serif,
+             compressed or geometric grotesque — webfont link or embedded WOFF2)
+             at clamp(2.5rem → 6rem+) where the surface argues; one quiet UI face;
+             text-wrap: balance on headings, tightened display tracking
+Components :
+  Hero     → the subject at full presence (photography, generated-labeled imagery,
+             or type AS the image at true display scale) + one clear action
+  Sections → composed, not stacked: asymmetric grids, overlap, bleed, scale
+             contrast; every section owns one idea and one dominant element
+  Material → exactly one atmosphere from visual-effects.md (grain, wash, scrims,
+             glass) carried consistently — plus reveals that make scrolling feel
+             deliberate, honoring prefers-reduced-motion
+Rationale  : a brand site is judged in the first viewport before a word is read;
+             display typography, evidence imagery, and one committed material are
+             the argument. App-scale type on a brand surface reads as a template.
+```
+
+---
+
 ## Conversion Landing
 
 *For: landing pages, product launches, campaign pages — any surface whose job is one decision.*
@@ -139,10 +173,12 @@ Rationale  : a landing converts through evidence and one unmistakable action, no
 
 ---
 
-## Other directions (adapt token specs above)
+## Other directions (never build from one line)
 
-- **Data & Analysis** — cool blue, high-density tables, monospace for numbers, minimal chrome
-- **Editorial** — strong typographic hierarchy, generous white space, restrained color
-- **Minimal & Calm** — near-monochrome, whitespace as design element, hairline borders only
-- **Boldness & Clarity** — stronger accent, harder contrast, one dominant focal move
-- **Utility & Function** — minimal decoration, maximum legibility, near-invisible chrome
+These are flavors, not specs. Each resolves to full token math by pairing a direction above with its register executed at the premium bar — a build that starts from one of these lines alone has no spacing scale, no delivered face, and no material, and it will read as a template:
+
+- **Data & Analysis** — Precision & Density + Technical register; monospace numerals carrying real weight
+- **Editorial** — Brand & Presence + Editorial register at its premium bar (delivered display serif at magazine scale, plates, drawn rules) — never just "hierarchy and white space"
+- **Minimal & Calm** — Brand & Presence + Quiet register; the premium bar demands the one thing worth the silence
+- **Boldness & Clarity** — Brand & Presence or Conversion Landing + Constructed register; the uncomfortable choice committed
+- **Utility & Function** — Precision & Density + Technical register with chrome dialed to near-zero

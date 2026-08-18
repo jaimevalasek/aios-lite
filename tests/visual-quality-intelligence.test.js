@@ -333,6 +333,18 @@ test('the cold start has a register vocabulary and a funnel that uses it', async
   assert.match(await read(TEMPLATE_ROOT, skill), /aesthetic-registers\.md/);
   // And the arena has to be able to compare registers, not only models.
   assert.match(await read(TEMPLATE_ROOT, exploration), /Arena over registers/);
+
+  // Directions must carry a site-class option and must not let app-scale type
+  // ranges cap a brand surface — the gap that shipped 24px "heroes".
+  const directions = '.aioson/skills/design/interface-design/references/design-directions.md';
+  const [dirTemplate, dirWorkspace] = await Promise.all([
+    read(TEMPLATE_ROOT, directions),
+    read(WORKSPACE_ROOT, directions)
+  ]);
+  assert.equal(dirWorkspace, dirTemplate, `template/workspace drift: ${directions}`);
+  assert.match(dirTemplate, /## Brand & Presence/);
+  assert.match(dirTemplate, /App ranges never cap a site/);
+  assert.match(dirTemplate, /never build from one line/i);
 });
 
 test('rule precedence over the brain is stated once, in the brain itself', async () => {
