@@ -942,6 +942,21 @@ const ADAPTERS = {
           issues.push('prototype-manifest.md has no filled `## Visual direction` — register, thesis, anti-goals, and the composition signature must be written before layout; an identity record supplies tokens, never the composition decision');
         }
         metrics.manifest_visual_direction = body.length > 0;
+
+        // A `## Quality evidence` section that is empty or still a placeholder
+        // means the measurement ran nowhere — the exact misfire that let a
+        // flat prototype ship with its evidence section reading "(filled after
+        // measurement)". Warning tier: the manifest may legitimately not exist
+        // yet mid-build; an EMPTY evidence section at verify time is the smell.
+        const evidence = manifest.match(/(?:^|\n)##\s+Quality evidence[^\n]*((?:\n(?!##\s)[^\n]*)*)/i);
+        if (evidence) {
+          const evidenceBody = evidence[1].replace(/[_*()\s-]+/g, ' ').trim();
+          const placeholder = evidenceBody.length < 60 || /preenchid|filled after|to be filled|pendente|\btbd\b|\btodo\b/i.test(evidenceBody.slice(0, 80));
+          if (placeholder) {
+            warnings.push('prototype-manifest.md `## Quality evidence` is empty or a placeholder — the measured numbers (kind=visual metrics, fold outcome, walkthrough verdict) were never persisted; run the measurement and record it, or the done-gate is self-graded prose');
+          }
+          metrics.manifest_quality_evidence = !placeholder;
+        }
       }
     }
 
@@ -1112,7 +1127,10 @@ async function runVerifyArtifact({ args, options = {}, logger }) {
   if (report.metrics) {
     const m = report.metrics;
     const pct = m.token_adherence_pct === null || m.token_adherence_pct === undefined ? 'n/a' : `${m.token_adherence_pct}%`;
-    logger.log(`  tokens ${pct} | spacing off-grid ${m.spacing_off_grid ?? 'n/a'} | depth ${(m.depth_strategies || []).join('+') || 'none'} | fonts ${(m.font_families || []).length} | reduced-motion ${m.reduced_motion_handled ? 'yes' : 'no'}`);
+    const craft = m.craft && m.craft.measured
+      ? ` | type max ${m.max_font_size_px || 0}px | font ${m.font_delivery && m.font_delivery.delivered ? 'delivered' : 'not delivered'} | craft ${m.craft.active_levers}/5`
+      : '';
+    logger.log(`  tokens ${pct} | spacing off-grid ${m.spacing_off_grid ?? 'n/a'} | depth ${(m.depth_strategies || []).join('+') || 'none'} | fonts ${(m.font_families || []).length} | reduced-motion ${m.reduced_motion_handled ? 'yes' : 'no'}${craft}`);
     if (Array.isArray(m.states_missing) && m.states_missing.length) logger.log(`  states missing: ${m.states_missing.join(', ')}`);
   }
   for (const issue of issues) logger.log(`  ✗ ${issue}`);

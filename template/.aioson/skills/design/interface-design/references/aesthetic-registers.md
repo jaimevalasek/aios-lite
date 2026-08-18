@@ -6,6 +6,8 @@ Load in **origination mode only** — and composition is an origination act when
 
 A register is not a theme and never overrides accessibility, contrast, state coverage, or a project rule. It is the input that keeps the first decision specific instead of default.
 
+**A register is a posture, not a budget cut.** Every register at premium execution still carries the craft floor the telemetry measures: one real, delivered typeface with true display scale where the surface argues; one earned material or atmosphere; motion that choreographs rather than decorates; and evidence imagery when the surface argues by inspection. "Restrained" describes which levers a register pulls and how far — never whether any lever is pulled. The plainest system-stack, hairline-and-whitespace execution of any register reads as a default document, and each register below names its cheap failure so it cannot be mistaken for the register itself.
+
 ---
 
 ## Technical
@@ -19,6 +21,7 @@ A register is not a theme and never overrides accessibility, contrast, state cov
 - **Texture** — data itself: tables, sparklines, counts, timestamps, units.
 - **Motion** — state feedback only, under 150ms.
 - **Failure mode** — density without hierarchy. Everything the same weight is unreadable, not technical.
+- **Premium bar** — a delivered grotesque with real optical presence, monospace numerals that align to the digit, one oversized hero metric per view, and state color that glows only where live. Cheap technical is a gray table in Arial; premium technical looks machined.
 
 ## Quiet
 
@@ -31,6 +34,7 @@ A register is not a theme and never overrides accessibility, contrast, state cov
 - **Texture** — atmosphere, not ornament: one photograph, one gradient field, one horizon.
 - **Motion** — slow, long, few. Reveal rather than animate.
 - **Failure mode** — emptiness with nothing to look at. Quiet needs one thing worth the silence.
+- **Premium bar** — display type at 96px+ from a face worth staring at, one breathtaking image or gradient field carrying the whole viewport, and slow reveals that make scrolling feel expensive. Cheap quiet is a centered sentence on white; premium quiet is a gallery wall.
 
 ## Editorial
 
@@ -43,6 +47,7 @@ A register is not a theme and never overrides accessibility, contrast, state cov
 - **Texture** — pull quotes, marginalia, captions, figure numbers.
 - **Motion** — near zero. Scroll is the interaction.
 - **Failure mode** — a blog template. Editorial means composed, not centered.
+- **Premium bar** — a delivered display serif (high-contrast, real italics) at magazine scale, photography or figures treated as plates with credits, drop caps or hanging numerals as composition anchors, and rules that draw themselves on reveal. Cheap editorial is Georgia hairlines on beige — a word processor, not a publication.
 
 ## Material
 
@@ -55,6 +60,7 @@ A register is not a theme and never overrides accessibility, contrast, state cov
 - **Texture** — grain, fibre, print artifacts at low opacity. Static, never animated.
 - **Motion** — physical easing, short travel.
 - **Failure mode** — skeuomorphism. The texture is a surface, not a costume.
+- **Premium bar** — grain you can almost feel under a delivered display face with personality, product photography lit like still life, pigment accents that look mixed rather than picked, and physical easing on every touch. Cheap material is a beige page that says "artisanal"; premium material makes the screen feel printed.
 
 ## Constructed
 
@@ -67,6 +73,7 @@ A register is not a theme and never overrides accessibility, contrast, state cov
 - **Texture** — halftone, dither, pattern fills, rules.
 - **Motion** — sharp, mechanical, short.
 - **Failure mode** — novelty without usability. The controls stay obvious even when the composition is not.
+- **Premium bar** — an unusual delivered display face doing structural work at very large sizes, overlap and off-axis moves executed with grid-snapped precision, and one uncomfortable color used with total commitment. Cheap constructed is quirky spacing; premium constructed looks like a poster you would frame.
 
 ## Cinematic
 
@@ -79,6 +86,7 @@ A register is not a theme and never overrides accessibility, contrast, state cov
 - **Texture** — the footage or artwork itself; subtle grain over flat areas binds UI to image.
 - **Motion** — choreographed: staged entrances, scroll-driven reveals, restrained parallax. Motion is the narration — and still degrades to meaningful static frames under reduced motion.
 - **Failure mode** — a trailer with buttons. Legibility scrims, visible focus, and controls that stay reachable are what separate cinema from noise.
+- **Premium bar** — full-bleed media worth pausing on, display type composed over it at true scale, panels floating with ambient light bled from the image, and scroll-driven scenes that stage the argument. Cheap cinematic is a dark page with a stock photo; premium cinematic feels directed.
 
 ---
 

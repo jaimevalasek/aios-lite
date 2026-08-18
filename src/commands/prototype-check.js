@@ -118,7 +118,10 @@ async function runPrototypeCheck({ args, options = {}, logger }) {
     if (visual && visual.applicable) {
       const m = visual.metrics;
       const pct = m.token_adherence_pct === null ? 'n/a' : `${m.token_adherence_pct}%`;
-      logger.log(`Visual telemetry (advisory): tokens ${pct} | spacing off-grid ${m.spacing_off_grid} | depth ${(m.depth_strategies || []).join('+') || 'none'} | reduced-motion ${m.reduced_motion_handled ? 'yes' : 'no'}`);
+      const craft = m.craft && m.craft.measured
+        ? ` | type max ${m.max_font_size_px || 0}px | font ${m.font_delivery && m.font_delivery.delivered ? 'delivered' : 'not delivered'} | craft ${m.craft.active_levers}/5`
+        : '';
+      logger.log(`Visual telemetry (advisory): tokens ${pct} | spacing off-grid ${m.spacing_off_grid} | depth ${(m.depth_strategies || []).join('+') || 'none'} | reduced-motion ${m.reduced_motion_handled ? 'yes' : 'no'}${craft}`);
       for (const finding of [...visual.issues, ...visual.warnings]) logger.log(`  · ${finding}`);
     }
     logger.log('');

@@ -3,7 +3,7 @@
   "agent": "dev,deyvin,briefing-refiner,benchmark,product,sheldon",
   "domain": "visual-quality",
   "desc": "Quality-scored visual patterns and anti-patterns for producing specific, usable interfaces instead of generic AI-looking layouts, plus the specification-lens nodes that keep the product authority from going generic upstream.",
-  "updated": "2026-08-15",
+  "updated": "2026-08-18",
   "nodes": [
     {
       "id": "vq-000",
@@ -284,6 +284,34 @@
       "not": "Excusing each toast, placeholder, and seed title as an occasional em dash with intent while the corpus count reads saturation",
       "warn": "Quotations, code, commands, and established brand punctuation stay verbatim. vq-002 owns the sentence-level rhythm test; this node owns the corpus budget.",
       "see": ["vq-002", "vq-016"]
+    },
+    {
+      "id": "vq-020",
+      "title": "A named typeface without delivery renders as the OS default",
+      "tags": ["visual-quality", "anti-slop", "design", "ui", "typography", "prototype"],
+      "q": 5,
+      "v": "AVOID",
+      "s": "Writing `font-family: Inter` (or any real face) with no `@font-face` and no webfont link ships nothing: most machines silently render the OS fallback, the chosen typography never reaches the owner, and the surface reads as a default document. Deliver the face through the build contract's sanctioned channel (a dedicated font-host link or an embedded WOFF2 `@font-face`) with a deliberate fallback stack, and prove it with the telemetry's `font_delivery` metric.",
+      "p": "named family = delivery mechanism + fallback stack that preserves hierarchy; `font_delivery.delivered: true` on premium-intent surfaces",
+      "src": "AIOSON supervised briefing session: a refined prototype named Inter and a system serif with zero @font-face and zero webfont links; every hygiene gate passed and the owner saw OS fallbacks",
+      "date": "2026-08-18",
+      "not": "Calling typography decided because a family is named in the tokens while nothing delivers it, or banning webfonts wholesale and shipping Georgia as the display face of a premium surface",
+      "warn": "Delivery is progressive enhancement: the fallback must keep the hierarchy readable offline and under a CSP that blocks the font host. OS-only stacks are legitimate only when a project rule or the identity record explicitly demands them.",
+      "see": ["vq-021", "vq-005"]
+    },
+    {
+      "id": "vq-021",
+      "title": "Hygiene passing is not craft: clear the measured ambition floor",
+      "tags": ["visual-quality", "anti-slop", "design", "layout", "ui", "prototype"],
+      "q": 5,
+      "v": "BEST_PRACTICE",
+      "s": "Perfect token adherence, grid rhythm, and contrast can coexist with a surface that reads cheap: hygiene metrics measure discipline, not ambition. The telemetry's craft axis measures five levers (delivered typeface, display-scale type, material depth, motion choreography, evidence imagery). Treat every craft warning as a rewrite directive: activate the levers the chosen register's premium bar calls for, or justify each inactive lever in the manifest with its measured number.",
+      "p": "read `metrics.craft.active_levers`; a full surface at <= 2/5 is a rewrite, not a note; each remaining inactive lever gets a written justification",
+      "src": "AIOSON supervised briefing session: two institutional-site prototypes passed every hygiene gate at 46% and 96% token adherence while shipping undelivered typography, near-zero material depth, and (in one) zero imagery; the owner rejected both on sight",
+      "date": "2026-08-18",
+      "not": "Reading `tokens 96% (no issues)` as proof of a premium surface, or answering the craft floor by piling every effect onto one screen",
+      "warn": "The floor is not a license for style soup: levers are activated through the register's premium bar, one atmosphere per surface (vq-005), and every effect still pays the visual-effects cost contract.",
+      "see": ["vq-020", "vq-008", "vq-002"]
     },
     {
       "id": "sq-001",

@@ -156,6 +156,46 @@ const PROTOTYPE_ANCHOR = /data-aioson-id\s*=/i;
 const PRIMARY_MARKER = /data-aioson-primary\b/i;
 const TOUR_MARKER = /data-aioson-tour\b/i;
 
+// ── craft floor (the measured half of "premium") ─────────────────────────────
+// Hygiene metrics prove discipline; none of them can see ambition. A surface
+// with perfect tokens, perfect rhythm and OS-default typography reads as a
+// default document — the measured shape of "cheap". The craft axis counts the
+// levers that separate a designed surface from a hygienic one: a delivered
+// typeface, display-scale type, material depth, motion choreography, and
+// evidence imagery. Each lever is a fact provable from the text; only the
+// aggregate is judgment, and it stays a warning.
+//
+// Small corpora (component demos, unit fixtures, fragments) are not surfaces —
+// the craft axis only measures documents with a real amount of authored CSS.
+const CRAFT_MIN_DECLARATIONS = 150;
+const CRAFT_LEVER_FLOOR = 2; // warn at <= 2 of 5 active
+const DISPLAY_TYPE_FLOOR_PX = 56; // 3.5rem — where display typography starts
+
+// Families every OS ships (or ships a metric twin of): naming one of these
+// first is delivery-free by definition. Naming anything else WITHOUT an
+// @font-face or webfont link means most machines silently render the fallback.
+const OS_DEFAULT_FONT_STACKS = new Set([
+  'system-ui', '-apple-system', 'blinkmacsystemfont', 'ui-serif', 'ui-sans-serif',
+  'ui-monospace', 'ui-rounded', 'segoe ui', 'segoe ui variable', 'roboto', 'arial',
+  'helvetica', 'helvetica neue', 'georgia', 'times', 'times new roman', 'garamond',
+  'palatino', 'palatino linotype', 'book antiqua', 'iowan old style', 'charter',
+  'cambria', 'calibri', 'candara', 'constantia', 'corbel', 'optima', 'avenir',
+  'avenir next', 'seravek', 'verdana', 'tahoma', 'trebuchet ms', 'gill sans',
+  'courier', 'courier new', 'consolas', 'monaco', 'menlo', 'sfmono-regular',
+  'sf mono', 'sf pro', 'sf pro text', 'sf pro display', 'lucida grande',
+  'lucida sans', 'noto sans', 'noto serif', 'droid sans', 'cantarell', 'ubuntu',
+  'liberation sans', 'liberation serif', 'dejavu sans', 'dejavu serif',
+  'apple color emoji', 'segoe ui emoji', 'segoe ui symbol', 'noto color emoji',
+  'serif', 'sans-serif', 'monospace', 'cursive', 'fantasy', 'math', 'emoji'
+]);
+const CSS_WIDE_KEYWORDS = new Set(['inherit', 'initial', 'unset', 'revert', 'revert-layer']);
+
+// The build contract's one sanctioned external resource: font delivery hosts.
+const WEBFONT_HOST = /fonts\.googleapis\.com|fonts\.gstatic\.com|fonts\.bunny\.net|api\.fontshare\.com|cdn\.fontshare\.com|use\.typekit\.net|fonts\.cdnfonts\.com/i;
+
+// Scroll-driven reveal machinery — CSS-native or the vanilla JS idiom.
+const SCROLL_REVEAL = /IntersectionObserver|view-timeline|scroll-timeline|animation-timeline|@starting-style/i;
+
 /** Strip CSS comments so commented-out code never counts as a measurement. */
 function stripComments(css) {
   return String(css || '').replace(/\/\*[\s\S]*?\*\//g, '');
@@ -213,6 +253,70 @@ function ruleBlocks(css) {
     out.push({ selector: m[1].trim(), body: m[2] });
   }
   return out;
+}
+
+/** Split a CSS value on top-level commas — commas inside function calls stay put. */
+function topLevelSplit(value) {
+  const out = [];
+  let depth = 0;
+  let current = '';
+  for (const ch of String(value || '')) {
+    if (ch === '(') depth += 1;
+    else if (ch === ')') depth -= 1;
+    if (ch === ',' && depth === 0) {
+      out.push(current);
+      current = '';
+      continue;
+    }
+    current += ch;
+  }
+  if (current.trim()) out.push(current);
+  return out;
+}
+
+/** Map of `--custom-property` → raw value across the corpus. Last write wins. */
+function customProperties(css) {
+  const out = {};
+  const re = /(--[\w-]+)\s*:\s*([^;{}]+)/g;
+  let m;
+  while ((m = re.exec(String(css || '')))) out[m[1]] = m[2].trim();
+  return out;
+}
+
+/**
+ * Resolve `var(--x, fallback)` chains against the corpus's own custom
+ * properties, depth-limited. This is what lets typography metrics see through
+ * a token system — `font-family: var(--font-display)` was invisible to the
+ * measurement before, which is how a surface reported "fonts 0" while
+ * rendering Georgia.
+ */
+function resolveCustomProps(value, props, depth = 0) {
+  if (depth > 4 || !/var\(/.test(String(value || ''))) return String(value || '');
+  const re = /var\(\s*(--[\w-]+)\s*(?:,\s*([^()]*(?:\([^()]*\)[^()]*)*))?\)/g;
+  const replaced = String(value).replace(re, (all, name, fallback) => {
+    if (props[name] != null) return resolveCustomProps(props[name], props, depth + 1);
+    if (fallback != null) return resolveCustomProps(fallback, props, depth + 1);
+    return all;
+  });
+  return replaced;
+}
+
+/**
+ * A font-size value in px, or null. rem/em resolve against 16; `clamp()` reads
+ * its maximum arm — fluid type is judged by where it is allowed to grow.
+ */
+function fontSizePx(value) {
+  let v = String(value || '').trim();
+  const clamp = v.match(/clamp\(([\s\S]*)\)/i);
+  if (clamp) {
+    const arms = topLevelSplit(clamp[1]);
+    v = (arms[arms.length - 1] || v).trim();
+  }
+  let m;
+  if ((m = v.match(/(-?\d*\.?\d+)px\b/))) return Math.abs(Number(m[1]));
+  if ((m = v.match(/(-?\d*\.?\d+)rem\b/))) return Math.abs(Number(m[1])) * 16;
+  if ((m = v.match(/(-?\d*\.?\d+)em\b/))) return Math.abs(Number(m[1])) * 16;
+  return null;
 }
 
 /** px values in a declaration value, as absolute numbers. */
@@ -398,12 +502,41 @@ function analyzeVisualSources({ html = '', css = '' } = {}) {
   const activeDepth = Object.entries(depth).filter(([, n]) => n >= DEPTH_FLOOR).map(([k]) => k);
 
   // ── typography ───────────────────────────────────────────────────────────
+  // var()-resolved: `font-family: var(--font-display)` is a token, not an
+  // invisible font. The first family of each stack is what actually renders.
+  const props = customProperties(styleText);
   const families = new Set();
   for (const { prop, value } of decls) {
     if (prop !== 'font-family') continue;
-    const first = value.split(',')[0].trim().replace(/^["']|["']$/g, '').toLowerCase();
-    if (first && !first.startsWith('var(')) families.add(first);
+    const resolved = resolveCustomProps(value, props);
+    const first = topLevelSplit(resolved)[0];
+    const name = first ? first.trim().replace(/^["']|["']$/g, '').toLowerCase() : '';
+    if (name && !name.startsWith('var(') && !CSS_WIDE_KEYWORDS.has(name)) families.add(name);
   }
+
+  // Font delivery: does anything make a non-OS family actually render?
+  const fontFaceBlocks = (styleText.match(/@font-face\b/g) || []).length;
+  const webfontLinked =
+    WEBFONT_HOST.test(markup.match(/<link\b[^>]*>/gi)?.join('\n') || '') ||
+    WEBFONT_HOST.test(styleText.match(/@import\b[^;]+/gi)?.join('\n') || '');
+  const fontDelivered = fontFaceBlocks > 0 || webfontLinked;
+  const undeliveredFamilies = fontDelivered
+    ? []
+    : [...families].filter((f) => !OS_DEFAULT_FONT_STACKS.has(f));
+
+  // Type scale: the largest resolved font-size is where display typography
+  // lives (or does not). clamp() counts at its max arm.
+  let maxFontPx = 0;
+  const fontSizes = new Set();
+  for (const { prop, value } of decls) {
+    if (prop !== 'font-size') continue;
+    const px = fontSizePx(resolveCustomProps(value, props));
+    if (px === null) continue;
+    fontSizes.add(px);
+    if (px > maxFontPx) maxFontPx = px;
+  }
+  const fluidType = /font-size\s*:\s*[^;{}]*clamp\(/i.test(styleText) ||
+    [...Object.values(props)].some((v) => /clamp\(/.test(v) && /rem|px/.test(v));
 
   // ── motion ───────────────────────────────────────────────────────────────
   const keyframes = (styleText.match(/@keyframes\b/g) || []).length;
@@ -456,6 +589,43 @@ function analyzeVisualSources({ html = '', css = '' } = {}) {
       && /filter\s*:\s*[^;]*blur\s*\(/i.test(body);
   }).map((block) => block.selector);
 
+  // ── craft levers (measured ambition) ─────────────────────────────────────
+  const gradientCount = (styleText.match(/(?:linear|radial|conic)-gradient\(/gi) || []).length;
+  let layeredShadows = 0;
+  for (const { prop, value } of decls) {
+    if (prop !== 'box-shadow' && prop !== 'text-shadow') continue;
+    const resolved = resolveCustomProps(value, props);
+    if (/^\s*none\b/i.test(resolved)) continue;
+    if (topLevelSplit(resolved).length >= 2) layeredShadows += 1;
+  }
+  const grainNoise = /feTurbulence/i.test(markup);
+  const blendModes = decls.filter((d) => d.prop === 'mix-blend-mode' || d.prop === 'background-blend-mode').length;
+  const maskLayers = decls.filter((d) => d.prop === 'mask-image' || d.prop === '-webkit-mask-image').length;
+  const modernColor = (styleText.match(/color-mix\(|oklch\(|oklab\(/gi) || []).length;
+  const backgroundImages = decls.filter((d) => (d.prop === 'background' || d.prop === 'background-image') && /url\(/i.test(d.value)).length;
+  const transitionCount = decls.filter((d) => d.prop === 'transition' || d.prop === 'transition-property').length;
+  const scrollReveal = SCROLL_REVEAL.test(markup);
+
+  const materialTechniques = [
+    gradientCount >= 2 && 'gradients',
+    layeredShadows >= 2 && 'layered shadows',
+    depth.blur >= 1 && 'blur',
+    grainNoise && 'grain',
+    blendModes >= 1 && 'blend modes',
+    maskLayers >= 1 && 'masks',
+    modernColor >= 3 && 'modern color'
+  ].filter(Boolean);
+
+  const craftMeasured = decls.length >= CRAFT_MIN_DECLARATIONS;
+  const levers = {
+    typeface: fontDelivered,
+    display_scale: maxFontPx >= DISPLAY_TYPE_FLOOR_PX,
+    material: materialTechniques.length >= 2,
+    motion: (keyframes >= 3 && hasReducedMotion) || scrollReveal || transitionCount >= 12,
+    evidence: mediaElements >= 1 || backgroundImages >= 1
+  };
+  const activeLevers = Object.values(levers).filter(Boolean).length;
+
   const metrics = {
     declarations: decls.length,
     token_adherence_pct: adherence,
@@ -466,6 +636,15 @@ function analyzeVisualSources({ html = '', css = '' } = {}) {
     depth_strategies: activeDepth,
     depth_counts: depth,
     font_families: [...families],
+    font_delivery: {
+      font_face_blocks: fontFaceBlocks,
+      webfont_linked: webfontLinked,
+      delivered: fontDelivered,
+      undelivered_families: undeliveredFamilies
+    },
+    max_font_size_px: maxFontPx || null,
+    font_size_count: fontSizes.size,
+    fluid_type: fluidType,
     keyframes,
     animated_declarations: animated,
     reduced_motion_handled: hasReducedMotion,
@@ -488,7 +667,22 @@ function analyzeVisualSources({ html = '', css = '' } = {}) {
     kanban_surface: kanbanSurface,
     dnd_markers: hasDndMarkers,
     management_surface: managementSurface,
-    widget_markers: hasWidgetMarkers
+    widget_markers: hasWidgetMarkers,
+    craft: {
+      measured: craftMeasured,
+      active_levers: activeLevers,
+      levers,
+      material_techniques: materialTechniques,
+      gradient_count: gradientCount,
+      layered_shadow_declarations: layeredShadows,
+      grain_noise: grainNoise,
+      blend_modes: blendModes,
+      mask_layers: maskLayers,
+      modern_color_functions: modernColor,
+      background_images: backgroundImages,
+      transition_declarations: transitionCount,
+      scroll_reveal: scrollReveal
+    }
   };
 
   // ── findings ─────────────────────────────────────────────────────────────
@@ -557,12 +751,40 @@ function analyzeVisualSources({ html = '', css = '' } = {}) {
     warnings.push('prototype has no first-open explainer (`data-aioson-tour`) — a briefing prototype must explain itself to the owner: 3–5 lay steps from the briefing promises, reopenable via a persistent `?` control');
   }
 
+  // ── craft warnings (full surfaces only) ──────────────────────────────────
+  // Typography first: it is the single most visible "cheap default" tell, and
+  // both failure shapes are provable from the text. A family named without any
+  // delivery mechanism silently renders the OS fallback on most machines — the
+  // chosen face never reaches the user.
+  if (craftMeasured && !fontDelivered) {
+    if (undeliveredFamilies.length > 0) {
+      const sample = undeliveredFamilies.slice(0, 4).join(', ');
+      warnings.push(`font families named but never delivered (${sample}) — no @font-face and no webfont link in the corpus, so most machines silently render the OS fallback instead of the chosen face; link the typeface (the build contract's font exception) or embed a WOFF2 @font-face, and keep a deliberate fallback stack`);
+    } else if (families.size > 0) {
+      const sample = [...families].slice(0, 4).join(', ');
+      warnings.push(`typography never leaves the OS default stacks (${sample}) — the most visible "cheap default" tell there is; a premium surface delivers one real typeface (webfont link or embedded @font-face) with a credible fallback that preserves hierarchy`);
+    }
+  }
+  if (craftMeasured && activeLevers <= CRAFT_LEVER_FLOOR) {
+    const missing = [];
+    if (!levers.typeface) missing.push(`a delivered typeface (${fontFaceBlocks} @font-face, webfont link ${webfontLinked ? 'present' : 'absent'})`);
+    if (!levers.display_scale) missing.push(`display-scale type (largest font-size ${maxFontPx || 0}px, floor ${DISPLAY_TYPE_FLOOR_PX}px)`);
+    if (!levers.material) missing.push(`material depth (${gradientCount} gradients, ${layeredShadows} layered shadows, ${depth.blur} blur, grain ${grainNoise ? 'yes' : 'no'})`);
+    if (!levers.motion) missing.push(`motion choreography (${keyframes} keyframes, ${transitionCount} transitions, no scroll reveal)`);
+    if (!levers.evidence) missing.push(`evidence imagery (${mediaElements} media elements, ${backgroundImages} CSS image layers)`);
+    warnings.push(`craft floor: ${activeLevers}/5 premium levers active — missing: ${missing.join('; ')}. Hygiene alone reads as a default document, not a designed product; each lever is optional, the floor is not (visual-effects.md owns the vocabulary, the register's premium bar owns the shape)`);
+  }
+
   return { applicable: true, metrics, issues, warnings };
 }
 
 module.exports = {
   analyzeVisualSources,
   // exported for reuse / tests
+  topLevelSplit,
+  customProperties,
+  resolveCustomProps,
+  fontSizePx,
   extractStyleBlocks,
   extractScriptText,
   bareStructuredInputs,

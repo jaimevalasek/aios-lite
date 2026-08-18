@@ -549,3 +549,135 @@ test('a strict binding failure still runs without telemetry when no prototype re
   assert.equal(r.status, 'not_applicable');
   assert.equal(r.visual, undefined);
 });
+
+// ─── craft floor (measured ambition) ─────────────────────────────────────────
+
+const { fontSizePx, resolveCustomProps, customProperties } = require('../src/lib/visual-telemetry');
+
+// A full surface (>= 150 declarations) with PERFECT hygiene and ZERO ambition:
+// tokenized values, on-grid rhythm, every state marked — and OS-default
+// typography, small type, no material, no motion, no imagery. This is the
+// measured shape of the "default document" that used to pass with (no issues).
+function flatHygienicSurface({ fontTokens = '', headStyles = '', extraHead = '', body = '' } = {}) {
+  const filler = Array.from({ length: 40 }, (_, i) =>
+    `.f${i} { padding: var(--s2); margin: var(--s3); color: var(--fg); background: var(--bg); }`
+  ).join('\n');
+  return `<!doctype html><html><head>${extraHead}<style>
+  :root { --s2: 8px; --s3: 12px; --fg: #1a1a1a; --bg: #ffffff; --border: rgba(0,0,0,.1); ${fontTokens} }
+  body { font-family: Georgia, serif; font-size: 16px; color: var(--fg); background: var(--bg); }
+  h1 { font-size: 32px; }
+  .btn { padding: var(--s2); transition: opacity .2s; }
+  .btn:disabled { opacity: .5; } .btn:focus-visible { outline: 2px solid var(--fg); }
+  .carregando { opacity: .6; } .vazio { color: var(--fg); } .erro { color: #b00020; }
+  ${headStyles}
+  ${filler}
+  </style></head><body>
+  <main><h1>Consultório</h1><button class="btn">Agendar conversa</button>${body}</main>
+  </body></html>`;
+}
+
+test('a full hygienic surface with zero ambition fires the craft floor and the typography ceiling', () => {
+  const result = analyzeVisualSources({ html: flatHygienicSurface() });
+  assert.equal(result.applicable, true);
+  assert.deepEqual(result.issues, []);
+
+  const m = result.metrics;
+  assert.ok(m.declarations >= 150, `fixture must be a full surface (got ${m.declarations})`);
+  assert.equal(m.craft.measured, true);
+  assert.equal(m.font_delivery.delivered, false);
+  assert.deepEqual(m.font_families, ['georgia']);
+  assert.equal(m.max_font_size_px, 32);
+  assert.equal(m.craft.active_levers, 0);
+
+  const text = result.warnings.join('\n');
+  assert.match(text, /typography never leaves the OS default stacks \(georgia\)/);
+  assert.match(text, /craft floor: 0\/5 premium levers active/);
+  assert.match(text, /display-scale type \(largest font-size 32px, floor 56px\)/);
+  assert.match(text, /evidence imagery \(0 media elements, 0 CSS image layers\)/);
+});
+
+test('a family named without any delivery mechanism is its own finding, resolved through var()', () => {
+  const result = analyzeVisualSources({
+    html: flatHygienicSurface({
+      fontTokens: '--font-display: "Marlow Display", Georgia, serif;',
+      headStyles: 'h1 { font-family: var(--font-display); }'
+    })
+  });
+  // var() resolution is what makes the metric see the token system at all —
+  // this exact shape used to report font_families: [].
+  assert.ok(result.metrics.font_families.includes('marlow display'));
+  assert.deepEqual(result.metrics.font_delivery.undelivered_families, ['marlow display']);
+  const text = result.warnings.join('\n');
+  assert.match(text, /font families named but never delivered \(marlow display\)/);
+  assert.doesNotMatch(text, /never leaves the OS default stacks/);
+});
+
+test('an ambitious surface activates the levers and stays silent — the gate must not cry wolf', () => {
+  const html = flatHygienicSurface({
+    extraHead: '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fictional+Display:wght@400;700&display=swap">',
+    fontTokens: '--font-display: "Fictional Display", Georgia, serif;',
+    headStyles: `
+      h1 { font-family: var(--font-display); font-size: clamp(2.5rem, 8vw, 6rem); }
+      .hero { background: radial-gradient(circle at 20% 0%, rgba(20,40,80,.4), transparent), linear-gradient(180deg, #0b0d12, #141821); }
+      .hero::after { content: ''; background-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg'><filter id='n'><feTurbulence baseFrequency='0.8'/></filter></svg>"); opacity: .05; }
+    `,
+    body: `<img src="data:image/svg+xml,%3Csvg%3E%3C/svg%3E" alt="Vitrine do produto" width="800" height="500">
+      <script>const io = new IntersectionObserver(() => {}); io.observe(document.body);</script>`
+  });
+  const result = analyzeVisualSources({ html });
+  assert.deepEqual(result.issues, []);
+
+  const m = result.metrics;
+  assert.equal(m.font_delivery.delivered, true);
+  assert.equal(m.font_delivery.webfont_linked, true);
+  assert.equal(m.max_font_size_px, 96, 'clamp() is judged at its max arm (6rem)');
+  assert.equal(m.craft.active_levers, 5);
+  assert.deepEqual(m.craft.levers, { typeface: true, display_scale: true, material: true, motion: true, evidence: true });
+
+  const text = result.warnings.join('\n');
+  assert.doesNotMatch(text, /craft floor|never delivered|OS default stacks/);
+});
+
+test('the craft axis only measures full surfaces — fixtures and fragments stay silent', () => {
+  const clean = analyzeVisualSources({ html: CLEAN });
+  assert.equal(clean.metrics.craft.measured, false);
+  // CLEAN names "IBM Plex Sans" with no delivery; on a fragment that is not a
+  // finding, which is exactly why the floor is gated on corpus size.
+  assert.deepEqual(clean.warnings, []);
+});
+
+test('font-size and custom-property resolution helpers are arithmetic', () => {
+  assert.equal(fontSizePx('clamp(1rem, 2vw + 1rem, 4.5rem)'), 72);
+  assert.equal(fontSizePx('2.25rem'), 36);
+  assert.equal(fontSizePx('18px'), 18);
+  assert.equal(fontSizePx('inherit'), null);
+  const props = customProperties(':root { --a: var(--b); --b: 24px; }');
+  assert.equal(resolveCustomProps('var(--a)', props), '24px');
+  assert.equal(resolveCustomProps('var(--missing, 8px)', props), '8px');
+});
+
+test('kind=visual warns when the manifest Quality evidence is a placeholder', async () => {
+  const dir = await makeTmpDir();
+  await writeFile(dir, '.aioson/briefings/orders/prototype.html', CLEAN);
+  const manifest = (evidence) => `---\nfeature: orders\nstatus: draft\n---\n\n## Visual direction\n\n- Register: Technical — the data is the composition.\n\n## Quality evidence\n\n${evidence}\n`;
+
+  await writeFile(dir, '.aioson/briefings/orders/prototype-manifest.md', manifest('_(preenchido após a medição)_'));
+  const placeholder = await runVerifyArtifact({
+    args: [dir],
+    options: { kind: 'visual', slug: 'orders', json: true, advisory: true, suppressExitCode: true },
+    logger: makeLogger()
+  });
+  assert.equal(placeholder.ok, true, 'placeholder evidence is a warning, not a blocker');
+  assert.match(placeholder.warnings.join('\n'), /`## Quality evidence` is empty or a placeholder/);
+
+  await writeFile(dir, '.aioson/briefings/orders/prototype-manifest.md', manifest(
+    '- kind=visual: tokens 92% | type max 72px | font delivered | craft 4/5\n- fold check: approved on desktop and mobile\n- walkthrough: approved, matched the briefing promises'
+  ));
+  const filled = await runVerifyArtifact({
+    args: [dir],
+    options: { kind: 'visual', slug: 'orders', json: true, advisory: true, suppressExitCode: true },
+    logger: makeLogger()
+  });
+  assert.doesNotMatch(filled.warnings.join('\n'), /Quality evidence/);
+  assert.equal(filled.metrics.manifest_quality_evidence, true);
+});

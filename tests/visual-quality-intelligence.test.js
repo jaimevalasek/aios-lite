@@ -34,7 +34,7 @@ test('the layout lens stays exactly with the implementation-oriented agents', as
 
     assert.ok(entry, `visual quality brain missing from ${root}`);
     assert.deepEqual(entry.agents, INDEXED_AGENTS);
-    assert.equal(entry.nodes, 23);
+    assert.equal(entry.nodes, 25);
     assert.equal(entry.path, BRAIN_RELATIVE_PATH);
 
     for (const agent of AGENTS) {
@@ -47,7 +47,7 @@ test('the layout lens stays exactly with the implementation-oriented agents', as
 
       assert.equal(result.ok, true);
       assert.deepEqual(result.warnings, []);
-      assert.equal(result.nodes.length, 20);
+      assert.equal(result.nodes.length, 22);
       const replaceability = result.nodes.find((node) => node.id === 'vq-002');
       assert.equal(replaceability.v, 'AVOID');
       assert.match(replaceability.s, /repeated em dashes/i);
@@ -66,6 +66,14 @@ test('the layout lens stays exactly with the implementation-oriented agents', as
       assert.match(fold.s, /data-aioson-primary/);
       const tour = result.nodes.find((node) => node.id === 'vq-016');
       assert.match(tour.s, /data-aioson-tour/);
+      // The craft-floor pair: hygiene metrics cannot see ambition, so the lens
+      // binds the measured levers — typeface delivery first, aggregate second.
+      const delivery = result.nodes.find((node) => node.id === 'vq-020');
+      assert.equal(delivery.v, 'AVOID');
+      assert.match(delivery.s, /font_delivery/);
+      const craft = result.nodes.find((node) => node.id === 'vq-021');
+      assert.match(craft.s, /craft axis|active_levers/);
+      assert.match(craft.p, /active_levers/);
     }
   }
 });
@@ -264,9 +272,13 @@ test('the effect and asset vocabulary is framework-level, routed, and honest abo
   assert.match(template, /prefers-reduced-motion/);
   assert.match(template, /## 3\. Cost contract/);
   assert.match(template, /## 4\. Asset contract/);
-  // AIOSON has no image model. Claiming otherwise is how a prototype ends up
-  // describing assets that were never produced.
-  assert.match(template, /generates no imagery/i);
+  // Image generation is host-dependent. When the host offers it, generated
+  // imagery is the sanctioned plan B — but only with provenance labeled, and
+  // never presented as the client's real work. The honesty clause is the pin:
+  // a prototype must not describe assets as something they are not.
+  assert.match(template, /provenance labeled `generated`/);
+  assert.match(template, /never presented as the client's real product or work/);
+  assert.match(template, /never described as if they existed/);
 });
 
 test('both the implementation and the prototype polish pass can reach the effects vocabulary', async () => {
