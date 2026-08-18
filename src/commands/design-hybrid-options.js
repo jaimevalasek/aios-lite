@@ -10,10 +10,7 @@ const {
   getDesignVariationCatalog,
   getDesignVariationSources
 } = require('../design-variation-catalog');
-
-function resolveTargetDir(args) {
-  return path.resolve(process.cwd(), args[0] || '.');
-}
+const { resolveTargetDir } = require('../lib/project-root');
 
 async function detectProjectLocale(targetDir) {
   const context = await validateProjectContextFile(targetDir);

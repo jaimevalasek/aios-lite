@@ -20,6 +20,7 @@
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const { openRuntimeDb } = require('../runtime-store');
+const { resolveTargetDir } = require('../lib/project-root');
 
 const EVOLUTION_LOG = path.join('.aioson', 'evolution', 'evolution-log.jsonl');
 
@@ -45,7 +46,7 @@ async function writeEvolutionLog(projectDir, entries) {
 }
 
 async function runLearningRollback({ args = [], options = {}, logger = console } = {}) {
-  const projectDir = path.resolve(process.cwd(), args[0] || '.');
+  const projectDir = resolveTargetDir(args);
   const dryRun = Boolean(options['dry-run'] || options.dry);
 
   // ── List mode ──────────────────────────────────────────────────────────────

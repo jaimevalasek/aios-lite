@@ -38,6 +38,7 @@ const {
   CONTEXT_ALLOWED_PROJECT_TYPES,
   CONTEXT_ALLOWED_PROFILES
 } = require('../constants');
+const { resolveTargetDir } = require('../lib/project-root');
 
 const CONTEXT_PATH = '.aioson/context/project.context.md';
 const TRAVERSAL_DOC_PATH = '.aioson/docs/benchmark/traversal.md';
@@ -176,7 +177,7 @@ async function collectChecks(targetDir) {
 }
 
 async function runBenchmarkBootstrap({ args = [], options = {}, logger = console }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const checkOnly = options.check === true;
   const actions = [];
 

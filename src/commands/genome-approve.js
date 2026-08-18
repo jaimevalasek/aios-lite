@@ -13,6 +13,7 @@ const path = require('node:path');
 const { isValidSlug } = require('../dossier/schema');
 const { normalizeBinding } = require('../genomes/bindings');
 const { specimenDirRel, specimenPathIssue, hasAnyFile } = require('../lib/genome-approval-lint');
+const { resolveTargetDir } = require('../lib/project-root');
 
 async function writeAtomic(filePath, content) {
   await fs.mkdir(path.dirname(filePath), { recursive: true });
@@ -60,7 +61,7 @@ function collectBindingEntries(manifest) {
 }
 
 async function runGenomeApprove({ args = [], options = {}, logger = console } = {}) {
-  const projectDir = path.resolve(process.cwd(), args[0] || '.');
+  const projectDir = resolveTargetDir(args);
   const squadSlug = options.squad || null;
   const genomeSlug = options.genome || null;
   if (!squadSlug || !genomeSlug) {

@@ -11,11 +11,11 @@
  * src/ and its tests, not in prose across five prompts.
  */
 
-const path = require('node:path');
 const { resolveAutopilotSignal } = require('../autopilot-signal');
+const { resolveTargetDir } = require('../lib/project-root');
 
 async function runWorkflowMode({ args, options = {}, logger }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const slug = options.feature ? String(options.feature).trim() : null;
   const signal = await resolveAutopilotSignal(targetDir, {
     slug,

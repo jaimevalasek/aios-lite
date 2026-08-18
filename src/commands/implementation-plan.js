@@ -13,6 +13,7 @@ const {
   updatePlanPhaseStatus,
   getPlanPhases
 } = require('../runtime-store');
+const { resolveTargetDir } = require('../lib/project-root');
 
 const CONTEXT_DIR = path.join('.aioson', 'context');
 const PLANS_DIR = path.join('.aioson', 'plans');
@@ -346,7 +347,7 @@ async function run(projectDir, args, context) {
  * Entry point for CLI integration (same signature as other commands).
  */
 async function runImplementationPlan({ args = [], options = {}, logger = console, t = (k) => k } = {}) {
-  const projectDir = path.resolve(process.cwd(), args[0] || '.');
+  const projectDir = resolveTargetDir(args);
   const sub = options.sub || args[1] || 'show';
   const slug = options.feature || options.slug || args[2] || null;
   const context = { logger, t };

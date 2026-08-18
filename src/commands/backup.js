@@ -8,10 +8,7 @@ const {
   runtimeStoreExists
 } = require('../runtime-store');
 const { createProvider, contentHash } = require('../backup-provider');
-
-function resolveTargetDir(args) {
-  return path.resolve(process.cwd(), args[0] || '.');
-}
+const { resolveTargetDir } = require('../lib/project-root');
 
 async function readBackupConfig(targetDir) {
   try {

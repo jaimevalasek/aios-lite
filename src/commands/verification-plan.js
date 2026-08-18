@@ -22,6 +22,7 @@ const {
   VERIFICATION_AGENTS,
   TRIGGERS
 } = require('../verification-policy');
+const { resolveTargetDir } = require('../lib/project-root');
 
 const BAR = '─'.repeat(60);
 const CLASSIFICATIONS = ['MICRO', 'SMALL', 'MEDIUM'];
@@ -66,7 +67,7 @@ async function detectClassification(targetDir, slug) {
 }
 
 async function runVerificationPlan({ args, options = {}, logger, catalogLoader }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const slug = (options.feature || options.slug || '').toString().trim() || null;
 
   const triggerRaw = (options.trigger || 'per-phase').toString().trim().toLowerCase();

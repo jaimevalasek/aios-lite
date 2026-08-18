@@ -2,6 +2,7 @@
 
 const path = require('node:path');
 const { generateRecovery, readRecovery } = require('../squad/recovery-context');
+const { resolveTargetDir } = require('../lib/project-root');
 
 /**
  * aioson squad:recovery <project> --squad <squad> --agent <agent> [--show]
@@ -10,7 +11,7 @@ const { generateRecovery, readRecovery } = require('../squad/recovery-context');
  * --show: print the generated content to stdout instead of just confirming.
  */
 async function runSquadRecovery({ args, options, logger }) {
-  const projectDir = path.resolve(process.cwd(), args[0] || '.');
+  const projectDir = resolveTargetDir(args);
   const squadSlug = options.squad || args[1];
   const agentSlug = options.agent || args[2];
 

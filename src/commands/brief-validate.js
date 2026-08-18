@@ -11,9 +11,10 @@
 
 const path = require('node:path');
 const { validateBrief, autoFixBrief } = require('../squad/brief-validator');
+const { resolveTargetDir } = require('../lib/project-root');
 
 async function runBriefValidate({ args, options = {}, logger }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const briefPath = String(options.brief || options.b || '').trim();
 
   if (!briefPath) {

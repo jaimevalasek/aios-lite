@@ -3,9 +3,10 @@
 const path = require('node:path');
 const fs = require('node:fs/promises');
 const { readTextIfExists, exists } = require('../utils');
+const { resolveTargetDir } = require('../lib/project-root');
 
 async function runQaReport({ args, options = {}, logger, t }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const mdPath = path.join(targetDir, 'aios-qa-report.md');
   const jsonPath = path.join(targetDir, 'aios-qa-report.json');
 

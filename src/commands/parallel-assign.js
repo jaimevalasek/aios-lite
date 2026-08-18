@@ -20,6 +20,7 @@ const {
   replaceSection,
   replaceMetadataLine
 } = require('../parallel-workspace');
+const { resolveTargetDir } = require('../lib/project-root');
 
 const SOURCE_ALIAS = {
   prd: '.aioson/context/prd.md',
@@ -215,7 +216,7 @@ function appendSharedDecision(content, generatedAt, sourcePath, workers, scopeCo
 }
 
 async function runParallelAssign({ args, options = {}, logger, t }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const dryRun = Boolean(options['dry-run']);
   const force = Boolean(options.force);
   const workersOptionRaw = options.workers;

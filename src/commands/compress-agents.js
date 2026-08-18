@@ -17,6 +17,7 @@
 
 const fs = require('node:fs/promises');
 const path = require('node:path');
+const { resolveTargetDir } = require('../lib/project-root');
 
 // ---------------------------------------------------------------------------
 // Structural compression — no LLM required
@@ -333,7 +334,7 @@ async function compressDir(dir, { agentFilter, dryRun, useLLM, apiKey, model, lo
 // ---------------------------------------------------------------------------
 
 async function runCompressAgents({ args, options = {}, logger }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const agentsDir = path.join(targetDir, '.aioson', 'agents');
   const rulesDir  = path.join(targetDir, '.aioson', 'rules');
 

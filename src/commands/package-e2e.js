@@ -6,6 +6,7 @@ const os = require('node:os');
 const path = require('node:path');
 const { spawn } = require('node:child_process');
 const { ensureDir } = require('../utils');
+const { resolveTargetDir } = require('../lib/project-root');
 
 function toArg(value) {
   return typeof value === 'string' ? value : String(value);
@@ -101,7 +102,7 @@ async function resolveTarballFromDir(packDir) {
 }
 
 async function runPackageTest({ args, options = {}, logger, t }) {
-  const sourceDir = path.resolve(process.cwd(), args[0] || '.');
+  const sourceDir = resolveTargetDir(args);
   const keep = Boolean(options.keep);
   const dryRun = Boolean(options['dry-run']);
   const jsonMode = Boolean(options.json);

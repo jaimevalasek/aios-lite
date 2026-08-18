@@ -11,6 +11,7 @@ const path = require('node:path');
 const { isValidSlug } = require('../dossier/schema');
 const { analyzeSquadPilot, computePilotFingerprint } = require('../lib/squad-pilot-lint');
 const { flattenGenomeBindings } = require('../genomes/bindings');
+const { resolveTargetDir } = require('../lib/project-root');
 
 async function writeAtomic(filePath, content) {
   await fs.mkdir(path.dirname(filePath), { recursive: true });
@@ -20,7 +21,7 @@ async function writeAtomic(filePath, content) {
 }
 
 async function runSquadPilotApprove({ args = [], options = {}, logger = console } = {}) {
-  const projectDir = path.resolve(process.cwd(), args[0] || '.');
+  const projectDir = resolveTargetDir(args);
   const slug = options.squad || args[1];
   if (!slug) {
     logger.error('squad:pilot-approve requires --squad=<slug>');

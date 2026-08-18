@@ -15,6 +15,7 @@
 
 const fs = require('node:fs/promises');
 const path = require('node:path');
+const { resolveTargetDir } = require('../lib/project-root');
 
 const AGENTS_DIR = path.join('.aioson', 'agents');
 
@@ -156,7 +157,7 @@ function capitalize(str) {
  * @param {object} params  — { args, options, logger }
  */
 async function runAgentExportSkill({ args, options = {}, logger }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const agentName = String(options.agent || options.a || '').trim();
   const outputDir = options.output
     ? path.resolve(targetDir, options.output)

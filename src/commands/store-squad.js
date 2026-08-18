@@ -6,6 +6,7 @@ const { exists, ensureDir } = require('../utils');
 const { readConfig } = require('./config');
 const { readWorkspace, findProjectRoot } = require('./workspace');
 const { scanPackage, formatScanReport } = require('../lib/store/security-scan');
+const { resolveTargetDir } = require('../lib/project-root');
 
 const DEFAULT_BASE_URL = 'https://aioson.com';
 const SQUADS_DIR = '.aioson/squads';
@@ -115,7 +116,7 @@ function parseBundledDeps(content) {
 async function runSquadPublish({ args, options, logger, t }) {
   const config = await readConfig();
   const token = requireToken(config, t);
-  const projectDir = await findProjectRoot(path.resolve(process.cwd(), args[0] || '.'));
+  const projectDir = await findProjectRoot(resolveTargetDir(args));
   const slug = String(options.slug || '').trim();
   if (!slug) throw new Error(t('store.error_missing_slug'));
 
@@ -243,7 +244,7 @@ async function runSquadPublish({ args, options, logger, t }) {
 async function runSquadInstall({ args, options, logger, t }) {
   const config = await readConfig();
   const token = requireToken(config, t);
-  const projectDir = await findProjectRoot(path.resolve(process.cwd(), args[0] || '.'));
+  const projectDir = await findProjectRoot(resolveTargetDir(args));
   const baseUrl = resolveBaseUrl(config);
 
   const ref = String(options.slug || options.code || args[1] || args[0] || '').trim();
@@ -403,7 +404,7 @@ async function runSquadList({ args, options, logger, t }) {
   }
 
   // local: list squad dirs under .aioson/squads/
-  const projectDir = await findProjectRoot(path.resolve(process.cwd(), args[0] || '.'));
+  const projectDir = await findProjectRoot(resolveTargetDir(args));
   const squadsDir = path.join(projectDir, SQUADS_DIR);
 
   if (!(await exists(squadsDir))) {

@@ -22,6 +22,7 @@ const {
   buildArchiveContent,
   parseActiveSlugs
 } = require('../current-state-trim');
+const { resolveTargetDir } = require('../lib/project-root');
 
 const CURRENT_STATE_REL = '.aioson/context/bootstrap/current-state.md';
 const DEFAULT_ARCHIVE_REL = '.aioson/context/bootstrap/current-state-archive.md';
@@ -50,7 +51,7 @@ function parseKeep(value) {
 }
 
 async function runMemoryTrim({ args, options = {}, logger, t }) {
-  const targetDir = path.resolve(process.cwd(), args && args[0] ? args[0] : '.');
+  const targetDir = resolveTargetDir(args);
   const wantJson = Boolean(options.json);
   const dryRun = Boolean(options['dry-run'] || options.dryRun);
   const keep = parseKeep(options.keep);

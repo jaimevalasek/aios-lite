@@ -40,6 +40,7 @@ const {
   applyDeclinedFeedback,
   writeRefinementReport
 } = require('../lib/briefing-refiner/apply-feedback');
+const { resolveTargetDir } = require('../lib/project-root');
 
 // ─── Interactive prompt helpers ───────────────────────────────────────────────
 
@@ -204,7 +205,7 @@ function logPrototypeGateError(logger, slug, failure, t) {
 // ─── briefing:approve ─────────────────────────────────────────────────────────
 
 async function runBriefingApprove({ args, options = {}, logger }) {
-  const projectDir = path.resolve(process.cwd(), args[0] || '.');
+  const projectDir = resolveTargetDir(args);
   const slugOpt = String(options.slug || '').trim() || null;
   const configFile = registryConfigPath(projectDir);
 
@@ -288,7 +289,7 @@ async function runBriefingApprove({ args, options = {}, logger }) {
 // ─── briefing:unapprove ───────────────────────────────────────────────────────
 
 async function runBriefingUnapprove({ args, options = {}, logger }) {
-  const projectDir = path.resolve(process.cwd(), args[0] || '.');
+  const projectDir = resolveTargetDir(args);
   const slugOpt = String(options.slug || '').trim() || null;
   const configFile = registryConfigPath(projectDir);
 
@@ -439,7 +440,7 @@ async function readOptionalJson(filePath) {
 }
 
 async function runBriefingReview({ args, options = {}, logger }) {
-  const projectDir = path.resolve(process.cwd(), args[0] || '.');
+  const projectDir = resolveTargetDir(args);
   const resolved = await resolveRefinableSlug(projectDir, options.slug);
   if (!resolved.ok) {
     logSlugResolutionError(resolved, logger);
@@ -581,7 +582,7 @@ function summarizeFeedback(feedback) {
 }
 
 async function runBriefingApplyFeedback({ args, options = {}, logger }) {
-  const projectDir = path.resolve(process.cwd(), args[0] || '.');
+  const projectDir = resolveTargetDir(args);
   const resolved = await resolveRefinableSlug(projectDir, options.slug);
   if (!resolved.ok) {
     logSlugResolutionError(resolved, logger);

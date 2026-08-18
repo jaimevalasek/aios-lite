@@ -27,6 +27,7 @@ const {
   archiveTarget,
   TARGET_TYPES
 } = require('../learning-loop-archive');
+const { resolveTargetDir } = require('../lib/project-root');
 
 function tFn(t, key, params) {
   if (typeof t === 'function') {
@@ -40,7 +41,7 @@ function isHookContext() {
 }
 
 async function runMemoryArchive({ args, options = {}, logger, t }) {
-  const targetDir = path.resolve(process.cwd(), args && args[0] ? args[0] : '.');
+  const targetDir = resolveTargetDir(args);
   const wantJson = Boolean(options.json);
   const dryRun = Boolean(options['dry-run'] || options.dryRun);
   const log = (msg) => { if (logger && typeof logger.log === 'function') logger.log(msg); };

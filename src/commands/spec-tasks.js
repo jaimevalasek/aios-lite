@@ -2,6 +2,7 @@
 
 const fs = require('node:fs/promises');
 const path = require('node:path');
+const { resolveTargetDir } = require('../lib/project-root');
 
 function nowIso() {
   return new Date().toISOString();
@@ -187,7 +188,7 @@ function buildTasksDoc({ title, slug, planPath, phases, parallelNotes, openAssum
 }
 
 async function runSpecTasks({ args, options = {}, logger }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const contextDir = path.join(targetDir, '.aioson', 'context');
 
   // Resolve plan path

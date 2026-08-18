@@ -6,6 +6,7 @@ const { runSquadValidate } = require('./squad-validate');
 const { evaluateSquad } = require('../squad/eval-engine');
 const { validateEvalReport } = require('../squad/eval-contract');
 const { isValidSlug } = require('../dossier/schema');
+const { resolveTargetDir } = require('../lib/project-root');
 
 async function readJson(filePath) {
   return JSON.parse(await fs.readFile(filePath, 'utf8'));
@@ -56,7 +57,7 @@ function renderMarkdown(report) {
 }
 
 async function runSquadEval({ args = [], options = {}, logger = console, t } = {}) {
-  const projectDir = path.resolve(process.cwd(), args[0] || '.');
+  const projectDir = resolveTargetDir(args);
   const slug = options.squad || args[1];
   if (!slug) {
     logger.error(t ? t('squadEval.missing_slug') : 'squad:eval requires --squad=<slug>');

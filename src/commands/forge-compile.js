@@ -31,6 +31,7 @@ const path = require('node:path');
 
 const { validateContract, resolveContract } = require('../harness/contract-schema');
 const { parseExecutionWaves, groupByWave } = require('../harness/plan-waves');
+const { resolveTargetDir } = require('../lib/project-root');
 
 const ADVERSARIAL_VOTES = 3;
 const DEFAULT_MAX_FIX_ROUNDS = 5;
@@ -214,7 +215,7 @@ function buildScript({ slug, waves, execCriteria, judgedCriteria, maxFixRounds }
 }
 
 async function runForgeCompile({ args, options = {}, logger }) {
-  const targetDir = path.resolve(process.cwd(), args?.[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const slug = String(options.feature || options.slug || '').trim();
 
   if (!slug) {

@@ -29,6 +29,7 @@
 
 const fs = require('node:fs/promises');
 const path = require('node:path');
+const { resolveTargetDir } = require('../lib/project-root');
 
 // ─── File discovery helpers ───────────────────────────────────────────────────
 
@@ -248,7 +249,7 @@ function buildBrief({
 // ─── Main command ─────────────────────────────────────────────────────────────
 
 async function runBriefGen({ args, options = {}, logger }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const phaseNumber = options.phase != null ? Number(options.phase) : null;
   const squadSlug = String(options.squad || '').trim() || null;
   const executorSlug = String(options.executor || '').trim() || null;

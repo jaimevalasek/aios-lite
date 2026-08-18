@@ -19,11 +19,12 @@ const {
 const { analyzeFeatureCompleteness } = require('../lib/feature-completeness');
 const { validateCurrentSheldonReview } = require('../lib/sheldon-review');
 const { resolveGateCBaseline } = require('../lib/gate-checkpoint');
+const { resolveTargetDir } = require('../lib/project-root');
 
 const BAR = '━'.repeat(45);
 
 async function runArtifactValidate({ args, options = {}, logger }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const slug = options.feature ? String(options.feature) : null;
 
   if (!slug) {

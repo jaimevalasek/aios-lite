@@ -21,6 +21,7 @@ const {
   detectRichSurfaces,
   parseSurfacesOverride
 } = require('../lib/feature-completeness');
+const { resolveTargetDir } = require('../lib/project-root');
 
 const BAR = '━'.repeat(30);
 
@@ -321,7 +322,7 @@ async function runInteractive(logger) {
 }
 
 async function runClassify({ args, options = {}, logger }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const slug = options.feature ? String(options.feature) : null;
   const interactive = Boolean(options.interactive);
 

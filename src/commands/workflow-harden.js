@@ -17,6 +17,7 @@ const fs = require('node:fs/promises');
 const { scanFriction, buildRecommendations } = require('../friction-scanner');
 const { ensureDir, exists } = require('../utils');
 const { installPreCommitHook } = require('../lib/git-commit-guard');
+const { resolveTargetDir } = require('../lib/project-root');
 
 async function ensureGitignoreBlocks(targetDir, blocks) {
   const gitignorePath = path.join(targetDir, '.gitignore');
@@ -177,7 +178,7 @@ function buildReport(analysis, recommendations, fixes) {
 }
 
 async function runWorkflowHarden({ args, options, logger }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const dryRun = Boolean(options['dry-run'] || options.dryRun);
   const jsonMode = Boolean(options.json);
 

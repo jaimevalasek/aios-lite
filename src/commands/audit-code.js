@@ -25,6 +25,7 @@ const path = require('node:path');
 const fs = require('node:fs');
 
 const { gitChangedFiles } = require('../harness/detect-runtime-feature');
+const { resolveTargetDir } = require('../lib/project-root');
 
 const VERSION = '1.0.0';
 const GENERATOR = `aioson audit:code@${VERSION}`;
@@ -271,7 +272,7 @@ function parseCategories(option) {
 }
 
 async function runAuditCode({ args, options = {}, logger }) {
-  const targetDir = path.resolve(process.cwd(), args?.[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const suppressExitCode = Boolean(options.suppressExitCode);
   const setExitCode = (code) => { if (!suppressExitCode) process.exitCode = code; };
   const categories = parseCategories(options.category);

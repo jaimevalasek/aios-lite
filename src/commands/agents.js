@@ -22,6 +22,7 @@ const { readAgentManifest, buildAgentCapabilitySummary } = require('../agent-man
 const { emitSecurityRuntimeEvent } = require('../lib/security/runtime-events');
 const { buildChainActivationContext } = require('../neural-chain-activation');
 const { buildAgentContextActivation } = require('../agent-context-activation');
+const { resolveTargetDir } = require('../lib/project-root');
 
 const WORKFLOW_AGENT_IDS = new Set([
   'setup',
@@ -165,7 +166,7 @@ async function resolveExistingInstructionPath(targetDir, agent, locale) {
 }
 
 async function runAgentsList({ args, options, logger, t }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const locale = await resolveLocaleForTarget(targetDir, options);
   const agents = listAgentDefinitions();
   logger.log(t('agents.list_title', { locale }));
@@ -199,7 +200,7 @@ async function runAgentPrompt({ args, options, logger, t }) {
     throw new Error(t('agents.prompt_unknown_agent', { agent: name }));
   }
 
-  const targetDir = path.resolve(process.cwd(), args[1] || '.');
+  const targetDir = resolveTargetDir(args[1]);
   const locale = await resolveLocaleForTarget(targetDir, options);
   const tool = options.tool || 'codex';
   const isHeadless = Boolean(options.headless);

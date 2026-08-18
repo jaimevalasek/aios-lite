@@ -13,9 +13,10 @@
 
 const path = require('node:path');
 const { estimateContext, formatReport } = require('../squad/preflight-context');
+const { resolveTargetDir } = require('../lib/project-root');
 
 async function runPreflightContext({ args, options = {}, logger }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const agent = String(options.agent || options.a || 'dev').trim();
   const squad = options.squad ? String(options.squad).trim() : undefined;
   const verbose = Boolean(options.verbose || options.v);

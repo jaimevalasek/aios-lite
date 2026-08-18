@@ -20,13 +20,10 @@ const { ensureDir, exists } = require('../utils');
 const { SUPPORTED_PROMPT_TOOLS } = require('../prompt-tool');
 const { isTmuxAvailable, launchTmuxSession, buildSessionName, hasSession, attachSession } = require('../lib/tmux-launcher');
 const { resolvePermissionModeArgs, resolveResumeArgs } = require('../lib/tool-capabilities');
+const { resolveTargetDir } = require('../lib/project-root');
 
 const LIVE_EVENTS_LIMIT = 10;
 const LIVE_MESSAGE_LIMIT = 500;
-
-function resolveTargetDir(args) {
-  return path.resolve(process.cwd(), args[0] || '.');
-}
 
 function requireOption(options, key, t) {
   const value = options[key];

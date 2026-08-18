@@ -9,11 +9,12 @@ const {
   listDynamicTools
 } = require('../runtime-store');
 const { executeTool } = require('../tool-executor');
+const { resolveTargetDir } = require('../lib/project-root');
 
 const TOOL_NAME_RE = /^[a-z][a-z0-9_]*$/;
 
 async function runToolRegistry({ args = [], options = {}, logger = console, t = (k) => k } = {}) {
-  const projectDir = path.resolve(process.cwd(), args[0] || '.');
+  const projectDir = resolveTargetDir(args);
   const sub = options.sub || 'list';
 
   if (sub === 'register') return handleRegister(projectDir, options, logger);

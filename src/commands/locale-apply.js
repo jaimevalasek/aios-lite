@@ -8,6 +8,7 @@ const {
   validateProjectContextFile,
   getInteractionLanguage
 } = require('../context');
+const { resolveTargetDir } = require('../lib/project-root');
 
 function yamlString(value) {
   return `"${String(value).replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
@@ -80,7 +81,7 @@ async function synchronizeProjectContextLanguage(targetDir, language, options = 
 }
 
 async function runLocaleApply({ args, options, logger, t }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const dryRun = Boolean(options['dry-run']);
 
   let requestedLanguage = options.language || options.lang || '';

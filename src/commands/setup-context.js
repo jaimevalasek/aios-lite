@@ -4,6 +4,7 @@ const path = require('node:path');
 const readline = require('node:readline/promises');
 const { detectFramework, isMonorepoDetection } = require('../detector');
 const { normalizeLanguageTag } = require('../context');
+const { resolveTargetDir } = require('../lib/project-root');
 
 /**
  * Infer conversation language from the OS locale environment variables.
@@ -471,7 +472,7 @@ async function askTeamProfile(rl, data, t) {
 }
 
 async function runSetupContext({ args, options, logger, t }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const defaultsMode = Boolean(options.defaults);
 
   const detection = await detectFramework(targetDir);

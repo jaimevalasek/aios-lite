@@ -18,6 +18,7 @@ const path = require('node:path');
 const fs = require('node:fs/promises');
 const os = require('node:os');
 const { getAgentDefinition, normalizeAgentName } = require('../agents');
+const { resolveTargetDir } = require('../lib/project-root');
 
 const HOME = os.homedir();
 const HOOK_AGENT_NAME_RE = /^[a-z][a-z0-9-]*$/;
@@ -376,7 +377,7 @@ async function detectInstalledTools() {
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 async function runHooksInstall({ args, options = {}, logger }) {
-  const projectDir = path.resolve(process.cwd(), args[0] || '.');
+  const projectDir = resolveTargetDir(args);
   let agentName;
   try {
     agentName = normalizeHookAgentName(options.agent || 'dev');
@@ -452,7 +453,7 @@ async function runHooksUninstall({ args, options = {}, logger }) {
     logger.log(`Invalid agent name: ${err.message}`);
     return { ok: false, reason: 'invalid_agent_name', error: err.message };
   }
-  const projectDir = path.resolve(process.cwd(), args && args[0] ? args[0] : '.');
+  const projectDir = resolveTargetDir(args);
   const dryRun = options['dry-run'] || options.dryRun || false;
   const tool = options.tool ? String(options.tool).trim().toLowerCase() : 'claude';
   const tools = tool.split(',').map((t) => t.trim()).filter(Boolean);

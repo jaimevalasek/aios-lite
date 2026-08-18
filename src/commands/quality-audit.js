@@ -15,6 +15,7 @@ const {
   runProvider
 } = require('../lib/quality/provider');
 const { writeMarkdownReport } = require('../lib/quality/report');
+const { resolveTargetDir } = require('../lib/project-root');
 
 function parseFrontmatterValue(content, key) {
   const match = content.match(new RegExp(`^${key}:\\s*([^\\r\\n]+)`, 'm'));
@@ -37,7 +38,7 @@ function buildReportPath(featureSlug, options = {}) {
 }
 
 async function runQualityAudit({ args, options = {}, logger }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const json = Boolean(options.json);
   const featureSlug = await detectFeatureSlug(targetDir, options);
   const changedPaths = await getChangedPaths(targetDir, options);

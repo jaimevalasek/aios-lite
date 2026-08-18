@@ -11,13 +11,13 @@
  *   aioson detect:test-runner . --json
  */
 
-const path = require('node:path');
 const { detectTestRunner } = require('../preflight-engine');
+const { resolveTargetDir } = require('../lib/project-root');
 
 const BAR = '━'.repeat(25);
 
 async function runDetectTestRunner({ args, options = {}, logger }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
 
   const runner = await detectTestRunner(targetDir);
 

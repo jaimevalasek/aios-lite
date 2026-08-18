@@ -16,6 +16,7 @@ const path = require('node:path');
 const { readFileSafe, contextDir } = require('../preflight-engine');
 const { openRuntimeDb } = require('../runtime-store');
 const { ensureRunnerQueue, addTask } = require('../runner/queue-store');
+const { resolveTargetDir } = require('../lib/project-root');
 
 // Phase extraction patterns
 const PHASE_PATTERNS = [
@@ -82,7 +83,7 @@ function extractPhases(content) {
 }
 
 async function runRunnerQueueFromPlan({ args, options = {}, logger }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const slug = options.feature ? String(options.feature) : null;
   const agent = options.agent ? String(options.agent) : 'dev';
   const dryRun = Boolean(options['dry-run'] || options.dry);

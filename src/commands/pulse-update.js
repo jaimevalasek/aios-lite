@@ -15,13 +15,14 @@
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const { contextDir, readFileSafe, parseFrontmatter } = require('../preflight-engine');
+const { resolveTargetDir } = require('../lib/project-root');
 
 function nowDate() {
   return new Date().toISOString().slice(0, 10);
 }
 
 async function runPulseUpdate({ args, options = {}, logger }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const agent = options.agent ? String(options.agent) : null;
   const slug = options.feature ? String(options.feature) : null;
   const gate = options.gate ? String(options.gate) : null;

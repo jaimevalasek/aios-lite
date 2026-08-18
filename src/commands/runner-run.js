@@ -4,6 +4,7 @@ const path = require('node:path');
 const { launchCLI, detectCLI } = require('../runner/cli-launcher');
 const { runWithCascade, parseCascadeChain } = require('../runner/cascade');
 const { openRuntimeDb, startRun, updateRun, createRunKey } = require('../runtime-store');
+const { resolveTargetDir } = require('../lib/project-root');
 
 /**
  * aioson runner:run — executa uma única task headless usando o CLI de AI ativo.
@@ -15,7 +16,7 @@ const { openRuntimeDb, startRun, updateRun, createRunKey } = require('../runtime
  *   aioson runner:run . --task="..." --dry-run
  */
 async function runRunnerRun({ args, options = {}, logger }) {
-  const projectDir = path.resolve(process.cwd(), args[0] || '.');
+  const projectDir = resolveTargetDir(args);
   const { task, agent = 'dev', dryRun, cascade: cascadeStr } = options;
   const timeout = options.timeout ? Number(options.timeout) * 1000 : 120000;
 

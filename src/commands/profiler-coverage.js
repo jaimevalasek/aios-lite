@@ -17,6 +17,7 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
+const { resolveTargetDir } = require('../lib/project-root');
 
 const TIERS = [
   ['high', 'High-Value Sources'],
@@ -63,7 +64,7 @@ function tableRows(body) {
 }
 
 async function runProfilerCoverage({ args, options = {}, logger }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const slug = options.slug ? String(options.slug).trim() : null;
   const rel = options.file
     ? String(options.file).trim()

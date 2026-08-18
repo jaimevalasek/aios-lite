@@ -22,6 +22,7 @@ const {
 } = require('../sub-task-engine');
 const { withLock } = require('../sub-task-state');
 const { openRuntimeDb, logAgentEvent } = require('../runtime-store');
+const { resolveTargetDir } = require('../lib/project-root');
 
 function splitCsv(value) {
   if (typeof value !== 'string' || value.length === 0) return [];
@@ -91,7 +92,7 @@ async function emitEvent(targetDir, agent, type, message, payload) {
 }
 
 async function runScoutPrep({ args, options = {}, logger }) {
-  const targetDir = path.resolve(process.cwd(), args?.[0] || '.');
+  const targetDir = resolveTargetDir(args);
 
   // Reject scope_globs explicitly (V1 limitation).
   if (options['scope-globs'] && String(options['scope-globs']).length > 0) {

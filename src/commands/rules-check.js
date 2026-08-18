@@ -37,6 +37,7 @@ const { parseFrontmatter } = require('../preflight-engine');
 const { gitChangedFiles } = require('../harness/detect-runtime-feature');
 const { listSourceFiles, readText, CODE_EXTS, IGNORE_DIRS } = require('./audit-code');
 const { scanNamingLanguage } = require('../lib/naming-language');
+const { resolveTargetDir } = require('../lib/project-root');
 
 const VERSION = '1.0.0';
 const GENERATOR = `aioson rules:check@${VERSION}`;
@@ -301,7 +302,7 @@ function loadFiles(targetDir, absPaths) {
 // ─── run ──────────────────────────────────────────────────────────────────────
 
 async function runRulesCheck({ args, options = {}, logger }) {
-  const targetDir = path.resolve(process.cwd(), args?.[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const suppressExitCode = Boolean(options.suppressExitCode);
   const strict = Boolean(options.strict);
 

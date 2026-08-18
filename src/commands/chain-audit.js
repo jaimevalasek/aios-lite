@@ -21,6 +21,7 @@ const path = require('node:path');
 const { openRuntimeDb } = require('../runtime-store');
 const { emitChainAuditEvent } = require('../neural-chain-telemetry');
 const { isUnsafePath, sanitizationReason } = require('../neural-chain-sanitize');
+const { resolveTargetDir } = require('../lib/project-root');
 
 const DEFAULT_LIMIT = 20;
 const HARD_LIMIT_CAP = 200;
@@ -33,7 +34,7 @@ function normalizeLimit(value) {
 }
 
 async function runChainAudit({ args, options = {}, logger, t }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const json = Boolean(options.json);
   const filePath = options.file || args[1];
   const featureSlug = options.feature ? String(options.feature).trim() : null;

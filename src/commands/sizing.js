@@ -14,6 +14,7 @@
 
 const path = require('node:path');
 const { readFileSafe, contextDir } = require('../preflight-engine');
+const { resolveTargetDir } = require('../lib/project-root');
 
 const BAR = '━'.repeat(30);
 
@@ -98,7 +99,7 @@ function sizingDecision(score) {
 }
 
 async function runSizing({ args, options = {}, logger }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const slug = options.feature ? String(options.feature) : null;
 
   let prdPath = options.prd ? path.resolve(targetDir, options.prd) : null;

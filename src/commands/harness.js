@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { createCircuitBreaker } = require('../harness/circuit-breaker');
 const { validateContract, isTodoPlaceholder } = require('../harness/contract-schema');
+const { resolveTargetDir } = require('../lib/project-root');
 
 /**
  * aioson harness:init — Inicializa o contrato e progresso da feature.
@@ -61,7 +62,7 @@ function buildStubCriteria(runtime) {
 }
 
 async function runHarnessInit({ args, options = {}, logger, t }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const slug = String(options.slug || options.feature || '').trim();
   const mode = String(options.mode || 'BALANCED').toUpperCase();
   const dryRun = Boolean(options['dry-run'] || options.dryRun);
@@ -209,7 +210,7 @@ function translateValidatorOutputToLastError(output) {
  * Implements AC-HD-15 of harness-driven-aioson.
  */
 async function runHarnessApplyValidation({ args, options = {}, logger, t }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const slug = String(options.slug || options.feature || '').trim();
 
   if (!slug) {
@@ -318,7 +319,7 @@ function archiveValidatorOutput(planDir, inputPath) {
  * Implements AC-HD-09 / AC-HD-10 entry point.
  */
 async function runHarnessValidate({ args, options = {}, logger, t }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const slug = String(options.slug || options.feature || '').trim();
 
   if (!slug) {

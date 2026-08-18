@@ -18,6 +18,7 @@
 
 const fs = require('node:fs/promises');
 const path = require('node:path');
+const { resolveTargetDir } = require('../lib/project-root');
 
 async function loadSquadManifests(projectDir) {
   const squadsDir = path.join(projectDir, '.aioson', 'squads');
@@ -120,7 +121,7 @@ function renderMermaid(manifests, edges) {
 }
 
 async function runSquadDependencyGraph({ args, options = {}, logger }) {
-  const projectDir = path.resolve(process.cwd(), args[0] || '.');
+  const projectDir = resolveTargetDir(args);
   const format = String(options.format || 'ascii').trim().toLowerCase();
 
   const manifests = await loadSquadManifests(projectDir);

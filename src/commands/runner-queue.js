@@ -13,6 +13,7 @@ const {
 } = require('../runner/queue-store');
 const { launchCLI } = require('../runner/cli-launcher');
 const { runWithCascade, parseCascadeChain } = require('../runner/cascade');
+const { resolveTargetDir } = require('../lib/project-root');
 
 const STATUS_ICON = {
   pending: '○',
@@ -34,7 +35,7 @@ const STATUS_ICON = {
  */
 async function runRunnerQueue({ args, options = {}, logger }) {
   const sub = options.sub || args[1] || 'list';
-  const projectDir = path.resolve(process.cwd(), args[0] || '.');
+  const projectDir = resolveTargetDir(args);
 
   const handle = await openRuntimeDb(projectDir, {});
   if (!handle) {

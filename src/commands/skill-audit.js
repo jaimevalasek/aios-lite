@@ -4,6 +4,7 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const Database = require('better-sqlite3');
 const { resolveSkillCatalog, normalizeId } = require('../skills/registry');
+const { resolveTargetDir } = require('../lib/project-root');
 
 const CHARS_PER_TOKEN = 4;
 const ROUTER_TARGET_CHARS = 4000;
@@ -354,7 +355,7 @@ function resolveRoots(scope) {
 }
 
 async function runSkillAudit({ args, options = {}, logger }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const scope = String(options.scope || 'runtime').trim().toLowerCase();
   const selectedRoots = resolveRoots(scope);
   const roots = selectedRoots.map((root) => root.rel);

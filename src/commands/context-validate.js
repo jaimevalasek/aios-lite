@@ -3,9 +3,10 @@
 const path = require('node:path');
 const { validateProjectContextFile } = require('../context');
 const { localizeContextParseReason } = require('../context-parse-reason');
+const { resolveTargetDir } = require('../lib/project-root');
 
 async function runContextValidate({ args, options = {}, logger, t }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const jsonMode = Boolean(options.json);
   const result = await validateProjectContextFile(targetDir);
 

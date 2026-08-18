@@ -40,6 +40,7 @@ const {
 } = require('../lib/feature-completeness');
 const { resolveGateCBaseline } = require('../lib/gate-checkpoint');
 const { inspectTemplateVersion } = require('../template-version-status');
+const { resolveTargetDir } = require('../lib/project-root');
 
 const BAR = '━'.repeat(55);
 
@@ -51,7 +52,7 @@ function gateIcon(status) {
 }
 
 async function runPreflight({ args, options = {}, logger }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const agent = options.agent ? String(options.agent) : null;
   const slug = options.feature ? String(options.feature) : null;
 

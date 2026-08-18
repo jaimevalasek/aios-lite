@@ -2,6 +2,7 @@
 
 const fs = require('node:fs/promises');
 const path = require('node:path');
+const { resolveTargetDir } = require('../lib/project-root');
 
 const CHARS_PER_TOKEN = 4;
 const LARGE_SECTION_BULLETS = 20; // warn if a section has more than this many bullet lines
@@ -58,7 +59,7 @@ function findLargeSections(content, fileName) {
 }
 
 async function runContextTrim({ args, options = {}, logger }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const contextDir = path.join(targetDir, '.aioson', 'context');
   const archiveDir = path.join(contextDir, 'archive');
   const dryRun = options['dry-run'] || options.dryRun || false;

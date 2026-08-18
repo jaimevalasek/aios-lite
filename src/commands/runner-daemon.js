@@ -11,6 +11,7 @@ const {
 } = require('../runner/queue-store');
 const { launchCLI } = require('../runner/cli-launcher');
 const { runWithCascade, parseCascadeChain } = require('../runner/cascade');
+const { resolveTargetDir } = require('../lib/project-root');
 
 const DAEMON_DDL = `
   CREATE TABLE IF NOT EXISTS runner_daemon (
@@ -38,7 +39,7 @@ const DAEMON_ROW_ID = 1;
  */
 async function runRunnerDaemon({ args, options = {}, logger }) {
   const sub = options.sub || args[1] || 'status';
-  const projectDir = path.resolve(process.cwd(), args[0] || '.');
+  const projectDir = resolveTargetDir(args);
 
   switch (sub) {
     case 'start':  return await handleStart(projectDir, options, logger);

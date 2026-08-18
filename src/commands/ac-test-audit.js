@@ -3,6 +3,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { auditAcceptanceCriteriaTests } = require('../lib/ac-test-audit');
+const { resolveTargetDir } = require('../lib/project-root');
 
 const CLOSED_FINDING_STATUSES = new Set(['fixed', 'false_positive', 'accepted_risk']);
 
@@ -46,7 +47,7 @@ async function buildMatrixSeeds(targetDir, slug, report) {
 // each test-file AC reference. Executable harness criteria remain strong proof.
 
 async function runAcTestAudit({ args, options = {}, logger }) {
-  const targetDir = path.resolve(process.cwd(), args?.[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const slug = String(options.feature || options.slug || '').trim();
 
   if (!slug) {

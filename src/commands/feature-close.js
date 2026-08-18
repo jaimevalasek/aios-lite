@@ -33,6 +33,7 @@ const {
 } = require('../harness/contract-integrity-gate');
 const { analyzeFeatureCompleteness, findingsThroughStage } = require('../lib/feature-completeness');
 const { auditAcceptanceCriteriaTests } = require('../lib/ac-test-audit');
+const { resolveTargetDir } = require('../lib/project-root');
 
 // P0 agent-loading-contract: a feature closing is the natural cadence to roll
 // aged-out current-state.md entries into the cold archive. Conservative window
@@ -398,7 +399,7 @@ async function promptCloseAnyway(blockerCount) {
 }
 
 async function runFeatureClose({ args, options = {}, logger }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   // A10: --slug e --feature são aliases em todo o CLI — metade dos comandos
   // usava um, metade o outro, e o erro "missing_feature" sugeria que a feature
   // não existia quando só a flag estava trocada.

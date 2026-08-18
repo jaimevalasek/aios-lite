@@ -2,9 +2,10 @@
 
 const path = require('node:path');
 const { createWorktree, mergeWorktree, cleanupWorktree, listWorktrees } = require('../squad/worktree-manager');
+const { resolveTargetDir } = require('../lib/project-root');
 
 async function runSquadWorktrees({ args, options, logger }) {
-  const projectDir = path.resolve(process.cwd(), args[0] || '.');
+  const projectDir = resolveTargetDir(args);
   const squadSlug = options.squad || args[1];
 
   if (!squadSlug) {
@@ -48,7 +49,7 @@ async function runSquadWorktrees({ args, options, logger }) {
 }
 
 async function runSquadMerge({ args, options, logger }) {
-  const projectDir = path.resolve(process.cwd(), args[0] || '.');
+  const projectDir = resolveTargetDir(args);
   const squadSlug = options.squad || args[1];
   const agentSlug = options.agent || args[2];
 

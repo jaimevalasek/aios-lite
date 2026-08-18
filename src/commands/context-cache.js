@@ -2,6 +2,7 @@
 
 const path = require('node:path');
 const { saveContextShadow, listSessions, restoreContext, cleanup } = require('../context-cache');
+const { resolveTargetDir } = require('../lib/project-root');
 
 async function runContextCacheList({ args, options, logger }) {
   const cacheDir = options.cacheDir || undefined;
@@ -28,7 +29,7 @@ async function runContextCacheList({ args, options, logger }) {
 }
 
 async function runContextCacheSave({ args, options, logger }) {
-  const cwd = path.resolve(process.cwd(), args[0] || '.');
+  const cwd = resolveTargetDir(args);
   const content = options.content || '';
 
   if (!content) {

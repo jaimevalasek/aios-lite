@@ -12,6 +12,7 @@ const {
   insertWorkerRun,
   listWorkerRuns
 } = require('../runtime-store');
+const { resolveTargetDir } = require('../lib/project-root');
 
 async function handleList(projectDir, squadSlug, { logger, t }) {
   if (!squadSlug) {
@@ -166,7 +167,7 @@ async function handleScaffold(projectDir, squadSlug, workerSlug, options, { logg
 }
 
 async function runSquadWorker({ args, options, logger, t }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const sub = options.sub || 'list';
   const squadSlug = options.squad;
   const workerSlug = options.worker;

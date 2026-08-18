@@ -22,9 +22,10 @@ const {
   validateRunArtifacts
 } = require('../visual-exploration/store');
 const { validateIntake } = require('../visual-exploration/schema');
+const { resolveTargetDir } = require('../lib/project-root');
 
 function projectDir(args) {
-  return path.resolve(process.cwd(), args[0] || '.');
+  return resolveTargetDir(args);
 }
 
 function csv(value) {

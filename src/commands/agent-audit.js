@@ -30,6 +30,7 @@
 
 const fs = require('node:fs/promises');
 const path = require('node:path');
+const { resolveTargetDir } = require('../lib/project-root');
 
 // ─── Thresholds ───────────────────────────────────────────────────────────────
 
@@ -335,7 +336,7 @@ function summarizeActivationRisk(files) {
 // ─── Main command ─────────────────────────────────────────────────────────────
 
 async function runAgentAudit({ args, options = {}, logger }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const verbose = Boolean(options.verbose || options.v);
   const includeLocales = Boolean(options.locales);
   const writeFix = Boolean(options.fix);

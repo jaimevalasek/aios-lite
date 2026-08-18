@@ -16,6 +16,7 @@ const { isContainedPath } = require('../squad/manifest-validator');
 const { validateEvalReport } = require('../squad/eval-contract');
 const { verifyEvalReportIntegrity } = require('../squad/eval-verifier');
 const { isValidSlug } = require('../dossier/schema');
+const { resolveTargetDir } = require('../lib/project-root');
 
 function playbookPath(projectDir) {
   return path.join(projectDir, '.aioson', 'squads', '.playbook', 'generation-playbook.json');
@@ -60,7 +61,7 @@ function sanitizeText(s, max = 280) {
 
 async function runSquadPlaybook({ args = [], options = {}, logger = console } = {}) {
   const sub = args[0] || 'list';
-  const projectDir = path.resolve(process.cwd(), options.dir || options.path || '.');
+  const projectDir = resolveTargetDir(options.dir || options.path);
   const file = playbookPath(projectDir);
 
   if (sub === 'capture') {

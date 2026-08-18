@@ -3,6 +3,7 @@
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const { flattenGenomeBindings, mergeGenomeBindings } = require('../genomes/bindings');
+const { resolveTargetDir } = require('../lib/project-root');
 
 const TIER_COSTS = {
   powerful: { inputPer1k: 0.015, outputPer1k: 0.075 },
@@ -371,7 +372,7 @@ async function buildFallbackSquadRecords(targetDir, metadataSlugs) {
 }
 
 async function runSquadStatus({ args, logger, t }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const squadsDir = path.join(targetDir, SQUADS_DIR);
   const metadataEntries = await fs.readdir(squadsDir, { withFileTypes: true }).catch(() => []);
   const packageDirs = metadataEntries

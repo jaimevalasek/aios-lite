@@ -2,6 +2,7 @@
 
 const fs = require('node:fs/promises');
 const path = require('node:path');
+const { resolveTargetDir } = require('../lib/project-root');
 
 const CHAIN_AGENTS = Object.freeze([
   'product',
@@ -19,7 +20,7 @@ const CHAIN_AGENTS = Object.freeze([
 const FEATURE_DOSSIER_HEADER = '## Feature dossier';
 
 function resolveProjectRoot(targetDir) {
-  return path.resolve(process.cwd(), targetDir || '.');
+  return resolveTargetDir(targetDir);
 }
 
 async function readFileOrNull(filePath) {

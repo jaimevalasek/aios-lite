@@ -13,6 +13,7 @@ const {
   normalizeGenomeBindings,
   resolveExecutorGenomes
 } = require('../genomes/bindings');
+const { resolveTargetDir } = require('../lib/project-root');
 
 function sanitizeSegment(value, fallback) {
   const normalized = String(value || fallback || '')
@@ -927,7 +928,7 @@ async function materializeImportedSquad(projectDir, payload, sourceUrl, force) {
 }
 
 async function ensureProjectDir(targetDir, t) {
-  const absolute = path.resolve(process.cwd(), targetDir || '.');
+  const absolute = resolveTargetDir(targetDir);
   const stat = await fs.stat(absolute).catch(() => null);
   if (!stat || !stat.isDirectory()) {
     throw new Error(t('cloud.project_missing', { path: absolute }));

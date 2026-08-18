@@ -27,6 +27,7 @@ const {
   buildMachineSyncReport,
   collectDependencyIssues
 } = require('../parallel-workspace');
+const { resolveTargetDir } = require('../lib/project-root');
 
 const DEFAULT_FIX_WORKERS = 3;
 
@@ -736,7 +737,7 @@ async function applyParallelFixes(targetDir, context, state, options) {
 }
 
 async function runParallelDoctor({ args, options = {}, logger, t }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const dryRun = Boolean(options['dry-run']);
   const fix = Boolean(options.fix);
   const force = Boolean(options.force);

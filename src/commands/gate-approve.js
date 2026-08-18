@@ -28,6 +28,7 @@ const {
 const { ensureDir } = require('../utils');
 const { runGateCheck } = require('./gate-check');
 const { CHECKPOINTS_DIR } = require('../lib/gate-checkpoint');
+const { resolveTargetDir } = require('../lib/project-root');
 
 const CHECKPOINT_MAX_BYTES = 5120;
 
@@ -82,7 +83,7 @@ function updateFrontmatterField(content, field, value) {
 }
 
 async function runGateApprove({ args, options = {}, logger }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const slug = options.feature ? String(options.feature) : (options.slug ? String(options.slug) : null);
   let gateLetter = options.gate ? String(options.gate).toUpperCase() : null;
 

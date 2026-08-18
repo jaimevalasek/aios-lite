@@ -36,6 +36,7 @@ const { emitGuardEvent } = require('../harness/guard-events');
 const { detectGates, createGate, enterHumanGate, resolveGateState, pendingGates, loadGates } = require('../harness/human-gate');
 const { runCriteria, registerFailureSignatures, startRunSignatures } = require('../harness/criteria-runner');
 const { findActiveContract } = require('../harness/active-contract');
+const { resolveTargetDir } = require('../lib/project-root');
 
 // ─── Agent execution ─────────────────────────────────────────────────────────
 
@@ -344,7 +345,7 @@ async function runPostAttemptGuards({ targetDir, guards, cb, logger, attempt, ag
  * @returns {Promise<object>}  — { ok, iterations, verdict, feedback[] }
  */
 async function runSelfLoop({ args, options = {}, logger }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const agent = String(options.agent || options.a || 'dev').trim();
   const task = String(options.task || options.t || '').trim();
   const spec = options.spec ? String(options.spec).trim() : null;

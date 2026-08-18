@@ -18,6 +18,7 @@ const readline = require('node:readline');
 const { runGitGuard } = require('./git-guard');
 const { promptPicker } = require('../lib/terminal-picker');
 const { evaluatePathRules, loadGuardConfig } = require('../lib/git-commit-guard');
+const { resolveTargetDir } = require('../lib/project-root');
 
 function runGit(gitRoot, args, options = {}) {
   return execFileSync('git', args, {
@@ -326,7 +327,7 @@ function wasPrepCommitted(prep) {
 }
 
 async function runCommitPrepare({ args, options, logger }) {
-  const projectDir = path.resolve(process.cwd(), args[0] || '.');
+  const projectDir = resolveTargetDir(args);
   const jsonMode = Boolean(options.json);
   const stagedOnly = Boolean(options['staged-only'] || options.stagedOnly);
   const agentSafe = Boolean(options['agent-safe'] || options.agentSafe);

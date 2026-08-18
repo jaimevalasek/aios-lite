@@ -9,6 +9,7 @@ const {
   getPipelineDAG,
   getTopologicalOrder
 } = require('../runtime-store');
+const { resolveTargetDir } = require('../lib/project-root');
 
 /**
  * Determine node completion status by checking handoffs.
@@ -112,7 +113,7 @@ async function requirePipelineSlug(slugArg, logger) {
 }
 
 async function runSquadPipeline({ args = [], options = {}, logger = console } = {}) {
-  const projectDir = path.resolve(process.cwd(), args[0] || '.');
+  const projectDir = resolveTargetDir(args);
   const subcommand = options.sub || args[1] || 'list';
   const slugArg = options.pipeline || args[2];
 

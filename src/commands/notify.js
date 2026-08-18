@@ -6,9 +6,9 @@
 // (ℹ / ⚠ / ⛔) and records the event in the runtime SQLite store. Level=block
 // causes the command to exit with code 2 so callers know to wait for a human.
 
-const path = require('node:path');
 const { openRuntimeDb, logAgentEvent } = require('../runtime-store');
 const { render, normalizeLevel } = require('../notify-renderer');
+const { resolveTargetDir } = require('../lib/project-root');
 
 async function emitEvent(targetDir, agent, level, topic, message) {
   try {
@@ -29,7 +29,7 @@ async function emitEvent(targetDir, agent, level, topic, message) {
 }
 
 async function runNotify({ args, options = {}, logger }) {
-  const targetDir = path.resolve(process.cwd(), args?.[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const level = normalizeLevel(options.level);
   const topic = options.topic ? String(options.topic).trim() : '';
   const message = String(options.message || '').trim();

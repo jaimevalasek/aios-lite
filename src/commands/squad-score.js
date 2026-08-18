@@ -8,6 +8,7 @@ const {
 } = require('../squad/manifest-validator');
 const { runSquadValidate } = require('./squad-validate');
 const { isValidSlug } = require('../dossier/schema');
+const { resolveTargetDir } = require('../lib/project-root');
 
 async function readJsonIfExists(filePath) {
   try {
@@ -246,7 +247,7 @@ function suggestQuickWins(d1, d2, d3, d4) {
 }
 
 async function runSquadScore({ args = [], options = {}, logger = console, translator } = {}) {
-  const projectDir = path.resolve(process.cwd(), args[0] || '.');
+  const projectDir = resolveTargetDir(args);
   const slug = options.squad || args[1];
 
   if (!slug) {

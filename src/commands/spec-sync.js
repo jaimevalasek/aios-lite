@@ -3,6 +3,7 @@
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const { openRuntimeDb } = require('../runtime-store');
+const { resolveTargetDir } = require('../lib/project-root');
 
 function nowIso() {
   return new Date().toISOString();
@@ -140,7 +141,7 @@ async function syncSpecFile(db, specPath, { verbose = false } = {}) {
 }
 
 async function runSpecSync({ args, options = {}, logger }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const contextDir = path.join(targetDir, '.aioson', 'context');
 
   let files;

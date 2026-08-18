@@ -25,6 +25,7 @@ const fs = require('node:fs');
 const { runSecurityAudit } = require('./security-audit');
 const { runAgentPrompt } = require('./agents');
 const { resolveActiveFeature } = require('./feature-current');
+const { resolveTargetDir } = require('../lib/project-root');
 
 function silentLogger() {
   return { log() {}, error() {} };
@@ -48,7 +49,7 @@ async function buildAgentPromptText(agentName, targetDir, agentOptions, t) {
 }
 
 async function runReviewFeature({ args, options = {}, logger, t }) {
-  const targetDir = path.resolve(process.cwd(), args?.[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const tool = options.tool || 'claude';
 
   // 1. Resolve the feature slug.

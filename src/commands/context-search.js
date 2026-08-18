@@ -3,6 +3,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { withIndex } = require('../context-search');
+const { resolveTargetDir } = require('../lib/project-root');
 
 async function runContextSearch({ args, options, logger }) {
   const { query, cwd } = resolveSearchTarget(args, options);
@@ -52,7 +53,7 @@ async function runContextSearch({ args, options, logger }) {
 }
 
 async function runContextSearchIndex({ args, options, logger }) {
-  const cwd = path.resolve(process.cwd(), args[0] || options.cwd || '.');
+  const cwd = resolveTargetDir(args[0] || options.cwd);
   const force = Boolean(options.force);
 
   logger.log(`Indexing: ${cwd} ...`);
@@ -75,7 +76,7 @@ async function runContextSearchIndex({ args, options, logger }) {
 }
 
 function resolveSearchTarget(args, options = {}) {
-  let cwd = path.resolve(process.cwd(), options.cwd || '.');
+  let cwd = resolveTargetDir(options.cwd);
   let query = String(options.query || options.q || '').trim();
 
   if (args.length > 0 && query) {

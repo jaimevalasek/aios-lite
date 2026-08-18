@@ -9,6 +9,7 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const { openRuntimeDb, logAgentEvent } = require('../runtime-store');
 const { evaluate, buildPrompt } = require('../memory-reflect-engine');
+const { resolveTargetDir } = require('../lib/project-root');
 
 const REFLECT_PROMPT_RELATIVE = path.join('.aioson', 'runtime', 'reflect-prompt.json');
 
@@ -35,7 +36,7 @@ async function emitEvent(targetDir, agent, type, message, payload) {
 }
 
 async function runMemoryReflectPrepare({ args, options = {}, logger }) {
-  const targetDir = path.resolve(process.cwd(), args?.[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const agent = String(options.agent || '').trim() || 'unknown';
   const gitRange = options['git-range'] || options.range || undefined;
   const force = Boolean(options.force);

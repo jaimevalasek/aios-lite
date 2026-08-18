@@ -4,6 +4,7 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const { TEMPLATE_DIR } = require('../installer');
 const { AGENT_DEFINITIONS, MANAGED_FILES } = require('../constants');
+const { resolveTargetDir } = require('../lib/project-root');
 
 const OBSERVABILITY_EXEMPT = new Set(['neo']);
 
@@ -99,7 +100,7 @@ async function findLocaleAgentFiles(localesRoot) {
 
 async function resolveSurfaces(args) {
   const explicitTarget = Boolean(args[0]);
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const sourceTemplateRoot = path.join(targetDir, 'template', '.aioson', 'agents');
   const workspaceRoot = path.join(targetDir, '.aioson', 'agents');
 

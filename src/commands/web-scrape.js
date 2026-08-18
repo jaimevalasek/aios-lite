@@ -1,12 +1,12 @@
 'use strict';
 
-const path = require('node:path');
 const { scrapePage } = require('../web');
+const { resolveTargetDir } = require('../lib/project-root');
 
 const SUPPORTED_FORMATS = new Set(['markdown', 'text', 'html', 'links']);
 
 async function runWebScrape({ args, options = {}, logger, t }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const url = String(options.url || '').trim();
   const format = String(options.format || 'markdown').trim().toLowerCase();
 

@@ -1,10 +1,10 @@
 'use strict';
 
-const path = require('node:path');
 const { splitCsv, queryBrains, formatBrainNodesCompact } = require('../brain-query');
+const { resolveTargetDir } = require('../lib/project-root');
 
 async function runBrainQuery({ args, options = {}, logger }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const result = await queryBrains({
     targetDir,
     tags: splitCsv(options.tags),

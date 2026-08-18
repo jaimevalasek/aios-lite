@@ -11,9 +11,10 @@
 
 const path = require('node:path');
 const { compactContext } = require('../squad/context-compactor');
+const { resolveTargetDir } = require('../lib/project-root');
 
 async function runContextCompact({ args, options = {}, logger }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const agent = String(options.agent || options.a || 'dev').trim();
   const input = options.input ? String(options.input).trim() : undefined;
   const session = options.session ? String(options.session).trim() : undefined;

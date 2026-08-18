@@ -11,6 +11,7 @@ const {
   buildContextualInput,
   cleanExpiredSessions
 } = require('../squad/external-session');
+const { resolveTargetDir } = require('../lib/project-root');
 
 const SQUADS_DIR = path.join('.aioson', 'squads');
 
@@ -143,7 +144,7 @@ function handleConfig(options, { logger }) {
 }
 
 async function runSquadWebhook({ args, options, logger }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const sub = options.sub || 'start';
 
   switch (sub) {

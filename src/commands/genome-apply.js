@@ -13,9 +13,10 @@
 
 const path = require('node:path');
 const { applyGenomeToExistingSquad } = require('../squads/apply-genome');
+const { resolveTargetDir } = require('../lib/project-root');
 
 async function runGenomeApply({ args, options = {}, logger }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const genome = options.genome ? String(options.genome).trim() : null;
   const squadSlug = options.squad ? String(options.squad).trim() : null;
   const executor = options.executor ? String(options.executor).trim() : null;

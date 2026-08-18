@@ -9,11 +9,11 @@
  *   aioson pattern:detect . --squad=content-team --json
  */
 
-const path = require('node:path');
 const { detectPatterns, formatPatternReport } = require('../squad/pattern-detector');
+const { resolveTargetDir } = require('../lib/project-root');
 
 async function runPatternDetect({ args, options = {}, logger }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const squadSlug = String(options.squad || options.s || '').trim();
 
   if (!squadSlug) {

@@ -1,7 +1,7 @@
 'use strict';
 
-const path = require('node:path');
 const { getActiveProcesses, stopProcess, stopSquadProcesses } = require('../squad-dashboard/process-monitor');
+const { resolveTargetDir } = require('../lib/project-root');
 
 function formatElapsed(seconds) {
   if (seconds == null) return '-';
@@ -11,7 +11,7 @@ function formatElapsed(seconds) {
 }
 
 async function runSquadProcesses({ args, options, logger }) {
-  const projectDir = path.resolve(process.cwd(), args[0] || '.');
+  const projectDir = resolveTargetDir(args);
   const squadFilter = options.squad || null;
 
   // --stop <pid>

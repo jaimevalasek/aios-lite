@@ -1,10 +1,10 @@
 'use strict';
 
-const path = require('node:path');
 const { validateProjectContextFile } = require('../context');
 const {
   PROJECT_WORKFLOW_BY_CLASSIFICATION
 } = require('../workflow-profile');
+const { resolveTargetDir } = require('../lib/project-root');
 
 const WORKFLOW_BY_CLASSIFICATION = PROJECT_WORKFLOW_BY_CLASSIFICATION;
 
@@ -45,7 +45,7 @@ function buildWorkflowPlan(input = {}) {
 }
 
 async function runWorkflowPlan({ args, options = {}, logger, t }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const jsonMode = Boolean(options.json);
   const context = await validateProjectContextFile(targetDir);
   const contextData = context.parsed && context.data ? context.data : {};

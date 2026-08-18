@@ -15,7 +15,7 @@
 const path = require('node:path');
 const fs = require('node:fs/promises');
 const { execFileSync } = require('node:child_process');
-const { resolveProjectRoot } = require('../lib/project-root');
+const { resolveProjectRoot, resolveTargetDir } = require('../lib/project-root');
 const {
   openRuntimeDb,
   resolveRuntimePaths,
@@ -219,7 +219,7 @@ async function runHooksEmit({ args, options = {} }) {
   // The hook fires with the SHELL's cwd, which any `cd` during the session
   // moves — it is a starting point for discovery, never the project root
   // itself. Walk up to the real root so telemetry lands in one store.
-  const startDir = path.resolve(process.cwd(), args[0] || '.');
+  const startDir = resolveTargetDir(args);
   const targetDir = resolveProjectRoot(startDir);
 
   // Hooks attach to an existing project; they never scaffold one. Outside any

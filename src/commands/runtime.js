@@ -2,7 +2,7 @@
 
 const fs = require('node:fs/promises');
 const path = require('node:path');
-const { resolveProjectRootOrSelf } = require('../lib/project-root');
+const { resolveProjectRootOrSelf, resolveTargetDir: resolveCommandDir } = require('../lib/project-root');
 const {
   resolveRuntimePaths,
   openRuntimeDb,
@@ -42,7 +42,7 @@ const DEFAULT_TEXT_FIELDS = ['content', 'text', 'body', 'lyrics', 'markdown'];
 // store, so walk up to the real root first; outside any project the resolved
 // directory stands, keeping scaffolding-from-scratch legitimate.
 function resolveTargetDir(args) {
-  return resolveProjectRootOrSelf(path.resolve(process.cwd(), args[0] || '.'));
+  return resolveProjectRootOrSelf(resolveCommandDir(args));
 }
 
 function requireOption(options, key, t) {

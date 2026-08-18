@@ -40,6 +40,7 @@ const {
   extractStatusWritePathItems
 } = require('../parallel-workspace');
 const { validateFeatureSlug } = require('../verification/path-policy');
+const { resolveTargetDir } = require('../lib/project-root');
 
 const BAR = '━'.repeat(45);
 const EXECUTION_STATE_RELATIVE_PATH = '.aioson/context/workflow-execute.json';
@@ -799,7 +800,7 @@ async function performRunnerTransition(targetDir, suggestion, tool, requestedMod
 }
 
 async function runWorkflowExecute({ args, options = {}, logger }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const slug = options.feature ? String(options.feature).trim() : null;
   const tool = options.tool ? String(options.tool).trim() : 'claude';
   const requestedMode = options.mode ? String(options.mode).trim() : null;

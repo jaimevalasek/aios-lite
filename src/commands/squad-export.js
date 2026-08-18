@@ -4,9 +4,10 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 const { isValidSlug } = require('../dossier/schema');
+const { resolveTargetDir } = require('../lib/project-root');
 
 async function runSquadExport({ args = [], options = {}, logger = console } = {}) {
-  const projectDir = path.resolve(process.cwd(), args[0] || '.');
+  const projectDir = resolveTargetDir(args);
   const slug = options.squad || args[1];
 
   if (!slug) {

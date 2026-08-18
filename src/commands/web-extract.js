@@ -4,6 +4,7 @@ const fsp = require('node:fs/promises');
 const path = require('node:path');
 const { extractSite, searchSavedSite } = require('../web-extract');
 const { ensureCapturedVia } = require('./web-save');
+const { resolveTargetDir } = require('../lib/project-root');
 
 function parseInteger(value, fallback) {
   const parsed = Number.parseInt(String(value ?? ''), 10);
@@ -11,7 +12,7 @@ function parseInteger(value, fallback) {
 }
 
 async function runWebExtract({ args, options = {}, logger, t }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const slug = String(options.slug || '').trim();
   const dirOption = String(options.dir || '').trim();
   if (!slug && !dirOption) {

@@ -5,6 +5,7 @@ const path = require('node:path');
 const { validateProjectContextFile, getInteractionLanguage } = require('../context');
 const { createTranslator } = require('../i18n');
 const { ensureDir, readTextIfExists } = require('../utils');
+const { resolveTargetDir } = require('../lib/project-root');
 
 const TOOL_PRESET_DEFINITIONS = [
   {
@@ -285,7 +286,7 @@ function buildToolPresets(plan, options = {}) {
 }
 
 async function runMcpInit({ args, options = {}, logger, t }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const dryRun = Boolean(options['dry-run']);
   const jsonMode = Boolean(options.json);
   const requestedTool = normalizeTool(options.tool);

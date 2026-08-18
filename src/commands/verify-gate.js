@@ -30,6 +30,7 @@
 
 const fs = require('node:fs/promises');
 const path = require('node:path');
+const { resolveTargetDir } = require('../lib/project-root');
 
 // ─── Spec parser ──────────────────────────────────────────────────────────────
 
@@ -386,7 +387,7 @@ function determineVerdict(issues, notes, strict) {
 // ─── Main command ─────────────────────────────────────────────────────────────
 
 async function runVerifyGate({ args, options = {}, logger }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const strict = Boolean(options.strict);
 
   // ── Locate spec ──────────────────────────────────────────────────────────

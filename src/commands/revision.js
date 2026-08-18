@@ -14,9 +14,10 @@ const path = require('node:path');
 
 const revStore = require('../dossier/revision-store');
 const { isValidSlug } = require('../dossier/schema');
+const { resolveTargetDir } = require('../lib/project-root');
 
 function resolveContextDir(targetDir) {
-  return path.join(path.resolve(process.cwd(), targetDir || '.'), '.aioson', 'context');
+  return path.join(resolveTargetDir(targetDir), '.aioson', 'context');
 }
 
 function pickSlug(options) {

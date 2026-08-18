@@ -3,6 +3,7 @@
 const path = require('node:path');
 const fs = require('node:fs/promises');
 const { openRuntimeDb, listSquadLearnings, listProjectLearnings, listDynamicTools } = require('../runtime-store');
+const { resolveTargetDir } = require('../lib/project-root');
 
 const MIN_FREQUENCY = 2;
 const INACTIVITY_DAYS = 14;
@@ -72,7 +73,7 @@ async function countPendingEvolutions(projectDir) {
  * Comando principal: aioson health [project-dir]
  */
 async function runHealth({ args = [], options = {}, logger = console } = {}) {
-  const projectDir = path.resolve(process.cwd(), args[0] || '.');
+  const projectDir = resolveTargetDir(args);
   const quiet = Boolean(options.quiet);
   const json = Boolean(options.json);
 

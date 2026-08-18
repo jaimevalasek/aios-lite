@@ -22,6 +22,7 @@ const {
   replaceSection,
   replaceMetadataLine
 } = require('../parallel-workspace');
+const { resolveTargetDir } = require('../lib/project-root');
 
 function parseLaneIndex(fileName) {
   const match = String(fileName || '').match(/^agent-(\d+)\.status\.md$/);
@@ -99,7 +100,7 @@ function buildStructuralSummary({ sharedExists, machineFiles, sync, ownershipCon
 }
 
 async function runParallelMerge({ args, options = {}, logger, t }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const apply = Boolean(options.apply);
   const generatedAt = new Date().toISOString();
   const parallelDir = path.join(targetDir, PARALLEL_RELATIVE_DIR);

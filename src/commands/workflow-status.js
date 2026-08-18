@@ -11,6 +11,7 @@ const { readAgentManifest, buildAgentCapabilitySummary } = require('../agent-man
 const { validateHandoffContract } = require('../handoff-contract');
 const { listGenomes } = require('../genome-files');
 const { loadOrCreateState } = require('./workflow-next');
+const { resolveTargetDir } = require('../lib/project-root');
 
 const STATE_RELATIVE_PATH = '.aioson/context/workflow.state.json';
 
@@ -313,7 +314,7 @@ function handoffMatchesState(handoff, state) {
 }
 
 async function runWorkflowStatus({ args, options, logger, t }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const tool = options.tool || 'codex';
 
   let state = null;

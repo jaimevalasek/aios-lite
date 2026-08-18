@@ -17,6 +17,7 @@ const {
   buildMachineSyncReport,
   collectDependencyIssues
 } = require('../parallel-workspace');
+const { resolveTargetDir } = require('../lib/project-root');
 
 const KNOWN_STATUSES = ['pending', 'in_progress', 'completed', 'merged', 'blocked'];
 
@@ -170,7 +171,7 @@ async function parseLaneFile(parallelDir, index) {
 }
 
 async function runParallelStatus({ args, options = {}, logger, t }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const parallelDir = path.join(targetDir, '.aioson/context/parallel');
 
   if (!(await exists(parallelDir))) {

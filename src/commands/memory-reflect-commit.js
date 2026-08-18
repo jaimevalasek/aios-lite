@@ -12,6 +12,7 @@ const { openRuntimeDb, logAgentEvent } = require('../runtime-store');
 const { validate, readBootstrapSnapshot } = require('../memory-reflect-engine');
 const { REFLECT_PROMPT_RELATIVE } = require('./memory-reflect-prepare');
 const { stripInjectionChars } = require('../lib/llm-content-sanitizer');
+const { resolveTargetDir } = require('../lib/project-root');
 
 async function readJsonFile(filePath) {
   const raw = await fs.readFile(filePath, 'utf8');
@@ -61,7 +62,7 @@ async function emitEvent(targetDir, agent, type, message, payload) {
 }
 
 async function runMemoryReflectCommit({ args, options = {}, logger }) {
-  const targetDir = path.resolve(process.cwd(), args?.[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const agent = String(options.agent || '').trim() || 'unknown';
   const dryRun = Boolean(options['dry-run'] || options.dryRun);
 

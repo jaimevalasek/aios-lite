@@ -12,6 +12,7 @@ const path = require('node:path');
 const { validateOutput, enforceCaps, loadConfig } = require('../sub-task-engine');
 const { withLock } = require('../sub-task-state');
 const { openRuntimeDb, logAgentEvent } = require('../runtime-store');
+const { resolveTargetDir } = require('../lib/project-root');
 
 function fail(code, message, details, logger, options) {
   const error = { error: { code, message } };
@@ -32,7 +33,7 @@ async function emitEvent(targetDir, agent, type, message, payload) {
 }
 
 async function runScoutValidate({ args, options = {}, logger }) {
-  const targetDir = path.resolve(process.cwd(), args?.[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const inputPath = options.input ? String(options.input) : null;
   if (!inputPath) {
     return fail('input_invalid', '--input=<path> required', null, logger, options);

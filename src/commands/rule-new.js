@@ -2,6 +2,7 @@
 
 const path = require('node:path');
 const { scaffoldRule } = require('../lib/rule-scaffold');
+const { resolveTargetDir } = require('../lib/project-root');
 
 function translated(t, key, values, fallback) {
   if (typeof t !== 'function') return fallback;
@@ -19,7 +20,7 @@ const ERRORS = {
 };
 
 async function runRuleNew({ args, options = {}, logger, t }) {
-  const projectDir = path.resolve(process.cwd(), args[0] || '.');
+  const projectDir = resolveTargetDir(args);
   const result = await scaffoldRule(projectDir, options);
 
   if (!result.ok) {

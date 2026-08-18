@@ -7,6 +7,7 @@
 
 const fs = require('node:fs/promises');
 const path = require('node:path');
+const { resolveTargetDir } = require('../lib/project-root');
 
 const STOPWORDS = new Set([
   'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with',
@@ -135,7 +136,7 @@ async function resolveDocPaths({ projectDir, docsOpt, slug }) {
 }
 
 async function runSquadRoleScan({ args = [], options = {}, logger = console } = {}) {
-  const projectDir = path.resolve(process.cwd(), args[0] || '.');
+  const projectDir = resolveTargetDir(args);
   const slug = options.squad || args[1];
   const docsOpt = options.docs;
 

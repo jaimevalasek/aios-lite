@@ -3,6 +3,7 @@
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const { openRuntimeDb } = require('../runtime-store');
+const { resolveTargetDir } = require('../lib/project-root');
 
 function slugify(text) {
   return String(text || '')
@@ -42,7 +43,7 @@ created_at: ${learning.created_at ? learning.created_at.slice(0, 10) : now}
 }
 
 async function runLearningExport({ args, options = {}, logger }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const minFrequency = Number(options['min-frequency'] || options.minFrequency || 1);
   const brainsDir = path.join(targetDir, '.aioson', 'brains');
 

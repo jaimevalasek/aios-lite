@@ -6,6 +6,7 @@ const ignore = require('ignore');
 const { exists, ensureDir } = require('../utils');
 const { readConfig } = require('./config');
 const { readWorkspace, findProjectRoot } = require('./workspace');
+const { resolveTargetDir } = require('../lib/project-root');
 
 let _terser = null;
 function getTerser() {
@@ -488,7 +489,7 @@ async function syncPackageVersions(dir, version, logger) {
 // ── system:package ──────────────────────────────────────────────────────────
 
 async function runSystemPackage({ args, options, logger, t }) {
-  const dir = path.resolve(process.cwd(), args[0] || '.');
+  const dir = resolveTargetDir(args);
 
   logger.log(t('system.package_reading_manifest'));
   const manifest = await readSystemJson(dir, t);
@@ -536,7 +537,7 @@ async function runSystemPackage({ args, options, logger, t }) {
 async function runSystemPublish({ args, options, logger, t }) {
   const config = await readConfig();
   const token = requireToken(config, t);
-  const dir = path.resolve(process.cwd(), args[0] || '.');
+  const dir = resolveTargetDir(args);
   const buildMode = Boolean(options.build);
 
   logger.log(t('system.publish_reading_manifest'));
@@ -671,7 +672,7 @@ async function runSystemList({ args, options, logger, t }) {
   }
 
   // Local: list cached system packages
-  const projectDir = await findProjectRoot(path.resolve(process.cwd(), args[0] || '.'));
+  const projectDir = await findProjectRoot(resolveTargetDir(args));
   const pkgsDir = path.join(projectDir, SYSTEM_PACKAGES_DIR);
 
   if (!(await exists(pkgsDir))) {
@@ -701,7 +702,7 @@ async function runSystemList({ args, options, logger, t }) {
 async function runSystemInstall({ args, options, logger, t }) {
   const config = await readConfig();
   const token = requireToken(config, t);
-  const projectDir = await findProjectRoot(path.resolve(process.cwd(), args[0] || '.'));
+  const projectDir = await findProjectRoot(resolveTargetDir(args));
   const baseUrl = resolveBaseUrl(config);
 
   const ref = String(options.slug || options.code || args[1] || '').trim();

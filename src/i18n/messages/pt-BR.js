@@ -621,6 +621,8 @@ module.exports = {
     bootstrap_coverage_hint_seed: 'Rode /discover para criar .aioson/context/bootstrap/{what-is,how-it-works,what-it-does,current-state}.md',
     features_dir_present: 'Diretorio de features presente (.aioson/context/features/)',
     features_dir_present_hint: 'Crie .aioson/context/features/ para hospedar dossies por feature (doctor --fix cria automaticamente).',
+    no_nested_project_root: 'Sem raiz AIOSON aninhada dentro de .aioson/ ({count} encontradas)',
+    no_nested_project_root_hint: 'Armazenamento AIOSON orfao, criado por um comando rodado de dentro de .aioson/: {paths}. Nada le esse conteudo e o estado de runtime nunca reconcilia com o real — apague esses diretorios. O CLI agora redireciona essas execucoes para a raiz do projeto dona.',
     auto_handoff_declared: 'Flag de autopilot handoff declarada (auto_handoff no project.context.md)',
     auto_handoff_declared_hint: 'O protocolo autopilot-handoff esta instalado e auto_handoff nao esta definido — o @product pergunta o modo na tela no inicio de cada feature (Autopilot / Passo a passo / Sempre). Defina auto_handoff: true para sempre autopilot e pular a pergunta, ou false para sempre passo a passo.',
     claude_commands_present: 'Slash commands do Claude presentes ({missing} ausentes de {required})',

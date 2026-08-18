@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { buildGuardResponse } = require('../context-guard');
 const { normalizeAgentName } = require('../agents');
-const { resolveProjectRootOrSelf } = require('../lib/project-root');
+const { resolveProjectRootOrSelf, resolveTargetDir } = require('../lib/project-root');
 
 // `aioson context:guard [path] --tool=claude [--json]`
 //
@@ -15,7 +15,7 @@ const { resolveProjectRootOrSelf } = require('../lib/project-root');
 async function runContextGuard({ args, options = {}, logger }) {
   // `$PWD` from the hook is a starting point, not the project root — resolve
   // upward so rules are read from the project that actually owns the edit.
-  const targetDir = resolveProjectRootOrSelf(path.resolve(process.cwd(), args[0] || '.'));
+  const targetDir = resolveProjectRootOrSelf(resolveTargetDir(args));
   const event = await resolveEvent(args, options);
 
   let response;

@@ -19,6 +19,7 @@ const {
 const { aggregate } = require('../lib/retro/retro-aggregate');
 const { openRuntimeDb, promoteProjectLearning } = require('../runtime-store');
 const { upsertProjectLearning } = require('./devlog-process');
+const { resolveTargetDir } = require('../lib/project-root');
 
 const SLUG_RE = /^[a-z0-9][a-z0-9-]*$/;
 const TARGETS = new Set(['learnings', 'rules']);
@@ -290,7 +291,7 @@ async function applyPromotions(rootDir, selectedCandidates, items, { dossierRelP
 
 async function runHarnessRetroPromote({ args, options = {}, logger } = {}) {
   const log = logger || { log() {}, error() {} };
-  const rootDir = path.resolve(process.cwd(), (args && args[0]) || '.');
+  const rootDir = resolveTargetDir(args);
   const slug = options.feature !== undefined && options.feature !== true
     ? String(options.feature || '').trim()
     : '';

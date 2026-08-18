@@ -3,6 +3,7 @@
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const { openRuntimeDb } = require('../runtime-store');
+const { resolveTargetDir } = require('../lib/project-root');
 
 const CHARS_PER_TOKEN = 4;
 const HEAVY_TOKEN_THRESHOLD = 5000;   // ~20KB
@@ -178,7 +179,7 @@ async function getCacheHitRate(db) {
 }
 
 async function runContextHealth({ args, options = {}, logger }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const contextDir = path.join(targetDir, '.aioson', 'context');
 
   let entries;

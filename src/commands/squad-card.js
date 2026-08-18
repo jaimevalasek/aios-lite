@@ -14,6 +14,7 @@
 
 const fs = require('node:fs/promises');
 const path = require('node:path');
+const { resolveTargetDir } = require('../lib/project-root');
 
 const SQUADS_DIR = path.join('.aioson', 'squads');
 
@@ -104,7 +105,7 @@ function generateAgentCard(manifest, options = {}) {
  * CLI handler.
  */
 async function runSquadCard({ args, options = {}, logger }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const squadSlug = String(options.squad || options.s || '').trim();
 
   if (!squadSlug) {

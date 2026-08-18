@@ -53,6 +53,7 @@ const STALENESS_CHAIN = [
 const TRACE_TARGETS = ['spec', 'design_doc', 'implementation_plan', 'conformance'];
 
 const { parseExecutionWaves } = require('../harness/plan-waves');
+const { resolveTargetDir } = require('../lib/project-root');
 
 function extractIds(content, regex) {
   return new Set(String(content || '').match(regex) || []);
@@ -79,7 +80,7 @@ function readContract(targetDir, slug) {
 }
 
 async function runSpecAnalyze({ args, options = {}, logger }) {
-  const targetDir = path.resolve(process.cwd(), args?.[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const slug = String(options.feature || options.slug || '').trim();
 
   if (!slug) {

@@ -15,6 +15,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { openRuntimeDb, appendContextLoadEvent } = require('../runtime-store');
+const { resolveTargetDir } = require('../lib/project-root');
 
 const PAYLOAD_BYTE_CAP = 4 * 1024; // BR-ALL-08
 
@@ -103,7 +104,7 @@ function eventTypeForKind(kind) {
 }
 
 async function runContextLoad({ args, options = {}, logger, t }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const verbose = Boolean(options.verbose);
   const json = Boolean(options.json);
   const log = (msg) => { if (verbose && logger && typeof logger.log === 'function') logger.log(msg); };

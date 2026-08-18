@@ -1,14 +1,10 @@
 'use strict';
 
-const path = require('node:path');
 const { runPulseUpdate } = require('./pulse-update');
 const { runDossierAddFinding } = require('./dossier');
 const { runGateApprove } = require('./gate-approve');
 const { runAgentDone } = require('./runtime');
-
-function resolveTargetDir(args) {
-  return path.resolve(process.cwd(), args[0] || '.');
-}
+const { resolveTargetDir } = require('../lib/project-root');
 
 function normalizeAgent(value) {
   return String(value || '').trim().replace(/^@/, '');

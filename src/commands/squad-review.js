@@ -20,9 +20,10 @@
 
 const path = require('node:path');
 const { runCrossAIReview, detectAvailableCLIs } = require('../squad/cross-ai-synthesizer');
+const { resolveTargetDir } = require('../lib/project-root');
 
 async function runSquadReview({ args, options = {}, logger }) {
-  const projectDir = path.resolve(process.cwd(), args[0] || '.');
+  const projectDir = resolveTargetDir(args);
   const squadSlug = String(options.squad || '').trim();
   const outputFile = String(options.output || '').trim();
 

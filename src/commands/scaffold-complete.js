@@ -21,10 +21,7 @@ const {
   openRuntimeDb,
   appendRunEvent
 } = require('../runtime-store');
-
-function resolveTargetDir(args) {
-  return path.resolve(process.cwd(), args[0] || '.');
-}
+const { resolveTargetDir } = require('../lib/project-root');
 
 function requireOption(options, key, t) {
   const value = options[key];

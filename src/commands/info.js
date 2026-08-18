@@ -1,12 +1,12 @@
 'use strict';
 
-const path = require('node:path');
 const { detectFramework } = require('../detector');
 const { detectExistingInstall } = require('../installer');
 const { getCliVersion } = require('../version');
+const { resolveTargetDir } = require('../lib/project-root');
 
 async function runInfo({ args, options = {}, logger, t }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const jsonMode = Boolean(options.json);
   const version = await getCliVersion();
 

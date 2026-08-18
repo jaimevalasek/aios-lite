@@ -1,7 +1,7 @@
 'use strict';
 
-const path = require('node:path');
 const { backupAiosonDocs } = require('../backup-local');
+const { resolveTargetDir } = require('../lib/project-root');
 
 /**
  * aioson backup:local [.]
@@ -10,7 +10,7 @@ const { backupAiosonDocs } = require('../backup-local');
  * to ~/.aioson/backups/{project}/{timestamp}/
  */
 async function runBackupLocal({ args, options, logger }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const result = await backupAiosonDocs(targetDir);
 
   if (result.count === 0) {

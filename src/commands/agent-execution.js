@@ -4,6 +4,7 @@ const {initManifest,loadManifest,resolveAgentExecution,resolveDevelopmentLaneExe
 const {dispatch,readState}=require('../agent-execution/dispatcher');
 const {openRuntimeDb,getExecutionSnapshot,listExecutionEvents}=require('../runtime-store');
 const {validateFeatureSlug}=require('../verification/path-policy');
+const { resolveTargetDir } = require('../lib/project-root');
 async function resolveAllAgents(manifest,catalogLoader){
  const entries=await Promise.all(Object.keys(manifest.agents).map(async id=>[id,await resolveAgentExecution(manifest,id,{}, {catalogLoader})]));
  return Object.fromEntries(entries);
@@ -17,7 +18,7 @@ function resolutionErrors(resolutions,prefix='agents'){
  return Object.entries(resolutions).filter(([,value])=>!value.ok).map(([id,value])=>({path:`$.${prefix}.${id}.model`,message:value.reason,candidates:value.candidates||[],supported:value.supported||[]}));
 }
 async function runAgentExecution({args,options={},logger,catalogLoader}){
- const projectDir=path.resolve(process.cwd(),args[0]||'.'); const sub=options.sub||'show'; const featureInput=String(options.feature||options.slug||'').trim();
+ const projectDir=resolveTargetDir(args); const sub=options.sub||'show'; const featureInput=String(options.feature||options.slug||'').trim();
  if(!featureInput)return {ok:false,reason:'feature_required',message:'Use --feature=<slug>'};
  const featureValidation=validateFeatureSlug(featureInput);
  if(!featureValidation.ok)return{ok:false,reason:'invalid_feature_slug',feature:featureInput,message:'--feature must be a lowercase kebab-case slug'};

@@ -3,6 +3,7 @@
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const { parseFrontmatter } = require('../preflight-engine');
+const { resolveTargetDir } = require('../lib/project-root');
 
 const ROUTING_FIELDS = [
   'task_types',
@@ -77,7 +78,7 @@ async function collectMarkdownFiles(absDir, relDir, recursive) {
 }
 
 async function runRulesLint({ args, options = {}, logger }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const relDir = '.aioson/rules';
 
   const files = await collectMarkdownFiles(path.join(targetDir, '.aioson', 'rules'), relDir, true);

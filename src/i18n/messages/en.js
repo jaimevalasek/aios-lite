@@ -645,6 +645,8 @@ module.exports = {
     bootstrap_coverage_hint_seed: 'Run /discover to seed .aioson/context/bootstrap/{what-is,how-it-works,what-it-does,current-state}.md',
     features_dir_present: 'Features directory present (.aioson/context/features/)',
     features_dir_present_hint: 'Create .aioson/context/features/ to host per-feature dossiers (doctor --fix will create it).',
+    no_nested_project_root: 'No nested AIOSON root inside .aioson/ ({count} found)',
+    no_nested_project_root_hint: 'Stray AIOSON storage scaffolded by a command run from inside .aioson/: {paths}. Nothing reads it and its runtime state never reconciles with the real one — delete those directories. The CLI now redirects such runs to the owning project root.',
     auto_handoff_declared: 'Autopilot handoff flag declared (auto_handoff in project.context.md)',
     auto_handoff_declared_hint: 'The autopilot-handoff protocol is installed and auto_handoff is not set — @product asks the run mode on screen at each feature kickoff (Autopilot / Step by step / Always). Set auto_handoff: true to always autopilot and skip the question, or false to always go step-by-step.',
     claude_commands_present: 'Claude slash commands present ({missing} missing of {required})',

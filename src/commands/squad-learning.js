@@ -10,6 +10,7 @@ const {
   archiveStaleSquadLearnings,
   getSquadLearningStats
 } = require('../runtime-store');
+const { resolveTargetDir } = require('../lib/project-root');
 
 const SQUADS_DIR = path.join('.aioson', 'squads');
 
@@ -180,7 +181,7 @@ async function handleExport(projectDir, squadSlug, { logger, t }) {
  * Entry point for CLI integration.
  */
 async function runSquadLearning({ args = [], options = {}, logger = console, t = (k) => k } = {}) {
-  const projectDir = path.resolve(process.cwd(), args[0] || '.');
+  const projectDir = resolveTargetDir(args);
   const sub = options.sub || args[1] || 'list';
   const slug = options.squad || args[2] || null;
   const context = { logger, t };

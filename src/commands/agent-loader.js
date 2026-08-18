@@ -2,11 +2,12 @@
 
 const path = require('node:path');
 const { AgentLoader } = require('../agent-loader');
+const { resolveTargetDir } = require('../lib/project-root');
 
 async function runAgentLoad({ args, options, logger }) {
   const agentId = args[0] || options.agent || '';
   const goal = options.goal || '';
-  const cwd = path.resolve(process.cwd(), options.cwd || '.');
+  const cwd = resolveTargetDir(options.cwd);
   const agentsDir = path.join(cwd, options['agents-dir'] || '.aioson/agents');
   const maxShards = Number(options['max-shards']) || 3;
   const maxTokens = Number(options['max-tokens']) || 2000;
@@ -54,7 +55,7 @@ async function runAgentLoad({ args, options, logger }) {
 }
 
 async function runAgentShardIndex({ args, options, logger }) {
-  const cwd = path.resolve(process.cwd(), args[0] || '.');
+  const cwd = resolveTargetDir(args);
   const agentsDir = path.join(cwd, options['agents-dir'] || '.aioson/agents');
   const force = Boolean(options.force);
 

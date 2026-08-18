@@ -10,6 +10,7 @@ const {
 const { inspectOutputPolicy } = require('../squad/output-policy');
 const { isValidSlug } = require('../dossier/schema');
 const { analyzeGenomeApprovals } = require('../lib/genome-approval-lint');
+const { resolveTargetDir } = require('../lib/project-root');
 
 async function pathExists(targetPath) {
   try { await fs.access(targetPath); return true; } catch { return false; }
@@ -370,7 +371,7 @@ async function validateSemanticDeep(projectDir, slug, manifest) {
 }
 
 async function runSquadValidate({ args = [], options = {}, logger = console } = {}) {
-  const projectDir = path.resolve(process.cwd(), args[0] || '.');
+  const projectDir = resolveTargetDir(args);
   const slug = options.squad || args[1];
   const strict = options.strict === true || options.strict === 'true';
 

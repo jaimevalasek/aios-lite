@@ -23,6 +23,39 @@ const { openRuntimeDb } = require('./runtime-store');
 
 const BOOTSTRAP_REQUIRED = ['what-is.md', 'how-it-works.md', 'what-it-does.md', 'current-state.md'];
 
+// A `.aioson/` or `aioson-logs/` directory INSIDE the project's own `.aioson/`
+// tree is never legitimate: it is the residue of a command that ran with its
+// working directory pointing at framework storage and scaffolded a second
+// project there — its own runtime store, telemetry and logs, forked from the
+// real one. `resolveTargetDir` prevents new ones; this reports the old.
+const NESTED_ROOT_NAMES = new Set(['.aioson', 'aioson-logs']);
+const NESTED_SCAN_MAX_DEPTH = 6;
+const NESTED_SCAN_MAX_DIRS = 4000;
+
+async function scanNestedProjectRoots(targetDir) {
+  const found = [];
+  const stack = [{ dir: path.join(targetDir, '.aioson'), depth: 0 }];
+  let seen = 0;
+  while (stack.length) {
+    const { dir, depth } = stack.pop();
+    if (depth > NESTED_SCAN_MAX_DEPTH || seen > NESTED_SCAN_MAX_DIRS) break;
+    let entries;
+    try { entries = await fs.readdir(dir, { withFileTypes: true }); } catch { continue; }
+    for (const entry of entries) {
+      if (!entry.isDirectory()) continue;
+      seen += 1;
+      const full = path.join(dir, entry.name);
+      if (NESTED_ROOT_NAMES.has(entry.name)) {
+        // Report it, never descend — the residue's own contents are not news.
+        found.push(path.relative(targetDir, full).split(path.sep).join('/'));
+        continue;
+      }
+      stack.push({ dir: full, depth: depth + 1 });
+    }
+  }
+  return found.sort();
+}
+
 // Every agent file installed under .aioson/agents/ needs a matching slash-command
 // wrapper under .claude/commands/aioson/agent/ — derived live so a newly added
 // agent is never silently missing its command file (was a hardcoded 4-item list).
@@ -520,6 +553,18 @@ async function runDoctor(targetDir) {
     }
   });
 
+  // 6. no_nested_project_root
+  const nestedRoots = await scanNestedProjectRoots(targetDir);
+  checks.push({
+    id: 'living-memory:no_nested_project_root',
+    severity: 'warning',
+    key: 'doctor.no_nested_project_root',
+    params: { count: nestedRoots.length },
+    ok: nestedRoots.length === 0,
+    hintKey: nestedRoots.length === 0 ? undefined : 'doctor.no_nested_project_root_hint',
+    hintParams: nestedRoots.length === 0 ? undefined : { paths: nestedRoots.join(', ') }
+  });
+
   // Overall `ok` only considers errors (not warnings). `failedCount` still
   // includes warnings so the user sees them in the count line.
   const errorChecks = checks.filter((c) => !c.ok && c.severity !== 'warning');
@@ -539,6 +584,7 @@ async function runDoctor(targetDir) {
       claudeCommandsMissing: missingClaudeCmds,
       versionDrift: !versionOk ? { context: contextVersion, cli: cliVersion } : null,
       permissions: permsAssessment,
+      nestedProjectRoots: nestedRoots,
       scoutPruning: scoutAssessment,
       curation: {
         classification,
@@ -816,6 +862,7 @@ async function applyDoctorFixes(targetDir, report, options = {}) {
 
 module.exports = {
   runDoctor,
+  scanNestedProjectRoots,
   parseMajor,
   applyDoctorFixes
 };

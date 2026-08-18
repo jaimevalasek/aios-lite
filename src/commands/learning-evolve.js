@@ -4,6 +4,7 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const { randomUUID } = require('node:crypto');
 const { openRuntimeDb, listSquadLearnings, listProjectLearnings, promoteSquadLearning, promoteProjectLearning } = require('../runtime-store');
+const { resolveTargetDir } = require('../lib/project-root');
 
 const AGENTS_DIR = path.join('.aioson', 'agents');
 const EVOLUTION_DIR = path.join('.aioson', 'evolution');
@@ -109,7 +110,7 @@ async function applyDelta(delta, projectDir) {
  * Ponto de entrada principal.
  */
 async function runLearningEvolve({ args = [], options = {}, logger = console, t = (k) => k } = {}) {
-  const projectDir = path.resolve(process.cwd(), args[0] || '.');
+  const projectDir = resolveTargetDir(args);
   const squadSlug = options.squad || null;
   const dryRun = Boolean(options['dry-run'] || options.dry);
   const autoApply = Boolean(options['auto-apply'] || options.auto);
@@ -298,7 +299,7 @@ async function applyProposed(proposed, projectDir, db, logger, quiet, squadSlug)
  * Subcomando: apply — aplica um arquivo de deltas pendentes.
  */
 async function runLearningApply({ args = [], options = {}, logger = console } = {}) {
-  const projectDir = path.resolve(process.cwd(), args[0] || '.');
+  const projectDir = resolveTargetDir(args);
   const filePath = options.file ? String(options.file) : null;
 
   if (!filePath) {

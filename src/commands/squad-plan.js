@@ -14,6 +14,7 @@ const {
   updateSquadPlanRoundStatus,
   getSquadPlanRounds
 } = require('../runtime-store');
+const { resolveTargetDir } = require('../lib/project-root');
 
 const SQUADS_DIR = path.join('.aioson', 'squads');
 
@@ -340,7 +341,7 @@ async function run(projectDir, args, context) {
  * Entry point for CLI integration (same signature as other commands).
  */
 async function runSquadPlan({ args = [], options = {}, logger = console, t = (k) => k } = {}) {
-  const projectDir = path.resolve(process.cwd(), args[0] || '.');
+  const projectDir = resolveTargetDir(args);
   const sub = options.sub || args[1] || 'show';
   const slug = options.squad || args[2] || null;
   const context = { logger, t };

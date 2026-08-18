@@ -12,11 +12,11 @@
  * stack is recorded as the user describes it.
  */
 
-const path = require('node:path');
 const { detectFramework, isMonorepoDetection } = require('../detector');
+const { resolveTargetDir } = require('../lib/project-root');
 
 async function runSetupDetect({ args, options = {}, logger }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   let detection;
   try {
     detection = await detectFramework(targetDir);

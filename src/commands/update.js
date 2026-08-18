@@ -1,6 +1,5 @@
 'use strict';
 
-const path = require('node:path');
 // Namespace require (no destructuring) so tests can stub installDefaultHooks'
 // inner runHooksInstall — the real thing mutates machine-global settings.
 const hooksInstall = require('./hooks-install');
@@ -9,9 +8,10 @@ const { updateInstallation } = require('../updater');
 const { validateProjectContextFile, getInteractionLanguage } = require('../context');
 const { applyAgentLocale } = require('../locales');
 const { getCliVersionLabelSync } = require('../version');
+const { resolveTargetDir } = require('../lib/project-root');
 
 async function runUpdate({ args, options, logger, t }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const dryRun = Boolean(options['dry-run']);
   const all = Boolean(options.all);
   const selective = Boolean(options.selective);

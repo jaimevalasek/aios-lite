@@ -14,6 +14,7 @@ const {
   isSelected
 } = require('../learning-import-claude');
 const { upsertProjectLearning } = require('./devlog-process');
+const { resolveTargetDir } = require('../lib/project-root');
 
 /**
  * Subcommand: list [--status=active|stale|archived|promoted]
@@ -188,7 +189,7 @@ async function handleImportFromClaude(projectDir, options, { logger }) {
  * Entry point for CLI integration.
  */
 async function runLearning({ args = [], options = {}, logger = console, t = (k) => k } = {}) {
-  const projectDir = path.resolve(process.cwd(), args[0] || '.');
+  const projectDir = resolveTargetDir(args);
   const sub = options.sub || args[1] || 'list';
   const context = { logger, t };
 

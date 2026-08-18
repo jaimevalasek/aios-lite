@@ -37,6 +37,7 @@
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const { contextDir, readFileSafe, parseFrontmatter, scanArtifacts } = require('../preflight-engine');
+const { resolveTargetDir } = require('../lib/project-root');
 
 const MAX_CONTEXT = 4;
 
@@ -73,7 +74,7 @@ async function fileExistsRel(targetDir, rel) {
 }
 
 async function runStateSave({ args, options = {}, logger }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const slug = options.feature ? String(options.feature) : null;
   const phase = options.phase ? String(options.phase) : null;
   const next = options.next ? String(options.next) : null;
@@ -230,7 +231,7 @@ async function runStateSave({ args, options = {}, logger }) {
  *   aioson state:reset . --archive --json
  */
 async function runStateReset({ args, options = {}, logger }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const statePath = path.join(contextDir(targetDir), 'dev-state.md');
   const archive = Boolean(options.archive);
 

@@ -1,7 +1,7 @@
 'use strict';
 
-const path = require('node:path');
 const { runDoctor, applyDoctorFixes } = require('../doctor');
+const { resolveTargetDir } = require('../lib/project-root');
 
 function printDoctorChecks(report, logger, t) {
   for (const check of report.checks) {
@@ -58,7 +58,7 @@ function printFixAction(action, logger, t, dryRun) {
 }
 
 async function runDoctorCommand({ args, options = {}, logger, t }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const fix = Boolean(options.fix);
   const dryRun = Boolean(options['dry-run']);
   const jsonMode = Boolean(options.json);

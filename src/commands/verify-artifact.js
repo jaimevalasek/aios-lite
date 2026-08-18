@@ -29,6 +29,7 @@ const fs = require('node:fs');
 const { spawnSync } = require('node:child_process');
 
 const { evaluateStaticCriterion } = require('../harness/static-criteria');
+const { resolveTargetDir, resolveOperandPath } = require('../lib/project-root');
 
 const VERSION = '1.0.0';
 const GENERATOR = `aioson verify:artifact@${VERSION}`;
@@ -997,11 +998,14 @@ async function evaluateKind(kind, ctx, logger) {
 // ─── main command ─────────────────────────────────────────────────────────────
 
 async function runVerifyArtifact({ args, options = {}, logger }) {
-  const targetDir = path.resolve(process.cwd(), args?.[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const kind = options.kind ? String(options.kind).trim() : '';
   const slug = options.slug ? String(options.slug).trim() : null;
-  const file = options.file ? String(options.file).trim() : null;
-  const dir = options.dir ? String(options.dir).trim() : null;
+  // Absolutized here so every kind downstream reads the artifact the caller
+  // meant: when the target dir was lifted out of a .aioson/ tree, a relative
+  // operand still resolves from where the command was actually run.
+  const file = options.file ? resolveOperandPath(targetDir, String(options.file).trim()) : null;
+  const dir = options.dir ? resolveOperandPath(targetDir, String(options.dir).trim()) : null;
   const noBuild = Boolean(options['no-build'] || options.noBuild);
   const buildTimeout = options['build-timeout'] ? Number(options['build-timeout']) : undefined;
   const buildCommand = Array.isArray(options.buildCommand) ? options.buildCommand : undefined;

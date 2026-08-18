@@ -1,6 +1,5 @@
 'use strict';
 
-const path = require('node:path');
 // Namespace require (no destructuring) so tests can stub installDefaultHooks'
 // inner runHooksInstall — the real thing mutates machine-global settings.
 const hooksInstall = require('./hooks-install');
@@ -12,9 +11,10 @@ const { resolvePromptTool } = require('../prompt-tool');
 const { runInstallWizard } = require('../install-wizard');
 const { renderRevealAnimation, renderInstallSummary, renderProgress } = require('../install-animation');
 const { getCliVersion } = require('../version');
+const { resolveTargetDir } = require('../lib/project-root');
 
 async function runInstall({ args, options, logger, t }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const force = Boolean(options.force);
   const dryRun = Boolean(options['dry-run']);
   const noInteractive = Boolean(options['no-interactive']);

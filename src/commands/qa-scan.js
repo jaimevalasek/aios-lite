@@ -3,6 +3,7 @@
 const path = require('node:path');
 const fs = require('node:fs/promises');
 const { ensureDir } = require('../utils');
+const { resolveTargetDir } = require('../lib/project-root');
 
 const SECRET_PATTERNS = [
   { name: 'OpenAI key',     regex: /sk-[a-zA-Z0-9]{20,}/ },
@@ -240,7 +241,7 @@ function buildScanReport(projectName, baseUrl, routes, findings) {
 }
 
 async function runQaScan({ args, options = {}, logger, t }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
 
   const pw = requirePlaywright();
   if (!pw) {

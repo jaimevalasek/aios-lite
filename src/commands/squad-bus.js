@@ -20,8 +20,8 @@
  *   aioson squad:bus . --squad=content-team list
  */
 
-const path = require('node:path');
 const bus = require('../squad/intra-bus');
+const { resolveTargetDir } = require('../lib/project-root');
 
 function formatMessage(msg, { compact = false } = {}) {
   if (compact) {
@@ -41,7 +41,7 @@ function formatMessage(msg, { compact = false } = {}) {
 }
 
 async function runSquadBus({ args, options = {}, logger }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const sub = String(options.sub || args[1] || 'read').trim();
   const squadSlug = String(options.squad || options.s || '').trim();
   const sessionId = String(options.session || '').trim();

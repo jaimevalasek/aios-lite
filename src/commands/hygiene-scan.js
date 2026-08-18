@@ -6,6 +6,7 @@ const { readNoiseFileAndRecompute } = require('../neural-chain-noise-file');
 const { contextDir, readFileSafe } = require('../preflight-engine');
 const { runFeatureArchive, runFeatureSweep } = require('./feature-archive');
 const { scanRuntimeRecoveryCandidates } = require('../runtime-recovery-scan');
+const { resolveTargetDir } = require('../lib/project-root');
 
 const REVIEW_PREFIXES = new Set(['qa-report', 'security-findings']);
 const GLOBAL_REVIEW_SLUGS = new Set(['project', 'test-coverage']);
@@ -424,7 +425,7 @@ function buildSummary(buckets) {
 }
 
 async function runHygieneScan({ args = [], options = {}, logger }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const jsonOut = Boolean(options.json);
   const ctxDir = contextDir(targetDir);
 

@@ -4,6 +4,7 @@ const path = require('node:path');
 const { openRuntimeDb } = require('../runtime-store');
 const { ensureRunnerQueue, addTask, listTasks } = require('../runner/queue-store');
 const { importFromPlan } = require('../runner/plan-importer');
+const { resolveTargetDir } = require('../lib/project-root');
 
 /**
  * aioson runner:plan — importa phases de um implementation-plan.md para a queue do runner.
@@ -13,7 +14,7 @@ const { importFromPlan } = require('../runner/plan-importer');
  *   aioson runner:plan . --slug=checkout  (usa agent=dev por padrão)
  */
 async function runRunnerPlan({ args, options = {}, logger }) {
-  const projectDir = path.resolve(process.cwd(), args[0] || '.');
+  const projectDir = resolveTargetDir(args);
   const { slug, agent = 'dev' } = options;
 
   if (!slug) {

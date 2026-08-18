@@ -22,6 +22,7 @@
 
 const path = require('node:path');
 const { openRuntimeDb } = require('../runtime-store');
+const { resolveTargetDir } = require('../lib/project-root');
 
 function nowIso() { return new Date().toISOString(); }
 
@@ -63,7 +64,7 @@ async function handleDelete(db, squadSlug, toolName, logger) {
 }
 
 async function runSquadToolRegister({ args, options = {}, logger }) {
-  const projectDir = path.resolve(process.cwd(), args[0] || '.');
+  const projectDir = resolveTargetDir(args);
   const squadSlug = String(options.squad || '').trim();
 
   if (!squadSlug) {

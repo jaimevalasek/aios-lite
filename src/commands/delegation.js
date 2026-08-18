@@ -3,6 +3,7 @@
 const path = require('node:path');
 const { buildDelegationPlan } = require('../model-delegation');
 const { redact } = require('../agent-execution/adapters/base');
+const { resolveTargetDir } = require('../lib/project-root');
 
 const DEFAULT_TIMEOUT = 600000;
 const DEFAULT_MAX_OUTPUT = 256 * 1024;
@@ -44,14 +45,14 @@ function renderPlan(logger, result) {
 }
 
 async function runDelegationPlan({ args, options = {}, logger, catalogLoader }) {
-  const projectDir = path.resolve(process.cwd(), args[0] || '.');
+  const projectDir = resolveTargetDir(args);
   const result = await buildDelegationPlan(planOptions(projectDir, options, catalogLoader));
   if (!options.json) renderPlan(logger, result);
   return result;
 }
 
 async function runDelegationRun({ args, options = {}, logger, catalogLoader, adapterRegistry }) {
-  const projectDir = path.resolve(process.cwd(), args[0] || '.');
+  const projectDir = resolveTargetDir(args);
   const result = await buildDelegationPlan(planOptions(projectDir, options, catalogLoader, true));
   if (!result.ok) {
     if (!options.json) renderPlan(logger, result);

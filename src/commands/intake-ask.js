@@ -4,6 +4,7 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const readline = require('node:readline/promises');
 const { promptPicker } = require('../lib/terminal-picker');
+const { resolveTargetDir } = require('../lib/project-root');
 
 const SUPPORTED_TYPES = new Set(['input', 'radio', 'checkbox']);
 
@@ -326,7 +327,7 @@ async function promptForAnswers(schema) {
 }
 
 async function runIntakeAsk({ args, options = {}, logger }) {
-  const projectDir = path.resolve(process.cwd(), args[0] || '.');
+  const projectDir = resolveTargetDir(args);
   const schemaPath = resolveProjectPath(projectDir, options.schema || args[1]);
   if (!schemaPath) {
     logger.error('Usage: aioson intake:ask [path] --schema=<questions.json> [--out=<answers.json>]');

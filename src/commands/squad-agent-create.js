@@ -3,6 +3,7 @@
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const { exists, ensureDir } = require('../utils');
+const { resolveTargetDir } = require('../lib/project-root');
 
 const MY_AGENTS_DIR = '.aioson/my-agents';
 const SQUADS_DIR = '.aioson/squads';
@@ -15,10 +16,6 @@ const VALID_DISC = [
   'compliant-analytical', 'dominant-influential', 'influential-steady',
   'steady-compliant', 'compliant-dominant'
 ];
-
-function resolveTargetDir(args) {
-  return path.resolve(process.cwd(), args[0] || '.');
-}
 
 function slugify(name) {
   return name

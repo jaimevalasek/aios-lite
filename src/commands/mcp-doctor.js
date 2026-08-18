@@ -6,6 +6,7 @@ const { validateProjectContextFile, getInteractionLanguage } = require('../conte
 const { localizeContextParseReason } = require('../context-parse-reason');
 const { exists, readTextIfExists } = require('../utils');
 const { extractStackValue, normalizeDatabaseEngine } = require('./mcp-init');
+const { resolveTargetDir } = require('../lib/project-root');
 
 const REQUIRED_CORE_SERVERS = ['filesystem', 'context7'];
 const TOOL_PRESETS = ['claude', 'codex', 'opencode'];
@@ -96,7 +97,7 @@ function formatCheckPrefix(check, t) {
 }
 
 async function runMcpDoctor({ args, options = {}, logger, t }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const strictEnv = normalizeBoolean(options['strict-env'], false);
   const planPath = path.join(targetDir, '.aioson/mcp/servers.local.json');
   const presetsDir = path.join(targetDir, '.aioson/mcp/presets');

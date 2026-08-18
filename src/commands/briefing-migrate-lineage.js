@@ -1,11 +1,11 @@
 'use strict';
 
-const path = require('node:path');
 const {
   analyzeBriefingLineageMigration,
   applyBriefingLineageMigration,
   publicMigrationPlan
 } = require('../lib/briefing-lineage-migration');
+const { resolveTargetDir } = require('../lib/project-root');
 
 function failure(error, logger, t) {
   const code = error && error.code ? error.code : 'migration_failed';
@@ -29,7 +29,7 @@ async function runBriefingMigrateLineage({ args, options = {}, logger, t }) {
   }
 
   try {
-    const projectDir = path.resolve(process.cwd(), args[0] || '.');
+    const projectDir = resolveTargetDir(args);
     const plan = await analyzeBriefingLineageMigration({
       projectDir,
       slug: options.slug

@@ -2,9 +2,10 @@
 
 const path = require('node:path');
 const { generateSessionRecovery, readSessionRecovery } = require('../recovery-context-session');
+const { resolveTargetDir } = require('../lib/project-root');
 
 async function runRecoveryGenerate({ args, options, logger }) {
-  const cwd = path.resolve(process.cwd(), args[0] || '.');
+  const cwd = resolveTargetDir(args);
   const sessionState = {
     goal: options.goal || undefined,
     agent: options.agent || undefined,
@@ -24,7 +25,7 @@ async function runRecoveryGenerate({ args, options, logger }) {
 }
 
 async function runRecoveryShow({ args, options, logger }) {
-  const cwd = path.resolve(process.cwd(), args[0] || '.');
+  const cwd = resolveTargetDir(args);
   const content = await readSessionRecovery(cwd);
 
   if (!content) {

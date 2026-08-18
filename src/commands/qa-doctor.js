@@ -3,6 +3,7 @@
 const path = require('node:path');
 const { readTextIfExists, exists } = require('../utils');
 const { validateProjectContextFile } = require('../context');
+const { resolveTargetDir } = require('../lib/project-root');
 
 function makeCheck(id, ok, severity, message, hint = '') {
   return { id, ok: Boolean(ok), severity, message: String(message || ''), hint: String(hint || '') };
@@ -54,7 +55,7 @@ function countAcItems(prdContent) {
 }
 
 async function runQaDoctor({ args, options = {}, logger, t }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const configPath = path.join(targetDir, 'aios-qa.config.json');
   const prdPath = path.join(targetDir, '.aioson/context/prd.md');
   const checks = [];

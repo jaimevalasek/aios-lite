@@ -13,9 +13,9 @@
  *                                  [--include-archived] [--json]
  */
 
-const path = require('node:path');
 const { openRuntimeDb } = require('../runtime-store');
 const { searchProjectLearnings, QUERY_MAX_CHARS } = require('../learning-loop-fts5');
+const { resolveTargetDir } = require('../lib/project-root');
 
 function tFn(t, key, params) {
   if (typeof t === 'function') {
@@ -42,7 +42,7 @@ function formatTextResults(results) {
 }
 
 async function runMemorySearch({ args, options = {}, logger, t }) {
-  const targetDir = path.resolve(process.cwd(), args[1] !== undefined ? args[1] : '.');
+  const targetDir = resolveTargetDir(args[1]);
   // Positional 0 is the query string. Some shells will pass it as args[0].
   const query = args[0] !== undefined && args[0] !== null && String(args[0]).trim() !== ''
     ? String(args[0])

@@ -1,11 +1,11 @@
 'use strict';
 
 const fs = require('node:fs/promises');
-const path = require('node:path');
 const { openRuntimeDb } = require('../runtime-store');
+const { resolveTargetDir } = require('../lib/project-root');
 
 async function runSpecStatus({ args, options = {}, logger }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const { db, dbPath } = await openRuntimeDb(targetDir, { mustExist: true });
 
   if (!db) {

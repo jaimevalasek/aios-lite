@@ -6,6 +6,7 @@ const { openRuntimeDb } = require('../runtime-store');
 const { exists } = require('../utils');
 const { runSquadValidate } = require('./squad-validate');
 const { scoreCompletude, scoreProfundidade, scoreQualidadeEstrutural, scorePotencial, gradeFromScore } = require('./squad-score');
+const { resolveTargetDir } = require('../lib/project-root');
 
 function normalizeRel(value) {
   return String(value || '')
@@ -160,7 +161,7 @@ async function detectContentCandidates(outputDir, projectRoot) {
 }
 
 async function runSquadDoctor({ args, options = {}, logger, t }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const slug = await resolveSquadSlug(targetDir, options.squad);
   const staleMinutes = Number(options['stale-minutes'] || 5);
   const paths = await parseSquadPaths(targetDir, slug);

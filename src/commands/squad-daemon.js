@@ -5,6 +5,7 @@ const path = require('node:path');
 const { SquadDaemon } = require('../squad-daemon');
 const { openRuntimeDb } = require('../runtime-store');
 const { consume: consumeInterSquadEvents } = require('../squad/inter-squad-events');
+const { resolveTargetDir } = require('../lib/project-root');
 
 async function handleStart(projectDir, squadSlug, options, { logger, t }) {
   if (!squadSlug) {
@@ -316,7 +317,7 @@ async function handlePersistent(projectDir, squadSlug, options, { logger }) {
 }
 
 async function runSquadDaemon({ args, options, logger, t }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const sub = options.sub || 'status';
   const squadSlug = options.squad;
 

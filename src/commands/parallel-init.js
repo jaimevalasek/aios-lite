@@ -15,6 +15,7 @@ const {
   buildOwnershipMap,
   buildMergePlan
 } = require('../parallel-workspace');
+const { resolveTargetDir } = require('../lib/project-root');
 
 const MIN_WORKERS = 2;
 const MAX_WORKERS = 6;
@@ -128,7 +129,7 @@ function buildTargetFiles(targetDir, workers) {
 }
 
 async function runParallelInit({ args, options = {}, logger, t }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const dryRun = Boolean(options['dry-run']);
   const force = Boolean(options.force);
   const workers = parseWorkers(options.workers);

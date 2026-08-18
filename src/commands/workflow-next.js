@@ -48,6 +48,7 @@ const {
 const { reviewStatus } = require('../review-intelligence/engine');
 const { validateCurrentSheldonReview } = require('../lib/sheldon-review');
 const { inspectTemplateVersion } = require('../template-version-status');
+const { resolveTargetDir } = require('../lib/project-root');
 
 const STATE_RELATIVE_PATH = '.aioson/context/workflow.state.json';
 const CONFIG_RELATIVE_PATH = '.aioson/context/workflow.config.json';
@@ -2137,7 +2138,7 @@ async function runWorkflowNext({ args, options, logger, t }) {
       ? logger.log.bind(logger)
       : () => {};
 
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const tool = options.tool || 'codex';
   const locale = await resolveLocaleForTarget(targetDir, options);
   const templateVersion = await inspectTemplateVersion(targetDir);

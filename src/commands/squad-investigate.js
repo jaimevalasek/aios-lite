@@ -9,6 +9,7 @@ const {
   getInvestigation,
   linkInvestigation
 } = require('../runtime-store');
+const { resolveTargetDir } = require('../lib/project-root');
 
 const SEARCHES_DIR = 'squad-searches';
 const DIMENSION_HEADERS = ['D1', 'D2', 'D3', 'D4', 'D5', 'D6', 'D7'];
@@ -329,7 +330,7 @@ async function handleRegister(projectDir, reportPath, options, { logger, t }) {
 }
 
 async function runSquadInvestigate({ args = [], options = {}, logger = console, t = (k) => k } = {}) {
-  const projectDir = path.resolve(process.cwd(), args[0] || '.');
+  const projectDir = resolveTargetDir(args);
   const sub = options.sub || args[1] || 'list';
 
   if (sub === 'list') {

@@ -9,9 +9,10 @@ const codemapStore = require('../dossier/codemap-store');
 const { compact, shouldCompact } = require('../dossier/dossier-compact');
 const { initFromExisting } = require('../dossier/dossier-bootstrap');
 const { ALLOWED_CLASSIFICATIONS, isValidSlug, isCanonicalAgent } = require('../dossier/schema');
+const { resolveTargetDir } = require('../lib/project-root');
 
 function resolveContextDir(targetDir) {
-  return path.join(path.resolve(process.cwd(), targetDir || '.'), '.aioson', 'context');
+  return path.join(resolveTargetDir(targetDir), '.aioson', 'context');
 }
 
 function pickSlug(options) {
@@ -68,7 +69,7 @@ async function runDossierInit({ args = [], options = {}, logger } = {}) {
         slug,
         contextDir: ctxDir,
         classification,
-        targetDir: path.resolve(process.cwd(), targetDir || '.')
+        targetDir: resolveTargetDir(targetDir)
       });
       if (result.created === false) {
         if (jsonOut) return { ok: true, slug, reason: 'unchanged', path: result.path };
@@ -341,7 +342,7 @@ async function runDossierLinkRule({ args = [], options = {}, logger } = {}) {
 
   const reason = options.reason ? String(options.reason) : undefined;
   const ctxDir = resolveContextDir(targetDir);
-  const base = path.resolve(process.cwd(), targetDir || '.');
+  const base = resolveTargetDir(targetDir);
 
   try {
     const result = await codemapStore.linkRule({ slug, contextDir: ctxDir, rulePath, reason, targetDir: base });

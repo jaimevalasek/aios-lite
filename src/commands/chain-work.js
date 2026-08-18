@@ -1,6 +1,5 @@
 'use strict';
 
-const path = require('node:path');
 const { openRuntimeDb } = require('../runtime-store');
 const { reconcileNoiseState, syncNoiseProjection } = require('../neural-chain-noise-projection');
 const {
@@ -12,9 +11,10 @@ const {
   resolveWorkItem,
   summarizeWorkItems
 } = require('../neural-chain-work-items');
+const { resolveTargetDir } = require('../lib/project-root');
 
 function targetDirFrom(args) {
-  return path.resolve(process.cwd(), args[0] || '.');
+  return resolveTargetDir(args);
 }
 
 function parseStatuses(options) {

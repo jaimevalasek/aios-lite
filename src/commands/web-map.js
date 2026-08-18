@@ -1,7 +1,7 @@
 'use strict';
 
-const path = require('node:path');
 const { mapWebsite } = require('../web');
+const { resolveTargetDir } = require('../lib/project-root');
 
 function normalizeBoolean(value, fallback = false) {
   if (typeof value === 'boolean') return value;
@@ -18,7 +18,7 @@ function parseInteger(value, fallback) {
 }
 
 async function runWebMap({ args, options = {}, logger, t }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const url = String(options.url || '').trim();
   if (!url) {
     logger.error(t('web_map.url_missing'));

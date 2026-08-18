@@ -35,6 +35,7 @@ const {
  * do próprio git-guard.
  */
 const { findActiveContract } = require('../harness/active-contract');
+const { resolveTargetDir } = require('../lib/project-root');
 
 function applyActiveContractPolicy(targetDir, result) {
   const active = findActiveContract(targetDir);
@@ -76,7 +77,7 @@ function formatFinding(prefix, finding) {
 }
 
 async function runGitGuard({ args, options = {}, logger }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const allowWarnings = Boolean(options['allow-warnings'] || options.allowWarnings);
   const installHook = Boolean(options['install-hook'] || options.installHook);
   const uninstallHook = Boolean(options['uninstall-hook'] || options.uninstallHook || options['remove-hook'] || options.removeHook);

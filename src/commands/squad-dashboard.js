@@ -1,10 +1,10 @@
 'use strict';
 
-const path = require('node:path');
 const { createDashboardServer } = require('../squad-dashboard/server');
+const { resolveTargetDir } = require('../lib/project-root');
 
 async function runSquadDashboard({ args, options, logger, t }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const port = Number(options.port) || 4180;
   const filterSquad = options.squad || null;
 

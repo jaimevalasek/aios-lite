@@ -14,6 +14,7 @@ const path = require('node:path');
 
 const { resolveContract, validateContract } = require('../harness/contract-schema');
 const { pendingGates } = require('../harness/human-gate');
+const { resolveTargetDir } = require('../lib/project-root');
 
 function readJson(file) {
   try {
@@ -75,7 +76,7 @@ function nextAction(progress, pending, slug) {
 }
 
 async function runHarnessStatus({ args, options = {}, logger }) {
-  const targetDir = path.resolve(process.cwd(), args?.[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const slug = String(options.slug || '').trim();
 
   if (!slug) {

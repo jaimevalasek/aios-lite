@@ -22,6 +22,7 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const { contextDir } = require('../preflight-engine');
 const { collectFeatureArtifacts } = require('./feature-archive');
+const { resolveTargetDir } = require('../lib/project-root');
 
 async function dirExists(dirPath) {
   try {
@@ -128,7 +129,7 @@ function renderIndex({ slug, entries, targetDir, exportedAt }) {
 }
 
 async function runFeatureExport({ args = [], options = {}, logger }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const slug = options.feature ? String(options.feature) : null;
   const flatten = Boolean(options.flatten);
   const noIndex = Boolean(options['no-index'] || options.noIndex);

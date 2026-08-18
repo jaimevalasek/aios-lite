@@ -16,9 +16,10 @@
 
 const path = require('node:path');
 const { buildReviewPayload } = require('../harness/review-payload');
+const { resolveTargetDir } = require('../lib/project-root');
 
 async function runFeatureDiff({ args, options = {}, logger }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const slug = options.feature ? String(options.feature).trim() : null;
   if (!slug) {
     const failure = { ok: false, reason: 'missing_feature' };

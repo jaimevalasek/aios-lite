@@ -4,6 +4,7 @@ const path = require('node:path');
 const fs = require('node:fs/promises');
 const { readTextIfExists, ensureDir, exists } = require('../utils');
 const { validateProjectContextFile, getInteractionLanguage } = require('../context');
+const { resolveTargetDir } = require('../lib/project-root');
 
 const DEFAULT_PERSONAS = ['naive', 'hacker', 'power', 'mobile'];
 
@@ -73,7 +74,7 @@ function parseBusinessRules(discoveryContent) {
 }
 
 async function runQaInit({ args, options = {}, logger, t }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const dryRun = Boolean(options['dry-run']);
   const configPath = path.join(targetDir, 'aios-qa.config.json');
 

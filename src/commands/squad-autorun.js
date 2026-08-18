@@ -57,6 +57,7 @@ const { runHook, HOOK_DENY } = require('../lib/hook-protocol');
 const { extractLearnings, persistAgentMemory } = require('../squad/learning-extractor');
 const { validateBrief, autoFixBrief } = require('../squad/brief-validator');
 const { resolveEngine, translateToTeamConfig, writeTeamConfig } = require('../squad/agent-teams-adapter');
+const { resolveTargetDir } = require('../lib/project-root');
 
 const STATUS_ICON = {
   pending: '○',
@@ -859,7 +860,7 @@ async function runWithEvalOptimize(
 // ─── Main command ─────────────────────────────────────────────────────────────
 
 async function runSquadAutorun({ args, options = {}, logger }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const squadSlug = String(options.squad || options.s || '').trim();
 
   if (!squadSlug) {

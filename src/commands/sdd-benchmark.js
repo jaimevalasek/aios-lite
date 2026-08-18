@@ -6,6 +6,7 @@ const path = require('node:path');
 const { scanArtifacts, detectClassification } = require('../preflight-engine');
 const { auditAcceptanceCriteriaTests } = require('../lib/ac-test-audit');
 const { analyzeFeatureCompleteness } = require('../lib/feature-completeness');
+const { resolveTargetDir } = require('../lib/project-root');
 
 function roundScore(value) {
   return Math.round(Math.max(0, Math.min(1, value)) * 100) / 100;
@@ -65,7 +66,7 @@ function renderMarkdown(report) {
 }
 
 async function runSddBenchmark({ args, options = {}, logger }) {
-  const targetDir = path.resolve(process.cwd(), args?.[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const slug = String(options.feature || options.slug || '').trim();
 
   if (!slug) {

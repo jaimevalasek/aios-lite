@@ -9,6 +9,7 @@ const { runSetupContext } = require('./setup-context');
 const { resolvePromptTool } = require('../prompt-tool');
 const { normalizeBoolean } = require('../context-writer');
 const { runInstallWizard } = require('../install-wizard');
+const { resolveTargetDir } = require('../lib/project-root');
 
 async function ask(rl, question, fallback = '') {
   const suffix = fallback ? ` (${fallback})` : '';
@@ -19,7 +20,7 @@ async function ask(rl, question, fallback = '') {
 }
 
 async function runSetup({ args, options, logger, t }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const dryRun = Boolean(options['dry-run']);
   const force = Boolean(options.force);
   const defaultsMode = Boolean(options.defaults);

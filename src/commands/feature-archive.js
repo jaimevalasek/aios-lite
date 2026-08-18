@@ -18,6 +18,7 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const { contextDir, readFileSafe } = require('../preflight-engine');
 const { moveFileResilient, moveDirResilient } = require('../lib/fs-move');
+const { resolveTargetDir } = require('../lib/project-root');
 
 const ARCHIVED_EXTENSIONS = ['md', 'yaml', 'yml', 'json'];
 
@@ -334,7 +335,7 @@ async function mergeSkippedDir(sourceDir, archiveTargetDir) {
 }
 
 async function runFeatureArchive({ args = [], options = {}, logger }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const slug = options.feature ? String(options.feature) : (options.slug ? String(options.slug) : null);
   const dryRun = Boolean(options['dry-run'] || options.dryRun);
   const restore = Boolean(options.restore);
@@ -771,7 +772,7 @@ async function listArchivedSlugs(manifestPath) {
 }
 
 async function runFeatureSweep({ args = [], options = {}, logger }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const dryRun = Boolean(options['dry-run'] || options.dryRun);
   const jsonOut = Boolean(options.json);
   const log = (msg) => { if (logger && !jsonOut) logger.log(msg); };

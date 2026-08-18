@@ -5,6 +5,7 @@ const {
   discoverBriefingSourcePacks,
   inspectBriefingSourcePack
 } = require('../lib/briefing-source-pack');
+const { resolveTargetDir } = require('../lib/project-root');
 
 function translated(t, key, values, fallback) {
   if (typeof t !== 'function') return fallback;
@@ -13,7 +14,7 @@ function translated(t, key, values, fallback) {
 }
 
 async function runBriefingSources({ args, options = {}, logger, t }) {
-  const projectDir = path.resolve(process.cwd(), args[0] || '.');
+  const projectDir = resolveTargetDir(args);
   const slug = String(options.slug || '').trim();
   const result = slug
     ? await inspectBriefingSourcePack(projectDir, slug)

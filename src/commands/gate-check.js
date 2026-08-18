@@ -33,6 +33,7 @@ const {
 const { resolveGateCBaseline } = require('../lib/gate-checkpoint');
 const { runTechnicalGate } = require('../workflow-gates');
 const { validateCurrentSheldonReview } = require('../lib/sheldon-review');
+const { resolveTargetDir } = require('../lib/project-root');
 
 const BAR = '━'.repeat(35);
 
@@ -335,7 +336,7 @@ async function checkGate(targetDir, slug, gateLetter) {
 }
 
 async function runGateCheck({ args, options = {}, logger }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const slug = options.feature ? String(options.feature) : (options.slug ? String(options.slug) : null);
   let gateLetter = options.gate ? String(options.gate).toUpperCase() : null;
 

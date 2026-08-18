@@ -6,6 +6,7 @@ const { exists } = require('../utils');
 const { readConfig } = require('./config');
 const { readWorkspace, findProjectRoot } = require('./workspace');
 const { scanPackage, formatScanReport } = require('../lib/store/security-scan');
+const { resolveTargetDir } = require('../lib/project-root');
 
 const DEFAULT_BASE_URL = 'https://aioson.com';
 const SKILLS_DIRS = ['.aioson/skills', '.aioson/installed-skills'];
@@ -100,7 +101,7 @@ async function findSkillDir(projectDir, slug) {
 async function runSkillPublish({ args, options, logger, t }) {
   const config = await readConfig();
   const token = requireToken(config, t);
-  const projectDir = await findProjectRoot(path.resolve(process.cwd(), args[0] || '.'));
+  const projectDir = await findProjectRoot(resolveTargetDir(args));
   const slug = String(options.slug || '').trim();
   if (!slug) throw new Error(t('store.error_missing_slug'));
 
@@ -158,7 +159,7 @@ async function runSkillPublish({ args, options, logger, t }) {
 async function runSkillInstallStore({ args, options, logger, t }) {
   const config = await readConfig();
   const token = requireToken(config, t);
-  const projectDir = await findProjectRoot(path.resolve(process.cwd(), args[0] || '.'));
+  const projectDir = await findProjectRoot(resolveTargetDir(args));
   const baseUrl = resolveBaseUrl(config);
 
   const ref = String(options.slug || options.code || args[1] || args[0] || '').trim();

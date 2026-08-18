@@ -29,6 +29,7 @@ const {
   updateTask,
   appendRunEvent
 } = require('../runtime-store');
+const { resolveTargetDir } = require('../lib/project-root');
 
 const POLL_INTERVAL_MS = 30_000;
 const DEFAULT_IDLE_MINUTES = 60;
@@ -167,7 +168,7 @@ async function tick(targetDir, runtimeDir, agentName, tool, idleMs, state) {
 }
 
 async function runSessionGuard({ args, options = {}, logger }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const agentName = options.agent ? String(options.agent).replace(/^@/, '') : 'dev';
   const tool = options.tool ? String(options.tool).trim() : 'claude';
   const once = options.once || options['once'] || false;

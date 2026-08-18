@@ -5,6 +5,7 @@ const fsSync = require('node:fs');
 const path = require('node:path');
 const { openRuntimeDb } = require('../runtime-store');
 const { processDevlogFile } = require('./devlog-process');
+const { resolveTargetDir } = require('../lib/project-root');
 
 const POLL_INTERVAL_MS = 5000;
 const WSL_VERSION_PATH = '/proc/version';
@@ -102,7 +103,7 @@ async function watchWithPolling(logsDir, targetDir, logger) {
 }
 
 async function runDevlogWatch({ args, options = {}, logger }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const logsDir = path.join(targetDir, 'aioson-logs');
   const usePolling = options.poll || await isWsl2();
 

@@ -3,6 +3,7 @@
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const { openRuntimeDb } = require('../runtime-store');
+const { resolveTargetDir } = require('../lib/project-root');
 
 const REQUIRED_BOOTSTRAP = ['what-is.md', 'what-it-does.md', 'how-it-works.md', 'current-state.md'];
 
@@ -214,7 +215,7 @@ function formatTaskCounts(counts) {
 }
 
 async function runMemoryStatus({ args, options = {}, logger }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const status = await collectMemoryStatus(targetDir);
 
   if (options.json) return status;
@@ -236,7 +237,7 @@ async function runMemoryStatus({ args, options = {}, logger }) {
 }
 
 async function runMemorySummary({ args, options = {}, logger }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const status = await collectMemoryStatus(targetDir);
   const pulse = await readText(path.join(targetDir, '.aioson', 'context', 'project-pulse.md'));
   const whatIs = await readText(path.join(targetDir, '.aioson', 'context', 'bootstrap', 'what-is.md'));

@@ -15,10 +15,7 @@
 
 const path = require('node:path');
 const { analyzeFeatureCompleteness } = require('../lib/feature-completeness');
-
-function resolveTargetDir(args) {
-  return path.resolve(process.cwd(), args[0] || '.');
-}
+const { resolveTargetDir } = require('../lib/project-root');
 
 function upper(value) {
   return String(value || '').toUpperCase();

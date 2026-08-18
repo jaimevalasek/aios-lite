@@ -4,6 +4,7 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const { exists } = require('../utils');
 const { readConfig } = require('./config');
+const { resolveTargetDir } = require('../lib/project-root');
 
 const WORKSPACE_FILE = '.aioson/workspace.json';
 const DEFAULT_BASE_URL = 'https://aioson.com';
@@ -48,7 +49,7 @@ async function writeWorkspace(projectDir, data) {
 }
 
 async function runWorkspaceInit({ args, options, logger, t }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const projectDir = await findProjectRoot(targetDir);
   const wsPath = path.join(projectDir, WORKSPACE_FILE);
 
@@ -102,7 +103,7 @@ async function runWorkspaceInit({ args, options, logger, t }) {
 }
 
 async function runWorkspaceStatus({ args, options, logger, t }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const projectDir = await findProjectRoot(targetDir);
   const ws = await readWorkspace(projectDir);
 
@@ -124,7 +125,7 @@ async function runWorkspaceStatus({ args, options, logger, t }) {
 }
 
 async function runWorkspaceOpen({ args, options, logger, t }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const projectDir = await findProjectRoot(targetDir);
   const ws = await readWorkspace(projectDir);
 

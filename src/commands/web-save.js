@@ -3,6 +3,7 @@
 const fsp = require('node:fs/promises');
 const path = require('node:path');
 const { saveSite, DEFAULT_MAX_FILES, DEFAULT_MAX_TOTAL_BYTES } = require('../web-save');
+const { resolveTargetDir } = require('../lib/project-root');
 
 function parseInteger(value, fallback) {
   const parsed = Number.parseInt(String(value ?? ''), 10);
@@ -77,7 +78,7 @@ async function seedSummary(researchDir, slug, url, result) {
 }
 
 async function runWebSave({ args, options = {}, logger, t }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const url = String(options.url || '').trim();
   if (!url) {
     logger.error(t('web_save.url_missing'));

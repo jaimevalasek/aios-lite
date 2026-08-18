@@ -1,12 +1,12 @@
 'use strict';
 
-const path = require('node:path');
 const {
   getContextUsage,
   computeWarningLevel,
   THRESHOLDS
 } = require('../squad-dashboard/context-monitor');
 const { openRuntimeDb, appendRunEvent } = require('../runtime-store');
+const { resolveTargetDir } = require('../lib/project-root');
 
 const PROJECT_BUDGET_ZONES = {
   safe: 0.60,
@@ -67,7 +67,7 @@ async function emitBudgetEvent(cwd, { tokens, budget, pct, zone, agentName }) {
 }
 
 async function runContextMonitor({ args, options, logger }) {
-  const cwd = path.resolve(process.cwd(), args[0] || '.');
+  const cwd = resolveTargetDir(args);
   const squadSlug = options.squad || null;
   const agentSlug = options.agent || null;
   const budget = options.budget ? Number(options.budget) : null;

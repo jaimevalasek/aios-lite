@@ -26,6 +26,7 @@ const { emitGuardEvent } = require('../harness/guard-events');
 const { findActiveContract } = require('../harness/active-contract');
 const { checkContractIntegrity } = require('../harness/contract-integrity');
 const { detectRuntimeFeature, gitChangedFiles } = require('../harness/detect-runtime-feature');
+const { resolveTargetDir } = require('../lib/project-root');
 
 function readProgressSignals(planDir) {
   // Same progress fields the contract-integrity gate consults, so standalone
@@ -54,7 +55,7 @@ function resolveSlug(targetDir, options) {
 }
 
 async function runHarnessCheck({ args, options = {}, logger, t }) {
-  const targetDir = path.resolve(process.cwd(), args?.[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const slug = resolveSlug(targetDir, options);
 
   if (!slug) {

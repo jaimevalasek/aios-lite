@@ -6,6 +6,7 @@ const { exists } = require('../utils');
 const { readConfig } = require('./config');
 const { readWorkspace, findProjectRoot } = require('./workspace');
 const { scanPackage, formatScanReport } = require('../lib/store/security-scan');
+const { resolveTargetDir } = require('../lib/project-root');
 
 const DEFAULT_BASE_URL = 'https://aioson.com';
 const GENOMES_DIR = '.aioson/genomes';
@@ -193,7 +194,7 @@ async function parseSingleFileMetadata(genomesDir, slug) {
 async function runGenomePublish({ args, options, logger, t }) {
   const config = await readConfig();
   const token = requireToken(config, t);
-  const projectDir = await findProjectRoot(path.resolve(process.cwd(), args[0] || '.'));
+  const projectDir = await findProjectRoot(resolveTargetDir(args));
   const slug = String(options.slug || '').trim();
   if (!slug) throw new Error(t('store.error_missing_slug'));
 
@@ -347,7 +348,7 @@ async function publishSingleFileGenome({ projectDir, slug, paths, options, logge
 async function runGenomeInstallStore({ args, options, logger, t }) {
   const config = await readConfig();
   const token = requireToken(config, t);
-  const projectDir = await findProjectRoot(path.resolve(process.cwd(), args[0] || '.'));
+  const projectDir = await findProjectRoot(resolveTargetDir(args));
   const baseUrl = resolveBaseUrl(config);
 
   // Accept: --slug=X or positional code/slug
@@ -527,7 +528,7 @@ async function runGenomeList({ args, options, logger, t }) {
   }
 
   // local list — walk both folder format and single-file format
-  const projectDir = await findProjectRoot(path.resolve(process.cwd(), args[0] || '.'));
+  const projectDir = await findProjectRoot(resolveTargetDir(args));
   const genomesDir = path.join(projectDir, GENOMES_DIR);
 
   if (!(await exists(genomesDir))) {
@@ -600,7 +601,7 @@ async function runGenomeList({ args, options, logger, t }) {
 // ── genome:remove ────────────────────────────────────────────────────────────
 
 async function runGenomeRemove({ args, options, logger, t }) {
-  const projectDir = await findProjectRoot(path.resolve(process.cwd(), args[0] || '.'));
+  const projectDir = await findProjectRoot(resolveTargetDir(args));
   const slug = String(options.slug || args[0] || '').trim();
   if (!slug) throw new Error(t('store.error_missing_slug'));
 

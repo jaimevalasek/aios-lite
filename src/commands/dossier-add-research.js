@@ -4,9 +4,10 @@ const path = require('node:path');
 
 const researchIndexStore = require('../dossier/research-index-store');
 const { isValidSlug, RESEARCH_VERDICTS, isCanonicalAgent } = require('../dossier/schema');
+const { resolveTargetDir } = require('../lib/project-root');
 
 function resolveContextDir(targetDir) {
-  return path.join(path.resolve(process.cwd(), targetDir || '.'), '.aioson', 'context');
+  return path.join(resolveTargetDir(targetDir), '.aioson', 'context');
 }
 
 function pickFeatureSlug(options) {

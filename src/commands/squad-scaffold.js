@@ -11,11 +11,11 @@
  *   aioson squad:scaffold . --slug=test --json
  */
 
-const path = require('node:path');
 const { scaffoldSquad } = require('../squad/squad-scaffold');
+const { resolveTargetDir } = require('../lib/project-root');
 
 async function runSquadScaffold({ args, options = {}, logger }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const slug = String(options.slug || '').trim();
   const name = String(options.name || slug || '').trim();
   const mode = String(options.mode || 'mixed').trim();

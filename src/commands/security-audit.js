@@ -11,6 +11,7 @@ const {
 const { EXIT_CODES, resolveExitCode } = require('../lib/security/exit-codes');
 const { writeFindings } = require('../lib/security/findings-writer');
 const { emitSecurityRuntimeEvent } = require('../lib/security/runtime-events');
+const { resolveTargetDir } = require('../lib/project-root');
 
 const VERSION = '1.0.0';
 const GENERATOR = `aioson security:audit@${VERSION}`;
@@ -129,7 +130,7 @@ function buildAuditFindings({ slug, bundle }) {
 }
 
 async function runSecurityAudit({ args, options = {}, logger }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const slug = options.slug || options.feature || null;
   const strict = Boolean(options.strict);
   const format = String(options.format || 'json').toLowerCase();

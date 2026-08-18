@@ -10,13 +10,10 @@ const {
   captureCorrectionBaseline,
   verifyCorrectionChanges
 } = require('../lib/specialist-correction');
+const { resolveTargetDir } = require('../lib/project-root');
 
 const DEFAULT_MAX_CYCLES = 1;
 const EXECUTION_STATE_RELATIVE_PATH = '.aioson/context/workflow-execute.json';
-
-function resolveTargetDir(args) {
-  return path.resolve(process.cwd(), args[0] || '.');
-}
 
 function normalizeAgent(value, fallback) {
   const normalized = String(value || fallback || '')

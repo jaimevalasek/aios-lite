@@ -19,6 +19,7 @@ const { execFileSync } = require('node:child_process');
 
 const { decideGate, resolveGateState, pendingGates } = require('../harness/human-gate');
 const { emitGuardEvent } = require('../harness/guard-events');
+const { resolveTargetDir } = require('../lib/project-root');
 
 function gitUserName(targetDir) {
   try {
@@ -33,7 +34,7 @@ function gitUserName(targetDir) {
 }
 
 async function runGateDecision(decision, { args, options = {}, logger }) {
-  const targetDir = path.resolve(process.cwd(), args?.[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const slug = String(options.slug || '').trim();
   const gateId = String(options.gate || '').trim();
   const reason = options.reason ? String(options.reason).trim() : null;

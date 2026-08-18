@@ -11,6 +11,7 @@ const {
   matchWritePathPattern,
   collectWritePathConflicts
 } = require('../parallel-workspace');
+const { resolveTargetDir } = require('../lib/project-root');
 
 function parseLaneIndex(fileName) {
   const match = String(fileName || '').match(/^agent-(\d+)\.status\.md$/);
@@ -61,7 +62,7 @@ async function readLaneState(parallelDir, index) {
 }
 
 async function runParallelGuard({ args, options = {}, logger, t }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const lane = parseLaneOption(options.lane);
   if (lane === null) {
     throw new Error(t('parallel_guard.invalid_lane'));

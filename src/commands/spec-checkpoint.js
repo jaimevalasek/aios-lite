@@ -3,6 +3,7 @@
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const { openRuntimeDb, appendRunEvent } = require('../runtime-store');
+const { resolveTargetDir } = require('../lib/project-root');
 
 function nowIso() {
   return new Date().toISOString();
@@ -43,7 +44,7 @@ function extractPhaseGates(content) {
 }
 
 async function runSpecCheckpoint({ args, options = {}, logger }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const featureSlug = options.feature ? String(options.feature).trim() : null;
   const agentName = options.agent ? String(options.agent).trim() : 'dev';
   const contextDir = path.join(targetDir, '.aioson', 'context');

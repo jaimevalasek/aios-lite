@@ -5,6 +5,7 @@ const path = require('node:path');
 const { execFile } = require('node:child_process');
 const { exists, ensureDir } = require('../utils');
 const { resolveSkillCatalog } = require('../skills/registry');
+const { resolveTargetDir } = require('../lib/project-root');
 
 const INSTALLED_SKILLS_DIR = '.aioson/installed-skills';
 const TOOL_TARGETS = [
@@ -12,10 +13,6 @@ const TOOL_TARGETS = [
   '.cursor/skills',
   '.windsurf/skills'
 ];
-
-function resolveTargetDir(args) {
-  return path.resolve(process.cwd(), args[0] || '.');
-}
 
 async function copyRecursive(src, dest) {
   const stat = await fs.stat(src);

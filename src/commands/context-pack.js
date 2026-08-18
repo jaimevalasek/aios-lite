@@ -2,9 +2,10 @@
 
 const path = require('node:path');
 const { createContextPack } = require('../context-memory');
+const { resolveTargetDir } = require('../lib/project-root');
 
 async function runContextPack({ args, options = {}, logger, t }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const agent = String(options.agent || '').trim();
   const goal = String(options.goal || '').trim();
   const module = String(options.module || options.folder || '').trim();

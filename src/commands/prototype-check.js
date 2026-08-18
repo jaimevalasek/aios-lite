@@ -34,6 +34,7 @@ const {
   validatePrototypeBinding,
   validateIdentityBinding
 } = require('../lib/prototype-binding');
+const { resolveTargetDir } = require('../lib/project-root');
 
 const BAR = '━'.repeat(30);
 
@@ -55,7 +56,7 @@ function extractInteractions(manifest) {
 }
 
 async function runPrototypeCheck({ args, options = {}, logger }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const slug = options.feature ? String(options.feature) : null;
   const strict = Boolean(options.strict || String(options.policy || '').toLowerCase() === 'strict');
   const dir = contextDir(targetDir);

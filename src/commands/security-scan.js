@@ -19,6 +19,7 @@ const {
   buildFindingId
 } = require('../lib/security/findings-writer');
 const { emitSecurityRuntimeEvent } = require('../lib/security/runtime-events');
+const { resolveTargetDir } = require('../lib/project-root');
 
 const VERSION = '1.0.0';
 const GENERATOR = `aioson security:scan@${VERSION}`;
@@ -243,7 +244,7 @@ async function gatherFindings({ targetDir, stage }) {
 }
 
 async function runSecurityScan({ args, options = {}, logger }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const stage = String(options.stage || 'all').toLowerCase();
   const slug = options.feature || options.slug || null;
   const classification = String(options.classification || 'MEDIUM').toUpperCase();

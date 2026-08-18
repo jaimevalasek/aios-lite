@@ -3,6 +3,7 @@
 const path = require('node:path');
 const fs = require('node:fs/promises');
 const { readTextIfExists, ensureDir } = require('../utils');
+const { resolveTargetDir } = require('../lib/project-root');
 
 // --- Secret patterns for exposure detection ---
 const SECRET_PATTERNS = [
@@ -762,7 +763,7 @@ async function writeReports(targetDir, projectName, url, findings, acCoverage, p
 // MAIN
 // ============================================================
 async function runQaRun({ args, options = {}, logger, t }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
 
   const pw = requirePlaywright();
   if (!pw) {

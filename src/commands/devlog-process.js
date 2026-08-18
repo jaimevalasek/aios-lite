@@ -3,6 +3,7 @@
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const { openRuntimeDb, startTask, startRun, updateRun, updateTask, appendRunEvent, attachArtifact } = require('../runtime-store');
+const { resolveTargetDir } = require('../lib/project-root');
 
 function nowIso() {
   return new Date().toISOString();
@@ -237,7 +238,7 @@ async function processDevlogFile(db, filePath) {
 }
 
 async function runDevlogProcess({ args, options = {}, logger }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const logsDir = path.join(targetDir, 'aioson-logs');
 
   let entries;

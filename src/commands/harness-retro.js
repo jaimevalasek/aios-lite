@@ -24,6 +24,7 @@ const {
 } = require('../lib/retro/retro-sources');
 const { aggregate } = require('../lib/retro/retro-aggregate');
 const { renderDossier } = require('../lib/retro/retro-render');
+const { resolveTargetDir } = require('../lib/project-root');
 
 const SLUG_RE = /^[a-z0-9][a-z0-9-]*$/;
 const EXIT_OK = 0;
@@ -81,7 +82,7 @@ function rankByPassDate(targetDir, slugs, { anchor = null } = {}) {
 
 async function runHarnessRetro({ args, options = {}, logger, t } = {}) {
   const log = logger || { log() {}, error() {} };
-  const targetDir = path.resolve(process.cwd(), (args && args[0]) || '.');
+  const targetDir = resolveTargetDir(args);
 
   const hasFeature = options.feature !== undefined && options.feature !== null
     && options.feature !== true && String(options.feature).length > 0;

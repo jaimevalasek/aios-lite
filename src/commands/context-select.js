@@ -2,9 +2,10 @@
 
 const path = require('node:path');
 const { selectContext } = require('../context-selector');
+const { resolveTargetDir } = require('../lib/project-root');
 
 async function runContextSelect({ args, options = {}, logger }) {
-  const targetDir = path.resolve(process.cwd(), args[0] || '.');
+  const targetDir = resolveTargetDir(args);
   const result = await selectContext(targetDir, {
     agent: options.agent || options.a || 'dev',
     mode: options.mode || 'planning',

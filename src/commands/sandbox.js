@@ -1,11 +1,11 @@
 'use strict';
 
-const path = require('node:path');
 const { executeInSandbox } = require('../sandbox');
+const { resolveTargetDir } = require('../lib/project-root');
 
 async function runSandboxExec({ args, options, logger }) {
   const command = args[0] || options.command || '';
-  const cwd = path.resolve(process.cwd(), options.cwd || '.');
+  const cwd = resolveTargetDir(options.cwd);
   const timeout = Number(options.timeout) || 30_000;
   const intent = options.intent || undefined;
 
