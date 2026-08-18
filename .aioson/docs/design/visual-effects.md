@@ -126,6 +126,18 @@ A radial highlight following the pointer, or scroll-linked depth. Both are point
 
 Justified when the effect *is* the product (a visualizer, a map, a simulation) or when no CSS form can express it. Otherwise it is a bundle, a frame loop, and a battery cost buying something a gradient already did.
 
+### Modern baseline (the current dialect)
+
+Author in the platform's current dialect, not the 2018 one — flexbox, grid, and custom properties alone are the measured shape of "looks dated" even when every hygiene gate passes. All of these are native, build-free, and degrade honestly; the telemetry reports which are present (`modern_css`) and warns when a full surface uses none:
+
+- **Fluid type and space** — `clamp()` scales, `text-wrap: balance`/`pretty` on headings, `aspect-ratio` instead of padding hacks.
+- **Modern color** — OKLCH ramps and `color-mix()` for tints, hovers, and scrims derived from tokens instead of hand-picked hexes.
+- **Selector power** — `:has()` for stateful parents (a card that knows its checkbox, a form that knows its invalid field) without extra classes or JS.
+- **Layout** — container queries for components that adapt to their container, `subgrid` where nested rows must share tracks.
+- **Choreography** — scroll-driven animations (`animation-timeline`/`view-timeline`, IntersectionObserver as the compatibility idiom), `@starting-style` for entry transitions, View Transitions for route changes where supported.
+
+The rule of adoption is the same as everywhere in this file: a feature ships where the surface earns it, with a stated fallback (feature-queried via `@supports` when the failure would be visible), never as a checklist to sprinkle. But defaulting to the pre-2020 subset is a choice too — the wrong one for a premium surface.
+
 ## 3. Cost contract
 
 Every effect ships with all six answered:

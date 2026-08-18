@@ -594,6 +594,11 @@ test('a full hygienic surface with zero ambition fires the craft floor and the t
   assert.match(text, /craft floor: 0\/5 premium levers active/);
   assert.match(text, /display-scale type \(largest font-size 32px, floor 56px\)/);
   assert.match(text, /evidence imagery \(0 media elements, 0 CSS image layers\)/);
+
+  // The dated-dialect tell: flexbox/grid/custom-properties only, none of the
+  // current platform vocabulary anywhere in a full surface.
+  assert.deepEqual(m.craft.modern_css, []);
+  assert.match(text, /authored in pre-2020 CSS only/);
 });
 
 test('a family named without any delivery mechanism is its own finding, resolved through var()', () => {
@@ -636,6 +641,12 @@ test('an ambitious surface activates the levers and stays silent — the gate mu
 
   const text = result.warnings.join('\n');
   assert.doesNotMatch(text, /craft floor|never delivered|OS default stacks/);
+
+  // clamp() and the scroll-reveal idiom put it in the current dialect — the
+  // dated-vocabulary warning must stay out.
+  assert.ok(m.craft.modern_css.includes('fluid clamp() type'));
+  assert.ok(m.craft.modern_css.includes('scroll-driven reveals'));
+  assert.doesNotMatch(text, /pre-2020 CSS/);
 });
 
 test('the craft axis only measures full surfaces — fixtures and fragments stay silent', () => {

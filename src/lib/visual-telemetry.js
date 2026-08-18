@@ -196,6 +196,21 @@ const WEBFONT_HOST = /fonts\.googleapis\.com|fonts\.gstatic\.com|fonts\.bunny\.n
 // Scroll-driven reveal machinery — CSS-native or the vanilla JS idiom.
 const SCROLL_REVEAL = /IntersectionObserver|view-timeline|scroll-timeline|animation-timeline|@starting-style/i;
 
+// Modern CSS vocabulary probes. Each is a native, build-free feature of the
+// current platform; a full surface using NONE of them was authored in the
+// pre-2020 dialect — the measured shape of "looks dated" even when every
+// hygiene metric passes. Probes are (name, regex-over-css) pairs; scroll-driven
+// machinery is probed over the whole markup because the vanilla JS idiom counts.
+const MODERN_CSS_PROBES = [
+  { feature: 'container queries', re: /@container\b|container-type\s*:/i },
+  { feature: ':has()', re: /:has\(/i },
+  { feature: 'fluid clamp() type', re: /clamp\(/i },
+  { feature: 'oklch/color-mix', re: /oklch\(|oklab\(|color-mix\(/i },
+  { feature: 'subgrid', re: /\bsubgrid\b/i },
+  { feature: 'text-wrap balance', re: /text-wrap\s*:\s*(balance|pretty)/i },
+  { feature: 'aspect-ratio', re: /aspect-ratio\s*:/i }
+];
+
 /** Strip CSS comments so commented-out code never counts as a measurement. */
 function stripComments(css) {
   return String(css || '').replace(/\/\*[\s\S]*?\*\//g, '');
@@ -616,6 +631,9 @@ function analyzeVisualSources({ html = '', css = '' } = {}) {
     modernColor >= 3 && 'modern color'
   ].filter(Boolean);
 
+  const modernCss = MODERN_CSS_PROBES.filter((probe) => probe.re.test(styleText)).map((probe) => probe.feature);
+  if (scrollReveal) modernCss.push('scroll-driven reveals');
+
   const craftMeasured = decls.length >= CRAFT_MIN_DECLARATIONS;
   const levers = {
     typeface: fontDelivered,
@@ -681,7 +699,8 @@ function analyzeVisualSources({ html = '', css = '' } = {}) {
       modern_color_functions: modernColor,
       background_images: backgroundImages,
       transition_declarations: transitionCount,
-      scroll_reveal: scrollReveal
+      scroll_reveal: scrollReveal,
+      modern_css: modernCss
     }
   };
 
@@ -773,6 +792,9 @@ function analyzeVisualSources({ html = '', css = '' } = {}) {
     if (!levers.motion) missing.push(`motion choreography (${keyframes} keyframes, ${transitionCount} transitions, no scroll reveal)`);
     if (!levers.evidence) missing.push(`evidence imagery (${mediaElements} media elements, ${backgroundImages} CSS image layers)`);
     warnings.push(`craft floor: ${activeLevers}/5 premium levers active — missing: ${missing.join('; ')}. Hygiene alone reads as a default document, not a designed product; each lever is optional, the floor is not (visual-effects.md owns the vocabulary, the register's premium bar owns the shape)`);
+  }
+  if (craftMeasured && modernCss.length === 0) {
+    warnings.push('authored in pre-2020 CSS only — none of: container queries, :has(), fluid clamp() type, oklch/color-mix, subgrid, text-wrap balance, aspect-ratio, scroll-driven reveals. The current platform repertoire is absent, which is the measured shape of "looks dated"; adopt the features the surface earns (visual-effects.md, Modern baseline)');
   }
 
   return { applicable: true, metrics, issues, warnings };
