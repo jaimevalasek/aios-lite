@@ -681,3 +681,32 @@ test('kind=visual warns when the manifest Quality evidence is a placeholder', as
   assert.doesNotMatch(filled.warnings.join('\n'), /Quality evidence/);
   assert.equal(filled.metrics.manifest_quality_evidence, true);
 });
+
+test('an intent-first build that misses the craft floor is pointed at the identity route', async () => {
+  const dir = await makeTmpDir();
+  const manifest = (identity) => `---\nfeature: orders\nstatus: draft\nidentity: ${identity}\n---\n\n## Visual direction\n\n- Register: Editorial — plates and figure numbers carry the argument.\n\n## Quality evidence\n\n- kind=visual measured, findings recorded below with their numbers and dispositions\n`;
+
+  // Full flat surface (craft floor fires) + identity: none → the gate names
+  // the reference-identity-extract route instead of letting the next round
+  // re-roll intent-first origination or a preset menu.
+  await writeFile(dir, '.aioson/briefings/orders/prototype.html', flatHygienicSurface());
+  await writeFile(dir, '.aioson/briefings/orders/prototype-manifest.md', manifest('none'));
+  const intentFirst = await runVerifyArtifact({
+    args: [dir],
+    options: { kind: 'visual', slug: 'orders', json: true, advisory: true, suppressExitCode: true },
+    logger: makeLogger()
+  });
+  assert.match(intentFirst.warnings.join('\n'), /reference-identity-extract/);
+  assert.equal(intentFirst.metrics.manifest_identity, 'none');
+
+  // Same miss but an identity record was consumed → the route pointer stays
+  // out; the craft warnings themselves still stand on their own.
+  await writeFile(dir, '.aioson/briefings/orders/prototype-manifest.md', manifest('.aioson/briefings/orders/identity.md'));
+  const withIdentity = await runVerifyArtifact({
+    args: [dir],
+    options: { kind: 'visual', slug: 'orders', json: true, advisory: true, suppressExitCode: true },
+    logger: makeLogger()
+  });
+  assert.doesNotMatch(withIdentity.warnings.join('\n'), /reference-identity-extract/);
+  assert.match(withIdentity.warnings.join('\n'), /craft floor/);
+});

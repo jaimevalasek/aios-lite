@@ -314,6 +314,20 @@
       "see": ["vq-020", "vq-008", "vq-002"]
     },
     {
+      "id": "vq-022",
+      "title": "A rejected visual is answered with new input, never a preset menu",
+      "tags": ["visual-quality", "anti-slop", "design", "layout", "interface", "prototype"],
+      "q": 5,
+      "v": "AVOID",
+      "s": "When the owner rejects a surface as generic or cheap, the failure was the visual input, so the rebuild needs new input: ask for the owner's references (screenshots, capture folders, site URLs) and run reference-identity-extract so the one engine builds from their bar. Enumerating installed design skills as a choice menu re-rolls the same fixed looks that caused the complaint; presets are raw material used only when the owner names one unprompted.",
+      "p": "rejection -> ask for references -> identity route; no references -> different register at its premium bar with the failed build's craft warnings as the fix list; preset only if the owner names it",
+      "src": "AIOSON supervised briefing session: after rejecting a flat prototype, the owner was offered a menu of installed presets with one marked recommended, guaranteeing another same-looking result",
+      "date": "2026-08-18",
+      "not": "Answering 'these sites all look the same' with a picker over warm/bold/cloned preset skills, or marking a preset as the recommended fix for an aesthetic-quality complaint",
+      "warn": "Conformance still wins: an approved prototype or bound identity is never re-decided because of taste feedback on a different surface. The decision question, when needed, is identity-vs-origination-vs-named-preset, never a catalog listing.",
+      "see": ["vq-021", "vq-017", "vq-001"]
+    },
+    {
       "id": "sq-001",
       "title": "Replaceability test for a generic specification and prose",
       "tags": ["spec-quality", "anti-slop", "prd", "specification"],

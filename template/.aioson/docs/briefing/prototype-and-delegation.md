@@ -47,7 +47,8 @@ aioson verify:artifact . --kind=identity --file=.aioson/briefings/{slug}/identit
 `identity.md` parameterizes the one chosen design engine; its `## Component structure notes` inform the operational surface. Without images, let `interface-design` operate intent-first.
 
 - If `design_skill` names an installed preset, use only that preset.
-- If it is blank, default to `interface-design` in intent-first origination mode without asking. Commit to one aesthetic register and one product-specific signature move, then originate a new layout with premium tokenized craft — palette, typography, depth, and purposeful motion honoring `prefers-reduced-motion` — at the same ambition regardless of which model executes the run. This default is declared, never silent: record `design_skill: interface-design (default)` in `prototype-manifest.md` and add one non-blocking structured finding recommending the project register a definitive `design_skill`. Reference images stay optional; when the user provides them, the identity route above still applies.
+- If it is blank, default to `interface-design` in intent-first origination mode without asking. Commit to one aesthetic register and one product-specific signature move, then originate a new layout with premium tokenized craft — palette, typography, depth, and purposeful motion honoring `prefers-reduced-motion` — at the same ambition regardless of which model executes the run. This default is declared, never silent: record `design_skill: interface-design (default)` in `prototype-manifest.md` and add one non-blocking structured finding recommending the project register a definitive `design_skill`. For a premium-intent surface (marketing, institutional, showcase — anywhere the aesthetic is the argument), ask once, before originating, whether the owner has visual references — screenshots, capture folders, site URLs; owners who care about the aesthetic almost always hold a mental bar they can show. References given → the identity route above, which outranks intent-first origination. No references → originate.
+- The installed preset catalog is never the decision surface. Presets are raw material for the hybrid/forge processes and are used only when the owner explicitly names one; enumerating installed skills as a menu turns the aesthetic decision into a re-roll of the same fixed looks.
 
 If the user named another model for reference research or critique, finish explicit delegation first. Otherwise do not delegate merely because it might help.
 
@@ -79,5 +80,13 @@ Repair the blocking findings (decorative blob, animation with no `prefers-reduce
 ## Rejection closes the loop
 
 When the user rejects a visual that had passed every gate, the rejection is evidence of a harness miss, not just a rebuild order. Before rebuilding, append one learning under `.aioson/learnings/` (plus its `INDEX.md` line) naming: the pattern that slipped through, the gate that stayed green, and the cheapest check that would have caught it. A fingerprint that recurs across features graduates into a project rule via `aioson rule:new`. Then rebuild.
+
+The rebuild itself is re-routed with **new visual input, identity-first** — rerunning the same engine mode on the same inputs, or swapping to another installed preset, is rolling the same dice that just lost:
+
+1. Ask for the owner's references first. Someone who rejected a surface holds a mental bar; ask them to show it (screenshots, capture folders, reference site URLs) and run the identity route above. This is the recommended option whenever the complaint is sameness, "generic", or aesthetic quality.
+2. No references available → originate again, but with a **different aesthetic register** executed at its premium bar, and treat every craft warning from the rejected build's `kind=visual` report (undelivered typeface, OS-stack typography, `craft floor N/5`) as the explicit fix list of the new build.
+3. A preset only if the owner names one unprompted. Never present the installed skill catalog as the rebuild menu, and never mark a preset as the recommended answer to a quality or sameness complaint.
+
+When a decision question is genuinely needed, it has exactly this shape — extract identity from your references (recommended; ask for them) / premium origination without references / a specific preset you name — never a list of installed skills.
 
 Prototype work never edits `briefings.md`, never becomes canonical feedback, and never trades away a Core screen/action/state for visual polish.

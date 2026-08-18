@@ -34,7 +34,7 @@ test('the layout lens stays exactly with the implementation-oriented agents', as
 
     assert.ok(entry, `visual quality brain missing from ${root}`);
     assert.deepEqual(entry.agents, INDEXED_AGENTS);
-    assert.equal(entry.nodes, 25);
+    assert.equal(entry.nodes, 26);
     assert.equal(entry.path, BRAIN_RELATIVE_PATH);
 
     for (const agent of AGENTS) {
@@ -47,7 +47,7 @@ test('the layout lens stays exactly with the implementation-oriented agents', as
 
       assert.equal(result.ok, true);
       assert.deepEqual(result.warnings, []);
-      assert.equal(result.nodes.length, 22);
+      assert.equal(result.nodes.length, 23);
       const replaceability = result.nodes.find((node) => node.id === 'vq-002');
       assert.equal(replaceability.v, 'AVOID');
       assert.match(replaceability.s, /repeated em dashes/i);
@@ -74,6 +74,12 @@ test('the layout lens stays exactly with the implementation-oriented agents', as
       const craft = result.nodes.find((node) => node.id === 'vq-021');
       assert.match(craft.s, /craft axis|active_levers/);
       assert.match(craft.p, /active_levers/);
+      // Rejection re-route: new visual input (identity from the owner's
+      // references), never a menu of installed presets.
+      const reroute = result.nodes.find((node) => node.id === 'vq-022');
+      assert.equal(reroute.v, 'AVOID');
+      assert.match(reroute.s, /reference-identity-extract/);
+      assert.match(reroute.not, /preset/i);
     }
   }
 });

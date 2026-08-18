@@ -957,6 +957,19 @@ const ADAPTERS = {
           }
           metrics.manifest_quality_evidence = !placeholder;
         }
+
+        // Identity provenance: an intent-first build (`identity: none`) whose
+        // craft measurements missed has a NAMED route — extract an identity
+        // from the owner's references — and the gate says so, instead of the
+        // next round re-rolling the same intent-first dice or a preset menu.
+        const identityLine = manifest.match(/^identity:\s*(.+)$/mi);
+        const identityRef = identityLine ? identityLine[1].trim().replace(/^["']|["']$/g, '') : null;
+        metrics.manifest_identity = identityRef;
+        const intentFirst = !identityRef || /^(none|null|~)$/i.test(identityRef);
+        const craftMissed = warnings.some((w) => /never delivered|OS default stacks|craft floor/.test(w));
+        if (intentFirst && craftMissed) {
+          warnings.push('intent-first build (`identity: none`) with the measured craft floor unmet — before another intent-first round or any preset menu, ask the owner for visual references (screenshots, capture folders, site URLs) and run reference-identity-extract into the briefing\'s identity.md; an extracted identity outranks origination');
+        }
       }
     }
 
