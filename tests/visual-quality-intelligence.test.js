@@ -34,7 +34,7 @@ test('the layout lens stays exactly with the implementation-oriented agents', as
 
     assert.ok(entry, `visual quality brain missing from ${root}`);
     assert.deepEqual(entry.agents, INDEXED_AGENTS);
-    assert.equal(entry.nodes, 27);
+    assert.equal(entry.nodes, 28);
     assert.equal(entry.path, BRAIN_RELATIVE_PATH);
 
     for (const agent of AGENTS) {
@@ -47,7 +47,7 @@ test('the layout lens stays exactly with the implementation-oriented agents', as
 
       assert.equal(result.ok, true);
       assert.deepEqual(result.warnings, []);
-      assert.equal(result.nodes.length, 24);
+      assert.equal(result.nodes.length, 25);
       const replaceability = result.nodes.find((node) => node.id === 'vq-002');
       assert.equal(replaceability.v, 'AVOID');
       assert.match(replaceability.s, /repeated em dashes/i);
@@ -87,6 +87,14 @@ test('the layout lens stays exactly with the implementation-oriented agents', as
       assert.match(sameness.s, /design:seed/);
       assert.match(sameness.s, /cross-project palette repetition/);
       assert.match(sameness.p, /--seed=N/);
+      // The finish-system companion: a legitimate draw applied without the
+      // tokened finish (shadows, washes, texture) still ships as flat output,
+      // and the depth metric plus the dead-effect check make that measurable.
+      const finish = result.nodes.find((node) => node.id === 'vq-024');
+      assert.equal(finish.v, 'AVOID');
+      assert.match(finish.s, /material_depth|materials N\/7/);
+      assert.match(finish.s, /shallow material system/);
+      assert.match(finish.s, /declared finish never applied/);
     }
   }
 });

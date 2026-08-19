@@ -342,6 +342,20 @@
       "see": ["vq-022", "vq-021", "vq-005"]
     },
     {
+      "id": "vq-024",
+      "title": "A drawn palette with no finish system ships as flat AI output",
+      "tags": ["visual-quality", "anti-slop", "design", "layout", "interface", "prototype"],
+      "q": 5,
+      "v": "AVOID",
+      "s": "A legitimate palette applied as flat fills reads as generic output even when every hue and contrast is right: the premium difference is the finish SYSTEM — a layered shadow vocabulary on floating surfaces, tinted washes per accent role, texture or blend at the register's dosage — tokened so every route inherits it instead of spent on one hero moment. Telemetry measures it: material_depth (materials N/7) with the shallow material system warning when the lever rests on gradients and blur alone, and declared finish never applied when effect tokens or @keyframes exist that no rule references. The drawn signature material is the top note above that system, never its substitute.",
+      "p": "seeded or chosen palette -> tokened finish system every route inherits (shadow vocabulary + washes + texture at register dosage) -> finish depth measured, dead effects named",
+      "src": "AIOSON supervised briefing sessions: a rebuilt prototype consumed a legitimate seeded palette and passed craft 4/5, yet the owner read it as generic AI output — one wash where the predecessor tokened twelve layered shadows, grain and blend modes; the finish depth metric now separates the two",
+      "date": "2026-08-19",
+      "not": "Counting the material craft lever satisfied because two gradients and a blur exist somewhere, while every card sits flat on the ground with no shadow system, no washes, and effects declared in :root that nothing applies",
+      "warn": "Depth is a floor, not a decoration quota: a register may keep finish quiet, and evidence-led surfaces may argue with imagery instead — answer the warning by tokening real finish or by recording why this register's premium bar carries it differently.",
+      "see": ["vq-021", "vq-023"]
+    },
+    {
       "id": "sq-001",
       "title": "Replaceability test for a generic specification and prose",
       "tags": ["spec-quality", "anti-slop", "prd", "specification"],

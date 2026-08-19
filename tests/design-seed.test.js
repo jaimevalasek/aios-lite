@@ -215,6 +215,7 @@ test('design:seed returns the JSON contract and rejects an unknown register', as
         assert.ok(c.roles.ground.hex && c.roles.accent.hex && c.roles.accent_ink.hex);
         assert.ok(c.pairing.display && c.pairing.host);
         assert.ok(c.composition.hero && c.composition.material);
+        assert.match(c.composition.finishing, /shadow vocabulary/, 'every candidate carries its finish floor — the drawn material is the signature, never the whole system');
       }
 
       const bad = await runDesignSeed({ args: [dir], options: { json: true, register: 'vaporwave' }, logger });

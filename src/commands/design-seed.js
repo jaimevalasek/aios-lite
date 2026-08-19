@@ -74,6 +74,7 @@ async function runDesignSeed({ args, options = {}, logger }) {
     logger.log(`  type: ${c.pairing.display} / ${c.pairing.ui} (${c.pairing.host}) — ${c.pairing.vibe}`);
     logger.log(`  composition: ${c.composition.hero} — ${c.composition.note}`);
     logger.log(`  rhythm ${c.composition.rhythm} · material: ${c.composition.material}`);
+    logger.log(`  finishing floor: ${c.composition.finishing}`);
     logger.log('');
   }
   logger.log('Build FROM one candidate: hue family, pole, and pairing are the starting material; refine roles, scales, and');

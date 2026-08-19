@@ -1172,7 +1172,7 @@ async function runVerifyArtifact({ args, options = {}, logger }) {
     const m = report.metrics;
     const pct = m.token_adherence_pct === null || m.token_adherence_pct === undefined ? 'n/a' : `${m.token_adherence_pct}%`;
     const craft = m.craft && m.craft.measured
-      ? ` | type max ${m.max_font_size_px || 0}px | font ${m.font_delivery && m.font_delivery.delivered ? 'delivered' : 'not delivered'} | craft ${m.craft.active_levers}/5`
+      ? ` | type max ${m.max_font_size_px || 0}px | font ${m.font_delivery && m.font_delivery.delivered ? 'delivered' : 'not delivered'} | craft ${m.craft.active_levers}/5 | materials ${m.craft.material_depth ?? 0}/7`
       : '';
     const palette = m.palette && m.palette.accent_hue != null && m.palette.ground
       ? ` | accent ~${m.palette.accent_hue}° on ${m.palette.ground.pole}`

@@ -384,13 +384,24 @@ function generateSeedCandidates({ slug, register = null, count = 3, seed = 0, av
         hero: composition.hero,
         note: composition.note,
         rhythm: pickFrom(rng, RHYTHMS),
-        material: pickFrom(rng, MATERIALS)
+        material: pickFrom(rng, MATERIALS),
+        finishing: FINISHING_FLOOR[pole]
       }
     });
   }
 
   return { basis, hash, register: normalizedRegister, candidates };
 }
+
+// The drawn material is the SIGNATURE, never the whole system. Every candidate
+// ships with the finish floor its palette must wear — tokened so every route
+// inherits it — because a legitimate draw applied without finishing is exactly
+// how a premium palette ships looking like generic output.
+const FINISHING_FLOOR = {
+  light: 'token a paper shadow vocabulary (soft layered shadows + inset highlight) on floating surfaces and a tinted soft wash per accent role for chips/fills — the drawn material sits on top of this floor, it never replaces it',
+  dark: 'token surface elevation the eye can read (steps or an inverted light plate for the stat moment), a layered shadow vocabulary and tinted washes per accent role — the drawn material sits on top of this floor, it never replaces it',
+  chromatic: 'token an ink-anchored shadow vocabulary tuned on the colored field plus tinted washes per accent role — the drawn material sits on top of this floor, it never replaces it'
+};
 
 // ─── operator fingerprint registry ──────────────────────────────────────────
 // Written by verify:artifact from MEASURED surfaces (ground truth, auto-fires

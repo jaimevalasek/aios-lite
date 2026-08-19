@@ -607,7 +607,15 @@ function analyzeVisualSources({ html = '', css = '' } = {}) {
   }).map((block) => block.selector);
 
   // ── craft levers (measured ambition) ─────────────────────────────────────
-  const gradientCount = (styleText.match(/(?:linear|radial|conic)-gradient\(/gi) || []).length;
+  // Applied context only: a gradient or grain living in an unreferenced token
+  // decorates the stylesheet, not the product. Text presence is what a model
+  // fakes for free; a declaration that actually paints is what the user sees.
+  let gradientCount = 0;
+  for (const { prop, value } of decls) {
+    if (String(prop).startsWith('--')) continue;
+    const resolved = resolveCustomProps(value, props);
+    gradientCount += (resolved.match(/(?:linear|radial|conic)-gradient\(/gi) || []).length;
+  }
   let layeredShadows = 0;
   for (const { prop, value } of decls) {
     if (prop !== 'box-shadow' && prop !== 'text-shadow') continue;
@@ -615,7 +623,8 @@ function analyzeVisualSources({ html = '', css = '' } = {}) {
     if (/^\s*none\b/i.test(resolved)) continue;
     if (topLevelSplit(resolved).length >= 2) layeredShadows += 1;
   }
-  const grainNoise = /feTurbulence/i.test(markup);
+  const grainNoise = decls.some(({ prop, value }) => !String(prop).startsWith('--') && /feTurbulence/i.test(resolveCustomProps(value, props)))
+    || (/feTurbulence/i.test(markup) && /filter\s*[:=]\s*["']?url\(#/i.test(markup));
   const blendModes = decls.filter((d) => d.prop === 'mix-blend-mode' || d.prop === 'background-blend-mode').length;
   const maskLayers = decls.filter((d) => d.prop === 'mask-image' || d.prop === '-webkit-mask-image').length;
   const modernColor = (styleText.match(/color-mix\(|oklch\(|oklab\(/gi) || []).length;
@@ -632,6 +641,37 @@ function analyzeVisualSources({ html = '', css = '' } = {}) {
     maskLayers >= 1 && 'masks',
     modernColor >= 3 && 'modern color'
   ].filter(Boolean);
+
+  // Finish depth counts only PHYSICAL finish — modern color notation is
+  // hygiene, not material. A wash plus a blur satisfies the lever's presence
+  // bar while the surface still reads flat; depth is what separates a palette
+  // from a designed surface (a token-level shadow/texture system every route
+  // inherits, not one hero moment).
+  const materialDepth = [
+    gradientCount >= 2 && 'gradients',
+    layeredShadows >= 2 && 'layered shadows',
+    depth.blur >= 1 && 'blur',
+    grainNoise && 'grain',
+    blendModes >= 1 && 'blend modes',
+    maskLayers >= 1 && 'masks',
+    backgroundImages >= 1 && 'image layers'
+  ].filter(Boolean);
+
+  // Declared-but-never-applied finish: effect tokens and keyframes no rule
+  // references. They inflate every text-presence signal while the user sees
+  // flat — the exact "cool effects in the CSS, applied nowhere" report shape.
+  const varRefs = new Set();
+  for (const ref of String(markup).matchAll(/var\(\s*(--[\w-]+)/g)) varRefs.add(ref[1].toLowerCase());
+  const EFFECT_PROP = /shadow|grain|noise|glow|texture|gradient|wash|blur|halo/i;
+  const EFFECT_VALUE = /(?:linear|radial|conic)-gradient\(|feTurbulence|blur\(/i;
+  const unappliedEffectTokens = Object.entries(props)
+    .filter(([name, value]) => (EFFECT_PROP.test(name) || EFFECT_VALUE.test(value)) && !varRefs.has(name.toLowerCase()))
+    .map(([name]) => name);
+  const keyframeNames = [...styleText.matchAll(/@keyframes\s+([\w-]+)/g)].map((k) => k[1]);
+  const unappliedKeyframes = keyframeNames.filter(
+    (name) => !new RegExp(`animation(?:-name)?\\s*:[^;{}]*\\b${name}\\b`, 'i').test(markup)
+  );
+  const unappliedFinish = [...unappliedEffectTokens, ...unappliedKeyframes.map((name) => `@keyframes ${name}`)];
 
   const modernCss = MODERN_CSS_PROBES.filter((probe) => probe.re.test(styleText)).map((probe) => probe.feature);
   if (scrollReveal) modernCss.push('scroll-driven reveals');
@@ -693,12 +733,57 @@ function analyzeVisualSources({ html = '', css = '' } = {}) {
   const accentHue = accentCluster
     ? Math.round(((Math.atan2(accentCluster.sin, accentCluster.cos) * 180) / Math.PI + 360) % 360)
     : null;
+  // The page ground is what body/html paint. Frequency across background
+  // declarations is only the fallback: chips, logos and buttons can outnumber
+  // the page field by rule count while covering a fraction of its pixels —
+  // that is how a green logo block once became "the ground" of a violet-dark
+  // surface and poisoned the cross-project fingerprint.
+  const PAGE_GROUND_SELECTOR = /(^|[\s>+~])(html|body)((\.|\[|::?)[^\s>+~]*)?$/i;
+  // Resolve the page ground against the FIRST definition of each custom
+  // property: the base theme. A [data-theme] override later in the sheet is
+  // the toggle, not the shipped default, and last-write-wins resolution was
+  // flipping dark defaults to their light-theme values here.
+  const baseProps = {};
+  {
+    const re = /(--[\w-]+)\s*:\s*([^;{}]+)/g;
+    let bp;
+    while ((bp = re.exec(styleText))) { if (!(bp[1] in baseProps)) baseProps[bp[1]] = bp[2].trim(); }
+  }
+  // Among matching blocks, the LAST bare `body`/`html` rule wins (the CSS
+  // cascade); a scoped variant (`[data-theme] body`, `body.light`) is a theme
+  // override, never the default, and only serves as a fallback when no bare
+  // rule paints.
+  const BARE_PAGE_SELECTOR = /^(?:html|body)(?:\s+body)?$/i;
+  let bareGround = null;
+  let firstAnyGround = null;
+  for (const block of ruleBlocks(styleText)) {
+    const parts = String(block.selector || '').split(',').map((part) => part.trim());
+    if (!parts.some((part) => PAGE_GROUND_SELECTOR.test(part))) continue;
+    const bgDecls = [...block.body.matchAll(/(?:^|;)\s*background(?:-color)?\s*:\s*([^;{}]+)/gi)];
+    let found = null;
+    for (let i = bgDecls.length - 1; i >= 0 && !found; i -= 1) {
+      const resolved = resolveCustomProps(bgDecls[i][1], baseProps);
+      COLOR_TOKEN.lastIndex = 0;
+      const token = COLOR_TOKEN.exec(resolved);
+      const parsed = token ? parseCssColor(token[0]) : null;
+      if (parsed && parsed.alpha >= 0.9) found = { hex: rgbToHex(parsed), oklch: parsed.oklch };
+    }
+    if (!found) continue;
+    if (!firstAnyGround) firstAnyGround = found;
+    if (parts.some((part) => BARE_PAGE_SELECTOR.test(part))) bareGround = found;
+  }
+  const pageGround = bareGround || firstAnyGround;
   let ground = null;
-  if (groundCounts.size > 0) {
-    const [groundHex] = [...groundCounts.entries()].sort((a, b) => b[1] - a[1])[0];
-    const g = colorCounts.get(groundHex).oklch;
+  const groundPick = pageGround || (groundCounts.size > 0
+    ? (() => {
+      const [hex] = [...groundCounts.entries()].sort((a, b) => b[1] - a[1])[0];
+      return { hex, oklch: colorCounts.get(hex).oklch };
+    })()
+    : null);
+  if (groundPick) {
+    const g = groundPick.oklch;
     const pole = g.c >= 0.12 ? 'chromatic' : g.l >= 0.75 ? 'light' : g.l <= 0.45 ? 'dark' : 'mid';
-    ground = { hex: groundHex, l: Math.round(g.l * 100) / 100, c: Math.round(g.c * 1000) / 1000, h: Math.round(g.h), pole };
+    ground = { hex: groundPick.hex, l: Math.round(g.l * 100) / 100, c: Math.round(g.c * 1000) / 1000, h: Math.round(g.h), pole };
   }
   const palette = {
     color_literals: colorLiteralCount,
@@ -767,6 +852,8 @@ function analyzeVisualSources({ html = '', css = '' } = {}) {
       active_levers: activeLevers,
       levers,
       material_techniques: materialTechniques,
+      material_depth: materialDepth.length,
+      unapplied_effects: unappliedFinish,
       gradient_count: gradientCount,
       layered_shadow_declarations: layeredShadows,
       grain_noise: grainNoise,
@@ -868,6 +955,13 @@ function analyzeVisualSources({ html = '', css = '' } = {}) {
     if (!levers.motion) missing.push(`motion choreography (${keyframes} keyframes, ${transitionCount} transitions, no scroll reveal)`);
     if (!levers.evidence) missing.push(`evidence imagery (${mediaElements} media elements, ${backgroundImages} CSS image layers)`);
     warnings.push(`craft floor: ${activeLevers}/5 premium levers active — missing: ${missing.join('; ')}. Hygiene alone reads as a default document, not a designed product; each lever is optional, the floor is not (visual-effects.md owns the vocabulary, the register's premium bar owns the shape)`);
+  }
+  if (craftMeasured && levers.material && materialDepth.length <= 2) {
+    warnings.push(`shallow material system: the material lever rests on ${materialDepth.join(' + ') || 'modern color alone'} (finish depth ${materialDepth.length}/7) — a drawn palette with no system-level finish is the measured shape of generic AI output even when every hue is right. Token the finish so every route inherits it: a layered shadow vocabulary on floating surfaces, tinted washes for chips and fills, texture or blend where the register allows. The signature material is the top note, never the whole system`);
+  }
+  if (craftMeasured && unappliedFinish.length > 0) {
+    const sample = unappliedFinish.slice(0, 5).join(', ');
+    warnings.push(`declared finish never applied: ${sample}${unappliedFinish.length > 5 ? ', …' : ''} — effects that exist only in the stylesheet decorate the code while the user sees flat; wire each one to a real surface or delete it. Dead declarations are not craft, and they read as leftovers in review`);
   }
   if (craftMeasured && modernCss.length === 0) {
     warnings.push('authored in pre-2020 CSS only — none of: container queries, :has(), fluid clamp() type, oklch/color-mix, subgrid, text-wrap balance, aspect-ratio, scroll-driven reveals. The current platform repertoire is absent, which is the measured shape of "looks dated"; adopt the features the surface earns (visual-effects.md, Modern baseline)');

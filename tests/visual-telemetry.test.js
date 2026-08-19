@@ -655,6 +655,69 @@ test('an ambitious surface activates the levers and stays silent — the gate mu
   assert.doesNotMatch(text, /pre-2020 CSS/);
 });
 
+test('the page ground is what body paints in the base theme — not the most-frequent component background, not a theme override', () => {
+  // A green logo/chip family outnumbers the body rule by declaration count,
+  // and a [data-theme] block later in the sheet redefines the ground tokens.
+  // Both used to poison the fingerprint: frequency picked the chip color,
+  // last-write-wins resolution picked the toggle theme.
+  const chips = Array.from({ length: 12 }, (_, i) => `.chip-${i} { background: #297d1a; color: #ffffff; }`).join('\n');
+  const html = `<!doctype html><html><head><style>
+  :root { --bg: oklch(18.5% 0.028 315); --fg: #eeeaf2; }
+  [data-theme="light"] { --bg: oklch(96.5% 0.008 315); --fg: #1d1626; }
+  .logo { background: #297d1a; }
+  ${chips}
+  body { background: var(--bg); color: var(--fg); }
+  </style></head><body><main><h1>Painel</h1></main></body></html>`;
+  const m = analyzeVisualSources({ html }).metrics;
+  assert.equal(m.palette.ground.pole, 'dark');
+  assert.equal(m.palette.ground.h, 315);
+  assert.ok(Math.abs(m.palette.accent_hue - 141) <= 3, `accent stays the chip green family (got ${m.palette.accent_hue})`);
+});
+
+test('a full surface whose material rests on gradients and blur alone draws the shallow-material warning; a layered system stays silent', () => {
+  const shallow = analyzeVisualSources({ html: flatHygienicSurface({
+    headStyles: `
+      .hero { background: linear-gradient(180deg, #0b0d12, #141821), radial-gradient(circle at 20% 0%, #1a1e2a, transparent); }
+      .top { backdrop-filter: blur(12px); }
+    `
+  }) });
+  assert.equal(shallow.metrics.craft.levers.material, true);
+  assert.equal(shallow.metrics.craft.material_depth, 2);
+  assert.match(shallow.warnings.join('\n'), /shallow material system: .*finish depth 2\/7/);
+
+  const deep = analyzeVisualSources({ html: flatHygienicSurface({
+    headStyles: `
+      .hero { background: linear-gradient(180deg, #0b0d12, #141821), radial-gradient(circle at 20% 0%, #1a1e2a, transparent); }
+      .card { box-shadow: 0 1px 0 rgba(255,255,255,.7) inset, 0 8px 24px -14px rgba(0,0,0,.3); }
+      .pop { box-shadow: 0 4px 10px -2px rgba(0,0,0,.12), 0 22px 48px -24px rgba(0,0,0,.45); }
+      .veil::after { content: ''; background-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg'><filter id='n'><feTurbulence baseFrequency='0.8'/></filter></svg>"); }
+    `
+  }) });
+  assert.ok(deep.metrics.craft.material_depth >= 4, `deep fixture depth (got ${deep.metrics.craft.material_depth})`);
+  assert.doesNotMatch(deep.warnings.join('\n'), /shallow material system/);
+});
+
+test('effect tokens and keyframes that no rule applies are named — decorating the stylesheet is not craft', () => {
+  const result = analyzeVisualSources({ html: flatHygienicSurface({
+    headStyles: `
+      :root { --glow-wash: radial-gradient(circle, #223344, transparent); --shadow-lift: 0 4px 10px rgba(0,0,0,.2), 0 22px 48px rgba(0,0,0,.4); }
+      @keyframes float-up { from { transform: translateY(8px); } to { transform: none; } }
+    `
+  }) });
+  assert.deepEqual(result.metrics.craft.unapplied_effects, ['--glow-wash', '--shadow-lift', '@keyframes float-up']);
+  assert.match(result.warnings.join('\n'), /declared finish never applied: --glow-wash, --shadow-lift, @keyframes float-up/);
+
+  const wired = analyzeVisualSources({ html: flatHygienicSurface({
+    headStyles: `
+      :root { --glow-wash: radial-gradient(circle, #223344, transparent); }
+      .hero { background: var(--glow-wash); animation: float-up 6s ease infinite; }
+      @keyframes float-up { from { transform: translateY(8px); } to { transform: none; } }
+    `
+  }) });
+  assert.deepEqual(wired.metrics.craft.unapplied_effects, []);
+  assert.doesNotMatch(wired.warnings.join('\n'), /declared finish never applied/);
+});
+
 test('the craft axis only measures full surfaces — fixtures and fragments stay silent', () => {
   const clean = analyzeVisualSources({ html: CLEAN });
   assert.equal(clean.metrics.craft.measured, false);
@@ -664,12 +727,12 @@ test('the craft axis only measures full surfaces — fixtures and fragments stay
 });
 
 test('the palette fingerprint reads the shipped hue family through var()', () => {
-  // Dark teal ground carried by the token system (last :root write wins in
-  // the resolver, exactly like the cascade), one coral accent family.
+  // Dark teal ground painted by the last bare body rule (the cascade: a later
+  // unscoped body wins over the fixture's white base), one coral accent family.
   const dark = analyzeVisualSources({
     html: flatHygienicSurface({
       headStyles: `
-        :root { --bg: #0e2a2e; --fg: #eef4f2; }
+        body { background: #0e2a2e; color: #eef4f2; }
         .cta { background: #ff6b4a; color: #ffffff; }
         .cta:hover { background: #e85f41; }
         .link { color: #ff6b4a; }
