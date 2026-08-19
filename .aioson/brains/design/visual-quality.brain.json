@@ -356,6 +356,34 @@
       "see": ["vq-021", "vq-023"]
     },
     {
+      "id": "vq-025",
+      "title": "Generation tells are measured — category defaults need a named reason",
+      "tags": ["visual-quality", "anti-slop", "design", "layout", "interface", "prototype"],
+      "q": 5,
+      "v": "AVOID",
+      "s": "The recognizable defaults of generated UI are arithmetic now: kind=visual reports `tells N` and names each one — gradient text, a thick colored side border, a kicker/eyebrow above a heading, the icon-tile feature-card grid, zero-offset chromatic glows, hard-offset block shadows, a training-saturated display face (Inter, Playfair, Space Grotesk and kin in the display role), bounce easing, sub-11px functional text, marketing buzzwords, and the \"not just X. It's Y\" pivot. These are category defaults, not bans — a brief or register can earn most of them back with a recorded reason — except the kicker, which nothing earns back. Every warning carries its counter-move, and the cheap positive twin is themed browser chrome: ::selection, caret-color, scrollbars, :focus-visible, underline tuning, tabular numerals drawn from the surface's own palette.",
+      "p": "tell warning -> apply the named counter-move, or record the brief/register reason -> re-measure; kicker above heading -> delete the label",
+      "src": "AIOSON cross-harness slop-pattern research, 2026-08: the recurring tells catalogued across generated interfaces, made lexical so no reviewer has to re-spot them by taste",
+      "date": "2026-08-19",
+      "not": "Shipping a grid of icon-tile feature cards under an eyebrow-labeled hero because every hygiene gate passed — the tells are exactly what hygiene cannot see",
+      "warn": "Advisory by design: a genuinely neobrutalist block shadow or an identity-pinned face is legitimate — the reason gets recorded in the manifest or PRD, the warning never gets suppressed.",
+      "see": ["vq-002", "vq-021", "vq-024"]
+    },
+    {
+      "id": "vq-026",
+      "title": "Task surfaces earn familiarity — ornament is not their premium axis",
+      "tags": ["visual-quality", "anti-slop", "design", "layout", "interface", "prototype"],
+      "q": 5,
+      "v": "BEST_PRACTICE",
+      "s": "Name what the visitor came to do on each surface — decide, operate, read, or inhabit — before applying any premium bar, because the bar flips with the answer. On surfaces the user came to OPERATE (dashboards, admin, editors, settings, recurring CRUD) the failure mode is not flatness but purposeless strangeness: over-decorated controls, display faces in labels, gratuitous motion, invented affordances for standard tasks. The premium bar there is earned familiarity — a fluent user trusts the screen immediately and the tool disappears into the task. Concretely: one family is usually enough; a fixed rem scale (no fluid clamp() headings inside app chrome) at a tighter ratio (1.125–1.2); accent only on primary actions, selection, and state; motion 150–250ms as state feedback with no page-load orchestration; skeletons over spinners mid-content; empty states that teach the interface; overlays that escape clipped containers; modal as last resort. The craft floor still binds — delivered face, finish system, themed browser chrome — spent on precision and density instead of ornament. Persuade/experience surfaces (landing, showcase, marketing) keep the expressive bar: the mode is per surface, never per project.",
+      "p": "per surface: decide/inhabit -> expressive premium bar; operate/read -> earned familiarity (fixed scale, restrained accent, feedback motion, teaching empty states)",
+      "src": "AIOSON cross-harness slop-pattern research, 2026-08: product-surface quality inverts the landing-page rubric — the same expressive moves that argue on a showcase read as friction inside a task",
+      "date": "2026-08-19",
+      "not": "Display-serif labels, staged page-load entrances, and glass panels on an admin table, read as craft while a fluent operator reads them as friction",
+      "warn": "Familiarity never excuses the hygiene, state, or accessibility floors — and the product's marketing surface stays expressive even when its app is operate-mode.",
+      "see": ["vq-004", "vq-025"]
+    },
+    {
       "id": "sq-001",
       "title": "Replaceability test for a generic specification and prose",
       "tags": ["spec-quality", "anti-slop", "prd", "specification"],

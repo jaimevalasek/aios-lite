@@ -146,6 +146,21 @@ test('the draw steers the BUILT accent away from recent fingerprints', () => {
   assert.ok(delta > 18, `first candidate accent still within Δ${delta}° of the avoided fingerprint`);
 });
 
+test('the typeface bank never rolls the training-saturated monoculture the telemetry flags', () => {
+  const { SATURATED_DISPLAY_FACES } = require('../src/lib/visual-telemetry');
+  for (const pairing of TYPEFACE_BANK) {
+    assert.ok(!SATURATED_DISPLAY_FACES.has(pairing.display.toLowerCase()),
+      `bank display face "${pairing.display}" is on the saturated list — a dice that can roll the monoculture defeats its own purpose`);
+    assert.ok(!SATURATED_DISPLAY_FACES.has(pairing.ui.toLowerCase()),
+      `bank ui face "${pairing.ui}" is on the saturated list`);
+  }
+  // every register still has enough distinct displays for a full 3-slot draw
+  for (const register of REGISTERS) {
+    const pool = new Set(TYPEFACE_BANK.filter((p) => p.registers.includes(register)).map((p) => p.display));
+    assert.ok(pool.size >= 3, `register ${register} pool shrank to ${pool.size}`);
+  }
+});
+
 test('candidates in one draw do not waste slots on repeated pairings or heroes', () => {
   const { candidates } = generateSeedCandidates({ slug: 'variety-check', register: 'editorial', count: 3 });
   const displays = new Set(candidates.map((c) => c.pairing.display));

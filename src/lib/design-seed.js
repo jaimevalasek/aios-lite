@@ -78,27 +78,33 @@ function between(rng, lo, hi) {
 // Curated raw material, not a decision surface: the seed draws FROM these, the
 // engine composes WITH the draw. Every family is deliverable from its host
 // (Google Fonts / Fontshare) per the build contract's typeface exception.
+//
+// The bank deliberately avoids the training-saturated faces the telemetry
+// flags (SATURATED_DISPLAY_FACES in visual-telemetry.js): a face every model
+// reaches for by reflex reads as a default even when a fair draw picked it,
+// so a dice that can roll the monoculture defeats its own purpose. A test
+// keeps the two lists disjoint.
 
 const REGISTERS = ['technical', 'quiet', 'editorial', 'material', 'constructed', 'cinematic'];
 
 const TYPEFACE_BANK = [
-  { display: 'Fraunces', ui: 'Inter', host: 'google', registers: ['editorial', 'material'], vibe: 'high-contrast wonky serif' },
-  { display: 'Instrument Serif', ui: 'Instrument Sans', host: 'google', registers: ['editorial', 'quiet'], vibe: 'sharp contemporary serif' },
-  { display: 'Newsreader', ui: 'Archivo', host: 'google', registers: ['editorial'], vibe: 'news serif over grotesque' },
-  { display: 'Cormorant Garamond', ui: 'Karla', host: 'google', registers: ['quiet', 'editorial'], vibe: 'light display garamond' },
-  { display: 'DM Serif Display', ui: 'DM Sans', host: 'google', registers: ['material', 'editorial'], vibe: 'warm didone' },
+  { display: 'Young Serif', ui: 'Figtree', host: 'google', registers: ['editorial', 'material'], vibe: 'warm chunky oldstyle' },
+  { display: 'Gambetta', ui: 'Switzer', host: 'fontshare', registers: ['editorial', 'quiet'], vibe: 'calligraphic contemporary serif' },
+  { display: 'Petrona', ui: 'Archivo', host: 'google', registers: ['editorial'], vibe: 'upright latin serif with bite' },
+  { display: 'Italiana', ui: 'Karla', host: 'google', registers: ['quiet', 'editorial'], vibe: 'hairline display roman' },
+  { display: 'Abril Fatface', ui: 'Mulish', host: 'google', registers: ['material', 'editorial'], vibe: 'poster didone' },
   { display: 'Gloock', ui: 'Hanken Grotesk', host: 'google', registers: ['editorial', 'cinematic'], vibe: 'heavy didone display' },
-  { display: 'Playfair Display', ui: 'Public Sans', host: 'google', registers: ['editorial'], vibe: 'classic high-contrast serif' },
+  { display: 'Bodoni Moda', ui: 'Public Sans', host: 'google', registers: ['editorial'], vibe: 'true italian didone' },
   { display: 'Spectral', ui: 'Work Sans', host: 'google', registers: ['quiet', 'editorial'], vibe: 'cool text serif' },
   { display: 'Marcellus', ui: 'Mulish', host: 'google', registers: ['quiet', 'cinematic'], vibe: 'inscriptional capitals' },
-  { display: 'Space Grotesk', ui: 'Inter', host: 'google', registers: ['technical', 'constructed'], vibe: 'techy grotesque' },
-  { display: 'Sora', ui: 'Inter', host: 'google', registers: ['technical'], vibe: 'geometric future sans' },
+  { display: 'Schibsted Grotesk', ui: 'Archivo', host: 'google', registers: ['technical', 'constructed'], vibe: 'newsroom grotesque' },
+  { display: 'Sora', ui: 'Hanken Grotesk', host: 'google', registers: ['technical'], vibe: 'geometric future sans' },
   { display: 'Unbounded', ui: 'Manrope', host: 'google', registers: ['constructed', 'cinematic'], vibe: 'expanded display sans' },
-  { display: 'Syne', ui: 'Epilogue', host: 'google', registers: ['constructed'], vibe: 'art-school geometric' },
+  { display: 'Panchang', ui: 'General Sans', host: 'fontshare', registers: ['constructed'], vibe: 'squared wide display' },
   { display: 'Anton', ui: 'Archivo', host: 'google', registers: ['constructed'], vibe: 'compressed poster sans' },
   { display: 'Bricolage Grotesque', ui: 'Public Sans', host: 'google', registers: ['constructed', 'editorial'], vibe: 'characterful grotesque' },
-  { display: 'Familjen Grotesk', ui: 'Inter', host: 'google', registers: ['quiet', 'technical'], vibe: 'warm grotesque' },
-  { display: 'Fragment Mono', ui: 'Inter', host: 'google', registers: ['technical'], vibe: 'monospace display' },
+  { display: 'Familjen Grotesk', ui: 'Karla', host: 'google', registers: ['quiet', 'technical'], vibe: 'warm grotesque' },
+  { display: 'Fragment Mono', ui: 'Archivo', host: 'google', registers: ['technical'], vibe: 'monospace display' },
   { display: 'Clash Display', ui: 'Satoshi', host: 'fontshare', registers: ['constructed', 'cinematic'], vibe: 'angular display grotesque' },
   { display: 'Cabinet Grotesk', ui: 'General Sans', host: 'fontshare', registers: ['editorial', 'constructed'], vibe: 'retro grotesque' },
   { display: 'Zodiak', ui: 'Switzer', host: 'fontshare', registers: ['editorial', 'material'], vibe: 'fat-face serif' },

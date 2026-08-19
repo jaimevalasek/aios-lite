@@ -816,3 +816,118 @@ test('an intent-first build that misses the craft floor is pointed at the identi
   assert.doesNotMatch(withIdentity.warnings.join('\n'), /reference-identity-extract/);
   assert.match(withIdentity.warnings.join('\n'), /craft floor/);
 });
+
+// ── generation tells ─────────────────────────────────────────────────────────
+
+test('the generation tells fire on the saturated defaults, each with its counter-move', () => {
+  const html = `<!doctype html><html><head><style>
+  :root { --font-display: 'Playfair Display', serif; --accent: #7c3aed; }
+  h1 { font-family: var(--font-display); font-size: 64px; background: linear-gradient(90deg, #7c3aed, #22d3ee); -webkit-background-clip: text; }
+  .eyebrow { text-transform: uppercase; letter-spacing: .14em; font-size: 12px; color: var(--accent); }
+  .card { border-left: 4px solid var(--accent); padding: 16px; }
+  .halo { box-shadow: 0 0 24px #22d3ee; }
+  .brutal { box-shadow: 6px 6px 0 #111111; }
+  .springy { transition: transform .4s cubic-bezier(.5, 1.8, .4, .9); }
+  .legal { font-size: 10px; color: #777777; }
+  </style></head><body>
+  <p class="eyebrow">Nossa plataforma</p><h1>Streamline seu fluxo</h1>
+  <p>Enterprise-grade por design. It's not just a tool. It's a platform.</p>
+  <p>Não é só um painel. É seu copiloto.</p>
+  <div class="icon"><svg></svg></div><h3>Rápido</h3>
+  <div class="icon"><svg></svg></div><h3>Seguro</h3>
+  <div class="icon"><svg></svg></div><h3>Escalável</h3>
+  </body></html>`;
+  const result = analyzeVisualSources({ html });
+  const t = result.metrics.tells;
+  assert.equal(t.gradient_text, 1);
+  assert.equal(t.colored_side_border, 1);
+  assert.equal(t.kicker_above_heading, 1);
+  assert.equal(t.icon_tile_stack, 3);
+  assert.equal(t.chromatic_glow, 1);
+  assert.equal(t.block_shadow, 1);
+  assert.deepEqual(t.saturated_display_faces, ['playfair display']);
+  assert.equal(t.bounce_easing, 1);
+  assert.equal(t.tiny_text, 1);
+  assert.ok(t.buzzwords >= 2, `buzzwords ${t.buzzwords}`);
+  assert.ok(t.negation_pivots >= 2, `negation pivots ${t.negation_pivots}`);
+  assert.equal(t.active, 11);
+
+  const text = result.warnings.join('\n');
+  assert.match(text, /generation tell: .*gradient-text/);
+  assert.match(text, /generation tell: .*colored side border/);
+  assert.match(text, /No brief earns this one back/);
+  assert.match(text, /universal generated feature-card template/);
+  assert.match(text, /zero-offset chromatic glow/);
+  assert.match(text, /hard-offset block shadow/);
+  assert.match(text, /saturated display face in the display role \(playfair display\)/);
+  assert.match(text, /bounce\/elastic easing/);
+  assert.match(text, /under 11px/);
+  assert.match(text, /copy tell: .*marketing buzzword/);
+  assert.match(text, /copy tell: .*negation pivot/);
+});
+
+test('the same devices used deliberately stay silent — exemptions are the design contexts', () => {
+  const html = `<!doctype html><html><head><style>
+  blockquote { border-left: 3px solid #7c3aed; padding-left: 16px; }
+  .tab.active { border-left: 3px solid #7c3aed; }
+  .card { box-shadow: 0 8px 24px rgba(0,0,0,.35); }
+  .btn:focus-visible { box-shadow: 0 0 12px #7c3aed; }
+  .reveal { transition: transform .3s cubic-bezier(.2, .8, .2, 1); }
+  .meta { font-size: 12px; letter-spacing: .05em; }
+  h1 { font-family: 'Boska', serif; font-size: 72px; }
+  .note { padding: 8px; } .row { gap: 8px; } .x { margin: 4px; }
+  </style></head><body>
+  <h1>Atelier</h1><blockquote>Uma citação real do cliente.</blockquote>
+  <p>O painel aprova pedidos em duas etapas e nomeia cada erro.</p>
+  </body></html>`;
+  const result = analyzeVisualSources({ html });
+  const t = result.metrics.tells;
+  assert.equal(t.active, 0, `expected zero tells, got ${JSON.stringify(t)}`);
+  assert.doesNotMatch(result.warnings.join('\n'), /generation tell|copy tell/);
+});
+
+test('an untouched browser chrome is named on full surfaces; one themed surface clears it', () => {
+  // flatHygienicSurface ships :focus-visible, so build a bare full surface.
+  const filler = Array.from({ length: 40 }, (_, i) =>
+    `.g${i} { padding: 8px; margin: 12px; color: #1a1a1a; background: #ffffff; }`
+  ).join('\n');
+  const bare = `<!doctype html><html><head><style>
+  body { font-family: Georgia, serif; font-size: 16px; }
+  ${filler}
+  </style></head><body><main><h1>Painel</h1></main></body></html>`;
+  const untouched = analyzeVisualSources({ html: bare });
+  assert.equal(untouched.metrics.craft.measured, true);
+  assert.equal(untouched.metrics.craft.browser_surfaces.count, 0);
+  assert.match(untouched.warnings.join('\n'), /browser chrome never themed/);
+
+  const themed = analyzeVisualSources({ html: bare.replace('</style>', `
+  ::selection { background: #1a1a1a; color: #ffffff; }
+  td { font-variant-numeric: tabular-nums; }
+  </style>`) });
+  assert.equal(themed.metrics.craft.browser_surfaces.count, 2);
+  assert.deepEqual(themed.metrics.craft.browser_surfaces.present, ['::selection', 'tabular numerals']);
+  assert.doesNotMatch(themed.warnings.join('\n'), /browser chrome never themed/);
+
+  // Fragments are never held to it.
+  const fragment = analyzeVisualSources({ html: CLEAN });
+  assert.doesNotMatch(fragment.warnings.join('\n'), /browser chrome/);
+});
+
+test('the tells count reaches the verdict line', async () => {
+  const dir = await makeTmpDir();
+  const html = `<style>
+  .hero h1 { font-family: 'Space Grotesk', sans-serif; font-size: 56px; }
+  .k { text-transform: uppercase; letter-spacing: .12em; font-size: 11px; }
+  .a { padding: 8px; } .b { margin: 4px; } .c { color: #111; } .d { gap: 8px; }
+  .e { padding: 12px; } .f { margin: 8px; } .g { color: #222; } .h { gap: 4px; }
+  </style><div class="hero"><p class="k">Plataforma</p><h1>Título</h1></div>`;
+  await writeFile(dir, 'page.html', html);
+  const logger = makeLogger();
+  await runVerifyArtifact({
+    args: [dir],
+    options: { kind: 'visual', file: path.join(dir, 'page.html'), advisory: true, suppressExitCode: true },
+    logger
+  });
+  const out = logger.lines.join('\n');
+  assert.match(out, /\| tells 2\b/, `verdict line missing tells count:\n${out}`);
+});

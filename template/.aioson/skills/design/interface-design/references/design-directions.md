@@ -43,7 +43,7 @@ Spacing    : 4px base — scale: 8, 12, 16, 24, 32, 48 (generous)
 Colors     : foreground=stone-900, secondary=stone-600, accent=orange-500,
              surface=white on stone-50
 Radius     : 8px / 12px / 16px  (rounded, friendly)
-Typography : Inter, 13–24px, weights 400/500/600
+Typography : one delivered warm grotesque (e.g., Familjen Grotesk), 13–24px, weights 400/500/600
 Components :
   Button   → 40px height, 12px/20px padding, 8px radius
   Card     → 20px padding, 12px radius, white on stone-50
@@ -64,7 +64,7 @@ Spacing    : 4px base — scale: 4, 8, 12, 16, 24, 32
 Colors     : foreground=slate-950, secondary=slate-700, muted=slate-500,
              surface=white, border=rgba(15,23,42,0.10), accent=blue-700
 Radius     : 8px / 10px / 12px  (firm, not playful)
-Typography : IBM Plex Sans or Public Sans, 12–20px, weights 400/500/600
+Typography : Public Sans or Hanken Grotesk, 12–20px, weights 400/500/600
 Components :
   Button   → 38px height, 12px/18px padding, 10px radius
   Card     → 16px padding, 10px radius, subtle border, rare soft shadow
@@ -86,7 +86,7 @@ Colors     : base=#0b1015, surface=#10161d, elevated=#151c24,
              foreground=#f3f7fb, secondary=#b7c2cf, muted=#7f8b99,
              border=rgba(255,255,255,0.08), accent=desaturated blue
 Radius     : 12px / 14px / 16px  (premium, controlled)
-Typography : Manrope, Geist, or IBM Plex Sans, 12–22px, weights 400/500/600
+Typography : Manrope, Schibsted Grotesk, or Archivo, 12–22px, weights 400/500/600
 Components :
   Button   → 40px height, 12px/18px padding, 12px radius
   Card     → layered surfaces, 16px padding, 14px radius, no heavy glow

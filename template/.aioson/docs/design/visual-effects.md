@@ -126,6 +126,12 @@ A radial highlight following the pointer, or scroll-linked depth. Both are point
 
 Justified when the effect *is* the product (a visualizer, a map, a simulation) or when no CSS form can express it. Otherwise it is a bundle, a frame loop, and a battery cost buying something a gradient already did.
 
+### Browser surfaces (the cheapest built-vs-assembled tell)
+
+Text selection, the input caret, scrollbars, the focus ring, underline geometry, and the digits in tabular data all ship with browser defaults that belong to no design system — and stock chrome on an otherwise finished surface is the cheapest sign nobody looked. Theme the ones the surface owns, from its own palette: `::selection` (ground-inverted or accent-washed), `caret-color`, `scrollbar-color`/`::-webkit-scrollbar` on scrollers the design exposes, a `:focus-visible` ring drawn from the accent role, `text-underline-offset`/`text-decoration-thickness` on prose links, and `font-variant-numeric: tabular-nums` wherever numbers align in columns. The telemetry counts these (`browser_surfaces N/6`) and names a full surface that themes none of them.
+
+*Cost:* a handful of declarations, zero runtime. *Failure mode:* custom scrollbars that hide affordance or a focus ring with less contrast than the default — theming may restyle chrome, never weaken it.
+
 ### Modern baseline (the current dialect)
 
 Author in the platform's current dialect, not the 2018 one — flexbox, grid, and custom properties alone are the measured shape of "looks dated" even when every hygiene gate passes. All of these are native, build-free, and degrade honestly; the telemetry reports which are present (`modern_css`) and warns when a full surface uses none:

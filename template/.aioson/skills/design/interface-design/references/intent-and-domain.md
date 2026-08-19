@@ -74,6 +74,6 @@ Before proposing any visual direction, produce:
    Example: a subtle "pulse" animation on available time slots, echoing a heartbeat.
 
 4. **Defaults to avoid** — 3 obvious, generic choices that must be replaced.
-   Example: blue primary button → calm teal; card shadows → border-only depth; Inter font → IBM Plex Sans (clinical precision).
+   Example: blue primary button → calm teal; card shadows → border-only depth; the default sans → a delivered grotesque with clinical precision (e.g., Schibsted Grotesk) — never another face from the training-saturated set the telemetry flags.
 
 **The identity test:** Remove the product name. Could someone identify what this is for?

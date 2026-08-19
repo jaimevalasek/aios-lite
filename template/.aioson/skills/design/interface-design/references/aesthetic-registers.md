@@ -6,6 +6,8 @@ Load in **origination mode only** — and composition is an origination act when
 
 A register is not a theme and never overrides accessibility, contrast, state coverage, or a project rule. It is the input that keeps the first decision specific instead of default.
 
+**Calibration: the guessability test.** Generated interfaces cluster into a few looks regardless of subject — warm cream with a high-contrast serif and a terracotta accent; near-black with one neon accent and glowing borders; newspaper hairlines with an italic serif and small tracked mono labels. All are legitimate when the brief asks; where the brief leaves the aesthetic free, landing in one of them means the self-check failed. If someone could guess the aesthetic from the product's category alone — or from category-plus-avoidance — redraw until neither answer is obvious. A warm, bookish, or childlike subject does not soften this: binding cloth, thread, dust jackets, and shelf ephemera cover the whole saturated spectrum, and cream paper is the smallest corner of that world. The seeded draw exists precisely to move the starting point; reverting to the familiar corner after drawing is the failure, not the fix.
+
 **A register is a posture, not a budget cut.** Every register at premium execution still carries the craft floor the telemetry measures: one real, delivered typeface with true display scale where the surface argues; one earned material or atmosphere; motion that choreographs rather than decorates; and evidence imagery when the surface argues by inspection. "Restrained" describes which levers a register pulls and how far — never whether any lever is pulled. The plainest system-stack, hairline-and-whitespace execution of any register reads as a default document, and each register below names its cheap failure so it cannot be mistaken for the register itself. Restraint governs ornament, never finish: whatever the register, the finish is a tokened system every route inherits — a shadow vocabulary on floating surfaces, tinted washes per accent role, texture or blend at the dosage the register sets, from contained to theatrical — and the signature material sits as the top note above that system, never as its substitute. One wash over flat panels is the measured shape of the `shallow material system` warning, and an effect no rule applies is dead weight the telemetry names.
 
 ---
@@ -94,7 +96,7 @@ A register is not a theme and never overrides accessibility, contrast, state cov
 
 Answer three questions before committing:
 
-1. **What is the surface for** — inspecting data, making one decision, reading, browsing, or being convinced?
+1. **What is the surface for** — inspecting data, making one decision, reading, browsing, or being convinced? This is the visitor's mode (decide / operate / read / inhabit), and it is per surface, never per project: a product's landing page argues expressively while its admin earns familiarity, and applying either bar to the other surface is how dashboards get theatrical and showcases get flat.
 2. **What does the domain sound like** — precise, calm, considered, tactile, deliberate?
 3. **What is the one signature move** — the composition decision a returning user would recognize in a screenshot with the logo removed?
 

@@ -34,7 +34,7 @@ test('the layout lens stays exactly with the implementation-oriented agents', as
 
     assert.ok(entry, `visual quality brain missing from ${root}`);
     assert.deepEqual(entry.agents, INDEXED_AGENTS);
-    assert.equal(entry.nodes, 28);
+    assert.equal(entry.nodes, 30);
     assert.equal(entry.path, BRAIN_RELATIVE_PATH);
 
     for (const agent of AGENTS) {
@@ -47,7 +47,7 @@ test('the layout lens stays exactly with the implementation-oriented agents', as
 
       assert.equal(result.ok, true);
       assert.deepEqual(result.warnings, []);
-      assert.equal(result.nodes.length, 25);
+      assert.equal(result.nodes.length, 27);
       const replaceability = result.nodes.find((node) => node.id === 'vq-002');
       assert.equal(replaceability.v, 'AVOID');
       assert.match(replaceability.s, /repeated em dashes/i);
@@ -95,6 +95,20 @@ test('the layout lens stays exactly with the implementation-oriented agents', as
       assert.match(finish.s, /material_depth|materials N\/7/);
       assert.match(finish.s, /shallow material system/);
       assert.match(finish.s, /declared finish never applied/);
+      // The tell catalog: category defaults measured as `tells N`, each with
+      // its counter-move; only the kicker is a true ban.
+      const tells = result.nodes.find((node) => node.id === 'vq-025');
+      assert.equal(tells.v, 'AVOID');
+      assert.match(tells.s, /tells N/);
+      assert.match(tells.s, /kicker/i);
+      assert.match(tells.s, /browser chrome/i);
+      // The surface-mode counterweight: operate/read surfaces earn familiarity,
+      // and the expressive premium bar stays with persuade/experience.
+      const mode = result.nodes.find((node) => node.id === 'vq-026');
+      assert.equal(mode.v, 'BEST_PRACTICE');
+      assert.match(mode.s, /earned familiarity/i);
+      assert.match(mode.s, /per surface, never per project/i);
+      assert.match(mode.p, /operate\/read/);
     }
   }
 });

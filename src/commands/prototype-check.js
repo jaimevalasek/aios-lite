@@ -121,7 +121,8 @@ async function runPrototypeCheck({ args, options = {}, logger }) {
       const craft = m.craft && m.craft.measured
         ? ` | type max ${m.max_font_size_px || 0}px | font ${m.font_delivery && m.font_delivery.delivered ? 'delivered' : 'not delivered'} | craft ${m.craft.active_levers}/5 | materials ${m.craft.material_depth ?? 0}/7`
         : '';
-      logger.log(`Visual telemetry (advisory): tokens ${pct} | spacing off-grid ${m.spacing_off_grid} | depth ${(m.depth_strategies || []).join('+') || 'none'} | reduced-motion ${m.reduced_motion_handled ? 'yes' : 'no'}${craft}`);
+      const tells = m.tells && m.tells.active > 0 ? ` | tells ${m.tells.active}` : '';
+      logger.log(`Visual telemetry (advisory): tokens ${pct} | spacing off-grid ${m.spacing_off_grid} | depth ${(m.depth_strategies || []).join('+') || 'none'} | reduced-motion ${m.reduced_motion_handled ? 'yes' : 'no'}${craft}${tells}`);
       for (const finding of [...visual.issues, ...visual.warnings]) logger.log(`  · ${finding}`);
     }
     logger.log('');

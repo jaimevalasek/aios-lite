@@ -1174,10 +1174,11 @@ async function runVerifyArtifact({ args, options = {}, logger }) {
     const craft = m.craft && m.craft.measured
       ? ` | type max ${m.max_font_size_px || 0}px | font ${m.font_delivery && m.font_delivery.delivered ? 'delivered' : 'not delivered'} | craft ${m.craft.active_levers}/5 | materials ${m.craft.material_depth ?? 0}/7`
       : '';
+    const tells = m.tells && m.tells.active > 0 ? ` | tells ${m.tells.active}` : '';
     const palette = m.palette && m.palette.accent_hue != null && m.palette.ground
       ? ` | accent ~${m.palette.accent_hue}° on ${m.palette.ground.pole}`
       : '';
-    logger.log(`  tokens ${pct} | spacing off-grid ${m.spacing_off_grid ?? 'n/a'} | depth ${(m.depth_strategies || []).join('+') || 'none'} | fonts ${(m.font_families || []).length} | reduced-motion ${m.reduced_motion_handled ? 'yes' : 'no'}${craft}${palette}`);
+    logger.log(`  tokens ${pct} | spacing off-grid ${m.spacing_off_grid ?? 'n/a'} | depth ${(m.depth_strategies || []).join('+') || 'none'} | fonts ${(m.font_families || []).length} | reduced-motion ${m.reduced_motion_handled ? 'yes' : 'no'}${craft}${tells}${palette}`);
     if (Array.isArray(m.states_missing) && m.states_missing.length) logger.log(`  states missing: ${m.states_missing.join(', ')}`);
   }
   for (const issue of issues) logger.log(`  ✗ ${issue}`);

@@ -151,6 +151,63 @@ const EMOJI_ALLOWED = new Set(['✓', '✔', '✕', '✖', '✗', '✘', '★', 
 const EM_DASH_PROSE = /\s—\s/g;
 const EM_DASH_PROSE_THRESHOLD = 4;
 
+// ── generation tells (the measured shape of "looks generated") ───────────────
+// Category defaults every generative prior converges on: recognizable enough
+// that a reader dates the surface on sight, cheap enough to detect lexically.
+// All of them are warnings — a brief or a register can earn most of them back,
+// and each warning names what replaces the reflex. The one exception in spirit
+// is the kicker: no brief earns a label above a heading back.
+
+// Faces so saturated in generated output that the reader cannot tell a
+// deliberate choice from a default. Flagged only in the DISPLAY role (or as a
+// surface's only family) — a workhorse UI face on a task surface is sanctioned.
+const SATURATED_DISPLAY_FACES = new Set([
+  'inter', 'roboto', 'open sans', 'lato', 'montserrat',
+  'fraunces', 'instrument sans', 'instrument serif', 'geist', 'geist sans',
+  'geist mono', 'mona sans', 'plus jakarta sans', 'space grotesk', 'space mono',
+  'recoleta', 'playfair display', 'cormorant', 'cormorant garamond', 'lora',
+  'crimson text', 'crimson pro', 'newsreader', 'syne', 'ibm plex sans',
+  'ibm plex serif', 'ibm plex mono', 'dm sans', 'dm serif display',
+  'dm serif text', 'outfit'
+]);
+
+// Selector contexts where a colored side border is state, not decoration.
+const SIDE_BORDER_EXEMPT = /blockquote|\btab\b|active|selected|current|alert|toast|callout|status|notif|badge|\bnav\b/i;
+
+// Kicker/eyebrow: a small tracked label sitting directly above a heading.
+const KICKER_CLASS_NAME = /(eyebrow|kicker|overline|pre-?head(?:ing)?|pre-?title|suprat[ií]tulo)/i;
+
+// The universal generated feature-card template: icon tile, then heading.
+const ICON_TILE_STACK = /<(?:div|span)\b[^>]*class\s*=\s*["'][^"']*\bicon[^"']*["'][^>]*>\s*<(?:svg|i|img)\b[\s\S]{0,300}?<\/(?:div|span)>\s*<h[1-6]\b/gi;
+
+// Marketing filler in visible copy. Short on purpose: every entry is a word
+// whose presence is the claim it is hiding.
+// `última` opens with a non-word char, where \b never matches — it gets its
+// own unanchored alternative.
+const BUZZWORDS = /\b(?:streamlin(?:e|es|ed|ing)|empower(?:s|ed|ing)?|supercharg(?:e|es|ed|ing)|world-class|enterprise-grade|next-gen(?:eration)?|cutting-edge|game-chang(?:er|ers|ing)|best-in-class|revolucion(?:e|a|am|ária|ário|árias|ários)|potencialize)\b|[úu]ltima geração/gi;
+
+// "Not just X. It's Y." — the strongest model-writing cadence there is.
+const NEGATION_PIVOTS = [
+  /\bnot\s+(?:just|only|merely)\s+[^.!?\n]{2,60}[.!?—:;]\s*(?:it'?s|it\s+is|this\s+is)\b/gi,
+  /(?:^|[.!?]\s+)(?:not|não)\s+(?:a|an|um|uma)\s+\w+(?:\s+\w+)?\.\s+(?:a|an|um|uma)\s+\w+/gi,
+  // `é` is a non-word char, so \b never closes it — require whitespace instead.
+  /\bnão\s+é\s+(?:só|apenas)\s+[^.!?\n]{2,60}[.!?—:;,]\s*é\s/gi
+];
+
+const TINY_TEXT_FLOOR_PX = 11; // functional text floor
+
+// Browser-owned surfaces a built (not assembled) page themes from its palette:
+// stock selection color, caret, scrollbars, focus ring, underline geometry and
+// proportional digits in data are the cheapest tell that nobody looked.
+const BROWSER_SURFACE_PROBES = [
+  { name: '::selection', re: /::selection\b/ },
+  { name: 'caret-color', re: /caret-color\s*:/i },
+  { name: 'scrollbar', re: /scrollbar-(?:width|color|gutter)\s*:|::-webkit-scrollbar/i },
+  { name: ':focus-visible', re: /:focus-visible\b/ },
+  { name: 'underline tuning', re: /text-underline-offset\s*:|text-decoration-thickness\s*:/i },
+  { name: 'tabular numerals', re: /font-variant-numeric\s*:|tabular-nums/i }
+];
+
 // Prototype affordance markers. `data-aioson-id` is the build contract's anchor
 // attribute, so its presence identifies an AIOSON prototype; only then are the
 // tour and primary-feature markers expected.
@@ -442,18 +499,25 @@ function emojiGlyphs(text) {
 }
 
 /**
- * Spaced em dashes across the visible corpus, with short context samples.
- * Styles are removed first (CSS is never user-visible prose) and HTML/JS
- * comments are stripped (commented-out text is not on the surface); script
- * string/template content stays in — that is where SPA copy and seed data live.
+ * The user-visible prose corpus: markup minus styles and comments. Script
+ * string/template content stays in — that is where SPA copy and seed data
+ * live — but script comments are stripped (commented-out text is not on the
+ * surface). Shared by every copy-cadence measurement.
  */
-function emDashProse(html) {
+function visibleProse(html) {
   const noComments = stripHtmlComments(html);
   const noStyles = noComments.replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, '\n');
-  const corpus = noStyles.replace(
+  return noStyles.replace(
     /(<script\b[^>]*>)([\s\S]*?)(<\/script>)/gi,
     (all, open, body, close) => `${open}${stripJsComments(body)}${close}`
   );
+}
+
+/**
+ * Spaced em dashes across the visible corpus, with short context samples.
+ */
+function emDashProse(html) {
+  const corpus = visibleProse(html);
   const count = (corpus.match(EM_DASH_PROSE) || []).length;
   const samples = [];
   const sampleRe = /([^\s—][^\n—]{0,21})?\s—\s(?:([^\n—]{0,21}[^\s—]))?/g;
@@ -462,6 +526,246 @@ function emDashProse(html) {
     samples.push(`${m[1] || ''} — ${m[2] || ''}`.replace(/\s+/g, ' ').trim());
   }
   return { count, samples };
+}
+
+function escapeRegExp(text) {
+  return String(text).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/** First family of a font stack, unquoted and lowercased. */
+function firstFamily(value) {
+  const first = topLevelSplit(String(value || ''))[0];
+  return first ? first.trim().replace(/^["']|["']$/g, '').toLowerCase() : '';
+}
+
+/**
+ * Geometry of one box-shadow layer: offset-x, offset-y, blur — in px, with
+ * function bodies (colors) blanked first so their numbers never read as
+ * lengths. Unitless tokens only count as the literal 0 CSS allows.
+ */
+function shadowLayerGeometry(layer) {
+  const blanked = String(layer).replace(/\([^()]*\)/g, '()');
+  const lengths = [];
+  for (const token of blanked.split(/\s+/)) {
+    const m = token.match(/^(-?\d*\.?\d+)(px|rem|em)?$/);
+    if (!m) continue;
+    const n = Number(m[1]);
+    if (!m[2] && n !== 0) continue;
+    lengths.push(m[2] === 'rem' || m[2] === 'em' ? n * 16 : n);
+  }
+  return { x: lengths[0] ?? null, y: lengths[1] ?? null, blur: lengths[2] ?? 0 };
+}
+
+/** True when the (var-resolved) value carries a chromatic color literal. */
+function hasChromaticColor(value, chromaFloor = 0.07) {
+  const re = /#[0-9a-fA-F]{3,8}\b|(?:rgba?|hsla?|oklch)\([^()]*\)/g;
+  let m;
+  while ((m = re.exec(String(value || '')))) {
+    const parsed = parseCssColor(m[0]);
+    if (parsed && parsed.alpha >= 0.5 && parsed.oklch.c >= chromaFloor) return true;
+  }
+  return false;
+}
+
+/**
+ * The generation-tell scan. Every heuristic here is a category default a
+ * generative prior converges on; the exemptions are the contexts where the
+ * same device is a deliberate design decision.
+ */
+function scanGenerationTells({ markup, styleText, decls, props, families, craftMeasured }) {
+  const resolve = (value) => resolveCustomProps(value, props);
+
+  // gradient text — emphasis by paint instead of weight or size.
+  let gradientText = 0;
+  for (const { prop, value } of decls) {
+    if (/^(?:-webkit-)?background-clip$/.test(prop) && /\btext\b/i.test(value)) gradientText += 1;
+  }
+
+  // block-level scans: colored side borders, chromatic zero-offset glows,
+  // hard-offset block shadows, and kicker-signature classes.
+  let sideBorders = 0;
+  let chromaticGlow = 0;
+  let blockShadow = 0;
+  const kickerSignatureClasses = [];
+  for (const block of ruleBlocks(styleText)) {
+    const selector = String(block.selector || '');
+    const body = block.body;
+    const focusContext = /:focus(?:-visible|-within)?\b/.test(selector);
+
+    if (!SIDE_BORDER_EXEMPT.test(selector)) {
+      for (const side of ['left', 'right']) {
+        const decl = [...body.matchAll(new RegExp(`border-${side}(?:-width)?\\s*:\\s*([^;{}]+)`, 'gi'))].pop();
+        if (!decl) continue;
+        const resolved = resolve(decl[1]);
+        const width = Math.max(0, ...pxValues(resolved), 0);
+        const colorSource = body.match(new RegExp(`border-${side}-color\\s*:\\s*([^;{}]+)`, 'i'));
+        const chromatic = hasChromaticColor(resolved) || (colorSource && hasChromaticColor(resolve(colorSource[1])));
+        const rounded = /border-radius\s*:\s*[^0;]/.test(body);
+        if (chromatic && (width >= 3 || (rounded && width >= 2))) sideBorders += 1;
+      }
+    }
+
+    for (const decl of body.matchAll(/box-shadow\s*:\s*([^;{}]+)/gi)) {
+      const resolved = resolve(decl[1]);
+      if (/^\s*none\b/i.test(resolved)) continue;
+      for (const layer of topLevelSplit(resolved)) {
+        const { x, y, blur } = shadowLayerGeometry(layer);
+        if (x === null || y === null) continue;
+        if (!focusContext && x === 0 && y === 0 && blur > 0 && hasChromaticColor(layer)) chromaticGlow += 1;
+        if (Math.abs(x) >= 3 && Math.abs(y) >= 3 && blur === 0) blockShadow += 1;
+      }
+    }
+
+    const single = selector.match(/^\.([a-zA-Z][\w-]*)$/);
+    if (single && /text-transform\s*:\s*uppercase/i.test(body)) {
+      const tracking = body.match(/letter-spacing\s*:\s*([^;{}]+)/i);
+      const em = tracking && tracking[1].match(/(-?\d*\.?\d+)em\b/);
+      const px = tracking && tracking[1].match(/(-?\d*\.?\d+)px\b/);
+      const tracked = (em && Number(em[1]) >= 0.08) || (px && Number(px[1]) >= 1.5);
+      const sizeDecl = body.match(/font-size\s*:\s*([^;{}]+)/i);
+      const sizePx = sizeDecl ? fontSizePx(resolve(sizeDecl[1])) : null;
+      if (tracked && sizePx !== null && sizePx <= 14) kickerSignatureClasses.push(single[1]);
+    }
+  }
+
+  // kicker above heading — named classes, plus the anonymous CSS signature.
+  const namedKicker = markup.match(new RegExp(
+    `<[a-z][a-z0-9-]*\\b[^>]*class\\s*=\\s*["'][^"']*${KICKER_CLASS_NAME.source}[^"']*["'][^>]*>[\\s\\S]{0,200}?<h[12]\\b`, 'gi'
+  ));
+  let kicker = namedKicker ? namedKicker.length : 0;
+  for (const cls of kickerSignatureClasses) {
+    if (KICKER_CLASS_NAME.test(cls)) continue; // already counted by name
+    const re = new RegExp(`<[a-z][a-z0-9-]*\\b[^>]*class\\s*=\\s*["'][^"']*\\b${escapeRegExp(cls)}\\b[^"']*["'][^>]*>[\\s\\S]{0,200}?<h[12]\\b`, 'gi');
+    kicker += (markup.match(re) || []).length;
+  }
+
+  ICON_TILE_STACK.lastIndex = 0;
+  const iconTiles = (markup.match(ICON_TILE_STACK) || []).length;
+
+  // saturated display faces — display-role tokens, display-scale rules, or a
+  // measured surface wearing one of them as its only family.
+  const saturatedFaces = new Set();
+  for (const [name, value] of Object.entries(props)) {
+    if (!/font/i.test(name) || !/(display|head|title|hero|h1)/i.test(name)) continue;
+    const face = firstFamily(resolve(value));
+    if (SATURATED_DISPLAY_FACES.has(face)) saturatedFaces.add(face);
+  }
+  for (const block of ruleBlocks(styleText)) {
+    const familyDecl = block.body.match(/font-family\s*:\s*([^;{}]+)/i);
+    if (!familyDecl) continue;
+    const face = firstFamily(resolve(familyDecl[1]));
+    if (!SATURATED_DISPLAY_FACES.has(face)) continue;
+    const sizeDecl = block.body.match(/font-size\s*:\s*([^;{}]+)/i);
+    const sizePx = sizeDecl ? fontSizePx(resolve(sizeDecl[1])) : null;
+    const displaySelector = /(^|[\s,>+~])h[12]\b|display|hero|title|headline/i.test(block.selector);
+    if ((sizePx !== null && sizePx >= 28) || displaySelector) saturatedFaces.add(face);
+  }
+  let saturatedOnlyFamily = false;
+  if (craftMeasured && families.size === 1) {
+    const only = [...families][0];
+    if (SATURATED_DISPLAY_FACES.has(only)) {
+      saturatedFaces.add(only);
+      saturatedOnlyFamily = true;
+    }
+  }
+
+  // bounce/elastic easing — keywords or an overshooting cubic-bezier.
+  let bounceEasing = 0;
+  for (const { prop, value } of decls) {
+    if (!/^(?:transition|animation)(?:-timing-function)?$/.test(prop)) continue;
+    const resolved = resolve(value);
+    if (/\b(bounce|elastic)\b/i.test(resolved)) { bounceEasing += 1; continue; }
+    for (const bez of resolved.matchAll(/cubic-bezier\(\s*([^)]+)\)/gi)) {
+      const nums = bez[1].split(',').map((n) => Number(n.trim()));
+      if (nums.length === 4 && (nums[1] < -0.05 || nums[1] > 1.05 || nums[3] < -0.05 || nums[3] > 1.05)) bounceEasing += 1;
+    }
+  }
+
+  // functional text under the floor.
+  const tinySizes = [];
+  for (const { prop, value } of decls) {
+    if (prop !== 'font-size') continue;
+    const px = fontSizePx(resolve(value));
+    if (px !== null && px > 0 && px < TINY_TEXT_FLOOR_PX) tinySizes.push(`${px}px`);
+  }
+
+  // copy tells over the visible corpus.
+  const prose = visibleProse(markup);
+  BUZZWORDS.lastIndex = 0;
+  const buzzHits = prose.match(BUZZWORDS) || [];
+  let negationPivots = 0;
+  for (const re of NEGATION_PIVOTS) {
+    re.lastIndex = 0;
+    negationPivots += (prose.match(re) || []).length;
+  }
+
+  const counts = {
+    gradient_text: gradientText,
+    colored_side_border: sideBorders,
+    kicker_above_heading: kicker,
+    icon_tile_stack: iconTiles,
+    chromatic_glow: chromaticGlow,
+    block_shadow: blockShadow,
+    saturated_display_faces: [...saturatedFaces],
+    bounce_easing: bounceEasing,
+    tiny_text: tinySizes.length,
+    buzzwords: buzzHits.length,
+    negation_pivots: negationPivots
+  };
+
+  const active = [
+    gradientText > 0 && 'gradient text',
+    sideBorders > 0 && 'colored side border',
+    kicker > 0 && 'kicker above heading',
+    iconTiles >= 3 && 'icon tile stack',
+    chromaticGlow > 0 && 'chromatic glow',
+    blockShadow > 0 && 'block shadow',
+    saturatedFaces.size > 0 && 'saturated display face',
+    bounceEasing > 0 && 'bounce easing',
+    tinySizes.length > 0 && 'tiny text',
+    buzzHits.length >= 2 && 'marketing buzzwords',
+    negationPivots >= 2 && 'negation pivot'
+  ].filter(Boolean);
+
+  const warnings = [];
+  if (gradientText > 0) {
+    warnings.push(`generation tell: ${gradientText} gradient-text declaration(s) (background-clip: text) — emphasis comes from weight, size, or the accent, not from painting the letters; keep gradients in the material layer`);
+  }
+  if (sideBorders > 0) {
+    warnings.push(`generation tell: ${sideBorders} rule(s) ride a thick colored side border — the most recognizable generated-UI signature; carry the state in a background wash, an icon, or the tokened border system instead (status/tab/blockquote contexts are already exempt)`);
+  }
+  if (kicker > 0) {
+    warnings.push(`generation tell: ${kicker} kicker/eyebrow label(s) directly above a heading — the heading carries its own weight; delete the label and let display scale argue. No brief earns this one back`);
+  }
+  if (iconTiles >= 3) {
+    warnings.push(`generation tell: icon-tile-above-heading repeats ${iconTiles}× — the universal generated feature-card template; inline the icon with the heading, use a real figure, or let one row carry evidence instead of a grid of tiles`);
+  }
+  if (chromaticGlow > 0) {
+    warnings.push(`generation tell: ${chromaticGlow} zero-offset chromatic glow shadow(s) — a halo with no offset is decoration, not depth; shadows take offset and soft blur from the shadow vocabulary, and glow is reserved for live/focus states that mean something`);
+  }
+  if (blockShadow > 0) {
+    warnings.push(`generation tell: ${blockShadow} hard-offset block shadow(s) (x y 0) — outside a genuinely neobrutalist register the unblurred block shadow is a costume, not a depth system; commit to that register fully or return to the layered soft vocabulary`);
+  }
+  if (saturatedFaces.size > 0) {
+    const list = [...saturatedFaces].join(', ');
+    warnings.push(`generation tell: saturated display face in the display role (${list}${saturatedOnlyFamily ? ', as the only family' : ''}) — the faces every model reaches for by reflex, so the reader cannot tell a choice from a default; unless an extracted identity or a named brand reason pins this face, take the draw's pairing or another face with a point of view`);
+  }
+  if (bounceEasing > 0) {
+    warnings.push(`generation tell: ${bounceEasing} bounce/elastic easing(s) — real objects decelerate, they do not wobble; use ease-out and spend the personality on choreography, not physics cosplay`);
+  }
+  if (tinySizes.length > 0) {
+    const sample = [...new Set(tinySizes)].slice(0, 4).join(', ');
+    warnings.push(`generation tell: ${tinySizes.length} font-size declaration(s) under ${TINY_TEXT_FLOOR_PX}px (${sample}) — functional text floors at ${TINY_TEXT_FLOOR_PX}px; if it matters enough to render, it matters enough to read`);
+  }
+  if (buzzHits.length >= 2) {
+    const sample = [...new Set(buzzHits.map((w) => w.toLowerCase()))].slice(0, 5).join(', ');
+    warnings.push(`copy tell: ${buzzHits.length} marketing buzzword(s) in visible copy (${sample}) — replace each with the concrete claim it is hiding: a number, a named capability, or delete the sentence`);
+  }
+  if (negationPivots >= 2) {
+    warnings.push(`copy tell: ${negationPivots} negation pivot(s) ("not just X. It's Y") — the strongest model-writing cadence there is; state what the thing IS in one clause and cut the strawman half`);
+  }
+
+  return { counts, active, warnings };
 }
 
 /**
@@ -795,6 +1099,8 @@ function analyzeVisualSources({ html = '', css = '' } = {}) {
   };
 
   const craftMeasured = decls.length >= CRAFT_MIN_DECLARATIONS;
+  const browserSurfaces = BROWSER_SURFACE_PROBES.filter((probe) => probe.re.test(styleText)).map((probe) => probe.name);
+  const tells = scanGenerationTells({ markup, styleText, decls, props, families, craftMeasured });
   const levers = {
     typeface: fontDelivered,
     display_scale: maxFontPx >= DISPLAY_TYPE_FLOOR_PX,
@@ -847,12 +1153,18 @@ function analyzeVisualSources({ html = '', css = '' } = {}) {
     management_surface: managementSurface,
     widget_markers: hasWidgetMarkers,
     palette,
+    tells: {
+      active: tells.active.length,
+      present: tells.active,
+      ...tells.counts
+    },
     craft: {
       measured: craftMeasured,
       active_levers: activeLevers,
       levers,
       material_techniques: materialTechniques,
       material_depth: materialDepth.length,
+      browser_surfaces: { count: browserSurfaces.length, present: browserSurfaces },
       unapplied_effects: unappliedFinish,
       gradient_count: gradientCount,
       layered_shadow_declarations: layeredShadows,
@@ -967,6 +1279,12 @@ function analyzeVisualSources({ html = '', css = '' } = {}) {
     warnings.push('authored in pre-2020 CSS only — none of: container queries, :has(), fluid clamp() type, oklch/color-mix, subgrid, text-wrap balance, aspect-ratio, scroll-driven reveals. The current platform repertoire is absent, which is the measured shape of "looks dated"; adopt the features the surface earns (visual-effects.md, Modern baseline)');
   }
 
+  // ── generation tells + browser chrome ────────────────────────────────────
+  warnings.push(...tells.warnings);
+  if (craftMeasured && browserSurfaces.length === 0) {
+    warnings.push('browser chrome never themed: 0/6 of ::selection, caret-color, scrollbar, :focus-visible, underline tuning, tabular numerals — stock browser chrome on a finished surface is the cheapest tell that a page was assembled rather than built; theme the ones this surface owns from its own palette');
+  }
+
   return { applicable: true, metrics, issues, warnings };
 }
 
@@ -986,6 +1304,10 @@ module.exports = {
   maxCardSiblingRun,
   emojiGlyphs,
   emDashProse,
+  visibleProse,
+  scanGenerationTells,
+  shadowLayerGeometry,
+  SATURATED_DISPLAY_FACES,
   stripComments,
   stripHtmlComments,
   stripJsComments,
