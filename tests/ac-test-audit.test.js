@@ -6,7 +6,7 @@ const fs = require('node:fs/promises');
 const os = require('node:os');
 const path = require('node:path');
 
-const { extractAcIds, auditAcceptanceCriteriaTests } = require('../src/lib/ac-test-audit');
+const { extractAcIds, auditAcceptanceCriteriaTests, maskNonCode } = require('../src/lib/ac-test-audit');
 const { runAcTestAudit } = require('../src/commands/ac-test-audit');
 const { runHarnessCheck } = require('../src/commands/harness-check');
 
@@ -162,6 +162,66 @@ fn renders_frame() {
   });
   assert.equal(result.ok, true);
   assert.equal(result.summary.covered, 1);
+});
+
+test('ac:test-audit reads Rust assertions that follow a lifetime', async () => {
+  const dir = await makeTmpDir();
+  await writeFile(dir, '.aioson/context/prd-renderer.md', '# PRD\n\nAC-renderer-01\n');
+  await writeFile(dir, 'tests/renderer.rs', `
+fn machine_guard() -> std::sync::MutexGuard<'static, ()> {
+    LOCK.lock().unwrap()
+}
+
+#[test]
+fn renders_frame() {
+    // AC-renderer-01
+    assert_eq!(2 + 2, 4);
+}
+`);
+
+  const result = await auditAcceptanceCriteriaTests(dir, 'renderer', {
+    requireCriteria: true,
+    requireAssertions: true
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.summary.covered, 1);
+});
+
+test('maskNonCode treats a Rust lifetime as code and a char literal as a literal', () => {
+  const source = "fn f<'a>(c: char) -> &'a str { assert_eq!(c, 'Z'); \"BODY\" }";
+  const masked = maskNonCode(source, { file: 'crates/app/src/lib.rs' });
+
+  assert.ok(masked.includes("<'a>"), 'the lifetime must stay in the masked code');
+  assert.ok(masked.includes("&'a str"), 'the lifetime must not open a literal');
+  assert.ok(masked.includes('assert_eq!('), 'the assertion must survive the mask');
+  assert.ok(!masked.includes('Z'), 'the char literal must be blanked');
+  assert.ok(!masked.includes('BODY'), 'the string literal must be blanked');
+  assert.equal(masked.length, source.length, 'the mask must preserve offsets');
+});
+
+test('maskNonCode blanks a Rust raw string without inverting the rest of the file', () => {
+  const source = [
+    'const FIXTURE: &str = r#"{ "id": "x", "steps": [] }"#;',
+    '',
+    '#[test]',
+    'fn covers() {',
+    '    // AC-renderer-01',
+    '    assert_eq!(load(FIXTURE).steps.len(), 0);',
+    '}'
+  ].join('\n');
+  const masked = maskNonCode(source, { file: 'crates/app/src/lib.rs' });
+
+  assert.ok(!masked.includes('"id"'), 'the raw string body must be blanked');
+  assert.ok(masked.includes('assert_eq!('), 'code after the raw string must survive');
+  assert.equal(masked.length, source.length, 'the mask must preserve offsets');
+});
+
+test('maskNonCode still blanks a single-quoted string outside Rust', () => {
+  const source = "const note = 'static text with assert_eq!(1, 1) inside';";
+
+  assert.ok(!maskNonCode(source, { file: 'tests/checkout.test.js' }).includes('assert_eq!'));
+  assert.ok(!maskNonCode(source).includes('assert_eq!'));
 });
 
 for (const [variant, source] of Object.entries({

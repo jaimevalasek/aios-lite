@@ -45,6 +45,15 @@ function isTestFile(relPath) {
   return false;
 }
 
+// Rust is the one supported language whose quotes need their own lexing: an
+// apostrophe may be a lifetime rather than a literal, and a raw string carries
+// its own delimiter. The masker relaxes those two rules for these files only,
+// because in every other language a single quote does open a string and must
+// keep being blanked.
+function isRustSource(relPath) {
+  return /\.rs$/i.test(String(relPath || ''));
+}
+
 function extractAcIds(content) {
   return [...new Set(String(content || '').match(AC_ID_RE) || [])].sort();
 }
@@ -100,13 +109,61 @@ async function listTestFiles(targetDir, dirPath = targetDir, out = []) {
   return out;
 }
 
+// A Rust lifetime or loop label is an apostrophe followed by an identifier that
+// no closing apostrophe terminates: `'static`, `'a`, `'_`, `'outer:`. A char
+// literal always closes, so `'a'` and `b'a'` still read as literals, and an
+// escape (`'\n'`, `'\''`) never starts an identifier.
+function isRustLifetimeAt(chars, index) {
+  if (!/[A-Za-z_]/.test(chars[index + 1] || '')) return false;
+  let end = index + 1;
+  while (end < chars.length && /[A-Za-z0-9_]/.test(chars[end])) end += 1;
+  return chars[end] !== "'";
+}
+
+// A Rust raw string takes no escapes and may hold quotes of its own: `r"..."`,
+// `r#"..."#`, `br##"..."##`. Reading one as an ordinary string closes it at the
+// first inner quote and leaves the mask inverted for the rest of the file —
+// hiding real assertions and, worse, exposing string bodies as if they were
+// code. Returns the index of the closing delimiter, or null when `index` does
+// not open a raw string. An unterminated one masks to the end, which is the
+// conservative direction.
+function rustRawStringAt(chars, index) {
+  let hashes = 0;
+  let prefix = index - 1;
+  while (prefix >= 0 && chars[prefix] === '#') {
+    hashes += 1;
+    prefix -= 1;
+  }
+  if (chars[prefix] !== 'r') return null;
+  if (chars[prefix - 1] === 'b' || chars[prefix - 1] === 'c') prefix -= 1;
+  // The prefix must open the token, never end a longer identifier.
+  if (prefix > 0 && /[A-Za-z0-9_]/.test(chars[prefix - 1] || '')) return null;
+
+  for (let i = index + 1; i < chars.length; i += 1) {
+    if (chars[i] !== '"') continue;
+    let closed = true;
+    for (let hash = 1; hash <= hashes; hash += 1) {
+      if (chars[i + hash] !== '#') {
+        closed = false;
+        break;
+      }
+    }
+    if (closed) return i + hashes;
+  }
+  return chars.length - 1;
+}
+
 // Blank comments and string/template contents while preserving offsets and
 // newlines. AC ids may legitimately live in test titles/comments, so matching
 // still uses the original source; only test/assertion syntax is read from this
 // masked view. This is deliberately conservative: ambiguous text is never
 // promoted to executable proof.
-function maskNonCode(content) {
+function maskNonCode(content, options = {}) {
   const text = String(content || '');
+  // Rust needs two exceptions the other languages do not: a lifetime opens no
+  // literal, and a raw string carries its own delimiter. Lexing either as an
+  // ordinary quote desynchronises the mask for the rest of the file.
+  const rust = options.rust ?? isRustSource(options.file);
   const chars = [...text];
   let state = 'code';
   let quote = null;
@@ -156,6 +213,15 @@ function maskNonCode(content) {
       i += 1;
       state = 'block-comment';
     } else if (current === '"' || current === "'" || current === '`') {
+      if (rust && current === "'" && isRustLifetimeAt(chars, i)) continue;
+      const rawEnd = rust && current === '"' ? rustRawStringAt(chars, i) : null;
+      if (rawEnd !== null) {
+        for (let j = i; j <= rawEnd; j += 1) {
+          if (chars[j] !== '\n' && chars[j] !== '\r') chars[j] = ' ';
+        }
+        i = rawEnd;
+        continue;
+      }
       chars[i] = ' ';
       state = 'string';
       quote = current;
@@ -165,9 +231,9 @@ function maskNonCode(content) {
   return chars.join('');
 }
 
-function hasAssertionNearAc(content, acId) {
+function hasAssertionNearAc(content, acId, options = {}) {
   const text = String(content || '');
-  const code = maskNonCode(text);
+  const code = maskNonCode(text, options);
   const matcher = new RegExp(`(?<![\\w-])${escapeRegExp(acId)}(?![\\w-])`, 'g');
   const testStarts = [];
   const testStartRe = /(?:^|\n)\s*(test|it|describe)(?:\.(only|skip|todo))?\s*\(/g;
@@ -206,7 +272,8 @@ function hasAssertionNearAc(content, acId) {
 function testEvidenceFor(acId, testContents, options = {}) {
   return testContents
     .filter((item) => mentionsAcId(item.content, acId))
-    .filter((item) => !options.requireAssertions || hasAssertionNearAc(item.content, acId))
+    .filter((item) => !options.requireAssertions
+      || hasAssertionNearAc(item.content, acId, { file: item.file }))
     .map((item) => ({
       file: item.file,
       evidence: options.requireAssertions
@@ -217,7 +284,8 @@ function testEvidenceFor(acId, testContents, options = {}) {
 
 function weakTestEvidenceFor(acId, testContents) {
   return testContents
-    .filter((item) => mentionsAcId(item.content, acId) && !hasAssertionNearAc(item.content, acId))
+    .filter((item) => mentionsAcId(item.content, acId)
+      && !hasAssertionNearAc(item.content, acId, { file: item.file }))
     .map((item) => ({
       file: item.file,
       evidence: `test file references ${acId} without a nearby assertion signal`
