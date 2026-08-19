@@ -24,6 +24,8 @@
  * `applicable: false` rather than inventing a verdict.
  */
 
+const { parseCssColor, rgbToHex } = require('./color-math');
+
 // Properties whose value should come from a design token, not a literal.
 const TOKENIZABLE = new Set([
   'color', 'background', 'background-color', 'border-color', 'fill', 'stroke',
@@ -634,6 +636,79 @@ function analyzeVisualSources({ html = '', css = '' } = {}) {
   const modernCss = MODERN_CSS_PROBES.filter((probe) => probe.re.test(styleText)).map((probe) => probe.feature);
   if (scrollReveal) modernCss.push('scroll-driven reveals');
 
+  // ── palette fingerprint ──────────────────────────────────────────────────
+  // Which hue family this surface actually ships, as arithmetic: every color
+  // literal (var()-resolved) converted to OKLCH and weighted by use. The
+  // fingerprint is what makes cross-PROJECT sameness machine-visible — each
+  // surface can pass every gate alone while the operator's projects all land
+  // on the model's favorite palette; comparing fingerprints is how that stops
+  // being a feeling and starts being a measured delta.
+  const COLOR_TOKEN = /#[0-9a-fA-F]{3,8}\b|(?:rgba?|hsla?|oklch)\([^()]*\)/g;
+  const colorCounts = new Map(); // canonical hex → { count, oklch }
+  const groundCounts = new Map(); // background-prop colors only
+  for (const { prop, value } of decls) {
+    const resolved = resolveCustomProps(value, props);
+    let match;
+    COLOR_TOKEN.lastIndex = 0;
+    let first = true;
+    while ((match = COLOR_TOKEN.exec(resolved))) {
+      const parsed = parseCssColor(match[0]);
+      if (!parsed || parsed.alpha < 0.5) { first = false; continue; }
+      const key = rgbToHex(parsed);
+      const record = colorCounts.get(key) || { count: 0, oklch: parsed.oklch };
+      record.count += 1;
+      colorCounts.set(key, record);
+      if (first && parsed.alpha >= 0.9 && (prop === 'background' || prop === 'background-color')) {
+        groundCounts.set(key, (groundCounts.get(key) || 0) + 1);
+      }
+      first = false;
+    }
+  }
+  const CHROMATIC_FLOOR = 0.07; // OKLCH chroma below this reads as a tinted neutral
+  let colorLiteralCount = 0;
+  let chromaticCount = 0;
+  const clusters = []; // { sin, cos, weight, maxChroma } — greedy ±20° hue clustering
+  const sorted = [...colorCounts.values()].sort((a, b) => b.count - a.count);
+  for (const { count, oklch } of sorted) {
+    colorLiteralCount += count;
+    if (oklch.c < CHROMATIC_FLOOR) continue;
+    chromaticCount += count;
+    const rad = (oklch.h * Math.PI) / 180;
+    const home = clusters.find((cl) => {
+      const rep = ((Math.atan2(cl.sin, cl.cos) * 180) / Math.PI + 360) % 360;
+      const d = Math.abs(((oklch.h - rep) % 360 + 360) % 360);
+      return Math.min(d, 360 - d) <= 20;
+    });
+    if (home) {
+      home.sin += Math.sin(rad) * count;
+      home.cos += Math.cos(rad) * count;
+      home.weight += count;
+      home.maxChroma = Math.max(home.maxChroma, oklch.c);
+    } else {
+      clusters.push({ sin: Math.sin(rad) * count, cos: Math.cos(rad) * count, weight: count, maxChroma: oklch.c });
+    }
+  }
+  clusters.sort((a, b) => b.weight - a.weight);
+  const accentCluster = clusters[0] || null;
+  const accentHue = accentCluster
+    ? Math.round(((Math.atan2(accentCluster.sin, accentCluster.cos) * 180) / Math.PI + 360) % 360)
+    : null;
+  let ground = null;
+  if (groundCounts.size > 0) {
+    const [groundHex] = [...groundCounts.entries()].sort((a, b) => b[1] - a[1])[0];
+    const g = colorCounts.get(groundHex).oklch;
+    const pole = g.c >= 0.12 ? 'chromatic' : g.l >= 0.75 ? 'light' : g.l <= 0.45 ? 'dark' : 'mid';
+    ground = { hex: groundHex, l: Math.round(g.l * 100) / 100, c: Math.round(g.c * 1000) / 1000, h: Math.round(g.h), pole };
+  }
+  const palette = {
+    color_literals: colorLiteralCount,
+    chromatic_share_pct: colorLiteralCount ? Math.round((chromaticCount / colorLiteralCount) * 100) : null,
+    hue_clusters: clusters.length,
+    accent_hue: accentHue,
+    accent_chroma: accentCluster ? Math.round(accentCluster.maxChroma * 1000) / 1000 : null,
+    ground
+  };
+
   const craftMeasured = decls.length >= CRAFT_MIN_DECLARATIONS;
   const levers = {
     typeface: fontDelivered,
@@ -686,6 +761,7 @@ function analyzeVisualSources({ html = '', css = '' } = {}) {
     dnd_markers: hasDndMarkers,
     management_surface: managementSurface,
     widget_markers: hasWidgetMarkers,
+    palette,
     craft: {
       measured: craftMeasured,
       active_levers: activeLevers,

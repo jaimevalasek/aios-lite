@@ -40,10 +40,11 @@ Skip to origination mode only when no prototype, no identity, and no established
 
 1. Confirm explicit activation or a recorded module default.
 2. Load `references/intent-and-domain.md` and `references/design-directions.md`. This is the cold start — the moment a generative system reverts to the average — so also load `references/aesthetic-registers.md` and commit to one register before any token decision, including its **Premium bar**: the register names its posture and the level it must be executed at; the cheap failure named under each register is never an acceptable reading of it. Register sets posture, direction sets the token math; one of each, never two of either.
-3. Name the surface type, domain cues, primary user decision, and one signature move.
-4. Load only the additional references needed below. When composing the surface's atmosphere, material, or entrance motion, load `.aioson/docs/design/visual-effects.md` — choosing the one earned atmosphere is part of the cold start, not a later option.
-5. Establish tokens and responsive constraints before component styling. Typography is delivered, not just named: one real typeface (webfont link or embedded `@font-face`) with a credible fallback stack, and a display scale where the surface argues.
-6. Implement in the active stack, then inspect mobile and desktop before handoff.
+3. Draw the starting material: with no identity record, run `aioson design:seed . --register=<register> --slug=<feature> --json` and build FROM one candidate. The draw decides where the work starts — hue family, ground pole, scheme, typeface pairing, hero posture — because that is exactly the decision a model prior otherwise makes the same way in every project; it is diversified against the operator's recent measured projects, and quietly reverting to a familiar favorite palette re-creates the cross-project sameness it exists to break. Refining roles, scales, and composition stays your judgment, and an extracted identity outranks any draw.
+4. Name the surface type, domain cues, primary user decision, and one signature move.
+5. Load only the additional references needed below. When composing the surface's atmosphere, material, or entrance motion, load `.aioson/docs/design/visual-effects.md` — choosing the one earned atmosphere is part of the cold start, not a later option.
+6. Establish tokens and responsive constraints before component styling. Typography is delivered, not just named: one real typeface (webfont link or embedded `@font-face`) with a credible fallback stack, and a display scale where the surface argues.
+7. Implement in the active stack, then inspect mobile and desktop before handoff.
 
 ## Reference routing
 
@@ -67,4 +68,4 @@ Skip to origination mode only when no prototype, no identity, and no established
 
 ## Done gate
 
-Reject overlap, clipped text, missing states/assets, raw palette drift, generic template composition, isolated blurred-circle decoration, responsive behavior that only shrinks desktop, OS-default typography standing where the chosen face should render, an unaddressed `craft floor` telemetry warning, any mismatch with an active identity file, or — in conformance mode — any drift from the approved prototype that the PRD does not record as an approved deviation.
+Reject overlap, clipped text, missing states/assets, raw palette drift, generic template composition, isolated blurred-circle decoration, responsive behavior that only shrinks desktop, OS-default typography standing where the chosen face should render, an unaddressed `craft floor` telemetry warning, an unaddressed `cross-project palette repetition` warning (diversify, or record the named brand reason the family is shared), any mismatch with an active identity file, or — in conformance mode — any drift from the approved prototype that the PRD does not record as an approved deviation.

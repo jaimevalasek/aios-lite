@@ -10,6 +10,12 @@ const { analyzeVisualSources, maxCardNesting, emDashProse } = require('../src/li
 const { runVerifyArtifact, availableKinds } = require('../src/commands/verify-artifact');
 const { runPrototypeCheck } = require('../src/commands/prototype-check');
 
+// Full-surface fixtures below are craft-measured, the tier that records
+// palette fingerprints. Nesting the registry path under a FILE makes both
+// read and write fail silently (best-effort by design), so these tests never
+// touch the operator's registry and never warn about each other's palettes.
+process.env.AIOSON_DESIGN_REGISTRY = path.join(__filename, 'no-registry', 'design-fingerprints.json');
+
 function makeLogger() {
   const lines = [];
   return { log: (m = '') => lines.push(String(m)), error: (m = '') => lines.push(String(m)), warn: () => {}, lines };
@@ -655,6 +661,32 @@ test('the craft axis only measures full surfaces — fixtures and fragments stay
   // CLEAN names "IBM Plex Sans" with no delivery; on a fragment that is not a
   // finding, which is exactly why the floor is gated on corpus size.
   assert.deepEqual(clean.warnings, []);
+});
+
+test('the palette fingerprint reads the shipped hue family through var()', () => {
+  // Dark teal ground carried by the token system (last :root write wins in
+  // the resolver, exactly like the cascade), one coral accent family.
+  const dark = analyzeVisualSources({
+    html: flatHygienicSurface({
+      headStyles: `
+        :root { --bg: #0e2a2e; --fg: #eef4f2; }
+        .cta { background: #ff6b4a; color: #ffffff; }
+        .cta:hover { background: #e85f41; }
+        .link { color: #ff6b4a; }
+        .badge { border-color: #ff6b4a; color: #ff6b4a; }
+      `
+    })
+  });
+  const palette = dark.metrics.palette;
+  assert.equal(palette.ground.pole, 'dark', `ground ${JSON.stringify(palette.ground)}`);
+  assert.equal(palette.ground.hex, '#0e2a2e');
+  assert.ok(palette.accent_hue >= 20 && palette.accent_hue <= 50, `coral accent family, got ${palette.accent_hue}°`);
+  assert.ok(palette.color_literals > 80, 'var()-resolved uses are counted, not just literal sites');
+  assert.ok(palette.hue_clusters >= 1);
+
+  // The default fixture ships a white ground — pole flips with the surface.
+  const light = analyzeVisualSources({ html: flatHygienicSurface() });
+  assert.equal(light.metrics.palette.ground.pole, 'light');
 });
 
 test('font-size and custom-property resolution helpers are arithmetic', () => {

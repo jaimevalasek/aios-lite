@@ -34,7 +34,7 @@ test('the layout lens stays exactly with the implementation-oriented agents', as
 
     assert.ok(entry, `visual quality brain missing from ${root}`);
     assert.deepEqual(entry.agents, INDEXED_AGENTS);
-    assert.equal(entry.nodes, 26);
+    assert.equal(entry.nodes, 27);
     assert.equal(entry.path, BRAIN_RELATIVE_PATH);
 
     for (const agent of AGENTS) {
@@ -47,7 +47,7 @@ test('the layout lens stays exactly with the implementation-oriented agents', as
 
       assert.equal(result.ok, true);
       assert.deepEqual(result.warnings, []);
-      assert.equal(result.nodes.length, 23);
+      assert.equal(result.nodes.length, 24);
       const replaceability = result.nodes.find((node) => node.id === 'vq-002');
       assert.equal(replaceability.v, 'AVOID');
       assert.match(replaceability.s, /repeated em dashes/i);
@@ -80,6 +80,13 @@ test('the layout lens stays exactly with the implementation-oriented agents', as
       assert.equal(reroute.v, 'AVOID');
       assert.match(reroute.s, /reference-identity-extract/);
       assert.match(reroute.not, /preset/i);
+      // Cross-project sameness: cold-start hue families come from the seeded
+      // draw, and the fingerprint registry makes repetition machine-visible.
+      const sameness = result.nodes.find((node) => node.id === 'vq-023');
+      assert.equal(sameness.v, 'AVOID');
+      assert.match(sameness.s, /design:seed/);
+      assert.match(sameness.s, /cross-project palette repetition/);
+      assert.match(sameness.p, /--seed=N/);
     }
   }
 });

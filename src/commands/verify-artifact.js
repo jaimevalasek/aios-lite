@@ -995,6 +995,37 @@ const ADAPTERS = {
       }
     }
 
+    // Cross-project palette repetition. Each surface can pass every gate alone
+    // while the operator's projects all land on the model's favorite palette —
+    // the fingerprint registry (operator-local, best-effort) is the only place
+    // that sameness is visible. Advisory by design: two brands may genuinely
+    // share a family, but that is a decision to record, not a default to
+    // discover after the third identical site.
+    // Only full surfaces (craft-measured, ≥150 declarations) carry a palette
+    // identity worth registering — fragments and snippets stay out.
+    try {
+      const pal = metrics.palette;
+      if (pal && pal.accent_hue != null && pal.ground && metrics.craft && metrics.craft.measured) {
+        const { readRegistry, recordFingerprint, findRepetition } = require('../lib/design-seed');
+        const current = {
+          project: path.basename(path.resolve(ctx.targetDir)),
+          slug: ctx.slug || null,
+          accent_hue: pal.accent_hue,
+          ground_pole: pal.ground.pole,
+          ground_hue: pal.ground.h,
+          display_face: (metrics.font_families || [])[0] || null,
+          source: 'measured'
+        };
+        const repetition = findRepetition(current, readRegistry().entries);
+        if (repetition) {
+          const face = repetition.same_face ? ', same display face' : '';
+          warnings.push(`cross-project palette repetition: accent hue ~${pal.accent_hue}° on a ${pal.ground.pole} ground repeats recent project "${repetition.entry.project}" (Δ${repetition.delta}°, ${repetition.reason}${face}) — the model's favorite palette is reappearing across unrelated projects; draw a diversified start with \`aioson design:seed\` (or extract an identity from the owner's references), or record why these brands genuinely share the family`);
+          metrics.palette_repeat = { project: repetition.entry.project, delta_deg: repetition.delta, reason: repetition.reason, same_face: repetition.same_face };
+        }
+        recordFingerprint(current);
+      }
+    } catch { /* fingerprinting is advisory — a broken registry never blocks the gate */ }
+
     const ok = issues.length === 0;
     return {
       ok,
@@ -1143,7 +1174,10 @@ async function runVerifyArtifact({ args, options = {}, logger }) {
     const craft = m.craft && m.craft.measured
       ? ` | type max ${m.max_font_size_px || 0}px | font ${m.font_delivery && m.font_delivery.delivered ? 'delivered' : 'not delivered'} | craft ${m.craft.active_levers}/5`
       : '';
-    logger.log(`  tokens ${pct} | spacing off-grid ${m.spacing_off_grid ?? 'n/a'} | depth ${(m.depth_strategies || []).join('+') || 'none'} | fonts ${(m.font_families || []).length} | reduced-motion ${m.reduced_motion_handled ? 'yes' : 'no'}${craft}`);
+    const palette = m.palette && m.palette.accent_hue != null && m.palette.ground
+      ? ` | accent ~${m.palette.accent_hue}° on ${m.palette.ground.pole}`
+      : '';
+    logger.log(`  tokens ${pct} | spacing off-grid ${m.spacing_off_grid ?? 'n/a'} | depth ${(m.depth_strategies || []).join('+') || 'none'} | fonts ${(m.font_families || []).length} | reduced-motion ${m.reduced_motion_handled ? 'yes' : 'no'}${craft}${palette}`);
     if (Array.isArray(m.states_missing) && m.states_missing.length) logger.log(`  states missing: ${m.states_missing.join(', ')}`);
   }
   for (const issue of issues) logger.log(`  ✗ ${issue}`);

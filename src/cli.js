@@ -425,6 +425,8 @@ const JSON_SUPPORTED_COMMANDS = new Set([
   'audit-code',
   'verify:artifact',
   'verify-artifact',
+  'design:seed',
+  'design-seed',
   'rule:new',
   'rule-new',
   'briefing:sources',
@@ -1575,6 +1577,9 @@ async function main() {
     } else if (command === 'verify:artifact' || command === 'verify-artifact') {
       const { runVerifyArtifact } = require('./commands/verify-artifact');
       result = await runVerifyArtifact({ args, options, logger: commandLogger, t });
+    } else if (command === 'design:seed' || command === 'design-seed') {
+      const { runDesignSeed } = require('./commands/design-seed');
+      result = await runDesignSeed({ args, options, logger: commandLogger, t });
     } else if (command === 'review:prepare' || command === 'review-prepare') {
       result = await runReviewPrepare({ args, options, logger: commandLogger });
       if (!jsonMode) process.exitCode = result.exitCode;

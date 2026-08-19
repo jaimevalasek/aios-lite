@@ -3,7 +3,7 @@
   "agent": "dev,deyvin,briefing-refiner,benchmark,product,sheldon",
   "domain": "visual-quality",
   "desc": "Quality-scored visual patterns and anti-patterns for producing specific, usable interfaces instead of generic AI-looking layouts, plus the specification-lens nodes that keep the product authority from going generic upstream.",
-  "updated": "2026-08-18",
+  "updated": "2026-08-19",
   "nodes": [
     {
       "id": "vq-000",
@@ -326,6 +326,20 @@
       "not": "Answering 'these sites all look the same' with a picker over warm/bold/cloned preset skills, or marking a preset as the recommended fix for an aesthetic-quality complaint",
       "warn": "Conformance still wins: an approved prototype or bound identity is never re-decided because of taste feedback on a different surface. The decision question, when needed, is identity-vs-origination-vs-named-preset, never a catalog listing.",
       "see": ["vq-021", "vq-017", "vq-001"]
+    },
+    {
+      "id": "vq-023",
+      "title": "Unrelated projects wearing one palette: the hue family is drawn, never defaulted",
+      "tags": ["visual-quality", "anti-slop", "design", "layout", "interface", "prototype"],
+      "q": 5,
+      "v": "AVOID",
+      "s": "Left to its prior, a generative model lands every cold-start project in the same favorite palette and hero shapes, and per-project gates cannot see it because each surface passes alone. Origination without an identity therefore builds FROM a design:seed draw (contrast-solved hue family, ground pole, pairing, hero posture, diversified against the operator's recent measured fingerprints), and the kind=visual palette fingerprint compares the built accent against that registry: a cross-project palette repetition warning is answered by diversifying or by recording the named brand reason the family is genuinely shared.",
+      "p": "no identity -> aioson design:seed --register=<register> -> build from ONE candidate and refine with judgment; repetition warning -> new draw (--seed=N) or a recorded brand reason; an extracted identity outranks any draw",
+      "src": "AIOSON supervised briefing sessions: two consumer projects in unrelated niches shipped the same espresso-cream-rust wardrobe (accent delta 17 degrees) with every per-project gate green",
+      "date": "2026-08-19",
+      "not": "Re-rolling origination and silently landing in the model's favorite corner of the wheel again, or treating the repetition warning as noise because this surface, alone, measures fine",
+      "warn": "The draw is raw material, not a straitjacket: the model still picks one candidate and refines every role. Two projects for the SAME brand legitimately share a palette — record that reason and the warning is answered.",
+      "see": ["vq-022", "vq-021", "vq-005"]
     },
     {
       "id": "sq-001",
