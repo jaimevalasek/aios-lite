@@ -43,9 +43,35 @@ const AGENT_ARTIFACT_KIND = {
   },
   briefing: { kind: 'briefing', needs: 'slug', featureSlugged: true },
   tester: { kind: 'test-report', needs: 'slug', featureSlugged: true },
-  squad: { kind: 'squad-pilot', needs: 'slug' },
+  // The pilot is the squad's one flagship deliverable. When it is a web
+  // surface, the session end also proves its measured visual floor (craft,
+  // generation tells, materials, cross-project fingerprint) — the same gate the
+  // built-in visual agents pass, keyed on the DELIVERABLE, not on who built it,
+  // so a squad-generated executor never ships unmeasured. Non-web pilots
+  // (a report, a dataset) skip it: absence of HTML is a state, not a finding.
+  squad: {
+    kind: 'squad-pilot', needs: 'slug',
+    also: [{ kind: 'visual', needs: 'dir', dir: 'output/{slug}/pilot', skipIfNoHtml: 'output/{slug}/pilot' }]
+  },
   shakedown: { kind: 'shakedown', needs: 'file' }
 };
+
+/** True when `dir` holds at least one HTML file within three levels. */
+function hasHtmlSurface(dir, depth = 0) {
+  const fs = require('node:fs');
+  const path = require('node:path');
+  let entries;
+  try {
+    entries = fs.readdirSync(dir, { withFileTypes: true });
+  } catch {
+    return false;
+  }
+  for (const entry of entries) {
+    if (entry.isFile() && /\.html?$/i.test(entry.name)) return true;
+    if (entry.isDirectory() && depth < 3 && entry.name !== 'node_modules' && hasHtmlSurface(path.join(dir, entry.name), depth + 1)) return true;
+  }
+  return false;
+}
 
 const NEEDS_FLAG = { slug: '--slug=<slug>', file: '--file=<path>', dir: '--dir=<dir>' };
 
@@ -79,7 +105,19 @@ async function verifyAgentArtifact({ targetDir, agent, options = {} }) {
       ? String(options.slug).trim()
       : (m.featureSlugged && feature ? feature : null);
     const file = options.file ? String(options.file).trim() : null;
-    const dir = options.dir ? String(options.dir).trim() : null;
+    // A secondary kind may derive its directory from the slug (`dir` template)
+    // when the caller threaded none — the pilot lives at a contract path.
+    const dir = options.dir
+      ? String(options.dir).trim()
+      : (m.dir && slug ? m.dir.replace('{slug}', slug) : null);
+
+    if (m.skipIfNoHtml) {
+      const rel = m.skipIfNoHtml.replace('{slug}', slug || '');
+      const path = require('node:path');
+      if (!slug || !hasHtmlSurface(path.resolve(targetDir, rel))) {
+        return { kind, ok: true, skipped: true, reason: `${rel} holds no HTML surface — nothing to measure` };
+      }
+    }
 
     const missingLocator =
       (needs === 'slug' && !slug) || (needs === 'file' && !file) || (needs === 'dir' && !dir);

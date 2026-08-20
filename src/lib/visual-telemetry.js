@@ -176,6 +176,9 @@ const SIDE_BORDER_EXEMPT = /blockquote|\btab\b|active|selected|current|alert|toa
 
 // Kicker/eyebrow: a small tracked label sitting directly above a heading.
 const KICKER_CLASS_NAME = /(eyebrow|kicker|overline|pre-?head(?:ing)?|pre-?title|suprat[ií]tulo)/i;
+// Class names that mark a control or navigation item — the uppercase-tracked
+// signature is conventional there and never reads as a kicker.
+const CONTROL_CLASS_NAME = /(?:^|[-_])(?:btn|button|nav|link|menu|tab|tabs|badge|chip|tag|pill|cell|th|breadcrumbs?|crumb)(?:[-_]|$)/i;
 
 // The universal generated feature-card template: icon tile, then heading.
 const ICON_TILE_STACK = /<(?:div|span)\b[^>]*class\s*=\s*["'][^"']*\bicon[^"']*["'][^>]*>\s*<(?:svg|i|img)\b[\s\S]{0,300}?<\/(?:div|span)>\s*<h[1-6]\b/gi;
@@ -189,7 +192,11 @@ const BUZZWORDS = /\b(?:streamlin(?:e|es|ed|ing)|empower(?:s|ed|ing)?|supercharg
 // "Not just X. It's Y." — the strongest model-writing cadence there is.
 const NEGATION_PIVOTS = [
   /\bnot\s+(?:just|only|merely)\s+[^.!?\n]{2,60}[.!?—:;]\s*(?:it'?s|it\s+is|this\s+is)\b/gi,
-  /(?:^|[.!?]\s+)(?:not|não)\s+(?:a|an|um|uma)\s+\w+(?:\s+\w+)?\.\s+(?:a|an|um|uma)\s+\w+/gi,
+  // `\w` stops at accents ("relatório", "decisão") — letters are matched as
+  // Unicode letters so the pt-BR cadence counts the same as the English one.
+  // A sentence also starts right after a tag (`<p>Não um relatório.`) — the
+  // corpus keeps its markup, so `>` is a sentence boundary too.
+  /(?:^|[.!?]\s+|>\s*)(?:not|não)\s+(?:a|an|um|uma)\s+[\p{L}\p{M}\p{N}_]+(?:\s+[\p{L}\p{M}\p{N}_]+)?\.\s+(?:a|an|um|uma)\s+[\p{L}\p{M}\p{N}_]+/giu,
   // `é` is a non-word char, so \b never closes it — require whitespace instead.
   /\bnão\s+é\s+(?:só|apenas)\s+[^.!?\n]{2,60}[.!?—:;,]\s*é\s/gi
 ];
@@ -377,7 +384,9 @@ function resolveCustomProps(value, props, depth = 0) {
 
 /**
  * A font-size value in px, or null. rem/em resolve against 16; `clamp()` reads
- * its maximum arm — fluid type is judged by where it is allowed to grow.
+ * its maximum arm — fluid type is judged by where it is allowed to grow — and
+ * `calc()` sums its absolute terms (`calc(1rem + 2px)` is 18, not the 2 of
+ * its first px token; viewport terms are unknowable statically and ignored).
  */
 function fontSizePx(value) {
   let v = String(value || '').trim();
@@ -385,6 +394,17 @@ function fontSizePx(value) {
   if (clamp) {
     const arms = topLevelSplit(clamp[1]);
     v = (arms[arms.length - 1] || v).trim();
+  }
+  if (/calc\(/i.test(v)) {
+    // Signed sum of the absolute-length terms: `2rem - 2px` → 30.
+    const signed = v.replace(/calc\(|\)/gi, ' ').replace(/\s-\s*(?=\d|\.)/g, ' + -');
+    let total = 0;
+    let found = false;
+    for (const m of signed.matchAll(/(-?\d*\.?\d+)(px|rem|em)\b/g)) {
+      found = true;
+      total += m[2] === 'px' ? Number(m[1]) : Number(m[1]) * 16;
+    }
+    return found ? Math.abs(total) : null;
   }
   let m;
   if ((m = v.match(/(-?\d*\.?\d+)px\b/))) return Math.abs(Number(m[1]));
@@ -538,6 +558,45 @@ function firstFamily(value) {
   return first ? first.trim().replace(/^["']|["']$/g, '').toLowerCase() : '';
 }
 
+// A selector token that names the display role: h1/h2, or a class/id whose
+// name STARTS with display|hero|title|headline (`.card-title` does not).
+const DISPLAY_ROLE_SELECTOR = /(^|[\s,>+~])h[12]\b|(^|[\s,>+~.#])(?:display|hero|title|headline)\b/i;
+const DISPLAY_SCALE_PX = 28;
+
+/**
+ * The family the display role renders, or null when the corpus names none.
+ * Priority: a display-role token (`--font-display`, `--font-heading`), then
+ * the font-family rule with the largest display-scale size, then a rule on a
+ * display-role selector. The first declared family is deliberately NOT a
+ * fallback — it is the body/UI face.
+ */
+function resolveDisplayFace({ styleText, props, families }) {
+  const resolve = (value) => resolveCustomProps(value, props);
+  const known = (face) => face && !CSS_WIDE_KEYWORDS.has(face) && !face.startsWith('var(') && families.has(face);
+  for (const [name, value] of Object.entries(props)) {
+    if (!/font/i.test(name) || !/(display|head|title|hero|h1)/i.test(name)) continue;
+    const face = firstFamily(resolve(value));
+    if (known(face)) return face;
+  }
+  let best = null;
+  let bestScore = 0;
+  for (const block of ruleBlocks(styleText)) {
+    const familyDecl = block.body.match(/font-family\s*:\s*([^;{}]+)/i);
+    if (!familyDecl) continue;
+    const face = firstFamily(resolve(familyDecl[1]));
+    if (!known(face)) continue;
+    const sizeDecl = block.body.match(/font-size\s*:\s*([^;{}]+)/i);
+    const sizePx = sizeDecl ? fontSizePx(resolve(sizeDecl[1])) : null;
+    const roleSelector = DISPLAY_ROLE_SELECTOR.test(block.selector) && (sizePx === null || sizePx >= 20);
+    const score = sizePx !== null && sizePx >= DISPLAY_SCALE_PX ? sizePx : (roleSelector ? DISPLAY_SCALE_PX : 0);
+    if (score > bestScore) {
+      best = face;
+      bestScore = score;
+    }
+  }
+  return best;
+}
+
 /**
  * Geometry of one box-shadow layer: offset-x, offset-y, blur — in px, with
  * function bodies (colors) blanked first so their numbers never read as
@@ -616,8 +675,11 @@ function scanGenerationTells({ markup, styleText, decls, props, families, craftM
       }
     }
 
+    // Controls and navigation wear the same uppercase-tracked-small signature
+    // by convention (nav links, buttons, badges, tabs); they are not labels
+    // sitting above a heading, so their class never becomes a kicker class.
     const single = selector.match(/^\.([a-zA-Z][\w-]*)$/);
-    if (single && /text-transform\s*:\s*uppercase/i.test(body)) {
+    if (single && !CONTROL_CLASS_NAME.test(single[1]) && /text-transform\s*:\s*uppercase/i.test(body)) {
       const tracking = body.match(/letter-spacing\s*:\s*([^;{}]+)/i);
       const em = tracking && tracking[1].match(/(-?\d*\.?\d+)em\b/);
       const px = tracking && tracking[1].match(/(-?\d*\.?\d+)px\b/);
@@ -635,7 +697,17 @@ function scanGenerationTells({ markup, styleText, decls, props, families, craftM
   let kicker = namedKicker ? namedKicker.length : 0;
   for (const cls of kickerSignatureClasses) {
     if (KICKER_CLASS_NAME.test(cls)) continue; // already counted by name
-    const re = new RegExp(`<[a-z][a-z0-9-]*\\b[^>]*class\\s*=\\s*["'][^"']*\\b${escapeRegExp(cls)}\\b[^"']*["'][^>]*>[\\s\\S]{0,200}?<h[12]\\b`, 'gi');
+    // The anonymous signature is weaker evidence than a name, so it needs the
+    // kicker SHAPE: a non-interactive element that closes and is immediately
+    // followed by the heading. Three uppercase nav links that happen to sit
+    // within 200 chars of the hero h1, or a button ending the section before
+    // the next h2, are not a label above a heading.
+    const re = new RegExp(
+      `<(?!a\\b|button\\b)([a-z][a-z0-9-]*)\\b[^>]*class\\s*=\\s*["'][^"']*\\b${escapeRegExp(cls)}\\b[^"']*["'][^>]*>` +
+      `(?:[^<]|<(?!\\/?(?:h[1-6]|p|div|section|article|header|nav|ul|ol|li|a|button|table)\\b)[^>]*>){0,200}?` +
+      `<\\/\\1>\\s*(?:<!--[\\s\\S]*?-->\\s*)*<h[12]\\b`,
+      'gi'
+    );
     kicker += (markup.match(re) || []).length;
   }
 
@@ -657,8 +729,12 @@ function scanGenerationTells({ markup, styleText, decls, props, families, craftM
     if (!SATURATED_DISPLAY_FACES.has(face)) continue;
     const sizeDecl = block.body.match(/font-size\s*:\s*([^;{}]+)/i);
     const sizePx = sizeDecl ? fontSizePx(resolve(sizeDecl[1])) : null;
-    const displaySelector = /(^|[\s,>+~])h[12]\b|display|hero|title|headline/i.test(block.selector);
-    if ((sizePx !== null && sizePx >= 28) || displaySelector) saturatedFaces.add(face);
+    // Display ROLE, not display substring: `.card-title`, `.subtitle` and
+    // `.modal-title` are UI text — a workhorse face there is sanctioned. The
+    // keyword has to start a selector token, and a rule that declares itself
+    // small is UI text whatever it is called.
+    const displaySelector = DISPLAY_ROLE_SELECTOR.test(block.selector) && (sizePx === null || sizePx >= 20);
+    if ((sizePx !== null && sizePx >= DISPLAY_SCALE_PX) || displaySelector) saturatedFaces.add(face);
   }
   let saturatedOnlyFamily = false;
   if (craftMeasured && families.size === 1) {
@@ -859,6 +935,12 @@ function analyzeVisualSources({ html = '', css = '' } = {}) {
   const fluidType = /font-size\s*:\s*[^;{}]*clamp\(/i.test(styleText) ||
     [...Object.values(props)].some((v) => /clamp\(/.test(v) && /rem|px/.test(v));
 
+  // The display face is the family the DISPLAY ROLE wears — a display token,
+  // or the family of the largest display-scale rule — never the first
+  // font-family declared (that is body/UI, which pairs with many displays and
+  // made two projects "share a display face" when they merely shared Inter).
+  const displayFace = resolveDisplayFace({ styleText, props, families });
+
   // ── motion ───────────────────────────────────────────────────────────────
   const keyframes = (styleText.match(/@keyframes\b/g) || []).length;
   const animated = decls.filter((d) => d.prop === 'animation' || d.prop === 'animation-name').length;
@@ -934,7 +1016,7 @@ function analyzeVisualSources({ html = '', css = '' } = {}) {
   const modernColor = (styleText.match(/color-mix\(|oklch\(|oklab\(/gi) || []).length;
   const backgroundImages = decls.filter((d) => (d.prop === 'background' || d.prop === 'background-image') && /url\(/i.test(d.value)).length;
   const transitionCount = decls.filter((d) => d.prop === 'transition' || d.prop === 'transition-property').length;
-  const scrollReveal = SCROLL_REVEAL.test(markup);
+  const scrollReveal = SCROLL_REVEAL.test(corpus);
 
   const materialTechniques = [
     gradientCount >= 2 && 'gradients',
@@ -964,8 +1046,13 @@ function analyzeVisualSources({ html = '', css = '' } = {}) {
   // Declared-but-never-applied finish: effect tokens and keyframes no rule
   // references. They inflate every text-presence signal while the user sees
   // flat — the exact "cool effects in the CSS, applied nowhere" report shape.
+  // References live wherever rules live — inline <style>, external .css files
+  // (the --dir / --file=styles.css shapes) and style attributes — so the scan
+  // reads the whole corpus. Reading only the HTML reported every token a
+  // stylesheet defined AND used as dead, and the dev doctrine then told the
+  // agent to delete live finish.
   const varRefs = new Set();
-  for (const ref of String(markup).matchAll(/var\(\s*(--[\w-]+)/g)) varRefs.add(ref[1].toLowerCase());
+  for (const ref of corpus.matchAll(/var\(\s*(--[\w-]+)/g)) varRefs.add(ref[1].toLowerCase());
   const EFFECT_PROP = /shadow|grain|noise|glow|texture|gradient|wash|blur|halo/i;
   const EFFECT_VALUE = /(?:linear|radial|conic)-gradient\(|feTurbulence|blur\(/i;
   const unappliedEffectTokens = Object.entries(props)
@@ -973,7 +1060,7 @@ function analyzeVisualSources({ html = '', css = '' } = {}) {
     .map(([name]) => name);
   const keyframeNames = [...styleText.matchAll(/@keyframes\s+([\w-]+)/g)].map((k) => k[1]);
   const unappliedKeyframes = keyframeNames.filter(
-    (name) => !new RegExp(`animation(?:-name)?\\s*:[^;{}]*\\b${name}\\b`, 'i').test(markup)
+    (name) => !new RegExp(`animation(?:-name)?\\s*:[^;{}]*\\b${escapeRegExp(name)}\\b`, 'i').test(corpus)
   );
   const unappliedFinish = [...unappliedEffectTokens, ...unappliedKeyframes.map((name) => `@keyframes ${name}`)];
 
@@ -1120,6 +1207,7 @@ function analyzeVisualSources({ html = '', css = '' } = {}) {
     depth_strategies: activeDepth,
     depth_counts: depth,
     font_families: [...families],
+    display_face: displayFace,
     font_delivery: {
       font_face_blocks: fontFaceBlocks,
       webfont_linked: webfontLinked,

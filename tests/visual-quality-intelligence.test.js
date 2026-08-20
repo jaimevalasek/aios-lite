@@ -16,10 +16,20 @@ const AGENTS = ['dev', 'deyvin', 'briefing-refiner'];
 // Product/Sheldon consume the same brain through the spec-quality lens only: the PRD
 // authority must not inherit layout nodes it has no right to decide.
 const SPEC_AGENTS = ['product', 'sheldon'];
+// @ux-ui decides interaction on the prototype and @ui-specialist is the one
+// squad-generated executor the framework itself names (squad-create Step 2.5):
+// both BUILD what people see, so both carry the layout lens by name — a squad
+// designer under any other name reaches the same nodes through the tag-only
+// query its visual-quality block issues.
+const VISUAL_AGENTS = ['ux-ui', 'ui-specialist'];
 // Briefing originates through the spec-quality lens; QA verifies delivery through
 // the interaction lens. Neither may inherit the layout nodes. Order mirrors the
 // on-disk index array exactly.
-const INDEXED_AGENTS = ['briefing', ...AGENTS, ...SPEC_AGENTS, 'qa'];
+const INDEXED_AGENTS = ['briefing', ...AGENTS, ...SPEC_AGENTS, 'qa', ...VISUAL_AGENTS];
+// @ui-specialist is generated inside consumer projects (squad-create Step 2.5) and
+// has no kernel file in the template; its visual-quality block is pinned by
+// squad-agent-visual-block.test.js instead.
+const KERNEL_AGENTS = INDEXED_AGENTS.filter((agent) => agent !== 'ui-specialist');
 const BRAIN_RELATIVE_PATH = '.aioson/brains/design/visual-quality.brain.json';
 const INDEX_RELATIVE_PATH = '.aioson/brains/_index.json';
 
@@ -37,7 +47,7 @@ test('the layout lens stays exactly with the implementation-oriented agents', as
     assert.equal(entry.nodes, 30);
     assert.equal(entry.path, BRAIN_RELATIVE_PATH);
 
-    for (const agent of AGENTS) {
+    for (const agent of [...AGENTS, ...VISUAL_AGENTS]) {
       const result = await queryBrains({
         targetDir: root,
         agent,
@@ -209,7 +219,7 @@ test('visual quality brain and agent kernels remain template/workspace synchroni
     );
   }
 
-  for (const agent of INDEXED_AGENTS) {
+  for (const agent of KERNEL_AGENTS) {
     const relativePath = `.aioson/agents/${agent}.md`;
     const [template, workspace] = await Promise.all([
       read(TEMPLATE_ROOT, relativePath),
@@ -387,7 +397,7 @@ test('rule precedence over the brain is stated once, in the brain itself', async
   }
 
   // No agent kernel may restate it — that duplication is what drifts.
-  for (const agent of INDEXED_AGENTS) {
+  for (const agent of KERNEL_AGENTS) {
     const kernel = await read(TEMPLATE_ROOT, `.aioson/agents/${agent}.md`);
     assert.doesNotMatch(
       kernel,

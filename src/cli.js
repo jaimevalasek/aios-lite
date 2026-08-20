@@ -1331,8 +1331,12 @@ async function main() {
     'output-strategy:'
   ];
   if (command && DEPRECATED_COMMAND_PREFIXES.some((p) => command.startsWith(p))) {
-    const warn = typeof logger.warn === 'function' ? logger.warn.bind(logger) : logger.log.bind(logger);
-    warn(`[deprecated] "${command}" belongs to an ownerless command family scheduled for removal in a future major release.`);
+    // `--json` promises a machine-only envelope — no human logs on either
+    // stream — so the notice is for interactive runs only.
+    if (!jsonMode) {
+      const warn = typeof logger.warn === 'function' ? logger.warn.bind(logger) : logger.log.bind(logger);
+      warn(`[deprecated] "${command}" belongs to an ownerless command family scheduled for removal in a future major release.`);
+    }
   }
 
   if (

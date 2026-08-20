@@ -42,6 +42,36 @@ function resolveExecutorModelTier(type, modelTier) {
 //   5 — Integration (hand-offs and synergies)
 // ---------------------------------------------------------------------------
 
+// A role whose deliverable is something people SEE — the same trigger list the
+// squad design task uses to detect visual output. The built-in visual agents
+// reach the anti-slop stack (visual-quality brain, the one design engine,
+// design:seed, the measured kind=visual gate) by name; a generated executor has
+// no name the framework knows, so the stack rides in its prompt instead.
+const VISUAL_ROLE = /\b(?:design(?:er)?|ui|ux|visual|landing|web-?sites?|sites?|pages?|front-?end|interfaces?|layouts?|dashboards?|screens?|html|css|brand(?:ing)?|web\s*apps?)\b/i;
+
+function isVisualRole({ slug = '', domain = '', mission = '', focus = [] } = {}) {
+  const corpus = [slug, domain, mission, ...(Array.isArray(focus) ? focus : [])].filter(Boolean).join('\n');
+  return VISUAL_ROLE.test(corpus);
+}
+
+/** The visual-quality block every visual executor carries — CLI-backed, not adjectives. */
+function visualQualityBlock() {
+  return [
+    '## Visual quality intelligence',
+    'This agent ships what people see. The bar is measured, never self-graded:',
+    '',
+    '1. **One engine.** Resolve `design_skill` from `.aioson/context/project.context.md`; blank → `.aioson/skills/design/interface-design/SKILL.md` in intent-first mode. Load only that engine — the preset catalog is raw material, never a menu.',
+    '2. **Measured patterns first:** `aioson brain:query . --tags=visual-quality,layout --min-quality=4 --format=compact`',
+    '3. **Draw the start, do not default it:** `aioson design:seed . --register=<register> --slug=<deliverable> --json` — build FROM one candidate (hue family, ground, typeface pairing, hero posture), diversified against the operator\'s recent projects.',
+    '4. **Replaceability test + anti-references.** If the client name could be swapped and nothing else changes, it is not done. Ask the owner for 2-5 things this must NOT look like before originating; a named anti-reference outranks ten adjectives.',
+    '5. **Implementation doctrine:** `.aioson/docs/dev/visual-implementation.md` (front-end conformance) and `.aioson/docs/design/visual-effects.md` (motion and effect gotchas).',
+    '',
+    '**Done gate** — before declaring any page, screen, or component ready:',
+    '`aioson verify:artifact . --kind=visual --dir=<deliverable dir> --advisory` — craft floor, generation tells (`tells N`), materials, cross-project fingerprint. Record the numbers with the deliverable; a warning you cannot answer with a reason is a rewrite directive.',
+    ''
+  ];
+}
+
 function buildAgentTemplate(slug, opts) {
   const {
     mission = '',
@@ -137,6 +167,10 @@ function buildAgentTemplate(slug, opts) {
   lines.push('3. **Execute** — Produce the output following the methodology');
   lines.push('4. **Validate** — Check against quality criteria before delivering');
   lines.push('');
+
+  if (isVisualRole({ slug, domain, mission, focus })) {
+    lines.push(...visualQualityBlock());
+  }
 
   // ── Level 3: Voice DNA (assistant/clone types) ──────────────────────────
   if (type === 'assistant' || type === 'clone') {
@@ -824,4 +858,4 @@ function assessMaturity(content, hasInfra) {
   return { score, level, label, hint, checks };
 }
 
-module.exports = { runSquadAgentCreate };
+module.exports = { runSquadAgentCreate, isVisualRole, visualQualityBlock };

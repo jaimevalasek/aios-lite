@@ -134,8 +134,8 @@ After defining executors, check whether the squad produces visual output.
 **If detected, ask in the selected project language:**
 > This squad will produce visual output. How do you want to include UI/UX?
 >
-> 1. Skills — install `landing-page-forge` + `ui-ux-modern` as squad skills; lightweight, executors reference them
-> 2. Executor — add `@ui-specialist` to the squad; autonomous, produces `ui-spec.md` + HTML
+> 1. Skills — bind the project's design engine (`design_skill`, default `interface-design`) + `landing-page-forge` as squad skills; lightweight, executors reference them
+> 2. Executor — add `@ui-specialist` to the squad; autonomous, produces `ui-spec.md` + HTML, carries the visual-quality block
 > 3. External — no UI inside the squad; call `@ux-ui` separately
 > 4. Skip
 
@@ -145,10 +145,12 @@ After defining executors, check whether the squad produces visual output.
 ```json
 "uiCapability": {
   "mode": "skills | executor | external | none",
-  "skills": ["landing-page-forge", "ui-ux-modern"],
+  "skills": ["interface-design", "landing-page-forge"],
   "executor": "ui-specialist | null"
 }
 ```
+
+The engine is the project's one aesthetic source (`.aioson/skills/design/interface-design/` unless `design_skill` names another); `ui-ux-modern` is no longer offered — generic "clarity before decoration" bullets are the slop the visual-quality brain exists to prevent. Any visual executor, whichever mode, carries the visual-quality block from `.aioson/docs/squad/package-contract.md` § Variant C.
 
 If `mode = executor`, add `ui-specialist` to the executor list before continuing.
 

@@ -33,3 +33,15 @@ if (process.platform === 'win32') {
     return rm(target, withRetries(options), callback);
   };
 }
+
+// All platforms: operator-store isolation. `verify:artifact --kind=visual`
+// records a palette fingerprint in the operator's registry
+// (~/.aioson/design-fingerprints.json) for every craft-measured surface. A
+// test fixture large enough to be craft-measured would otherwise write the
+// developer's real registry and then warn about its own siblings' palettes.
+// Nesting the path under a FILE makes both read and write fail silently
+// (best-effort by design) — the registry is simply absent for the suite. A
+// test that wants a live registry sets its own path (design-seed.test.js).
+if (!process.env.AIOSON_DESIGN_REGISTRY) {
+  process.env.AIOSON_DESIGN_REGISTRY = require('node:path').join(__filename, 'no-registry', 'design-fingerprints.json');
+}

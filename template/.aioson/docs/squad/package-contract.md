@@ -229,6 +229,18 @@ interaction_principles:
 
 Full guidance + four worked examples (pharmacy, restaurant, gym, hotel) in `.aioson/docs/squad/domain-breadth.md`. The `quality-lens.md` scorecard now includes a `domain breadth` criterion that gates this block.
 
+### Variant C — Visual executors — mandatory visual-quality block
+
+Any executor whose deliverable is something people **see** — UI, landing page, site, dashboard, screens, HTML/CSS, layout, visual direction (the trigger list of `squad-design` Step 3.5) — **must** additionally carry a `## Visual quality intelligence` section. The built-in visual agents (`@briefing-refiner`, `@dev`, `@ux-ui`) reach the anti-slop stack by name; a generated executor has no name the framework routes, so the stack rides in its prompt. `aioson squad:agent:create` emits the block automatically when the role reads as visual; an executor written by hand carries the same five lines and the done gate:
+
+1. **One engine.** Resolve `design_skill` from `.aioson/context/project.context.md`; blank → `.aioson/skills/design/interface-design/SKILL.md` in intent-first mode. Load only that engine — presets are raw material, never a menu. Reference the engine in place; never copy it into the squad.
+2. **Measured patterns first:** `aioson brain:query . --tags=visual-quality,layout --min-quality=4 --format=compact`
+3. **Draw the start:** `aioson design:seed . --register=<register> --slug=<deliverable> --json` — build FROM one candidate, diversified against the operator's recent projects.
+4. **Replaceability test + anti-references:** if the client name could be swapped and nothing else changes, it is not done; ask the owner for 2-5 things it must NOT look like before originating.
+5. **Implementation doctrine:** `.aioson/docs/dev/visual-implementation.md` and `.aioson/docs/design/visual-effects.md`.
+
+**Done gate:** `aioson verify:artifact . --kind=visual --dir=<deliverable dir> --advisory` before any page, screen, or component is declared ready — craft floor, generation tells (`tells N`), materials, cross-project fingerprint. The squad's own session end enforces the same floor on the pilot: `agent:done --agent=squad --slug=<slug>` runs `kind=visual` over `output/<slug>/pilot/` whenever it holds an HTML surface.
+
 Agent file language follows `.aioson/rules/agent-language-policy.md`:
 
 - `locale_scope` absent or `universal` → prompt files in English
@@ -239,7 +251,7 @@ Agent file language follows `.aioson/rules/agent-language-policy.md`:
 
 If `uiCapability.mode = "executor"`:
 
-- create `.aioson/squads/{squad-slug}/agents/ui-specialist.md`
+- create `.aioson/squads/{squad-slug}/agents/ui-specialist.md` — Variant C applies in full: the `## Visual quality intelligence` block and its done gate are mandatory, and the project's design engine (`design_skill`, default `interface-design`) is the only aesthetic source
 - treat it as a visual specialist responsible for UI direction, layout decisions, and HTML/UI-spec deliverables
 - give it `modelTier: powerful`
 - if using an assistant profile, prefer `behavioralProfile: compliant-dominant`

@@ -170,3 +170,34 @@ test('verifyAgentArtifact persists the report json the same way the CLI does', a
   assert.equal(parsed.kind, 'bootstrap');
   assert.equal(parsed.mode, 'advisory');
 });
+
+test('the squad session end measures a web pilot with kind=visual — and skips a pilot with no HTML', async () => {
+  // A pilot that is a report: nothing visual to measure, no nagging.
+  const report = tmpDir();
+  fs.mkdirSync(path.join(report, 'output', 'agencia', 'pilot'), { recursive: true });
+  fs.writeFileSync(path.join(report, 'output', 'agencia', 'pilot', 'plano.md'), '# Plano\n', 'utf8');
+  const quiet = await verifyAgentArtifact({ targetDir: report, agent: 'squad', options: { slug: 'agencia' } });
+  assert.equal(quiet.kind, 'squad-pilot');
+  const quietVisual = (quiet.also || []).find((entry) => entry.kind === 'visual');
+  assert.ok(quietVisual, 'the visual gate rides along with the pilot gate');
+  assert.equal(quietVisual.skipped, true);
+  assert.match(quietVisual.reason, /holds no HTML surface/);
+
+  // A pilot that is a landing page: the visual gate runs over the pilot
+  // directory with no --dir threaded — the deliverable is at a contract path.
+  const web = tmpDir();
+  fs.mkdirSync(path.join(web, 'output', 'agencia', 'pilot'), { recursive: true });
+  fs.writeFileSync(path.join(web, 'output', 'agencia', 'pilot', 'index.html'), '<style>.a{padding:7px;margin:3px;color:#123;gap:5px;border-radius:3px;font-size:13px;background:#fff;border:1px solid #eee;box-shadow:none;fill:#123}</style><div class="a">x</div>', 'utf8');
+  const live = await verifyAgentArtifact({ targetDir: web, agent: 'squad', options: { slug: 'agencia' } });
+  const liveVisual = (live.also || []).find((entry) => entry.kind === 'visual');
+  assert.ok(liveVisual);
+  assert.equal(liveVisual.skipped, false);
+  assert.match(liveVisual.reason || '', /verify-artifact-visual\.json|^$/);
+
+  // No slug at all: the primary kind reports its missing locator; the visual
+  // rider cannot derive a directory and skips instead of failing.
+  const noSlug = await verifyAgentArtifact({ targetDir: web, agent: 'squad', options: {} });
+  assert.equal(noSlug.skipped, true);
+  const noSlugVisual = (noSlug.also || []).find((entry) => entry.kind === 'visual');
+  assert.equal(noSlugVisual.skipped, true);
+});

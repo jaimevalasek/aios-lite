@@ -51,15 +51,15 @@ Read the blueprint `uiCapability` field. If absent, treat it as `mode: none`.
 
 **If `mode = skills`:**
 1. Copy `.aioson/skills/static/landing-page-forge.md` → `.aioson/squads/{slug}/skills/design/landing-page-forge.md`
-2. Copy `.aioson/skills/static/ui-ux-modern.md` → `.aioson/squads/{slug}/skills/design/ui-ux-modern.md`
-3. If `design_skill` exists in `project.context.md`, also copy that skill to `skills/design/`
-4. Register the skills in `squad.manifest.json`
+2. Bind the project's design engine by reference, never by copy: `design_skill` from `project.context.md`, or `.aioson/skills/design/interface-design/SKILL.md` when blank. Record the path in `squad.manifest.json` — the engine stays the project's single aesthetic source (one skill, no fork, no preset menu)
+3. Register the skills in `squad.manifest.json`
 
 **If `mode = executor`:**
 1. Execute the same skill steps above; the executor depends on them.
 2. Generate `.aioson/squads/{slug}/agents/ui-specialist.md` following `.aioson/docs/squad/package-contract.md`:
    - use the same structure as other permanent executors
    - mission focused on UI, layout, components, and visual direction
+   - the `## Visual quality intelligence` block from `package-contract.md` § Variant C is mandatory (engine, brain, `design:seed`, replaceability test, `kind=visual` done gate) — `aioson squad:agent:create` emits it when the role reads as visual
    - expected output: `ui-spec.md` and, when appropriate, HTML/visual deliverable
    - make explicit when business context must be delegated back to `@orquestrador`
 3. Register the executor in `squad.manifest.json` with `modelTier: powerful` and `behavioralProfile: compliant-dominant`.

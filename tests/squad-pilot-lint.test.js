@@ -217,7 +217,10 @@ test('squad:pilot-approve refuses gate failures and non-approvable statuses', as
 
 test('kind=squad-pilot is registered, requires a slug, and is bridged from @squad', async () => {
   assert.ok(availableKinds().includes('squad-pilot'));
-  assert.deepEqual(AGENT_ARTIFACT_KIND.squad, { kind: 'squad-pilot', needs: 'slug' });
+  assert.equal(AGENT_ARTIFACT_KIND.squad.kind, 'squad-pilot');
+  assert.equal(AGENT_ARTIFACT_KIND.squad.needs, 'slug');
+  // The pilot's session end also measures its visual floor when it is a web surface.
+  assert.deepEqual(AGENT_ARTIFACT_KIND.squad.also.map((m) => m.kind), ['visual']);
 
   const logger = makeLogger();
   const res = await runVerifyArtifact({ args: ['.'], options: { kind: 'squad-pilot', json: true, suppressExitCode: true }, logger });

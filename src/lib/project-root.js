@@ -20,6 +20,11 @@
  * artifact it graded, say) creates `.aioson/<...>/.aioson/context/`, and from
  * that moment the marker walk CONFIRMS the parasite: every later resolution
  * stops there and the runtime store, logs and live sessions follow it in.
+ *
+ * The one thing inside a `.aioson/` tree that IS a project is a git checkout:
+ * squad worktrees live at `.aioson/squads/<squad>/worktrees/<agent>/`, each a
+ * full checkout with its own `.aioson/`. `isGitCheckout` is the discriminator —
+ * residue and update backups never carry a `.git`.
  */
 
 const path = require('node:path');
@@ -56,9 +61,43 @@ const MAX_DEPTH = 64;
 function escapeDataTree(dir) {
   const resolved = path.resolve(dir || '.');
   const parts = resolved.split(path.sep);
-  const idx = parts.indexOf(PROJECT_MARKER);
-  if (idx <= 0) return resolved;
-  return parts.slice(0, idx).join(path.sep) || path.parse(resolved).root;
+  let from = 0;
+  for (;;) {
+    const idx = parts.indexOf(PROJECT_MARKER, from);
+    if (idx <= 0) return resolved;
+    // A git checkout INSIDE this `.aioson/` tree — a squad worktree at
+    // `.aioson/squads/<squad>/worktrees/<agent>/` — is a project space of
+    // its own, not storage: the data-tree boundary restarts there, and only
+    // a `.aioson/` segment past the checkout is storage again.
+    const checkout = nearestCheckoutAfter(parts, idx);
+    if (checkout === -1) return parts.slice(0, idx).join(path.sep) || path.parse(resolved).root;
+    from = checkout + 1;
+  }
+}
+
+/** Index of the nearest path segment after `idx` whose directory is a git checkout, or -1. */
+function nearestCheckoutAfter(parts, idx) {
+  for (let j = idx + 1; j < parts.length; j += 1) {
+    if (isGitCheckout(parts.slice(0, j + 1).join(path.sep))) return j;
+  }
+  return -1;
+}
+
+/**
+ * True when `dir` is the root of a git checkout: a repository (`.git/`) or a
+ * linked worktree (`.git` file). Update backups and persisted reports never
+ * carry one, which is what separates a worktree from the residue this module
+ * exists to contain.
+ *
+ * @param {string} dir Absolute directory path.
+ * @returns {boolean}
+ */
+function isGitCheckout(dir) {
+  try {
+    return fs.existsSync(path.join(dir, '.git'));
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -175,5 +214,6 @@ module.exports = {
   resolveOperandPath,
   escapeDataTree,
   isProjectRoot,
+  isGitCheckout,
   PROJECT_MARKER
 };

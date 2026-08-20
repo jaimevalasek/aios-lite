@@ -1013,7 +1013,7 @@ const ADAPTERS = {
           accent_hue: pal.accent_hue,
           ground_pole: pal.ground.pole,
           ground_hue: pal.ground.h,
-          display_face: (metrics.font_families || [])[0] || null,
+          display_face: metrics.display_face || (metrics.font_families || [])[0] || null,
           source: 'measured'
         };
         const repetition = findRepetition(current, readRegistry().entries);

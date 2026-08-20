@@ -20,6 +20,7 @@ const {
 } = require('./learning-loop-doctor');
 const { assessJargonLeak } = require('./jargon-leak-doctor');
 const { openRuntimeDb } = require('./runtime-store');
+const { isGitCheckout } = require('./lib/project-root');
 
 const BOOTSTRAP_REQUIRED = ['what-is.md', 'how-it-works.md', 'what-it-does.md', 'current-state.md'];
 
@@ -31,6 +32,12 @@ const BOOTSTRAP_REQUIRED = ['what-is.md', 'how-it-works.md', 'what-it-does.md', 
 const NESTED_ROOT_NAMES = new Set(['.aioson', 'aioson-logs']);
 const NESTED_SCAN_MAX_DEPTH = 6;
 const NESTED_SCAN_MAX_DIRS = 4000;
+
+// Two things under `.aioson/` legitimately contain a `.aioson/` of their own
+// and are never residue: `aioson update` snapshots (`.aioson/backups/<stamp>/`
+// mirrors the whole tree it replaced — telling the user to delete them deletes
+// their rollback) and git checkouts (squad worktrees, each a full project).
+const NESTED_SCAN_SKIP_TOP = new Set(['backups']);
 
 async function scanNestedProjectRoots(targetDir) {
   const found = [];
@@ -45,6 +52,8 @@ async function scanNestedProjectRoots(targetDir) {
       if (!entry.isDirectory()) continue;
       seen += 1;
       const full = path.join(dir, entry.name);
+      if (depth === 0 && NESTED_SCAN_SKIP_TOP.has(entry.name)) continue;
+      if (isGitCheckout(full)) continue;
       if (NESTED_ROOT_NAMES.has(entry.name)) {
         // Report it, never descend — the residue's own contents are not news.
         found.push(path.relative(targetDir, full).split(path.sep).join('/'));

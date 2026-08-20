@@ -255,3 +255,57 @@ test('verify:artifact run from inside a briefing directory scaffolds nothing the
     fs.rmSync(tmpRoot, { recursive: true, force: true });
   }
 });
+
+// --- what lives under .aioson/ and IS a project, or is never residue ---------
+
+/** A squad worktree: a full checkout (`.git` file) with its own `.aioson/`. */
+function mkWorktree(project, squad, agent) {
+  const worktree = mkProject(project, '.aioson', 'squads', squad, 'worktrees', agent);
+  fs.writeFileSync(path.join(worktree, '.git'), `gitdir: ${path.join(project, '.git', 'worktrees', agent)}\n`, 'utf8');
+  return worktree;
+}
+
+test('a squad worktree inside .aioson/ is its own project, not storage of the main tree', () => {
+  withTmp((tmp) => {
+    const project = mkProject(tmp, 'proj');
+    const worktree = mkWorktree(project, 'growth', 'dev-a');
+    const src = mkdirp(worktree, 'src', 'lib');
+
+    assert.equal(isProjectRoot(worktree), true);
+    assert.equal(escapeDataTree(src), src, 'a path inside the checkout is an ordinary path');
+    assert.equal(resolveTargetDir([], src), src, 'no hoist to the main project from inside the worktree');
+    assert.equal(resolveTargetDir([worktree], tmp), worktree);
+    assert.equal(resolveProjectRootOrSelf(src), worktree, 'hooks attach to the worktree, not the main tree');
+
+    // Storage INSIDE the worktree is still storage — of the worktree.
+    const briefing = mkdirp(worktree, '.aioson', 'briefings', 'site');
+    assert.equal(escapeDataTree(briefing), worktree);
+    assert.equal(resolveTargetDir([], briefing), worktree);
+  });
+});
+
+test('without a .git the same shape is residue and still hoists to the owner', () => {
+  withTmp((tmp) => {
+    const project = mkProject(tmp, 'proj');
+    const residue = mkProject(project, '.aioson', 'squads', 'growth', 'worktrees', 'ghost');
+    assert.equal(isProjectRoot(residue), false);
+    assert.equal(resolveTargetDir([], path.join(residue, 'src')), project);
+  });
+});
+
+test('doctor never reports update backups or git checkouts as nested storage', async () => {
+  await withTmpAsync(async (tmp) => {
+    const project = mkProject(tmp, 'proj');
+    mkdirp(project, '.aioson', 'context');
+    // `aioson update` snapshots mirror the whole tree they replaced.
+    mkdirp(project, '.aioson', 'backups', '2026-08-20T10-00-00', '.aioson', 'context');
+    mkdirp(project, '.aioson', 'backups', '2026-08-20T10-00-00', '.aioson', 'agents');
+    mkdirp(project, '.aioson', 'backups', '2026-08-19T09-00-00', '.aioson', 'context');
+    // A squad worktree carries a full project of its own.
+    mkWorktree(project, 'growth', 'dev-a');
+    // Real residue next to them is still reported.
+    mkdirp(project, '.aioson', 'briefings', 'site', '.aioson', 'context');
+
+    assert.deepEqual(await scanNestedProjectRoots(project), ['.aioson/briefings/site/.aioson']);
+  });
+});

@@ -88,7 +88,7 @@ test('forge:compile: contrato sem critério executável é recusado', async () =
   assert.strictEqual(result.error, 'no_executable_criteria');
 });
 
-test('forge:compile: plano sem coluna Wave é recusado com orientação ao @pm', async () => {
+test('forge:compile: plano sem coluna Wave é recusado com orientação ao @planner', async () => {
   const dir = await makeTmpDir();
   const slug = 'no-wave';
   await setupFeature(dir, slug, {
@@ -102,7 +102,9 @@ test('forge:compile: plano sem coluna Wave é recusado com orientação ao @pm',
   const logger = makeLogger();
   const result = await runForgeCompile({ args: [dir], options: { feature: slug }, logger });
   assert.strictEqual(result.error, 'no_wave_column');
-  assert.match(logger.errors.join('\n'), /@pm/);
+  // The wave annotation moved from @pm to @planner in the lean redesign (pm is
+  // an opt-in advisor); the guidance names the agent that owns it.
+  assert.match(logger.errors.join('\n'), /@planner/);
 });
 
 test('forge:compile: wave_file_overlap (warning no analyze) bloqueia a compilação', async () => {

@@ -931,3 +931,110 @@ test('the tells count reaches the verdict line', async () => {
   const out = logger.lines.join('\n');
   assert.match(out, /\| tells 2\b/, `verdict line missing tells count:\n${out}`);
 });
+
+// ── regressions caught by the post-wave audit ────────────────────────────────
+
+test('finish declared and applied in an EXTERNAL stylesheet is live, not dead — the --dir shape', () => {
+  // HTML only links the sheet; every token, keyframe and scroll-driven reveal
+  // lives in styles.css. Reading the markup alone reported all of it unapplied
+  // and the dev doctrine then said "wire it or delete it" about live finish.
+  const html = `<!doctype html><html><head><link rel="stylesheet" href="styles.css"></head>
+  <body><main><h1>Consultório</h1><section class="card">Agenda</section></main></body></html>`;
+  const filler = Array.from({ length: 60 }, (_, i) => `.f${i} { padding: var(--s2); margin: var(--s3); color: var(--fg); background: var(--bg); }`).join('\n');
+  const css = `
+    :root { --s2: 8px; --s3: 12px; --fg: #1a1a1a; --bg: #ffffff; --shadow-card: 0 4px 10px rgba(0,0,0,.2), 0 22px 48px rgba(0,0,0,.4); --wash-accent: radial-gradient(circle, #223344, transparent); }
+    @keyframes rise { from { transform: translateY(8px); } to { transform: none; } }
+    body { font-family: Georgia, serif; background: var(--bg); color: var(--fg); }
+    .card { box-shadow: var(--shadow-card); background: var(--wash-accent); animation: rise .6s ease-out; animation-timeline: view(); }
+    ${filler}`;
+  const external = analyzeVisualSources({ html, css });
+  assert.equal(external.metrics.craft.measured, true, 'fixture must be a full surface');
+  assert.deepEqual(external.metrics.craft.unapplied_effects, []);
+  assert.doesNotMatch(external.warnings.join('\n'), /declared finish never applied/);
+  assert.ok(external.metrics.craft.modern_css.includes('scroll-driven reveals'), `scroll reveal in external CSS lights the lever: ${external.metrics.craft.modern_css}`);
+
+  // The identical corpus inlined measures the same — the locator shape is not a variable.
+  const inline = analyzeVisualSources({ html: html.replace('<link rel="stylesheet" href="styles.css">', `<style>${css}</style>`) });
+  assert.deepEqual(inline.metrics.craft.unapplied_effects, external.metrics.craft.unapplied_effects);
+});
+
+test('font-size arithmetic evaluates calc() instead of reading its first px addend', () => {
+  assert.equal(fontSizePx('calc(1rem + 2px)'), 18);
+  assert.equal(fontSizePx('calc(0.875rem + 1px)'), 15);
+  assert.equal(fontSizePx('calc(2rem - 2px)'), 30);
+  assert.equal(fontSizePx('clamp(2rem, 1rem + 4vw, calc(3rem + 8px))'), 56);
+
+  // Two ordinary sizes written as calc() are not "tiny text", and a calc()
+  // display size reaches the display-scale lever.
+  const result = analyzeVisualSources({ html: flatHygienicSurface({
+    headStyles: `.lede { font-size: calc(1rem + 2px); } .small { font-size: calc(0.875rem + 1px); } h1 { font-size: calc(3.5rem + 4px); }`
+  }) });
+  assert.equal(result.metrics.tells.tiny_text, 0, JSON.stringify(result.metrics.tells));
+  assert.equal(result.metrics.max_font_size_px, 60);
+});
+
+test('uppercase-tracked nav links and buttons near a heading are not kickers; a label that closes right before it is', () => {
+  const controls = `<!doctype html><html><head><style>
+  .nav-link { text-transform: uppercase; letter-spacing: .12em; font-size: 12px; }
+  .btn { text-transform: uppercase; letter-spacing: .1em; font-size: 13px; }
+  .cat { text-transform: uppercase; letter-spacing: .14em; font-size: 12px; }
+  h1 { font-family: 'Boska', serif; font-size: 72px; }
+  </style></head><body>
+  <nav><a class="nav-link" href="#">Início</a><a class="nav-link" href="#">Agenda</a><a class="nav-link" href="#">Contato</a></nav>
+  <header><h1>Atelier</h1></header>
+  <section><p>Texto.</p><button class="btn">Agendar</button></section>
+  <section><h2>Serviços</h2></section>
+  </body></html>`;
+  assert.equal(analyzeVisualSources({ html: controls }).metrics.tells.kicker_above_heading, 0);
+
+  const label = controls.replace('<section><h2>Serviços</h2>', '<section><p class="cat">Nossos serviços</p>\n<h2>Serviços</h2>');
+  assert.equal(analyzeVisualSources({ html: label }).metrics.tells.kicker_above_heading, 1);
+});
+
+test('a workhorse UI face on `.card-title` is sanctioned; the same face on the display role is the tell', () => {
+  const base = (titleRule) => `<!doctype html><html><head><style>
+  :root { --font-display: 'Young Serif', serif; --font-ui: Inter, system-ui, sans-serif; }
+  body { font-family: var(--font-ui); }
+  h1 { font-family: var(--font-display); font-size: 64px; }
+  ${titleRule}
+  .p1 { margin: 4px; } .p2 { margin: 8px; } .p3 { padding: 4px; } .p4 { padding: 8px; } .p5 { gap: 4px; } .p6 { gap: 8px; } .p7 { color: #222222; } .p8 { color: #333333; } .p9 { opacity: .9; } .p10 { opacity: .8; }
+  </style></head><body><h1>Painel</h1><div class="card"><p class="card-title">Pedidos</p><p class="subtitle">Hoje</p></div></body></html>`;
+  const sanctioned = analyzeVisualSources({ html: base('.card-title { font-family: var(--font-ui); font-size: 14px; } .subtitle { font-family: var(--font-ui); }') });
+  assert.deepEqual(sanctioned.metrics.tells.saturated_display_faces, []);
+  assert.equal(sanctioned.metrics.display_face, 'young serif');
+
+  const display = analyzeVisualSources({ html: base('.hero-title { font-family: var(--font-ui); }') });
+  assert.deepEqual(display.metrics.tells.saturated_display_faces, ['inter']);
+});
+
+test('display_face is the face of the display role, never the first family declared', () => {
+  // Body declares the UI face first; the display face arrives on h1 through
+  // the largest rule. The fingerprint registry keys same_face on this value.
+  const byScale = analyzeVisualSources({ html: `<!doctype html><html><head><style>
+    body { font-family: 'Switzer', sans-serif; font-size: 16px; }
+    h1 { font-family: 'Gambetta', serif; font-size: 56px; }
+    .p1 { margin: 4px; } .p2 { margin: 8px; } .p3 { padding: 4px; } .p4 { padding: 8px; } .p5 { gap: 4px; } .p6 { gap: 8px; } .p7 { color: #222222; } .p8 { color: #333333; } .p9 { opacity: .9; } .p10 { opacity: .8; }
+    </style></head><body><h1>Atelier</h1></body></html>` });
+  assert.deepEqual(byScale.metrics.font_families, ['switzer', 'gambetta']);
+  assert.equal(byScale.metrics.display_face, 'gambetta');
+
+  const byToken = analyzeVisualSources({ html: `<!doctype html><html><head><style>
+    :root { --font-ui: 'Switzer', sans-serif; --font-display: 'Gambetta', serif; }
+    body { font-family: var(--font-ui); }
+    .title { font-family: var(--font-display); }
+    .p1 { margin: 4px; } .p2 { margin: 8px; } .p3 { padding: 4px; } .p4 { padding: 8px; } .p5 { gap: 4px; } .p6 { gap: 8px; } .p7 { color: #222222; } .p8 { color: #333333; } .p9 { opacity: .9; } .p10 { opacity: .8; }
+    </style></head><body><h1 class="title">Atelier</h1></body></html>` });
+  assert.equal(byToken.metrics.display_face, 'gambetta');
+
+  const single = analyzeVisualSources({ html: `<!doctype html><html><head><style>
+    body { font-family: Georgia, serif; } h1 { font-size: 48px; }
+    .p1 { margin: 4px; } .p2 { margin: 8px; } .p3 { padding: 4px; } .p4 { padding: 8px; } .p5 { gap: 4px; } .p6 { gap: 8px; } .p7 { color: #222222; } .p8 { color: #333333; } .p9 { opacity: .9; } .p10 { opacity: .8; }
+    </style></head><body><h1>Atelier</h1></body></html>` });
+  assert.equal(single.metrics.display_face, null, 'a body-only family is not promoted to display');
+});
+
+test('the negation-pivot cadence counts accented pt-BR words', () => {
+  const result = analyzeVisualSources({ html: `<!doctype html><html><head><style>.a { color: #111; } .p1 { margin: 4px; } .p2 { margin: 8px; } .p3 { padding: 4px; } .p4 { padding: 8px; } .p5 { gap: 4px; } .p6 { gap: 8px; } .p7 { color: #222222; } .p8 { color: #333333; } .p9 { opacity: .9; } .p10 { opacity: .8; }</style></head><body>
+    <p>Não um relatório. Uma decisão.</p><p>Não uma lista. Uma rotina.</p></body></html>` });
+  assert.equal(result.metrics.tells.negation_pivots, 2);
+});

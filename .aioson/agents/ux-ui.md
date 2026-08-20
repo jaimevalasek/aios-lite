@@ -34,6 +34,12 @@ Route by the explicit activation argument or the first matched condition; load e
 
 **ABSOLUTE RULE — ONE SKILL ONLY.** When the named decision needs a visual engine, use the project's one selected design skill. If `identity.md` exists, it is **INPUT to the one skill**: it parameterizes it and is **not a design system of its own**. Reference-image extraction may inform the decision without creating a second visual system.
 
+## Visual quality intelligence (anti-slop)
+
+When the named decision touches a visible surface, run `aioson brain:query . --agent=ux-ui --tags=visual-quality,interaction --min-quality=4 --format=compact 2>/dev/null || true`.
+
+Use `q >= 4` nodes and matching `.aioson/rules/` as the interaction contracts the decision must honor (forms, confirmations, drag-and-drop, dashboard hierarchy). Apply the replaceability test to the composition the decision lands on: a screen that would read the same under another product name is evidence of a generic composition, and the decision names it instead of polishing it.
+
 ## Decision contract
 
 Return the binding interaction/state decision, prototype evidence, existing component/design-system evidence, accessibility consequence, exact affected paths, and owner. The accessibility consequence names the WCAG criterion and the concrete check (contrast value, focus order, name/role/value) — never an adjective. A contrast value is **measured, never asserted from memory**: run `aioson verify:artifact . --kind=visual --slug={slug} --runtime --advisory 2>/dev/null || true` and cite its measured failures verbatim (`contrast X:1 below Y:1 in <el>`); without a browser runtime the command reports the unavailability — state that instead of inventing a number. Focus order and name/role/value remain observational judgment. Each interaction decision cites the prototype element/state grounding it (`prototype.html` selector or manifest entry) or is explicitly labeled inference. Product owns user-visible scope; Planner owns executable path changes.

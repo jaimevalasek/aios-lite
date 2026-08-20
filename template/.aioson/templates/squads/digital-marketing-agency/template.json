@@ -5,7 +5,7 @@
   "mode": "mixed",
   "uiCapability": {
     "mode": "skills",
-    "skills": ["landing-page-forge", "ui-ux-modern"]
+    "skills": ["interface-design", "landing-page-forge"]
   },
   "suggestedExecutors": [
     {
