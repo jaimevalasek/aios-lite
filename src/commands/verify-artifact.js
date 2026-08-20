@@ -30,6 +30,7 @@ const { spawnSync } = require('node:child_process');
 
 const { evaluateStaticCriterion } = require('../harness/static-criteria');
 const { resolveTargetDir, resolveOperandPath } = require('../lib/project-root');
+const { VISUAL_EVIDENCE_FILE } = require('../lib/visual-evidence');
 
 const VERSION = '1.0.0';
 const GENERATOR = `aioson verify:artifact@${VERSION}`;
@@ -364,56 +365,112 @@ function evaluateCommitMessage(message) {
 
 // ─── kind=visual (static telemetry for a produced interface) ─────────────────
 
-const VISUAL_EXTS = new Set(['.html', '.htm', '.css']);
-const VISUAL_MAX_FILES = 40;
+// The corpus has three shapes — documents, stylesheets, component sources —
+// because a shipped interface keeps its markup and styles in all three.
+// Reading only .html/.css measured a different product than the one a
+// framework app ships: zero markup (every copy and composition metric read 0
+// in silence) and finish referenced from components reported as dead.
+const VISUAL_DOC_EXTS = new Set(['.html', '.htm']);
+const VISUAL_STYLE_EXTS = new Set(['.css', '.scss', '.sass', '.less']);
+const VISUAL_COMPONENT_EXTS = new Set(['.tsx', '.jsx', '.vue', '.svelte', '.astro', '.js', '.mjs', '.ts']);
+// Tests, type declarations, stories and tool configs hold strings that are
+// not UI copy; their directories are skipped and their files are left out.
+const VISUAL_NOISE_FILE = /\.(?:test|spec|d|stories|config)\.[cm]?[jt]sx?$/i;
+const VISUAL_NOISE_DIRS = new Set(['__tests__', '__mocks__', 'e2e', 'test', 'tests', 'cypress']);
+const VISUAL_MAX_FILES = 400;
+const VISUAL_MAX_WALK = 8000;
+const VISUAL_FILES_LISTED = 60;
+
+function classifyVisualFile(abs) {
+  const ext = path.extname(abs).toLowerCase();
+  if (VISUAL_DOC_EXTS.has(ext)) return 'documents';
+  if (VISUAL_STYLE_EXTS.has(ext)) return 'stylesheets';
+  if (VISUAL_COMPONENT_EXTS.has(ext)) return VISUAL_NOISE_FILE.test(path.basename(abs)) ? 'noise' : 'components';
+  return null;
+}
 
 /**
- * Collect the HTML/CSS corpus for `kind=visual`, in locator precedence:
+ * Collect the interface corpus for `kind=visual`, in locator precedence:
  * --file (one artifact) → --dir (a front-end root) → --slug (the feature-owned
- * prototype). Returns { html, css, files } or null when nothing resolves.
+ * prototype). A directory walk is deterministic: documents first, then
+ * stylesheets, then component sources, each sorted by path, cut at
+ * VISUAL_MAX_FILES with the cut reported — a silent cap reads as "measured
+ * everything" when it did not. Returns { html, css, components, files, entry,
+ * corpus } or null when nothing resolves.
  */
 function collectVisualSources({ targetDir, file, dir, slug }) {
   const read = (abs) => { try { return fs.readFileSync(abs, 'utf8'); } catch { return null; } };
-  const bucket = { html: [], css: [], files: [], entry: null };
-  const add = (abs) => {
-    const ext = path.extname(abs).toLowerCase();
-    if (!VISUAL_EXTS.has(ext)) return;
+  const bucket = {
+    html: [], css: [], components: [], files: [], entry: null,
+    corpus: { documents: 0, stylesheets: 0, components: 0, files_total: 0, truncated: 0 }
+  };
+  const add = (abs, cls) => {
     const content = read(abs);
     if (content === null) return;
-    (ext === '.css' ? bucket.css : bucket.html).push(content);
+    if (cls === 'documents') bucket.html.push(content);
+    else if (cls === 'stylesheets') bucket.css.push(content);
+    else bucket.components.push(content);
+    bucket.corpus[cls] += 1;
     const rel = path.relative(targetDir, abs).split(path.sep).join('/');
     bucket.files.push(rel);
     // The first HTML document is the only thing a browser can be pointed at.
-    if (!bucket.entry && ext !== '.css') bucket.entry = rel;
+    if (!bucket.entry && cls === 'documents') bucket.entry = rel;
   };
 
   if (file) {
     const abs = path.resolve(targetDir, file);
     if (!fs.existsSync(abs)) return null;
-    add(abs);
+    // An explicit file is measured whatever its name says.
+    const cls = classifyVisualFile(abs);
+    if (cls) add(abs, cls === 'noise' ? 'components' : cls);
   } else if (dir) {
     const root = path.resolve(targetDir, dir);
     if (!fs.existsSync(root)) return null;
+    const candidates = [];
     const stack = [root];
-    while (stack.length && bucket.files.length < VISUAL_MAX_FILES) {
+    let walked = 0;
+    while (stack.length && walked < VISUAL_MAX_WALK) {
       const current = stack.pop();
       let entries;
       try { entries = fs.readdirSync(current, { withFileTypes: true }); } catch { continue; }
       for (const e of entries) {
+        walked += 1;
         const full = path.join(current, e.name);
-        if (e.isDirectory()) { if (!SITE_IGNORE.has(e.name)) stack.push(full); } else if (e.isFile()) add(full);
+        if (e.isDirectory()) {
+          if (!SITE_IGNORE.has(e.name) && !VISUAL_NOISE_DIRS.has(e.name)) stack.push(full);
+        } else if (e.isFile()) {
+          const cls = classifyVisualFile(full);
+          if (cls && cls !== 'noise') candidates.push({ abs: full, cls });
+        }
       }
     }
+    const order = { documents: 0, stylesheets: 1, components: 2 };
+    candidates.sort((a, b) => order[a.cls] - order[b.cls] || (a.abs < b.abs ? -1 : a.abs > b.abs ? 1 : 0));
+    bucket.corpus.truncated = Math.max(0, candidates.length - VISUAL_MAX_FILES);
+    for (const c of candidates.slice(0, VISUAL_MAX_FILES)) add(c.abs, c.cls);
   } else if (slug) {
     const abs = path.resolve(targetDir, '.aioson', 'briefings', slug, 'prototype.html');
     if (!fs.existsSync(abs)) return null;
-    add(abs);
+    add(abs, 'documents');
   } else {
     return null;
   }
 
   if (bucket.files.length === 0) return null;
-  return { html: bucket.html.join('\n'), css: bucket.css.join('\n'), files: bucket.files, entry: bucket.entry };
+  bucket.corpus.files_total = bucket.files.length;
+  return {
+    html: bucket.html.join('\n'),
+    css: bucket.css.join('\n'),
+    components: bucket.components.join('\n'),
+    files: bucket.files,
+    entry: bucket.entry,
+    corpus: bucket.corpus
+  };
+}
+
+/** The corpus of a `--url`-only run: nothing static to read, a browser to open. */
+function emptyVisualSources() {
+  return { html: '', css: '', components: '', files: [], entry: null, corpus: { documents: 0, stylesheets: 0, components: 0, files_total: 0, truncated: 0 } };
 }
 
 const ADAPTERS = {
@@ -894,11 +951,11 @@ const ADAPTERS = {
   // motion and state coverage — plus the structural defects provable from text.
   // Findings a browser or taste would be needed for stay out by construction.
   visual: async (ctx) => {
-    const sources = collectVisualSources(ctx);
+    const sources = collectVisualSources(ctx) || (ctx.url ? emptyVisualSources() : null);
     if (!sources) {
       return {
         ok: false,
-        issues: ['kind=visual found no HTML/CSS — pass --file=<path>, --dir=<front-end root>, or --slug=<feature> for the owned prototype'],
+        issues: ['kind=visual found no interface sources — pass --file=<path>, --dir=<front-end root>, or --slug=<feature> for the owned prototype; a served framework app is measured with --url=<http://…> --runtime'],
         warnings: [],
         checks: []
       };
@@ -907,26 +964,40 @@ const ADAPTERS = {
     const { analyzeVisualSources } = require('../lib/visual-telemetry');
     const result = analyzeVisualSources(sources);
 
-    if (!result.applicable) {
-      return {
-        ok: true,
-        issues: [],
-        warnings: [`visual telemetry not applicable: ${result.reason}`],
-        checks: [{ id: 'visual', ok: true, detail: result.reason }],
-        metrics: { ...result.metrics, files: sources.files }
-      };
-    }
-
     const issues = [...result.issues];
     const warnings = [...result.warnings];
-    const metrics = { ...result.metrics, files: sources.files };
+    const metrics = {
+      ...result.metrics,
+      files: sources.files.slice(0, VISUAL_FILES_LISTED),
+      corpus: sources.corpus
+    };
+    if (sources.corpus.truncated > 0) {
+      warnings.push(`corpus truncated: ${sources.corpus.truncated} file(s) beyond the ${VISUAL_MAX_FILES}-file cap were not read, so this measurement is partial — point --dir at the interface root (src/, app/) rather than the repository`);
+    }
+
+    // A browser can still measure what static telemetry cannot read, so a
+    // not-applicable static pass only ends the run when no runtime target
+    // was given.
+    const runtimeTarget = ctx.runtime ? (ctx.url || sources.entry) : null;
+    if (!result.applicable) {
+      warnings.push(`visual telemetry not applicable: ${result.reason}`);
+      if (!runtimeTarget) {
+        return {
+          ok: true,
+          issues: [],
+          warnings,
+          checks: [{ id: 'visual', ok: true, detail: result.reason }],
+          metrics
+        };
+      }
+    }
 
     // Slug mode resolves the feature-owned prototype, whose contract is the
     // prototype.html + prototype-manifest.md PAIR. A manifest without a
     // `## Visual direction` (register, thesis, anti-goals, signature) means the
     // composition was never decided in writing — the exact gap that lets an
     // identity re-skin ship over the default generative layout.
-    if (ctx.slug && !ctx.file && !ctx.dir) {
+    if (result.applicable && ctx.slug && !ctx.file && !ctx.dir) {
       const manifestPath = path.resolve(ctx.targetDir, '.aioson', 'briefings', ctx.slug, 'prototype-manifest.md');
       let manifest = null;
       try { manifest = fs.readFileSync(manifestPath, 'utf8'); } catch { /* handled below */ }
@@ -975,12 +1046,19 @@ const ADAPTERS = {
 
     // Opt-in runtime pass. Static telemetry reads what was written; this reads
     // what the browser did with it — overflow, clipping, real computed contrast.
-    // A missing browser is a reported state, never a silent pass.
-    if (ctx.runtime && sources.entry) {
+    // A missing browser is a reported state, never a silent pass — and so is a
+    // missing target: a framework app has no HTML document to open until it is
+    // built or served, and a run that asked for the browser must say which.
+    if (ctx.runtime && !runtimeTarget) {
+      const reason = 'runtime pass skipped: the corpus holds no HTML document to open — pass --file=<built index.html> or --url=<served app> (e.g. http://localhost:5173) with --runtime; the fold, overflow and computed-contrast findings need a rendered page';
+      warnings.push(reason);
+      metrics.runtime = { available: false, reason };
+    } else if (ctx.runtime) {
       const { collectRuntimeMeasurements, summarizeRuntime } = require('../lib/visual-runtime');
       const { pathToFileURL } = require('node:url');
+      const entryUrl = ctx.url || pathToFileURL(path.resolve(ctx.targetDir, sources.entry)).href;
       const collected = await collectRuntimeMeasurements({
-        fileUrl: pathToFileURL(path.resolve(ctx.targetDir, sources.entry)).href,
+        fileUrl: entryUrl,
         route: ctx.route || null,
         launcher: ctx.browserLauncher || null
       });
@@ -991,7 +1069,7 @@ const ADAPTERS = {
         const runtime = summarizeRuntime(collected.runs);
         issues.push(...runtime.issues);
         warnings.push(...runtime.warnings);
-        metrics.runtime = { available: true, entry: sources.entry, ...runtime.metrics };
+        metrics.runtime = { available: true, entry: ctx.url || sources.entry, ...runtime.metrics };
       }
     }
 
@@ -1022,7 +1100,10 @@ const ADAPTERS = {
           warnings.push(`cross-project palette repetition: accent hue ~${pal.accent_hue}° on a ${pal.ground.pole} ground repeats recent project "${repetition.entry.project}" (Δ${repetition.delta}°, ${repetition.reason}${face}) — the model's favorite palette is reappearing across unrelated projects; draw a diversified start with \`aioson design:seed\` (or extract an identity from the owner's references), or record why these brands genuinely share the family`);
           metrics.palette_repeat = { project: repetition.entry.project, delta_deg: repetition.delta, reason: repetition.reason, same_face: repetition.same_face };
         }
-        recordFingerprint(current);
+        // A diagnostic run (`--no-persist`) compares but never records: a
+        // measurement must not rewrite the operator's registry as a side
+        // effect of looking.
+        metrics.fingerprint_recorded = ctx.persist !== false && recordFingerprint(current);
       }
     } catch { /* fingerprinting is advisory — a broken registry never blocks the gate */ }
 
@@ -1107,9 +1188,13 @@ async function runVerifyArtifact({ args, options = {}, logger }) {
 
   const runtime = Boolean(options.runtime);
   const route = options.route ? String(options.route).trim() : null;
+  const url = options.url ? String(options.url).trim() : null;
+  // `--no-persist`: a diagnostic run reads and reports but writes nothing —
+  // no context report, no operator fingerprint. Measuring is not mutating.
+  const persist = !(options['no-persist'] || options.noPersist);
   const result = await evaluateKind(kind, {
     slug, targetDir, file, dir, noBuild, buildTimeout, buildCommand,
-    runtime, route, browserLauncher: options.browserLauncher || null
+    runtime, route, url, persist, browserLauncher: options.browserLauncher || null
   }, logger);
 
   if (result === null) {
@@ -1151,13 +1236,28 @@ async function runVerifyArtifact({ args, options = {}, logger }) {
   // `ok`. Without it, "advisory never blocks" is only true in-process.
   report.exitCode = blocking ? 1 : 0;
 
-  // Persist for downstream consumption (mirrors audit:code).
-  try {
-    const ctxDir = path.join(targetDir, '.aioson', 'context');
-    fs.mkdirSync(ctxDir, { recursive: true });
-    fs.writeFileSync(path.join(ctxDir, `verify-artifact-${kind}.json`), JSON.stringify(report, null, 2), 'utf8');
-  } catch {
-    // best-effort persistence — never fail the gate on a write error
+  // Persist for downstream consumption (mirrors audit:code). The per-kind file
+  // is the LATEST run of that kind — a shared slot by design, like audit:code.
+  // A feature-owned measurement (kind=visual in pure --slug mode) is also
+  // written to the feature's own evidence slot, where a later run over
+  // another feature or an ad-hoc --dir cannot overwrite it; feature:trace and
+  // feature:close read it from there.
+  if (persist) {
+    try {
+      const ctxDir = path.join(targetDir, '.aioson', 'context');
+      fs.mkdirSync(ctxDir, { recursive: true });
+      fs.writeFileSync(path.join(ctxDir, `verify-artifact-${kind}.json`), JSON.stringify(report, null, 2), 'utf8');
+      if (kind === 'visual' && slug && !file && !dir) {
+        const evidenceDir = path.join(ctxDir, 'features', slug);
+        fs.mkdirSync(evidenceDir, { recursive: true });
+        fs.writeFileSync(path.join(evidenceDir, VISUAL_EVIDENCE_FILE), JSON.stringify({ ...report, measured_at: new Date().toISOString() }, null, 2), 'utf8');
+        report.evidence = `.aioson/context/features/${slug}/${VISUAL_EVIDENCE_FILE}`;
+      }
+    } catch {
+      // best-effort persistence — never fail the gate on a write error
+    }
+  } else {
+    report.persisted = false;
   }
 
   if (options.json) {

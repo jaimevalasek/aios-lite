@@ -102,6 +102,27 @@ test('agent:epilogue forwards artifact locators (--file/--slug/--dir) to the age
   assert.equal(withFile.ok, true, 'advisory artifact gate must never flip the epilogue result');
 });
 
+test('agent:epilogue surfaces the secondary (`also:`) done-gate kinds, not only the primary', async () => {
+  const dir = await makeTempDir();
+  const { t } = createTranslator('en');
+  // squad = squad-pilot primary + a kind=visual rider over output/{slug}/pilot.
+  // With no pilot on disk the rider reports its skip; before this step existed
+  // the rider of any epilogue-routed agent vanished (agent:done ran json-only).
+  const result = await runAgentEpilogue({
+    args: [dir],
+    options: { json: true, agent: 'squad', summary: 'pilot built', slug: 'acme', 'no-dossier': true },
+    logger: makeLogger(),
+    t
+  });
+  const primary = result.steps.find((s) => s.name === 'verify:artifact');
+  assert.ok(primary, 'primary verify:artifact step missing');
+  const rider = result.steps.find((s) => s.name === 'verify:artifact:visual');
+  assert.ok(rider, `rider step missing — steps: ${result.steps.map((s) => s.name).join(', ')}`);
+  assert.equal(rider.skipped, true);
+  assert.match(String(rider.reason), /no HTML surface/);
+  assert.equal(result.ok, true, 'riders are advisory like the primary');
+});
+
 test('agent:prompt keeps Sheldon PRD-only even when a legacy config routes it to Dev', async () => {
   const dir = await makeTempDir();
   const { runAgentPrompt } = require('../src/commands/agents');

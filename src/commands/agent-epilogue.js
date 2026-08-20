@@ -170,6 +170,13 @@ async function runAgentEpilogue({ args, options = {}, logger, t }) {
   if (doneResult && doneResult.verify_artifact) {
     const va = doneResult.verify_artifact;
     pushStep(steps, 'verify:artifact', { ok: va.skipped ? true : va.ok, skipped: va.skipped, reason: va.reason });
+    // Secondary kinds ride the same done-gate (`also:` in artifact-kinds — the
+    // visual measurement next to a review or a squad pilot). agent:done prints
+    // them in human mode; the epilogue runs it with json:true, so without this
+    // loop every rider of an epilogue-routed agent vanished in silence.
+    for (const rider of Array.isArray(va.also) ? va.also : []) {
+      pushStep(steps, `verify:artifact:${rider.kind}`, { ok: rider.skipped ? true : rider.ok, skipped: rider.skipped, reason: rider.reason });
+    }
   }
 
   // Advisory contract-integrity signal for untracked (prompt-only) dev/qa

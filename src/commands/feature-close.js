@@ -34,6 +34,7 @@ const {
 const { analyzeFeatureCompleteness, findingsThroughStage } = require('../lib/feature-completeness');
 const { auditAcceptanceCriteriaTests } = require('../lib/ac-test-audit');
 const { resolveTargetDir } = require('../lib/project-root');
+const { visualEvidenceBlock, formatVisualEvidence } = require('../lib/visual-evidence');
 
 // P0 agent-loading-contract: a feature closing is the natural cadence to roll
 // aged-out current-state.md entries into the cold archive. Conservative window
@@ -581,6 +582,15 @@ async function runFeatureClose({ args, options = {}, logger }) {
       }
     }
 
+    // Visual evidence — advisory, never a blocker. The prototype's measured
+    // numbers (craft floor, generation tells, materials, palette) are recorded
+    // at closure, or the closure says in writing that a visible surface was
+    // never measured or was edited after its measurement. A feature with no
+    // prototype produces no line.
+    const visualEvidence = visualEvidenceBlock(targetDir, slug);
+    const visualLine = formatVisualEvidence(visualEvidence);
+    if (visualLine) updates.push(visualLine);
+
     const publicBlockers = blockers.map(({ legacy, bypassLabel, ...pub }) => pub);
     const unforceable = blockers.filter((b) => !b.forceable);
 
@@ -595,6 +605,7 @@ async function runFeatureClose({ args, options = {}, logger }) {
         forceable: blockers.length > 0 ? unforceable.length === 0 : undefined,
         notes: [
           'nothing was executed or mutated (RG-* runtime checks were NOT run in preflight)',
+          ...(visualLine ? [visualLine] : []),
           ...(blockers.length === 0 ? [] : [unforceable.length === 0
             ? 'all blockers are forceable: re-run with --force (the bypass is recorded in done/{slug}/force-bypass-findings.json)'
             : 'the publish gate requires human approval (aioson harness:approve) and is never bypassed by --force'])

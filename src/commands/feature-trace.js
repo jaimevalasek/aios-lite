@@ -16,6 +16,7 @@
 const path = require('node:path');
 const { analyzeFeatureCompleteness } = require('../lib/feature-completeness');
 const { resolveTargetDir } = require('../lib/project-root');
+const { visualEvidenceBlock, formatVisualEvidence } = require('../lib/visual-evidence');
 
 function upper(value) {
   return String(value || '').toUpperCase();
@@ -83,6 +84,12 @@ async function runFeatureTrace({ args, options = {}, logger }) {
     };
   });
 
+  // The prototype's measured visual evidence (craft floor, generation tells,
+  // materials, palette) rides the same chain QA reads, so the reviewer sees
+  // the numbers without re-running the measurement — or sees that a visible
+  // surface was never measured. Null when the feature has no prototype.
+  const visual = visualEvidenceBlock(targetDir, slug);
+
   const result = {
     ok: true,
     feature: slug,
@@ -93,6 +100,7 @@ async function runFeatureTrace({ args, options = {}, logger }) {
     caps,
     acs: acRows.map((row) => ({ ac: row.ac, caps: row.caps || [], behavior: row.behavior || null })),
     gaps: (analysis.findings || []).map((f) => ({ stage: f.stage, check: f.check, message: f.message })),
+    visual,
     summary: analysis.summary || null
   };
 
@@ -105,6 +113,8 @@ async function runFeatureTrace({ args, options = {}, logger }) {
     const files = cap.delivery.flatMap((d) => (Array.isArray(d.files) ? d.files : [d.files])).filter(Boolean);
     logger.log(`  ${cap.cap}${cap.required ? ' [required]' : ''} → ACs: ${cap.acs.join(', ') || '—'} | phase ${phases} | ${files.length} file(s)`);
   }
+  const visualLine = formatVisualEvidence(visual);
+  if (visualLine) logger.log(`  ${visualLine}`);
   if (result.gaps.length > 0) {
     logger.log(`  gaps: ${result.gaps.length}`);
     for (const gap of result.gaps.slice(0, 8)) logger.log(`    [${gap.stage}] ${gap.check}: ${gap.message}`);

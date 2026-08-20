@@ -82,7 +82,7 @@ Get the PROM→CAP→AC→phase→files chain precomputed — never re-derive it
 aioson feature:trace . --feature={slug} --json
 ```
 
-It returns every promise with its decision/caps, every capability with its ACs, delivery phases, files and verification, plus `gaps[]` for anything the artifacts left malformed (treat gaps as findings, not as license to skip). Then, for each required `CAP-*` in the trace:
+It returns every promise with its decision/caps, every capability with its ACs, delivery phases, files and verification, plus `gaps[]` for anything the artifacts left malformed (treat gaps as findings, not as license to skip), and `visual` — the prototype's recorded kind=visual evidence (craft, tells, materials); `measured: false` or `stale: true` on a visible surface is a finding to name. Then, for each required `CAP-*` in the trace:
 
 1. Take its `AC-*` rows from the trace (open the PRD only to judge wording, not to rebuild the map).
 2. Inspect the implementing files and tests the trace names.

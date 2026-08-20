@@ -14,7 +14,7 @@ Worked precedents of this exact loop: the supervised-briefing 3-complaint report
 
 ## The loop
 
-1. **Measure the incident.** Read the report/print; open the concrete artifacts in the consumer tree (prototype, manifest, telemetry, logs) READ-ONLY and reduce the complaint to reproducible facts: counts, diffs, or a live read-only run of this tree's CLI against the consumer artifact (`node bin/aioson.js <cmd> <consumer-root> ...`). A complaint you cannot measure yet is one you cannot prove fixed.
+1. **Measure the incident.** Read the report/print; open the concrete artifacts in the consumer tree (prototype, manifest, telemetry, logs) READ-ONLY and reduce the complaint to reproducible facts: counts, diffs, or a live read-only run of this tree's CLI against the consumer artifact (`node bin/aioson.js <cmd> <consumer-root> ...` — always with `--no-persist` on `verify:artifact`: a measurement that writes the consumer's `.aioson/context/` report or the operator's palette registry is not read-only). A complaint you cannot measure yet is one you cannot prove fixed.
 2. **Find where the framework let it pass.** The signature question: *why did every gate stay green?* Classify the escape and say which it is:
    - **misfire** — the intelligence existed but never ran (wiring / auto-fire gap);
    - **uncovered surface** — no check existed for this axis at all;

@@ -305,6 +305,96 @@ function stripJsComments(js) {
     .replace(/(^|[^:\\])\/\/[^\n]*/gm, '$1');
 }
 
+// ── component sources (JSX/TSX, Vue/Svelte/Astro SFCs, CSS-in-JS) ──────────
+// A framework app keeps its markup in components and its styles in three
+// places: stylesheets, SFC <style> blocks, and tagged template literals. The
+// measurement reads all of them or it measures a different product than the
+// one shipped: reading only the .css files reported every token a component
+// referenced from a style prop as dead finish (and the dev doctrine then told
+// the agent to delete live finish), and counted zero copy in an app holding
+// hundreds of user-facing strings.
+const CSS_IN_JS_TAG = /\b(?:styled|css|keyframes|createGlobalStyle|injectGlobal)\b(?:\.[A-Za-z]\w*|\((?:[^()]|\([^()]*\))*\))?(?:\.attrs\((?:[^()]|\([^()]*\))*\))?\s*`/g;
+
+/**
+ * Index of the backtick that closes a template literal whose body starts at
+ * `from`, honoring `\`` escapes and `${ … }` nesting (an expression may hold
+ * another template literal). -1 when the literal never closes.
+ */
+function closingBacktick(src, from) {
+  let depth = 0;
+  for (let i = from; i < src.length; i += 1) {
+    const ch = src[i];
+    if (ch === '\\') { i += 1; continue; }
+    if (depth === 0) {
+      if (ch === '`') return i;
+      if (ch === '$' && src[i + 1] === '{') { depth = 1; i += 1; }
+      continue;
+    }
+    if (ch === '{') depth += 1;
+    else if (ch === '}') depth -= 1;
+    else if (ch === '`') {
+      const end = closingBacktick(src, i + 1);
+      if (end === -1) return -1;
+      i = end;
+    }
+  }
+  return -1;
+}
+
+/** A template-literal body with every `${ … }` interpolation blanked to a neutral `0`. */
+function blankInterpolations(body) {
+  let out = '';
+  let i = 0;
+  while (i < body.length) {
+    if (body[i] === '$' && body[i + 1] === '{') {
+      let depth = 1;
+      let j = i + 2;
+      while (j < body.length && depth > 0) {
+        if (body[j] === '{') depth += 1;
+        else if (body[j] === '}') depth -= 1;
+        j += 1;
+      }
+      out += ' 0 ';
+      i = j;
+      continue;
+    }
+    out += body[i];
+    i += 1;
+  }
+  return out;
+}
+
+/**
+ * Split component source text into the markup the telemetry reads as HTML
+ * and the CSS it reads as stylesheet: tagged template literals (styled-
+ * components, Emotion, Linaria, `keyframes`) become CSS; the rest is markup
+ * with `className=` normalized to `class=` so the HTML patterns see JSX. SFC
+ * `<style>` blocks stay in the markup — `extractStyleBlocks` already lifts
+ * them. JS comments go first so a commented-out `confirm()` never fires.
+ *
+ * @param {string} text Concatenated component sources.
+ * @returns {{markup: string, css: string}}
+ */
+function componentSources(text) {
+  const src = stripJsComments(String(text || ''));
+  const css = [];
+  let markup = '';
+  let last = 0;
+  let m;
+  CSS_IN_JS_TAG.lastIndex = 0;
+  while ((m = CSS_IN_JS_TAG.exec(src))) {
+    const start = m.index + m[0].length;
+    const end = closingBacktick(src, start);
+    if (end === -1) break;
+    css.push(blankInterpolations(src.slice(start, end)));
+    markup += src.slice(last, m.index);
+    last = end + 1;
+    CSS_IN_JS_TAG.lastIndex = last;
+  }
+  markup += src.slice(last);
+  return { markup: markup.replace(/\bclassName\s*=/g, 'class='), css: css.join('\n') };
+}
+
 /** Collect the text of every `<style>` block in an HTML document. */
 function extractStyleBlocks(html) {
   const out = [];
@@ -845,20 +935,22 @@ function scanGenerationTells({ markup, styleText, decls, props, families, craftM
 }
 
 /**
- * Measure one HTML+CSS corpus.
+ * Measure one interface corpus: HTML documents, stylesheets, and component
+ * sources (JSX/TSX, SFCs, CSS-in-JS — see `componentSources`).
  *
- * @param {{html?: string, css?: string}} sources
+ * @param {{html?: string, css?: string, components?: string}} sources
  * @returns {{applicable: boolean, metrics: object, issues: string[], warnings: string[]}}
  */
-function analyzeVisualSources({ html = '', css = '' } = {}) {
-  const markup = stripHtmlComments(html);
-  const styleText = stripComments(`${extractStyleBlocks(markup)}\n${String(css || '')}`);
+function analyzeVisualSources({ html = '', css = '', components = '' } = {}) {
+  const component = componentSources(components);
+  const markup = `${stripHtmlComments(html)}\n${component.markup}`;
+  const styleText = stripComments(`${extractStyleBlocks(markup)}\n${String(css || '')}\n${component.css}`);
   const decls = declarations(styleText);
 
   if (decls.length < 10) {
     return {
       applicable: false,
-      reason: 'not enough authored CSS to measure (fewer than 10 declarations) — utility-class markup and framework-generated styles are out of scope for static telemetry',
+      reason: 'not enough authored CSS to measure (fewer than 10 declarations) — utility-class markup and framework-generated styles are out of scope for static telemetry; measure the rendered result instead: --file=<built index.html> --runtime, or --url=<served app> --runtime',
       metrics: { declarations: decls.length },
       issues: [],
       warnings: []
@@ -1379,6 +1471,7 @@ function analyzeVisualSources({ html = '', css = '' } = {}) {
 module.exports = {
   analyzeVisualSources,
   // exported for reuse / tests
+  componentSources,
   topLevelSplit,
   customProperties,
   resolveCustomProps,
