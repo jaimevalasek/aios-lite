@@ -395,8 +395,11 @@ test('sim: every enforcement declared in the shipped template resolves', async (
 
   assert.ok(declared.length >= 3, 'the template must ship enforced governance');
   for (const doc of declared) {
-    assert.ok(ENFORCERS[doc.declared_enforcement],
-      `${doc.path} declares unknown checker "${doc.declared_enforcement}"`);
+    // A document may bind several checkers (`enforcement: [file-size,
+    // function-size]`); every declared id must resolve, not just the first.
+    for (const id of doc.declared_enforcement.split(',').map((value) => value.trim()).filter(Boolean)) {
+      assert.ok(ENFORCERS[id], `${doc.path} declares unknown checker "${id}"`);
+    }
   }
 });
 

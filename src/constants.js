@@ -142,6 +142,7 @@ const MANAGED_FILES = [
   '.aioson/docs/dev/execution-discipline.md',
   '.aioson/docs/dev/simple-plan-lane.md',
   '.aioson/docs/quality/code-health-analysis.md',
+  '.aioson/docs/quality/code-size-limits.md',
   '.aioson/skills/process/decision-presentation/SKILL.md',
   '.aioson/skills/process/decision-presentation/references/jargon-map.en.yaml',
   '.aioson/skills/process/decision-presentation/references/jargon-map.pt-BR.yaml',

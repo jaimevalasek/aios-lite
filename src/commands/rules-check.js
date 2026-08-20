@@ -37,6 +37,7 @@ const { parseFrontmatter } = require('../preflight-engine');
 const { gitChangedFiles } = require('../harness/detect-runtime-feature');
 const { listSourceFiles, readText, CODE_EXTS, IGNORE_DIRS } = require('./audit-code');
 const { scanNamingLanguage } = require('../lib/naming-language');
+const { measureFile } = require('../lib/code-size');
 const { resolveTargetDir } = require('../lib/project-root');
 
 const VERSION = '1.0.0';
@@ -93,6 +94,10 @@ function stripInertText(line) {
 // `enforcement:` frontmatter field. Adding a rule-enforcer here is how a new
 // convention becomes machine-checkable instead of merely written down.
 
+// One finding per file, keyed by the checker id so `--baseline` identity
+// survives the count changing as the file grows or shrinks.
+const FILE_SIZE_ID = 'file-size';
+
 const ENFORCERS = Object.freeze({
   'source-code-language': {
     id: 'source-code-language',
@@ -147,8 +152,78 @@ const ENFORCERS = Object.freeze({
       }
       return findings;
     }
+  },
+
+  // Size limits — the modularization floor. Thresholds come from the binding
+  // document's frontmatter (`max_file_lines`, `max_function_lines`), so the
+  // routed doc ships the doctrine's numbers and a project rule overrides them;
+  // when several documents bind, a binding rule's value wins, then the lowest.
+  'file-size': {
+    id: FILE_SIZE_ID,
+    surface: 'code',
+    summary: 'a file stays under its logic-line limit — a God object is a measured finding, not a feeling',
+    run({ files, documents }) {
+      const limit = sizeThreshold(documents, 'max_file_lines', 500);
+      const findings = [];
+      for (const { rel, lines } of files) {
+        const measured = measureFile(rel, lines);
+        if (measured.exempt || measured.logic <= limit) continue;
+        findings.push({
+          category: 'FILE_SIZE',
+          severity: 'HIGH',
+          message: `${measured.logic} logic lines (limit ${limit}) — split by responsibility before writing more here; design-docs/file-size.md lists the split strategies`,
+          file: rel,
+          line: 1,
+          token: FILE_SIZE_ID,
+          snippet: `${measured.logic} logic lines`
+        });
+      }
+      return findings;
+    }
+  },
+
+  'function-size': {
+    id: 'function-size',
+    surface: 'code',
+    summary: 'a function stays under its logic-line limit — one responsibility per named body',
+    run({ files, documents }) {
+      const limit = sizeThreshold(documents, 'max_function_lines', 60);
+      const findings = [];
+      for (const { rel, lines } of files) {
+        const measured = measureFile(rel, lines);
+        if (measured.exempt) continue;
+        for (const fn of measured.functions) {
+          if (fn.logic <= limit) continue;
+          findings.push({
+            category: 'FUNCTION_SIZE',
+            severity: 'HIGH',
+            message: `\`${fn.name}\` has ${fn.logic} logic lines (limit ${limit}, lines ${fn.start}-${fn.end}) — extract the steps it narrates into named functions`,
+            file: rel,
+            line: fn.start,
+            token: fn.name,
+            snippet: String(lines[fn.start - 1] || '').trim().slice(0, 120)
+          });
+        }
+      }
+      return findings;
+    }
   }
 });
+
+/**
+ * A numeric threshold declared by the documents binding a checker. A binding
+ * rule's value outranks a doc's; among equals the strictest (lowest) wins;
+ * absent or non-numeric values fall back to the doctrine's default.
+ */
+function sizeThreshold(documents, field, fallback) {
+  const declared = (documents || [])
+    .map((doc) => ({ authority: doc.authority, value: Number(doc.frontmatter && doc.frontmatter[field]) }))
+    .filter((entry) => Number.isFinite(entry.value) && entry.value > 0);
+  if (declared.length === 0) return fallback;
+  const binding = declared.filter((entry) => entry.authority === 'binding');
+  const pool = binding.length > 0 ? binding : declared;
+  return Math.min(...pool.map((entry) => entry.value));
+}
 
 function listEnforcerIds() {
   return Object.keys(ENFORCERS);
@@ -196,6 +271,12 @@ async function collectGovernanceFiles(absDir, relDir) {
   return files;
 }
 
+/** `enforcement:` accepts one id, a comma list, or a bracketed YAML list. */
+function parseEnforcementIds(value) {
+  const raw = Array.isArray(value) ? value.join(',') : String(value || '');
+  return [...new Set(raw.replace(/[[\]]/g, ' ').split(/[\s,]+/).map((id) => id.trim()).filter(Boolean))];
+}
+
 async function discoverGovernance(targetDir) {
   const documents = [];
   for (const source of GOVERNANCE_SURFACES) {
@@ -209,14 +290,19 @@ async function discoverGovernance(targetDir) {
       }
       const frontmatter = parseFrontmatter(content);
       const name = String(frontmatter.name || path.basename(file.rel, '.md')).trim();
-      const declared = String(frontmatter.enforcement || '').trim();
+      // One document may bind several checkers — `enforcement: [file-size,
+      // function-size]` or a comma list — the size doctrine needs both.
+      const declaredIds = parseEnforcementIds(frontmatter.enforcement);
+      const enforcements = declaredIds.filter((id) => ENFORCERS[id]);
       documents.push({
         name,
         surface: source.surface,
         authority: source.authority,
         path: file.rel,
-        enforcement: declared && ENFORCERS[declared] ? declared : null,
-        declared_enforcement: declared || null
+        enforcement: enforcements[0] || null,
+        enforcements,
+        declared_enforcement: declaredIds.length > 0 ? declaredIds.join(', ') : null,
+        frontmatter
       });
     }
   }
@@ -308,9 +394,9 @@ async function runRulesCheck({ args, options = {}, logger }) {
 
   const allRules = await discoverGovernance(targetDir);
   const onlyRule = options.rule ? String(options.rule).trim() : null;
-  const enforceable = allRules.filter((rule) =>
-    rule.enforcement && (!onlyRule || rule.name === onlyRule)
-  );
+  const enforceable = allRules
+    .filter((rule) => rule.enforcement && (!onlyRule || rule.name === onlyRule))
+    .flatMap((rule) => (rule.enforcements || [rule.enforcement]).map((id) => ({ ...rule, enforcement: id })));
 
   // Recording debt is a statement about the whole project, so it is never made
   // from a partial view: a baseline written under `--changed` in a repository
@@ -483,7 +569,8 @@ async function runRulesCheck({ args, options = {}, logger }) {
   const coverage = {};
   for (const source of GOVERNANCE_SURFACES) {
     const total = allRules.filter((rule) => rule.surface === source.surface).length;
-    const checked = enforced.filter((rule) => rule.governance_surface === source.surface).length;
+    // A document binding two checkers is one enforced document, not two.
+    const checked = new Set(enforced.filter((rule) => rule.governance_surface === source.surface).map((rule) => rule.path)).size;
     coverage[source.surface] = { total, enforced: checked };
   }
 

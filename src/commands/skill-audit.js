@@ -435,6 +435,10 @@ async function runSkillAudit({ args, options = {}, logger }) {
 }
 
 module.exports = {
+  ROUTER_TARGET_CHARS,
+  ROUTER_HARD_CHARS,
+  REFERENCE_TARGET_CHARS,
+  REFERENCE_HARD_CHARS,
   parseUsedSkills,
   readUsage,
   classifyReachabilitySource,

@@ -513,4 +513,4 @@ async function dirExists(dirPath) {
   }
 }
 
-module.exports = { runAgentAudit };
+module.exports = { runAgentAudit, AGENT_TYPES };

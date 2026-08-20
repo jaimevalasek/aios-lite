@@ -34,6 +34,8 @@ When estimating that a resulting file will exceed 500 lines:
 
 The alert is never blocking — it is a pause to think, not an impediment.
 
+The numbers are **measured**, not estimated: `aioson rules:check` carries `file-size` and `function-size` checkers, bound by default through `.aioson/docs/quality/code-size-limits.md` (500 logic lines per file, 60 per function, advisory `MED`) and run over the changed files at every tracked `@dev`/`@qa` done-gate. A project that wants the limit to block binds the same checkers from a rule in `.aioson/rules/` with its own thresholds.
+
 ## Common split strategies
 
 | Situation | Split approach |
