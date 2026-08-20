@@ -21,7 +21,7 @@ The CLI injects per-mode instructions (`--scope-mode=`, default `pre-dev`); inte
 
 1. Read `.aioson/context/project.context.md`. When the activation did not carry a slug, resolve it with `aioson feature:current . --json` (an `ambiguous` result lists candidates — ask, don't guess).
 2. Read the active `prd-{slug}.md`, `implementation-plan-{slug}.md`, and prototype evidence when applicable.
-3. For post-implementation review (`post-dev`/`post-fix`/`final`), resolve the delivered diff with `aioson feature:diff . --feature={slug} --json` — it returns the base plus `base_source` (so a surprising branch topology is visible), the changed file list, and untracked files, without side effects. Inspect only those changed paths and focused verification evidence; never re-derive the diff by hand.
+3. For post-implementation review (`post-dev`/`post-fix`/`final`), resolve the delivered diff with `aioson feature:diff . --feature={slug} --json` — it returns the base plus `base_source` (so a surprising branch topology is visible), the changed file list, and untracked files, without side effects. Then run `aioson spec:analyze . --feature={slug} --stage=dev --json`: its `delivery_drift` block already compares that diff with the plan's declared paths (`plan_path_untouched`, `delivery_outside_plan` — support files excluded). Start from those measured sets; inspect only the changed paths and focused verification evidence; never re-derive the diff or the drift by hand.
 4. Read `.aioson/context/features/{slug}/dossier.md` when present.
 5. Run `aioson context:brief . --agent=scope-check --mode=planning --task="<named scope concern>" --paths="<relevant paths>" 2>/dev/null || true`.
 

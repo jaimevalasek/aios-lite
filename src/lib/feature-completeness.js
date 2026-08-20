@@ -1027,5 +1027,7 @@ module.exports = {
   validateRequirementsBaseline,
   validatePrdAcceptanceCriteria,
   analyzeFeatureCompleteness,
-  findingsThroughStage
+  findingsThroughStage,
+  extractPlannedPaths,
+  plannedPathKey
 };

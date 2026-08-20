@@ -112,6 +112,40 @@ function resolveBase(targetDir, planDir, baseRef, slug = null) {
   return { base: 'HEAD', source: 'fallback (uncommitted changes only)' };
 }
 
+/**
+ * The delivered change set of a feature — base resolution + `--name-status`
+ * + untracked files — without the diff text. `spec:analyze` compares it with
+ * the plan's declared paths; the full payload (diff text included) stays the
+ * reviewer's. Never throws: outside a git repo returns `{ ok: false }`.
+ *
+ * Status letters are git's (`A`dded, `M`odified, `D`eleted, `R`enamed…);
+ * renames keep the destination path. Framework state (`.aioson/**`) is not a
+ * delivery surface and is left out, as the review payload already does for
+ * untracked files.
+ *
+ * @returns {{ ok: boolean, base: string|null, baseSource: string|null, changedFiles: Array<{status: string, path: string}>, untracked: string[] }}
+ */
+function deliveredChangeSet(targetDir, planDir, { baseRef, slug } = {}) {
+  try {
+    const resolved = resolveBase(targetDir, planDir, baseRef, slug || null);
+    const changedFiles = git(targetDir, ['diff', '--name-status', resolved.base])
+      .split('\n')
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .map((line) => {
+        const [status, ...rest] = line.split('\t');
+        return { status: status.charAt(0), path: rest[rest.length - 1] };
+      })
+      .filter((entry) => entry.path && !matchGlob(FRAMEWORK_STATE_GLOB, entry.path));
+    const untracked = parsePorcelain(git(targetDir, ['status', '--porcelain', '-uall']))
+      .filter((entry) => entry.status === 'added' && !matchGlob(FRAMEWORK_STATE_GLOB, entry.path))
+      .map((entry) => entry.path);
+    return { ok: true, base: resolved.base, baseSource: resolved.source, changedFiles, untracked };
+  } catch {
+    return { ok: false, base: null, baseSource: null, changedFiles: [], untracked: [] };
+  }
+}
+
 /** Trunca em fronteira de linha com marcador; bytes UTF-8. */
 function truncateDiff(diff, maxBytes) {
   const bytes = Buffer.byteLength(diff, 'utf8');
@@ -268,6 +302,7 @@ function buildReviewPayload(targetDir, planDir, opts = {}) {
 module.exports = {
   DEFAULT_MAX_DIFF_BYTES,
   resolveBase,
+  deliveredChangeSet,
   featureStartBase,
   truncateDiff,
   buildReviewPayload

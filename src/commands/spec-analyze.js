@@ -19,6 +19,16 @@
  * - Sanidade do harness-contract: erros de schema (error) e avisos de
  *   cobertura executável (info), via validateContract.
  * - Vínculo AC→contrato: ACs declarados sem nenhuma menção no contrato (info).
+ * - Drift código-vs-plano (`--stage=dev|qa`, pós-implementação): o change set
+ *   entregue (base resolvida como em feature:diff) contra os caminhos que o
+ *   plano declarou — caminho planejado que nunca mudou (`plan_path_untouched`)
+ *   e arquivo entregue que nenhuma linha do plano declara
+ *   (`delivery_outside_plan`). Testes, lockfiles e estado do framework são
+ *   suporte, não drift. Warning: o plano pode ter declarado demais, e um
+ *   arquivo fora do plano pode ser a correção certa — o que o gate exige é que
+ *   a diferença seja VISTA e registrada (linha no plano ou desvio aprovado),
+ *   não que ela não exista. Com `--stage` o fechamento de capacidades também
+ *   checa a existência dos caminhos planejados (estágio execution).
  *
  * Determinístico, read-only sobre os artefatos; persiste o relatório em
  * `.aioson/context/spec-analyze-{slug}.json` (best-effort). Severidades:
@@ -54,9 +64,121 @@ const TRACE_TARGETS = ['spec', 'design_doc', 'implementation_plan', 'conformance
 
 const { parseExecutionWaves } = require('../harness/plan-waves');
 const { resolveTargetDir } = require('../lib/project-root');
+const { deliveredChangeSet } = require('../harness/review-payload');
+const { matchGlob } = require('../harness/glob-match');
+const { extractPlannedPaths, plannedPathKey } = require('../lib/feature-completeness');
+
+/** Stages whose completion happens AFTER the code exists. */
+const POST_IMPLEMENTATION_STAGES = new Set(['dev', 'qa', 'tester', 'validator', 'shakedown', 'pentester']);
+
+/**
+ * Delivered files that are support, not scope: tests and fixtures, lockfiles,
+ * dependency manifests and generated/build output. A plan declares behavior
+ * paths; it never enumerates every spec file the ACs grow.
+ */
+const SUPPORT_PATH = /(?:^|\/)(?:__tests__|__mocks__|tests?|spec|e2e|cypress|fixtures|snapshots|__snapshots__|coverage|dist|build|out|target|vendor|node_modules)\/|\.(?:test|spec|stories|snap|d)\.[cm]?[jt]sx?$|(?:^|\/)(?:package-lock\.json|yarn\.lock|pnpm-lock\.yaml|bun\.lockb?|Cargo\.lock|composer\.lock|Gemfile\.lock|poetry\.lock|Pipfile\.lock|go\.sum|packages\.lock\.json|\.gitignore|\.gitattributes|CHANGELOG\.md)$|_test\.go$|_spec\.rb$|_test\.py$|^tests?\/|Test\.(?:java|kt|cs|php)$/i;
 
 function extractIds(content, regex) {
   return new Set(String(content || '').match(regex) || []);
+}
+
+/**
+ * Code-vs-plan drift of one feature, post-implementation. Pure over its
+ * inputs: planned paths (plan rows), the delivered change set (git), and the
+ * contract's `allowed_files` globs when a harness contract sanctions a wider
+ * surface. Returns the findings plus the measured sets for the report.
+ */
+/** A delivery-cell item the plan marks as reused — present by design, changed by nobody. */
+const REUSE_MARK = /^\s*(?:reuse|reusar)\s*:|\s+\((?:reuse|existing|reusar|existente)\)\s*$/i;
+
+function splitPlanCell(value) {
+  return String(value || '').replace(/<br\s*\/?>/gi, ',').split(/[,;\n]/).map((item) => item.trim()).filter(Boolean);
+}
+
+/**
+ * The plan's declared paths in two sets: the ones it promises to change
+ * (create/modify/retire) and the ones it only reuses. Delivery rows carry the
+ * marker per item (`reuse: src/x.js`, `src/x.js (existing)`); delta rows
+ * carry it as the row action.
+ */
+function plannedPathSets(completeness) {
+  const change = [];
+  const reuse = [];
+  for (const row of (completeness.delivery_plan && completeness.delivery_plan.rows) || []) {
+    for (const item of splitPlanCell(row.files)) {
+      (REUSE_MARK.test(item) ? reuse : change).push(...extractPlannedPaths(item));
+    }
+  }
+  for (const row of (completeness.implementation_delta && completeness.implementation_delta.rows) || []) {
+    (row.action === 'reuse' ? reuse : change).push(...(row.paths || []));
+  }
+  const changeKeys = new Set(change.map(plannedPathKey));
+  return {
+    change: [...new Set(change)],
+    reuse: [...new Set(reuse)].filter((p) => !changeKeys.has(plannedPathKey(p)))
+  };
+}
+
+function analyzePlanDeliveryDrift({ plannedPaths, reusePaths = [], changeSet, allowedGlobs = [] }) {
+  const findings = [];
+  const planned = new Map(plannedPaths.map((p) => [plannedPathKey(p), p]));
+  const declared = new Map([...planned, ...reusePaths.map((p) => [plannedPathKey(p), p])]);
+  const delivered = [
+    ...changeSet.changedFiles.map((f) => ({ path: f.path, status: f.status })),
+    ...changeSet.untracked.map((p) => ({ path: p, status: 'A' }))
+  ];
+  const deliveredKeys = new Set(delivered.map((f) => plannedPathKey(f.path)));
+
+  // A planned path that exists (the completeness engine blocks when a planned
+  // file is missing) but carries no change since the base: the plan promised
+  // work the diff does not show. When the base fell back to HEAD (no feature
+  // start commit, no main/master, no baseline) the diff holds only uncommitted
+  // work, so "untouched" would accuse every committed file — not measured.
+  const baseIsFallback = /^fallback/i.test(String(changeSet.baseSource || ''));
+  const untouched = baseIsFallback ? [] : [...planned.entries()]
+    .filter(([key]) => !deliveredKeys.has(key))
+    .map(([, original]) => original);
+  if (baseIsFallback) {
+    findings.push({
+      severity: 'info',
+      check: 'delivery_drift_base_fallback',
+      message: 'no feature start commit, main/master merge-base or baseline.json resolved — the diff covers uncommitted work only, so planned-path coverage is not measured (commit the feature artifacts under .aioson/ or pass --base)',
+      artifacts: ['git']
+    });
+  }
+
+  // A delivered file no plan row declares — behavior paths only, support
+  // excluded, and anything a harness contract explicitly allows is in scope.
+  const outside = delivered
+    .filter((f) => !declared.has(plannedPathKey(f.path)))
+    .filter((f) => !SUPPORT_PATH.test(f.path))
+    .filter((f) => !(allowedGlobs.length > 0 && allowedGlobs.some((g) => matchGlob(g, f.path))))
+    .map((f) => `${f.status} ${f.path}`);
+
+  if (untouched.length > 0) {
+    findings.push({
+      severity: 'warning',
+      check: 'plan_path_untouched',
+      message: `${untouched.length} planned path(s) carry no change since ${changeSet.baseSource}: ${untouched.slice(0, 8).join(', ')}${untouched.length > 8 ? ` (+${untouched.length - 8})` : ''} — either the work is undone or the plan over-declared; deliver it or record the deviation in the plan`,
+      artifacts: ['implementation_plan', 'git']
+    });
+  }
+  if (outside.length > 0) {
+    findings.push({
+      severity: 'warning',
+      check: 'delivery_outside_plan',
+      message: `${outside.length} delivered file(s) no plan row declares: ${outside.slice(0, 8).join(', ')}${outside.length > 8 ? ` (+${outside.length - 8})` : ''} — architectural drift starts here; add each to the plan's delivery rows (or an approved deviation) or revert it. Tests, lockfiles and build output are already excluded`,
+      artifacts: ['implementation_plan', 'git']
+    });
+  }
+  return {
+    findings,
+    planned: [...planned.values()],
+    reused: [...reusePaths],
+    delivered: delivered.map((f) => `${f.status} ${f.path}`),
+    untouched,
+    outside
+  };
 }
 
 function mtimeMs(targetDir, artifact) {
@@ -91,6 +213,13 @@ async function runSpecAnalyze({ args, options = {}, logger }) {
   const artifacts = await scanArtifacts(targetDir, slug);
   const classification = await detectClassification(targetDir, slug);
   const strict = Boolean(options.strict);
+  // `--stage=dev|qa`: the code exists now, so the delivered change set is a
+  // measurable artifact too — planned paths must exist (execution-stage
+  // completeness) and the diff is compared with the plan (drift). Without it
+  // the analysis is pre-implementation: a planned `create` path that does not
+  // exist yet is not a finding.
+  const stage = String(options.stage || '').trim().toLowerCase();
+  const postImplementation = POST_IMPLEMENTATION_STAGES.has(stage);
   const contractInfo = readContract(targetDir, slug);
   const findings = [];
 
@@ -267,7 +396,8 @@ async function runSpecAnalyze({ args, options = {}, logger }) {
   // follows each approved CAP through requirements, design, and delivery.
   const completeness = await analyzeFeatureCompleteness(targetDir, slug, {
     artifacts,
-    classification
+    classification,
+    includeExecutionStructure: postImplementation
   });
   if (completeness.applicable) {
     findings.push(...completeness.findings.map((item) => ({
@@ -277,6 +407,39 @@ async function runSpecAnalyze({ args, options = {}, logger }) {
       message: item.message,
       artifacts: item.artifacts
     })));
+  }
+
+  // ── Drift código-vs-plano (pós-implementação) ───────────────────────────
+  let drift = null;
+  if (postImplementation && completeness.applicable) {
+    const sets = plannedPathSets(completeness);
+    const plannedPaths = sets.change;
+    if (plannedPaths.length === 0 && sets.reuse.length === 0) {
+      findings.push({
+        severity: 'info',
+        check: 'delivery_drift_unmeasured',
+        message: 'the plan declares no concrete file paths, so code-vs-plan drift cannot be measured — delivery rows need repo-relative paths',
+        artifacts: ['implementation_plan']
+      });
+    } else {
+      const changeSet = deliveredChangeSet(targetDir, path.join(targetDir, '.aioson', 'plans', slug), { slug });
+      if (!changeSet.ok) {
+        findings.push({
+          severity: 'info',
+          check: 'delivery_drift_unmeasured',
+          message: 'git is unavailable here, so the delivered change set could not be compared with the plan',
+          artifacts: ['git']
+        });
+      } else {
+        const allowedGlobs = contractInfo.exists && contractInfo.contract && Array.isArray(contractInfo.contract.allowed_files)
+          ? contractInfo.contract.allowed_files
+          : [];
+        drift = analyzePlanDeliveryDrift({ plannedPaths, reusePaths: sets.reuse, changeSet, allowedGlobs });
+        drift.base = changeSet.base;
+        drift.base_source = changeSet.baseSource;
+        findings.push(...drift.findings);
+      }
+    }
   }
 
   const summary = {
@@ -298,6 +461,8 @@ async function runSpecAnalyze({ args, options = {}, logger }) {
       ok: completeness.ok,
       summary: completeness.summary
     },
+    stage: stage || null,
+    ...(drift ? { delivery_drift: { base: drift.base, base_source: drift.base_source, planned: drift.planned, reused: drift.reused, delivered: drift.delivered, untouched: drift.untouched, outside: drift.outside } } : {}),
     findings,
     summary
   };
@@ -347,4 +512,4 @@ async function runSpecAnalyze({ args, options = {}, logger }) {
   return report;
 }
 
-module.exports = { runSpecAnalyze };
+module.exports = { runSpecAnalyze, analyzePlanDeliveryDrift, plannedPathSets, SUPPORT_PATH };

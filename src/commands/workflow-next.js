@@ -1142,6 +1142,7 @@ async function finalizeCurrentStage(targetDir, config, state, stageName) {
   }
   let auditCodeSummary = null;
   let rulesCheckSummary = null;
+  let scopeDriftSummary = null;
 
   // ── Harness Done Gate ───────────────────────────────────────────────────
   if (state.mode === 'feature' && state.featureSlug) {
@@ -1215,34 +1216,69 @@ async function finalizeCurrentStage(targetDir, config, state, stageName) {
       }
 
       // ── Scope drift gate (absorbs @scope-check's deterministic spec:analyze) ──
-      // scope-check is no longer a default stage; preserve its drift check so a
-      // dev/qa completion still blocks on real drift — a design-doc/readiness that
-      // declares `readiness: blocked`, or a malformed/invalid harness-contract.json.
-      // Non-strict spec:analyze only raises error-severity findings for those
-      // genuine problems (never for merely-absent artifacts), so this never
-      // false-blocks an artifact-light feature. Defensive: never crashes the run.
-      const legacyScopeArtifacts = [
+      // scope-check is no longer a default stage; this is the drift check a
+      // dev/qa completion keeps. It used to run only when a LEGACY artifact
+      // (spec-/design-doc-/readiness-{slug}.md) existed — artifacts every
+      // canonical kernel forbids — so in the PRD → plan route it never fired and
+      // no gate ever compared the delivered code with the plan. It now runs for
+      // the canonical artifacts too, post-implementation (`--stage`): planned
+      // paths must exist and the delivered diff is compared with the plan.
+      //
+      // Honest tiering. BLOCK on what the completing stage owns or what is
+      // broken beyond doubt: execution-stage completeness errors (a planned
+      // file missing, a retired file still present), an invalid harness
+      // contract, a readiness declared blocked. Upstream-stage completeness
+      // errors (a malformed PRD or plan table) are surfaced with their owner —
+      // they were sheldon's or planner's seal to refuse, feature:close still
+      // blocks on them, and a dev completion is the wrong place to pay that
+      // debt. Warnings (drift, staleness, wave overlap) are advisory: they ride
+      // the finalize result, a guard event, and the persisted
+      // spec-analyze-{slug}.json, and never block. Defensive: never crashes.
+      const scopeArtifacts = [
+        path.join(targetDir, '.aioson', 'context', `implementation-plan-${state.featureSlug}.md`),
+        path.join(targetDir, '.aioson', 'context', `prd-${state.featureSlug}.md`),
         path.join(targetDir, '.aioson', 'context', `spec-${state.featureSlug}.md`),
         path.join(targetDir, '.aioson', 'context', `design-doc-${state.featureSlug}.md`),
         path.join(targetDir, '.aioson', 'context', `readiness-${state.featureSlug}.md`)
       ];
-      if (await Promise.any(legacyScopeArtifacts.map(async (filePath) => {
+      if (await Promise.any(scopeArtifacts.map(async (filePath) => {
         if (await exists(filePath)) return true;
         throw new Error('missing');
       })).catch(() => false)) try {
         const drift = await runSpecAnalyze({
           args: [targetDir],
-          options: { feature: state.featureSlug },
+          options: { feature: state.featureSlug, stage: normalizedStage },
           logger: { log() {}, error() {} }
         });
-        if (drift && Array.isArray(drift.findings) && drift.summary && drift.summary.errors > 0) {
-          const errs = drift.findings
-            .filter((f) => f.severity === 'error')
-            .map((f) => `  - ${f.check}: ${f.message}`)
-            .join('\n');
-          const driftMsg = `[Scope Drift Gate] @${normalizedStage} blocked — spec:analyze found ${drift.summary.errors} drift error(s):\n${errs}\nResolve the drift (or run @scope-check) before completing this stage.`;
-          await logError(targetDir, normalizedStage, driftMsg, 'scope-drift');
-          throw new Error(driftMsg);
+        if (drift && Array.isArray(drift.findings)) {
+          const ownedError = (f) => f.severity === 'error' && (!f.stage || f.stage === 'execution');
+          const blocking = drift.findings.filter(ownedError);
+          const upstream = drift.findings.filter((f) => f.severity === 'error' && !ownedError(f));
+          const advisories = drift.findings.filter((f) => f.severity === 'warning');
+          scopeDriftSummary = {
+            stage: normalizedStage,
+            blocking: blocking.map((f) => `${f.check}: ${f.message}`),
+            upstream: upstream.map((f) => `[${f.stage}] ${f.check}: ${f.message}`),
+            advisories: advisories.map((f) => `${f.check}: ${f.message}`),
+            report: `.aioson/context/spec-analyze-${state.featureSlug}.json`
+          };
+          if (blocking.length > 0) {
+            const errs = blocking.map((f) => `  - ${f.check}: ${f.message}`).join('\n');
+            const driftMsg = `[Scope Drift Gate] @${normalizedStage} blocked — spec:analyze found ${blocking.length} drift error(s):\n${errs}\nResolve the drift (or run @scope-check) before completing this stage.`;
+            await logError(targetDir, normalizedStage, driftMsg, 'scope-drift');
+            throw new Error(driftMsg);
+          }
+          if (advisories.length > 0 || upstream.length > 0) {
+            try {
+              const { emitGuardEvent } = require('../harness/guard-events');
+              await emitGuardEvent(targetDir, {
+                eventType: 'scope_drift_findings',
+                agent: normalizedStage,
+                message: `${advisories.length} drift advisory(ies), ${upstream.length} upstream error(s) — advisory`,
+                payload: { slug: state.featureSlug, advisories: advisories.map((f) => f.check), upstream: upstream.map((f) => f.check) }
+              });
+            } catch { /* telemetry best-effort */ }
+          }
         }
       } catch (driftErr) {
         if (driftErr && driftErr.message && driftErr.message.includes('[Scope Drift Gate]')) throw driftErr;
@@ -1470,7 +1506,8 @@ async function finalizeCurrentStage(targetDir, config, state, stageName) {
     ...(correctionCycleResolution ? { correctionCycleResolution } : {}),
     ...(correctionCycleReset ? { correctionCycleReset } : {}),
     ...(auditCodeSummary ? { auditCode: auditCodeSummary } : {}),
-    ...(rulesCheckSummary ? { rulesCheck: rulesCheckSummary } : {})
+    ...(rulesCheckSummary ? { rulesCheck: rulesCheckSummary } : {}),
+    ...(scopeDriftSummary ? { scopeDrift: scopeDriftSummary } : {})
   };
 }
 
@@ -2502,6 +2539,15 @@ async function runWorkflowNext({ args, options, logger, t }) {
   }));
   if (completedStage) {
     logger.log(t('workflow_next.completed', { agent: `@${completedStage}` }));
+  }
+  // Drift that did not block still has to be SEEN: the plan is the contract
+  // and a delivered diff that walked away from it is news for the owner even
+  // when the walk was the right call — it gets recorded, not discovered at
+  // close. Upstream errors name their owner instead of blocking the wrong one.
+  const scopeDrift = completionEvidence && completionEvidence.scopeDrift;
+  if (scopeDrift && (scopeDrift.advisories.length > 0 || scopeDrift.upstream.length > 0)) {
+    logger.log(`[Scope Drift] advisory for @${scopeDrift.stage} — ${scopeDrift.advisories.length} drift warning(s), ${scopeDrift.upstream.length} upstream error(s) (owner: product/sheldon/planner); full report: ${scopeDrift.report}`);
+    for (const line of [...scopeDrift.advisories, ...scopeDrift.upstream].slice(0, 5)) logger.log(`  - ${line}`);
   }
   if (reviewCycleTransition) {
     logger.log(`QA correction cycle ${reviewCycleTransition.cycle}/${reviewCycleTransition.max_cycles}: @qa → @dev`);

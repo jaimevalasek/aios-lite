@@ -90,6 +90,16 @@ The honest way to switch this off for a project is the rule file itself — edit
 
 **Legacy codebases.** A project written against a different convention before the rule existed is not charged retroactively on every unrelated edit. When the gate is about to block and most of the tree already violates, the report carries `divergence` and the message offers the decision instead of demanding a migration mid-slice. `aioson rules:check . --baseline` records the existing violations in `.aioson/context/rules-baseline.json` as counted debt: they stay visible in every run, they never block, and every new violation still does. Commit that file — it is a recorded decision, not a generated report. Only a human runs it.
 
+## Scope-drift gate (`spec:analyze --stage`)
+
+Not configurable, always on in the tracked `@dev`/`@qa` done-gate, for the canonical PRD → plan artifacts as well as the legacy ones. It runs `aioson spec:analyze . --feature={slug} --stage=dev|qa` — the same command `@scope-check` reads — and tiers the result honestly:
+
+- **blocks** on what the completing stage owns or what is broken beyond doubt: a planned file that does not exist, a retired file still present, an invalid `harness-contract.json`, a readiness declared blocked;
+- **surfaces, never blocks** the code-vs-plan drift: `plan_path_untouched` (a planned `create`/`modify`/`retire` path with no change since the feature began) and `delivery_outside_plan` (a delivered file no plan row declares — tests, lockfiles, build output and `.aioson/` are support, not drift; a harness contract's `allowed_files` sanctions more). The plan may have over-declared, and the file outside it may be the right fix: the gate demands that the difference be **seen and recorded** (a delivery row or an approved deviation), not that it not exist. Advisories ride the workflow result, a guard event, and `.aioson/context/spec-analyze-{slug}.json`;
+- names upstream errors (a malformed PRD or plan table) with their owner instead of refusing the wrong stage — `feature:close` still blocks on them.
+
+`plan_path_untouched` is measured against the feature's start (the parent of the first commit touching its `.aioson/` artifacts, a `main`/`master` merge-base, or the loop's `baseline.json`); when none resolves the diff covers uncommitted work only, the check says so (`delivery_drift_base_fallback`) and does not guess.
+
 ## Examples
 
 Pin qa to the cheapest Claude tier per phase:
