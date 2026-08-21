@@ -1272,7 +1272,8 @@ const ADAPTERS = {
         route: ctx.route || null,
         routes: ctx.routes && ctx.routes.length > 0 ? ctx.routes : (ctx.route ? null : declaredRuntimeMatrix(ctx)),
         screenshotDir: ctx.screenshotDir || null,
-        launcher: ctx.browserLauncher || null
+        launcher: ctx.browserLauncher || null,
+        projectDir: ctx.targetDir
       });
       if (!collected.available) {
         warnings.push(collected.reason);

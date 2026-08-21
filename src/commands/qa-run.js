@@ -30,9 +30,9 @@ const DEBUG_ROUTES = [
 ];
 
 // --- Playwright gate ---
-function requirePlaywright() {
-  try { return require('playwright'); } catch { return null; }
-}
+// Resolved from the project under test first, then from the CLI's own tree —
+// a global or linked CLI shares no node_modules with the project.
+const { loadPlaywright } = require('../lib/playwright-loader');
 
 // --- Config ---
 async function loadConfig(targetDir) {
@@ -765,7 +765,7 @@ async function writeReports(targetDir, projectName, url, findings, acCoverage, p
 async function runQaRun({ args, options = {}, logger, t }) {
   const targetDir = resolveTargetDir(args);
 
-  const pw = requirePlaywright();
+  const pw = loadPlaywright([targetDir]);
   if (!pw) {
     logger.error(t('qa_run.playwright_missing'));
     process.exitCode = 1;

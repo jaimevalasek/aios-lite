@@ -1,5 +1,7 @@
 'use strict';
 
+const { loadPlaywright } = require('./playwright-loader');
+
 /**
  * Runtime visual telemetry — the measurements that only exist once a browser has
  * laid the page out.
@@ -105,10 +107,18 @@ function isLargeText(fontSizePx, fontWeight) {
  * verdict is formed outside, in `summarizeRuntime`, where it can be tested.
  *
  * Kept dependency-free and ES5-ish on purpose: it is stringified into a browser
- * context, not bundled.
+ * context, not bundled. Nothing from this module exists in that context — not a
+ * constant, not a helper. Whatever the probe needs from here travels as an
+ * argument of `page.evaluate`; a free module identifier inside this body is a
+ * `ReferenceError` in every real browser and a pass in any stub that hands back
+ * canned data, which is why the suite replays the serialized source in an
+ * isolated realm and lints the body for module-scope names.
+ *
+ * @param {number} probeVersion `RUNTIME_PROBE_VERSION`, passed in because the
+ *   page cannot see it
  */
-/* istanbul ignore next — executes inside the page, covered by summarizeRuntime */
-function pageProbe() {
+/* istanbul ignore next — executes inside the page; replayed in an isolated realm by the suite */
+function pageProbe(probeVersion) {
   const doc = document;
   const root = doc.documentElement;
   const out = {
@@ -279,7 +289,7 @@ function pageProbe() {
     maskSurfaces > 0 && 'mask'
   ].filter(Boolean);
   out.assurance = {
-    probe_version: RUNTIME_PROBE_VERSION,
+    probe_version: Number(probeVersion) || 0,
     elements_measured: Math.min(all.length, 3000),
     max_font_size_px: Math.round(maxFontSize * 100) / 100,
     fonts: {
@@ -441,6 +451,11 @@ function summarizeRuntime(runs) {
       axes.material = axes.material || ((assurance.material && assurance.material.techniques) || []).length >= 2;
       axes.motion = axes.motion || Boolean(assurance.motion && assurance.motion.active > 0);
       axes.evidence = axes.evidence || Boolean(assurance.media && assurance.media.loaded > 0);
+    } else if (assurance) {
+      // A probe that answered with a block the contract cannot accept (an
+      // unversioned or outdated probe, a caller that forgot to hand the version
+      // over) must say so — silence here would read as "nothing to report".
+      warnings.push(`${scope}: runtime probe returned assurance version ${assurance.probe_version == null ? 'none' : assurance.probe_version}, below the v${RUNTIME_PROBE_VERSION} contract — rendered craft stays unverified here`);
     }
   }
 
@@ -455,10 +470,6 @@ function summarizeRuntime(runs) {
   return { metrics, issues, warnings };
 }
 
-function loadPlaywright() {
-  try { return require('playwright'); } catch { return null; }
-}
-
 /**
  * Drive a real browser over `fileUrl` at each viewport and return the summary.
  * Never throws for a missing browser — that is a reported state, not an error.
@@ -467,7 +478,10 @@ function loadPlaywright() {
  * (where the primary feature usually lives) can be measured, not only the
  * entry route.
  *
- * @param {{fileUrl: string, viewports?: Array, timeout?: number, launcher?: Function, route?: string|null}} options
+ * `projectDir` is where Playwright is looked for first: the project under
+ * verification owns the browser, not the CLI's install tree.
+ *
+ * @param {{fileUrl: string, viewports?: Array, timeout?: number, launcher?: Function, route?: string|null, projectDir?: string|null}} options
  */
 function normalizeRoutes(route, routes) {
   const input = Array.isArray(routes) && routes.length > 0 ? routes : [route || null];
@@ -488,8 +502,8 @@ function runtimeUrl(fileUrl, route) {
   return `${base}${String(route).startsWith('#') ? '' : '#'}${route}`;
 }
 
-async function collectRuntimeMeasurements({ fileUrl, viewports = DEFAULT_VIEWPORTS, timeout = 20000, launcher = null, route = null, routes = null, screenshotDir = null } = {}) {
-  const playwright = launcher ? { chromium: { launch: launcher } } : loadPlaywright();
+async function collectRuntimeMeasurements({ fileUrl, viewports = DEFAULT_VIEWPORTS, timeout = 20000, launcher = null, route = null, routes = null, screenshotDir = null, projectDir = null } = {}) {
+  const playwright = launcher ? { chromium: { launch: launcher } } : loadPlaywright([projectDir]);
   if (!playwright) {
     return {
       available: false,
@@ -512,7 +526,9 @@ async function collectRuntimeMeasurements({ fileUrl, viewports = DEFAULT_VIEWPOR
           // Hash routers and state fixtures render after `load`; give them a
           // bounded settle before measuring or capturing evidence.
           if (routeSpec.route && typeof page.waitForTimeout === 'function') await page.waitForTimeout(250);
-          const raw = await page.evaluate(pageProbe);
+          // The probe is serialized into the page: it sees no module binding, so
+          // the version it stamps on its assurance block travels as an argument.
+          const raw = await page.evaluate(pageProbe, RUNTIME_PROBE_VERSION);
           let screenshot = null;
           if (screenshotDir && typeof page.screenshot === 'function') {
             const safe = `${routeSpec.name}-${viewport.name}`.replace(/[^a-z0-9_-]+/gi, '-').replace(/^-|-$/g, '').toLowerCase();
@@ -545,5 +561,6 @@ module.exports = {
   runtimeUrl,
   DEFAULT_VIEWPORTS,
   RUNTIME_PROBE_VERSION,
-  MIN_TAP_TARGET
+  MIN_TAP_TARGET,
+  loadPlaywright
 };

@@ -310,14 +310,7 @@ async function runDoctor(targetDir) {
   // static-only — the two real defects a browser catches (overflow, clipped
   // text, displaced elements, contrast) stay invisible. Resolved from the
   // project first, then from the CLI's own tree.
-  let playwrightAvailable = false;
-  for (const paths of [[path.join(targetDir, 'node_modules')], undefined]) {
-    try {
-      require.resolve('playwright', paths ? { paths } : undefined);
-      playwrightAvailable = true;
-      break;
-    } catch { /* keep probing */ }
-  }
+  const playwrightAvailable = Boolean(require('./lib/playwright-loader').resolvePlaywright([targetDir]));
   checks.push({
     id: 'visual:runtime_telemetry',
     severity: 'warning',

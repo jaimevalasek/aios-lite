@@ -19,9 +19,8 @@ const SENSITIVE_FILE_PATHS = [
   '/config.js', '/api/config', '/application.yml'
 ];
 
-function requirePlaywright() {
-  try { return require('playwright'); } catch { return null; }
-}
+// Resolved from the project under test first, then from the CLI's own tree.
+const { loadPlaywright } = require('../lib/playwright-loader');
 
 async function loadConfig(targetDir) {
   try {
@@ -243,7 +242,7 @@ function buildScanReport(projectName, baseUrl, routes, findings) {
 async function runQaScan({ args, options = {}, logger, t }) {
   const targetDir = resolveTargetDir(args);
 
-  const pw = requirePlaywright();
+  const pw = loadPlaywright([targetDir]);
   if (!pw) {
     logger.error(t('qa_scan.playwright_missing'));
     process.exitCode = 1;

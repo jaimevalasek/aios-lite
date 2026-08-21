@@ -16,9 +16,12 @@ const {
   isLargeText,
   summarizeRuntime,
   collectRuntimeMeasurements,
-  DEFAULT_VIEWPORTS
+  pageProbe,
+  DEFAULT_VIEWPORTS,
+  RUNTIME_PROBE_VERSION
 } = require('../src/lib/visual-runtime');
 const { runVerifyArtifact, declaredRuntimeMatrix } = require('../src/commands/verify-artifact');
+const { element, createPage, evaluateInPage, realmLauncher } = require('./helpers/fake-dom');
 
 function makeLogger() {
   const lines = [];
@@ -298,7 +301,13 @@ function stubBrowser(rawByWidth) {
       newContext: async ({ viewport }) => ({
         newPage: async () => ({
           goto: async () => {},
-          evaluate: async () => rawByWidth[viewport.width]
+          evaluate: async (fn, probeVersion) => {
+            // The real browser receives the probe's SOURCE and nothing else from
+            // the module; the version it stamps must travel as the argument.
+            assert.equal(typeof fn, 'function');
+            assert.equal(probeVersion, RUNTIME_PROBE_VERSION, 'page.evaluate must pass RUNTIME_PROBE_VERSION to the probe');
+            return rawByWidth[viewport.width];
+          }
         }),
         close: async () => { closed.contexts += 1; }
       }),
@@ -380,4 +389,116 @@ test('without --runtime the static pass is untouched and no browser is launched'
 
   assert.equal(launched, false, 'runtime telemetry must be opt-in');
   assert.equal(report.metrics.runtime, undefined);
+});
+
+// ---------------------------------------------------------------------------
+// The page realm. `page.evaluate` serializes the probe into the browser, where
+// no binding of this module exists. Every test above that hands the browser
+// canned data is blind to that by construction; these replay the probe the way
+// Playwright runs it.
+// ---------------------------------------------------------------------------
+
+function craftPage(viewport) {
+  return createPage({
+    width: viewport.width,
+    height: viewport.height,
+    fonts: [{ family: 'Fraunces', status: 'loaded' }],
+    animations: [{ state: 'running', iterations: Infinity }],
+    elements: [
+      element({ tag: 'h1', className: 'display', text: 'Bancada', style: { fontFamily: '"Fraunces", serif', fontSize: '64px', fontWeight: '600', backgroundImage: 'linear-gradient(180deg, #fff, #eee)' }, rect: { top: 24, width: 320, height: 80 } }),
+      element({ tag: 'section', id: 'bench', matches: ['[data-aioson-primary]'], style: { boxShadow: '0 10px 30px rgba(0, 0, 0, 0.2)' }, rect: { top: 120, width: 320, height: 300 } }),
+      element({ tag: 'p', className: 'lead', text: 'Pedido 4471 em separação', style: { overflowX: 'hidden' }, rect: { top: 440, width: 200, height: 24 }, scrollWidth: 260 }),
+      element({ tag: 'aside', className: 'rail', rect: { left: viewport.width - 20, top: 0, width: 100, height: 400 } }),
+      element({ tag: 'button', className: 'icon', text: '+', rect: { top: 480, width: 30, height: 30 } }),
+      element({ tag: 'img', className: 'proof', matches: ['img'], props: { alt: 'Tela do app', src: 'proof.png', complete: true, naturalWidth: 800 } }),
+      element({ tag: 'img', className: 'chart', matches: ['img'], props: { alt: 'Gráfico de vendas', src: 'missing.png', complete: true, naturalWidth: 0 } }),
+      element({ tag: 'div', className: 'skeleton', matches: ['.skeleton'], style: { display: 'none' } }),
+      element({ tag: 'div', className: 'toast', matches: ['[role="alert"]'], text: 'Falha ao salvar', rect: { top: 600, width: 300, height: 48 } })
+    ]
+  });
+}
+
+test('the page realm has teeth: a function reading its module scope fails there as it does in a browser', () => {
+  const LEAKED = RUNTIME_PROBE_VERSION; // a binding that exists here and nowhere in the page
+  const leaky = function probe() { return LEAKED; };
+  assert.throws(() => evaluateInPage(createPage(), leaky), /ReferenceError: LEAKED is not defined/);
+  const honest = function probe(version) { return version; };
+  assert.equal(evaluateInPage(createPage(), honest, 7), 7);
+});
+
+test('the probe survives serialization: replayed in the page realm it measures everything it promises', () => {
+  const raw = evaluateInPage(craftPage(VIEWPORT_MOBILE), pageProbe, RUNTIME_PROBE_VERSION);
+
+  assert.equal(raw.assurance.probe_version, RUNTIME_PROBE_VERSION);
+  assert.equal(raw.assurance.elements_measured, 9);
+  assert.equal(raw.assurance.max_font_size_px, 64);
+  assert.deepEqual(raw.assurance.fonts.custom_used, ['fraunces']);
+  assert.deepEqual(raw.assurance.fonts.undelivered_families, []);
+  assert.deepEqual(raw.assurance.material.techniques, ['gradients', 'shadows']);
+  assert.equal(raw.assurance.media.candidates, 2);
+  assert.equal(raw.assurance.media.loaded, 1);
+  assert.equal(raw.assurance.media.broken[0].el, 'img.chart');
+  assert.deepEqual(raw.assurance.motion, { active: 1, ambient: 1 });
+  assert.deepEqual(raw.assurance.states, { present: ['loading', 'error'], visible: ['error'] });
+  assert.deepEqual(raw.clipped, ['p.lead']);
+  assert.deepEqual(raw.offscreen, ['aside.rail']);
+  assert.deepEqual(raw.small_targets, ['button.icon 30x30']);
+  assert.deepEqual(raw.primary, [{ el: 'section#bench', hidden: false, top: 120, height: 300 }]);
+  assert.equal(raw.text_samples.length, 4);
+
+  const summary = summarizeRuntime([{ viewport: VIEWPORT_MOBILE, raw }]);
+  assert.equal(summary.metrics.assurance.craft_verified, true);
+  assert.deepEqual(summary.metrics.assurance.craft_axes, { typeface: true, display_scale: true, material: true, motion: true, evidence: true });
+  assert.match(summary.issues.join('\n'), /text clipped in `p\.lead`/);
+  assert.match(summary.issues.join('\n'), /runtime media failed to load in `img\.chart`/);
+  assert.match(summary.warnings.join('\n'), /1 tap target\(s\) under 44px \(button\.icon 30x30\)/);
+});
+
+test('the browser glue hands the probe its version: a full run through the page realm is verified', async () => {
+  const browser = realmLauncher(craftPage);
+  const collected = await collectRuntimeMeasurements({ fileUrl: 'file:///proto.html', launcher: browser.launcher });
+
+  assert.equal(collected.available, true, collected.reason);
+  assert.equal(browser.calls.length, DEFAULT_VIEWPORTS.length);
+  for (const call of browser.calls) {
+    assert.equal(call.fn, pageProbe);
+    assert.equal(call.arg, RUNTIME_PROBE_VERSION);
+  }
+  const summary = summarizeRuntime(collected.runs);
+  assert.equal(summary.metrics.assurance.probe_runs, DEFAULT_VIEWPORTS.length);
+  assert.equal(summary.metrics.assurance.craft_verified, true);
+  assert.equal(browser.closed.browser, true);
+});
+
+test('the probe body names nothing from module scope', () => {
+  const source = require('node:fs').readFileSync(path.join(__dirname, '..', 'src', 'lib', 'visual-runtime.js'), 'utf8');
+  const topLevel = [...source.matchAll(/^(?:const|let|var|function|async function)\s+([A-Za-z_$][\w$]*)/gm)]
+    .map((m) => m[1])
+    .filter((name) => name !== 'pageProbe');
+  assert.ok(topLevel.includes('RUNTIME_PROBE_VERSION'), 'the lint must see the names it guards against');
+
+  const moduleScopeLeaks = (fn) => {
+    const body = fn.toString()
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/(^|[^:'"`\\])\/\/.*$/gm, '$1');
+    return topLevel.filter((name) => new RegExp('(?<![\\w$.])' + name + '(?![\\w$])').test(body));
+  };
+
+  // The lint itself must catch the shape that shipped broken.
+  const regression = function probe() { return { probe_version: RUNTIME_PROBE_VERSION }; };
+  assert.deepEqual(moduleScopeLeaks(regression), ['RUNTIME_PROBE_VERSION']);
+
+  const leaked = moduleScopeLeaks(pageProbe);
+  assert.deepEqual(leaked, [], 'pageProbe runs inside the page and cannot see: ' + leaked.join(', ') + ' — pass them through page.evaluate arguments');
+});
+
+test('a probe answering below the version contract is reported, never silently ignored', () => {
+  const base = { scroll_width: 360, viewport_width: 360, viewport_height: 740, clipped: [], offscreen: [], small_targets: [], text_samples: [], primary: [] };
+  const stale = summarizeRuntime([{ viewport: VIEWPORT_MOBILE, raw: { ...base, assurance: { probe_version: 0 } } }]);
+  assert.equal(stale.metrics.assurance.craft_verified, false);
+  assert.equal(stale.metrics.assurance.probe_runs, 0);
+  assert.match(stale.warnings.join('\n'), /runtime probe returned assurance version 0, below the v2 contract/);
+
+  const unversioned = summarizeRuntime([{ viewport: VIEWPORT_MOBILE, raw: { ...base, assurance: {} } }]);
+  assert.match(unversioned.warnings.join('\n'), /assurance version none, below the v2 contract/);
 });

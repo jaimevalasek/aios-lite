@@ -22,13 +22,9 @@ function formatPrefix(check, t) {
   return t('qa_doctor.prefix_fail');
 }
 
-function requirePlaywright() {
-  try {
-    return require('playwright');
-  } catch {
-    return null;
-  }
-}
+// Resolved from the project under test first, then from the CLI's own tree —
+// the same order `aioson doctor` uses, so the two never disagree.
+const { loadPlaywright } = require('../lib/playwright-loader');
 
 async function checkTargetUrl(url) {
   if (!url) return { reachable: false, error: 'no_url' };
@@ -61,7 +57,7 @@ async function runQaDoctor({ args, options = {}, logger, t }) {
   const checks = [];
 
   // Check 1 — Playwright installed
-  const pw = requirePlaywright();
+  const pw = loadPlaywright([targetDir]);
   checks.push(makeCheck(
     'playwright.installed',
     Boolean(pw),

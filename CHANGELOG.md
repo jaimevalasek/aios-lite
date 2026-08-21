@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.59.1] - 2026-08-21
+
+### Fixed
+- **`verify:artifact --kind=visual --runtime` measured nothing — every run was `UNVERIFIED`.** The page probe is serialized into the browser by `page.evaluate`, where no binding of the Node module exists, and 1.59.0 made it read `RUNTIME_PROBE_VERSION` from module scope: `ReferenceError` in every real browser, on every project, with or without Playwright. The version now travels as the `page.evaluate` argument. The suite stayed green because its browser stub handed back canned data without ever executing the function it was given — so the probe is now replayed the way Playwright runs it (stringified, in an isolated realm holding only a minimal DOM), the stub asserts the argument contract, and a lint fails the build on any module-scope name inside the probe body. A probe that answers below the version contract is reported as a warning instead of being silently ignored.
+- **Playwright is resolved from the project under inspection, not only beside the CLI.** A global or `npm link`ed `aioson` shares no `node_modules` with the project, so `verify:artifact --runtime`, `qa:run`, `qa:scan` and `qa:doctor` reported "not installed" against a project that had installed it — while `aioson doctor`, which already looked in the project first, kept promising the runtime gate could run. One resolver (`src/lib/playwright-loader.js`) now serves all five, project first, CLI tree second; a test forbids a bare `require('playwright')` from returning anywhere under `src/`.
+
 ## [1.59.0] - 2026-08-21
 
 ### Added
