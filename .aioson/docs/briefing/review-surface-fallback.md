@@ -1,6 +1,6 @@
 ---
-description: Static local Briefing Refiner review surface contract used only when the CLI renderer is unavailable
-agents: [briefing-refiner]
+description: Static local Refiner review surface contract used only when the CLI renderer is unavailable
+agents: [refiner]
 task_types: [review-surface-fallback]
 triggers: [briefing review CLI unavailable]
 ---

@@ -24,24 +24,24 @@ const {
   markRefinementState,
   readBriefingRegistry,
   writeBriefingRegistry
-} = require('../lib/briefing-refiner/briefing-registry');
-const { hashText, parseBriefingSections } = require('../lib/briefing-refiner/briefing-sections');
+} = require('../lib/refiner/briefing-registry');
+const { hashText, parseBriefingSections } = require('../lib/refiner/briefing-sections');
 const {
   assertFeedbackPath,
   collectApprovedReviewDecisions,
   validateFeedback,
   validateFindingsInput
-} = require('../lib/briefing-refiner/feedback-schema');
-const { resolveBriefingPath } = require('../lib/briefing-refiner/briefing-paths');
-const { resolvePrototypeState } = require('../lib/briefing-refiner/prototype-resolution');
+} = require('../lib/refiner/feedback-schema');
+const { resolveBriefingPath } = require('../lib/refiner/briefing-paths');
+const { resolvePrototypeState } = require('../lib/refiner/prototype-resolution');
 const { validatePrototypeManifestQuality } = require('../lib/prototype-manifest-quality');
 const { readVisualEvidence, visualEvidenceBlock } = require('../lib/visual-evidence');
-const { writeReviewArtifacts } = require('../lib/briefing-refiner/review-html');
+const { writeReviewArtifacts } = require('../lib/refiner/review-html');
 const {
   applyConfirmedFeedback,
   applyDeclinedFeedback,
   writeRefinementReport
-} = require('../lib/briefing-refiner/apply-feedback');
+} = require('../lib/refiner/apply-feedback');
 const { resolveTargetDir } = require('../lib/project-root');
 
 // ─── Interactive prompt helpers ───────────────────────────────────────────────
@@ -443,7 +443,7 @@ async function runBriefingUnapprove({ args, options = {}, logger }) {
 
 // ─── briefing:review / briefing:apply-feedback ────────────────────────────────
 //
-// The deterministic half of @briefing-refiner: the agent does the intelligent
+// The deterministic half of @refiner: the agent does the intelligent
 // audit (findings), the CLI owns the surface — parse briefings.md, render
 // review.html + refinement-feedback.json + refinement-report.md, and later
 // validate + apply the exported feedback. This kills the per-run hand-written
@@ -453,7 +453,7 @@ const USER_EXPORT_METHODS = new Set(['download', 'copy-paste', 'file-system-acce
 
 /**
  * Resolve which briefing a refinement command targets. Refinable = `draft`, or
- * `approved` with no PRD yet (same rule as the @briefing-refiner contract).
+ * `approved` with no PRD yet (same rule as the @refiner contract).
  * Unambiguous cases resolve without --slug; ambiguity is an error (these
  * commands are agent-driven, so no interactive prompt).
  */
@@ -792,7 +792,7 @@ async function runBriefingApplyFeedback({ args, options = {}, logger }) {
     logger.log('  Blockers remain — resolve them and regenerate the review (aioson briefing:review).');
   } else if (result.nextAction === 'build_prototype') {
     logger.log('  No blockers, but the prototype is unresolved — `aioson briefing:approve` will refuse until it exists.');
-    logger.log(`  Visual scope → activate @briefing-refiner to build .aioson/briefings/${slug}/prototype.html (+ manifest).`);
+    logger.log(`  Visual scope → activate @refiner to build .aioson/briefings/${slug}/prototype.html (+ manifest).`);
     logger.log('  Non-visual feature → record `prototype: not_applicable` in briefings.md, then approve.');
   } else {
     logger.log('  No blockers — approve with `aioson briefing:approve` and hand off to @product, or regenerate the review for another round.');

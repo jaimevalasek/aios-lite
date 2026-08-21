@@ -42,7 +42,7 @@ test('benchmark:bootstrap --check names every missing piece without writing', as
     const byId = Object.fromEntries(report.checks.map((check) => [check.id, check]));
     assert.equal(byId.install.ok, false);
     assert.equal(byId.traversal_agents.ok, false);
-    assert.match(byId.traversal_agents.detail, /briefing-refiner/);
+    assert.match(byId.traversal_agents.detail, /refiner/);
     assert.equal(byId.context.ok, false);
     assert.equal(byId.marker.ok, false);
     assert.equal(report.actions.length, 0);

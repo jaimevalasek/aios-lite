@@ -71,7 +71,7 @@ Uma regra de interação não vale só na hora de codar. Cada uma nomeia, no pr�
       ▼
 @product / @ux-ui    → a spec nomeia formato, máscara, transição, widget e decisão servida
       ▼
-@briefing-refiner    → o protótipo demonstra o contrato funcionando sobre estado mock
+@refiner    → o protótipo demonstra o contrato funcionando sobre estado mock
   / @benchmark          (input sem máscara, botão destrutivo sem modal, kanban só de clique
                          e home sem valor são achados bloqueantes)
       ▼

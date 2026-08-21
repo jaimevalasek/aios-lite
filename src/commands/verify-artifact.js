@@ -749,7 +749,7 @@ const ADAPTERS = {
     return { ok: issues.length === 0, issues, warnings, checks: [{ id: 'site', ok: issues.length === 0, detail: issues.join('; ') || null }] };
   },
 
-  // briefing-refiner — the review surface must be the deterministic, fully
+  // refiner — the review surface must be the deterministic, fully
   // self-contained artifact `aioson briefing:review` renders: export fallbacks
   // present, no external resources, an embedded source_hash, and a feedback
   // JSON that passes the canonical schema. Staleness (briefings.md changed
@@ -758,8 +758,8 @@ const ADAPTERS = {
     if (!ctx.slug) {
       return { ok: false, issues: ['kind=review requires --slug=<briefing-slug>'], warnings: [], checks: [] };
     }
-    const { hashText } = require('../lib/briefing-refiner/briefing-sections');
-    const { validateFeedback } = require('../lib/briefing-refiner/feedback-schema');
+    const { hashText } = require('../lib/refiner/briefing-sections');
+    const { validateFeedback } = require('../lib/refiner/feedback-schema');
     const briefingDir = path.resolve(ctx.targetDir, '.aioson', 'briefings', ctx.slug);
     const issues = [];
     const warnings = [];
@@ -986,11 +986,11 @@ const ADAPTERS = {
     // not have built it yet — but briefing:approve refuses while it is missing,
     // so surface the pending state before the human hits that wall.
     try {
-      const { resolvePrototypeState } = require('../lib/briefing-refiner/prototype-resolution');
+      const { resolvePrototypeState } = require('../lib/refiner/prototype-resolution');
       const prototype = resolvePrototypeState(ctx.targetDir, ctx.slug, briefingText);
       metrics.prototype_state = prototype.state;
       if (prototype.state === 'missing') {
-        warnings.push(`prototype unresolved — briefing:approve will refuse until @briefing-refiner builds .aioson/briefings/${ctx.slug}/prototype.html or the briefing records \`prototype: not_applicable\``);
+        warnings.push(`prototype unresolved — briefing:approve will refuse until @refiner builds .aioson/briefings/${ctx.slug}/prototype.html or the briefing records \`prototype: not_applicable\``);
       } else if (prototype.state === 'skipped_measured_run') {
         warnings.push('prototype skipped by the measured-run contract (.aioson/benchmark/measured-run.json) — this briefing is round evidence, never product authority');
       }

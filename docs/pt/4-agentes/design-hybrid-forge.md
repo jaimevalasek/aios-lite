@@ -106,7 +106,7 @@ aioson design-hybrid:options
 ## Handoff típico
 
 - **Vem de:** `@setup`/`@site-forge` (quando nenhum skill nativo serve) ou pedido direto
-- **Vai para:** `@briefing-refiner` (o skill vira insumo do protótipo) e depois `@dev` — o híbrido é o design system das implementações
+- **Vai para:** `@refiner` (o skill vira insumo do protótipo) e depois `@dev` — o híbrido é o design system das implementações
 
 ---
 

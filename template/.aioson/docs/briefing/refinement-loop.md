@@ -1,6 +1,6 @@
 ---
-description: Deterministic Briefing Refiner audit, browser-review, feedback application, and terminal-state loop
-agents: [briefing-refiner]
+description: Deterministic Refiner audit, browser-review, feedback application, and terminal-state loop
+agents: [refiner]
 task_types: [briefing-review, feedback-application]
 triggers: [generate briefing review, pending refinement feedback, apply briefing feedback]
 ---

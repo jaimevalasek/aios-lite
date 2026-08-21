@@ -72,7 +72,7 @@ status: draft
 
 ## Role usage
 
-- Briefing Refiner writes only into the selected briefing slug and stamps the manifest owner.
+- Refiner writes only into the selected briefing slug and stamps the manifest owner.
 - Product resolves the binding from the exact matching folder before writing the PRD. A cross-feature or closed-feature prototype is excluded automatically when the user did not explicitly request a new feature-owned prototype.
 - Sheldon independently checks the same ownership before enriching interactions into ACs.
 - Planner maps only a verified current binding to vertical phases. With `prototype_status: none`, it plans from PRD plus inspected repository behavior.

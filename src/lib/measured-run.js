@@ -24,7 +24,7 @@ const MEASURED_RUN_MODE = 'measured-run';
 // `.aioson/docs/benchmark/traversal.md` and the @benchmark kernel.
 const TRAVERSAL_CHAIN = Object.freeze([
   'briefing',
-  'briefing-refiner',
+  'refiner',
   'product',
   'sheldon',
   'planner',

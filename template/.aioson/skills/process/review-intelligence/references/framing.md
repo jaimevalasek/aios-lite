@@ -1,11 +1,11 @@
 # Framing review
 
-Use for `briefing`, `briefing-refiner`, and `product` after a concrete feature slug and artifact exist.
+Use for `briefing`, `refiner`, and `product` after a concrete feature slug and artifact exist.
 
 ## Review stance
 
 - `briefing` and `product`: self-review the artifact before their existing approval or handoff.
-- `briefing-refiner`: independently review the briefing; do not assume the author's framing is correct.
+- `refiner`: independently review the briefing; do not assume the author's framing is correct.
 - Preserve the smallest coherent outcome. Surface extensions as alternatives unless they close a material gap.
 
 ## Pass 1 — current framing

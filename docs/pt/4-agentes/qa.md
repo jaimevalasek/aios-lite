@@ -37,7 +37,7 @@ Cada contrato de interação que o PRD, o plano ou um AC prometeu precisa de **u
 | Drag-and-drop em fluxo recorrente | arrasta um card real e confirma que o novo status/ordem persiste depois de um reload; movimento que só muda o DOM é FAIL |
 | Widgets da home de gestão | altera o dado por trás e confirma que cada widget reflete a mudança; widget congelado no valor de seed é FAIL |
 
-A consulta **nunca adiciona escopo**: um contrato que nada prometeu continua sendo recomendação, não achado. Isso fecha a cadeia `origem (@briefing) → spec (@product) → protótipo (@briefing-refiner) → implementação (@dev) → verificação (@qa)`.
+A consulta **nunca adiciona escopo**: um contrato que nada prometeu continua sendo recomendação, não achado. Isso fecha a cadeia `origem (@briefing) → spec (@product) → protótipo (@refiner) → implementação (@dev) → verificação (@qa)`.
 
 Detalhes das quatro regras: [Regras de interação e gate visual](../5-referencia/regras-de-interacao-e-gate-visual.md).
 

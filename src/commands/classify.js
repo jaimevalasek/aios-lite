@@ -437,7 +437,7 @@ async function runClassify({ args, options = {}, logger }) {
   // A rich operational surface is exactly the case a clickable prototype is meant
   // to de-risk (management screens + interactions before the PRD). Emit the
   // recommendation from the deterministic tool so it does not rely on agent prose
-  // alone — @product/@briefing-refiner key off this flag.
+  // alone — @product/@refiner key off this flag.
   const recommendPrototype = operationalSurfaces.length > 0;
 
   const result = {
@@ -483,7 +483,7 @@ async function runClassify({ args, options = {}, logger }) {
     logger.log(`Operational surfaces: ${operationalSurfaces.join(', ')}${floored ? ' → floored to at least SMALL' : ''}`);
   }
   if (recommendPrototype) {
-    logger.log('Recommendation: generate a clickable prototype in @briefing-refiner before @product (surfaces management screens + interactions early).');
+    logger.log('Recommendation: generate a clickable prototype in @refiner before @product (surfaces management screens + interactions early).');
   }
   logger.log('');
   logger.log('Phase depth:');

@@ -66,7 +66,7 @@ Detecta a classificação da feature (MICRO / SMALL / MEDIUM) automaticamente a 
 - **2–3:** SMALL — mesma rota, profundidade padrão
 - **4–6:** MEDIUM — mesma rota, mais detalhe nos riscos e integrações
 
-Esteira: `@briefing → @briefing-refiner → @product → @sheldon → @planner → @dev → @qa → @tester → @pentester`. A cadeia automática vai até o QA (Gate D); Tester e Pentester são o endurecimento habilitado por feature.
+Esteira: `@briefing → @refiner → @product → @sheldon → @planner → @dev → @qa → @tester → @pentester`. A cadeia automática vai até o QA (Gate D); Tester e Pentester são o endurecimento habilitado por feature.
 
 **Flags:**
 

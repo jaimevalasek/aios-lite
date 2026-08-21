@@ -5,10 +5,10 @@ O autopilot remove confirmações mecânicas de handoff, mas preserva decisões 
 ## Rota canônica
 
 ```text
-[fontes opcionais → Briefing → Briefing Refiner → aprovação] → Product → Sheldon → Planner → DEV → QA → fechamento humano
+[fontes opcionais → Briefing → Refiner → aprovação] → Product → Sheldon → Planner → DEV → QA → fechamento humano
 ```
 
-Briefing e Briefing Refiner são opcionais quando o usuário já possui direção de produto aprovada. Quando o Briefing é usado, o Refiner e a aprovação fecham essa entrada antes do Product. Sheldon é a revisão independente obrigatória do PRD. Analyst, Architect, Discovery Design Doc, PM, Scope Check e UX/UI continuam disponíveis como consultores, mas a classificação não os insere na rota e eles não criam pacotes obrigatórios de artefatos.
+Briefing e Refiner são opcionais quando o usuário já possui direção de produto aprovada. Quando o Briefing é usado, o Refiner e a aprovação fecham essa entrada antes do Product. Sheldon é a revisão independente obrigatória do PRD. Analyst, Architect, Discovery Design Doc, PM, Scope Check e UX/UI continuam disponíveis como consultores, mas a classificação não os insere na rota e eles não criam pacotes obrigatórios de artefatos.
 
 MICRO, SMALL e MEDIUM usam a mesma rota. A classificação altera profundidade, cobertura de risco e orçamento de implementação — não a quantidade de agentes de especificação.
 

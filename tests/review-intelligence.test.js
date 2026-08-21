@@ -136,7 +136,7 @@ function assurance(status = 'pass') {
 test('profile registry preserves the approved agent, profile, mode and default matrix', () => {
   const expected = {
     briefing: ['framing', 'self_review', '.aioson/briefings/review-intelligence/briefings.md'],
-    'briefing-refiner': ['framing', 'independent_review', '.aioson/briefings/review-intelligence/briefings.md'],
+    'refiner': ['framing', 'independent_review', '.aioson/briefings/review-intelligence/briefings.md'],
     product: ['framing', 'self_review', '.aioson/context/prd-review-intelligence.md'],
     sheldon: ['specification', 'independent_review', '.aioson/context/prd-review-intelligence.md'],
     analyst: ['specification', 'self_review', '.aioson/context/requirements-review-intelligence.md'],

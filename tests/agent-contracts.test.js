@@ -226,7 +226,7 @@ test('MICRO, SMALL, and MEDIUM share the same streamlined route with mandatory S
 });
 
 test('feature agents preserve compaction continuity without promoting mappings to authority', async () => {
-  const agents = ['briefing', 'briefing-refiner', 'product', 'sheldon', 'planner', 'dev', 'qa'];
+  const agents = ['briefing', 'refiner', 'product', 'sheldon', 'planner', 'dev', 'qa'];
   for (const agent of agents) {
     const content = await read(`.aioson/agents/${agent}.md`);
     assert.match(content, /mappings\/\{slug\}\/continuity\.md/, `${agent} lacks the continuity mapping rule`);

@@ -11,7 +11,7 @@ const {
   readMeasuredRunMarker,
   isMeasuredRun
 } = require('../src/lib/measured-run');
-const { resolvePrototypeState } = require('../src/lib/briefing-refiner/prototype-resolution');
+const { resolvePrototypeState } = require('../src/lib/refiner/prototype-resolution');
 const { validatePrototypeBinding, SKIPPED_MEASURED_RUN_STATUS } = require('../src/lib/prototype-binding');
 
 function makeWorkspace() {

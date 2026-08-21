@@ -23,7 +23,7 @@ vague idea / notes
        ↓
    @briefing   →  .aioson/briefings/{slug}/briefings.md
        ↓
- (optional) @briefing-refiner  →  refinement loop: audit + review.html + apply-feedback
+ (optional) @refiner  →  refinement loop: audit + review.html + apply-feedback
        ↓
 aioson briefing:approve
        ↓
@@ -97,7 +97,7 @@ You > All.
 
 Read `.aioson/briefings/push-notifications/briefings.md`.
 
-> **Want a structured review before approving?** Activate [`@briefing-refiner`](../4-agents/briefing-refiner.md): it audits the briefing into structured findings (category, severity, blocking), the CLI renders the `review.html` surface (`aioson briefing:review . --slug=push-notifications`) where you decide each finding and edit each section **in a real browser**, and confirmed feedback is applied with `aioson briefing:apply-feedback . --slug=push-notifications --confirm` — in rounds, until nothing blocks the PRD.
+> **Want a structured review before approving?** Activate [`@refiner`](../4-agents/refiner.md): it audits the briefing into structured findings (category, severity, blocking), the CLI renders the `review.html` surface (`aioson briefing:review . --slug=push-notifications`) where you decide each finding and edit each section **in a real browser**, and confirmed feedback is applied with `aioson briefing:apply-feedback . --slug=push-notifications --confirm` — in rounds, until nothing blocks the PRD.
 
 If it looks good:
 
@@ -244,5 +244,5 @@ plans/                              ← your drafts (untouched)
 - [External plans for @product (PT)](../../pt/3-receitas/plans-externos-para-product.md) — how to use ChatGPT/Claude.ai output as source for `plans/`
 - [Full feature with @sheldon](./full-feature-with-sheldon.md) — when the PRD is ready and the trail is SMALL/MEDIUM
 - [@briefing — agent sheet (PT)](../../pt/4-agentes/briefing.md) — technical reference for the agent
-- [@briefing-refiner — agent sheet](../4-agents/briefing-refiner.md) — briefing review/refinement loop before the PRD
+- [@refiner — agent sheet](../4-agents/refiner.md) — briefing review/refinement loop before the PRD
 - [@product — agent sheet (PT)](../../pt/4-agentes/product.md) — technical reference for the agent

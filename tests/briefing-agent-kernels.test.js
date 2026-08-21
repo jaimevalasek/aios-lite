@@ -31,15 +31,15 @@ async function read(root, relativePath) {
 test('Briefing kernels stay compact and preserve full historical contracts off the hot path', async () => {
   const [briefing, refiner, briefingLegacy, refinerLegacy] = await Promise.all([
     read(TEMPLATE, 'agents/briefing.md'),
-    read(TEMPLATE, 'agents/briefing-refiner.md'),
+    read(TEMPLATE, 'agents/refiner.md'),
     read(TEMPLATE, 'docs/briefing/legacy-agent-contract.md'),
     read(TEMPLATE, 'docs/briefing/legacy-refiner-agent-contract.md')
   ]);
 
   assert.ok(briefing.length < 12000, `Briefing kernel is ${briefing.length} chars`);
-  assert.ok(refiner.length < 12000, `Briefing Refiner kernel is ${refiner.length} chars`);
+  assert.ok(refiner.length < 12000, `Refiner kernel is ${refiner.length} chars`);
   assert.ok(briefingLegacy.length > 25000, 'legacy Briefing intelligence was not preserved');
-  assert.ok(refinerLegacy.length > 18000, 'legacy Briefing Refiner intelligence was not preserved');
+  assert.ok(refinerLegacy.length > 18000, 'legacy Refiner intelligence was not preserved');
 
   assert.match(briefing, /Never load every module/i);
   assert.match(refiner, /Never load every module/i);
@@ -84,8 +84,8 @@ test('Briefing routes activation, exploration, deep craft, expansion, and exact 
   assert.match(kernel, /One activation should advance one coherent decision branch/i);
 });
 
-test('Briefing Refiner is a bounded filesystem state machine with on-demand rare routes', async () => {
-  const kernel = await read(TEMPLATE, 'agents/briefing-refiner.md');
+test('Refiner is a bounded filesystem state machine with on-demand rare routes', async () => {
+  const kernel = await read(TEMPLATE, 'agents/refiner.md');
 
   for (const token of [
     'refinement-loop.md',
@@ -102,7 +102,7 @@ test('Briefing Refiner is a bounded filesystem state machine with on-demand rare
     'identity.md',
     'bounded premium quality pass'
   ]) {
-    assert.ok(kernel.includes(token), `Briefing Refiner kernel missing ${token}`);
+    assert.ok(kernel.includes(token), `Refiner kernel missing ${token}`);
   }
 
   assert.match(kernel, /Each generated review is a terminal point for that activation/i);
@@ -123,7 +123,7 @@ test('Briefing modules are managed and template/workspace copies remain byte-ide
     assert.equal(workspace, template, `template/workspace drift: ${relativePath}`);
   }
 
-  for (const relativePath of ['agents/briefing.md', 'agents/briefing-refiner.md']) {
+  for (const relativePath of ['agents/briefing.md', 'agents/refiner.md']) {
     const [template, workspace] = await Promise.all([
       read(TEMPLATE, relativePath),
       read(WORKSPACE, relativePath)

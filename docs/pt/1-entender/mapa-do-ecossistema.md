@@ -30,7 +30,7 @@ Esta é a cadeia que constrói feature. Ela é a mesma em MICRO, SMALL e MEDIUM 
 Em uma linha:
 
 ```text
-@briefing → @briefing-refiner → @product → @sheldon → @planner → @dev → @qa → @tester → @pentester
+@briefing → @refiner → @product → @sheldon → @planner → @dev → @qa → @tester → @pentester
 ```
 
 ### O que cada fase entrega
@@ -38,7 +38,7 @@ Em uma linha:
 | # | Fase | Agente | Papel | Prova de que terminou |
 |---|---|---|---|---|
 | 1 | **Briefing** | `@briefing` | Autoridade de pré-produção | Briefing redigido: fontes com caminho, promessas numeradas `PROM-*`, dúvida declarada |
-| 2 | **Refiner** | `@briefing-refiner` | Evidência antes da definição | **Protótipo navegável aprovado por você** — telas, estados e interações reais |
+| 2 | **Refiner** | `@refiner` | Evidência antes da definição | **Protótipo navegável aprovado por você** — telas, estados e interações reais |
 | 3 | **Product** | `@product` | Autoridade de produto | `prd-{slug}.md`: capacidades `CAP-*`, critérios observáveis, exclusões explícitas |
 | 4 | **Sheldon** | `@sheldon` | Revisão técnica do PRD | PRD enriquecido e selado (`sheldon_review: approved`, PASS vinculado ao hash) |
 | 5 | **Planner** | `@planner` | Execução mapeada | `implementation-plan-{slug}.md`: etapas verticais, arquivos exatos, check por etapa |
@@ -91,7 +91,7 @@ Simple Plan termina no Dev e não vira feature rastreada silenciosamente.
 | Agente | O que faz | Saída principal |
 |---|---|---|
 | **`@briefing`** | Transforma fontes cruas em briefing pré-PRD, com promessas rastreáveis | `briefing.md` |
-| **`@briefing-refiner`** | Audita lacunas e monta o protótipo navegável para você aprovar | `prototype.html`, `refinement-report.md` |
+| **`@refiner`** | Audita lacunas e monta o protótipo navegável para você aprovar | `prototype.html`, `refinement-report.md` |
 | **`@product`** | Define capacidades, ACs e o que fica fora | `prd-{slug}.md` |
 | **`@sheldon`** | Confronta o PRD com fonte, protótipo e repositório; corrige e sela | `prd-{slug}.md` selado |
 | **`@planner`** | Corta a entrega em etapas verticais verificáveis | `implementation-plan-{slug}.md` |
@@ -136,7 +136,7 @@ Simple Plan termina no Dev e não vira feature rastreada silenciosamente.
 | **`@orache`** | Investigação de domínio e pesquisa estratégica |
 | **`@copywriter`** | Copy de conversão para landing pages, emails |
 | **`@forge-run`** | Lane B opt-in: compila e roda o harness de verificação de uma feature MEDIUM |
-| **`@benchmark`** | Orquestra a travessia medida de um prompt congelado: joguinho de uma tela via `@briefing-refiner`, app real via cadeia completa em Autopilot |
+| **`@benchmark`** | Orquestra a travessia medida de um prompt congelado: joguinho de uma tela via `@refiner`, app real via cadeia completa em Autopilot |
 
 ---
 
@@ -145,7 +145,7 @@ Simple Plan termina no Dev e não vira feature rastreada silenciosamente.
 Eles **não conversam diretamente entre si**. Eles conversam **através de artefatos** em disco. Esse é o coração da arquitetura.
 
 ```
-@briefing ──escreve──▶ briefing.md ──lê──▶ @briefing-refiner
+@briefing ──escreve──▶ briefing.md ──lê──▶ @refiner
                                                   │
                                                   ▼ escreve
                                           prototype.html  ◀── você aprova
@@ -181,7 +181,7 @@ seu-projeto/
         ├── project-pulse.md        ← estado vivo, atualizado a cada sessão
         ├── features/<slug>/        ← features em desenvolvimento
         │   ├── briefing.md         ← saída de @briefing
-        │   ├── prototype.html      ← protótipo aprovado (@briefing-refiner)
+        │   ├── prototype.html      ← protótipo aprovado (@refiner)
         │   ├── prd-<slug>.md       ← saída de @product, selada por @sheldon
         │   └── implementation-plan-<slug>.md  ← saída de @planner
         ├── dev-state.md            ← saída de @dev (status atual)

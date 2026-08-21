@@ -297,7 +297,7 @@ Cria uma regra própria do projeto em `.aioson/rules/`. Regras são como você e
 ```bash
 aioson rule:new . --name=contrato-qualidade-visual \
   --description="Nosso design system prevalece sobre orientação visual genérica" \
-  --agents=dev,qa,briefing-refiner \
+  --agents=dev,qa,refiner \
   --paths="src/**,resources/**" \
   --triggers="layout,UI,componente"
 ```
@@ -337,7 +337,7 @@ Os `kind` disponíveis, com o localizador que cada um exige:
 | `bootstrap` | os 4 arquivos de `.aioson/context/bootstrap/` | — | `@discover` |
 | `commit-message` | qualidade do assunto do commit | — | `@committer` |
 | `briefing` | `.aioson/briefings/{slug}/briefings.md` | `--slug` | `@briefing` |
-| `review` | `.aioson/briefings/{slug}/review.html` | `--slug` | `@briefing-refiner` |
+| `review` | `.aioson/briefings/{slug}/review.html` | `--slug` | `@refiner` |
 | `sources` | linhagem `SRC-*`/`PROM-*` da feature | `--slug` | `@sheldon` |
 | `prd` | `.aioson/context/prd-{slug}.md` | `--slug` ou `--file` | `@sheldon` |
 | `test-report` | `.aioson/context/test-report-{slug}.md` | `--slug` | `@tester` |
@@ -450,7 +450,7 @@ aioson verify:artifact . --kind=visual --slug=pedidos --advisory --runtime
 
 Acrescenta o que só existe depois do layout, a 1280px e 360px: overflow horizontal, texto cortado, elementos empurrados para fora da tela, tap targets abaixo de 44px e contraste WCAG computado de verdade (primeiro plano translúcido é composto contra o ancestral opaco mais próximo).
 
-Nos fluxos visuais roteados do framework (protótipo do `@briefing-refiner`, front-end implementado pelo `@dev`/`@deyvin`) o `--runtime` faz parte da invocação padrão, não é um extra. Playwright continua sendo dependência opcional: quando falta, a execução informa que não aconteceu em vez de degradar para um "passou", e esse resultado deve ser registrado ao declarar o trabalho visual concluído. `aioson doctor` mostra se ele está disponível na sua máquina.
+Nos fluxos visuais roteados do framework (protótipo do `@refiner`, front-end implementado pelo `@dev`/`@deyvin`) o `--runtime` faz parte da invocação padrão, não é um extra. Playwright continua sendo dependência opcional: quando falta, a execução informa que não aconteceu em vez de degradar para um "passou", e esse resultado deve ser registrado ao declarar o trabalho visual concluído. `aioson doctor` mostra se ele está disponível na sua máquina.
 
 `prototype:check` roda a mesma telemetria automaticamente quando resolve um protótipo próprio, sempre como bloco advisory — ela nunca altera o veredito do vínculo.
 

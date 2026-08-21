@@ -1,6 +1,6 @@
 ---
 description: "Streamlined closure from fingerprinted source promises through PRD capabilities to production-path evidence without parallel specification documents."
-agents: [briefing, briefing-refiner, product, sheldon, planner, dev, qa, tester, pentester, validator]
+agents: [briefing, refiner, product, sheldon, planner, dev, qa, tester, pentester, validator]
 modes: [planning, executing]
 task_types: [feature-framing, prd-writing, implementation-plan, implementation, verification]
 load_tier: trigger

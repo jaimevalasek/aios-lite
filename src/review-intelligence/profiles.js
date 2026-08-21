@@ -27,7 +27,7 @@ const REVIEW_PROFILES = deepFreeze({
     ],
     challenge_lenses: ['problem', 'user-value', 'scope', 'assumptions', 'future-state', 'ownership']
   },
-  'briefing-refiner': {
+  'refiner': {
     profile: 'framing',
     review_mode: 'independent_review',
     default_artifacts: ['.aioson/briefings/{slug}/briefings.md'],
@@ -146,7 +146,8 @@ function expandFeaturePath(template, featureSlug) {
 }
 
 function getReviewProfile(agent) {
-  const key = String(agent || '').trim().toLowerCase();
+  const { canonicalAgentId } = require('../agents');
+  const key = canonicalAgentId(agent);
   const profile = REVIEW_PROFILES[key];
   if (!profile) return null;
   return {

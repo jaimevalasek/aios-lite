@@ -1,6 +1,6 @@
 ---
-description: Briefing Refiner pre-briefing visual exploration, screenshot sufficiency, current-front-end scan, single/sequential/arena runs, review, reporting, and promotion
-agents: [briefing-refiner, briefing]
+description: Refiner pre-briefing visual exploration, screenshot sufficiency, current-front-end scan, single/sequential/arena runs, review, reporting, and promotion
+agents: [refiner, briefing]
 task_types: [visual-exploration, redesign, screenshot-reference, multi-model-design]
 triggers: [explore a design, visual redesign, screenshots, prints, design arena, compare models, pre-briefing prototype]
 ---
@@ -197,4 +197,4 @@ Only a selected run may be promoted:
 aioson exploration:promote . --slug={slug} --briefing-slug={briefing-slug} --json
 ```
 
-This prepares `plans/{briefing-slug}/visual-exploration.md` with immutable paths and fingerprints. It does not create or approve the Briefing. Hand off to `@briefing`; after the draft exists, `@briefing-refiner` audits it and consolidates the selected direction into the canonical feature-owned prototype under `.aioson/briefings/{briefing-slug}/`.
+This prepares `plans/{briefing-slug}/visual-exploration.md` with immutable paths and fingerprints. It does not create or approve the Briefing. Hand off to `@briefing`; after the draft exists, `@refiner` audits it and consolidates the selected direction into the canonical feature-owned prototype under `.aioson/briefings/{briefing-slug}/`.

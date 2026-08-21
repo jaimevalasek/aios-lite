@@ -1,5 +1,7 @@
 'use strict';
 
+const { canonicalAgentId } = require('../agents');
+
 const SCHEMA_VERSION = '1.2';
 const SUPPORTED_SCHEMA_VERSIONS = Object.freeze(new Set(['1.0', '1.1', '1.2']));
 
@@ -7,7 +9,7 @@ const CANONICAL_AGENT_IDS = Object.freeze(new Set([
   'analyst',
   'architect',
   'briefing',
-  'briefing-refiner',
+  'refiner',
   'committer',
   'copywriter',
   'cypher',
@@ -81,7 +83,8 @@ function isValidIsoDate(value) {
 }
 
 function isCanonicalAgent(value) {
-  return typeof value === 'string' && CANONICAL_AGENT_IDS.has(value);
+  // Alias-aware: dossiers persisted before an agent rename keep validating.
+  return typeof value === 'string' && CANONICAL_AGENT_IDS.has(canonicalAgentId(value));
 }
 
 function isAllowedAuthor(value) {

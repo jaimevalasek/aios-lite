@@ -460,7 +460,12 @@ function appliesToAgent(frontmatter, agent) {
   const agents = parseAgentList(frontmatter.agents);
   if (agents === null) return true;
   if (agents.length === 0) return true;
-  return agents.includes('all') || agents.includes(agent);
+  if (agents.includes('all')) return true;
+  // Alias-aware: client-owned rules (never overwritten by `aioson update`)
+  // may still tag a renamed agent by its legacy id.
+  const { canonicalAgentId } = require('./agents');
+  const wanted = canonicalAgentId(agent);
+  return agents.some((item) => canonicalAgentId(item) === wanted);
 }
 
 async function discoverRules(targetDir, agent) {

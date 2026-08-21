@@ -31,7 +31,7 @@ The sum of three factors (each worth 0, 1, or 2 points):
 After one-time setup, every tracked feature uses the same stage chain:
 
 ```text
-optional @briefing → optional @briefing-refiner → @product
+optional @briefing → optional @refiner → @product
 → @sheldon → @planner → @dev → @qa
 ```
 

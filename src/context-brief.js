@@ -53,7 +53,7 @@ const AGENT_PROFILES = {
     mustSurfaces: new Set(['rules', 'design_governance']),
     shouldSurfaces: new Set(['docs', 'context', 'feature_dossier', 'bootstrap'])
   },
-  'briefing-refiner': {
+  'refiner': {
     role: 'feature-framing',
     mustSurfaces: new Set(['rules']),
     shouldSurfaces: new Set(['docs', 'context', 'feature_dossier', 'bootstrap', 'design_governance'])
@@ -484,7 +484,8 @@ function suggestedStructure(concerns) {
 }
 
 function profileForAgent(agent) {
-  const base = AGENT_PROFILES[agent] || {
+  const { canonicalAgentId } = require('./agents');
+  const base = AGENT_PROFILES[canonicalAgentId(agent)] || {
     role: 'generic',
     mustSurfaces: new Set(['rules']),
     shouldSurfaces: new Set(['docs', 'context', 'design_governance', 'bootstrap', 'feature_dossier'])

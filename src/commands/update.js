@@ -61,6 +61,12 @@ async function runUpdate({ args, options, logger, t }) {
     logger.log('');
     logger.log(t('update.profile_renamed'));
   }
+  const agentRename = result.migrations && result.migrations.agentRename;
+  if (agentRename && agentRename.changed) {
+    logger.log('');
+    logger.log(t('update.agent_renamed', { count: agentRename.removed.length }));
+    agentRename.removed.forEach((relPath) => logger.log(`    - ${relPath}`));
+  }
   if (!dryRun) {
     logger.log('');
     logger.log(t('update.reconfigure_hint'));

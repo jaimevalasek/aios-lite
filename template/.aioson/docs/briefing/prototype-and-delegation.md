@@ -1,6 +1,6 @@
 ---
-description: Briefing Refiner prototype route, reference identity extraction, and explicit-model delegation
-agents: [briefing-refiner]
+description: Refiner prototype route, reference identity extraction, and explicit-model delegation
+agents: [refiner]
 task_types: [briefing-prototype, visual-refinement, explicit-model-delegation]
 triggers: [prototype requested, rich-surface prototype accepted, user names another model]
 ---

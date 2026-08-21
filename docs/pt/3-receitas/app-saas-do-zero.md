@@ -6,14 +6,14 @@
 MEDIUM aumenta a profundidade. Não cria uma esteira diferente:
 
 ```text
-@briefing → @briefing-refiner → @product → @sheldon → @planner → @dev → @qa → @tester → @pentester
+@briefing → @refiner → @product → @sheldon → @planner → @dev → @qa → @tester → @pentester
 ```
 
 Briefing e Refiner são a entrada de fonte crua (obrigatórios quando há superfície visual nova, via protótipo aprovado). QA é o Gate D; Tester e Pentester endurecem depois dele — num SaaS com auth e cobrança, quase sempre vale habilitar os dois.
 
 ## 1. Enquadre o produto
 
-Se a ideia ainda está aberta, use Briefing e Briefing Refiner para confirmar problema, usuários, billing, tenancy e exclusões. Se essas decisões já existem, comece em Product.
+Se a ideia ainda está aberta, use Briefing e Refiner para confirmar problema, usuários, billing, tenancy e exclusões. Se essas decisões já existem, comece em Product.
 
 ## 2. Product fecha o PRD
 

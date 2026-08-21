@@ -199,7 +199,7 @@ All three use Product → Sheldon → Planner → DEV → QA after setup.
 
 ## Pipeline / Workflow
 
-**Definition:** the canonical tracked-feature sequence: optional raw-source Briefing → Briefing Refiner → user approval, then Product → Sheldon → Planner → DEV → QA. Classification changes depth and budget, not the sequence. Analyst, Architect, Discovery Design Doc, PM, UX/UI, and Scope Check are explicit consultants; Tester, Pentester, and Validator are opt-in reviewers.
+**Definition:** the canonical tracked-feature sequence: optional raw-source Briefing → Refiner → user approval, then Product → Sheldon → Planner → DEV → QA. Classification changes depth and budget, not the sequence. Analyst, Architect, Discovery Design Doc, PM, UX/UI, and Scope Check are explicit consultants; Tester, Pentester, and Validator are opt-in reviewers.
 
 **Central command:** `aioson workflow:next .` — shows which agent is next.
 

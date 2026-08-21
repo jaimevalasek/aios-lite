@@ -13,19 +13,19 @@ const {
   parseConfigFrontmatter,
   readBriefingRegistry,
   writeBriefingRegistry
-} = require('../src/lib/briefing-refiner/briefing-registry');
-const { hashText, parseBriefingSections, serializeBriefingSections } = require('../src/lib/briefing-refiner/briefing-sections');
+} = require('../src/lib/refiner/briefing-registry');
+const { hashText, parseBriefingSections, serializeBriefingSections } = require('../src/lib/refiner/briefing-sections');
 const {
   buildInitialFeedback,
   collectApprovedReviewDecisions,
   DECISION_LIMITS,
   validateFeedback,
   validateFindingsInput
-} = require('../src/lib/briefing-refiner/feedback-schema');
-const { renderSafeMarkdown } = require('../src/lib/briefing-refiner/safe-markdown');
-const { assertSafeSlug, resolveBriefingPath } = require('../src/lib/briefing-refiner/briefing-paths');
-const { writeReviewArtifacts } = require('../src/lib/briefing-refiner/review-html');
-const { applyConfirmedFeedback, applyDeclinedFeedback } = require('../src/lib/briefing-refiner/apply-feedback');
+} = require('../src/lib/refiner/feedback-schema');
+const { renderSafeMarkdown } = require('../src/lib/refiner/safe-markdown');
+const { assertSafeSlug, resolveBriefingPath } = require('../src/lib/refiner/briefing-paths');
+const { writeReviewArtifacts } = require('../src/lib/refiner/review-html');
+const { applyConfirmedFeedback, applyDeclinedFeedback } = require('../src/lib/refiner/apply-feedback');
 const { runBriefingApprove, runBriefingUnapprove, runBriefingReview, runBriefingApplyFeedback } = require('../src/commands/briefing');
 const { runVerifyArtifact } = require('../src/commands/verify-artifact');
 const { AGENT_ARTIFACT_KIND, verifyAgentArtifact } = require('../src/artifact-kinds');
@@ -61,7 +61,7 @@ Original solution.
 `;
 
 async function makeProject() {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'aioson-briefing-refiner-'));
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'aioson-refiner-'));
   await fs.mkdir(path.join(dir, '.aioson', 'briefings', 'idea-one'), { recursive: true });
   await fs.mkdir(path.join(dir, '.aioson', 'briefings', 'idea-two'), { recursive: true });
   await fs.writeFile(path.join(dir, '.aioson', 'briefings', 'idea-one', 'briefings.md'), BRIEFING, 'utf8');
@@ -110,13 +110,13 @@ async function makeProject() {
   return dir;
 }
 
-test('briefing-refiner agent is registered as official but not workflow-mandatory', async () => {
-  const agent = getAgentDefinition('briefing-refiner');
-  assert.equal(agent.id, 'briefing-refiner');
-  assert.equal(MANAGED_FILES.includes('.aioson/agents/briefing-refiner.md'), true);
+test('refiner agent is registered as official but not workflow-mandatory', async () => {
+  const agent = getAgentDefinition('refiner');
+  assert.equal(agent.id, 'refiner');
+  assert.equal(MANAGED_FILES.includes('.aioson/agents/refiner.md'), true);
 
-  const templatePrompt = await fs.readFile(path.join(ROOT, 'template/.aioson/agents/briefing-refiner.md'), 'utf8');
-  const workspacePrompt = await fs.readFile(path.join(ROOT, '.aioson/agents/briefing-refiner.md'), 'utf8');
+  const templatePrompt = await fs.readFile(path.join(ROOT, 'template/.aioson/agents/refiner.md'), 'utf8');
+  const workspacePrompt = await fs.readFile(path.join(ROOT, '.aioson/agents/refiner.md'), 'utf8');
   assert.equal(templatePrompt, workspacePrompt);
 
   for (const token of [
@@ -134,8 +134,8 @@ test('briefing-refiner agent is registered as official but not workflow-mandator
   }
 
   const agentsCommand = await fs.readFile(path.join(ROOT, 'src/commands/agents.js'), 'utf8');
-  assert.equal(agentsCommand.includes("'briefing-refiner'"), false);
-  assert.equal(isCanonicalAgent('briefing-refiner'), true);
+  assert.equal(agentsCommand.includes("'refiner'"), false);
+  assert.equal(isCanonicalAgent('refiner'), true);
 });
 
 test('registry parser lists only refinable briefings and preserves refinement metadata', async () => {
@@ -295,7 +295,7 @@ test('briefing approval blocks an unresolved visual/prototype decision with an a
   const output = lines.join('\n');
   assert.match(output, /prototype_resolution_missing/);
   assert.match(output, /\.aioson\/briefings\/idea-two\/prototype\.html/);
-  assert.match(output, /@briefing-refiner/);
+  assert.match(output, /@refiner/);
   assert.match(output, /prototype: not_applicable/);
 });
 
@@ -609,7 +609,7 @@ const STRUCTURED_FINDINGS = [
         description: 'Review one material choice at a time.',
         impact: 'Fastest path with explicit authority.',
         recommended: true,
-        evidence_refs: ['researchs/open-design-briefing-refiner-2026/summary.md']
+        evidence_refs: ['researchs/open-design-refiner-2026/summary.md']
       },
       {
         id: 'document',
@@ -967,7 +967,7 @@ test('briefing:apply-feedback next action is prototype-aware', async () => {
   assert.match(report, /Next action: build_prototype/);
   const output = lines.join('\n');
   assert.match(output, /prototype is unresolved/);
-  assert.match(output, /@briefing-refiner/);
+  assert.match(output, /@refiner/);
   assert.doesNotMatch(output, /approve with/);
 
   // Round 2: prototype built → approve_briefing returns.
@@ -1024,7 +1024,7 @@ test('AC-BRDR-06: confirmed structured selection is recorded with rationale, evi
   assert.match(report, /Approved review authority: binding/);
   assert.match(report, /F-choice \[structured_selection\] problem: guided — Guided decisions/);
   assert.match(report, /rationale: Explicit approval is easier to audit\./);
-  assert.match(report, /researchs\/open-design-briefing-refiner-2026\/summary\.md/);
+  assert.match(report, /researchs\/open-design-refiner-2026\/summary\.md/);
   assert.match(report, /Source hash: [a-f0-9]{64}/);
   assert.match(report, /Applied hash: [a-f0-9]{64}/);
 });
@@ -1123,8 +1123,8 @@ test('verify:artifact kind=review proves the canonical surface and rejects a han
   assert.equal(bad.issues.some((issue) => issue.includes('external resources')), true);
 });
 
-test('briefing-refiner auto-fires the review gate at agent:done', async () => {
-  const mapping = AGENT_ARTIFACT_KIND['briefing-refiner'];
+test('refiner auto-fires the review gate at agent:done', async () => {
+  const mapping = AGENT_ARTIFACT_KIND['refiner'];
   assert.equal(mapping.kind, 'review');
   assert.equal(mapping.needs, 'slug');
   assert.equal(mapping.featureSlugged, true);
@@ -1136,12 +1136,12 @@ test('briefing-refiner auto-fires the review gate at agent:done', async () => {
   const logger = { log() {}, error() {} };
   await runBriefingReview({ args: [dir], options: { slug: 'idea-one' }, logger });
 
-  const fired = await verifyAgentArtifact({ targetDir: dir, agent: 'briefing-refiner', options: { slug: 'idea-one' } });
+  const fired = await verifyAgentArtifact({ targetDir: dir, agent: 'refiner', options: { slug: 'idea-one' } });
   assert.equal(fired.kind, 'review');
   assert.equal(fired.ok, true);
   assert.equal(fired.skipped, false);
 
-  const skipped = await verifyAgentArtifact({ targetDir: dir, agent: 'briefing-refiner', options: {} });
+  const skipped = await verifyAgentArtifact({ targetDir: dir, agent: 'refiner', options: {} });
   assert.equal(skipped.skipped, true);
   assert.equal(skipped.reason.includes('--kind=review'), true);
 });

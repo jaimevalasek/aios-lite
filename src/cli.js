@@ -1224,7 +1224,7 @@ function printHelp(t, logger) {
 
 function printAgentHelp(agentName, jsonMode, logger, t) {
   const { AGENT_DEFINITIONS } = require('./constants');
-  const { normalizeAgentName } = require('./agents');
+  const { getAgentDefinition } = require('./agents');
 
   if (!agentName) {
     const list = AGENT_DEFINITIONS.map((a) => ({
@@ -1244,11 +1244,8 @@ function printAgentHelp(agentName, jsonMode, logger, t) {
     return;
   }
 
-  const normalized = normalizeAgentName(agentName);
-  const agent = AGENT_DEFINITIONS.find((a) => {
-    if (a.id === normalized) return true;
-    return Array.isArray(a.aliases) && a.aliases.includes(normalized);
-  });
+  // Single resolver: ids, live aliases (`pair`) and legacy ids (`briefing-refiner`).
+  const agent = getAgentDefinition(agentName);
 
   if (!agent) {
     if (jsonMode) {
@@ -1270,6 +1267,7 @@ function printAgentHelp(agentName, jsonMode, logger, t) {
         command: agent.command,
         path: agent.path,
         aliases: agent.aliases || [],
+        legacyIds: agent.legacyIds || [],
         flags: agent.flags || [],
         dependsOn: agent.dependsOn,
         output: agent.output
@@ -1281,7 +1279,10 @@ function printAgentHelp(agentName, jsonMode, logger, t) {
   const aliasLine = agent.aliases && agent.aliases.length > 0
     ? ` (aliases: ${agent.aliases.join(', ')})`
     : '';
-  logger.log(`${agent.command} — ${agent.description || agent.displayName}${aliasLine}\n`);
+  const legacyLine = agent.legacyIds && agent.legacyIds.length > 0
+    ? ` (formerly: ${agent.legacyIds.join(', ')})`
+    : '';
+  logger.log(`${agent.command} — ${agent.description || agent.displayName}${aliasLine}${legacyLine}\n`);
   logger.log(`${t('agents.help_usage')}`);
   logger.log(`  aioson agent:prompt ${agent.id} [path] [options]`);
   logger.log(`  /${agent.id} [task description]                  ${t('agents.help_claude_code')}\n`);
@@ -1316,8 +1317,25 @@ function writeJson(payload) {
   writeThrough(process.stdout, 1, text);
 }
 
+// Flags that carry an agent id. A renamed agent's legacy id (see `aliases`
+// in constants.js) is canonicalized once here so every command downstream
+// compares canonical ids; unknown/custom values pass through untouched.
+const AGENT_ID_FLAGS = ['agent', 'from', 'to', 'source-agent', 'stage'];
+
+function canonicalizeAgentFlags(options) {
+  const { canonicalAgentId } = require('./agents');
+  for (const flag of AGENT_ID_FLAGS) {
+    const value = options[flag];
+    if (typeof value !== 'string' || !value.trim()) continue;
+    const canonical = canonicalAgentId(value);
+    if (canonical !== value.trim().toLowerCase().replace(/^@/, '')) options[flag] = canonical;
+  }
+  return options;
+}
+
 async function main() {
   const { command, args, options } = parseArgv(process.argv);
+  canonicalizeAgentFlags(options);
   const locale = normalizeLocale(options.locale || process.env.AIOS_LITE_LOCALE || 'en');
   const jsonMode = Boolean(options.json);
   const { t } = createTranslator(locale);

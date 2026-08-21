@@ -11,7 +11,7 @@
 ## A esteira principal
 
 ```text
-@briefing → @briefing-refiner → @product → @sheldon → @planner → @dev → @qa → @tester → @pentester
+@briefing → @refiner → @product → @sheldon → @planner → @dev → @qa → @tester → @pentester
 ```
 
 Esta é a cadeia que constrói feature, em ciclo. MICRO, SMALL e MEDIUM percorrem a mesma ordem — a classificação muda profundidade, orçamento e cobertura de risco, não a sequência.
@@ -19,7 +19,7 @@ Esta é a cadeia que constrói feature, em ciclo. MICRO, SMALL e MEDIUM percorre
 | # | Agente | Para que serve | Saída principal |
 |---|---|---|---|
 | 1 | [@briefing](./briefing.md) | Transforma fontes cruas em briefing pré-PRD, com fontes preservadas e promessas `PROM-*` numeradas | `briefing.md` |
-| 2 | [@briefing-refiner](./briefing-refiner.md) | Audita as lacunas em achados estruturados e monta o protótipo navegável que você aprova. O CLI renderiza a revisão (`briefing:review`) e aplica o feedback confirmado (`briefing:apply-feedback`) | `prototype.html`, `refinement-findings.json`, `review.html`, `refinement-report.md` |
+| 2 | [@refiner](./refiner.md) | Audita as lacunas em achados estruturados e monta o protótipo navegável que você aprova. O CLI renderiza a revisão (`briefing:review`) e aplica o feedback confirmado (`briefing:apply-feedback`) | `prototype.html`, `refinement-findings.json`, `review.html`, `refinement-report.md` |
 | 3 | [@product](./product.md) | Define capacidades `CAP-*`, critérios observáveis e o que fica explicitamente fora | `prd-{slug}.md` |
 | 4 | [@sheldon](./sheldon.md) | Confronta o PRD com fonte, protótipo e repositório; corrige no próprio arquivo e sela | o mesmo `prd-{slug}.md` + PASS vinculado ao hash |
 | 5 | [@planner](./planner.md) | Transforma o PRD selado em etapas verticais com arquivos exatos e check por etapa | `implementation-plan-{slug}.md` |

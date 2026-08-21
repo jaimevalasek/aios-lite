@@ -13,7 +13,7 @@ After the current request has been bound to the active feature, `aioson workflow
 - Apply the Concrete implementation lane gate first.
 - Preserve an unrelated active workflow unchanged; Simple Plan runs directly in Dev and never calls `workflow:next`.
 - Canonical feature route: Product → Sheldon → Planner → Dev → QA.
-- When the user starts from raw feature sources, use the pre-product route `plans/{slug}/ → Briefing → Briefing Refiner → user approval`; visual/rich surfaces require the feature-owned prototype to be approved before Product.
+- When the user starts from raw feature sources, use the pre-product route `plans/{slug}/ → Briefing → Refiner → user approval`; visual/rich surfaces require the feature-owned prototype to be approved before Product.
 - Product, Sheldon, Planner, Dev, and QA stay in workflow. Other specialists run only for a concrete unresolved decision or enabled/risk-triggered review.
 - Simple Plan goes directly to Dev and ends there.
 - Repair objectively inferable stale/inconsistent context in workflow; unresolved project-context uncertainty routes to Setup.

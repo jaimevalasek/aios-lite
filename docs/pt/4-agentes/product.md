@@ -4,7 +4,7 @@
 
 ## Para que serve
 
-`@product` é o dono do único PRD da feature: `.aioson/context/prd-{slug}.md`. Ele consolida briefing, feedback do Briefing Refiner, planos externos e decisões do usuário sem criar especificações paralelas.
+`@product` é o dono do único PRD da feature: `.aioson/context/prd-{slug}.md`. Ele consolida briefing, feedback do Refiner, planos externos e decisões do usuário sem criar especificações paralelas.
 
 O PRD registra:
 
@@ -35,7 +35,7 @@ MICRO, SMALL e MEDIUM mudam o detalhe do PRD, não o próximo estágio canônico
 ## Quando invocar
 
 - Para iniciar uma feature com direção de produto já razoavelmente clara.
-- Depois de `@briefing` e, opcionalmente, `@briefing-refiner`.
+- Depois de `@briefing` e, opcionalmente, `@refiner`.
 - Quando existem planos externos em `plans/` que precisam virar um PRD governado.
 - Para revisar escopo, ACs ou exclusões antes do planejamento.
 
@@ -77,7 +77,7 @@ Dossiês, pesquisas e pareceres de especialistas são contexto auxiliar. O PRD c
 
 ## Handoff típico
 
-- **Vem de:** `@briefing-refiner`, `@briefing`, `@setup` ou pedido direto.
+- **Vem de:** `@refiner`, `@briefing`, `@setup` ou pedido direto.
 - **Vai para:** `@sheldon` quando enriquecimento foi escolhido; caso contrário, `@planner`.
 
 ## Veja também

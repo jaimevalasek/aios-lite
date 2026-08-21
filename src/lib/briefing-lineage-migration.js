@@ -19,8 +19,8 @@ const {
 const {
   findBriefing,
   readBriefingRegistry
-} = require('./briefing-refiner/briefing-registry');
-const { resolveBriefingPath } = require('./briefing-refiner/briefing-paths');
+} = require('./refiner/briefing-registry');
+const { resolveBriefingPath } = require('./refiner/briefing-paths');
 const {
   isInsideRoot,
   relativeFromRoot,

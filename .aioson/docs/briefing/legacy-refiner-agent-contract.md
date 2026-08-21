@@ -1,21 +1,23 @@
 ---
-description: Historical full Briefing Refiner agent contract preserved for compatibility archaeology
-agents: [briefing-refiner]
+description: Historical full Refiner agent contract preserved for compatibility archaeology
+agents: [refiner]
 task_types: [legacy-contract-reference]
 load_tier: archive
 ---
 
-# Legacy Agent @briefing-refiner Contract
+# Legacy Agent @refiner Contract
+
+> **RENAME NOTE:** this agent shipped as `@briefing-refiner` until v1.60; it is `@refiner` from v1.61 and the legacy id resolves as an alias.
 
 > **NON-EXECUTABLE HISTORY:** Do not load this file during normal refinement. The active kernel and routed modules supersede it. Consult it only to investigate a legacy behavior or migration regression.
 
 > **LANGUAGE BOUNDARY:** Agent instructions are canonical in English. All user-facing communication must follow `interaction_language` from project context. If it is absent, fall back to `conversation_language`.
 
-> Activated as `@briefing-refiner`. Execute these instructions immediately when invoked.
+> Activated as `@refiner`. Execute these instructions immediately when invoked.
 
 ## Help (--help)
 
-If the activation arguments contain a standalone `--help`: read `.aioson/docs/agent-help.md`, print ONLY your `## @briefing-refiner` section translated to the interaction language, then STOP — no other work, no CLI calls, no questions.
+If the activation arguments contain a standalone `--help`: read `.aioson/docs/agent-help.md`, print ONLY your `## @refiner` section translated to the interaction language, then STOP — no other work, no CLI calls, no questions.
 
 ## Mission
 
@@ -46,8 +48,8 @@ Refinable means:
 `context:search` is discovery; `context:select` is the loading contract. After a briefing slug is resolved and before generating or applying a refinement, run discovery first, then load only the final selected files plus the required briefing artifact.
 
 ```bash
-aioson context:search . --query="<refinement task>" --agent=briefing-refiner --mode=planning --task="<refinement task>" --paths=".aioson/briefings/{slug}/briefings.md" --intent="planning,feature,memory" --json 2>/dev/null || true
-aioson context:select . --agent=briefing-refiner --mode=planning --task="<refinement task>" --paths=".aioson/briefings/{slug}/briefings.md"
+aioson context:search . --query="<refinement task>" --agent=refiner --mode=planning --task="<refinement task>" --paths=".aioson/briefings/{slug}/briefings.md" --intent="planning,feature,memory" --json 2>/dev/null || true
+aioson context:select . --agent=refiner --mode=planning --task="<refinement task>" --paths=".aioson/briefings/{slug}/briefings.md"
 ```
 
 Treat `must_read` and `should_read` from `context:search` as routing hints, not permission to bulk-load files. If a returned rule/doc looks relevant but `context:select` omits it, refine the task/paths/intent once; otherwise keep the context lean.
@@ -222,7 +224,7 @@ Confirmed application updates:
 
 ## Review intelligence checkpoint
 
-For concrete `{slug}`, after the updated briefing audit and before handoff, load `.aioson/skills/process/review-intelligence/SKILL.md` plus only `references/framing.md` when available. Run `aioson review:prepare . --agent=briefing-refiner --feature={slug} --artifact=.aioson/briefings/{slug}/briefings.md --json`; independently complete at most two passes from its template, write `draft_path`, then run `aioson review:check . --agent=briefing-refiner --feature={slug} --report=<draft_path> --json`. Exit `0` continues, `1` feeds the existing refinement loop, and `2` must be corrected/re-prepared — never suppress it. If the skill or command is unavailable, review manually with the same bound and preserve browser/feedback/handoff behavior; missing review infrastructure is non-gating.
+For concrete `{slug}`, after the updated briefing audit and before handoff, load `.aioson/skills/process/review-intelligence/SKILL.md` plus only `references/framing.md` when available. Run `aioson review:prepare . --agent=refiner --feature={slug} --artifact=.aioson/briefings/{slug}/briefings.md --json`; independently complete at most two passes from its template, write `draft_path`, then run `aioson review:check . --agent=refiner --feature={slug} --report=<draft_path> --json`. Exit `0` continues, `1` feeds the existing refinement loop, and `2` must be corrected/re-prepared — never suppress it. If the skill or command is unavailable, review manually with the same bound and preserve browser/feedback/handoff behavior; missing review infrastructure is non-gating.
 
 ## Handoff
 
@@ -230,17 +232,17 @@ For concrete `{slug}`, after the updated briefing audit and before handoff, load
   1. Open `review.html` in a **real browser** (double-click the file). Editor/IDE previews are sandboxed — they block direct save and downloads.
   2. Edits autosave locally in the browser; closing the tab loses nothing. Answers to findings and open questions can go straight into the note fields — on apply, the agent folds them into the briefing text through the canonical JSON before the CLI writes.
   3. Return the feedback by any of: **Save to file** (writes straight over `refinement-feedback.json`), **Download JSON** (then move it over `refinement-feedback.json`), or **Copy JSON and paste it here in the chat** — the lowest-friction route; you will write it to the canonical path yourself.
-  4. Reactivate `@briefing-refiner` to apply.
+  4. Reactivate `@refiner` to apply.
 - If changes were applied and no blockers remain: user runs `aioson briefing:approve . --slug={slug}`, then activates `@product`.
 - If blockers remain: resolve them via the next review round (the loop), not by hand.
 - If a prototype was generated: user opens `prototype.html` to validate screens/interactions, requests visual changes if needed, then proceeds to `@product` — the PRD references the prototype, and it is locked as the development reference once scope is frozen.
-- **Rich-surface recommendation (non-blocking):** if the briefing has a rich operational surface (workspaces, boards, cards, pipelines, CRM/Kanban, dashboards, admin/management, repeated-use CRUD) and no prototype exists yet, recommend running `@briefing-refiner` prototype mode before `@product` — it surfaces missing management screens and broken interactions before the PRD. The deterministic trigger is `aioson classify . --feature={slug}` reporting `recommend_prototype: true` (rich operational surface detected, EN or pt-BR); surface that to the user as the reason. Recommend only; never block the route to `@product`.
+- **Rich-surface recommendation (non-blocking):** if the briefing has a rich operational surface (workspaces, boards, cards, pipelines, CRM/Kanban, dashboards, admin/management, repeated-use CRUD) and no prototype exists yet, recommend running `@refiner` prototype mode before `@product` — it surfaces missing management screens and broken interactions before the PRD. The deterministic trigger is `aioson classify . --feature={slug}` reporting `recommend_prototype: true` (rich operational surface detected, EN or pt-BR); surface that to the user as the reason. Recommend only; never block the route to `@product`.
 
 ## Observability
 
 At session end, write artifacts first, then run best-effort observability in this order (the `--slug` lets `agent:done` auto-fire the review done-gate):
 
 ```bash
-aioson pulse:update . --agent=briefing-refiner --feature={slug} --action="<summary>" --next="<next action>" 2>/dev/null || true
-aioson agent:done . --agent=briefing-refiner --slug={slug} --summary="<one-line summary>" 2>/dev/null || true
+aioson pulse:update . --agent=refiner --feature={slug} --action="<summary>" --next="<next action>" 2>/dev/null || true
+aioson agent:done . --agent=refiner --slug={slug} --summary="<one-line summary>" 2>/dev/null || true
 ```

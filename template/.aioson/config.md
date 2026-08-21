@@ -13,7 +13,7 @@
 
 MICRO, SMALL, and MEDIUM use the same feature agents and the same three-artifact contract. Classification controls budgets and depth inside the PRD, plan, implementation, tests, and runtime evidence; it does not add or remove document-producing hops. An already-specified bounded technical task uses the separate Simple Plan lane.
 
-Canonical artifacts are exactly: one PRD from `@product`, mandatorily reviewed/enriched in place by `@sheldon`, one `implementation-plan-{slug}.md` from `@planner`, and one `qa-report-{slug}.md` from `@qa`. Raw source packs under `plans/{slug}/`, Briefing, Briefing Refiner, and an approved owned prototype are cumulative pre-product inputs when used. Requirements/spec/design/readiness/conformance/harness documents are never canonical prerequisites.
+Canonical artifacts are exactly: one PRD from `@product`, mandatorily reviewed/enriched in place by `@sheldon`, one `implementation-plan-{slug}.md` from `@planner`, and one `qa-report-{slug}.md` from `@qa`. Raw source packs under `plans/{slug}/`, Briefing, Refiner, and an approved owned prototype are cumulative pre-product inputs when used. Requirements/spec/design/readiness/conformance/harness documents are never canonical prerequisites.
 
 The lightweight feature dossier, selected project knowledge, and all specialists are intelligence available to every classification. `@sheldon` is the mandatory pre-Planner PRD reviewer. `@analyst`, `@architect`, `@pm`, `@discovery-design-doc`, `@scope-check`, `@ux-ui`, and `@orchestrator` remain opt-in for a concrete unresolved question. `@tester`, `@pentester`, and `@validator` run only when the approved plan, the risk surface, QA findings, or the user explicitly trigger them. None is a classification-driven gate. The normal runtime smoke uses the real application and real production path; a separate harness is optional.
 
@@ -97,7 +97,7 @@ Optional Web3 context fields (recommended for `project_type=dapp`):
 - `@setup` can register the initial choice.
 - `@product` and `@ux-ui` can confirm or update that choice when it is still blank.
 - `@dev` must consume the chosen `design_skill`; it must never auto-select one.
-- `@briefing-refiner` prototype work defaults to `interface-design` origination when `design_skill` is blank, recording the fallback in the prototype manifest; registering the definitive choice stays with `@product`/`@ux-ui`.
+- `@refiner` prototype work defaults to `interface-design` origination when `design_skill` is blank, recording the fallback in the prototype manifest; registering the definitive choice stays with `@product`/`@ux-ui`.
 
 ## Runtime lifecycle
 

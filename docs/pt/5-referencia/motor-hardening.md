@@ -190,13 +190,13 @@ Complete these items before finishing the stage.
 
 ### Tabela de contratos por agente
 
-Estes são os contratos da esteira. Cada linha corresponde a uma fase de `@briefing → @briefing-refiner → @product → @sheldon → @planner → @dev → @qa → @tester → @pentester`.
+Estes são os contratos da esteira. Cada linha corresponde a uma fase de `@briefing → @refiner → @product → @sheldon → @planner → @dev → @qa → @tester → @pentester`.
 
 | Agente | Artefatos obrigatórios | Gate |
 |---|---|---|
 | `@setup` | `project.context.md` | — |
 | `@briefing` | `briefing.md` com fontes e `PROM-*` | — |
-| `@briefing-refiner` | `prototype.html` com `prototype_status: current` e aprovação sua | — |
+| `@refiner` | `prototype.html` com `prototype_status: current` e aprovação sua | — |
 | `@product` | `prd-{slug}.md` com `CAP-*` e ACs observáveis | escopo/prontidão |
 | `@sheldon` | o mesmo PRD, enriquecido | `sheldon_review: approved` + PASS vinculado ao hash |
 | `@planner` | `implementation-plan-{slug}.md` com etapas verticais | C |

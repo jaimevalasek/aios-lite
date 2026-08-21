@@ -9,7 +9,7 @@ Cards are being translated progressively. Until a card is available here, the PT
 ## Canonical feature route
 
 ```text
-optional @briefing → optional @briefing-refiner → @product
+optional @briefing → optional @refiner → @product
 → @sheldon → @planner → @dev → @qa
 ```
 
@@ -27,7 +27,7 @@ Autopilot defaults to the DEV → QA handoff and can cover the full canonical ch
 |---|---|
 | `@setup` | Project onboarding — detect stack, classify MICRO/SMALL/MEDIUM, write `project.context.md` |
 | `@briefing` | Pre-PRD framing — turn `plans/` sketches into structured briefings with gap analysis |
-| [`@briefing-refiner`](./briefing-refiner.md) | Briefing refinement loop — audits the briefing into structured findings, the CLI renders the localized `review.html` surface (`briefing:review`), confirmed feedback is applied via `briefing:apply-feedback`, rounds repeat until nothing blocks the PRD |
+| [`@refiner`](./refiner.md) | Briefing refinement loop — audits the briefing into structured findings, the CLI renders the localized `review.html` surface (`briefing:review`), confirmed feedback is applied via `briefing:apply-feedback`, rounds repeat until nothing blocks the PRD |
 | `@product` | PRD — vision, problem, users, scope, acceptance criteria; resolves and records the prototype and identity bindings (`identity`/`identity_status`) the PRD carries forward |
 | `@sheldon` | Optional PRD review and enrichment; updates Product's single PRD instead of creating a parallel specification package; blocks approval when a material state the approved prototype renders (loading, empty, error, permission-denied, responsive) has neither an acceptance criterion nor a recorded deferral |
 | `@planner` | Converts the approved PRD into the single vertical implementation plan |

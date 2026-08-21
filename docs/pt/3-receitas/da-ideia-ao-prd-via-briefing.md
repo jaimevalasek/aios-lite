@@ -23,7 +23,7 @@ ideia vaga / anotações
        ↓
    @briefing   →  .aioson/briefings/{slug}/briefings.md
        ↓
- (opcional) @briefing-refiner  →  loop de refino: auditoria + review.html + apply-feedback
+ (opcional) @refiner  →  loop de refino: auditoria + review.html + apply-feedback
        ↓
 aioson briefing:approve
        ↓
@@ -93,7 +93,7 @@ Você > Todos.
 
 Leia `.aioson/briefings/notificacoes-push/briefings.md`.
 
-> **Quer uma revisão estruturada antes de aprovar?** Ative o [`@briefing-refiner`](../4-agentes/briefing-refiner.md): ele audita o briefing em achados estruturados (categoria, severidade, bloqueio), o CLI renderiza a superfície `review.html` (`aioson briefing:review . --slug=notificacoes-push`) para você decidir cada achado e editar cada seção **num navegador de verdade**, e o feedback confirmado é aplicado com `aioson briefing:apply-feedback . --slug=notificacoes-push --confirm` — em rodadas, até nada bloquear o PRD.
+> **Quer uma revisão estruturada antes de aprovar?** Ative o [`@refiner`](../4-agentes/refiner.md): ele audita o briefing em achados estruturados (categoria, severidade, bloqueio), o CLI renderiza a superfície `review.html` (`aioson briefing:review . --slug=notificacoes-push`) para você decidir cada achado e editar cada seção **num navegador de verdade**, e o feedback confirmado é aplicado com `aioson briefing:apply-feedback . --slug=notificacoes-push --confirm` — em rodadas, até nada bloquear o PRD.
 
 Se estiver bom:
 
@@ -240,5 +240,5 @@ plans/                              ← seus rascunhos (intocados)
 - [Plans externos para @product](./plans-externos-para-product.md) — como usar ChatGPT/Claude.ai como fonte para `plans/`
 - [Feature completa com @sheldon](./feature-completa-com-sheldon.md) — quando o PRD está pronto para revisão independente obrigatória e planejamento
 - [@briefing — ficha](../4-agentes/briefing.md) — referência técnica do agente
-- [@briefing-refiner — ficha](../4-agentes/briefing-refiner.md) — loop de revisão/refino do briefing antes do PRD
+- [@refiner — ficha](../4-agentes/refiner.md) — loop de revisão/refino do briefing antes do PRD
 - [@product — ficha](../4-agentes/product.md) — referência técnica do agente

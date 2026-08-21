@@ -1,7 +1,7 @@
 ---
 name: feature-expansion-taxonomy
 description: "Shared taxonomy for optional feature expansion: classify richer product possibilities without inflating MVP scope."
-agents: [briefing, briefing-refiner, product, sheldon]
+agents: [briefing, refiner, product, sheldon]
 modes: [planning, executing]
 task_types: [feature-expansion, product-discovery, prd-enrichment, briefing-refinement]
 load_tier: trigger

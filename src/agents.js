@@ -13,12 +13,48 @@ function getAgentDefinition(name) {
   const normalized = normalizeAgentName(name);
   return AGENT_DEFINITIONS.find((agent) => {
     if (agent.id === normalized) return true;
-    return Array.isArray(agent.aliases) && agent.aliases.includes(normalized);
+    if (Array.isArray(agent.aliases) && agent.aliases.includes(normalized)) return true;
+    return Array.isArray(agent.legacyIds) && agent.legacyIds.includes(normalized);
   }) || null;
 }
 
 function listAgentDefinitions() {
   return [...AGENT_DEFINITIONS];
+}
+
+function mapToCanonical(field) {
+  return Object.freeze(
+    Object.fromEntries(
+      AGENT_DEFINITIONS.flatMap((agent) =>
+        (Array.isArray(agent[field]) ? agent[field] : []).map((name) => [name, agent.id])
+      )
+    )
+  );
+}
+
+// Legacy id → canonical id, derived from the definitions' `legacyIds` so a
+// rename is declared once (constants.js) and honored everywhere an agent id
+// is compared: CLI flags, rules/docs frontmatter, brains, dossier authors.
+// Drives the `aioson update` cleanup of the files the old name left behind.
+const LEGACY_AGENT_IDS = mapToCanonical('legacyIds');
+
+// Live aliases keep their own stub file (`pair.md` → @deyvin); they are the
+// same agent for every comparison but are never treated as debris.
+const ALIAS_AGENT_IDS = mapToCanonical('aliases');
+
+// Canonical id for any spelling of a known agent (`@briefing-refiner`,
+// `Briefing-Refiner`, `refiner`, `pair`); unknown names come back normalized
+// but untouched, so squad/custom agent ids are never rewritten.
+function canonicalAgentId(name) {
+  const normalized = normalizeAgentName(name);
+  if (!normalized) return normalized;
+  return LEGACY_AGENT_IDS[normalized] || ALIAS_AGENT_IDS[normalized] || normalized;
+}
+
+// True when `candidate` names the same agent as `agent`, alias-aware.
+function isSameAgent(agent, candidate) {
+  const a = canonicalAgentId(agent);
+  return Boolean(a) && a === canonicalAgentId(candidate);
 }
 
 function resolveInstructionPath(agent, locale) {
@@ -54,7 +90,7 @@ function buildAgentPrompt(agent, tool, options = {}) {
   const orchestration = String(options.orchestration || '').trim();
   let scopeException = '';
   if (orchestration === 'benchmark-traversal') {
-    scopeException = ' Exception: this activation conducts a measured benchmark traversal — running `aioson benchmark:bootstrap`, activating the AIOSON chain agents (`@briefing → @briefing-refiner → @product → @sheldon → @planner → @dev → @qa`) inside the assigned run, and resolving their gates under the measured-run contract IS @benchmark\'s own territory. Follow `.aioson/docs/benchmark/traversal.md`. The round is unattended: never ask the user anything mid-round.';
+    scopeException = ' Exception: this activation conducts a measured benchmark traversal — running `aioson benchmark:bootstrap`, activating the AIOSON chain agents (`@briefing → @refiner → @product → @sheldon → @planner → @dev → @qa`) inside the assigned run, and resolving their gates under the measured-run contract IS @benchmark\'s own territory. Follow `.aioson/docs/benchmark/traversal.md`. The round is unattended: never ask the user anything mid-round.';
   } else if (autoHandoff) {
     scopeException = ' Exception: autopilot handoff is active for this stage — follow `.aioson/docs/autopilot-handoff.md` and auto-invoke the next agent\'s skill when no stop condition applies. The canonical chain is `@product → @sheldon → @planner → @dev → @qa`: one Sheldon-reviewed PRD, one executable plan, one delivery verdict. Inside DEV, a clean vertical phase checkpoint is recovery state, never a human approval gate: load `.aioson/docs/dev/phase-loop.md` for multi-phase plans and continue immediately through all remaining phases. DEV may dispatch explicitly enabled development lanes with registered host/model pairs, but remains integration owner; unavailable pairs pause unless an applicable fallback is explicit. `@tester`, `@pentester`, and `@validator` are disabled by default and run only when enabled and triggered, then return to `@qa`. Stop for a genuine human decision, and NEVER auto-run `feature:close`/publish — those require explicit human approval.';
   }
@@ -95,7 +131,10 @@ function buildAgentPrompt(agent, tool, options = {}) {
 }
 
 module.exports = {
+  LEGACY_AGENT_IDS,
   normalizeAgentName,
+  canonicalAgentId,
+  isSameAgent,
   getAgentDefinition,
   listAgentDefinitions,
   resolveInstructionPath,

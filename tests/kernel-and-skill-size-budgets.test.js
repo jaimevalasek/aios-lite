@@ -43,7 +43,7 @@ const KERNEL_CEILINGS = {
   'deyvin.md': 16384,
   'benchmark.md': 14000,
   'briefing.md': 12000,
-  'briefing-refiner.md': 12000,
+  'refiner.md': 12000,
   'neo.md': 12000,
   'genome.md': 12000,
   'copywriter.md': 12000,

@@ -15,7 +15,7 @@ Offer these lanes and stop:
 - Dev Simple Plan for a bounded technical change or refactor.
 - Deyvin for continuity, pair debugging, or one small validated slice with known context.
 - Briefing for an early idea not yet ready for PRD commitment.
-- Briefing Refiner for an existing briefing that needs review.
+- Refiner for an existing briefing that needs review.
 - Product when the user already intends to define/build a feature.
 - Neo when the user asks about project status or available agents, or when more than one lane remains genuinely plausible after this gate — Neo recommends one agent and stops.
 
@@ -52,7 +52,7 @@ Named activation loads `.aioson/agents/{slug}.md` immediately. Main routes:
 | Intent | Agent |
 |---|---|
 | Setup/repair project context | `setup` |
-| Early idea / existing briefing | `briefing` / `briefing-refiner` |
+| Early idea / existing briefing | `briefing` / `refiner` |
 | Product scope / PRD enrichment / plan | `product` / `sheldon` / `planner` |
 | Implement / pair continuity / test / acceptance | `dev` / `deyvin` / `tester` / `qa` |
 | Post-delivery completeness walkthrough ("pente fino") | `shakedown` |

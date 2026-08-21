@@ -11,7 +11,7 @@ Cada agente produz arquivos que os agentes subsequentes leem. Nenhum agente lê 
 ```
 @briefing → briefing.md (fontes com hash + promessas PROM-*)
                ↓
-@briefing-refiner → prototype.html (aprovado por você) + refinement-report.md
+@refiner → prototype.html (aprovado por você) + refinement-report.md
                ↓
 @product → prd-{slug}.md (capacidades CAP-* + ACs observáveis + exclusões)
                ↓
@@ -182,7 +182,7 @@ Para os agentes mapeados em `src/artifact-kinds.js`, o gate **dispara sozinho** 
 | `@setup` | `project-context` | `project.context.md` válido |
 | `@discover` | `bootstrap` | os 4 arquivos do cache de cold start |
 | `@briefing` | `briefing` | frontmatter, as 8 seções, perguntas classificadas, registro e linhagem de fontes |
-| `@briefing-refiner` | `review` | `review.html` gerado pelo CLI, não à mão |
+| `@refiner` | `review` | `review.html` gerado pelo CLI, não à mão |
 | `@tester` | `test-report` | matriz de hipóteses, evidência de comando, risco residual nomeado |
 | `@squad` | `squad-pilot` | contrato de pilot: bloco, entrypoint, `PILOT.md`, fingerprint |
 | `@genome` / `@profiler-forge` | `genome` | `genome:doctor` + aviso de aprovação stale |

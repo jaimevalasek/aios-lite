@@ -67,7 +67,7 @@ test('the composite briefing wording recalls the confirmation rule (regression)'
   // The wording that missed in the real-project test: the confirmation intent
   // is expressed only through the verb "cancelar".
   const result = await selectContext(dir, {
-    agent: 'briefing-refiner',
+    agent: 'refiner',
     mode: 'executing',
     task: 'protótipo de gestão de OS: mover etapas no quadro, cancelar OS, cadastro com CPF e dashboard operacional',
     semantic: false

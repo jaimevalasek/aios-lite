@@ -8,7 +8,7 @@
 ## The trail in one line
 
 ```text
-optional @briefing → optional @briefing-refiner → @product
+optional @briefing → optional @refiner → @product
 → @sheldon → @planner → @dev → @qa
 ```
 

@@ -5,12 +5,12 @@
 ## A esteira
 
 ```text
-@briefing → @briefing-refiner → @product → @sheldon → @planner → @dev → @qa → @tester → @pentester
+@briefing → @refiner → @product → @sheldon → @planner → @dev → @qa → @tester → @pentester
 ```
 
 Esta receita cobre o trecho `@product → @qa`, que é onde você entra quando a direção de produto já está clara.
 
-- **Antes:** `@briefing → @briefing-refiner` é a entrada de fonte crua — opcional quando a direção já está definida, obrigatória (via protótipo aprovado) quando há superfície visual nova. Ver [Da ideia ao PRD via briefing](./da-ideia-ao-prd-via-briefing.md).
+- **Antes:** `@briefing → @refiner` é a entrada de fonte crua — opcional quando a direção já está definida, obrigatória (via protótipo aprovado) quando há superfície visual nova. Ver [Da ideia ao PRD via briefing](./da-ideia-ao-prd-via-briefing.md).
 - **Depois:** `@tester` e `@pentester` endurecem a entrega depois do PASS. Eles não concedem o Gate D — o Gate D é o QA.
 
 MICRO, SMALL e MEDIUM percorrem a mesma esteira; a classificação muda detalhe, orçamento e cobertura de risco.

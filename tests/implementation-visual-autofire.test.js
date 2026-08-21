@@ -259,7 +259,7 @@ test('site-forge carries the visual rider over its deliverable, and the engine i
 
 test('the active feature resolves for a featureSlugged done-gate when no --feature was threaded', async () => {
   const dir = await featureRepo();
-  const refiner = await verifyAgentArtifact({ targetDir: dir, agent: 'briefing-refiner', options: {} });
+  const refiner = await verifyAgentArtifact({ targetDir: dir, agent: 'refiner', options: {} });
   // The primary kind=review has no report for this feature (not ok, advisory);
   // what matters: the slug resolved, so it was not the "needs --slug" hint.
   assert.equal(refiner.kind, 'review');

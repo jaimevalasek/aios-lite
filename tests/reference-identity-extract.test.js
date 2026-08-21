@@ -65,10 +65,10 @@ test('verify:artifact registers the identity kind', () => {
   assert.equal(availableKinds().includes('identity'), true);
 });
 
-test('briefing-refiner wires the reference-image intake (byte-parity)', async () => {
-  const agent = await parityTracked('.aioson/agents/briefing-refiner.md');
+test('refiner wires the reference-image intake (byte-parity)', async () => {
+  const agent = await parityTracked('.aioson/agents/refiner.md');
   for (const token of ['references/identity', 'reference-identity-extract', '--kind=identity', 'identity.md']) {
-    assert.equal(agent.includes(token), true, `briefing-refiner missing wiring token: ${token}`);
+    assert.equal(agent.includes(token), true, `refiner missing wiring token: ${token}`);
   }
 });
 

@@ -5,6 +5,7 @@ const path = require('node:path');
 const os = require('node:os');
 const Database = require('better-sqlite3');
 const { parseFrontmatter, parseAgentList } = require('./preflight-engine');
+const { canonicalAgentId } = require('./agents');
 const { pathMatchesPattern: selectorPathMatchesPattern } = require('./context-selector');
 
 const SEARCH_DIR = path.join(os.homedir(), '.aioson', 'search');
@@ -754,7 +755,7 @@ function rankContextRow(row, context) {
     if (metadata.agents.length === 0 || metadata.agents.includes('all')) {
       score += 4;
       reasons.push('agent:all');
-    } else if (metadata.agents.map(normalizeKey).includes(context.agent)) {
+    } else if (metadata.agents.map((item) => canonicalAgentId(normalizeKey(item))).includes(canonicalAgentId(context.agent))) {
       score += 14;
       reasons.push(`agent:${context.agent}`);
     } else {

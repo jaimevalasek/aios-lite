@@ -1,6 +1,6 @@
 ---
 description: Exact canonical identity.md structure and token families
-agents: [briefing-refiner, setup]
+agents: [refiner, setup]
 task_types: [identity-record]
 triggers: [write identity.md]
 ---

@@ -5,7 +5,7 @@
 
 ## O que muda no fluxo
 
-Com Briefing refinável, o `@briefing-refiner` continua criando o protótipo canônico em `.aioson/briefings/{slug}/`.
+Com Briefing refinável, o `@refiner` continua criando o protótipo canônico em `.aioson/briefings/{slug}/`.
 
 Sem Briefing, uma exploração fica isolada em `.aioson/explorations/{slug}/`. Ela pode ser selecionada, mas só vira fonte de produto depois de `exploration:promote` e da criação normal do Briefing. Seleção visual não é aprovação de escopo.
 
@@ -94,7 +94,7 @@ aioson exploration:promote . \
 
 Isso cria `plans/modernizacao-dashboard/visual-exploration.md` com caminhos e SHA-256 dos artefatos escolhidos. Depois:
 
-`@briefing → @briefing-refiner → aprovação do usuário → @product`
+`@briefing → @refiner → aprovação do usuário → @product`
 
 O Briefing separa o que é direção visual do que seria nova interação ou novo escopo. O Refiner consolida um protótipo canônico e exclusivo da feature; ele nunca simplesmente renomeia a exploração como aprovada.
 

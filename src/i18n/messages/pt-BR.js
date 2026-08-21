@@ -4,10 +4,10 @@ module.exports = {
   briefing_gate: {
     resolution_missing: 'Briefing "{slug}" não pode ser aprovado: protótipo não resolvido (prototype_resolution_missing).',
     resolution_missing_expected: '  Esperado: {path}',
-    resolution_missing_visual: '  Escopo visual → ative @briefing-refiner para gerar o protótipo antes da aprovação.',
+    resolution_missing_visual: '  Escopo visual → ative @refiner para gerar o protótipo antes da aprovação.',
     resolution_missing_non_visual: '  Feature sem superfície visual → registre a linha `prototype: not_applicable` no briefings.md e aprove de novo.',
     manifest_missing: 'Briefing "{slug}" tem prototype.html, mas falta o manifesto (prototype_manifest_missing).',
-    manifest_missing_expected: '  Esperado: {path} com `feature: {slug}` e `status: draft` — @briefing-refiner deve gerá-lo.',
+    manifest_missing_expected: '  Esperado: {path} com `feature: {slug}` e `status: draft` — @refiner deve gerá-lo.',
     owner_mismatch: 'O manifesto do protótipo pertence a outra feature ("{owner}", esperado "{slug}") (prototype_manifest_owner_mismatch).',
     owner_mismatch_fix: '  Corrija o campo `feature:` em {path} — nunca reaproveite o protótipo de outro briefing.',
     status_invalid: 'O manifesto do protótipo tem status inválido "{status}" (prototype_manifest_status_invalid).',
@@ -533,6 +533,7 @@ module.exports = {
     files_updated: 'Arquivos atualizados: {count}',
     backups_created: 'Backups criados: {count}',
     profile_renamed: 'i Perfil `beginner` renomeado para `creator` em project.context.md para descrever melhor o usuario. Comportamento inalterado. Edite o arquivo para mudar para `developer` se preferir.',
+    agent_renamed: 'i O agente `briefing-refiner` agora se chama `refiner` (`/refiner`, `@refiner`). {count} arquivo(s) do nome antigo removido(s); o id antigo continua resolvendo como alias.',
     reconfigure_hint: 'Novas opcoes podem estar disponiveis. Execute: aioson install --reconfigure',
     tracked_ignored_found: '  Gitignore: {count} arquivo(s) gerenciado(s) pelo framework continuam rastreados pelo Git embora a politica do AIOSON os ignore — o git status segue listando e `git add -- <caminho>` recusa:',
     tracked_ignored_remedy: '  Gitignore: pare de versiona-los uma vez com: git rm -r --cached -- {paths}'

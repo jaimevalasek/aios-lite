@@ -43,7 +43,7 @@ test('benchmark wrapper carries the traversal orchestration exception', () => {
   });
   assert.match(orchestrated, /measured benchmark traversal/);
   assert.match(orchestrated, /benchmark:bootstrap/);
-  assert.match(orchestrated, /@briefing → @briefing-refiner → @product → @sheldon → @planner → @dev → @qa/);
+  assert.match(orchestrated, /@briefing → @refiner → @product → @sheldon → @planner → @dev → @qa/);
   assert.match(orchestrated, /\.aioson\/docs\/benchmark\/traversal\.md/);
   assert.match(orchestrated, /never ask the user anything mid-round/i);
 
@@ -93,8 +93,8 @@ test('benchmark kernel conducts the measured traversal instead of building alone
   // Route detection: prototype vs full chain.
   assert.match(kernel, /prototype route/);
   assert.match(kernel, /full route/);
-  assert.match(kernel, /`@briefing → @briefing-refiner`/);
-  assert.match(kernel, /`@briefing → @briefing-refiner \(no prototype\) → @product → @sheldon → @planner → @dev → @qa`/);
+  assert.match(kernel, /`@briefing → @refiner`/);
+  assert.match(kernel, /`@briefing → @refiner \(no prototype\) → @product → @sheldon → @planner → @dev → @qa`/);
   assert.match(kernel, /one self-contained screen/i);
   assert.match(kernel, /When in doubt, take the full route/i);
 

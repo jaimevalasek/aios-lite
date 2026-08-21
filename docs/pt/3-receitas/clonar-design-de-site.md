@@ -206,6 +206,6 @@ Na próxima vez que você clonar um site com características similares (dark si
 
 ## Próximo passo
 
-- Aplicar a nova skill num projeto: mencione `design_skill: <nome>` em `project.context.md` ou rode `@setup`. Ela vira insumo do protótipo no `@briefing-refiner` e autoridade visual para o `@dev`.
+- Aplicar a nova skill num projeto: mencione `design_skill: <nome>` em `project.context.md` ou rode `@setup`. Ela vira insumo do protótipo no `@refiner` e autoridade visual para o `@dev`.
 - Publicar a skill: → [Publicar no aioson.com](./publicar-no-aioson-com.md)
 - Construir uma landing com a skill: → [Landing page](./landing-page.md)

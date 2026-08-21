@@ -43,7 +43,7 @@ test('feature expansion taxonomy keeps routing metadata and shared buckets', asy
 
   const tokens = [
     'name: feature-expansion-taxonomy',
-    'agents: [briefing, briefing-refiner, product, sheldon]',
+    'agents: [briefing, refiner, product, sheldon]',
     'task_types: [feature-expansion, product-discovery, prd-enrichment, briefing-refinement]',
     'Core',
     'Recommended MVP',
@@ -89,7 +89,7 @@ test('feature expansion skills have frontmatter and role-specific output contrac
 test('briefing, product, and sheldon agents wire feature expansion skills on demand', async () => {
   const gateway = await read('template/AGENTS.md');
   const briefing = await read('template/.aioson/agents/briefing.md');
-  const briefingRefiner = await read('template/.aioson/agents/briefing-refiner.md');
+  const briefingRefiner = await read('template/.aioson/agents/refiner.md');
   const product = await read('template/.aioson/agents/product.md');
   const sheldon = await read('template/.aioson/agents/sheldon.md');
 

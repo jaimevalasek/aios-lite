@@ -2,7 +2,7 @@
 
 > **Para quem é:** quem tem uma dúvida de interação concreta que o protótipo aprovado não resolveu.
 
-> ⚠️ **Não é uma etapa da esteira.** O visual da feature é decidido antes, no protótipo navegável que você aprova no `@briefing-refiner`. O `@ux-ui` é um desvio opt-in para uma pergunta nomeada. Ver [a esteira principal](../1-entender/mapa-do-ecossistema.md#a-esteira-principal).
+> ⚠️ **Não é uma etapa da esteira.** O visual da feature é decidido antes, no protótipo navegável que você aprova no `@refiner`. O `@ux-ui` é um desvio opt-in para uma pergunta nomeada. Ver [a esteira principal](../1-entender/mapa-do-ecossistema.md#a-esteira-principal).
 
 ## Onde mora a autoridade visual
 

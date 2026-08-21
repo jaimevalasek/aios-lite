@@ -1,6 +1,6 @@
 ---
 description: "Artifact done-gates (verify:artifact) — build-free, model-agnostic completeness/integrity checks for the non-code artifacts the specialized agents produce before they register done."
-agents: [setup, genome, profiler-researcher, profiler-enricher, profiler-forge, discover, orache, design-hybrid-forge, site-forge, copywriter, committer, squad, briefing, briefing-refiner, product, sheldon, tester, dev, shakedown]
+agents: [setup, genome, profiler-researcher, profiler-enricher, profiler-forge, discover, orache, design-hybrid-forge, site-forge, copywriter, committer, squad, briefing, refiner, product, sheldon, tester, dev, shakedown]
 task_types: [verification, configuration]
 triggers: [verify:artifact, artifact gate, done gate, artifact done-gate, placeholder gate, kind=]
 ---
@@ -41,10 +41,10 @@ done-gate line, not a bespoke implementation.
 | `copy` | `@copywriter` | ruleset (placeholder / Lorem / TODO / unfilled-token scan) | advisory |
 | `commit-message` | `@committer` | subject heuristics (`--file` draft or HEAD commit) | advisory |
 | `briefing` | `@briefing` | briefing lint (registry lifecycle/structure, prototype-pending surfacing) | advisory |
-| `identity` | `@briefing-refiner` | ruleset (identity record shape and binding coherence) | advisory |
+| `identity` | `@refiner` | ruleset (identity record shape and binding coherence) | advisory |
 | `prd` | `@sheldon` (advisory preflight also in `@product`) | PRD lint (PROM coverage, CAP→fit rows, AC chain, assertion-only-evidence ban, binding coherence) | blocking before the seal |
 | `sources` | `@sheldon`, `@product` | source-pack re-hash + `SRC-*`/`PROM-*`/Source Coverage reconciliation | blocking |
-| `review` | `@briefing-refiner` | review-surface gate (canonical marker, stale `source_hash`, feedback schema) | advisory |
+| `review` | `@refiner` | review-surface gate (canonical marker, stale `source_hash`, feedback schema) | advisory |
 | `visual` | `@dev` / design flows | visual-quality measurement over the delivered surface | advisory |
 | `test-report` | `@tester` | test-report lint (mandatory sections, hypothesis classes, correction packet) | blocking done gate |
 | `squad-pilot` | `@squad` | squad-pilot lint (pilot block, fingerprint, deliverable + builder drift) | blocking — `squad:pilot-approve` refuses while issues remain |
@@ -80,7 +80,7 @@ end (and rides on `agent:epilogue`, which wraps `agent:done`):
   command, so the gate is visible rather than silently skipped. `agent:epilogue`
   forwards the same three locator flags to the `agent:done` it wraps.
 - **Feature-slugged kinds** (`tester`→`test-report`, `briefing`→`briefing`,
-  `briefing-refiner`→`review`) fall back to `--feature` as the slug when no
+  `refiner`→`review`) fall back to `--feature` as the slug when no
   explicit `--slug` was threaded — those artifacts are keyed by the feature slug,
   so a plain `agent:done --feature={slug}` already fires them.
 

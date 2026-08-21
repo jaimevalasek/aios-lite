@@ -13,12 +13,12 @@ Você tem um produto novo e precisa de uma página de apresentação. O desafio 
 Landing page é **superfície visual rica**. Por isso ela entra na esteira pelo começo, e não direto no PRD:
 
 ```text
-@briefing → @briefing-refiner → @copywriter → @product → @sheldon → @planner → @dev → @qa
+@briefing → @refiner → @copywriter → @product → @sheldon → @planner → @dev → @qa
                     ↓
         prototype.html aprovado por VOCÊ
 ```
 
-O `@briefing-refiner` monta um **protótipo navegável** com as seções, os estados e as interações reais. Você caminha por ele e aprova. Só então o PRD existe — e o protótipo aprovado vira a autoridade visual que o `@dev` segue.
+O `@refiner` monta um **protótipo navegável** com as seções, os estados e as interações reais. Você caminha por ele e aprova. Só então o PRD existe — e o protótipo aprovado vira a autoridade visual que o `@dev` segue.
 
 > **A regra dura:** escopo visual não passa para o `@product` sem um protótipo próprio aprovado (`prototype_status: current`). Isso é o que impede a página de nascer "quase certa" e virar retrabalho depois.
 
@@ -117,38 +117,38 @@ Você > "É complicado", "não tenho tempo pra aprender", "funciona pro meu tipo
             - preço aparece na página ou só depois do cadastro?
             - depoimento real ou nenhum? (fictício não entra)
 
-@briefing > briefing.md gravado. Próximo: @briefing-refiner.
+@briefing > briefing.md gravado. Próximo: @refiner.
 ```
 
 > **O que muda aqui:** as promessas viram `PROM-1..n` rastreáveis. Lá na frente, o `@product` tem que cobrir todas — não dá para uma promessa sumir no caminho.
 
 ---
 
-## Passo 3 — `@briefing-refiner` monta o protótipo que você aprova
+## Passo 3 — `@refiner` monta o protótipo que você aprova
 
 Esta é a fase que economiza mais tempo na receita inteira.
 
 ```
-Você > @briefing-refiner
+Você > @refiner
 
-@briefing-refiner > Extraindo a identidade das 3 imagens de referência...
+@refiner > Extraindo a identidade das 3 imagens de referência...
                     identity.md gravado: paleta, peso tipográfico, densidade,
                     tratamento de borda e sombra, cadência de espaçamento.
 
-@briefing-refiner > Lacunas do briefing viraram achados com opções:
+@refiner > Lacunas do briefing viraram achados com opções:
                     [1] Preço na página?
                         (a) faixa "a partir de R$ X"  (b) sem preço  (c) tabela completa
                     [2] Prova social sem depoimento real?
                         (a) logos de clientes  (b) número de negócios atendidos  (c) omitir
 Você > 1a, 2b
 
-@briefing-refiner > Montando prototype.html — autocontido, com as seções reais:
+@refiner > Montando prototype.html — autocontido, com as seções reais:
                     nav · hero · problema · como funciona · faixa de preço ·
                     prova (número) · FAQ (3 objeções) · CTA final · footer
                     Estados incluídos: hover dos CTAs, FAQ aberto/fechado,
                     mobile 390px, dark/light.
 
-@briefing-refiner > Abra .aioson/context/features/landing-principal/prototype.html
+@refiner > Abra .aioson/context/features/landing-principal/prototype.html
                     e me diga o que mudar — pode comentar na própria tela.
 ```
 
@@ -157,12 +157,12 @@ Você abre no navegador, navega, e devolve o feedback:
 ```
 Você > O hero está com muito respiro, a headline perde força. E o FAQ deveria vir antes do preço.
 
-@briefing-refiner > Rodada 2 aplicada: hero mais compacto, FAQ movido para antes do preço.
+@refiner > Rodada 2 aplicada: hero mais compacto, FAQ movido para antes do preço.
                     refinement-report.md registra as duas rodadas.
 
 Você > Agora sim. Aprovado.
 
-@briefing-refiner > prototype_status: current, aprovado por você.
+@refiner > prototype_status: current, aprovado por você.
                     Próximo: @copywriter (texto de conversão) e depois @product.
 ```
 
@@ -358,7 +358,7 @@ plans/landing-principal/                      ← fontes cruas e imagens de refe
 
 | Problema | Solução |
 |---|---|
-| O `@dev` implementou diferente do protótipo | Confira `prototype_status: current` no PRD. Se estiver vazio ou `stale`, o vínculo se perdeu — rode o `@briefing-refiner` para reaprovar. |
+| O `@dev` implementou diferente do protótipo | Confira `prototype_status: current` no PRD. Se estiver vazio ou `stale`, o vínculo se perdeu — rode o `@refiner` para reaprovar. |
 | A página saiu com cara de template | Provavelmente rodou sem identidade. Confira se `identity.md` existe e está vinculado no PRD; se não, rode a extração a partir das suas imagens de referência. |
 | Copy gerado está genérico | Abra `copy-landing-principal.md` e adicione dados reais (preços, nome do fundador). Reative o `@copywriter` pedindo "refine a seção Hero com esses dados". |
 | Sobrou uma dúvida de interação que o protótipo não resolveu | Chame `@ux-ui` para *aquela* pergunta específica. Ele é um desvio opt-in, não uma etapa da esteira. |

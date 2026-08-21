@@ -20,7 +20,7 @@ Esta é a rota que uma feature percorre no AIOSON. Cada agente entrega um **arte
    @briefing                → .aioson/briefings/{slug}/briefings.md
         │                      problema, temas, riscos, gaps, perguntas em aberto
         ▼
-   @briefing-refiner        → review.html + refinement-report.md
+   @refiner        → review.html + refinement-report.md
         │                      + prototype.html quando o escopo é visual
         ▼
    VOCÊ aprova              → aioson briefing:approve . --slug={slug}
@@ -46,7 +46,7 @@ Esta é a rota que uma feature percorre no AIOSON. Cada agente entrega um **arte
 | Etapa | O que o agente faz | O que entra | O que sai |
 |---|---|---|---|
 | [`@briefing`](./4-agentes/briefing.md) | Coleta a matéria-prima e a transforma em um documento estruturado — sem decidir escopo | Arquivos em `plans/{slug}/` ou uma conversa guiada | `briefings.md` com problema, temas, riscos, gaps e perguntas classificadas |
-| [`@briefing-refiner`](./4-agentes/briefing-refiner.md) | Audita o briefing em achados estruturados e, quando o escopo é visual, produz o **protótipo** que você aprova | O briefing em `draft` | `review.html` para você decidir no navegador, `refinement-report.md` e `prototype.html` |
+| [`@refiner`](./4-agentes/refiner.md) | Audita o briefing em achados estruturados e, quando o escopo é visual, produz o **protótipo** que você aprova | O briefing em `draft` | `review.html` para você decidir no navegador, `refinement-report.md` e `prototype.html` |
 | **Você** | Aprova o briefing — nenhum agente aprova no seu lugar | Briefing refinado | `aioson briefing:approve . --slug={slug}` |
 | [`@product`](./4-agentes/product.md) | Transforma o briefing aprovado em PRD: o que a feature faz, o que ela **não** faz, e como saber que ficou pronta | Briefing aprovado | `prd-{slug}.md` — a autoridade de escopo |
 | [`@sheldon`](./4-agentes/sheldon.md) | Revisão técnica e de arquitetura: acha o edge case frágil, o risco não nomeado, o AC que não é verificável | O PRD | O **mesmo** `prd-{slug}.md`, enriquecido e selado para planejamento |
@@ -59,7 +59,7 @@ Esta é a rota que uma feature percorre no AIOSON. Cada agente entrega um **arte
 Cada etapa existe para impedir que uma decisão cara seja tomada cedo demais, com informação de menos:
 
 1. **`@briefing` antes de tudo** porque escrever um PRD a partir de uma ideia vaga produz um PRD vago. Ele coleta e organiza; não decide.
-2. **`@briefing-refiner` antes da aprovação** porque ambiguidade que passa daqui vira dívida no PRD — e porque, em escopo visual, é muito mais barato discordar de um protótipo do que de uma tela já implementada.
+2. **`@refiner` antes da aprovação** porque ambiguidade que passa daqui vira dívida no PRD — e porque, em escopo visual, é muito mais barato discordar de um protótipo do que de uma tela já implementada.
 3. **Sua aprovação antes do `@product`** porque o escopo é decisão de dono do produto, não de agente.
 4. **`@sheldon` depois do `@product`** porque revisão técnica precisa de algo concreto para criticar; revisar uma intenção não produz achado.
 5. **`@planner` depois do PRD selado** porque plano feito sobre escopo instável é replanejado a cada mudança.
@@ -67,9 +67,9 @@ Cada etapa existe para impedir que uma decisão cara seja tomada cedo demais, co
 7. **`@qa` independente** porque quem implementou não é a melhor pessoa para achar o que ficou faltando. O PASS do QA é o Gate D.
 8. **`@tester` e `@pentester` depois do veredito** porque cobertura e endurecimento protegem um comportamento já aprovado — eles não decidem se a feature está pronta.
 
-Esteira completa: `@briefing → @briefing-refiner → @product → @sheldon → @planner → @dev → @qa → @tester → @pentester`.
+Esteira completa: `@briefing → @refiner → @product → @sheldon → @planner → @dev → @qa → @tester → @pentester`.
 
-O bloco `@briefing → @briefing-refiner → aprovação` é **opcional**: se a feature já está clara, comece direto no `@product`. Mas se você começar, precisa terminar — um briefing pela metade não vira PRD, e escopo visual exige o protótipo aprovado. MICRO, SMALL e MEDIUM percorrem a mesma esteira; a classificação muda profundidade e orçamento, não a ordem. As consultorias (`@analyst`, `@architect`, `@ux-ui`, `@pm`) **não são etapas** — entram sob pedido explícito, para uma dúvida nomeada. E para uma mudança pequena existe a rota curta, o Simple Plan via `@deyvin`.
+O bloco `@briefing → @refiner → aprovação` é **opcional**: se a feature já está clara, comece direto no `@product`. Mas se você começar, precisa terminar — um briefing pela metade não vira PRD, e escopo visual exige o protótipo aprovado. MICRO, SMALL e MEDIUM percorrem a mesma esteira; a classificação muda profundidade e orçamento, não a ordem. As consultorias (`@analyst`, `@architect`, `@ux-ui`, `@pm`) **não são etapas** — entram sob pedido explícito, para uma dúvida nomeada. E para uma mudança pequena existe a rota curta, o Simple Plan via `@deyvin`.
 
 ### Exemplo curto de ponta a ponta
 
@@ -82,14 +82,14 @@ Você > @briefing
 Você > Sim.
 @briefing > .aioson/briefings/export-csv/briefings.md criado.
             3 perguntas em aberto (1 decision-required: separador , ou ;).
-            Próximo: @briefing-refiner.
+            Próximo: @refiner.
 
-Você > @briefing-refiner
-@briefing-refiner > 4 achados (1 bloqueia o PRD: formato de data não definido).
+Você > @refiner
+@refiner > 4 achados (1 bloqueia o PRD: formato de data não definido).
                     Revisão renderizada: .aioson/briefings/export-csv/review.html
                     Abra, decida cada achado e volte.
 Você > [decide no navegador; o feedback é aplicado]
-@briefing-refiner > Nada bloqueia o PRD. Aprove quando quiser.
+@refiner > Nada bloqueia o PRD. Aprove quando quiser.
 
 # no terminal:
 $ aioson briefing:approve . --slug=export-csv

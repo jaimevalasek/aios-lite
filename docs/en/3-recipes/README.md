@@ -9,7 +9,7 @@ These three trails show **how features reach development** in AIOSON. You almost
 | Trail | When to use | Key agents |
 |---|---|---|
 | **[Full feature with mandatory @sheldon review](./full-feature-with-sheldon.md)** | The canonical tracked feature trail at proportional depth | `@product → @sheldon → @planner → @dev → @qa` |
-| [From idea to PRD via @briefing](./from-idea-to-prd-via-briefing.md) | Your idea is still vague, several loose notes | optional `@briefing → @briefing-refiner` → `@product` |
+| [From idea to PRD via @briefing](./from-idea-to-prd-via-briefing.md) | Your idea is still vague, several loose notes | optional `@briefing → @refiner` → `@product` |
 | [External plans for @product (PT)](../../pt/3-receitas/plans-externos-para-product.md) *(EN coming soon)* | You already planned in another chat (ChatGPT, Claude.io Web) | @product (reads `/plans/`) |
 
 ## Recipes by scenario
@@ -23,7 +23,7 @@ These three trails show **how features reach development** in AIOSON. You almost
 | [Security audit (PT)](../../pt/3-receitas/auditoria-seguranca.md) *(EN coming soon)* | Review vulnerabilities before production | explicit @pentester |
 | [Publish on aioson.com (PT)](../../pt/3-receitas/publicar-no-aioson-com.md) *(EN coming soon)* | Distribute a squad, skill, or genome | system:package, system:publish |
 | [Clone site design (PT)](../../pt/3-receitas/clonar-design-de-site.md) *(EN coming soon)* | Extract a site's visual or combine two styles | @site-forge, @design-hybrid-forge |
-| [Visual exploration and multi-model arena](./visual-exploration-arena.md) | Test redesigns, screenshots, and model variants before Briefing | @briefing-refiner, @briefing |
+| [Visual exploration and multi-model arena](./visual-exploration-arena.md) | Test redesigns, screenshots, and model variants before Briefing | @refiner, @briefing |
 | [Continuity between sessions](./continuity-between-sessions.md) | Resume a feature after the session ended | @deyvin, dossier, dev-state |
 
 Back to the main portal: [docs/en/README.md](../README.md)

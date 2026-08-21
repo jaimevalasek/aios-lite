@@ -2,6 +2,7 @@
 
 const fs = require('node:fs/promises');
 const path = require('node:path');
+const { canonicalAgentId } = require('./agents');
 
 function splitCsv(value) {
   return String(value || '')
@@ -36,7 +37,8 @@ async function readJsonFile(filePath) {
 function brainMatches({ brain, tags, agent }) {
   if (agent) {
     const agents = Array.isArray(brain.agents) ? brain.agents : [];
-    if (!agents.includes(agent)) return false;
+    const wanted = canonicalAgentId(agent);
+    if (!agents.some((item) => canonicalAgentId(item) === wanted)) return false;
   }
   if (tags.length > 0) {
     const brainTags = Array.isArray(brain.tags) ? brain.tags : [];

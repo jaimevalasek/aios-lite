@@ -4,10 +4,10 @@ module.exports = {
   briefing_gate: {
     resolution_missing: 'Briefing "{slug}" cannot be approved: prototype not resolved (prototype_resolution_missing).',
     resolution_missing_expected: '  Expected: {path}',
-    resolution_missing_visual: '  Visual scope → activate @briefing-refiner to build the prototype before approval.',
+    resolution_missing_visual: '  Visual scope → activate @refiner to build the prototype before approval.',
     resolution_missing_non_visual: '  Feature with no visual surface → record the `prototype: not_applicable` line in briefings.md and approve again.',
     manifest_missing: 'Briefing "{slug}" has prototype.html but the manifest is missing (prototype_manifest_missing).',
-    manifest_missing_expected: '  Expected: {path} with `feature: {slug}` and `status: draft` — @briefing-refiner generates it.',
+    manifest_missing_expected: '  Expected: {path} with `feature: {slug}` and `status: draft` — @refiner generates it.',
     owner_mismatch: 'The prototype manifest belongs to another feature ("{owner}", expected "{slug}") (prototype_manifest_owner_mismatch).',
     owner_mismatch_fix: '  Fix the `feature:` field in {path} — never reuse another briefing\'s prototype.',
     status_invalid: 'The prototype manifest has an invalid status "{status}" (prototype_manifest_status_invalid).',
@@ -566,6 +566,7 @@ module.exports = {
     files_updated: 'Files updated: {count}',
     backups_created: 'Backups created: {count}',
     profile_renamed: 'i Profile `beginner` renamed to `creator` in project.context.md to better describe the user. Behavior unchanged. Edit the file to switch to `developer` if desired.',
+    agent_renamed: 'i Agent `briefing-refiner` is now `refiner` (`/refiner`, `@refiner`). Removed {count} stale file(s) from the old name; the old id keeps resolving as an alias.',
     reconfigure_hint: 'New options may be available. Run: aioson install --reconfigure',
     tracked_ignored_found: '  Gitignore: {count} framework-managed file(s) are still tracked by Git although the AIOSON policy ignores them — git status keeps listing them and `git add -- <path>` refuses them:',
     tracked_ignored_remedy: '  Gitignore: stop tracking them once with: git rm -r --cached -- {paths}'

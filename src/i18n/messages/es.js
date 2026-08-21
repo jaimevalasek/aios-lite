@@ -4,10 +4,10 @@ module.exports = {
   briefing_gate: {
     resolution_missing: 'El briefing "{slug}" no puede aprobarse: prototipo sin resolver (prototype_resolution_missing).',
     resolution_missing_expected: '  Esperado: {path}',
-    resolution_missing_visual: '  Alcance visual → activa @briefing-refiner para generar el prototipo antes de la aprobación.',
+    resolution_missing_visual: '  Alcance visual → activa @refiner para generar el prototipo antes de la aprobación.',
     resolution_missing_non_visual: '  Feature sin superficie visual → registra la línea `prototype: not_applicable` en briefings.md y aprueba de nuevo.',
     manifest_missing: 'El briefing "{slug}" tiene prototype.html, pero falta el manifiesto (prototype_manifest_missing).',
-    manifest_missing_expected: '  Esperado: {path} con `feature: {slug}` y `status: draft` — @briefing-refiner debe generarlo.',
+    manifest_missing_expected: '  Esperado: {path} con `feature: {slug}` y `status: draft` — @refiner debe generarlo.',
     owner_mismatch: 'El manifiesto del prototipo pertenece a otra feature ("{owner}", se esperaba "{slug}") (prototype_manifest_owner_mismatch).',
     owner_mismatch_fix: '  Corrige el campo `feature:` en {path} — nunca reutilices el prototipo de otro briefing.',
     status_invalid: 'El manifiesto del prototipo tiene un status inválido "{status}" (prototype_manifest_status_invalid).',
@@ -396,6 +396,7 @@ module.exports = {
     files_updated: 'Archivos actualizados: {count}',
     backups_created: 'Backups creados: {count}',
     profile_renamed: 'i Perfil `beginner` renombrado a `creator` en project.context.md para describir mejor al usuario. Comportamiento sin cambios. Edita el archivo para cambiar a `developer` si lo prefieres.',
+    agent_renamed: 'i El agente `briefing-refiner` ahora se llama `refiner` (`/refiner`, `@refiner`). Se eliminaron {count} archivo(s) del nombre anterior; el id antiguo sigue resolviendo como alias.',
     reconfigure_hint: 'Nuevas opciones pueden estar disponibles. Ejecuta: aioson install --reconfigure',
     tracked_ignored_found: '  Gitignore: {count} archivo(s) gestionado(s) por el framework siguen rastreados por Git aunque la politica de AIOSON los ignora — git status los sigue listando y `git add -- <ruta>` los rechaza:',
     tracked_ignored_remedy: '  Gitignore: deja de versionarlos una vez con: git rm -r --cached -- {paths}'

@@ -74,7 +74,7 @@
 
 After one-time setup, every tracked feature uses:
 
-`optional raw-source @briefing → @briefing-refiner → user approval → @product → @sheldon → @planner → @dev → @qa`
+`optional raw-source @briefing → @refiner → user approval → @product → @sheldon → @planner → @dev → @qa`
 
 > **The authorities stay stable at every classification.** Product owns one PRD, Planner owns one implementation plan, DEV owns implementation and final integration, and QA owns one final verdict. MICRO, SMALL, and MEDIUM change depth, risk coverage, and work budget—not the stage chain. Other specialists are explicitly requested consultants or reviewers.
 

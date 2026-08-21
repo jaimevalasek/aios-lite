@@ -1,7 +1,7 @@
 ---
 name: web-capture
 description: "Shared capture-route module for reference/inspiration site URLs: client decision between AIOSON capture (web:save + web:extract) and harness web tools, token-lean reading discipline, fallbacks, and local-reference-only policy."
-agents: [briefing-refiner, benchmark, site-forge, sheldon, product, dev]
+agents: [refiner, benchmark, site-forge, sheldon, product, dev]
 task_types: [design, research, benchmarking, site-cloning, visual-identity]
 load_tier: trigger
 triggers: [reference site, inspiration site, site URL, web:save, web:extract, site capture, clone site, site effects, motion reference, extract.md, researchs site, CSS extraction, keyframes reference, visual reference]
@@ -11,7 +11,7 @@ triggers: [reference site, inspiration site, site URL, web:save, web:extract, si
 
 > Load this module on demand when the current task is about to ingest a **reference/inspiration site URL** whose design, effects, motion, or structure matter (identity extraction, benchmark references, site cloning, visual research). Do not load it for plain content reading — harness web tools are fine for text.
 
-Consumers: briefing-refiner (visual route), benchmark (reference research and clones), site-forge (extraction source), and any agent doing visual web research. One module, one behavior — never restate these rules inside agent kernels; point here.
+Consumers: refiner (visual route), benchmark (reference research and clones), site-forge (extraction source), and any agent doing visual web research. One module, one behavior — never restate these rules inside agent kernels; point here.
 
 ## Why two routes exist
 

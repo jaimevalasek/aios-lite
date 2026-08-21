@@ -55,7 +55,7 @@ const AGENT_ARTIFACT_KIND = {
   // The refiner's session end proves BOTH halves of its output: the review
   // surface AND the prototype's measured craft. `skipIfMissing` keeps the
   // visual gate quiet for genuinely non-visual features (no prototype.html).
-  'briefing-refiner': {
+  'refiner': {
     kind: 'review', needs: 'slug', featureSlugged: true,
     also: [{ kind: 'visual', needs: 'slug', featureSlugged: true, skipIfMissing: '.aioson/briefings/{slug}/prototype.html' }]
   },
@@ -121,8 +121,8 @@ function summarizeVisualRun(report, dir) {
 
 /** Resolve an agent name (with or without a leading @) to its artifact mapping, or null. */
 function resolveAgentArtifact(agent) {
-  const name = String(agent || '').trim().replace(/^@/, '');
-  return AGENT_ARTIFACT_KIND[name] || null;
+  const { canonicalAgentId } = require('./agents');
+  return AGENT_ARTIFACT_KIND[canonicalAgentId(agent)] || null;
 }
 
 /**

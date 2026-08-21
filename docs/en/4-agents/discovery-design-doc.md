@@ -5,7 +5,7 @@
 `@discovery-design-doc` is available, but it is not part of the canonical feature chain:
 
 ```text
-optional Briefing → optional Briefing Refiner → Product
+optional Briefing → optional Refiner → Product
 → Sheldon → Planner → DEV → QA
 ```
 

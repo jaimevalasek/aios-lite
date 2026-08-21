@@ -1,6 +1,6 @@
 ---
 description: Evidence separation and one-pass extraction rules for visual reference identities
-agents: [briefing-refiner, setup]
+agents: [refiner, setup]
 task_types: [reference-image-extraction]
 triggers: [identity images, structure screenshots]
 ---

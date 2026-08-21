@@ -1,6 +1,6 @@
 ---
 name: briefing-expansion-scout
-description: "Briefing process skill for early feature expansion and operational surface scouting. Use in @briefing or @briefing-refiner when an idea may have a rich surface and the user wants to explore whether it is worth pursuing before PRD: tools, workflows, generators, dashboards, editors, collaboration, automation, templates, media outputs, workspace/board/card systems, operational CRUD, or Trello/CRM/Kanban-like systems."
+description: "Briefing process skill for early feature expansion and operational surface scouting. Use in @briefing or @refiner when an idea may have a rich surface and the user wants to explore whether it is worth pursuing before PRD: tools, workflows, generators, dashboards, editors, collaboration, automation, templates, media outputs, workspace/board/card systems, operational CRUD, or Trello/CRM/Kanban-like systems."
 ---
 
 # Briefing Expansion Scout
@@ -23,7 +23,7 @@ Run only when one is true:
 
 - user asks to explore, expand, evaluate, or pressure-test an idea
 - the idea has a rich surface: workflow, collaboration, editor/builder, generator, dashboard, automation, templates, media output, repeated operational use, workspaces, boards, operational CRUD, or admin/management surfaces
-- briefing-refiner detects that an existing briefing feels too thin for team discussion
+- refiner detects that an existing briefing feels too thin for team discussion
 
 If the idea is a tiny bugfix or a one-field CRUD addition, skip and say the normal briefing path is enough.
 

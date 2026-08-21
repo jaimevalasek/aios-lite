@@ -96,7 +96,7 @@ Quando a feature tem superfície visível ou operacional rica, o `@briefing` con
 - O **teste de substituibilidade** roda em `## Problem` e `## Proposed solution` — o primeiro lugar onde texto genérico pode entrar. Se o parágrafo continua fazendo sentido depois de trocar o produto, ele não descreve nada.
 - Os **contratos de interação** da superfície (máscaras e validação, confirmação de mudança de status, drag-and-drop em fluxo recorrente, widgets de decisão) são registrados como promessa ou como pergunta classificada em aberto.
 
-O ganho é de ordem: o contrato nasce como escopo em vez de ser descoberto como ausência pelo `@briefing-refiner` — ou, pior, pelo `@qa`. Veja [Regras de interação e gate visual](../5-referencia/regras-de-interacao-e-gate-visual.md).
+O ganho é de ordem: o contrato nasce como escopo em vez de ser descoberto como ausência pelo `@refiner` — ou, pior, pelo `@qa`. Veja [Regras de interação e gate visual](../5-referencia/regras-de-interacao-e-gate-visual.md).
 
 ## Gate determinístico antes do handoff
 
@@ -121,7 +121,7 @@ Uma ativação com `--help` (`/briefing --help`) imprime um resumo rápido — o
 ## Handoff típico
 
 - **Vem de:** você, com arquivos avulsos, um pacote heterogêneo em `plans/{slug}/` ou uma ideia conversacional.
-- **Vai para:** [`@briefing-refiner`](./briefing-refiner.md) (opcional — loop de revisão e refino do briefing antes do PRD) ou, após `aioson briefing:approve`, `@product` (que usa o briefing como contexto enriquecido no PRD).
+- **Vai para:** [`@refiner`](./refiner.md) (opcional — loop de revisão e refino do briefing antes do PRD) ou, após `aioson briefing:approve`, `@product` (que usa o briefing como contexto enriquecido no PRD).
 
 ## Modo conversacional
 
@@ -139,6 +139,6 @@ Você > Sim.
 ## Próximo passo
 
 - Entender o fluxo completo → [Mapa do ecossistema](../1-entender/mapa-do-ecossistema.md)
-- Revisar e refinar o briefing antes do PRD → [@briefing-refiner](./briefing-refiner.md)
+- Revisar e refinar o briefing antes do PRD → [@refiner](./refiner.md)
 - Após o briefing aprovado → [@product](./product.md) *(ficha em construção)*
 - Termos como "gap" e "PRD" → [Glossário](../1-entender/glossario.md)

@@ -291,7 +291,7 @@ plans/ → prd.md → [dev implementa] → qa-report.md
 ### MICRO, SMALL e MEDIUM
 
 ```text
-plans/{slug}/ → @briefing → @briefing-refiner → aprovação
+plans/{slug}/ → @briefing → @refiner → aprovação
        → @product: prd-{slug}.md
        → @sheldon: revisão obrigatória + PASS vinculado ao hash
        → @planner: implementation-plan-{slug}.md

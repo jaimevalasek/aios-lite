@@ -2,7 +2,7 @@
 
 > **Versão tabular alternativa (legado).** Para fichas individuais detalhadas com diálogos, saídas em disco e handoff, veja [`4-agentes/README.md`](./4-agentes/README.md).
 
-> ⚠️ **A ordem de agentes mostrada nesta página está desatualizada.** A esteira atual é `@briefing → @briefing-refiner → @product → @sheldon → @planner → @dev → @qa → @tester → @pentester`, e `@analyst`/`@architect`/`@ux-ui` são consultorias opt-in, não etapas. Use [4-agentes/README.md](./4-agentes/README.md) e o [Mapa do ecossistema](./1-entender/mapa-do-ecossistema.md#a-esteira-principal) como referência.
+> ⚠️ **A ordem de agentes mostrada nesta página está desatualizada.** A esteira atual é `@briefing → @refiner → @product → @sheldon → @planner → @dev → @qa → @tester → @pentester`, e `@analyst`/`@architect`/`@ux-ui` são consultorias opt-in, não etapas. Use [4-agentes/README.md](./4-agentes/README.md) e o [Mapa do ecossistema](./1-entender/mapa-do-ecossistema.md#a-esteira-principal) como referência.
 
 > `@pair` é alias de `@deyvin` e não possui ficha separada.
 
@@ -62,7 +62,7 @@ Quando o projeto ja existe e voce roda `scan:project`, o handoff correto agora e
 scan:project -> @analyst -> @scope-check -> @dev (ou @architect quando o full-merged opt-in do SMALL estiver ativo)
 ```
 
-> Fluxo atual: `[fontes em plans/{slug} -> @briefing -> @briefing-refiner -> aprovação] -> @product -> @sheldon -> @planner -> @dev -> @qa`. MICRO, SMALL e MEDIUM mudam profundidade, não a cadeia. `@analyst`, `@architect`, `@pm`, `@orchestrator` e outros especialistas entram somente sob pedido explícito.
+> Fluxo atual: `[fontes em plans/{slug} -> @briefing -> @refiner -> aprovação] -> @product -> @sheldon -> @planner -> @dev -> @qa`. MICRO, SMALL e MEDIUM mudam profundidade, não a cadeia. `@analyst`, `@architect`, `@pm`, `@orchestrator` e outros especialistas entram somente sob pedido explícito.
 
 Regras do fluxo:
 - os artefatos locais do scan (`scan-index.md`, `scan-folders.md`, `scan-<pasta>.md`, `scan-aioson.md`) servem como mapas brutos do codigo
@@ -978,7 +978,7 @@ Duração típica: minutos a horas. Sem análise, sem arquitetura formal.
 
 ### MICRO, SMALL e MEDIUM — mesma rota
 ```
-@setup → [fontes → @briefing → @briefing-refiner → aprovação] → @product → @sheldon → @planner → @dev → @qa
+@setup → [fontes → @briefing → @refiner → aprovação] → @product → @sheldon → @planner → @dev → @qa
 ```
 A classificação muda detalhe, orçamento e cobertura de risco. Sheldon é a revisão independente obrigatória do mesmo PRD antes do Planner. Tester, Pentester e Validator são opt-in e nunca entram apenas pela classificação.
 > `[@tester]` — opcional, recomendado quando a cobertura de testes for insuficiente após `@dev`.

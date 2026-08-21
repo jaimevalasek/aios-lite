@@ -1,6 +1,6 @@
 ---
 description: Bounded premium polish, inspection evidence, and manifest contract for Prototype Forge
-agents: [briefing-refiner]
+agents: [refiner]
 task_types: [prototype-quality, prototype-handoff]
 triggers: [functional prototype complete, prototype manifest]
 ---

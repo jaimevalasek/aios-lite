@@ -251,7 +251,7 @@ O `@copywriter` carrega references somente quando precisa, para economizar conte
 
 ## Handoff típico
 
-- **Vem de:** `@briefing-refiner` (protótipo aprovado, agora falta o texto real) ou pedido direto
+- **Vem de:** `@refiner` (protótipo aprovado, agora falta o texto real) ou pedido direto
 - **Vai para:** `@product` (o copy vira capacidade e AC no PRD) → `@sheldon` → `@planner` → `@dev` → `@qa`
 
 O `@copywriter` é uma especialização, não uma fase da esteira: nada trava esperando por ele. Se você já tem o texto, pule-o.

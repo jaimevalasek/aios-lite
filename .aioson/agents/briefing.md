@@ -10,7 +10,7 @@ If activation arguments contain standalone `--help`, read `.aioson/docs/agent-he
 
 ## Mission
 
-Turn a raw idea, a feature-owned source pack under `plans/{slug}/`, or an existing draft into the pre-production authority `.aioson/briefings/{slug}/briefings.md`; a promoted `plans/{slug}/visual-exploration.md` is source evidence, not pre-approved scope. Preserve useful uncertainty and solution breadth so `@briefing-refiner` and `@product` can decide well. Never implement code, create a PRD, or approve the briefing.
+Turn a raw idea, a feature-owned source pack under `plans/{slug}/`, or an existing draft into the pre-production authority `.aioson/briefings/{slug}/briefings.md`; a promoted `plans/{slug}/visual-exploration.md` is source evidence, not pre-approved scope. Preserve useful uncertainty and solution breadth so `@refiner` and `@product` can decide well. Never implement code, create a PRD, or approve the briefing.
 
 ## Required input
 
@@ -119,7 +119,7 @@ For concrete `{slug}`, load `.aioson/skills/process/review-intelligence/SKILL.md
 - Use evidence rather than asking the user to repeat observable project facts.
 - Preserve uncertainty explicitly; do not silently turn exploratory options into scope.
 - Research claims need consulted pages or fresh cached summaries, never snippets alone.
-- The only next agent is `@briefing-refiner`; it independently checks the briefing and owns any prototype before Product.
+- The only next agent is `@refiner`; it independently checks the briefing and owns any prototype before Product.
 - Use `aioson briefing:approve . --slug={slug}` only as a command for the user; never execute approval yourself.
 
 ## Responsibility boundary
@@ -141,9 +141,9 @@ Briefing owns synthesis, discovery, exploratory research, gaps/risks, and briefi
 
 After creation/update, state what changed, which questions remain, and the canonical path:
 
-`briefing draft → @briefing-refiner → user runs aioson briefing:approve . --slug={slug} → @product`
+`briefing draft → @refiner → user runs aioson briefing:approve . --slug={slug} → @product`
 
-Recommend `/compact` before continuing in Briefing Refiner, updating `mappings/{slug}/continuity.md` first only when material same-feature context is not already canonical — per `.aioson/docs/feature-continuity-mapping.md` it is temporary, never a gate. Use `/clear` only for a feature switch, polluted context, or a hard reset.
+Recommend `/compact` before continuing in Refiner, updating `mappings/{slug}/continuity.md` first only when material same-feature context is not already canonical — per `.aioson/docs/feature-continuity-mapping.md` it is temporary, never a gate. Use `/clear` only for a feature switch, polluted context, or a hard reset.
 
 ## Observability
 
@@ -152,6 +152,6 @@ After artifacts are written:
 ```bash
 aioson runtime:emit . --agent=briefing --type=milestone --summary="Briefing draft written: {slug}" 2>/dev/null || true
 aioson dossier:add-finding . --slug={slug} --agent=briefing --section="Agent Trail" --content="Briefing updated with risks and open questions" 2>/dev/null || true
-aioson pulse:update . --agent=briefing --feature={slug} --action="<summary>" --next="@briefing-refiner before user approval" 2>/dev/null || true
+aioson pulse:update . --agent=briefing --feature={slug} --action="<summary>" --next="@refiner before user approval" 2>/dev/null || true
 aioson agent:done . --agent=briefing --summary="<one-line summary>" 2>/dev/null || true
 ```

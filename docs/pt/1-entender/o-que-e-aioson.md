@@ -21,7 +21,7 @@ Imagine que você quer construir uma casa.
 A esteira principal é sempre a mesma, e cada fase só entrega quando tem prova:
 
 - O **Briefing** ouve sua ideia ainda crua (a "conversa de bar") e devolve um briefing estruturado, com fontes preservadas, promessas numeradas e o que ainda é dúvida — *antes* de virar projeto.
-- O **Briefing Refiner** monta a maquete: um protótipo navegável com as telas e os estados reais. Você caminha por ele e só então aprova. A planta chega antes do concreto.
+- O **Refiner** monta a maquete: um protótipo navegável com as telas e os estados reais. Você caminha por ele e só então aprova. A planta chega antes do concreto.
 - O **Product** converte o que você aprovou no PRD: o que o morador precisa poder fazer, com critério verificável e o que fica explicitamente fora.
 - O **Sheldon** revisa o PRD como um arquiteto sênior que já viu de tudo: confronta com as fontes, com o protótipo e com o seu código real, corrige lacuna e contradição no próprio arquivo, e sela.
 - O **Planner** corta a obra em etapas verticais — arquivos exatos, risco e check em cada uma.
@@ -37,7 +37,7 @@ E ainda tem o **Deyvin**, o empreiteiro que retoma a obra quando você volta de 
 Cada um sabe quando entrar, quando sair, e que documento entregar para o próximo. Você fala com qualquer um deles digitando `@nome` no seu cliente AI.
 
 > Esteira completa, em uma linha:
-> `@briefing → @briefing-refiner → @product → @sheldon → @planner → @dev → @qa → @tester → @pentester`
+> `@briefing → @refiner → @product → @sheldon → @planner → @dev → @qa → @tester → @pentester`
 > Detalhe fase a fase no [Mapa do ecossistema](./mapa-do-ecossistema.md#a-esteira-principal).
 
 ## O que isso muda na prática

@@ -16,7 +16,7 @@
     {
       "id": "briefing-expansion-scout",
       "path": ".aioson/skills/process/briefing-expansion-scout/SKILL.md",
-      "owner_agents": ["briefing", "briefing-refiner"],
+      "owner_agents": ["briefing", "refiner"],
       "triggers": ["rich feature surface", "existing expansion artifact", "explicit request for richer options"],
       "load_tier": "risk_triggered",
       "mutually_exclusive_group": null,
@@ -28,7 +28,7 @@
     {
       "id": "decision-presentation",
       "path": ".aioson/skills/process/decision-presentation/SKILL.md",
-      "owner_agents": ["product", "planner", "briefing", "briefing-refiner"],
+      "owner_agents": ["product", "planner", "briefing", "refiner"],
       "triggers": ["material user decision", "trade-off presentation", "approval choice"],
       "load_tier": "decision_triggered",
       "mutually_exclusive_group": null,
@@ -76,7 +76,7 @@
     {
       "id": "prototype-forge",
       "path": ".aioson/skills/process/prototype-forge/SKILL.md",
-      "owner_agents": ["briefing-refiner"],
+      "owner_agents": ["refiner"],
       "triggers": ["approved prototype request", "editable briefing prototype"],
       "load_tier": "explicit",
       "mutually_exclusive_group": null,
@@ -88,7 +88,7 @@
     {
       "id": "reference-identity-extract",
       "path": ".aioson/skills/process/reference-identity-extract/SKILL.md",
-      "owner_agents": ["setup", "briefing-refiner"],
+      "owner_agents": ["setup", "refiner"],
       "triggers": ["reference URL supplied", "visual identity extraction"],
       "load_tier": "explicit",
       "mutually_exclusive_group": null,
@@ -100,7 +100,7 @@
     {
       "id": "review-intelligence",
       "path": ".aioson/skills/process/review-intelligence/SKILL.md",
-      "owner_agents": ["briefing", "briefing-refiner", "product", "sheldon", "analyst", "architect", "scope-check", "qa"],
+      "owner_agents": ["briefing", "refiner", "product", "sheldon", "analyst", "architect", "scope-check", "qa"],
       "triggers": ["concrete feature artifact", "critical or high risk", "cross-cutting ambiguity", "independent review requested"],
       "load_tier": "risk_triggered",
       "mutually_exclusive_group": null,

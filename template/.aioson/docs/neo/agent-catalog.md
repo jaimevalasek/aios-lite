@@ -37,7 +37,7 @@ Load only when the user asks about available agents or the routing matrix is ins
 
 ## Discovery, content, and operations
 
-- `@briefing`, `@briefing-refiner`: pre-PRD framing and refinement
+- `@briefing`, `@refiner`: pre-PRD framing and refinement
 - `@orache`: external domain/market research
 - `@discover`: semantic codebase knowledge
 - `@discovery-design-doc`: explicitly requested living design document

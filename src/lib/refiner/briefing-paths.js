@@ -4,7 +4,7 @@ const path = require('node:path');
 
 // A briefing slug is a single, safe path segment: lowercase alphanumerics and
 // hyphens, never starting with a hyphen. This is the single source of truth for
-// slug validity across the briefing-refiner modules — it blocks path traversal
+// slug validity across the refiner modules — it blocks path traversal
 // (`../`), absolute paths, and separators before any slug reaches the filesystem.
 const SAFE_SLUG = /^[a-z0-9][a-z0-9-]*$/;
 

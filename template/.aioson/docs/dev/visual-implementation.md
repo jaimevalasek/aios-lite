@@ -34,7 +34,7 @@ Resolve from the PRD binding, in this order:
 3. the project's selected `design_skill`
 4. existing repository component language
 
-Do not replace missing visual direction with a generic layout. A genuinely unresolved visual decision is a product question for `@product`, or a prototype gap for `@briefing-refiner`; never invent a second visual system to fill it.
+Do not replace missing visual direction with a generic layout. A genuinely unresolved visual decision is a product question for `@product`, or a prototype gap for `@refiner`; never invent a second visual system to fill it.
 
 When an approved prototype exists, the design skill runs in **conformance mode**: transfer the approved direction, do not re-decide it. A deviation must already be recorded in the PRD as an approved deviation — never introduced silently as an improvement.
 

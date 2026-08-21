@@ -16,8 +16,8 @@ A primeira decisão da travessia é detectar o que o prompt pede de verdade:
 
 | Rota | Quando | Cadeia | Entregável |
 |---|---|---|---|
-| **prototype** | jogo, brinquedo ou experimento visual de **uma tela** — sem servidor, sem contas, sem dados persistentes multi-tela | `@briefing → @briefing-refiner` | o `prototype.html` funcional completo — o artefato comparável ao HTML único que o harness produziria |
-| **full** | qualquer aplicação real: site, CRM, dashboard, SaaS, API — o que um dev construiria com Node.js, React, Vite | `@briefing → @briefing-refiner (sem protótipo) → @product → @sheldon → @planner → @dev → @qa` em Autopilot | software rodando, com servidor quando o produto pede |
+| **prototype** | jogo, brinquedo ou experimento visual de **uma tela** — sem servidor, sem contas, sem dados persistentes multi-tela | `@briefing → @refiner` | o `prototype.html` funcional completo — o artefato comparável ao HTML único que o harness produziria |
+| **full** | qualquer aplicação real: site, CRM, dashboard, SaaS, API — o que um dev construiria com Node.js, React, Vite | `@briefing → @refiner (sem protótipo) → @product → @sheldon → @planner → @dev → @qa` em Autopilot | software rodando, com servidor quando o produto pede |
 
 Na dúvida, rota **full** — é o caminho real do produto. Jogo com servidor, ranking ou contas é rota full. A rota escolhida e o motivo ficam registrados no `report.md`.
 

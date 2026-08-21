@@ -36,7 +36,7 @@ test('rule:new scaffolds routable frontmatter', async () => {
   const result = await scaffoldRule(dir, {
     name: 'visual-quality-contract',
     description: 'The client design system outranks generic visual guidance',
-    agents: 'dev,qa,briefing-refiner',
+    agents: 'dev,qa,refiner',
     paths: 'src/**,resources/**',
     triggers: 'layout,UI,component'
   });
@@ -46,7 +46,7 @@ test('rule:new scaffolds routable frontmatter', async () => {
 
   const content = await fs.readFile(path.join(dir, result.path), 'utf8');
   assert.match(content, /^name: visual-quality-contract$/m);
-  assert.match(content, /^agents: \[dev, qa, briefing-refiner\]$/m);
+  assert.match(content, /^agents: \[dev, qa, refiner\]$/m);
   assert.match(content, /^paths: \[src\/\*\*, resources\/\*\*\]$/m, 'globs must stay unquoted like the shipped rules');
   assert.match(content, /^priority: 50$/m);
   assert.match(content, /## Precedence/);

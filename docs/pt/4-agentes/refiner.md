@@ -1,9 +1,9 @@
-# @briefing-refiner — Revisa e refina um briefing antes do PRD
+# @refiner — Revisa e refina um briefing antes do PRD
 
 > **Para quem é:** quem quer revisar um briefing existente ou explorar uma direção visual antes de criar o Briefing.
 > **Tempo de leitura:** 5 min.
 > **O que você vai sair sabendo:**
-> - O que o `@briefing-refiner` faz e onde ele entra no fluxo.
+> - O que o `@refiner` faz e onde ele entra no fluxo.
 > - Como funciona o loop de refinamento em rodadas (auditoria → revisão no navegador → aplicação).
 > - Como a superfície `review.html` salva de verdade (autosave local + 3 rotas de retorno do JSON).
 
@@ -11,7 +11,7 @@
 
 Entre o briefing gerado e o PRD há uma etapa que costuma ser pulada: **revisar o briefing com olhar crítico**. Ambiguidades, redundâncias, decisões faltando, riscos vagos e gaps de impacto de implementação passam direto para o `@product` e viram dívida no PRD.
 
-O `@briefing-refiner` preenche essa etapa em um **loop de rodadas**: ele audita o briefing e registra **achados estruturados** (findings com categoria, severidade e se bloqueiam o PRD); o CLI renderiza a superfície de revisão determinística (`aioson briefing:review`); você decide cada achado e edita cada seção no navegador; o feedback estruturado volta e é aplicado (`aioson briefing:apply-feedback`) — e o ciclo se repete até nada bloquear o PRD.
+O `@refiner` preenche essa etapa em um **loop de rodadas**: ele audita o briefing e registra **achados estruturados** (findings com categoria, severidade e se bloqueiam o PRD); o CLI renderiza a superfície de revisão determinística (`aioson briefing:review`); você decide cada achado e edita cada seção no navegador; o feedback estruturado volta e é aplicado (`aioson briefing:apply-feedback`) — e o ciclo se repete até nada bloquear o PRD.
 
 É o complemento do [`@briefing`](./briefing.md): um gera, o outro refina.
 
@@ -53,9 +53,9 @@ Cada rodada tem número (`round`) e arquiva o feedback consumido (`refinement-fe
 O agente audita o briefing e escreve os achados em `refinement-findings.json`; o CLI valida e renderiza:
 
 ```
-Você > @briefing-refiner
+Você > @refiner
 
-@briefing-refiner > Briefing refinável encontrado: marketplace-v1 (draft).
+@refiner > Briefing refinável encontrado: marketplace-v1 (draft).
 
                     Auditando... 10 achados (3 ambiguidades, 2 gaps,
                     1 bloqueante: modelo de comissão indefinido).
@@ -72,7 +72,7 @@ Você > @briefing-refiner
 O CLI valida (schema, slug, hash da fonte) e faz um **dry-run** com o resumo; o agente pede confirmação explícita antes de tocar o briefing:
 
 ```
-@briefing-refiner > Feedback pendente em marketplace-v1 (rodada 1):
+@refiner > Feedback pendente em marketplace-v1 (rodada 1):
                     - 4 seções com mudança, 1 bloqueada
                     - achados: 6 aceitos, 2 rejeitados, 1 adiado, 1 pendente (bloqueante)
 
@@ -80,7 +80,7 @@ O CLI valida (schema, slug, hash da fonte) e faz um **dry-run** com o resumo; o 
                     pendente mantém o bloqueio do PRD.
 Você > Sim.
 
-@briefing-refiner > aioson briefing:apply-feedback --confirm  ✓
+@refiner > aioson briefing:apply-feedback --confirm  ✓
                     Aplicado; briefing voltou de approved para draft.
                     Bloqueio restante → regenerando a revisão (rodada 2)...
 ```
@@ -143,7 +143,7 @@ O protótipo é mock-only e nunca vira feedback canônico.
 
 ## Opção `--help`
 
-Uma ativação com `--help` (`/briefing-refiner --help`) imprime um resumo rápido — o que faz, quando usar, chamada típica, o que produz, próximo agente — localizado no seu idioma, e para sem executar nada. Fonte: `.aioson/docs/agent-help.md`.
+Uma ativação com `--help` (`/refiner --help`) imprime um resumo rápido — o que faz, quando usar, chamada típica, o que produz, próximo agente — localizado no seu idioma, e para sem executar nada. Fonte: `.aioson/docs/agent-help.md`.
 
 ## Handoff típico
 

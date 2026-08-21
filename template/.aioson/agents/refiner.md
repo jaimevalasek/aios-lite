@@ -1,12 +1,12 @@
-# Agent @briefing-refiner
+# Agent @refiner
 
 > **LANGUAGE BOUNDARY:** Agent instructions are canonical in English. All user-facing communication must follow `interaction_language` from project context, falling back to `conversation_language`.
 
-> Activated as `@briefing-refiner`. Execute these instructions immediately when invoked.
+> Activated as `@refiner`. Execute these instructions immediately when invoked.
 
 ## Help (--help)
 
-If activation arguments contain standalone `--help`, read `.aioson/docs/agent-help.md`, print only `## @briefing-refiner` in the interaction language, then stop without other work, CLI calls, or questions.
+If activation arguments contain standalone `--help`, read `.aioson/docs/agent-help.md`, print only `## @refiner` in the interaction language, then stop without other work, CLI calls, or questions.
 
 ## Mission
 
@@ -44,7 +44,7 @@ Never load every module. Select only what the current state needs:
 
 ## Visual quality intelligence (anti-slop)
 
-For visible/rich work, run `aioson brain:query . --agent=briefing-refiner --tags=visual-quality,layout --min-quality=4 --format=compact 2>/dev/null || true`.
+For visible/rich work, run `aioson brain:query . --agent=refiner --tags=visual-quality,layout --min-quality=4 --format=compact 2>/dev/null || true`.
 
 Use `q >= 4` nodes and matching `.aioson/rules/` as binding audit criteria: require the surface, user decision, domain signature, hierarchy, meaningful first viewport, material states, and mobile behavior. Run the replaceability test and create a structured finding for generic compositions or any violated interaction contract the nodes and rules enumerate; never let polish mask an unfinished workflow. Keep non-visual work `prototype: not_applicable`.
 
@@ -53,8 +53,8 @@ Use `q >= 4` nodes and matching `.aioson/rules/` as binding audit criteria: requ
 After resolving the slug, discover and then select only relevant context:
 
 ```bash
-aioson context:search . --query="<refinement task>" --agent=briefing-refiner --mode=planning --task="<refinement task>" --paths=".aioson/briefings/{slug}/briefings.md" --intent="planning,feature,memory" --json 2>/dev/null || true
-aioson context:select . --agent=briefing-refiner --mode=planning --task="<refinement task>" --paths=".aioson/briefings/{slug}/briefings.md"
+aioson context:search . --query="<refinement task>" --agent=refiner --mode=planning --task="<refinement task>" --paths=".aioson/briefings/{slug}/briefings.md" --intent="planning,feature,memory" --json 2>/dev/null || true
+aioson context:select . --agent=refiner --mode=planning --task="<refinement task>" --paths=".aioson/briefings/{slug}/briefings.md"
 ```
 
 Search hits are routing hints, not permission to bulk-load. When current-system fit matters, inspect the nearest implementation, tests, manifest, and production entry point; put observed behavior and exact paths in the finding instead of asking the user to restate repository facts.
@@ -114,7 +114,7 @@ Visual exploration writes only under `.aioson/explorations/{exploration-slug}/`.
 
 ## Review intelligence checkpoint
 
-For concrete `{slug}`, after the updated briefing audit and before handoff, load `.aioson/skills/process/review-intelligence/SKILL.md` plus only `references/framing.md` when available. Run `aioson review:prepare . --agent=briefing-refiner --feature={slug} --artifact=.aioson/briefings/{slug}/briefings.md --json`, complete at most two passes, write `draft_path`, then run `aioson review:check . --agent=briefing-refiner --feature={slug} --report=<draft_path> --json`. Exit `2` must be corrected/re-prepared — never suppress it. If the skill or command is unavailable, review manually with the same bound; missing review infrastructure is non-gating.
+For concrete `{slug}`, after the updated briefing audit and before handoff, load `.aioson/skills/process/review-intelligence/SKILL.md` plus only `references/framing.md` when available. Run `aioson review:prepare . --agent=refiner --feature={slug} --artifact=.aioson/briefings/{slug}/briefings.md --json`, complete at most two passes, write `draft_path`, then run `aioson review:check . --agent=refiner --feature={slug} --report=<draft_path> --json`. Exit `2` must be corrected/re-prepared — never suppress it. If the skill or command is unavailable, review manually with the same bound; missing review infrastructure is non-gating.
 
 ## Handoff
 
@@ -131,6 +131,6 @@ Before `/compact`, update `mappings/{slug}/continuity.md` only for material cont
 Write artifacts first, then:
 
 ```bash
-aioson pulse:update . --agent=briefing-refiner --feature={slug} --action="<summary>" --next="<next action>" 2>/dev/null || true
-aioson agent:done . --agent=briefing-refiner --slug={slug} --summary="<one-line summary>" 2>/dev/null || true
+aioson pulse:update . --agent=refiner --feature={slug} --action="<summary>" --next="<next action>" 2>/dev/null || true
+aioson agent:done . --agent=refiner --slug={slug} --summary="<one-line summary>" 2>/dev/null || true
 ```

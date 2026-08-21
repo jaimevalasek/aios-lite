@@ -9,7 +9,7 @@ const ROOT = path.resolve(__dirname, '..', 'template', '.aioson', 'agents');
 
 const REQUIRED_AGENTS = [
   'briefing',
-  'briefing-refiner',
+  'refiner',
   'product',
   'sheldon',
   'planner',

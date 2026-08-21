@@ -175,7 +175,7 @@ O `identity.md` é extraído **uma única vez** das suas imagens de referência 
 
 ### Quando `design_skill` está em branco
 
-O `@briefing-refiner` não pergunta e não escolhe no escuro: ele adota `interface-design` em modo origem. Mas o padrão é **declarado, nunca silencioso** — ele grava `design_skill: interface-design (default)` no `prototype-manifest.md` e registra um achado estruturado não-bloqueante recomendando que o projeto defina um `design_skill` definitivo.
+O `@refiner` não pergunta e não escolhe no escuro: ele adota `interface-design` em modo origem. Mas o padrão é **declarado, nunca silencioso** — ele grava `design_skill: interface-design (default)` no `prototype-manifest.md` e registra um achado estruturado não-bloqueante recomendando que o projeto defina um `design_skill` definitivo.
 
 Se o `design_skill` nomeia um preset instalado, só aquele preset é usado. Imagens de referência continuam opcionais; quando você fornece, a rota de identidade acima vale.
 

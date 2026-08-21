@@ -1,9 +1,9 @@
-# @briefing-refiner — Review and refine a briefing before the PRD
+# @refiner — Review and refine a briefing before the PRD
 
 > **Who this is for:** anyone who wants to review an existing briefing or explore a visual direction before creating one.
 > **Reading time:** 5 min.
 > **What you'll know after:**
-> - What `@briefing-refiner` does and where it fits in the flow.
+> - What `@refiner` does and where it fits in the flow.
 > - How the round-based refinement loop works (audit → browser review → apply).
 > - How the `review.html` surface actually saves (local autosave + 3 routes to return the JSON).
 
@@ -11,7 +11,7 @@
 
 Between the generated briefing and the PRD there is a step that usually gets skipped: **reviewing the briefing with a critical eye**. Ambiguities, redundancies, missing decisions, vague risks, and implementation-impact gaps go straight to `@product` and become debt in the PRD.
 
-`@briefing-refiner` fills that step as a **loop of rounds**: it audits the briefing and records **structured findings** (category, severity, and whether they block the PRD); the CLI renders the deterministic review surface (`aioson briefing:review`); you decide each finding and edit each section in the browser; the structured feedback comes back and is applied (`aioson briefing:apply-feedback`) — and the cycle repeats until nothing blocks the PRD.
+`@refiner` fills that step as a **loop of rounds**: it audits the briefing and records **structured findings** (category, severity, and whether they block the PRD); the CLI renders the deterministic review surface (`aioson briefing:review`); you decide each finding and edit each section in the browser; the structured feedback comes back and is applied (`aioson briefing:apply-feedback`) — and the cycle repeats until nothing blocks the PRD.
 
 It is the complement of [`@briefing`](../../pt/4-agentes/briefing.md): one generates, the other refines.
 
@@ -53,9 +53,9 @@ Each round is numbered (`round`) and archives the consumed feedback (`refinement
 The agent audits the briefing and writes the findings to `refinement-findings.json`; the CLI validates and renders:
 
 ```
-You > @briefing-refiner
+You > @refiner
 
-@briefing-refiner > Refinable briefing found: marketplace-v1 (draft).
+@refiner > Refinable briefing found: marketplace-v1 (draft).
 
                     Auditing... 10 findings (3 ambiguities, 2 gaps,
                     1 blocking: commission model undefined).
@@ -72,7 +72,7 @@ You > @briefing-refiner
 The CLI validates (schema, slug, source hash) and does a **dry-run** with the summary; the agent asks for explicit confirmation before touching the briefing:
 
 ```
-@briefing-refiner > Pending feedback on marketplace-v1 (round 1):
+@refiner > Pending feedback on marketplace-v1 (round 1):
                     - 4 sections changed, 1 blocked
                     - findings: 6 accepted, 2 rejected, 1 deferred, 1 pending (blocking)
 
@@ -80,7 +80,7 @@ The CLI validates (schema, slug, source hash) and does a **dry-run** with the su
                     finding keeps the PRD blocked.
 You > Yes.
 
-@briefing-refiner > aioson briefing:apply-feedback --confirm  ✓
+@refiner > aioson briefing:apply-feedback --confirm  ✓
                     Applied; briefing reverted from approved to draft.
                     Blocker remains → regenerating the review (round 2)...
 ```
@@ -143,7 +143,7 @@ The prototype is mock-only and never becomes canonical feedback.
 
 ## `--help` option
 
-An activation with `--help` (`/briefing-refiner --help`) prints a quick summary — what it does, when to use it, typical call, what it produces, next agent — localized in your language, and stops without executing anything. Source: `.aioson/docs/agent-help.md`.
+An activation with `--help` (`/refiner --help`) prints a quick summary — what it does, when to use it, typical call, what it produces, next agent — localized in your language, and stops without executing anything. Source: `.aioson/docs/agent-help.md`.
 
 ## Typical handoff
 

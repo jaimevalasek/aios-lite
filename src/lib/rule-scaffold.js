@@ -34,7 +34,7 @@ function splitList(value) {
 
 // Quote only what YAML actually needs quoted inside a flow list: a leading
 // indicator character, or a structural character anywhere. `src/**` and
-// `briefing-refiner` stay bare, matching the shipped rules.
+// `refiner` stay bare, matching the shipped rules.
 function yamlList(values) {
   const needsQuote = (v) => /^[-?:,[\]{}#&*!|>'"%@`]/.test(v) || /[:,[\]{}#]/.test(v);
   return `[${values.map((v) => (needsQuote(v) ? `"${v}"` : v)).join(', ')}]`;

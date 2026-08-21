@@ -57,11 +57,11 @@ test('every mapped kind exists in the verify:artifact registry', () => {
   }
 });
 
-test('briefing-refiner auto-fires the visual gate next to the review gate — and stays quiet without a prototype', async () => {
+test('refiner auto-fires the visual gate next to the review gate — and stays quiet without a prototype', async () => {
   // Non-visual feature: no prototype.html, so the secondary visual check is a
   // skipped hint, never an advisory failure nagging every text-only briefing.
   const nonVisual = tmpDir();
-  const quiet = await verifyAgentArtifact({ targetDir: nonVisual, agent: 'briefing-refiner', options: { feature: 'texto' } });
+  const quiet = await verifyAgentArtifact({ targetDir: nonVisual, agent: 'refiner', options: { feature: 'texto' } });
   assert.equal(quiet.kind, 'review');
   const quietVisual = (quiet.also || []).find((entry) => entry.kind === 'visual');
   assert.ok(quietVisual, 'the visual gate must ride along with the review gate');
@@ -73,7 +73,7 @@ test('briefing-refiner auto-fires the visual gate next to the review gate — an
   const visual = tmpDir();
   fs.mkdirSync(path.join(visual, '.aioson', 'briefings', 'painel'), { recursive: true });
   fs.writeFileSync(path.join(visual, '.aioson', 'briefings', 'painel', 'prototype.html'), '<style>.a{padding:7px;margin:3px;color:#123;gap:5px;border-radius:3px;font-size:13px;background:#fff;border:1px solid #eee;box-shadow:none;fill:#123}</style><div class="a">x</div>', 'utf8');
-  const live = await verifyAgentArtifact({ targetDir: visual, agent: 'briefing-refiner', options: { feature: 'painel' } });
+  const live = await verifyAgentArtifact({ targetDir: visual, agent: 'refiner', options: { feature: 'painel' } });
   const liveVisual = (live.also || []).find((entry) => entry.kind === 'visual');
   assert.ok(liveVisual);
   assert.equal(liveVisual.skipped, false);

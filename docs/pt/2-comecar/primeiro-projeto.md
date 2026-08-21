@@ -9,10 +9,10 @@ Vamos construir um **mini-app de TODO** percorrendo a esteira principal num proj
 A esteira completa é:
 
 ```text
-@briefing → @briefing-refiner → @product → @sheldon → @planner → @dev → @qa → @tester → @pentester
+@briefing → @refiner → @product → @sheldon → @planner → @dev → @qa → @tester → @pentester
 ```
 
-Neste tutorial a ideia já está clara, então começamos direto no `@product` e pulamos o bloco de briefing. (Se a sua ideia ainda estivesse crua, entraria pelo `@briefing`; e se ela tivesse tela, o `@briefing-refiner` montaria um protótipo navegável para você aprovar antes de qualquer PRD — ver [Da ideia ao PRD via briefing](../3-receitas/da-ideia-ao-prd-via-briefing.md).)
+Neste tutorial a ideia já está clara, então começamos direto no `@product` e pulamos o bloco de briefing. (Se a sua ideia ainda estivesse crua, entraria pelo `@briefing`; e se ela tivesse tela, o `@refiner` montaria um protótipo navegável para você aprovar antes de qualquer PRD — ver [Da ideia ao PRD via briefing](../3-receitas/da-ideia-ao-prd-via-briefing.md).)
 
 ---
 
@@ -339,7 +339,7 @@ Daqui a três meses, alguém (você ou outra IA) pode abrir esse projeto e enten
 
 ## E quando eu quiser uma feature nova?
 
-Volte para o passo 4 — a esteira é um ciclo. Toda feature rastreada segue `@briefing → @briefing-refiner → @product → @sheldon → @planner → @dev → @qa → @tester → @pentester`; MICRO, SMALL e MEDIUM mudam a profundidade, não a ordem. O `@setup` não precisa rodar de novo (já tem o contexto).
+Volte para o passo 4 — a esteira é um ciclo. Toda feature rastreada segue `@briefing → @refiner → @product → @sheldon → @planner → @dev → @qa → @tester → @pentester`; MICRO, SMALL e MEDIUM mudam a profundidade, não a ordem. O `@setup` não precisa rodar de novo (já tem o contexto).
 
 **E se for só um ajuste pequeno?** Não puxe a esteira inteira. Chame o `@deyvin`: ele confirma que a mudança cabe numa frase, registra um plano mínimo, implementa a menor fatia útil e fecha com o check combinado. Se o escopo crescer no meio, ele escala para a esteira em vez de inflar em silêncio.
 

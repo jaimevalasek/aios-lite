@@ -9,6 +9,7 @@ const {
 } = require('./installer');
 const { getCliVersion } = require('./version');
 const { migrateProfileRename } = require('./migrations/profile-rename');
+const { migrateAgentRename } = require('./migrations/agent-rename');
 
 // Numeric x.y.z compare; returns negative/0/positive, or null when either
 // side is unparseable (null disables the downgrade guard rather than guessing).
@@ -74,9 +75,15 @@ async function updateInstallation(targetDir, options = {}) {
   // Post-install migrations. Best-effort: a migration failure must not break
   // the update flow. Skip migrations in dry-run mode.
   let profileMigration = { changed: false, file: null };
+  let agentRenameMigration = { changed: false, removed: [] };
   if (!options.dryRun) {
     try {
       profileMigration = await migrateProfileRename(targetDir);
+    } catch {
+      // swallow — migrations are advisory
+    }
+    try {
+      agentRenameMigration = await migrateAgentRename(targetDir);
     } catch {
       // swallow — migrations are advisory
     }
@@ -86,7 +93,7 @@ async function updateInstallation(targetDir, options = {}) {
     ok: true,
     ...result,
     savedProfile,
-    migrations: { profileRename: profileMigration }
+    migrations: { profileRename: profileMigration, agentRename: agentRenameMigration }
   };
 }
 

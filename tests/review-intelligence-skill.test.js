@@ -28,7 +28,7 @@ const SKILL_FILES = [
 
 const HOOKS = {
   briefing: { reference: 'framing.md', before: '## Rules' },
-  'briefing-refiner': { reference: 'framing.md', before: '## Handoff' }
+  'refiner': { reference: 'framing.md', before: '## Handoff' }
 };
 
 async function readAt(root, relativePath) {
@@ -124,7 +124,7 @@ test('profile registry points to the four packaged references', async () => {
 });
 
 test('explicit briefing hooks remain bounded while Sheldon owns mandatory delivery review', async () => {
-  assert.deepEqual(Object.keys(HOOKS), ['briefing', 'briefing-refiner']);
+  assert.deepEqual(Object.keys(HOOKS), ['briefing', 'refiner']);
 
   for (const [agent, contract] of Object.entries(HOOKS)) {
     const relativePath = `agents/${agent}.md`;

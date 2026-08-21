@@ -20,7 +20,7 @@ const { validateSourceLineage } = require('./feature-source-lineage');
 const {
   findBriefing,
   readBriefingRegistry
-} = require('./briefing-refiner/briefing-registry');
+} = require('./refiner/briefing-registry');
 const {
   REQ_ID_RE,
   AC_ID_RE,

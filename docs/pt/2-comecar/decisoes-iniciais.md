@@ -31,10 +31,10 @@ Soma de três fatores (cada um vale 0, 1 ou 2 pontos):
 A esteira é a mesma nos três níveis:
 
 ```text
-@briefing → @briefing-refiner → @product → @sheldon → @planner → @dev → @qa → @tester → @pentester
+@briefing → @refiner → @product → @sheldon → @planner → @dev → @qa → @tester → @pentester
 ```
 
-Briefing e Briefing Refiner são a entrada de fonte crua — opcionais quando a direção já está clara, mas se iniciados precisam ser concluídos e aprovados (escopo visual exige o protótipo aprovado). Sheldon é a revisão independente obrigatória do mesmo PRD. QA é o Gate D; Tester e Pentester são o endurecimento que vem depois, habilitados por feature. A classificação regula profundidade, orçamento de arquivos, cobertura de risco e quantidade de evidência — não cria outra cadeia de agentes.
+Briefing e Refiner são a entrada de fonte crua — opcionais quando a direção já está clara, mas se iniciados precisam ser concluídos e aprovados (escopo visual exige o protótipo aprovado). Sheldon é a revisão independente obrigatória do mesmo PRD. QA é o Gate D; Tester e Pentester são o endurecimento que vem depois, habilitados por feature. A classificação regula profundidade, orçamento de arquivos, cobertura de risco e quantidade de evidência — não cria outra cadeia de agentes.
 
 Para uma mudança bounded, a rota curta (**Simple Plan**, via `@deyvin`) existe em qualquer classificação e não passa pela esteira.
 
@@ -110,7 +110,7 @@ Você pode marcar **mais de um** no wizard — eles convivem no mesmo projeto.
 
 ### Development (padrão)
 
-Inclui os 34 agentes oficiais — a esteira inteira (briefing, briefing-refiner, product, sheldon, planner, dev, qa, tester, pentester), o boot e roteamento (setup, neo), a continuidade (deyvin, committer, discover) e as consultorias opt-in. Suficiente para 95% dos projetos.
+Inclui os 34 agentes oficiais — a esteira inteira (briefing, refiner, product, sheldon, planner, dev, qa, tester, pentester), o boot e roteamento (setup, neo), a continuidade (deyvin, committer, discover) e as consultorias opt-in. Suficiente para 95% dos projetos.
 
 ### Development + Squads
 

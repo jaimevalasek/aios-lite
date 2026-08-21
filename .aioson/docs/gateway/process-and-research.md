@@ -15,7 +15,7 @@ Canonical feature artifacts:
 - `qa-report-{slug}.md`: independent delivery verdict.
 - `.aioson/context/project-pulse.md`: short crash-recovery heartbeat updated at agent completion.
 
-MICRO, SMALL, and MEDIUM use the same Product → Sheldon → Planner → Dev → QA route; classification controls depth/budgets, not extra documents. Briefing and Briefing Refiner are pre-product intake when raw sources need framing, not classification-driven extra stages.
+MICRO, SMALL, and MEDIUM use the same Product → Sheldon → Planner → Dev → QA route; classification controls depth/budgets, not extra documents. Briefing and Refiner are pre-product intake when raw sources need framing, not classification-driven extra stages.
 
 For tracked features, load `.aioson/docs/feature-completeness-contract.md` and close:
 

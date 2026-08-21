@@ -5,7 +5,7 @@
 
 ## Authority boundary
 
-When a refinable Briefing exists, `@briefing-refiner` keeps the canonical prototype in `.aioson/briefings/{slug}/`.
+When a refinable Briefing exists, `@refiner` keeps the canonical prototype in `.aioson/briefings/{slug}/`.
 
 Without one, candidates live under `.aioson/explorations/{slug}/`. Selection means “use this visual direction as evidence”; it is not product-scope or Briefing approval.
 
@@ -63,4 +63,4 @@ aioson exploration:promote . --slug=dashboard-refresh --briefing-slug=dashboard-
 
 Promotion creates `plans/dashboard-refresh-feature/visual-exploration.md` with immutable paths and SHA-256 fingerprints. The normal route then remains:
 
-`@briefing → @briefing-refiner → user approval → @product`
+`@briefing → @refiner → user approval → @product`

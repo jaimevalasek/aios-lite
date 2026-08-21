@@ -10,7 +10,7 @@ const { spawn } = require('node:child_process');
 const {
   readBriefingRegistry,
   writeBriefingRegistry
-} = require('../src/lib/briefing-refiner/briefing-registry');
+} = require('../src/lib/refiner/briefing-registry');
 
 const ROOT = path.resolve(__dirname, '..');
 

@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Changed
+- **`@briefing-refiner` is now `@refiner`** (`/refiner`, `/aioson:agent:refiner`, `.aioson/agents/refiner.md`) — the same agent, a shorter name. The old id is a declared legacy id (`legacyIds` in the agent catalog), distinct from live aliases such as `pair`, and keeps resolving everywhere an agent id is compared: CLI flags (`--agent`, `--from`, `--to`, `--source-agent`, `--stage`), `agent:help`, client-owned `.aioson/rules/` frontmatter, context search and brains, done-gate kinds, review profiles and dossier authors — so projects mid-flight and rules written before the rename keep routing. `aioson update` removes the two files the old name left behind (`.aioson/agents/briefing-refiner.md`, `.claude/commands/aioson/agent/briefing-refiner.md`) only once the canonical files exist, and says so. Internals follow: `src/lib/briefing-refiner/` → `src/lib/refiner/`; the benchmark traversal chain reads `briefing → refiner → product → …` (the Cockpit contract is by evidence path, unchanged).
+
 ## [1.60.0] - 2026-08-21
 
 ### Added

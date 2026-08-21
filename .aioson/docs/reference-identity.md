@@ -1,6 +1,6 @@
 ---
 description: "Reference-image-driven visual identity — how user-provided reference images become a text identity.md the interface-design engine applies. Covers exploration, briefing, and brand scopes, the extraction skill, verification, and no-vision fallback."
-agents: [setup, briefing-refiner, ux-ui]
+agents: [setup, refiner, ux-ui]
 task_types: [design, configuration, verification]
 triggers: [identity.md, reference image, visual identity, reference-identity-extract, kind=identity, brand reference, design_skill interface-design]
 ---
@@ -54,11 +54,11 @@ the `interface-design` token families plus its Phase-1 anti-sameness anchors. Au
 
 ## How it runs
 
-- **`@briefing-refiner`** (prototype mode) — when a rich-surface product would benefit from a visual,
+- **`@refiner`** (prototype mode) — when a rich-surface product would benefit from a visual,
   it offers reference-image intake: the user drops images into `references/{identity,structure}/`, the
   agent loads `reference-identity-extract`, writes `identity.md`, and `prototype-forge` builds from it.
   No images → it skips and `interface-design` runs intent-first. Always optional, never blocking.
-- **`@briefing-refiner`** (exploration mode) — before a Briefing exists, imported screenshots may produce `.aioson/explorations/{slug}/identity.md`; a targeted/full scan may separately prove current structure and behavior. Images establish observed visual evidence, code establishes current-system facts, and neither is silently treated as proposed scope.
+- **`@refiner`** (exploration mode) — before a Briefing exists, imported screenshots may produce `.aioson/explorations/{slug}/identity.md`; a targeted/full scan may separately prove current structure and behavior. Images establish observed visual evidence, code establishes current-system facts, and neither is silently treated as proposed scope.
 - **`@setup`** — for `site`/`web_app`, the recommended visual route is *interface-design + reference
   images* (sets `design_skill: interface-design`; the concrete look comes from `identity.md`). The
   fixed presets remain an explicit alternative.

@@ -34,7 +34,7 @@ Classification changes artifact and evidence depth, not the `product → sheldon
 | Add tests, improve coverage, mutation/property testing | `@tester` |
 | Security audit, auth/secrets/supply-chain/LLM injection concern | `@pentester` |
 | Frame raw thinking before a PRD | `@briefing` |
-| Refine an existing briefing | `@briefing-refiner` |
+| Refine an existing briefing | `@refiner` |
 | Independently challenge an existing PRD | `@sheldon` |
 | Named business-rule/entity question | `@analyst` |
 | Named structural boundary or architecture decision | `@architect` |

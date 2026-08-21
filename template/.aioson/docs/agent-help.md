@@ -24,14 +24,14 @@ Consumed by the `## Help (--help)` section of each agent kernel: a standalone `-
 - **Options:** none — point it at a loose plan/source-pack slug or describe the idea; deterministic discovery uses `aioson briefing:sources`.
 - **Typical:** `/briefing evaluate plans/loyalty-program.md`, `/briefing reconstruct plans/legacy-billing`, `/briefing frame this idea: ...`.
 - **Produces:** `.aioson/briefings/{slug}/briefings.md` (+ prototype when the flow calls for it).
-- **Next:** `@briefing-refiner` for review and user approval — the only next agent. `@product` starts only after the approved briefing (visual scope also requires the approved feature-owned prototype).
+- **Next:** `@refiner` for review and user approval — the only next agent. `@product` starts only after the approved briefing (visual scope also requires the approved feature-owned prototype).
 
-## @briefing-refiner
+## @refiner
 
 - **What:** reviews an existing briefing, or—when none exists—guides a non-canonical visual exploration from screenshots, current front-end evidence, or a multi-model arena.
 - **When:** a briefing needs corrections/decisions, or you want to test visual directions before committing them to a Briefing.
 - **Options:** in exploration mode it asks only unresolved target, single/sequential/arena, isolated/cumulative, blind/labeled, and scan choices.
-- **Typical:** `/briefing-refiner refine loyalty-program`.
+- **Typical:** `/refiner refine loyalty-program`.
 - **Produces:** canonical review/prototype artifacts for an existing Briefing, or immutable variants and reusable-prompt reports under `.aioson/explorations/{slug}/`.
 - **Next:** `@product` after Briefing approval; an exploration first promotes its selected direction to `plans/{briefing-slug}/` and hands off to `@briefing`.
 
@@ -138,7 +138,7 @@ Consumed by the `## Help (--help)` section of each agent kernel: a standalone `-
 
 - **What:** conducts one measured AIOSON traversal for one frozen prompt without clarification questions — route detection, then the real agent chain unattended.
 - **When:** the AIOSON side of a measured comparison (Cockpit mission) or one standalone measured run.
-- **Routes:** a single-screen game/toy crosses `@briefing → @briefing-refiner` and delivers the working prototype HTML; any real app (site, CRM, dashboard) crosses the full chain `briefing → refiner → product → sheldon → planner → dev → qa` in Autopilot.
+- **Routes:** a single-screen game/toy crosses `@briefing → @refiner` and delivers the working prototype HTML; any real app (site, CRM, dashboard) crosses the full chain `briefing → refiner → product → sheldon → planner → dev → qa` in Autopilot.
 - **Typical:** `/benchmark create a cozy underwater strategy game`.
 - **Produces:** the runnable delivery, `benchmark-result.json` (strict schema 1), and `report.md` with stages and auto-decisions; it never creates Arena, model rankings, tokens, or cost data.
 - **Next:** an external orchestrator may collect the isolated result for comparison, or the user can run the standalone entrypoint directly.

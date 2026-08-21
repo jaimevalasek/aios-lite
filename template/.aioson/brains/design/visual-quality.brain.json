@@ -1,6 +1,6 @@
 {
   "v": 1,
-  "agent": "dev,deyvin,briefing-refiner,benchmark,product,sheldon,ux-ui,ui-specialist",
+  "agent": "dev,deyvin,refiner,benchmark,product,sheldon,ux-ui,ui-specialist",
   "domain": "visual-quality",
   "desc": "Quality-scored visual patterns and anti-patterns for producing specific, usable interfaces instead of generic AI-looking layouts, plus the specification-lens nodes that keep the product authority from going generic upstream.",
   "updated": "2026-08-19",

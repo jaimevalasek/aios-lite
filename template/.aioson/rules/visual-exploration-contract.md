@@ -1,7 +1,7 @@
 ---
 name: visual-exploration-contract
 description: Keeps pre-briefing visual explorations isolated, attributable, reviewable, and non-canonical until human selection and Briefing promotion
-agents: [briefing, briefing-refiner, product, planner, dev]
+agents: [briefing, refiner, product, planner, dev]
 priority: 85
 version: 1.0.0
 modes: [planning, executing]
@@ -17,7 +17,7 @@ paths: [.aioson/explorations/**, .aioson/briefings/**]
 # Visual Exploration Contract
 
 - Treat `.aioson/explorations/{slug}/exploration-manifest.json` as the structured exploration state. Markdown and HTML surfaces are derived views.
-- An exploration is non-canonical. Product, Planner, Dev, and QA must ignore it unless `plans/{briefing-slug}/visual-exploration.md` was prepared, Briefing incorporated it, and Briefing Refiner later created the canonical feature-owned prototype.
+- An exploration is non-canonical. Product, Planner, Dev, and QA must ignore it unless `plans/{briefing-slug}/visual-exploration.md` was prepared, Briefing incorporated it, and Refiner later created the canonical feature-owned prototype.
 - Never overwrite a run. Each model or material restart receives a new `runs/variant-*/` directory.
 - Preserve requested and resolved host/model provenance. Never substitute a benchmark model silently.
 - Preserve reusable prompts in every run report. Do not delete rejected-run reports.

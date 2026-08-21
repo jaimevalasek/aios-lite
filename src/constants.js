@@ -37,7 +37,7 @@ const MANAGED_FILES = [
   '.aioson/agents/committer.md',
   '.aioson/agents/copywriter.md',
   '.aioson/agents/briefing.md',
-  '.aioson/agents/briefing-refiner.md',
+  '.aioson/agents/refiner.md',
   '.aioson/agents/forge-run.md',
   '.aioson/agents/shakedown.md',
   '.aioson/docs/shakedown/completeness-checklist.md',
@@ -673,11 +673,17 @@ const AGENT_DEFINITIONS = [
     output: '.aioson/briefings/{slug}/'
   },
   {
-    id: 'briefing-refiner',
-    displayName: 'Briefing Refiner',
+    id: 'refiner',
+    displayName: 'Refiner',
     description: 'Interactive refinement of briefing artifacts before Product PRD generation',
-    command: '@briefing-refiner',
-    path: '.aioson/agents/briefing-refiner.md',
+    command: '@refiner',
+    path: '.aioson/agents/refiner.md',
+    // Renamed from `briefing-refiner` (v1.61). Unlike `aliases` (live stubs
+    // with their own file, e.g. `pair`), a legacy id ships NO file: it stays
+    // resolvable everywhere an agent id is consumed — CLI flags, client-owned
+    // rules frontmatter, brains, dossier authors — so projects mid-flight keep
+    // routing, and `aioson update` removes the files the old name left behind.
+    legacyIds: ['briefing-refiner'],
     dependsOn: ['.aioson/context/project.context.md', '.aioson/briefings/config.md'],
     output: '.aioson/briefings/{slug}/review.html + refinement-feedback.json + refinement-report.md'
   },

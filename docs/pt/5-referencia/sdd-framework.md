@@ -59,10 +59,10 @@ Specify → Research → Requirements → Design → Tasks → Execute → State
 O SDD escala a profundidade, não o número de documentos nem a cadeia:
 
 ```text
-@briefing → @briefing-refiner → @product → @sheldon → @planner → @dev → @qa → @tester → @pentester
+@briefing → @refiner → @product → @sheldon → @planner → @dev → @qa → @tester → @pentester
 ```
 
-- Briefing e Briefing Refiner são enquadramento opcional antes do PRD.
+- Briefing e Refiner são enquadramento opcional antes do PRD.
 - Product é dono do único PRD.
 - Sheldon pode enriquecer esse mesmo PRD; não cria uma segunda especificação.
 - Planner é dono do único plano de implementação.

@@ -305,7 +305,7 @@ Notes:
 
 `@setup → @product → @sheldon → @planner → @dev → @qa`
 
-Briefing and Briefing Refiner precede Product when raw sources need framing; visual scope must leave an approved owned prototype. Sheldon always enriches and hash-bind approves the PRD between Product and Planner.
+Briefing and Refiner precede Product when raw sources need framing; visual scope must leave an approved owned prototype. Sheldon always enriches and hash-bind approves the PRD between Product and Planner.
 
 Consultants (`@analyst`, `@architect`, `@pm`, `@ux-ui`, `@scope-check`, `@discovery-design-doc`, `@orchestrator`) are explicitly requested and never inserted by classification. Tester, Pentester, and Validator are disabled by default.
 
@@ -328,7 +328,7 @@ Scaffold a project-authored rule under `.aioson/rules/`. Rules are how a project
 ```bash
 aioson rule:new . --name=visual-quality-contract \
   --description="Our design system outranks generic visual guidance" \
-  --agents=dev,qa,briefing-refiner \
+  --agents=dev,qa,refiner \
   --paths="src/**,resources/**" \
   --triggers="layout,UI,component"
 ```

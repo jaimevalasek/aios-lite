@@ -65,7 +65,7 @@ Termos em ordem alfabética. Cada um tem **definição curta** + **exemplo concr
 
 **Exemplo:** você tem 5 anotações soltas sobre uma ideia. O `@briefing` as transforma num briefing estruturado com fontes preservadas, promessas numeradas (`PROM-*`) e o que ainda é dúvida declarada.
 
-**O que vem depois:** o `@briefing-refiner` audita as lacunas e monta o **protótipo navegável** que você aprova antes de o PRD existir. Escopo visual ou rico exige esse protótipo aprovado antes do `@product`.
+**O que vem depois:** o `@refiner` audita as lacunas e monta o **protótipo navegável** que você aprova antes de o PRD existir. Escopo visual ou rico exige esse protótipo aprovado antes do `@product`.
 
 ---
 
@@ -73,7 +73,7 @@ Termos em ordem alfabética. Cada um tem **definição curta** + **exemplo concr
 
 **Definição:** o tamanho do projeto, calculado a partir de 3 fatores (tipos de usuário, integrações externas, regras de negócio). Define quanta cerimônia o workflow vai aplicar.
 
-**Como funciona:** 0–1 ponto → MICRO; 2–3 → SMALL; 4–6 → MEDIUM. Todos usam a mesma esteira `@briefing → @briefing-refiner → @product → @sheldon → @planner → @dev → @qa → @tester → @pentester`; o nível muda profundidade, orçamento e cobertura de risco, não a ordem.
+**Como funciona:** 0–1 ponto → MICRO; 2–3 → SMALL; 4–6 → MEDIUM. Todos usam a mesma esteira `@briefing → @refiner → @product → @sheldon → @planner → @dev → @qa → @tester → @pentester`; o nível muda profundidade, orçamento e cobertura de risco, não a ordem.
 
 **Onde aparece:** `classification:` no frontmatter do `project.context.md`.
 
@@ -217,7 +217,7 @@ Termos em ordem alfabética. Cada um tem **definição curta** + **exemplo concr
 
 **Definição:** a esteira — a sequência ordenada de agentes que o AIOSON aplica para construir uma feature.
 
-**A esteira principal:** `@briefing → @briefing-refiner → @product → @sheldon → @planner → @dev → @qa → @tester → @pentester`. Ela é a mesma em MICRO, SMALL e MEDIUM; a classificação muda profundidade e orçamento, não a ordem. O encadeamento automático vai de Product até QA (Gate D); Tester e Pentester são o endurecimento pós-veredito, habilitados por feature.
+**A esteira principal:** `@briefing → @refiner → @product → @sheldon → @planner → @dev → @qa → @tester → @pentester`. Ela é a mesma em MICRO, SMALL e MEDIUM; a classificação muda profundidade e orçamento, não a ordem. O encadeamento automático vai de Product até QA (Gate D); Tester e Pentester são o endurecimento pós-veredito, habilitados por feature.
 
 **A rota curta:** para uma mudança bounded, o **Simple Plan** vai direto ao `@deyvin` (escopo → plano curto → implementação → verificação) e nunca vira feature rastreada silenciosamente.
 
@@ -247,7 +247,7 @@ Termos em ordem alfabética. Cada um tem **definição curta** + **exemplo concr
 
 ## Protótipo (aprovado)
 
-**Definição:** o `prototype.html` autocontido que o `@briefing-refiner` monta com as telas, os estados e as interações reais da feature — antes de existir PRD ou código.
+**Definição:** o `prototype.html` autocontido que o `@refiner` monta com as telas, os estados e as interações reais da feature — antes de existir PRD ou código.
 
 **Por que importa:** você navega, testa e devolve o feedback na própria tela. Escopo visual ou rico só passa para o `@product` com o protótipo marcado `prototype_status: current` e aprovado por você. Depois disso, ele vira autoridade visual para o `@dev`.
 

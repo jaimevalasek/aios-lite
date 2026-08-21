@@ -18,7 +18,7 @@
       "type": "string",
       "enum": [
         "briefing",
-        "briefing-refiner",
+        "refiner",
         "product",
         "sheldon",
         "analyst",
