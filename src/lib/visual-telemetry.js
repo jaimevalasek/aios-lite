@@ -343,6 +343,31 @@ const WEBFONT_HOST = /fonts\.googleapis\.com|fonts\.gstatic\.com|fonts\.bunny\.n
 
 // Scroll-driven reveal machinery — CSS-native or the vanilla JS idiom.
 const SCROLL_REVEAL = /IntersectionObserver|view-timeline|scroll-timeline|animation-timeline|@starting-style/i;
+// The properties a keyframe animates when it is painting a SURFACE rather than
+// reacting to a pointer: an ambient backdrop moves its own paint. A spinner or
+// a badge pulse animates transform/opacity and is not a signature piece, which
+// is why the name of the keyframe cannot be the test.
+const BACKDROP_PROPERTY = /(?:^|[;{\s])(?:background(?:-(?:position|image|size))?|filter|backdrop-filter|mask-position|mask-image|background-position-x|background-position-y)\s*:/i;
+
+/** The bodies of every `@keyframes` block, for asking what they actually animate. */
+function keyframeBodies(styleText) {
+  const bodies = [];
+  const source = String(styleText || '');
+  const re = /@keyframes\s+[\w-]+\s*\{/gi;
+  let match;
+  while ((match = re.exec(source))) {
+    let depth = 1;
+    let i = re.lastIndex;
+    while (i < source.length && depth > 0) {
+      if (source[i] === '{') depth += 1;
+      else if (source[i] === '}') depth -= 1;
+      i += 1;
+    }
+    bodies.push(source.slice(re.lastIndex, i - 1));
+    re.lastIndex = i;
+  }
+  return bodies;
+}
 
 // Modern CSS vocabulary probes. Each is a native, build-free feature of the
 // current platform; a full surface using NONE of them was authored in the
@@ -1125,6 +1150,15 @@ function analyzeVisualSources({ html = '', css = '', components = '', surfaceMod
   const keyframes = (styleText.match(/@keyframes\b/g) || []).length;
   const animated = decls.filter((d) => d.prop === 'animation' || d.prop === 'animation-name').length;
   const hasReducedMotion = /prefers-reduced-motion/.test(styleText);
+  // A continuous surface that runs on its own — the "signature piece" a brief
+  // means by an animated background. Distinct from entrance reveals and from
+  // hover: nothing has to happen for the visitor to see it.
+  const ambientLoops = decls.filter((d) => d.prop === 'animation' && /\binfinite\b/i.test(d.value)).length;
+  // An animated backdrop is a keyframe that moves paint AND runs on its own —
+  // one `infinite` badge pulse is neither.
+  const animatedBackdrop = ambientLoops >= 1 && keyframeBodies(styleText).some((body) => BACKDROP_PROPERTY.test(body));
+  const paintedSurface = /<canvas\b/i.test(markup) || /\bWebGLRenderingContext\b|getContext\s*\(\s*['"]webgl|three(?:\.min)?\.js|\bTHREE\./i.test(markup);
+  const scrollDriven = /animation-timeline|scroll-timeline|view-timeline|\banimation\s*:[^;]*\bscroll\s*\(/i.test(styleText);
 
   // ── states ───────────────────────────────────────────────────────────────
   const corpus = `${markup}\n${styleText}`;
@@ -1374,18 +1408,28 @@ function analyzeVisualSources({ html = '', css = '', components = '', surfaceMod
   // scale and evidence imagery are not the axis — data is the evidence and
   // app chrome runs a fixed scale — so the floor is typeface, material,
   // motion, and themed browser chrome (vq-026).
+  // Hover transitions are hygiene, not choreography: every hand-written page
+  // carries a dozen, so `transitionCount >= 12` lit this lever on surfaces with
+  // one keyframe and no motion anyone would notice — a page could score 5/5
+  // craft while delivering none of the motion its brief asked for. The lever
+  // now asks whether motion was DESIGNED: a keyframe system that respects
+  // reduced-motion, a scroll-driven reveal, or an ambient signature surface.
+  const signatureMotion = paintedSurface || animatedBackdrop || scrollDriven;
+  const motionDesigned = (keyframes >= 3 && hasReducedMotion) || scrollReveal || signatureMotion;
+  const motionTransitionOnly = !motionDesigned && transitionCount >= 12;
+
   const levers = operateMode
     ? {
       typeface: fontDelivered,
       material: materialTechniques.length >= 2,
-      motion: (keyframes >= 3 && hasReducedMotion) || scrollReveal || transitionCount >= 12,
+      motion: motionDesigned,
       chrome: browserSurfaces.length >= 2
     }
     : {
       typeface: fontDelivered,
       display_scale: maxFontPx >= DISPLAY_TYPE_FLOOR_PX,
       material: materialTechniques.length >= 2,
-      motion: (keyframes >= 3 && hasReducedMotion) || scrollReveal || transitionCount >= 12,
+      motion: motionDesigned,
       evidence: mediaElements >= 1 || backgroundImages >= 1
     };
   const leverCount = Object.keys(levers).length;
@@ -1417,6 +1461,24 @@ function analyzeVisualSources({ html = '', css = '', components = '', surfaceMod
     keyframes,
     animated_declarations: animated,
     reduced_motion_handled: hasReducedMotion,
+    // The motion record, so "premium animation" stops being a matter of taste:
+    // what runs on its own, what runs on scroll, and what only runs on hover.
+    motion: {
+      designed: motionDesigned,
+      transition_only: motionTransitionOnly,
+      transitions: transitionCount,
+      keyframes,
+      animated_declarations: animated,
+      ambient_loops: ambientLoops,
+      signature: signatureMotion,
+      signature_kinds: [
+        paintedSurface && 'painted surface (canvas/WebGL)',
+        animatedBackdrop && 'animated backdrop',
+        scrollDriven && 'scroll-driven'
+      ].filter(Boolean),
+      scroll_reveal: scrollReveal,
+      reduced_motion_handled: hasReducedMotion
+    },
     states_present: statesPresent,
     states_missing: statesMissing,
     interactive_surface: interactive,
@@ -1559,13 +1621,19 @@ function analyzeVisualSources({ html = '', css = '', components = '', surfaceMod
     if (!levers.typeface) missing.push(`a delivered typeface (${fontFaceBlocks} @font-face, webfont link ${webfontLinked ? 'present' : 'absent'})`);
     if (!operateMode && !levers.display_scale) missing.push(`display-scale type (largest font-size ${maxFontPx || 0}px, floor ${DISPLAY_TYPE_FLOOR_PX}px)`);
     if (!levers.material) missing.push(`material depth (${gradientCount} gradients, ${layeredShadows} layered shadows, ${depth.blur} blur, grain ${grainNoise ? 'yes' : 'no'})`);
-    if (!levers.motion) missing.push(`motion choreography (${keyframes} keyframes, ${transitionCount} transitions, no scroll reveal)`);
+    if (!levers.motion) missing.push(`motion choreography (${keyframes} keyframes, ${animated} animated declarations, ${transitionCount} transitions, no scroll reveal, no signature surface)`);
     if (!operateMode && !levers.evidence) missing.push(`evidence imagery (${mediaElements} media elements, ${backgroundImages} CSS image layers)`);
     if (operateMode && !levers.chrome) missing.push(`themed browser chrome (${browserSurfaces.length}/6 of ::selection, caret, scrollbar, :focus-visible, underline tuning, tabular numerals)`);
     const bar = operateMode
       ? 'An operate surface earns familiarity, not ornament — its premium axis is precision: a delivered workhorse face, a tokened finish on floating surfaces, 150–250ms state feedback, and browser chrome themed from its own palette (vq-026)'
       : 'Hygiene alone reads as a default document, not a designed product; each lever is optional, the floor is not (visual-effects.md owns the vocabulary, the register\'s premium bar owns the shape)';
     warnings.push(`craft floor: ${activeLevers}/${leverCount} premium levers active${operateMode ? ' (operate surface)' : ''} — missing: ${missing.join('; ')}. ${bar}`);
+  }
+  // The motion lever used to light on hover transitions alone, so a page with
+  // one keyframe scored the same as a choreographed one. Naming the state is
+  // what makes "premium animation" arguable from numbers instead of taste.
+  if (craftMeasured && motionTransitionOnly) {
+    warnings.push(`motion is hover-only: ${transitionCount} transitions, ${keyframes} @keyframes, ${animated} animated declarations, no scroll reveal and no signature surface — state feedback is hygiene, not choreography. A surface reads animated when something moves without being poked: an ambient backdrop, a scroll-driven reveal, or an entrance system with reduced-motion handled (visual-effects.md owns the vocabulary)`);
   }
   if (craftMeasured && levers.material && materialDepth.length <= 2) {
     warnings.push(`shallow material system: the material lever rests on ${materialDepth.join(' + ') || 'modern color alone'} (finish depth ${materialDepth.length}/7) — a drawn palette with no system-level finish is the measured shape of generic AI output even when every hue is right. Token the finish so every route inherits it: a layered shadow vocabulary on floating surfaces, tinted washes for chips and fills, texture or blend where the register allows. The signature material is the top note, never the whole system`);

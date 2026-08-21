@@ -507,6 +507,63 @@ function conformanceAxes(m) {
 }
 
 /**
+ * Motion the feature's own recorded sources ASKED for.
+ *
+ * The craft floor is a generic bar: it asks whether a surface carries motion at
+ * all, never whether it carries the motion this brief promised. So a landing
+ * page whose recorded request was "premium animation and effects" — with a
+ * signature piece named in the briefing and a `required` promise citing it —
+ * shipped with three keyframes and no ambient surface, and every gate stayed
+ * green because the generic floor was satisfied. The ambition was written
+ * down; nothing compared the delivery to it.
+ *
+ * Bilingual and structural: the words a brief uses for this are few and stable
+ * in both languages, and the check only ever produces a warning, so a false
+ * positive costs a sentence in the manifest, never a blocked stage.
+ */
+const MOTION_AMBITION = /\banima(?:tion|ted|ç(?:ão|ões)|c(?:ao|oes))\b|\banimad[oa]s?\b|\bmotion\b|\bparallax\b|\bscroll[- ]?(?:driven|telling)\b|\bscrollytelling\b|\bwebgl\b|\bthree\.js\b|\bcanvas\b|\bmicro[- ]?intera(?:ction|ç(?:ão|ões))\b|\bcinemat(?:ic|ográfic[oa])\b/gi;
+const SIGNATURE_AMBITION = /\bfundo\s+animad[oa]\b|\bbackground\s+animad[oa]\b|\banimated\s+background\b|\bpe[çc]a[- ]assinatura\b|\bsignature\s+(?:piece|moment|motion)\b|\bhero\s+animad[oa]\b|\bgrain\b|\baurora\b|\bmesh\s+gradient\b|\bwebgl\b|\bthree\.js\b|\bcanvas\b/gi;
+const MOTION_AMBITION_FLOOR = 3;
+
+/**
+ * Read what the feature recorded about itself: the briefing, the manifest's
+ * visual direction, and the PRD. Absent files simply contribute nothing.
+ */
+function recordedSources(targetDir, slug) {
+  const files = [
+    path.resolve(targetDir, '.aioson', 'briefings', slug, 'briefings.md'),
+    path.resolve(targetDir, '.aioson', 'briefings', slug, 'prototype-manifest.md'),
+    path.resolve(targetDir, '.aioson', 'briefings', slug, 'identity.md'),
+    path.resolve(targetDir, '.aioson', 'context', `prd-${slug}.md`)
+  ];
+  return files.map((file) => { try { return fs.readFileSync(file, 'utf8'); } catch { return ''; } }).join('\n');
+}
+
+/**
+ * Compare the motion the sources asked for with the motion that was measured.
+ * Advisory by construction: it reports a gap between two written-down things.
+ */
+function motionAmbitionGap(sources, metrics) {
+  const motion = metrics.motion;
+  if (!motion || !sources) return null;
+  const asked = (sources.match(MOTION_AMBITION) || []).length;
+  const signatureAsked = (sources.match(SIGNATURE_AMBITION) || []).length > 0;
+  if (asked < MOTION_AMBITION_FLOOR && !signatureAsked) return null;
+  const delivered = {
+    signature: motion.signature,
+    signature_kinds: motion.signature_kinds,
+    keyframes: motion.keyframes,
+    animated_declarations: motion.animated_declarations,
+    ambient_loops: motion.ambient_loops,
+    scroll_reveal: motion.scroll_reveal
+  };
+  // A named signature piece is answered only by a signature surface; a general
+  // motion ambition is answered by any designed motion.
+  const met = signatureAsked ? motion.signature : motion.designed;
+  return { asked, signature_asked: signatureAsked, met, delivered };
+}
+
+/**
  * A corpus whose styling decisions live in class attributes instead of
  * declarations. Nothing static reads it — typeface, display scale and dialect
  * all read as absent, so comparing them against a prototype would invent
@@ -1114,6 +1171,22 @@ const ADAPTERS = {
     // `## Visual direction` (register, thesis, anti-goals, signature) means the
     // composition was never decided in writing — the exact gap that lets an
     // identity re-skin ship over the default generative layout.
+    // The ambition this feature wrote down, held against what it delivered.
+    // Runs wherever a slug names the feature, so the implementation is asked
+    // the same question the prototype is.
+    if (result.applicable && ctx.slug) {
+      const gap = motionAmbitionGap(recordedSources(ctx.targetDir, ctx.slug), metrics);
+      if (gap) {
+        metrics.motion_ambition = gap;
+        if (!gap.met) {
+          const measured = `${gap.delivered.keyframes} @keyframes, ${gap.delivered.animated_declarations} animated declarations, ${gap.delivered.ambient_loops} ambient loop(s), scroll reveal ${gap.delivered.scroll_reveal ? 'yes' : 'no'}, signature surface none`;
+          warnings.push(gap.signature_asked
+            ? `motion ambition unanswered: the recorded sources name a signature moving surface (animated background, canvas/WebGL, grain or mesh) and the delivery has none — measured ${measured}. A signature piece is a deliverable, not a mood: build it, or record in the manifest which constraint killed it and what replaces it`
+            : `motion ambition unanswered: the recorded sources ask for motion ${gap.asked} time(s) and the delivery carries no designed motion — measured ${measured}. Hover transitions are state feedback, not the animation that was asked for; add an entrance system with reduced-motion, a scroll-driven reveal, or an ambient surface, or record why not`);
+        }
+      }
+    }
+
     if (result.applicable && ctx.slug && !ctx.file && !ctx.dir) {
       const manifestPath = path.resolve(ctx.targetDir, '.aioson', 'briefings', ctx.slug, 'prototype-manifest.md');
       let manifest = null;

@@ -362,3 +362,81 @@ test('feature:trace carries the visual block to QA; feature:close records it at 
   assert.ok(preflight.notes.some((n) => /^visual evidence: craft/.test(n)), JSON.stringify(preflight.notes));
   assert.equal(preflight.blockers.some((b) => /visual/i.test(b.gate)), false, 'visual evidence never blocks');
 });
+
+// ── the ambition the feature wrote down is a floor, not a mood ──────────────
+// The craft floor is generic: it asks whether a surface carries motion at all,
+// never whether it carries the motion THIS brief promised. A landing page whose
+// recorded request was "premium animation and effects" — signature piece named,
+// promise marked required — shipped with three keyframes and no ambient
+// surface, and every gate stayed green because the generic floor was satisfied.
+
+const HOVER_ONLY_PROTOTYPE = `<!doctype html><html><head><style>
+:root { --s2: 8px; --s3: 12px; --fg: #f4efe7; --bg: #0d1017; --line: rgba(244,239,231,.12); --accent: #c8a24a; }
+body { background: var(--bg); color: var(--fg); font-family: Georgia, serif; }
+h1 { font-size: 4rem; }
+.btn { padding: var(--s2); transition: opacity .2s ease; }
+.btn:hover { opacity: .85; } .btn:focus-visible { outline: 2px solid var(--accent); }
+${Array.from({ length: 40 }, (_, i) => `.f${i} { padding: var(--s2); margin: var(--s3); color: var(--fg); background: var(--bg); border-bottom: 1px solid var(--line); transition: color .2s ease; }`).join('\n')}
+</style></head><body><main><h1>Assessoria</h1><button class="btn">Falar com um especialista</button></main></body></html>`;
+
+const AMBIENT_PROTOTYPE = HOVER_ONLY_PROTOTYPE.replace('</style>', `
+@keyframes drift { 0% { background-position: 0% 50%; } 100% { background-position: 100% 50%; } }
+.aurora { background: linear-gradient(120deg, #12203a, #3a1240, #12203a); background-size: 300% 300%; animation: drift 20s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .aurora { animation: none; } }
+</style>`);
+
+async function ambitionFixture(prototype, briefing) {
+  const dir = await makeTmpDir('aioson-motion-ambition-');
+  const slug = 'landing';
+  await writeFile(dir, '.aioson/context/project.context.md', '---\nclassification: "SMALL"\n---\n# C\n');
+  await writeFile(dir, `.aioson/briefings/${slug}/prototype.html`, prototype);
+  await writeFile(dir, `.aioson/briefings/${slug}/prototype-manifest.md`, `---\nfeature: ${slug}\nstatus: approved\n---\n\n## Visual direction\n- register: editorial\n`);
+  await writeFile(dir, `.aioson/briefings/${slug}/briefings.md`, briefing);
+  const report = await runVerifyArtifact({
+    args: [dir],
+    options: { kind: 'visual', slug, advisory: true, json: true, suppressExitCode: true, 'no-persist': true, noPersist: true },
+    logger: { log() {}, error() {} }
+  });
+  await fs.rm(dir, { recursive: true, force: true });
+  return report;
+}
+
+const PREMIUM_BRIEF = `# Briefing\n\n> "quero uma landpage bem bonita e premium, com animação e com efeitos"\n\n`
+  + `## Motion e efeitos\n\n- Uma peça-assinatura no hero: gradiente com grain animado em canvas.\n`
+  + `- Micro-interações discretas, text reveals e uma animação de entrada por seção.\n`
+  + `- prefers-reduced-motion desliga a animação sem esconder conteúdo.\n`;
+
+test('a signature moving surface named in the sources and absent from the delivery is a named gap, not a green gate', async () => {
+  await withTempRegistry(async () => {
+    const report = await ambitionFixture(HOVER_ONLY_PROTOTYPE, PREMIUM_BRIEF);
+    const ambition = report.metrics.motion_ambition;
+    assert.ok(ambition, 'the sources ask for motion, so the comparison must run');
+    assert.equal(ambition.signature_asked, true);
+    assert.equal(ambition.met, false);
+    assert.equal(ambition.delivered.signature, false);
+    assert.ok(
+      report.warnings.some((w) => /motion ambition unanswered: the recorded sources name a signature moving surface/.test(w)),
+      report.warnings.join('\n')
+    );
+    // Advisory: a gap between two written-down things never refuses the stage.
+    assert.equal(report.issues.some((i) => /motion/i.test(i)), false);
+  });
+});
+
+test('the same brief answered by an ambient backdrop reports the ambition met and says nothing', async () => {
+  await withTempRegistry(async () => {
+    const report = await ambitionFixture(AMBIENT_PROTOTYPE, PREMIUM_BRIEF);
+    assert.equal(report.metrics.motion_ambition.met, true);
+    assert.deepEqual(report.metrics.motion_ambition.delivered.signature_kinds, ['animated backdrop']);
+    assert.equal(report.warnings.some((w) => /motion ambition unanswered/.test(w)), false, report.warnings.join('\n'));
+  });
+});
+
+test('a brief that never asks for motion is owed no motion — the check stays silent', async () => {
+  await withTempRegistry(async () => {
+    const quiet = '# Briefing\n\n## Escopo\n\nUma página institucional sóbria, com contato e prova social.\n';
+    const report = await ambitionFixture(HOVER_ONLY_PROTOTYPE, quiet);
+    assert.equal(report.metrics.motion_ambition, undefined, 'no ambition recorded, no comparison');
+    assert.equal(report.warnings.some((w) => /motion ambition/.test(w)), false, report.warnings.join('\n'));
+  });
+});

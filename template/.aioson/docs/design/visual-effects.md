@@ -174,10 +174,24 @@ A prototype may ship a clearly labeled placeholder — that is honest design evi
 
 When the real asset does not exist yet, the surface says so — an explicit empty or pending state — instead of hiding the gap behind a blurred blob.
 
-## 6. Prove it
+## 6. A named signature is a deliverable
+
+When the recorded sources name a moving signature — an animated background, a canvas or WebGL surface, grain, aurora, a mesh gradient, scroll-driven storytelling — that is scope, not mood. It ships, or the manifest records which constraint killed it and what carries the moment instead. "The brief asked for it" is measured now: `kind=visual --slug=<feature>` reads the briefing, the manifest and the PRD, and reports `motion_ambition` — what was asked, and whether the delivery answers it.
+
+Motion is measured as three different things, and only the last two count as craft:
+
+| Reported | What it is |
+|---|---|
+| `transitions` | state feedback on hover, focus, disabled — hygiene, present on every page |
+| `designed` | a keyframe system with reduced-motion, a scroll reveal, or a signature surface |
+| `signature` | paint that moves on its own: canvas/WebGL, an animated backdrop, a scroll-driven timeline |
+
+A wall of hover transitions is not choreography, and one `infinite` badge pulse is not a backdrop: an ambient surface animates paint (`background`, `background-position`, `filter`, `mask`), not just a transform. A page whose only motion is hover reports `motion is hover-only`.
+
+## 7. Prove it
 
 ```bash
 aioson verify:artifact . --kind=visual --dir=<front-end root> --advisory 2>/dev/null || true
 ```
 
-The telemetry catches the three defects this file most often prevents: a decorative blob, animation with no reduced-motion branch, and depth strategies stacked on top of each other. It cannot judge whether the effect earned its place — that stays with §1.
+The telemetry catches the defects this file most often prevents: a decorative blob, animation with no reduced-motion branch, depth strategies stacked on top of each other, motion that never leaves hover, and a signature moving surface that was asked for and never built. It cannot judge whether the effect earned its place — that stays with §1.

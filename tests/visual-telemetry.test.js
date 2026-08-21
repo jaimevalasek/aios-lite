@@ -1038,3 +1038,83 @@ test('the negation-pivot cadence counts accented pt-BR words', () => {
     <p>Não um relatório. Uma decisão.</p><p>Não uma lista. Uma rotina.</p></body></html>` });
   assert.equal(result.metrics.tells.negation_pivots, 2);
 });
+
+// ── motion: choreography, not hover ─────────────────────────────────────────
+// The lever read `(keyframes >= 3 && reducedMotion) || scrollReveal ||
+// transitionCount >= 12`. Every hand-written page carries a dozen hover
+// transitions, so the third arm lit the lever on surfaces where nothing moved
+// unless poked — a page scored full craft while delivering none of the motion
+// its brief asked for. Motion is now a measured block, and a "signature"
+// surface is one that moves paint on its own.
+
+function hoverOnlySurface(extra = '') {
+  const filler = Array.from({ length: 40 }, (_, i) =>
+    `.h${i} { padding: var(--s2); color: var(--fg); background: var(--bg); transition: color .2s ease; }`
+  ).join('\n');
+  return `<!doctype html><html><head><style>
+  :root { --s2: 8px; --fg: #111; --bg: #fff; }
+  body { font-family: Georgia, serif; color: var(--fg); background: var(--bg); }
+  ${extra}
+  ${filler}
+  </style></head><body><main><h1>Painel</h1></main></body></html>`;
+}
+
+test('motion: a wall of hover transitions is state feedback, never choreography', () => {
+  const m = analyzeVisualSources({ html: hoverOnlySurface() }).metrics;
+  assert.ok(m.motion.transitions >= 12, `the fixture must carry the old threshold: ${m.motion.transitions}`);
+  assert.equal(m.motion.keyframes, 0);
+  assert.equal(m.motion.designed, false, 'transitions alone must not light the lever');
+  assert.equal(m.motion.transition_only, true);
+  assert.equal(m.craft.levers.motion, false);
+  const text = analyzeVisualSources({ html: hoverOnlySurface() }).warnings.join('\n');
+  assert.match(text, /motion is hover-only: \d+ transitions, 0 @keyframes/);
+});
+
+test('motion: an entrance system with reduced-motion is designed motion, and one badge pulse is not a signature', () => {
+  const entrance = analyzeVisualSources({
+    html: hoverOnlySurface(`
+      @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+      @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+      @keyframes slide { from { transform: translateX(-8px); } to { transform: none; } }
+      .a { animation: rise .5s ease both; } .b { animation: fade .4s ease both; } .c { animation: slide .4s ease both; }
+      @media (prefers-reduced-motion: reduce) { * { animation: none !important; } }
+    `)
+  }).metrics;
+  assert.equal(entrance.motion.designed, true);
+  assert.equal(entrance.motion.transition_only, false);
+  assert.equal(entrance.motion.signature, false, 'entrance choreography is not an ambient surface');
+
+  // One infinite pulse on a badge: `infinite` alone was never the point — the
+  // keyframe has to move paint.
+  const pulse = analyzeVisualSources({
+    html: hoverOnlySurface(`
+      @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+      .badge { animation: pulse 2s ease-in-out infinite; }
+    `)
+  }).metrics;
+  assert.equal(pulse.motion.ambient_loops, 1);
+  assert.equal(pulse.motion.signature, false, 'a transform-only loop is a badge, not a backdrop');
+  assert.deepEqual(pulse.motion.signature_kinds, []);
+});
+
+test('motion: an ambient backdrop, a painted surface and a scroll-driven timeline each read as a signature', () => {
+  const backdrop = analyzeVisualSources({
+    html: hoverOnlySurface(`
+      @keyframes drift { 0% { background-position: 0% 50%; } 100% { background-position: 100% 50%; } }
+      .aurora { background: linear-gradient(120deg, #12203a, #3a1240, #12203a); background-size: 300% 300%; animation: drift 18s ease-in-out infinite; }
+    `)
+  }).metrics;
+  assert.equal(backdrop.motion.signature, true);
+  assert.deepEqual(backdrop.motion.signature_kinds, ['animated backdrop']);
+  assert.equal(backdrop.craft.levers.motion, true);
+
+  const painted = analyzeVisualSources({ html: hoverOnlySurface().replace('<main>', '<main><canvas id="grain" width="800" height="600"></canvas>') }).metrics;
+  assert.equal(painted.motion.signature, true);
+  assert.deepEqual(painted.motion.signature_kinds, ['painted surface (canvas/WebGL)']);
+
+  const scrolled = analyzeVisualSources({
+    html: hoverOnlySurface('.reveal { animation: fade linear both; animation-timeline: view(); } @keyframes fade { from { opacity: 0; } to { opacity: 1; } }')
+  }).metrics;
+  assert.equal(scrolled.motion.signature, true);
+  assert.ok(scrolled.motion.signature_kinds.includes('scroll-driven'));
+});
