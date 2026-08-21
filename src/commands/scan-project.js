@@ -16,7 +16,7 @@ const fs = require('node:fs/promises');
 const https = require('node:https');
 const http = require('node:http');
 const { ensureDir, exists, copyFileWithDir, nowStamp, toRelativeSafe } = require('../utils');
-const { ensureGitignoreEntry, ensureProjectGitignorePolicy } = require('../installer');
+const { ensureGitignoreEntry, ensureProjectGitignorePolicy, listManagedTrackedIgnoredPaths, formatTrackedIgnoredRemedyOperands } = require('../installer');
 const {
   MEMORY_INDEX_FILE,
   SPEC_CURRENT_FILE,
@@ -984,6 +984,13 @@ async function runScanProject({ args, options = {}, logger, t }) {
     const gitignoreRulesAdded = await ensureProjectGitignorePolicy(targetDir);
     if (gitignoreRulesAdded > 0) {
       logger.log(t('scan_project.gitignore_policy_written', { path: path.join(targetDir, '.gitignore') }));
+    }
+    const trackedIgnored = listManagedTrackedIgnoredPaths(targetDir);
+    if (trackedIgnored.length > 0) {
+      logger.log(t('update.tracked_ignored_found', { count: trackedIgnored.length }));
+      trackedIgnored.slice(0, 10).forEach((relPath) => logger.log(`    - ${relPath}`));
+      logger.log(t('update.tracked_ignored_remedy', { paths: formatTrackedIgnoredRemedyOperands(trackedIgnored).join(' ') }));
+    } else if (gitignoreRulesAdded > 0) {
       logger.log(t('scan_project.gitignore_tracked_note'));
     }
   }

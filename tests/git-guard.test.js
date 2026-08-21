@@ -1019,3 +1019,73 @@ test('managed pre-commit hook blocks unsafe commits outside @committer', async (
     await fs.rm(dir, { recursive: true, force: true });
   }
 });
+
+test('git:guard treats locale-named translation files as human-facing strings wherever they live', async () => {
+  const dir = await makeRepo();
+  try {
+    await writeFile(
+      dir,
+      'messages/pt-BR.json',
+      // aioson-secret: fixture
+      '{\n  "password_label": "Senha",\n  "password_placeholder": "••••••••",\n  "confirm_password_label": "Confirmar senha",\n  "secret": "Confidencial"\n}\n'
+    );
+    git(dir, ['add', '--', 'messages/pt-BR.json']);
+
+    const result = await runGitGuard({ args: [dir], options: { json: true }, logger: makeLogger() });
+
+    assert.equal(result.ok, true, JSON.stringify(result.warnings, null, 2));
+    assert.equal(result.warnings.length, 0);
+    assert.ok(result.suppressed.some((item) => item.id === 'generic_secret_assignment' && /localization/.test(item.suppressionReason)));
+  } finally {
+    process.exitCode = 0;
+    await fs.rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('git:guard ignores credential descriptors (labels, headers, lifetimes) and symbol names under token keys in runtime code', async () => {
+  const dir = await makeRepo();
+  try {
+    await writeFile(
+      dir,
+      'lib/api-token-labels.ts',
+      // aioson-secret: fixture
+      'export const PLAY_LOGIN_TOKEN_LABEL = "Play login";\nexport const API_KEY_HEADER = "X-Api-Key-Name";\nexport const TOKEN_TTL = "3600seconds";\n'
+    );
+    await writeFile(
+      dir,
+      '.aioson/context/rules-check.json',
+      '{"findings":[{"token":"DashboardView"},{"token":"inboxClient"},{"token":"file-size"}]}\n'
+    );
+    git(dir, ['add', '--', 'lib/api-token-labels.ts', '.aioson/context/rules-check.json']);
+
+    const result = await runGitGuard({ args: [dir], options: { json: true }, logger: makeLogger() });
+
+    assert.equal(result.ok, true, JSON.stringify(result.warnings, null, 2));
+    assert.equal(result.warnings.length, 0);
+  } finally {
+    process.exitCode = 0;
+    await fs.rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('git:guard still warns when the credential noun comes last or the token value looks random', async () => {
+  const dir = await makeRepo();
+  try {
+    await writeFile(
+      dir,
+      'src/config.js',
+      // aioson-secret: fixture
+      "const PASSWORD = 'MySuperSecretPass';\nconst password_reset_token = 'qwertzuiop';\nconst report = { token: 'xK9fQ2mP7vB3nL5t' };\n"
+    );
+    git(dir, ['add', '--', 'src/config.js']);
+
+    const result = await runGitGuard({ args: [dir], options: { json: true }, logger: makeLogger() });
+
+    assert.equal(result.ok, false);
+    const lines = result.warnings.filter((item) => item.id === 'generic_secret_assignment').map((item) => item.line).sort();
+    assert.deepEqual(lines, [1, 2, 3]);
+  } finally {
+    process.exitCode = 0;
+    await fs.rm(dir, { recursive: true, force: true });
+  }
+});

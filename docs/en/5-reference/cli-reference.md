@@ -1122,3 +1122,7 @@ For a staged scan, `git:guard` reads `.aioson/git-guard.json` from the Git index
 
 `commit:prepare --agent-safe` accepts only `--mode=headless`. The interactive `guarded` and user-reviewed `trusted` modes are rejected in agent-safe execution; high-confidence guard errors always remain blocking.
 
+`commit:prepare . <path...>` stages explicit operands (files or directories) without the picker and is valid in agent-safe/headless mode. Staging runs in two lanes — tracked paths through `git add -u --` (immune to `.gitignore` rules, stages deletions) and untracked paths through `git add --` — chunked under the command-line ceiling and retried on `index.lock` contention. A refusal surfaces `gitMessage` (git's own lines, EOL warnings stripped), `failedPaths`, `stagedBeforeFailure` and the exit status. `trackedIgnored` reports tracked files that the ignore policy covers (advisory; remedy `git rm -r --cached -- <paths>`); `aioson update` and `aioson setup` measure the same list.
+
+The generic secret heuristic skips credential descriptors (`confirm_password_label`, `API_KEY_HEADER`, `TOKEN_TTL`), mask and label values (`••••••••`, `"Password"`), and suppresses — as visible notices — findings inside localization resources (`i18n/`, `locales/`, `lang/`, locale-named files such as `messages/pt-BR.json`, `.po/.arb/.xliff/.resx`) and word-shaped symbol names under `token` keys (lint/AST reports). Provider-key rules still apply everywhere.
+

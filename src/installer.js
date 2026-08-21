@@ -9,6 +9,7 @@ const { shouldIncludeForProfile } = require('./install-profile');
 const { generatePermissions } = require('./permissions-generator');
 const { isConfigMergePath, mergeConfigFile } = require('./installer-config-merge');
 const { isGatewayPointerPath, mergeGatewayPointer } = require('./gateway-pointer-merge');
+const { listTrackedIgnoredPaths } = require('./lib/git-stage');
 
 const ROOT_DIR = path.join(__dirname, '..');
 const TEMPLATE_DIR = path.join(ROOT_DIR, 'template');
@@ -123,6 +124,50 @@ async function ensureGitignoreEntries(targetDir, entries) {
 
 async function ensureProjectGitignorePolicy(targetDir) {
   return ensureGitignoreEntries(targetDir, GITIGNORE_POLICY_LINES);
+}
+
+/**
+ * Tracked files that the AIOSON gitignore policy says should not be committed.
+ * Projects that committed `.aioson/tasks/`, `.aioson/skills/`… before the
+ * policy line existed end up with tracked-but-ignored files: every update
+ * rewrites them, `git status` keeps listing them, and a plain
+ * `git add -- <path>` refuses them. Measured here so the remedy can name the
+ * real paths instead of a hypothetical note.
+ */
+function isIgnoreRule(line) {
+  return !line.startsWith('#') && !line.startsWith('!');
+}
+
+function listManagedTrackedIgnoredPaths(targetDir) {
+  const managed = GITIGNORE_POLICY_LINES.filter(isIgnoreRule);
+  const matches = (relPath) => managed.some((rule) => {
+    if (rule.endsWith('/**')) return relPath.startsWith(rule.slice(0, -2));
+    if (rule.endsWith('/*')) return relPath.startsWith(rule.slice(0, -1));
+    if (rule.endsWith('/')) return relPath.startsWith(rule);
+    if (rule.startsWith('*')) return relPath.endsWith(rule.slice(1));
+    return relPath === rule || relPath.startsWith(`${rule}/`);
+  });
+  return listTrackedIgnoredPaths(targetDir).filter(matches);
+}
+
+/**
+ * Operands for the `git rm -r --cached` remedy. A directory is collapsed only
+ * when a policy rule ignores the whole directory and no policy line re-includes
+ * something inside it (`!.aioson/profiler-reports/.gitkeep`); everything else
+ * stays an exact file so the remedy never untracks a legitimate neighbour.
+ */
+function formatTrackedIgnoredRemedyOperands(paths) {
+  const negated = GITIGNORE_POLICY_LINES.filter((line) => line.startsWith('!')).map((line) => line.slice(1));
+  const wholeDirs = GITIGNORE_POLICY_LINES
+    .filter((line) => isIgnoreRule(line) && line.endsWith('/'))
+    .filter((dir) => !negated.some((entry) => entry.startsWith(dir)));
+  const operands = [];
+  for (const relPath of paths) {
+    const dir = wholeDirs.find((candidate) => relPath.startsWith(candidate));
+    const operand = dir ? dir.replace(/\/$/, '') : relPath;
+    if (!operands.includes(operand)) operands.push(operand);
+  }
+  return operands;
 }
 
 async function ensureCodexDirectoryCompatibility(targetDir, dryRun = false) {
@@ -541,6 +586,8 @@ async function installTemplate(targetDir, options = {}) {
 
 module.exports = {
   TEMPLATE_DIR,
+  listManagedTrackedIgnoredPaths,
+  formatTrackedIgnoredRemedyOperands,
   detectExistingInstall,
   installTemplate,
   readInstallProfile,

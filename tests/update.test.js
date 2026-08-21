@@ -345,3 +345,30 @@ test('install --force hits the same downgrade guard (no backups in install mode)
   });
   assert.ok(result, 'non-overwrite install proceeds');
 });
+
+test('update measures framework-managed files still tracked despite the gitignore policy and names the remedy', async () => {
+  const { execFileSync } = require('node:child_process');
+  const dir = await makeTempDir();
+  await installTemplate(dir, { mode: 'install' });
+  const git = (args) => execFileSync('git', args, { cwd: dir, stdio: 'ignore' });
+  git(['init']);
+  git(['config', 'user.email', 'test@example.com']);
+  git(['config', 'user.name', 'Test User']);
+  // A project that committed managed files before the policy line existed.
+  git(['add', '-f', '--', '.aioson/tasks/squad-create.md', '.aioson/agents/dev.md']);
+  git(['commit', '-q', '-m', 'legacy']);
+
+  const lines = [];
+  const { t } = createTranslator('en');
+  const result = await runUpdate({
+    args: [dir],
+    options: { 'no-hooks': true },
+    logger: { log: (line) => lines.push(String(line)), error() {} },
+    t
+  });
+
+  assert.equal(result.ok, true);
+  assert.deepEqual(result.trackedIgnored, ['.aioson/tasks/squad-create.md']);
+  assert.ok(lines.some((line) => /1 framework-managed file\(s\) are still tracked/.test(line)), lines.join('\n'));
+  assert.ok(lines.some((line) => line.includes('git rm -r --cached -- .aioson/tasks')), lines.join('\n'));
+});

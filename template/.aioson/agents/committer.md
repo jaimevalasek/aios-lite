@@ -40,7 +40,7 @@ This agent is not only a message writer. It is a commit safety gate.
 
 - **Never** use `git add .`, `git add -A`, `git add -u`, `git add *`, or globs that match the entire repository.
 - **Never** stage files implicitly. Stage only concrete paths derived from the user's scope and the current `git status --short` snapshot.
-- A user request such as “stage/commit everything” is explicit scope for the current working-tree changes. Enumerate those changes, remove paths that the guard classifies as blocked, report any exclusions, and stage the remaining concrete paths with `git add -- <path...>`. Do not translate “everything” into `git add .`, `-A`, `-u`, `*`, or a repository-wide glob.
+- A user request such as “stage/commit everything” is explicit scope for the current working-tree changes. Enumerate those changes and stage them as concrete operands through the engine: `aioson commit:prepare . <path...> --agent-safe --mode=headless --json` (guard pre-exclusion, ignore-immune lane for tracked files, chunked adds, clean `gitMessage` on failure). Do not translate “everything” into `git add .`, `-A`, `-u`, `*`, or a repository-wide glob.
 - **Staging explicit directories is allowed** when the user clearly names them (e.g. `src/commands/`, `resources/views/`). You may expand a directory into its actual files using `git status --short` and then stage the concrete paths.
 - Project policy overrides live in `.aioson/git-guard.json`. `contentAllowPaths` is a legacy whole-file content bypass: never add a new entry to it. After inspecting the exact line and proving a false positive, a user-driven flow may add a scoped `contentAllowRules` entry for one path plus one detector rule, with an audit reason.
 - **Always** run `aioson git:guard . --json` after staging is finalized and before reading `git diff --staged`.
@@ -55,7 +55,7 @@ You are encouraged to run `aioson` CLI commands via Bash to prepare and secure t
 
 ### When to run
 1. **Before generating the commit message** — run `aioson commit:prepare . --agent-safe --staged-only --mode=headless` in agent automation, or `aioson commit:prepare .` when the user is driving an interactive terminal
-2. **If `commit:prepare` fails** — fix the reported issues and re-run it
+2. **If `commit:prepare` fails** — read `error`, `gitMessage` and `failedPaths` (never the raw git echo), fix the reported issue and re-run it
 3. **Before telling the user the commit is ready** — ensure `commit:prepare` succeeded and `.aioson/context/commit-prep.json` exists with `ready=true`
 
 The exact command variants live in Full Protocol Step 2.3 below — one command list, one place.
@@ -80,22 +80,14 @@ The exact command variants live in Full Protocol Step 2.3 below — one command 
    - if the user's requested scope is ambiguous, **show the numbered list** and explain that the user can either:
      - **run `aioson commit:prepare .` manually** (recommended) — this opens a terminal checkbox UI where they can pick files with ↑/↓ and Space
      - tell you explicitly which paths to stage (files or directories)
-   - if they choose to tell you paths, resolve directory names into concrete files via `git status --short` and run `git add -- <resolved-paths>`
-   - if the user asks to add everything, treat the current status snapshot as the requested scope: enumerate its concrete paths, pre-exclude clearly blocked artifacts, stage the remaining paths explicitly, then let `commit:prepare` and `git:guard` make the authoritative safety decision
+   - if they choose to tell you paths, pass them as operands: `aioson commit:prepare . <paths...> --agent-safe --mode=headless --json` (files or directories; `unmatchedOperands`/`excludedByGuard` say what was skipped). Raw `git add -- <paths>` only when the CLI is unavailable
+   - `trackedIgnored` in the result lists files the .gitignore policy says not to commit but Git still tracks — show the `git rm -r --cached` remedy once, never block on it
+   - if the user asks to add everything, treat the current status snapshot as the requested scope: pass its concrete paths as operands and let `commit:prepare` and `git:guard` make the authoritative safety decision
    - never exclude a path merely because its filename or test content contains words such as `token`, `secret`, or `key`; the contextual detector and scoped policy are the source of truth
 3. **MANDATORY:** Run the preparation command. In agent automation, prefer the safe non-interactive path:
-   - `aioson commit:prepare . --agent-safe --staged-only --mode=headless --json`
-   - `node bin/aioson.js commit:prepare . --agent-safe --staged-only --mode=headless --json`
-   - `npx aioson commit:prepare . --agent-safe --staged-only --mode=headless --json`
-   - `./node_modules/.bin/aioson commit:prepare . --agent-safe --staged-only --mode=headless --json`
+   - `aioson commit:prepare . --agent-safe --staged-only --mode=headless --json` (same flags via `node bin/aioson.js`, `npx aioson` or `./node_modules/.bin/aioson` when the global binary is missing)
    - **Note:** `commit:prepare .` (without `--staged-only`) triggers the interactive checkbox when run in a terminal and is only appropriate for a user-driven shell.
-4. If **all** preparation commands fail, use the **manual fallback**:
-   - run `git diff --staged` and capture the output
-   - read `.aioson/context/project-pulse.md`
-   - run `git log -n 3 --oneline`
-   - inspect the latest relevant file in `plans/` or `.aioson/plans/` when available
-   - continue to Step 3 using the manually gathered data
-   - you do **not** need to create `commit-prep.json` in this fallback path
+4. If **all** preparation commands fail, use the **manual fallback**: `git diff --staged`, `.aioson/context/project-pulse.md`, `git log -n 3 --oneline`, the latest relevant file in `plans/` or `.aioson/plans/`; continue to Step 3 with that data — no `commit-prep.json` is needed on this path
 5. If a preparation command **succeeds**, read `.aioson/context/commit-prep.json`.
    - If it says `ready=false` or `guardOk=false`:
      - show the errors/warnings from the JSON

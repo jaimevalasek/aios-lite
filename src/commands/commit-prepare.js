@@ -9,6 +9,7 @@
  *   aioson commit:prepare . --staged-only
  *   aioson commit:prepare . --agent-safe --staged-only --mode=headless
  *   aioson commit:prepare . --json
+ *   aioson commit:prepare . src/feature/ docs/new.md     (explicit paths, no picker)
  */
 
 const fs = require('node:fs');
@@ -19,6 +20,9 @@ const { runGitGuard } = require('./git-guard');
 const { promptPicker } = require('../lib/terminal-picker');
 const { evaluatePathRules, loadGuardConfig } = require('../lib/git-commit-guard');
 const { resolveTargetDir } = require('../lib/project-root');
+const { stagePaths, resolveExplicitPaths, listTrackedIgnoredPaths } = require('../lib/git-stage');
+
+const TRACKED_IGNORED_REASON = 'tracked file matches .gitignore — managed/ignored path; `git rm -r --cached -- <path>` stops tracking it';
 
 function runGit(gitRoot, args, options = {}) {
   return execFileSync('git', args, {
@@ -89,7 +93,7 @@ function askQuestion(rl, questionText) {
  * "press Enter to stage everything" muscle memory). Locked files stay
  * unchecked and locked.
  */
-function buildPickerItems(unstaged, untracked, guardConfig) {
+function buildPickerItems(unstaged, untracked, guardConfig, trackedIgnored = new Set()) {
   const cfg = guardConfig || {};
   const dirHint = (p) => {
     const dir = p.split('/').slice(0, -1).join('/');
@@ -99,11 +103,13 @@ function buildPickerItems(unstaged, untracked, guardConfig) {
   const make = (filePath, group) => {
     const evalResult = evaluatePathRules(filePath, cfg);
     const isBlocked = evalResult.blocked.length > 0;
-    const hasWarning = evalResult.warned.length > 0;
+    const warnedReasons = evalResult.warned.map((w) => w.reason);
+    if (trackedIgnored.has(filePath)) warnedReasons.push(TRACKED_IGNORED_REASON);
+    const hasWarning = warnedReasons.length > 0;
     const reason = isBlocked
       ? evalResult.blocked.map((b) => b.reason).join('; ')
       : hasWarning
-        ? evalResult.warned.map((w) => w.reason).join('; ')
+        ? warnedReasons.join('; ')
         : '';
     return {
       id: filePath,
@@ -123,8 +129,8 @@ function buildPickerItems(unstaged, untracked, guardConfig) {
   ];
 }
 
-async function promptFileSelectionPicker(unstaged, untracked, guardConfig) {
-  const items = buildPickerItems(unstaged, untracked, guardConfig);
+async function promptFileSelectionPicker(unstaged, untracked, guardConfig, trackedIgnored) {
+  const items = buildPickerItems(unstaged, untracked, guardConfig, trackedIgnored);
   if (items.length === 0) return [];
 
   const blockedCount = items.filter((i) => i.locked).length;
@@ -328,6 +334,7 @@ function wasPrepCommitted(prep) {
 
 async function runCommitPrepare({ args, options, logger }) {
   const projectDir = resolveTargetDir(args);
+  const explicitOperands = (Array.isArray(args) ? args.slice(1) : []).map((value) => String(value)).filter(Boolean);
   const jsonMode = Boolean(options.json);
   const stagedOnly = Boolean(options['staged-only'] || options.stagedOnly);
   const agentSafe = Boolean(options['agent-safe'] || options.agentSafe);
@@ -421,13 +428,59 @@ async function runCommitPrepare({ args, options, logger }) {
     };
   }
   const allModified = [...new Set([...unstaged, ...untracked])];
+  // Tracked files that also match an ignore rule: git status lists them, a
+  // plain `git add -- <path>` refuses them and stages nothing. Surfaced as an
+  // advisory (never a block) and staged through the update lane below.
+  const trackedIgnored = new Set(listTrackedIgnoredPaths(gitRoot).filter((p) => unstaged.includes(p) || staged.includes(p)));
 
   let filesToStage = [];
+  let stagingLanes = { tracked: [], untracked: [] };
+  let unmatchedOperands = [];
+  const excludedByGuard = [];
 
   if (stagedOnly) {
     filesToStage = [];
     if (!jsonMode) {
       logger.log('Modo --staged-only: usando apenas arquivos já no stage.');
+    }
+  } else if (explicitOperands.length > 0) {
+    // Explicit operands are explicit staging: allowed in every mode, including
+    // agent-safe/headless, because nothing interactive happens.
+    const resolved = resolveExplicitPaths(explicitOperands, { unstaged, untracked });
+    unmatchedOperands = resolved.unmatched;
+    let guardConfigState = { config: {} };
+    try {
+      guardConfigState = await loadGuardConfig(gitRoot);
+    } catch (err) {
+      logger.error(`Aviso: git-guard.json inválido (${err.message}). Usando regras padrão.`);
+    }
+    const keep = (list) => list.filter((filePath) => {
+      const verdict = evaluatePathRules(filePath, guardConfigState.config);
+      if (verdict.blocked.length === 0) return true;
+      excludedByGuard.push({ path: filePath, reason: verdict.blocked.map((b) => b.reason).join('; '), ids: verdict.blocked.map((b) => b.id) });
+      return false;
+    });
+    stagingLanes = { tracked: keep(resolved.tracked), untracked: keep(resolved.untracked) };
+    filesToStage = [...stagingLanes.tracked, ...stagingLanes.untracked];
+    if (!jsonMode) {
+      if (unmatchedOperands.length > 0) logger.log(`Sem alterações para: ${unmatchedOperands.join(', ')}`);
+      excludedByGuard.forEach((item) => logger.log(`Excluído pelo git-guard: ${item.path} — ${item.reason}`));
+    }
+    if (filesToStage.length === 0 && staged.length === 0) {
+      const failure = {
+        ok: false,
+        error: 'no_matching_paths',
+        message: 'Nenhum dos caminhos informados tem alterações para colocar no stage.',
+        gitRoot,
+        operands: explicitOperands,
+        unmatched: unmatchedOperands,
+        excludedByGuard,
+        ready: false
+      };
+      if (jsonMode) return failure;
+      logger.error(failure.message);
+      process.exitCode = 1;
+      return failure;
     }
   } else if (allModified.length > 0) {
     if (!jsonMode) {
@@ -482,7 +535,7 @@ async function runCommitPrepare({ args, options, logger }) {
       logger.error(`Aviso: git-guard.json inválido (${err.message}). Usando regras padrão.`);
     }
 
-    const selected = await promptFileSelectionPicker(unstaged, untracked, guardConfigState.config);
+    const selected = await promptFileSelectionPicker(unstaged, untracked, guardConfigState.config, trackedIgnored);
     if (selected === null) {
       const cancelResult = { ok: false, error: 'cancelled_by_user', message: 'Operação cancelada pelo usuário.' };
       if (jsonMode) return cancelResult;
@@ -490,25 +543,49 @@ async function runCommitPrepare({ args, options, logger }) {
       return cancelResult;
     }
     filesToStage = selected;
+    const untrackedSet = new Set(untracked);
+    stagingLanes = {
+      tracked: selected.filter((p) => !untrackedSet.has(p)),
+      untracked: selected.filter((p) => untrackedSet.has(p))
+    };
   }
 
   if (filesToStage.length > 0) {
-    try {
-      runGit(gitRoot, ['add', '--', ...filesToStage]);
-      if (!jsonMode) {
-        logger.log(`Adicionados ao stage: ${filesToStage.join(', ')}`);
-      }
-    } catch (error) {
+    const staging = await stagePaths(gitRoot, stagingLanes);
+    if (!staging.ok) {
       const failure = {
         ok: false,
         error: 'git_add_failed',
-        message: `git add failed: ${error.message}`
+        message: staging.message,
+        gitRoot,
+        lane: staging.lane,
+        exitStatus: staging.exitStatus,
+        gitMessage: staging.gitMessage,
+        failedPaths: staging.failedPaths,
+        stagedBeforeFailure: staging.staged,
+        ignoredPathsRefused: staging.ignoredPathsRefused,
+        indexLock: staging.indexLock,
+        ready: false
       };
       if (jsonMode) return failure;
       logger.error(failure.message);
+      if (staging.staged.length > 0) logger.error(`Já no stage antes da falha: ${staging.staged.length} caminho(s).`);
+      const shown = staging.failedPaths.slice(0, 8).join(', ');
+      const rest = staging.failedPaths.length > 8 ? ` … +${staging.failedPaths.length - 8}` : '';
+      logger.error(`Falhou ao adicionar (${staging.lane}): ${shown}${rest}`);
       process.exitCode = 1;
       return failure;
     }
+    if (!jsonMode) {
+      logger.log(`Adicionados ao stage: ${filesToStage.join(', ')}`);
+    }
+  }
+
+  const stagedTrackedIgnored = [...trackedIgnored].filter((p) => filesToStage.includes(p) || staged.includes(p));
+  if (!jsonMode && stagedTrackedIgnored.length > 0) {
+    logger.log(`\n⚠ ${stagedTrackedIgnored.length} arquivo(s) rastreado(s) batem com o .gitignore (política "não comitar"):`);
+    stagedTrackedIgnored.slice(0, 10).forEach((p) => logger.log(`  - ${p}`));
+    logger.log(`  Para parar de versionar: git rm -r --cached -- ${stagedTrackedIgnored.slice(0, 10).join(' ')}`);
   }
 
   // Re-read staged files after add
@@ -634,6 +711,11 @@ async function runCommitPrepare({ args, options, logger }) {
       untracked,
       filesToStage
     },
+    advisories: {
+      trackedIgnored: stagedTrackedIgnored,
+      unmatchedOperands,
+      excludedByGuard
+    },
     stagedFiles: finalStagedFiles,
     guard: guardResult,
     diff,
@@ -661,6 +743,9 @@ async function runCommitPrepare({ args, options, logger }) {
     stagedCount: finalStagedFiles.length,
     guardOk: true,
     guardMode,
+    trackedIgnored: stagedTrackedIgnored,
+    unmatchedOperands,
+    excludedByGuard,
     ready: true
   };
 }

@@ -2182,9 +2182,16 @@ aioson commit:prepare . --agent-safe --staged-only --mode=headless
 
 # Prosseguir com warnings que o usuário já revisou; erros continuam bloqueando
 aioson commit:prepare . --staged-only --mode=trusted
+
+# Caminhos explícitos (arquivos ou diretórios) — sem picker, válido em agent-safe/headless
+aioson commit:prepare . src/feature/ docs/new.md --agent-safe --mode=headless --json
 ```
 
 Modos aceitos: `guarded` (padrão), `headless` e `trusted`. O modo fica registrado em `commit-prep.json`, e um preparo menos estrito não é reutilizado por um modo mais estrito. Com `--agent-safe`, somente `--mode=headless` é permitido; `guarded` e `trusted` são rejeitados antes de qualquer preparo.
+
+O stage é feito pelo motor em duas faixas: arquivos rastreados via `git add -u -- <caminhos>` (regras de `.gitignore` não se aplicam a arquivos já rastreados; deleções entram corretamente) e não rastreados via `git add -- <caminhos>`, em lotes abaixo do limite de linha de comando e com retry em contenção de `index.lock`. Quando o git recusa, a saída traz `gitMessage` (a mensagem do git sem os avisos de LF/CRLF), `failedPaths`, `stagedBeforeFailure` e o código de saída — nunca o eco do comando inteiro.
+
+`trackedIgnored` lista arquivos que o `.gitignore` ignora mas o Git ainda rastreia (tipicamente arquivos gerenciados pelo AIOSON — `.aioson/tasks/`, `.aioson/skills/` — comitados antes da política). É aviso, nunca bloqueio; o remédio impresso é `git rm -r --cached -- <caminhos>`. `aioson update` e `aioson setup` medem a mesma lista.
 
 Saída esperada:
 

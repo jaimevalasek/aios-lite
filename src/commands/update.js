@@ -5,6 +5,7 @@
 const hooksInstall = require('./hooks-install');
 const { detectFramework } = require('../detector');
 const { updateInstallation } = require('../updater');
+const { listManagedTrackedIgnoredPaths, formatTrackedIgnoredRemedyOperands } = require('../installer');
 const { validateProjectContextFile, getInteractionLanguage } = require('../context');
 const { applyAgentLocale } = require('../locales');
 const { getCliVersionLabelSync } = require('../version');
@@ -64,6 +65,13 @@ async function runUpdate({ args, options, logger, t }) {
     logger.log('');
     logger.log(t('update.reconfigure_hint'));
   }
+  const trackedIgnored = listManagedTrackedIgnoredPaths(targetDir);
+  if (trackedIgnored.length > 0) {
+    logger.log('');
+    logger.log(t('update.tracked_ignored_found', { count: trackedIgnored.length }));
+    trackedIgnored.slice(0, 10).forEach((relPath) => logger.log(`    - ${relPath}`));
+    logger.log(t('update.tracked_ignored_remedy', { paths: formatTrackedIgnoredRemedyOperands(trackedIgnored).join(' ') }));
+  }
   if (localeSync) {
     if (dryRun) {
       logger.log(t('locale_apply.dry_run_applied', { locale: localeSync.locale }));
@@ -81,6 +89,7 @@ async function runUpdate({ args, options, logger, t }) {
     targetDir,
     ...result,
     localeSync,
+    trackedIgnored,
     hooksInstall: hooksResult
   };
 }

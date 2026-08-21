@@ -396,7 +396,9 @@ module.exports = {
     files_updated: 'Archivos actualizados: {count}',
     backups_created: 'Backups creados: {count}',
     profile_renamed: 'i Perfil `beginner` renombrado a `creator` en project.context.md para describir mejor al usuario. Comportamiento sin cambios. Edita el archivo para cambiar a `developer` si lo prefieres.',
-    reconfigure_hint: 'Nuevas opciones pueden estar disponibles. Ejecuta: aioson install --reconfigure'
+    reconfigure_hint: 'Nuevas opciones pueden estar disponibles. Ejecuta: aioson install --reconfigure',
+    tracked_ignored_found: '  Gitignore: {count} archivo(s) gestionado(s) por el framework siguen rastreados por Git aunque la politica de AIOSON los ignora — git status los sigue listando y `git add -- <ruta>` los rechaza:',
+    tracked_ignored_remedy: '  Gitignore: deja de versionarlos una vez con: git rm -r --cached -- {paths}'
   },
   info: {
     cli_version: 'AIOSON CLI: v{version}',

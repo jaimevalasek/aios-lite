@@ -225,3 +225,79 @@ test('commit:prepare trusted mode still blocks high-confidence secret errors', a
     await fs.rm(dir, { recursive: true, force: true });
   }
 });
+
+test('commit:prepare stages explicit operands in agent-safe headless mode — a tracked file under a .gitignore rule included', async () => {
+  const dir = await makeRepo();
+  try {
+    await writeFile(dir, '.aioson/tasks/squad-create.md', 'v1\n');
+    await writeFile(dir, 'src/a.js', 'v1\n');
+    git(dir, ['add', '-A']);
+    git(dir, ['commit', '-q', '-m', 'init']);
+    await writeFile(dir, '.gitignore', '.aioson/tasks/\n');
+    await writeFile(dir, '.aioson/tasks/squad-create.md', 'v2\n');
+    await writeFile(dir, 'src/a.js', 'v2\n');
+    await writeFile(dir, 'feature/new.js', 'console.log("new");\n');
+    await writeFile(dir, 'src/untouched.js', 'stay\n');
+    git(dir, ['add', '--', 'src/untouched.js']);
+    git(dir, ['commit', '-q', '-m', 'second']);
+
+    const result = await runCommitPrepare({
+      args: [dir, '.aioson/tasks/squad-create.md', 'src/', 'feature/', '.gitignore', 'src/untouched.js'],
+      options: { json: true, 'agent-safe': true, mode: 'headless' },
+      logger: makeLogger()
+    });
+
+    assert.equal(result.ok, true, JSON.stringify(result));
+    assert.equal(result.ready, true);
+    assert.equal(result.stagedCount, 4);
+    assert.deepEqual(result.trackedIgnored, ['.aioson/tasks/squad-create.md']);
+    assert.deepEqual(result.unmatchedOperands, ['src/untouched.js']);
+    const staged = execFileSync('git', ['diff', '--cached', '--name-only'], { cwd: dir, encoding: 'utf8' }).split('\n').filter(Boolean).sort();
+    assert.deepEqual(staged, ['.aioson/tasks/squad-create.md', '.gitignore', 'feature/new.js', 'src/a.js']);
+    const prep = JSON.parse(await fs.readFile(result.prepPath, 'utf8'));
+    assert.deepEqual(prep.advisories.trackedIgnored, ['.aioson/tasks/squad-create.md']);
+  } finally {
+    process.exitCode = 0;
+    await fs.rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('commit:prepare explicit operands exclude guard-blocked paths and report operands with no changes', async () => {
+  const dir = await makeRepo();
+  try {
+    await writeFile(dir, 'src/a.js', 'ok\n');
+    await writeFile(dir, 'node_modules/pkg/index.js', 'module.exports = 1;\n');
+
+    const result = await runCommitPrepare({
+      args: [dir, 'src/a.js', 'node_modules/'],
+      options: { json: true, 'agent-safe': true, mode: 'headless' },
+      logger: makeLogger()
+    });
+
+    assert.equal(result.ok, true, JSON.stringify(result));
+    assert.deepEqual(result.excludedByGuard.map((item) => item.path), ['node_modules/']);
+    assert.ok(result.excludedByGuard[0].ids.includes('dependency_dir'));
+    const staged = execFileSync('git', ['diff', '--cached', '--name-only'], { cwd: dir, encoding: 'utf8' }).split('\n').filter(Boolean);
+    assert.deepEqual(staged, ['src/a.js']);
+
+    const nothing = await runCommitPrepare({
+      args: [dir, 'missing.js'],
+      options: { json: true, 'agent-safe': true, mode: 'headless' },
+      logger: makeLogger()
+    });
+    assert.equal(nothing.ok, true, 'already-staged files keep the prep alive');
+
+    git(dir, ['reset', '-q']);
+    const empty = await runCommitPrepare({
+      args: [dir, 'missing.js'],
+      options: { json: true, 'agent-safe': true, mode: 'headless' },
+      logger: makeLogger()
+    });
+    assert.equal(empty.ok, false);
+    assert.equal(empty.error, 'no_matching_paths');
+    assert.deepEqual(empty.unmatched, ['missing.js']);
+  } finally {
+    process.exitCode = 0;
+    await fs.rm(dir, { recursive: true, force: true });
+  }
+});

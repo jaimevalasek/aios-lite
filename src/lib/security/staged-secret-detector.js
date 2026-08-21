@@ -86,6 +86,42 @@ const PRIVATE_KEY_HEADER = /-----BEGIN(?: [A-Z0-9]+)? PRIVATE KEY-----/g;
 const PRIVATE_KEY_PAYLOAD_LINE = /^[ \t]*([A-Za-z0-9+/=]{16,})[ \t]*(?:(?:\r?\n)|\\r?\\?n|$)/;
 const UUID_VALUE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
+// Localization resources hold human-facing strings by definition. Besides the
+// classic directory names, a file whose basename is a locale tag (`en.json`,
+// `pt-BR.json`, `messages.en_US.yml`) or whose format exists only for
+// translations (.po/.arb/.xliff/.resx/.strings) is a translation file wherever
+// it lives — next-intl, i18next, Laravel, Flutter, gettext, .NET and iOS all
+// name files this way.
+const LOCALIZATION_DIR = /(^|\/)(?:i18n|locales?|translations?|l10n|intl|nls|langs?)(\/|$)/i;
+const LOCALE_TAG = '[a-z]{2,3}(?:[-_](?:[A-Z][a-z]{3}|[A-Z]{2}|\\d{3}))?';
+const LOCALE_BASENAME = new RegExp(`^(?:[\\w.-]+[._-])?${LOCALE_TAG}\\.(?:json|ya?ml|[cm]?js|ts|php|properties|toml|xml|ini|resx)$`);
+const LOCALIZATION_EXTENSION = /\.(?:po|pot|arb|xlf|xliff|resx|strings|stringsdict|ftl)$/i;
+
+// Segments a credential noun can be followed by when the identifier names
+// something ABOUT the credential (its UI label, input hint, policy, header
+// name, lifetime) rather than the credential itself. `confirm_password_label`,
+// `API_KEY_HEADER`, `TOKEN_TTL` are descriptors; `password_reset_token` is not
+// because the noun comes last.
+const CREDENTIAL_TERMS = new Set(['secret', 'token', 'key', 'password', 'passwd']);
+const DESCRIPTOR_TERMS = new Set([
+  'label', 'labels', 'placeholder', 'title', 'hint', 'hints', 'help', 'text', 'message', 'msg', 'error', 'errors',
+  'meta', 'description', 'desc', 'required', 'invalid', 'mismatch', 'short', 'weak', 'strength', 'rule', 'rules',
+  'policy', 'reset', 'forgot', 'forgotten', 'change', 'changed', 'confirm', 'confirmation', 'field', 'input',
+  'button', 'btn', 'link', 'page', 'heading', 'caption', 'tooltip', 'aria', 'cta', 'subtitle', 'prompt', 'empty',
+  'success', 'warning', 'notice', 'info', 'name', 'type', 'kind', 'header', 'prefix', 'length', 'min', 'max',
+  'ttl', 'expiry', 'expires', 'expired', 'count', 'limit', 'url', 'path', 'endpoint', 'param', 'query', 'cookie',
+  'id', 'format', 'pattern', 'regex', 'mask', 'icon', 'visible', 'hidden', 'toggle', 'show', 'hide', 'copy',
+  'copied', 'sent', 'resend', 'status', 'state', 'enabled', 'disabled', 'flag', 'mode'
+]);
+// The word itself, in the languages a UI is commonly authored in, is a label
+// (`"password_label": "Password"`, `senha: "Senha"`), never the credential.
+const CREDENTIAL_LABEL_WORD = /^(?:password|passwd|passphrase|secret|token|api ?key|access ?token|senha|contrase[ñn]a|clave|palavra-passe|mot de passe|passwort|kennwort|wachtwoord|parola|пароль)$/i;
+// Lexer/AST/lint reports and design-token files say `token` for a symbol, not
+// a credential. Word-shaped identifiers (`DashboardView`, `inboxClient`,
+// `file-size`) have essentially zero chance of being random credential
+// material, which always mixes in digits.
+const WORD_CASED_IDENTIFIER = /^(?:(?:[A-Z][a-z]{2,}){2,}|[a-z]{2,}(?:[A-Z][a-z]{2,})+|[a-z]{2,}(?:[-_][a-z]{2,})+)$/;
+
 function collectPrivateKeyMaterialMatches(text) {
   const matches = [];
   let header;
@@ -142,7 +178,54 @@ function isSyntheticUtilityPath(relPath) {
 
 function isLocalizationPath(relPath) {
   const normalized = normalizeRelPath(relPath);
-  return /(^|\/)(?:i18n|locales?|translations?)(\/|$)/i.test(normalized);
+  if (LOCALIZATION_DIR.test(normalized)) return true;
+  if (LOCALIZATION_EXTENSION.test(normalized)) return true;
+  const base = normalized.split('/').pop() || '';
+  return LOCALE_BASENAME.test(base);
+}
+
+function identifierTerms(variableName) {
+  return String(variableName || '')
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter(Boolean);
+}
+
+/**
+ * True when the identifier describes an attribute of a credential (label,
+ * input hint, header name, lifetime…) instead of holding one: every term after
+ * the last credential noun is a descriptor.
+ */
+function isCredentialDescriptorName(variableName) {
+  const terms = identifierTerms(variableName);
+  let last = -1;
+  terms.forEach((term, index) => {
+    if (CREDENTIAL_TERMS.has(term)) last = index;
+  });
+  if (last === -1 || last === terms.length - 1) return false;
+  return terms.slice(last + 1).every((term) => DESCRIPTOR_TERMS.has(term));
+}
+
+function isTokenFamilyName(variableName) {
+  const terms = identifierTerms(variableName);
+  const credentialTerms = terms.filter((term) => CREDENTIAL_TERMS.has(term));
+  return credentialTerms.length > 0 && credentialTerms.every((term) => term === 'token');
+}
+
+function isMaskValue(value) {
+  return !/[A-Za-z0-9]/.test(String(value || ''));
+}
+
+function isUiStringValue(variableName, value) {
+  const raw = String(value || '').trim();
+  if (isMaskValue(raw)) return true;
+  if (CREDENTIAL_LABEL_WORD.test(raw)) return true;
+  return isCredentialDescriptorName(variableName);
+}
+
+function isSymbolUnderTokenKey(variableName, value) {
+  return isTokenFamilyName(variableName) && WORD_CASED_IDENTIFIER.test(String(value || '').trim());
 }
 
 function lineNumberAt(text, index) {
@@ -250,12 +333,13 @@ function collectGenericAssignmentFindings(relPath, text) {
   const suppressed = [];
 
   const evaluateCandidate = (variableName, value, index) => {
-    // Localization values commonly use keys such as `login_no_token`. Ignore
-    // human-readable sentences there, but keep passphrase-style assignments
-    // in runtime code under inspection.
-    if (/\s/.test(value) && isLocalizationPath(relPath)) return;
     if (PUBLIC_IDENTIFIER.test(variableName)) return;
     if (PLACEHOLDER_VALUE.test(value) || PLACEHOLDER_FRAGMENT.test(value)) return;
+    // A label, a mask, a descriptor of the credential, or a symbol name under a
+    // `token` key is UI/meta text in any file, not a credential. Whitespace
+    // alone is not proof: passphrase-style assignments in runtime code stay
+    // under inspection.
+    if (isUiStringValue(variableName, value)) return;
 
     const finding = {
       type: 'content',
@@ -266,6 +350,16 @@ function collectGenericAssignmentFindings(relPath, text) {
       reason: `possible secret assignment detected for ${variableName}`,
       line: lineNumberAt(text, index)
     };
+    // Translation resources hold human-facing strings by definition; keep the
+    // finding visible as a suppressed notice so the audit trail stays honest.
+    if (isLocalizationPath(relPath)) {
+      suppressed.push(createSuppressed(finding, 'localization resource holds human-facing strings'));
+      return;
+    }
+    if (isSymbolUnderTokenKey(variableName, value)) {
+      suppressed.push(createSuppressed(finding, 'word-shaped symbol name under a token key, not credential material'));
+      return;
+    }
     const context = lineContextAt(text, index);
     const fixtureEvidence = (isFixturePath(relPath) || isSyntheticUtilityPath(relPath))
       && (FIXTURE_VALUE_FRAGMENT.test(value)
@@ -316,6 +410,9 @@ module.exports = {
   isFixturePath,
   isTestSourcePath,
   isLocalizationPath,
+  isCredentialDescriptorName,
+  isUiStringValue,
+  isSymbolUnderTokenKey,
   isObviouslySyntheticSecret,
   FIXTURE_SENTINEL
 };
