@@ -66,6 +66,35 @@ const STATE_MARKERS = [
 
 const INTERACTIVE = /<button|<input|<select|<textarea|<form|addEventListener|onclick=/i;
 
+// WHICH states a surface owes depends on what the surface does, not on whether
+// it has a button. A landing page whose only controls are a motion toggle and a
+// guided tour was told it lacked loading, empty and error markers — it has no
+// form, no request and no list, so it owes none of them. A gate that charges
+// every page for states it cannot have is a gate people learn to scroll past.
+const FOCUSABLE = /<button|<input|<select|<textarea|<a\s[^>]*href|tabindex\s*=|role\s*=\s*["'](?:button|link|tab|menuitem|switch|checkbox)["']/i;
+const CONTROLS = /<button|<input|<select|<textarea|role\s*=\s*["'](?:button|switch|checkbox|menuitem)["']/i;
+const DATA_ENTRY = /<input|<select|<textarea|<form\b|contenteditable/i;
+const ASYNC_WORK = /\bfetch\s*\(|XMLHttpRequest|\baxios\b|\$\.ajax|addEventListener\s*\(\s*['"]submit|\bon[Ss]ubmit\b|\.submit\s*\(|\buse(?:Query|Mutation|SWR)\b|sendBeacon/i;
+// A collection rendered FROM DATA. A static `<ul>` of navigation links is not
+// one, which is why the markup tag alone can never be the test.
+const COLLECTION = /<table\b|role\s*=\s*["'](?:grid|table|feed|listbox|treegrid)["']|aria-rowcount|\bdata-grid\b|\.map\s*\(|\bv-for\b|\{#each\b|\*ngFor\b/i;
+
+/**
+ * What each state is owed BY — the capability that makes it REACHABLE.
+ *
+ * `focus` is the exception with no condition beyond being focusable: a visible
+ * focus ring is an accessibility floor, not a workflow state. `disabled` hangs
+ * on data entry or async work, never on the mere presence of a `<button>` —
+ * a toggle that always works has no disabled state to draw.
+ */
+const STATE_OWNERS = {
+  loading: (surface) => surface.data_entry || surface.async_work || surface.collections,
+  empty: (surface) => surface.collections,
+  error: (surface) => surface.data_entry || surface.async_work,
+  disabled: (surface) => surface.data_entry || surface.async_work,
+  focus: (surface) => surface.focusable
+};
+
 // ── interaction contracts (forms, confirmation, drag-and-drop, widgets) ──────
 // Lexical mirrors of the .aioson/rules/ interaction contracts. Same trade as
 // everything else in this file: the one near-zero-FP defect (a native browser
@@ -1165,6 +1194,18 @@ function analyzeVisualSources({ html = '', css = '', components = '', surfaceMod
   const statesPresent = STATE_MARKERS.filter((s) => s.re.test(corpus)).map((s) => s.state);
   const statesMissing = STATE_MARKERS.filter((s) => !s.re.test(corpus)).map((s) => s.state);
   const interactive = INTERACTIVE.test(markup);
+  // `states_missing` stays a plain measurement (which markers the corpus does
+  // not carry). What is CHARGED is the intersection with what this surface can
+  // actually reach.
+  const surfaceCapabilities = {
+    focusable: FOCUSABLE.test(markup),
+    controls: CONTROLS.test(markup),
+    data_entry: DATA_ENTRY.test(markup),
+    async_work: ASYNC_WORK.test(corpus),
+    collections: COLLECTION.test(markup)
+  };
+  const statesOwed = STATE_MARKERS.filter((s) => STATE_OWNERS[s.state](surfaceCapabilities)).map((s) => s.state);
+  const statesUnmet = statesOwed.filter((state) => !statesPresent.includes(state));
 
   // ── structure ────────────────────────────────────────────────────────────
   const cardNesting = maxCardNesting(markup);
@@ -1482,6 +1523,10 @@ function analyzeVisualSources({ html = '', css = '', components = '', surfaceMod
     states_present: statesPresent,
     states_missing: statesMissing,
     interactive_surface: interactive,
+    // What this surface can actually reach, and therefore owes.
+    surface_capabilities: surfaceCapabilities,
+    states_owed: statesOwed,
+    states_unmet: statesUnmet,
     max_card_nesting: cardNesting,
     max_card_sibling_run: cardWall.run,
     card_sibling_class: cardWall.className,
@@ -1565,8 +1610,14 @@ function analyzeVisualSources({ html = '', css = '', components = '', surfaceMod
   if (families.size > 3) {
     warnings.push(`${families.size} distinct font families (${[...families].slice(0, 4).join(', ')}) — a coherent system rarely needs more than two`);
   }
-  if (interactive && statesMissing.length > 0) {
-    warnings.push(`interactive surface with no marker for: ${statesMissing.join(', ')} — visual polish cannot hide an unfinished workflow`);
+  if (statesUnmet.length > 0) {
+    const why = [
+      surfaceCapabilities.data_entry && 'data entry',
+      surfaceCapabilities.async_work && 'async work',
+      surfaceCapabilities.collections && 'a rendered collection',
+      surfaceCapabilities.focusable && 'focusable controls'
+    ].filter(Boolean).join(', ');
+    warnings.push(`interactive surface with no marker for: ${statesUnmet.join(', ')} — this surface carries ${why}, so those states are reachable; visual polish cannot hide an unfinished workflow`);
   }
   if (unmaskedInputs.length > 0) {
     const sample = unmaskedInputs.slice(0, 3).join('; ');

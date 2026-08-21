@@ -109,11 +109,11 @@
       "tags": ["visual-quality", "prototype", "ui", "ux"],
       "q": 5,
       "v": "BEST_PRACTICE",
-      "s": "A polished surface includes the states that explain its behavior: loading, empty, error, disabled, focus, success, and relevant responsive or reduced-motion variants. Visual polish cannot hide an unfinished workflow.",
+      "s": "A polished surface includes the states that explain its behavior: loading, empty, error, disabled, focus, success, and relevant responsive or reduced-motion variants. Visual polish cannot hide an unfinished workflow. Which states a surface owes follows from what it can reach, not from having a button: data entry or async work make loading, error and disabled reachable; a collection rendered from data makes empty reachable; anything focusable owes a visible focus ring. A landing page with a toggle and no form owes the ring and nothing else — telemetry reports `states_owed` next to `states_missing` so the charge is arguable.",
       "p": "screen quality = hierarchy + interaction + states + accessibility + responsive behavior",
       "src": "AIOSON agent implementation and prototype contracts",
       "date": "2026-08-07",
-      "not": "A static screenshot, toast, decorative interaction, or happy-path-only prototype presented as a complete interface",
+      "not": "A static screenshot, toast, decorative interaction, or happy-path-only prototype presented as a complete interface, or charging a marketing page for loading and empty states it has no way to enter",
       "warn": "Include only states material to the feature; do not invent backend behavior outside the approved scope.",
       "see": ["vq-003", "vq-006"]
     },

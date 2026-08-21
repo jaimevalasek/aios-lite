@@ -1118,3 +1118,70 @@ test('motion: an ambient backdrop, a painted surface and a scroll-driven timelin
   assert.equal(scrolled.motion.signature, true);
   assert.ok(scrolled.motion.signature_kinds.includes('scroll-driven'));
 });
+
+// ── the states a surface OWES ───────────────────────────────────────────────
+// `interactive` was `<button|<input|…|addEventListener|onclick=`, all-or-
+// nothing: one button made a page owe loading, empty, error and disabled. A
+// marketing landing whose only controls were a motion toggle and a guided tour
+// was charged for all four — no form, no request, no list, none of those states
+// reachable. A gate that charges every page for states it cannot have is a gate
+// people learn to scroll past.
+
+function statesFixture(body, script = '') {
+  return `<!doctype html><html><head><style>
+  :root { --s: 8px; --fg: #111; --bg: #fff; }
+  body { background: var(--bg); color: var(--fg); font-family: Georgia, serif; }
+  button:focus-visible { outline: 2px solid var(--fg); }
+  ${Array.from({ length: 40 }, (_, i) => `.f${i} { padding: var(--s); color: var(--fg); background: var(--bg); }`).join('\n')}
+  </style></head><body>${body}<script>${script}<\/script></body></html>`;
+}
+
+const statesWarning = (result) => result.warnings.find((w) => /no marker for/.test(w)) || null;
+
+test('states: a surface with controls and nothing else owes a focus ring, not a workflow', () => {
+  const result = analyzeVisualSources({ html: statesFixture('<main><h1>Marca</h1><button type="button">Alternar movimento</button></main>') });
+  const m = result.metrics;
+  assert.deepEqual(m.surface_capabilities, { focusable: true, controls: true, data_entry: false, async_work: false, collections: false });
+  assert.deepEqual(m.states_owed, ['focus'], 'no form, no request, no list — none of those states exist here');
+  assert.deepEqual(m.states_unmet, []);
+  assert.equal(statesWarning(result), null, 'a landing page must not be charged for states it cannot reach');
+
+  // The raw measurement is untouched: it still reports which markers are absent.
+  assert.deepEqual(m.states_missing, ['loading', 'empty', 'error', 'disabled']);
+  assert.equal(m.interactive_surface, true);
+});
+
+test('states: data entry and async work each make loading, error and disabled reachable', () => {
+  const form = analyzeVisualSources({ html: statesFixture('<main><form><input name="email" type="email"><button type="submit">Enviar</button></form></main>') });
+  assert.deepEqual(form.metrics.states_owed, ['loading', 'error', 'disabled', 'focus']);
+  assert.deepEqual(form.metrics.states_unmet, ['loading', 'error', 'disabled']);
+  assert.match(statesWarning(form), /no marker for: loading, error, disabled — this surface carries data entry/);
+
+  const fetched = analyzeVisualSources({
+    html: statesFixture('<main><button id="go">Carregar</button></main>', "document.querySelector('#go').addEventListener('click', () => fetch('/api'));")
+  });
+  assert.equal(fetched.metrics.surface_capabilities.async_work, true);
+  assert.match(statesWarning(fetched), /carries async work/);
+});
+
+test('states: a rendered collection owes empty; a static nav list does not', () => {
+  const table = analyzeVisualSources({ html: statesFixture('<main><table><thead><tr><th>A</th><th>B</th><th>C</th></tr></thead><tbody><tr><td>1</td></tr></tbody></table></main>') });
+  assert.equal(table.metrics.surface_capabilities.collections, true);
+  assert.deepEqual(table.metrics.states_owed, ['loading', 'empty']);
+  assert.match(statesWarning(table), /no marker for: loading, empty — this surface carries a rendered collection/);
+
+  // The tag alone can never be the test: every page has a nav list.
+  const nav = analyzeVisualSources({ html: statesFixture('<nav><ul><li><a href="#a">Sobre</a></li><li><a href="#b">Contato</a></li></ul></nav><main><h1>Marca</h1></main>') });
+  assert.equal(nav.metrics.surface_capabilities.collections, false);
+  assert.deepEqual(nav.metrics.states_owed, ['focus']);
+  assert.equal(statesWarning(nav), null);
+});
+
+test('states: a surface that answers everything it owes stays silent', () => {
+  const complete = analyzeVisualSources({
+    html: statesFixture(`<main><form><input name="q"><button type="submit" disabled>Buscar</button></form>
+      <p class="is-loading">carregando</p><p class="empty-state">nenhum resultado</p><p class="error-state">falha</p></main>`)
+  });
+  assert.deepEqual(complete.metrics.states_unmet, []);
+  assert.equal(statesWarning(complete), null);
+});
