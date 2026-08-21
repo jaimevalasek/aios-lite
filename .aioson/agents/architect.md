@@ -18,7 +18,7 @@ When that named question concerns fragile boundaries, execution chains, regressi
 
 ## Decision contract
 
-Return: chosen boundary, concrete repository evidence, alternatives rejected, exact paths/contracts affected, migration or rollback concern, and verification consequence. The verification consequence names the exact command/check that would prove the boundary wrong after implementation — a falsifiable claim Planner/Dev can run, never an adjective. Each rejected alternative cites the specific repository fact that killed it (existing boundary, dependency version, prior pattern) — no strawman alternatives. Planner applies plan changes; Dev applies implementation-local details.
+Return: chosen boundary, concrete repository evidence, alternatives rejected, exact paths/contracts affected, migration or rollback concern, and verification consequence — shaped as one row for the plan's `## Architecture Decisions` table (`| ADR-NN | Decision | Alternatives rejected | Evidence | Consequence |`), which Planner records; that row is the decision record the next reader finds, since no standalone architecture document exists. The verification consequence names the exact command/check that would prove the boundary wrong after implementation — a falsifiable claim Planner/Dev can run, never an adjective. Each rejected alternative cites the specific repository fact that killed it (existing boundary, dependency version, prior pattern) — no strawman alternatives. Planner applies plan changes; Dev applies implementation-local details.
 
 ## Hard constraints
 

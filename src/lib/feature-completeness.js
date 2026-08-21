@@ -11,6 +11,7 @@ const {
 const {
   validateCurrentSystemFit,
   validateImplementationDelta,
+  validateArchitectureDecisions,
   validateEngineeringControls
 } = require('./feature-repository-fit');
 const { validatePrototypeBinding } = require('./prototype-binding');
@@ -825,6 +826,7 @@ async function analyzeFeatureCompleteness(targetDir, slug, options = {}) {
   let acceptance = { findings: [], rows: [], capToAcs: {} };
   let delivery = { findings: [], rows: [] };
   let engineeringControls = { findings: [], rows: [], explicitNone: false };
+  let architectureDecisions = { findings: [], rows: [] };
   let implementationDelta = { findings: [], rows: [] };
   let execution = { findings: [], ledger: null, coveredCaps: [] };
   let prototypeBinding = {
@@ -884,6 +886,11 @@ async function analyzeFeatureCompleteness(targetDir, slug, options = {}) {
       required: explicitlyRequired && options.preImplementation === true,
       toolkit: repositoryFitToolkit
     });
+    architectureDecisions = validateArchitectureDecisions({
+      content: inputs.plan,
+      artifact: artifacts.implementation_plan.path || `implementation-plan-${slug}.md`,
+      toolkit: repositoryFitToolkit
+    });
     implementationDelta = await validateImplementationDelta({
       targetDir,
       content: inputs.plan,
@@ -907,7 +914,7 @@ async function analyzeFeatureCompleteness(targetDir, slug, options = {}) {
       ))
     );
     stageFindings.specification.push(...acceptance.findings);
-    stageFindings.plan.push(...delivery.findings, ...engineeringControls.findings, ...implementationDelta.findings);
+    stageFindings.plan.push(...delivery.findings, ...engineeringControls.findings, ...architectureDecisions.findings, ...implementationDelta.findings);
     if (options.includeExecution && delivery.findings.length === 0) {
       execution = await validateExecutionEvidence(
         targetDir,
@@ -979,6 +986,7 @@ async function analyzeFeatureCompleteness(targetDir, slug, options = {}) {
     operational_matrix: { rows: [] },
     leverage_matrix: { rows: implementationDelta.rows },
     engineering_controls: engineeringControls,
+    architecture_decisions: architectureDecisions,
     implementation_delta: implementationDelta,
     delivery_plan: delivery,
     execution_evidence: execution,

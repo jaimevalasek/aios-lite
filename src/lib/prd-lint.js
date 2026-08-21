@@ -32,6 +32,15 @@ const VERIFICATION_MECHANISM = /test|teste|smoke|fixture|snapshot|hash|inspe[cç
 // Repository-path-looking tokens inside a Current System Fit evidence cell.
 const PATH_TOKEN = /[\w@.-]+(?:\/[\w@.-]+)+\.[a-z]{1,6}\b/g;
 
+// Rule language in prose — the signal that rules exist and were not tabled.
+// Bilingual: PRDs are written in the project's conversation language.
+const RULE_LANGUAGE = /\b(?:must(?:\s+not)?|never|always|only\s+if|cannot|may\s+not|shall(?:\s+not)?|nunca|sempre|somente\s+se|apenas\s+se|n[aã]o\s+pode|deve(?:m|r[aá])?(?:\s+n[aã]o)?|obrigat[oó]ri[ao])\b/gi;
+const RULE_LANGUAGE_FLOOR = 3;
+// Conditional clauses in prose — the branches nobody enumerated.
+// `se` (pt) counts only as a standalone word followed by a space, never inside one.
+const CONDITIONAL_LANGUAGE = /\b(?:if|when|whenever|unless|otherwise|else|in\s+case|quando|caso|sen[aã]o|a\s+menos\s+que|exceto)\b|(?:^|[\s(])se\s/gim;
+const CONDITIONAL_LANGUAGE_FLOOR = 6;
+
 const MATERIAL_STATES = [
   { state: 'loading', re: /\bloading\b|\bcarregando\b|\bcarregamento\b|skeleton|spinner/i },
   { state: 'empty', re: /\bempty\b|\bvazio\b|\bvazia\b|no.results|nenhum|sem.resultados/i },
@@ -227,6 +236,77 @@ function analyzePrd({ prd = '', briefing = '', targetDir = null } = {}) {
     }
   }
 
+  const capIdSet = new Set(capIds.map((id) => id.toUpperCase()));
+  const acIdSet = new Set(acIds.map((id) => id.toUpperCase()));
+
+  // ── business rules and invariants (optional section, linted when present) ─
+  // The PRD is behavior-level by contract, and "what must always / never
+  // hold" was only ever prose inside the flows — nothing an AC could cite and
+  // nothing Sheldon could grill row by row. The table makes each rule a named
+  // object: RULE-* with a statement, a kind (rule | invariant), the CAPs it
+  // binds, and where it came from. Absence is measured, not assumed: when the
+  // PRD's prose carries rule language and no table holds it, that is a
+  // warning; a PRD with no such language owes no table.
+  const rulesBody = sectionBody(text, /^(?:business rules?|rules?\s*(?:&|and)\s*invariants?|regras?\s*de\s*neg[oó]cio|regras?\s*(?:e|&)\s*invariantes?)$/i);
+  const ruleRows = rulesBody === null ? [] : tableRows(rulesBody).filter((row) => /^RULE-/i.test(row[0] || ''));
+  const ruleIds = ruleRows.map((row) => row[0].toUpperCase());
+  let rulesWithoutAc = [];
+  if (rulesBody !== null) {
+    if (ruleRows.length === 0) issues.push('## Business Rules has no RULE-* rows — table the rules or remove the section');
+    const duplicateRules = ruleIds.filter((id, index) => ruleIds.indexOf(id) !== index);
+    if (duplicateRules.length > 0) issues.push(`duplicate RULE id(s): ${[...new Set(duplicateRules)].join(', ')}`);
+    for (const row of ruleRows) {
+      const [id, statement = '', kind = '', appliesTo = ''] = row;
+      if (statement.trim().length < 15) issues.push(`${id} statement is under 15 chars — a rule states what must hold, in a sentence`);
+      if (kind && !/^(?:rule|invariant|regra|invariante)$/i.test(kind.trim())) issues.push(`${id} kind must be rule or invariant, got "${kind}"`);
+      const cited = idsIn(appliesTo, 'CAP');
+      if (cited.length === 0 && !/feature[- ]wide|toda a feature/i.test(appliesTo)) issues.push(`${id} binds no capability — cite the CAP-* it constrains, or feature-wide`);
+      for (const cap of cited) {
+        if (!capIdSet.has(cap.toUpperCase())) issues.push(`${id} cites unknown capability ${cap}`);
+      }
+    }
+    // A rule no acceptance criterion cites is prose with an id.
+    const acText = acBody || '';
+    rulesWithoutAc = ruleIds.filter((id) => !new RegExp(`\\b${id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i').test(acText));
+    if (rulesWithoutAc.length > 0) warnings.push(`${rulesWithoutAc.length} rule(s) no acceptance criterion cites (${rulesWithoutAc.slice(0, 6).join(', ')}) — a rule no AC proves stays prose; cite it from the criterion that verifies it`);
+  } else {
+    const ruleLanguage = (text.match(RULE_LANGUAGE) || []).length;
+    if (ruleLanguage >= RULE_LANGUAGE_FLOOR) {
+      warnings.push(`${ruleLanguage} rule-language occurrences (must / never / always / only if …) and no ## Business Rules table — the rules live in prose where no AC can cite them and no reviewer can grill them one by one; table them as RULE-* rows (statement, kind, applies to, source)`);
+    }
+  }
+
+  // ── decision branches (optional section, linted when present) ─────────────
+  // The "if this, then that" of a feature is where generated code goes wrong
+  // first and where no stage enumerated anything before the code existed: the
+  // only branch matrix in the framework ran after implementation. BR-* rows
+  // (condition, expected behavior, AC) put the enumeration before Planner.
+  const branchesBody = sectionBody(text, /^(?:decision branches|branches?\s*(?:&|and)\s*edge cases?|edge cases?|ramos?\s*de\s*decis[aã]o|casos?\s*de\s*borda|casos?\s*limite)$/i);
+  const branchRows = branchesBody === null ? [] : tableRows(branchesBody).filter((row) => /^BR-/i.test(row[0] || ''));
+  let branchesWithoutAc = 0;
+  if (branchesBody !== null) {
+    if (branchRows.length === 0) issues.push('## Decision Branches has no BR-* rows — enumerate the branches or remove the section');
+    const branchIds = branchRows.map((row) => row[0].toUpperCase());
+    const duplicateBranches = branchIds.filter((id, index) => branchIds.indexOf(id) !== index);
+    if (duplicateBranches.length > 0) issues.push(`duplicate BR id(s): ${[...new Set(duplicateBranches)].join(', ')}`);
+    for (const row of branchRows) {
+      const [id, condition = '', behavior = '', ac = ''] = row;
+      if (condition.trim().length < 8) issues.push(`${id} has no condition — a branch names when it applies`);
+      if (behavior.trim().length < 12) issues.push(`${id} has no expected behavior — a branch names what the user observes`);
+      const cites = idsIn(ac, 'AC');
+      if (cites.length === 0) branchesWithoutAc += 1;
+      for (const cited of cites) {
+        if (!acIdSet.has(cited.toUpperCase())) issues.push(`${id} cites unknown acceptance criterion ${cited}`);
+      }
+    }
+    if (branchesWithoutAc > 0) warnings.push(`${branchesWithoutAc} decision branch(es) with no acceptance criterion — a branch no AC covers is a path the tests will not walk`);
+  } else {
+    const conditionals = (text.match(CONDITIONAL_LANGUAGE) || []).length;
+    if (requiredCaps.length > 0 && conditionals >= CONDITIONAL_LANGUAGE_FLOOR) {
+      warnings.push(`${conditionals} conditional clauses (if / when / unless / otherwise …) and no ## Decision Branches table — the branches are described in prose where nobody enumerated them before code; table them as BR-* rows (condition, expected behavior, AC)`);
+    }
+  }
+
   // ── placeholders ─────────────────────────────────────────────────────────
   if (PLACEHOLDER.test(text)) issues.push('placeholder marker (TODO/FIXME/TBD/Lorem ipsum) still present in the PRD');
 
@@ -241,7 +321,9 @@ function analyzePrd({ prd = '', briefing = '', targetDir = null } = {}) {
     cited_paths_missing: missingPaths.length,
     weak_evidence_rows: weakEvidence,
     prototype_status: protoStatus || null,
-    material_states_missing: statesMissing
+    material_states_missing: statesMissing,
+    business_rules: rulesBody === null ? null : { rows: ruleRows.length, without_ac: rulesWithoutAc.length },
+    decision_branches: branchesBody === null ? null : { rows: branchRows.length, without_ac: branchesWithoutAc }
   };
 
   return { issues, warnings, metrics };

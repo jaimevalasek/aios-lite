@@ -68,7 +68,7 @@ After inspecting cited paths, rerun `context:brief` with `--paths=<comma-separat
 Use at most two independent passes:
 
 1. Coverage pass: source promises, ambiguity, contradictions, missing core behavior, and useless/speculative scope.
-2. Future-state pass: visible states, failure/recovery, permissions/ownership, operational use, and verifiability where evidence makes them material.
+2. Future-state pass: visible states, failure/recovery, permissions/ownership, operational use, and verifiability where evidence makes them material. Grill the forks and the rules here: every `if / when / unless` a required CAP implies becomes a `## Decision Branches` row with its AC, and every `must / never / always` becomes a `## Business Rules` row an AC cites — `kind=prd` measures both, and prose that carries them with no table is a finding.
 
 For each required `CAP-*`, test this causal chain:
 

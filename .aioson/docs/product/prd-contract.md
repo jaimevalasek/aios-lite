@@ -61,6 +61,8 @@ After the final PRD edit, Sheldon records `sheldon_review: approved` and promote
 - Open questions, with blocking questions explicitly marked
 - Visual identity when relevant
 - `## Acceptance Criteria` (owned and finalized by Product before Planner)
+- `## Business Rules` when the feature carries rules or invariants — `| Rule | Statement | Kind | Applies to | Source |`, `RULE-*`, kind `rule` | `invariant`, bound to `CAP-*` or `feature-wide`; every rule is cited by the AC that proves it (optional; linted when present, and rule language in prose with no table is a measured warning)
+- `## Decision Branches` when behavior forks — `| Branch | Condition | Expected behavior | AC |`, `BR-*`, one row per `if / when / unless`, each tied to its AC (optional; linted when present, and conditional prose with no table is a measured warning)
 
 Capability map:
 

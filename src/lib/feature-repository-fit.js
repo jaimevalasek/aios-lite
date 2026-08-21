@@ -422,10 +422,95 @@ function validateEngineeringControls({
   return { findings, rows, explicitNone: false };
 }
 
+/**
+ * `## Architecture Decisions` — the plan's decision record (ADR), optional
+ * and linted when present.
+ *
+ * The framework forbids a standalone architecture document (every kernel bans
+ * `architecture.md`), and `@architect`'s answer to a named boundary survived
+ * only as a dossier line. The decision therefore had nowhere to be READ by
+ * the next reader — the one thing a decision record exists for. This table
+ * puts it in the plan, next to the engineering controls it constrains:
+ * `| ADR | Decision | Alternatives rejected | Evidence | Consequence |`. Each
+ * row is a decision (what), the roads not taken (why not them, each killed by
+ * a named fact), the repository fact that decided it, and what it commits the
+ * implementation to. Absence is allowed — a feature with no architectural
+ * choice owes no record; a row that exists must be a record, not a note.
+ */
+function validateArchitectureDecisions({ content, artifact, toolkit }) {
+  const findings = [];
+  const section = toolkit.extractSection(content, [
+    'Architecture Decisions',
+    'Architecture Decision Records',
+    'Decisoes de Arquitetura',
+    'Decisões de Arquitetura',
+    'Registro de Decisoes de Arquitetura',
+    'Registro de Decisões de Arquitetura'
+  ]);
+  if (!section) return { findings, rows: [] };
+
+  const table = toolkit.parseFirstMarkdownTable(section);
+  if (!table) {
+    findings.push(toolkit.finding('plan', 'architecture_decisions_invalid', 'Architecture Decisions must contain its table (ADR | Decision | Alternatives rejected | Evidence | Consequence) or be removed', artifact));
+    return { findings, rows: [] };
+  }
+  for (const bad of table.malformed) {
+    findings.push(toolkit.finding('plan', 'architecture_decisions_row_malformed', `Architecture Decisions row ${bad.row} has ${bad.cells} cell(s), expected ${table.headers.length}; escape literal pipes as \\|`, artifact));
+  }
+  const columns = toolkit.mapColumns(table, {
+    id: ['ADR', 'Id', 'ID', 'Decision id'],
+    decision: ['Decision', 'Decisao', 'Decisão'],
+    alternatives: ['Alternatives rejected', 'Alternatives', 'Rejected alternatives', 'Alternativas rejeitadas', 'Alternativas'],
+    evidence: ['Evidence', 'Repository evidence', 'Evidencia', 'Evidência'],
+    consequence: ['Consequence', 'Consequences', 'Consequencia', 'Consequência', 'Consequencias', 'Consequências']
+  });
+  if (columns.missing.length > 0) {
+    findings.push(toolkit.finding('plan', 'architecture_decisions_columns', `Architecture Decisions missing column(s): ${columns.missing.join(', ')}`, artifact));
+    return { findings, rows: [] };
+  }
+
+  const rows = [];
+  const seen = new Set();
+  table.rows.forEach((row, index) => {
+    const id = toolkit.cleanCell(row[columns.indexes.id]);
+    const decision = toolkit.cleanCell(row[columns.indexes.decision]);
+    const alternatives = toolkit.cleanCell(row[columns.indexes.alternatives]);
+    const evidence = toolkit.cleanCell(row[columns.indexes.evidence]);
+    const consequence = toolkit.cleanCell(row[columns.indexes.consequence]);
+    const rowNumber = index + 1;
+    const label = id || `row ${rowNumber}`;
+
+    if (!/^ADR-[A-Za-z0-9][\w-]*$/.test(id)) {
+      findings.push(toolkit.finding('plan', 'architecture_decision_id_invalid', `Architecture Decisions row ${rowNumber} must carry a stable ADR-* id`, artifact));
+    } else if (seen.has(id.toUpperCase())) {
+      findings.push(toolkit.finding('plan', 'architecture_decision_duplicate', `duplicate decision id: ${id}`, artifact));
+    }
+    seen.add(id.toUpperCase());
+    if (toolkit.isPlaceholder(decision) || decision.length < 15) {
+      findings.push(toolkit.finding('plan', 'architecture_decision_missing', `${label} states no decision — name the boundary chosen, in a sentence`, artifact));
+    }
+    if (toolkit.isPlaceholder(alternatives) || /^(?:none|n\/a|nenhuma?|-)$/i.test(alternatives)) {
+      findings.push(toolkit.finding('plan', 'architecture_decision_alternatives_missing', `${label} rejects no alternative — a decision with nothing rejected is a default; name each road not taken and the fact that killed it`, artifact));
+    }
+    if (toolkit.isPlaceholder(evidence)) {
+      findings.push(toolkit.finding('plan', 'architecture_decision_evidence_missing', `${label} cites no repository evidence — name the file, package, or measured fact that decided it`, artifact));
+    }
+    if (toolkit.isPlaceholder(consequence)) {
+      findings.push(toolkit.finding('plan', 'architecture_decision_consequence_missing', `${label} names no consequence — what the implementation is now committed to, and what becomes harder`, artifact));
+    }
+    rows.push({ id, decision, alternatives, evidence, consequence });
+  });
+  if (table.rows.length === 0) {
+    findings.push(toolkit.finding('plan', 'architecture_decisions_empty', 'Architecture Decisions has no rows — record the decisions or remove the section', artifact));
+  }
+  return { findings, rows };
+}
+
 module.exports = {
   validateCurrentSystemFit,
   validateImplementationDelta,
   validateEngineeringControls,
+  validateArchitectureDecisions,
   FIT_DECISIONS,
   DELTA_ACTIONS
 };

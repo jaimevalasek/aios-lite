@@ -98,6 +98,10 @@ Each phase must leave an observable slice working through the normal production 
 
 The plan also contains `## Engineering Controls`. Planner uses model knowledge to consider quality concerns, but records only those triggered by the PRD, inspected repository, dependency/runtime contract, or production risk. Each material control belongs to a vertical phase and names verification plus recovery when persistent or externally visible state can change. This section seeds Dev/QA coverage and optional specialists; it never activates them by itself.
 
+When a feature carries an architectural choice — a boundary, a storage or integration decision, a pattern that constrains the implementation — the plan records it in `## Architecture Decisions` (`| ADR | Decision | Alternatives rejected | Evidence | Consequence |`): the decision in a sentence, each road not taken with the repository fact that killed it, the evidence that decided it, and what the implementation is now committed to. This is the framework's decision record; there is no standalone architecture document. `@architect`, when activated, returns its answer as one such row and Planner records it. The section is optional — a feature with no architectural choice owes no row — and linted when present (`feature:trace` gaps, `spec:analyze`, `feature:close`): a row that exists must be a record, not a note.
+
+The PRD may carry two optional tables `kind=prd` lints when present: `## Business Rules` (`| Rule | Statement | Kind | Applies to | Source |` — `RULE-*`, kind `rule` or `invariant`, the CAPs it binds or `feature-wide`, where it came from; a rule no AC cites is reported) and `## Decision Branches` (`| Branch | Condition | Expected behavior | AC |` — `BR-*`, the `if / when / unless` of the feature enumerated before Planner, each tied to the criterion that walks it). Their absence is measured against the prose: rule language with no rules table, conditional clauses with no branches table, are warnings the reviewer answers with a table or a reason.
+
 ## Delivery evidence
 
 QA verifies from promises outward:
