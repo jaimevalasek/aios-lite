@@ -14,7 +14,7 @@ Load before the first real user-facing decision. Do not load merely to produce a
 |---|---|---|---|
 | `creator` or absent/empty/`auto`/legacy `beginner` | one per turn | translate | recommended first option and pause option |
 | `developer` | up to five numbered questions per batch | allowed | recommendation optional |
-| `team` | same as developer | allowed | also emit `summary-{slug}-executive.md` at `agent:done` |
+| `team` | same as developer | allowed | also write the executive summary at `agent:done`: `aioson feature:summary . --feature={slug} --write` (→ `.aioson/context/executive-summary-{slug}.md`, jargon translated per `interaction_language`); the owner records `aioson feature:acknowledge` |
 
 ## Core rules
 

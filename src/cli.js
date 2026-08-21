@@ -396,6 +396,16 @@ const JSON_SUPPORTED_COMMANDS = new Set([
   'pentester:coverage',
   'pentester-coverage',
   'feature:trace',
+  'feature:summary',
+  'feature-summary',
+  'feature:acknowledge',
+  'feature-acknowledge',
+  'decision:add',
+  'decision-add',
+  'decision:resolve',
+  'decision-resolve',
+  'decision:list',
+  'decision-list',
   'feature-trace',
   'feature:diff',
   'feature-diff',
@@ -2008,6 +2018,21 @@ async function main() {
       result = await runFeatureCurrent({ args, options, logger: commandLogger });
     } else if (command === 'feature:trace' || command === 'feature-trace') {
       result = await runFeatureTrace({ args, options, logger: commandLogger });
+    } else if (command === 'feature:summary' || command === 'feature-summary') {
+      const { runFeatureSummary } = require('./commands/feature-summary');
+      result = await runFeatureSummary({ args, options, logger: commandLogger });
+    } else if (command === 'feature:acknowledge' || command === 'feature-acknowledge') {
+      const { runFeatureAcknowledge } = require('./commands/feature-summary');
+      result = await runFeatureAcknowledge({ args, options, logger: commandLogger });
+    } else if (command === 'decision:add' || command === 'decision-add') {
+      const { runDecisionAdd } = require('./commands/decision');
+      result = await runDecisionAdd({ args, options, logger: commandLogger });
+    } else if (command === 'decision:resolve' || command === 'decision-resolve') {
+      const { runDecisionResolve } = require('./commands/decision');
+      result = await runDecisionResolve({ args, options, logger: commandLogger });
+    } else if (command === 'decision:list' || command === 'decision-list') {
+      const { runDecisionList } = require('./commands/decision');
+      result = await runDecisionList({ args, options, logger: commandLogger });
     } else if (command === 'feature:diff' || command === 'feature-diff') {
       result = await runFeatureDiff({ args, options, logger: commandLogger });
     } else if (command === 'workflow:mode' || command === 'workflow-mode') {

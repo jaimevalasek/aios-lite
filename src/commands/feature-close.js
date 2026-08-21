@@ -591,6 +591,26 @@ async function runFeatureClose({ args, options = {}, logger }) {
     const visualLine = formatVisualEvidence(visualEvidence);
     if (visualLine) updates.push(visualLine);
 
+    // Owner comprehension — advisory, never a blocker. The executive summary
+    // is the one artifact written for the human who asked for the feature;
+    // closure records whether it exists, whether it still describes the
+    // artifacts (hash), and whether that human acknowledged it.
+    let ownerLine = null;
+    try {
+      const { summaryState } = require('./feature-summary');
+      const owner = await summaryState(targetDir, slug);
+      ownerLine = owner.state === 'missing'
+        ? `owner summary: not generated — aioson feature:summary . --feature=${slug} --write, then the owner acknowledges it`
+        : owner.state === 'stale'
+          ? `owner summary: STALE (artifacts changed after it was written) — regenerate with aioson feature:summary . --feature=${slug} --write and ask the owner to acknowledge again`
+          : owner.acknowledged
+            ? `owner summary: acknowledged by ${owner.acknowledged_by} at ${owner.acknowledged_at}`
+            : `owner summary: written, not yet acknowledged — aioson feature:acknowledge . --feature=${slug} --by="<owner>"`;
+    } catch {
+      ownerLine = null;
+    }
+    if (ownerLine) updates.push(ownerLine);
+
     const publicBlockers = blockers.map(({ legacy, bypassLabel, ...pub }) => pub);
     const unforceable = blockers.filter((b) => !b.forceable);
 
@@ -606,6 +626,7 @@ async function runFeatureClose({ args, options = {}, logger }) {
         notes: [
           'nothing was executed or mutated (RG-* runtime checks were NOT run in preflight)',
           ...(visualLine ? [visualLine] : []),
+          ...(ownerLine ? [ownerLine] : []),
           ...(blockers.length === 0 ? [] : [unforceable.length === 0
             ? 'all blockers are forceable: re-run with --force (the bypass is recorded in done/{slug}/force-bypass-findings.json)'
             : 'the publish gate requires human approval (aioson harness:approve) and is never bypassed by --force'])

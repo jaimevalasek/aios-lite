@@ -98,6 +98,8 @@ Not configurable, always on in the tracked `@dev`/`@qa` done-gate, for the canon
 - **surfaces, never blocks** the code-vs-plan drift: `plan_path_untouched` (a planned `create`/`modify`/`retire` path with no change since the feature began) and `delivery_outside_plan` (a delivered file no plan row declares — tests, lockfiles, build output and `.aioson/` are support, not drift; a harness contract's `allowed_files` sanctions more). The plan may have over-declared, and the file outside it may be the right fix: the gate demands that the difference be **seen and recorded** (a delivery row or an approved deviation), not that it not exist. Advisories ride the workflow result, a guard event, and `.aioson/context/spec-analyze-{slug}.json`;
 - names upstream errors (a malformed PRD or plan table) with their owner instead of refusing the wrong stage — `feature:close` still blocks on them.
 
+Two human checkpoints ride the same done-gates, both recorded by CLI and both advisory at close: a **decision checkpoint** (`aioson decision:add` / `decision:resolve` — a pending blocking decision refuses `workflow:next` until a human resolves it; see `autopilot-handoff.md`) and the **owner summary** (`aioson feature:summary --write` / `feature:acknowledge` — `feature:close` reports missing / stale / acknowledged).
+
 `plan_path_untouched` is measured against the feature's start (the parent of the first commit touching its `.aioson/` artifacts, a `main`/`master` merge-base, or the loop's `baseline.json`); when none resolves the diff covers uncommitted work only, the check says so (`delivery_drift_base_fallback`) and does not guess.
 
 ## Examples
