@@ -112,6 +112,8 @@ test('benchmark kernel conducts the measured traversal instead of building alone
   assert.match(kernel, /known_limitations/);
   assert.match(kernel, /Never leave the round without a result file/i);
   assert.match(kernel, /Do not label a skipped check as passed/i);
+  assert.match(kernel, /--kind=visual[\s\S]*--runtime[\s\S]*--screenshots/i);
+  assert.match(kernel, /UNVERIFIED[\s\S]*partial/i);
 });
 
 test('benchmark kernel preserves run fairness and external orchestration ownership', async () => {

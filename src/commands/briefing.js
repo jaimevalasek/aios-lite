@@ -34,6 +34,8 @@ const {
 } = require('../lib/briefing-refiner/feedback-schema');
 const { resolveBriefingPath } = require('../lib/briefing-refiner/briefing-paths');
 const { resolvePrototypeState } = require('../lib/briefing-refiner/prototype-resolution');
+const { validatePrototypeManifestQuality } = require('../lib/prototype-manifest-quality');
+const { readVisualEvidence, visualEvidenceBlock } = require('../lib/visual-evidence');
 const { writeReviewArtifacts } = require('../lib/briefing-refiner/review-html');
 const {
   applyConfirmedFeedback,
@@ -155,6 +157,74 @@ async function prepareApprovedPrototypeManifest(projectDir, slug, briefingConten
   if (!['draft', 'approved'].includes(status)) {
     return { ok: false, error: 'prototype_manifest_status_invalid', status, manifestPath };
   }
+
+  const report = readVisualEvidence(projectDir, slug);
+  if (!report) {
+    return {
+      ok: false,
+      error: 'prototype_visual_evidence_missing',
+      manifestPath,
+      details: [`run aioson verify:artifact . --kind=visual --slug=${slug} --advisory --runtime and bind its report in ## Quality evidence`]
+    };
+  }
+  const evidence = visualEvidenceBlock(projectDir, slug);
+  if (evidence && evidence.stale) {
+    return { ok: false, error: 'prototype_visual_evidence_stale', manifestPath, details: evidence.stale_files || [] };
+  }
+  if (report.verdict === 'unverified') {
+    return { ok: false, error: 'prototype_visual_evidence_unverified', manifestPath, details: report.unverified_reasons || [] };
+  }
+  if (!report.ok || (report.issues || []).length > 0) {
+    return { ok: false, error: 'prototype_visual_evidence_failed', manifestPath, details: report.issues || [] };
+  }
+  const quality = validatePrototypeManifestQuality(manifest, { report, slug, requireEvidence: true });
+  if (!quality.ok) {
+    return { ok: false, error: 'prototype_manifest_quality_invalid', manifestPath, details: quality.issues };
+  }
+  const staticCraft = Boolean(report.metrics && report.metrics.craft && report.metrics.craft.measured);
+  const runtimeCraft = Boolean(report.metrics && report.metrics.runtime && report.metrics.runtime.assurance && report.metrics.runtime.assurance.craft_verified);
+  if (!staticCraft && !runtimeCraft) {
+    return {
+      ok: false,
+      error: 'prototype_visual_craft_unassured',
+      manifestPath,
+      details: ['neither a full authored surface nor a complete rendered craft probe was measured']
+    };
+  }
+  if (quality.runtime_matrix.length === 0) {
+    return {
+      ok: false,
+      error: 'prototype_runtime_matrix_missing',
+      manifestPath,
+      details: ['add ## Runtime matrix with the entry/primary route and each reachable loading, empty, error, or success state']
+    };
+  }
+  const runtime = report.metrics && report.metrics.runtime;
+  const declaredMatrixStates = new Set(quality.runtime_matrix.map((row) => row.state).filter(Boolean));
+  const owedMatrixStates = new Set(
+    ((report.metrics && report.metrics.states_owed) || [])
+      .filter((state) => ['loading', 'empty', 'error'].includes(state))
+  );
+  // Success is not universally owed, but once the browser actually observes it
+  // the state is demonstrable and therefore belongs in the reproducible matrix.
+  for (const state of (runtime && runtime.assurance && runtime.assurance.states_verified) || []) {
+    if (state === 'success') owedMatrixStates.add(state);
+  }
+  const missingMatrixStates = [...owedMatrixStates].filter((state) => !declaredMatrixStates.has(state));
+  const hasEntryRoute = quality.runtime_matrix.some((row) => !row.state);
+  if (!hasEntryRoute || missingMatrixStates.length > 0) {
+    const details = [];
+    if (!hasEntryRoute) details.push('add one normal entry/primary route without a state annotation');
+    if (missingMatrixStates.length > 0) details.push(`add runtime rows for reachable states: ${missingMatrixStates.join(', ')}`);
+    return { ok: false, error: 'prototype_runtime_matrix_missing', manifestPath, details };
+  }
+  if (runtime && runtime.available) {
+    const verifiedRoutes = (runtime.assurance && runtime.assurance.routes_verified) || [];
+    const missingRoutes = quality.runtime_matrix.map((row) => row.name).filter((name) => !verifiedRoutes.includes(name));
+    if (missingRoutes.length > 0) {
+      return { ok: false, error: 'prototype_runtime_matrix_unverified', manifestPath, details: missingRoutes };
+    }
+  }
   let updated = updateFlatFrontmatterField(manifest, 'status', 'approved');
   updated = updateFlatFrontmatterField(updated, 'approved_at', new Date().toISOString());
   return { ok: true, applicable: true, manifestPath, updated };
@@ -199,6 +269,7 @@ function logPrototypeGateError(logger, slug, failure, t) {
     logger.error(t('briefing_gate.skipped_measured_run_fix'));
   } else {
     logger.error(t('briefing_gate.generic', { slug, error: failure.error }));
+    for (const detail of failure.details || []) logger.error(`  - ${detail}`);
   }
 }
 

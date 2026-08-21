@@ -32,7 +32,7 @@ An identity file **overlays the one engine** and is not a **second visual system
 
 ## Execution
 
-Load `references/build-contract.md`, implement the complete functional prototype, then load `references/quality-and-manifest.md` for the one bounded polish pass and handoff evidence. Do not load the quality reference before functional completeness.
+Load `references/build-contract.md` and `references/quality-and-manifest.md` before UI coding. Use the quality reference at that point only to write the manifest skeleton and its decision-grade `## Visual direction`; defer every polish/check/evidence step under “After the functional build” until operational completeness is real. Then re-read that same reference for exactly one bounded polish pass and handoff evidence. This phase boundary prevents both late composition and premature polishing.
 
 The prototype is a development reference, not production proof. A canonical lock stays draft until the workflow freezes it. An exploration stays non-canonical even after selection.
 

@@ -103,6 +103,7 @@ test('prototype-forge consumes identity.md as the engine overlay', async () => {
 test('interface-design continuity reuses identity.md (not a parallel system)', async () => {
   const ref = await readTemplate('.aioson/skills/design/interface-design/references/intent-and-domain.md');
   assert.equal(ref.includes('identity.md'), true);
-  assert.equal(ref.includes('extracted-from-references'), true);
+  assert.equal(ref.includes('source: references'), true);
+  assert.equal(ref.includes('source: intent'), true);
   assert.equal(ref.includes('.aioson/explorations/{slug}/identity.md'), true);
 });

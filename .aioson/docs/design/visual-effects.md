@@ -176,7 +176,7 @@ When the real asset does not exist yet, the surface says so — an explicit empt
 
 ## 6. A named signature is a deliverable
 
-When the recorded sources name a moving signature — an animated background, a canvas or WebGL surface, grain, aurora, a mesh gradient, scroll-driven storytelling — that is scope, not mood. It ships, or the manifest records which constraint killed it and what carries the moment instead. "The brief asked for it" is measured now: `kind=visual --slug=<feature>` reads the briefing, the manifest and the PRD, and reports `motion_ambition` — what was asked, and whether the delivery answers it.
+When the recorded sources name a moving signature — an animated background, a canvas or WebGL surface, **animated** noise/grain, a moving aurora or mesh gradient, scroll-driven storytelling — that is scope, not mood. Static grain remains material and never creates a motion obligation. A named moving signature ships, or the manifest records which constraint killed it and what carries the moment instead. "The brief asked for it" is measured now: `kind=visual --slug=<feature>` reads the briefing, the manifest and the PRD, and reports `motion_ambition` — what was asked, and whether the delivery answers it.
 
 Motion is measured as three different things, and only the last two count as craft:
 

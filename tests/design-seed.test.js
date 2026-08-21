@@ -230,7 +230,8 @@ test('design:seed returns the JSON contract and rejects an unknown register', as
         assert.ok(c.roles.ground.hex && c.roles.accent.hex && c.roles.accent_ink.hex);
         assert.ok(c.pairing.display && c.pairing.host);
         assert.ok(c.composition.hero && c.composition.material);
-        assert.match(c.composition.finishing, /shadow vocabulary/, 'every candidate carries its finish floor — the drawn material is the signature, never the whole system');
+        assert.match(c.composition.finishing, /token /, 'every candidate carries a register-aware finish floor');
+        assert.doesNotMatch(c.composition.finishing, /shadow vocabulary/, 'editorial depth uses type, rules and plates instead of a universal shadow recipe');
       }
 
       const bad = await runDesignSeed({ args: [dir], options: { json: true, register: 'vaporwave' }, logger });
@@ -247,6 +248,28 @@ test('design:seed returns the JSON contract and rejects an unknown register', as
       await fs.rm(dir, { recursive: true, force: true });
     }
   });
+});
+
+test('the project identity remains part of the draw even when two projects share a feature slug', async () => {
+  await withTempRegistry(async () => {
+    const projectA = await makeTmpDir('aioson-seed-same-slug-a-');
+    const projectB = await makeTmpDir('aioson-seed-same-slug-b-');
+    const options = { json: true, register: 'technical', slug: 'dashboard', count: 2 };
+    const a = await runDesignSeed({ args: [projectA], options, logger: makeLogger() });
+    const b = await runDesignSeed({ args: [projectB], options, logger: makeLogger() });
+    assert.notEqual(a.project_id, b.project_id);
+    assert.notEqual(a.basis, b.basis);
+    assert.notDeepEqual(a.candidates, b.candidates);
+  });
+});
+
+test('finishing floors honor no-shadow registers instead of imposing one global recipe', () => {
+  for (const register of ['technical', 'editorial', 'constructed']) {
+    const candidate = generateSeedCandidates({ project: 'p', slug: register, register, count: 1 }).candidates[0];
+    assert.doesNotMatch(candidate.composition.finishing, /shadow vocabulary/i, `${register} must not inherit the old universal shadow floor`);
+  }
+  const material = generateSeedCandidates({ project: 'p', slug: 'material', register: 'material', count: 1 }).candidates[0];
+  assert.match(material.composition.finishing, /exactly one physical depth strategy/i);
 });
 
 // ─── verify:artifact integration ────────────────────────────────────────────

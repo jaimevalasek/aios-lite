@@ -318,7 +318,7 @@ test('verify:artifact exposes kind=visual and measures a file locator', async ()
   assert.deepEqual(report.metrics.files, ['ui/screen.html']);
 });
 
-const DIRECTION_MANIFEST = `---\nfeature: orders\nstatus: draft\n---\n\n## Visual direction\n\n- Register: Technical — the data is the composition.\n- Anti-goals: uniform card grid, pill topbar.\n`;
+const DIRECTION_MANIFEST = `---\nfeature: orders\nstatus: draft\n---\n\n## Visual direction\n\n- Register: Technical — the data is the composition.\n- Thesis: order exceptions form the spine of the workspace, with decisions attached in-place.\n- Anti-goals: uniform card grid, pill topbar.\n- Composition signature: one continuous exception rail cuts through the table and opens evidence in place.\n`;
 
 test('kind=visual resolves the feature-owned prototype from --slug, and says so when it cannot', async () => {
   const dir = await makeTmpDir();
@@ -599,12 +599,12 @@ test('a full hygienic surface with zero ambition fires the craft floor and the t
   assert.match(text, /typography never leaves the OS default stacks \(georgia\)/);
   assert.match(text, /craft floor: 0\/5 premium levers active/);
   assert.match(text, /display-scale type \(largest font-size 32px, floor 56px\)/);
-  assert.match(text, /evidence imagery \(0 media elements, 0 CSS image layers\)/);
+  assert.match(text, /verified evidence imagery \(0 verified, 0 awaiting runtime verification\)/);
 
   // The dated-dialect tell: flexbox/grid/custom-properties only, none of the
   // current platform vocabulary anywhere in a full surface.
   assert.deepEqual(m.craft.modern_css, []);
-  assert.match(text, /authored in pre-2020 CSS only/);
+  assert.match(text, /modern CSS breadth 0\/7 capabilities/);
 });
 
 test('a family named without any delivery mechanism is its own finding, resolved through var()', () => {
@@ -765,7 +765,7 @@ test('font-size and custom-property resolution helpers are arithmetic', () => {
 test('kind=visual warns when the manifest Quality evidence is a placeholder', async () => {
   const dir = await makeTmpDir();
   await writeFile(dir, '.aioson/briefings/orders/prototype.html', CLEAN);
-  const manifest = (evidence) => `---\nfeature: orders\nstatus: draft\n---\n\n## Visual direction\n\n- Register: Technical — the data is the composition.\n\n## Quality evidence\n\n${evidence}\n`;
+  const manifest = (evidence) => `---\nfeature: orders\nstatus: draft\n---\n\n## Visual direction\n\n- Register: Technical — the data is the composition.\n- Thesis: order exceptions form the spine of the workspace and keep decisions close to evidence.\n- Anti-goals: uniform card grid, generic gradient hero.\n- Composition signature: one continuous exception rail cuts through the data and opens evidence in place.\n\n## Quality evidence\n\n${evidence}\n`;
 
   await writeFile(dir, '.aioson/briefings/orders/prototype-manifest.md', manifest('_(preenchido após a medição)_'));
   const placeholder = await runVerifyArtifact({
@@ -777,7 +777,7 @@ test('kind=visual warns when the manifest Quality evidence is a placeholder', as
   assert.match(placeholder.warnings.join('\n'), /`## Quality evidence` is empty or a placeholder/);
 
   await writeFile(dir, '.aioson/briefings/orders/prototype-manifest.md', manifest(
-    '- kind=visual: tokens 92% | type max 72px | font delivered | craft 4/5\n- fold check: approved on desktop and mobile\n- walkthrough: approved, matched the briefing promises'
+    '- verdict: pass\n- evidence: .aioson/context/features/orders/visual-evidence.json\n- craft: 4/5\n- runtime: measured in desktop and mobile\n- routes: 0'
   ));
   const filled = await runVerifyArtifact({
     args: [dir],
@@ -1108,9 +1108,19 @@ test('motion: an ambient backdrop, a painted surface and a scroll-driven timelin
   assert.deepEqual(backdrop.motion.signature_kinds, ['animated backdrop']);
   assert.equal(backdrop.craft.levers.motion, true);
 
-  const painted = analyzeVisualSources({ html: hoverOnlySurface().replace('<main>', '<main><canvas id="grain" width="800" height="600"></canvas>') }).metrics;
+  const painted = analyzeVisualSources({
+    html: hoverOnlySurface().replace(
+      '</main>',
+      `<canvas id="grain" width="800" height="600"></canvas></main><script>
+        const canvas = document.querySelector('#grain');
+        const context = canvas.getContext('2d');
+        function paint() { context.fillRect(0, 0, 2, 2); requestAnimationFrame(paint); }
+        requestAnimationFrame(paint);
+      <\/script>`
+    )
+  }).metrics;
   assert.equal(painted.motion.signature, true);
-  assert.deepEqual(painted.motion.signature_kinds, ['painted surface (canvas/WebGL)']);
+  assert.deepEqual(painted.motion.signature_kinds, ['animated canvas/WebGL']);
 
   const scrolled = analyzeVisualSources({
     html: hoverOnlySurface('.reveal { animation: fade linear both; animation-timeline: view(); } @keyframes fade { from { opacity: 0; } to { opacity: 1; } }')

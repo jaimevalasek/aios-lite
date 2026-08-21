@@ -7,6 +7,8 @@ triggers: [functional prototype complete, prototype manifest]
 
 # Prototype Forge Quality and Manifest
 
+This reference has two explicit phases. Before coding, execute only the decision record in the next paragraph. After functional completeness, resume at the numbered polish pass. Do not pull polish forward and do not postpone composition until after layout.
+
 Before UI coding — in every mode, identity included — write the manifest's `## Visual direction` first: the chosen aesthetic register, one visual thesis, two or three anti-goals, and one product-specific signature move, with the composition signature stated in a single sentence. When the owner named anti-references during intake ("must not look like X"), they enter here verbatim as anti-goals — owner-named anti-references outrank invented ones and bind every later round. An identity record supplies tokens; it never substitutes for this decision, and swapping tokens over the default generative composition is a re-skin that fails the replaceability test. `verify:artifact --kind=visual --slug` refuses a manifest without this section. After the functional build:
 
 1. Re-read the existing HTML and perform exactly one surgical polish pass; do not regenerate the artifact for style.
@@ -27,8 +29,9 @@ The manifest includes:
 - explicit “mock only — refresh resets, no backend”
 - `draft` or `locked-at: {ref}`
 - `## Visual direction`: register, thesis, anti-goals, signature move (authored before layout — see above)
+- `## Runtime matrix`: one named route for entry/primary plus one named route per demonstrable loading, empty, error, and success state (`- loading: #/orders?state=loading`). `kind=visual --runtime` visits the matrix at mobile and desktop and refuses a declared state whose structural marker is not visible.
 - frontmatter `surface_mode:` — `operate`, `brand` (persuade/inhabit), or `read` — what the visitor came to do on this surface. The telemetry detects it from structure (sidebar + data table + toolbar reads as operate; hero + display type + marketing sections as brand); the declaration outranks the detection, and on an operate surface the premium bar is measured as precision (delivered workhorse face, tokened finish, state motion, themed chrome — `craft N/4 (operate)`) instead of display type and atmosphere
-- `## Quality evidence`: checks and limitations, including the tour, the `data-aioson-primary` fold outcome, the signature microinteractions, the first-contact walkthrough verdict, and the `kind=visual` verdict line with its craft levers (`type max | font | craft N/5`) — an empty or placeholder evidence section is itself a measured warning, because it means the numbers ran nowhere
+- `## Quality evidence`: checks and limitations, including the tour, the `data-aioson-primary` fold outcome, the signature microinteractions, and the first-contact walkthrough. Its machine-bound core is exactly `verdict: pass|fail|unverified`, `evidence: .aioson/context/features/{slug}/visual-evidence.json`, `craft: N/N`, `runtime: measured` (or an explicit unavailable/waived decision and reason), and `routes: N`. Approval cross-checks these values against the persisted content-addressed report; prose length cannot make the section valid.
 - `## Delegation provenance` only when another model was explicitly used
 
 Exploration mode writes no briefing manifest. Its append-only `report.md` carries the same visual direction and truthful evidence, plus `<!-- aioson:reusable-prompts -->`, the exact generation prompt, a reusable one-shot prompt, an incremental prompt sequence, and any next-run corrective prompt.

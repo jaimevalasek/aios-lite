@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.59.0] - 2026-08-21
+
+### Added
+- **Visual assurance now measures delivered craft instead of suggestive source code.** The verifier binds font evidence to the exact requested family, treats motion as present only when an animation is actually applied, distinguishes static canvas texture from movement, requires structural state evidence, verifies embedded media locally, and leaves external media explicitly runtime-dependent. A modern-CSS capability matrix and adversarial fixtures cover the shortcuts that previously produced premium-looking scores without premium delivery.
+- **Visual proof is content-addressed and fail-closed.** Prototype approval evidence now carries a SHA-256 fingerprint over the prototype, manifest, identity, briefing, direct assets, and recursively referenced CSS assets. The manifest must describe a decision-grade visual direction, anti-goals, composition signature, exact evidence paths, and matching static/runtime craft projections; stale, missing, contradictory, failed, or unverified evidence cannot approve a visual handoff.
+- **A browser runtime matrix closes the source-to-render gap.** Route/state combinations are exercised on mobile and desktop with screenshots and computed evidence for font delivery, failed media, material, applied motion, visible states, and craft axes. A requested runtime run that never completes is `UNVERIFIED`, never silently green.
+- **Design seeds resist repetition at project scale.** Seed selection now includes project identity even when feature slugs match and remembers recent display faces, palette, material, and motion fingerprints. Finishing guidance is register-aware, so a premium result no longer collapses into one universal shadow-and-gradient recipe.
+
+### Changed
+- **Prototype Forge separates composition, operational completeness, and polish.** Agents establish visual direction before implementation, complete the working surface before the finishing pass, then produce the runtime matrix and bound evidence. Static grain is classified as material rather than motion, and finish is justified by the selected aesthetic register instead of a global shadow floor.
+- **Benchmark completion requires rendered visual evidence.** A visual delivery counts as completed only when screenshot proof exists and runtime visual validation passed, making benchmark quality reflect what a user can actually see rather than what the implementation appears to promise.
+- **Reference identity provenance is canonical and verifiable.** Identity records use `source: references|intent`; reference-derived records must name `reference-identity-extract` as their generator, preventing invented provenance fields from bypassing the verifier.
+
+### Fixed
+- **Source-level visual false positives no longer inflate quality.** Unused keyframes, disconnected canvas code, preconnect hints, unrelated `@font-face` declarations, lazy-loading attributes, generic error catches, and unverified external images no longer stand in for delivered motion, typography, states, or media.
+- **Weak or stale prototype evidence no longer reaches approval.** Approval rejects incomplete route/state coverage, mismatched report projections, changed local or CSS-recursive assets, absent screenshots, and runtime work that was requested but not completed.
+
 ## [1.58.0] - 2026-08-21
 
 ### Added

@@ -27,6 +27,7 @@ const DEFAULT_VIEWPORTS = [
 const MIN_TAP_TARGET = 44;
 const CONTRAST_NORMAL = 4.5;
 const CONTRAST_LARGE = 3;
+const RUNTIME_PROBE_VERSION = 2;
 
 /** Parse `rgb()` / `rgba()` / `#rgb` / `#rrggbb` into {r,g,b,a} or null. */
 function parseColor(input) {
@@ -118,7 +119,8 @@ function pageProbe() {
     offscreen: [],
     small_targets: [],
     text_samples: [],
-    primary: []
+    primary: [],
+    assurance: null
   };
 
   const label = (el) => {
@@ -138,12 +140,28 @@ function pageProbe() {
   };
 
   const all = doc.querySelectorAll('body *');
+  const usedFamilies = new Set();
+  let maxFontSize = 0;
+  let gradientSurfaces = 0;
+  let shadowSurfaces = 0;
+  let blurSurfaces = 0;
+  let blendSurfaces = 0;
+  let maskSurfaces = 0;
   for (let i = 0; i < all.length && i < 3000; i++) {
     const el = all[i];
     const style = getComputedStyle(el);
     if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') continue;
     const rect = el.getBoundingClientRect();
     if (rect.width === 0 && rect.height === 0) continue;
+
+    const family = String(style.fontFamily || '').split(',')[0].trim().replace(/^['"]|['"]$/g, '').toLowerCase();
+    if (family) usedFamilies.add(family);
+    maxFontSize = Math.max(maxFontSize, parseFloat(style.fontSize) || 0);
+    if (/(?:linear|radial|conic)-gradient\(/i.test(`${style.backgroundImage} ${style.background}`)) gradientSurfaces += 1;
+    if (style.boxShadow && style.boxShadow !== 'none') shadowSurfaces += 1;
+    if ((style.filter && style.filter !== 'none') || (style.backdropFilter && style.backdropFilter !== 'none')) blurSurfaces += 1;
+    if ((style.mixBlendMode && style.mixBlendMode !== 'normal') || (style.backgroundBlendMode && style.backgroundBlendMode !== 'normal')) blendSurfaces += 1;
+    if ((style.maskImage && style.maskImage !== 'none') || (style.webkitMaskImage && style.webkitMaskImage !== 'none')) maskSurfaces += 1;
 
     if (el.scrollWidth > el.clientWidth + 1 && /hidden|clip/.test(style.overflowX) && el.textContent.trim()) {
       out.clipped.push(label(el));
@@ -189,6 +207,107 @@ function pageProbe() {
       height: Math.round(rect.height)
     });
   }
+
+  const normalizeFamily = (value) => String(value || '').trim().replace(/^['"]|['"]$/g, '').replace(/\s+/g, ' ').toLowerCase();
+  const defaultFamilies = new Set([
+    'system-ui', '-apple-system', 'blinkmacsystemfont', 'ui-serif', 'ui-sans-serif', 'ui-monospace',
+    'segoe ui', 'roboto', 'arial', 'helvetica', 'georgia', 'times new roman', 'serif', 'sans-serif',
+    'monospace', 'cursive', 'fantasy', 'math', 'emoji'
+  ]);
+  const faces = [];
+  try {
+    if (doc.fonts) {
+      doc.fonts.forEach((face) => faces.push({ family: normalizeFamily(face.family), status: face.status || 'unknown' }));
+    }
+  } catch { /* an older browser may not expose the iterable FontFaceSet */ }
+  const customUsed = [...usedFamilies].filter((family) => !defaultFamilies.has(family));
+  const loadedFamilies = [...new Set(faces.filter((face) => face.status === 'loaded').map((face) => face.family).filter(Boolean))];
+  const undeliveredFamilies = customUsed.filter((family) => !loadedFamilies.includes(family));
+
+  const media = [];
+  const mediaNodes = doc.querySelectorAll('img,video');
+  for (let i = 0; i < mediaNodes.length && i < 100; i++) {
+    const el = mediaNodes[i];
+    const kind = el.tagName.toLowerCase();
+    const source = el.currentSrc || el.src || el.poster || '';
+    const alt = kind === 'img' ? String(el.alt || '').trim() : '';
+    if (kind === 'img' && (!alt || /^(?:logo|logotipo|icon|icone|ícone|avatar|placeholder|decorative|decora)/i.test(alt))) continue;
+    const loaded = kind === 'img' ? Boolean(el.complete && el.naturalWidth > 0) : Boolean(el.readyState >= 2);
+    media.push({ el: label(el), kind, source: String(source).slice(0, 160), loaded, alt: alt.slice(0, 80) });
+  }
+
+  let animations = [];
+  try {
+    animations = typeof doc.getAnimations === 'function'
+      ? doc.getAnimations().slice(0, 100).map((animation) => ({
+        state: animation.playState || 'unknown',
+        iterations: animation.effect && animation.effect.getTiming ? animation.effect.getTiming().iterations : null
+      }))
+      : [];
+  } catch { /* runtime animation inventory stays empty when unsupported */ }
+
+  const stateSelectors = {
+    loading: '.is-loading,.loading,.skeleton,.spinner,[aria-busy="true"],[data-state="loading"],progress',
+    empty: '.is-empty,.empty-state,.no-results,[data-state="empty"]',
+    error: '.is-error,.has-error,.error-state,[aria-invalid="true"],[data-state="error"],[role="alert"]',
+    disabled: ':disabled,[aria-disabled="true"]',
+    // `role=status` is an ARIA live region, not proof of a successful outcome;
+    // loading announcements commonly use it too.
+    success: '.is-success,.success-state,[data-state="success"]'
+  };
+  const statesPresent = [];
+  const statesVisible = [];
+  for (const state of Object.keys(stateSelectors)) {
+    let nodes = [];
+    try { nodes = doc.querySelectorAll(stateSelectors[state]); } catch { nodes = []; }
+    if (nodes.length > 0) statesPresent.push(state);
+    for (let i = 0; i < nodes.length; i++) {
+      const style = getComputedStyle(nodes[i]);
+      const rect = nodes[i].getBoundingClientRect();
+      if (style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0' && rect.width > 0 && rect.height > 0) {
+        statesVisible.push(state);
+        break;
+      }
+    }
+  }
+
+  const materialTechniques = [
+    gradientSurfaces > 0 && 'gradients',
+    shadowSurfaces > 0 && 'shadows',
+    blurSurfaces > 0 && 'blur',
+    blendSurfaces > 0 && 'blend',
+    maskSurfaces > 0 && 'mask'
+  ].filter(Boolean);
+  out.assurance = {
+    probe_version: RUNTIME_PROBE_VERSION,
+    elements_measured: Math.min(all.length, 3000),
+    max_font_size_px: Math.round(maxFontSize * 100) / 100,
+    fonts: {
+      used_families: [...usedFamilies],
+      custom_used: customUsed,
+      loaded_families: loadedFamilies,
+      undelivered_families: undeliveredFamilies,
+      faces: faces.length
+    },
+    media: {
+      candidates: media.length,
+      loaded: media.filter((item) => item.loaded).length,
+      broken: media.filter((item) => !item.loaded)
+    },
+    material: {
+      techniques: materialTechniques,
+      gradient_surfaces: gradientSurfaces,
+      shadow_surfaces: shadowSurfaces,
+      blur_surfaces: blurSurfaces,
+      blend_surfaces: blendSurfaces,
+      mask_surfaces: maskSurfaces
+    },
+    motion: {
+      active: animations.filter((animation) => animation.state === 'running' || animation.state === 'pending').length,
+      ambient: animations.filter((animation) => animation.iterations === Infinity).length
+    },
+    states: { present: statesPresent, visible: statesVisible }
+  };
   return out;
 }
 
@@ -201,10 +320,31 @@ function pageProbe() {
 function summarizeRuntime(runs) {
   const issues = [];
   const warnings = [];
-  const metrics = { viewports: [] };
+  const metrics = {
+    viewports: [],
+    assurance: {
+      craft_verified: false,
+      probe_runs: 0,
+      expected_runs: Array.isArray(runs) ? runs.length : 0,
+      routes_verified: [],
+      states_verified: [],
+      font_failures: [],
+      broken_media: [],
+      material_techniques: [],
+      max_font_size_px: 0,
+      craft_axes: { typeface: false, display_scale: false, material: false, motion: false, evidence: false }
+    },
+    screenshots: []
+  };
 
-  for (const { viewport, raw } of Array.isArray(runs) ? runs : []) {
+  for (const run of Array.isArray(runs) ? runs : []) {
+    const { viewport, raw } = run;
     if (!raw) continue;
+    const routeName = run.route && (run.route.route || run.route.state)
+      ? (run.route.name || run.route.route)
+      : null;
+    const scope = routeName ? `${routeName} / ${viewport.name}` : viewport.name;
+    if (run.screenshot) metrics.screenshots.push(run.screenshot);
     const overflow = Math.max(0, (raw.scroll_width || 0) - (raw.viewport_width || 0));
 
     const failures = [];
@@ -221,6 +361,8 @@ function summarizeRuntime(runs) {
 
     metrics.viewports.push({
       name: viewport.name,
+      ...(routeName ? { route: routeName } : {}),
+      ...(run.route && run.route.state ? { state: run.route.state } : {}),
       width: viewport.width,
       horizontal_overflow_px: overflow,
       clipped_elements: clipped.length,
@@ -233,23 +375,23 @@ function summarizeRuntime(runs) {
     // The page is wider than its own viewport: unambiguous, and the single most
     // common defect a desktop-only inspection misses.
     if (overflow > 0) {
-      issues.push(`${viewport.name} (${viewport.width}px): the page is ${overflow}px wider than the viewport — horizontal scroll`);
+      issues.push(`${scope} (${viewport.width}px): the page is ${overflow}px wider than the viewport — horizontal scroll`);
     }
     for (const el of clipped.slice(0, 5)) {
-      issues.push(`${viewport.name}: text clipped in \`${el}\``);
+      issues.push(`${scope}: text clipped in \`${el}\``);
     }
     for (const f of failures.slice(0, 6)) {
-      issues.push(`${viewport.name}: contrast ${f.ratio}:1 below ${f.floor}:1 in \`${f.el}\` ("${f.text}")`);
+      issues.push(`${scope}: contrast ${f.ratio}:1 below ${f.floor}:1 in \`${f.el}\` ("${f.text}")`);
     }
     if (failures.length > 6) {
-      issues.push(`${viewport.name}: ${failures.length - 6} further contrast failures`);
+      issues.push(`${scope}: ${failures.length - 6} further contrast failures`);
     }
 
     for (const el of offscreen.slice(0, 5)) {
-      warnings.push(`${viewport.name}: \`${el}\` extends outside the viewport — intentional bleed or a layout break`);
+      warnings.push(`${scope}: \`${el}\` extends outside the viewport — intentional bleed or a layout break`);
     }
     if (smallTargets.length > 0 && viewport.width <= 480) {
-      warnings.push(`${viewport.name}: ${smallTargets.length} tap target(s) under ${MIN_TAP_TARGET}px (${smallTargets.slice(0, 3).join(', ')})`);
+      warnings.push(`${scope}: ${smallTargets.length} tap target(s) under ${MIN_TAP_TARGET}px (${smallTargets.slice(0, 3).join(', ')})`);
     }
 
     // The fold check: the marked #1 differentiator must start inside the first
@@ -262,16 +404,52 @@ function summarizeRuntime(runs) {
     for (const p of visiblePrimary) {
       if (p.top >= viewportHeight) {
         belowFold += 1;
-        issues.push(`${viewport.name}: primary feature \`${p.el}\` starts ${p.top - viewportHeight}px below the fold — the product's #1 differentiator is invisible without scrolling`);
+        issues.push(`${scope}: primary feature \`${p.el}\` starts ${p.top - viewportHeight}px below the fold — the product's #1 differentiator is invisible without scrolling`);
       }
     }
     if (primaries.length > 0 && visiblePrimary.length === 0) {
-      warnings.push(`${viewport.name}: no [data-aioson-primary] element is visible on the loaded route — re-run with --route=<hash> pointing at the screen that carries the primary feature`);
+      warnings.push(`${scope}: no [data-aioson-primary] element is visible on the loaded route — declare the primary route in the manifest's Runtime matrix or re-run with --route=<hash>`);
     }
     const lastViewport = metrics.viewports[metrics.viewports.length - 1];
     lastViewport.primary_markers = primaries.length;
     lastViewport.primary_visible = visiblePrimary.length;
     lastViewport.primary_below_fold = belowFold;
+
+    const assurance = raw.assurance;
+    if (assurance && Number(assurance.probe_version) >= 2) {
+      metrics.assurance.probe_runs += 1;
+      if (routeName && !metrics.assurance.routes_verified.includes(routeName)) metrics.assurance.routes_verified.push(routeName);
+      metrics.assurance.max_font_size_px = Math.max(metrics.assurance.max_font_size_px, Number(assurance.max_font_size_px) || 0);
+      for (const technique of (assurance.material && assurance.material.techniques) || []) {
+        if (!metrics.assurance.material_techniques.includes(technique)) metrics.assurance.material_techniques.push(technique);
+      }
+      for (const family of (assurance.fonts && assurance.fonts.undelivered_families) || []) {
+        if (!metrics.assurance.font_failures.includes(family)) metrics.assurance.font_failures.push(family);
+      }
+      for (const item of (assurance.media && assurance.media.broken) || []) {
+        const label = item.el || item.source || 'media';
+        if (!metrics.assurance.broken_media.includes(label)) metrics.assurance.broken_media.push(label);
+      }
+      const visibleStates = (assurance.states && assurance.states.visible) || [];
+      for (const state of visibleStates) if (!metrics.assurance.states_verified.includes(state)) metrics.assurance.states_verified.push(state);
+      if (run.route && run.route.state && !visibleStates.includes(run.route.state)) {
+        issues.push(`${scope}: declared runtime state "${run.route.state}" has no visible structural state marker`);
+      }
+      const axes = metrics.assurance.craft_axes;
+      axes.typeface = axes.typeface || Boolean(assurance.fonts && assurance.fonts.custom_used && assurance.fonts.custom_used.length > 0 && assurance.fonts.undelivered_families.length === 0);
+      axes.display_scale = axes.display_scale || Number(assurance.max_font_size_px) >= 56;
+      axes.material = axes.material || ((assurance.material && assurance.material.techniques) || []).length >= 2;
+      axes.motion = axes.motion || Boolean(assurance.motion && assurance.motion.active > 0);
+      axes.evidence = axes.evidence || Boolean(assurance.media && assurance.media.loaded > 0);
+    }
+  }
+
+  metrics.assurance.craft_verified = metrics.assurance.expected_runs > 0 && metrics.assurance.probe_runs === metrics.assurance.expected_runs;
+  for (const family of metrics.assurance.font_failures) {
+    issues.push(`runtime font delivery failed for "${family}" — the computed surface uses the family but no loaded FontFace matches it`);
+  }
+  for (const media of metrics.assurance.broken_media) {
+    issues.push(`runtime media failed to load in \`${media}\` — broken assets are not product evidence`);
   }
 
   return { metrics, issues, warnings };
@@ -291,7 +469,26 @@ function loadPlaywright() {
  *
  * @param {{fileUrl: string, viewports?: Array, timeout?: number, launcher?: Function, route?: string|null}} options
  */
-async function collectRuntimeMeasurements({ fileUrl, viewports = DEFAULT_VIEWPORTS, timeout = 20000, launcher = null, route = null } = {}) {
+function normalizeRoutes(route, routes) {
+  const input = Array.isArray(routes) && routes.length > 0 ? routes : [route || null];
+  return input.map((item, index) => {
+    if (item && typeof item === 'object') {
+      const target = item.route || item.path || item.url || null;
+      return { name: item.name || item.label || item.state || target || (index === 0 ? 'entry' : `route-${index + 1}`), route: target, state: item.state || null };
+    }
+    const target = item ? String(item) : null;
+    return { name: target || 'entry', route: target, state: null };
+  });
+}
+
+function runtimeUrl(fileUrl, route) {
+  if (!route) return fileUrl;
+  if (/^(?:https?|file):/i.test(route)) return route;
+  const base = String(fileUrl).replace(/#.*$/, '');
+  return `${base}${String(route).startsWith('#') ? '' : '#'}${route}`;
+}
+
+async function collectRuntimeMeasurements({ fileUrl, viewports = DEFAULT_VIEWPORTS, timeout = 20000, launcher = null, route = null, routes = null, screenshotDir = null } = {}) {
   const playwright = launcher ? { chromium: { launch: launcher } } : loadPlaywright();
   if (!playwright) {
     return {
@@ -301,23 +498,33 @@ async function collectRuntimeMeasurements({ fileUrl, viewports = DEFAULT_VIEWPOR
     };
   }
 
-  const targetUrl = route
-    ? `${fileUrl}${String(route).startsWith('#') ? '' : '#'}${route}`
-    : fileUrl;
-
   let browser = null;
   try {
     browser = await playwright.chromium.launch({ headless: true });
     const runs = [];
-    for (const viewport of viewports) {
-      const context = await browser.newContext({ viewport: { width: viewport.width, height: viewport.height } });
-      const page = await context.newPage();
-      await page.goto(targetUrl, { waitUntil: 'load', timeout });
-      // Hash routers render after `load`; give the route a short settle.
-      if (route) await page.waitForTimeout(250);
-      const raw = await page.evaluate(pageProbe);
-      runs.push({ viewport, raw });
-      await context.close();
+    for (const routeSpec of normalizeRoutes(route, routes)) {
+      const targetUrl = runtimeUrl(fileUrl, routeSpec.route);
+      for (const viewport of viewports) {
+        const context = await browser.newContext({ viewport: { width: viewport.width, height: viewport.height } });
+        try {
+          const page = await context.newPage();
+          await page.goto(targetUrl, { waitUntil: 'load', timeout });
+          // Hash routers and state fixtures render after `load`; give them a
+          // bounded settle before measuring or capturing evidence.
+          if (routeSpec.route && typeof page.waitForTimeout === 'function') await page.waitForTimeout(250);
+          const raw = await page.evaluate(pageProbe);
+          let screenshot = null;
+          if (screenshotDir && typeof page.screenshot === 'function') {
+            const safe = `${routeSpec.name}-${viewport.name}`.replace(/[^a-z0-9_-]+/gi, '-').replace(/^-|-$/g, '').toLowerCase();
+            screenshot = require('node:path').join(screenshotDir, `${safe || 'runtime'}.png`);
+            require('node:fs').mkdirSync(screenshotDir, { recursive: true });
+            await page.screenshot({ path: screenshot, fullPage: true });
+          }
+          runs.push({ viewport, route: routeSpec, url: targetUrl, raw, screenshot });
+        } finally {
+          await context.close();
+        }
+      }
     }
     return { available: true, runs };
   } catch (error) {
@@ -334,6 +541,9 @@ module.exports = {
   parseColor,
   isLargeText,
   pageProbe,
+  normalizeRoutes,
+  runtimeUrl,
   DEFAULT_VIEWPORTS,
+  RUNTIME_PROBE_VERSION,
   MIN_TAP_TARGET
 };

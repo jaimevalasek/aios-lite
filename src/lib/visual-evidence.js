@@ -18,6 +18,7 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
+const crypto = require('node:crypto');
 
 const VISUAL_EVIDENCE_FILE = 'visual-evidence.json';
 // The implementation's measurement (the implementers' session end, held to the
@@ -30,6 +31,163 @@ function visualEvidencePath(targetDir, slug) {
 
 function prototypePath(targetDir, slug) {
   return path.join(targetDir, '.aioson', 'briefings', slug, 'prototype.html');
+}
+
+function sha256(value) {
+  return crypto.createHash('sha256').update(value).digest('hex');
+}
+
+function sha256File(file) {
+  const hash = crypto.createHash('sha256');
+  const buffer = Buffer.allocUnsafe(64 * 1024);
+  const handle = fs.openSync(file, 'r');
+  try {
+    let offset = 0;
+    let read = 0;
+    do {
+      read = fs.readSync(handle, buffer, 0, buffer.length, offset);
+      if (read > 0) {
+        hash.update(buffer.subarray(0, read));
+        offset += read;
+      }
+    } while (read > 0);
+  } finally {
+    fs.closeSync(handle);
+  }
+  return hash.digest('hex');
+}
+
+function canonicalManifest(content) {
+  return String(content || '')
+    .replace(/^status\s*:\s*.*$/gmi, 'status: <lifecycle>')
+    .replace(/^approved_at\s*:\s*.*$/gmi, 'approved_at: <lifecycle>')
+    .replace(/(?:^|\n)##\s+Quality evidence[^\n]*((?:\n(?!##\s)[^\n]*)*)/i, '\n## Quality evidence\n<measurement projection>')
+    .replace(/\r\n/g, '\n')
+    .trim();
+}
+
+function safeRelative(targetDir, file) {
+  const relative = path.relative(path.resolve(targetDir), path.resolve(file));
+  return relative && !relative.startsWith('..') && !path.isAbsolute(relative) ? relative.replace(/\\/g, '/') : null;
+}
+
+function localReference(targetDir, baseDir, rawReference) {
+  let ref = String(rawReference || '').trim().replace(/^['"]|['"]$/g, '');
+  if (!ref || /^(?:data:|https?:|file:|javascript:|#|\/\/)/i.test(ref)) return null;
+  ref = ref.split(/[?#]/)[0].trim();
+  if (!ref) return null;
+  try { ref = decodeURIComponent(ref); } catch { /* keep the literal path */ }
+  const resolved = ref.startsWith('/')
+    ? path.resolve(targetDir, ref.replace(/^[/\\]+/, ''))
+    : path.resolve(baseDir, ref);
+  return safeRelative(targetDir, resolved) ? resolved : null;
+}
+
+function linkedVisualInputs(targetDir, ownedDir, prototype) {
+  const found = new Set();
+  const enqueue = (baseDir, raw) => {
+    const resolved = localReference(targetDir, baseDir, raw);
+    if (resolved) found.add(resolved);
+  };
+
+  for (const match of String(prototype || '').matchAll(/\b(?:src|href|poster)\s*=\s*["']([^"']+)["']/gi)) {
+    enqueue(ownedDir, match[1]);
+  }
+  for (const match of String(prototype || '').matchAll(/\bsrcset\s*=\s*["']([^"']+)["']/gi)) {
+    if (/^\s*data:/i.test(match[1])) continue;
+    for (const candidate of match[1].split(',')) enqueue(ownedDir, candidate.trim().split(/\s+/)[0]);
+  }
+  for (const match of String(prototype || '').matchAll(/url\(\s*["']?([^"')]+)["']?\s*\)/gi)) {
+    enqueue(ownedDir, match[1]);
+  }
+
+  // Stylesheets can import other stylesheets and visual assets. Walk the
+  // local graph so changing the image behind an unchanged url() invalidates
+  // evidence just as changing prototype.html does.
+  const queue = [...found];
+  const inspected = new Set();
+  while (queue.length > 0) {
+    const file = queue.shift();
+    if (inspected.has(file) || path.extname(file).toLowerCase() !== '.css') continue;
+    inspected.add(file);
+    let css;
+    try {
+      const stat = fs.statSync(file);
+      if (!stat.isFile() || stat.size > 8 * 1024 * 1024) continue;
+      css = fs.readFileSync(file, 'utf8');
+    } catch {
+      continue;
+    }
+    const refs = [];
+    for (const match of css.matchAll(/url\(\s*["']?([^"')]+)["']?\s*\)/gi)) refs.push(match[1]);
+    for (const match of css.matchAll(/@import\s+(?:url\(\s*)?["']?([^"')\s;]+)["']?/gi)) refs.push(match[1]);
+    for (const ref of refs) {
+      const resolved = localReference(targetDir, path.dirname(file), ref);
+      if (!resolved || found.has(resolved)) continue;
+      found.add(resolved);
+      queue.push(resolved);
+    }
+  }
+  return found;
+}
+
+/**
+ * Content-address every input that can alter the visual contract. Lifecycle
+ * fields and the Quality evidence projection are canonicalized out so approval
+ * and recording the report do not invalidate their own evidence.
+ */
+function computeVisualInputFingerprint(targetDir, slug) {
+  const root = path.resolve(targetDir);
+  const owned = path.join(root, '.aioson', 'briefings', slug);
+  const manifestFile = path.join(owned, 'prototype-manifest.md');
+  const candidates = new Set([
+    path.join(owned, 'prototype.html'),
+    manifestFile,
+    path.join(owned, 'identity.md'),
+    path.join(owned, 'briefings.md')
+  ]);
+
+  let prototype = '';
+  try { prototype = fs.readFileSync(path.join(owned, 'prototype.html'), 'utf8'); } catch { /* absent is represented by no file */ }
+  for (const linked of linkedVisualInputs(root, owned, prototype)) candidates.add(linked);
+
+  try {
+    const manifest = fs.readFileSync(manifestFile, 'utf8');
+    const identity = manifest.match(/^identity\s*:\s*(.+)$/mi);
+    if (identity) {
+      const ref = identity[1].trim().replace(/^['"]|['"]$/g, '');
+      if (ref && !/^(?:none|null|~)$/i.test(ref)) {
+        const resolved = path.resolve(root, ref);
+        if (safeRelative(root, resolved)) candidates.add(resolved);
+      }
+    }
+  } catch { /* missing manifest is represented by no file */ }
+
+  const files = [];
+  for (const file of [...candidates]) {
+    let stat;
+    try { stat = fs.statSync(file); } catch { continue; }
+    if (!stat.isFile()) continue;
+    const relative = safeRelative(root, file);
+    if (!relative) continue;
+    const digest = path.resolve(file) === path.resolve(manifestFile)
+      ? sha256(Buffer.from(canonicalManifest(fs.readFileSync(file, 'utf8'))))
+      : sha256File(file);
+    files.push({ path: relative, sha256: digest });
+  }
+  files.sort((a, b) => a.path.localeCompare(b.path));
+  return {
+    algorithm: 'sha256',
+    digest: sha256(files.map((file) => `${file.path}\0${file.sha256}`).join('\n')),
+    files
+  };
+}
+
+function changedFingerprintFiles(before, after) {
+  const oldFiles = new Map(((before && before.files) || []).map((file) => [file.path, file.sha256]));
+  const newFiles = new Map(((after && after.files) || []).map((file) => [file.path, file.sha256]));
+  return [...new Set([...oldFiles.keys(), ...newFiles.keys()])]
+    .filter((file) => oldFiles.get(file) !== newFiles.get(file));
 }
 
 function readVisualReport(file) {
@@ -107,17 +265,20 @@ function visualEvidenceBlock(targetDir, slug) {
   // A prototype edited after its measurement carries numbers for a surface
   // that no longer exists.
   let stale = false;
-  if (hasPrototype && report.measured_at) {
-    try {
-      stale = fs.statSync(proto).mtimeMs > Date.parse(report.measured_at) + 1000;
-    } catch {
-      stale = false;
-    }
+  let staleFiles = [];
+  if (report.input_fingerprint && report.input_fingerprint.digest) {
+    const current = computeVisualInputFingerprint(targetDir, slug);
+    stale = current.digest !== report.input_fingerprint.digest;
+    if (stale) staleFiles = changedFingerprintFiles(report.input_fingerprint, current);
+  } else if (hasPrototype && report.measured_at) {
+    // Legacy reports predate content-addressed evidence.
+    try { stale = fs.statSync(proto).mtimeMs > Date.parse(report.measured_at) + 1000; } catch { stale = false; }
   }
   return {
     measured: true,
     prototype: hasPrototype,
     stale,
+    stale_files: staleFiles,
     measured_at: report.measured_at || null,
     ok: Boolean(report.ok),
     issues: (report.issues || []).length,
@@ -149,13 +310,17 @@ function formatVisualEvidence(block) {
     ? ` | implementation: ${block.implementation.summary}${conformanceVerdict(block.implementation)}`
     : '';
   if (!block.measured) return `visual evidence: ${block.reason}${implementation}`;
-  return `visual evidence: ${block.summary}${block.stale ? ' — STALE: the prototype changed after this measurement; re-run kind=visual' : ''} (${block.evidence})${implementation}`;
+  const changed = block.stale_files && block.stale_files.length > 0 ? ` (${block.stale_files.join(', ')})` : '';
+  return `visual evidence: ${block.summary}${block.stale ? ` — STALE: visual inputs changed after this measurement${changed}; re-run kind=visual` : ''} (${block.evidence})${implementation}`;
 }
 
 module.exports = {
   VISUAL_EVIDENCE_FILE,
   VISUAL_IMPLEMENTATION_FILE,
   visualEvidencePath,
+  computeVisualInputFingerprint,
+  changedFingerprintFiles,
+  canonicalManifest,
   readVisualEvidence,
   readVisualImplementation,
   summarizeVisualEvidence,

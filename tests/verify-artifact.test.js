@@ -711,6 +711,50 @@ test('kind=identity: a missing anti-sameness anchor (signature moves) fails', as
   assert.equal(report.ok, false);
 });
 
+test('kind=identity: provenance source is explicit and schema-bound', async () => {
+  const dir = await tmp();
+  await write(dir, IDENTITY_FILE, IDENTITY_OK.replace('source: references\n', ''));
+  const missing = await runVerifyArtifact({
+    args: [dir],
+    options: { kind: 'identity', file: IDENTITY_FILE, json: true, suppressExitCode: true },
+    logger: makeLogger()
+  });
+  assert.equal(missing.ok, false);
+  assert.ok(missing.issues.some((issue) => /source/.test(issue)));
+
+  await write(dir, IDENTITY_FILE, IDENTITY_OK.replace('source: references', 'source: fabricated'));
+  const invalid = await runVerifyArtifact({
+    args: [dir],
+    options: { kind: 'identity', file: IDENTITY_FILE, json: true, suppressExitCode: true },
+    logger: makeLogger()
+  });
+  assert.equal(invalid.ok, false);
+  assert.ok(invalid.issues.some((issue) => /source/.test(issue)));
+
+  await write(dir, IDENTITY_FILE, IDENTITY_OK.replace('generated_by: reference-identity-extract', 'generated_by: interface-design'));
+  const fabricatedExtraction = await runVerifyArtifact({
+    args: [dir],
+    options: { kind: 'identity', file: IDENTITY_FILE, json: true, suppressExitCode: true },
+    logger: makeLogger()
+  });
+  assert.equal(fabricatedExtraction.ok, false);
+  assert.ok(fabricatedExtraction.issues.some((issue) => /identity:provenance/.test(issue)));
+
+  await write(
+    dir,
+    IDENTITY_FILE,
+    IDENTITY_OK
+      .replace('source: references', 'source: intent')
+      .replace('generated_by: reference-identity-extract', 'generated_by: interface-design')
+  );
+  const originated = await runVerifyArtifact({
+    args: [dir],
+    options: { kind: 'identity', file: IDENTITY_FILE, json: true, suppressExitCode: true },
+    logger: makeLogger()
+  });
+  assert.equal(originated.ok, true, JSON.stringify(originated.issues));
+});
+
 test('kind=identity: a placeholder (TODO) fails', async () => {
   const dir = await tmp();
   await write(dir, IDENTITY_FILE, IDENTITY_OK.replace('- depth strategy: borders-only', '- depth strategy: TODO'));

@@ -47,14 +47,14 @@ function prototypeHtml() {
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
 html, body { background: var(--bg); color: var(--fg); font-family: 'Inter', system-ui, sans-serif; }
 h1 { font-family: 'Fraunces', Georgia, serif; font-size: clamp(2.5rem, 6vw, 4.5rem); line-height: 1.02; }
-.hero { padding: var(--s8); background: var(--wash); border-radius: var(--r2); box-shadow: var(--shadow-1); }
+  .hero { padding: var(--s8); background: var(--wash), radial-gradient(circle at 85% 10%, rgba(139,92,246,.18), transparent 32%); border-radius: var(--r2); box-shadow: var(--shadow-1); }
 .card { padding: var(--s4); border: 1px solid var(--line); border-radius: var(--r1); background: color-mix(in oklch, var(--bg), white 4%); }
 .btn { padding: var(--s2) var(--s4); background: var(--accent); color: var(--accent-ink); border-radius: var(--r1); transition: transform .2s ease, box-shadow .2s ease; }
 .btn:hover { transform: translateY(-1px); box-shadow: var(--shadow-1); } .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; } .btn:disabled { opacity: .5; }
 .is-loading { opacity: .6; } .empty-state { padding: var(--s4); } .error-state { color: #ffb4a8; } .reveal { animation: rise .6s ease both; }
 ::selection { background: var(--accent); color: var(--accent-ink); } img.evidence { border-radius: var(--r2); box-shadow: var(--shadow-1); }
 ${rules}
-</style></head><body><main class="hero"><h1>Catalog</h1><img class="evidence" src="/shot.png" alt=""><button class="btn">Go</button></main></body></html>`;
+</style></head><body><main class="hero reveal"><h1>Catalog</h1><img class="evidence" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='640' height='360'%3E%3Crect width='640' height='360' fill='%238b5cf6'/%3E%3C/svg%3E" alt="Editorial catalog evidence"><button class="btn">Go</button></main></body></html>`;
 }
 
 // A flat implementation: same hygiene, no delivered face, no display scale, no material, no motion.

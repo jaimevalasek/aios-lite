@@ -18,7 +18,7 @@ const {
   collectRuntimeMeasurements,
   DEFAULT_VIEWPORTS
 } = require('../src/lib/visual-runtime');
-const { runVerifyArtifact } = require('../src/commands/verify-artifact');
+const { runVerifyArtifact, declaredRuntimeMatrix } = require('../src/commands/verify-artifact');
 
 function makeLogger() {
   const lines = [];
@@ -103,6 +103,37 @@ test('summarize turns raw layout facts into findings, and silence into silence',
   assert.match(broken.warnings.join('\n'), /extends outside the viewport/);
 });
 
+test('runtime assurance binds craft to loaded fonts, media and visible state evidence', () => {
+  const summary = summarizeRuntime([{
+    viewport: VIEWPORT_MOBILE,
+    route: { name: 'error', route: '#/orders?state=error', state: 'error' },
+    raw: {
+      scroll_width: 360,
+      viewport_width: 360,
+      viewport_height: 740,
+      clipped: [], offscreen: [], small_targets: [], text_samples: [], primary: [],
+      assurance: {
+        probe_version: 2,
+        max_font_size_px: 64,
+        fonts: { custom_used: ['atlas display'], undelivered_families: ['atlas display'] },
+        media: { loaded: 0, broken: [{ el: 'img.workflow' }] },
+        material: { techniques: ['gradients', 'blur'] },
+        motion: { active: 1, ambient: 1 },
+        states: { present: ['error'], visible: [] }
+      }
+    }
+  }]);
+
+  assert.equal(summary.metrics.assurance.craft_verified, true);
+  assert.deepEqual(summary.metrics.assurance.routes_verified, ['error']);
+  assert.equal(summary.metrics.assurance.craft_axes.display_scale, true);
+  assert.equal(summary.metrics.assurance.craft_axes.material, true);
+  assert.equal(summary.metrics.assurance.craft_axes.motion, true);
+  assert.match(summary.issues.join('\n'), /runtime font delivery failed for "atlas display"/);
+  assert.match(summary.issues.join('\n'), /runtime media failed to load in `img\.workflow`/);
+  assert.match(summary.issues.join('\n'), /declared runtime state "error" has no visible structural state marker/);
+});
+
 test('the fold check: a visible primary below the viewport is an issue, an invisible one a routing hint', () => {
   const base = {
     scroll_width: 360, viewport_width: 360, viewport_height: 740,
@@ -161,6 +192,91 @@ test('--route appends the hash so an inner screen can be measured', async () => 
 
   await collectRuntimeMeasurements({ fileUrl: 'file:///proto.html', route: '/palco/2', launcher });
   assert.equal(urls[urls.length - 1], 'file:///proto.html#/palco/2', 'a bare route gains its # prefix');
+});
+
+test('a runtime matrix visits every declared route/state at every viewport', async () => {
+  const urls = [];
+  const launcher = async () => ({
+    newContext: async ({ viewport }) => ({
+      newPage: async () => ({
+        goto: async (url) => { urls.push(`${viewport.width}:${url}`); },
+        waitForTimeout: async () => {},
+        evaluate: async () => ({
+          scroll_width: viewport.width, viewport_width: viewport.width, viewport_height: viewport.height,
+          clipped: [], offscreen: [], small_targets: [], text_samples: [], primary: [],
+          assurance: {
+            probe_version: 2, max_font_size_px: 16,
+            fonts: { custom_used: [], undelivered_families: [] },
+            media: { loaded: 0, broken: [] }, material: { techniques: [] }, motion: { active: 0 },
+            states: { present: ['loading'], visible: ['loading'] }
+          }
+        })
+      }),
+      close: async () => {}
+    }),
+    close: async () => {}
+  });
+
+  const collected = await collectRuntimeMeasurements({
+    fileUrl: 'file:///proto.html',
+    viewports: [{ name: 'phone', width: 390, height: 844 }],
+    routes: [
+      { name: 'home', route: '#/home' },
+      { name: 'loading', route: '#/orders?state=loading', state: 'loading' }
+    ],
+    launcher
+  });
+  assert.deepEqual(urls, ['390:file:///proto.html#/home', '390:file:///proto.html#/orders?state=loading']);
+  assert.equal(collected.runs.length, 2);
+  assert.equal(collected.runs[1].route.state, 'loading');
+  const summary = summarizeRuntime(collected.runs);
+  assert.equal(summary.metrics.assurance.craft_verified, true);
+  assert.deepEqual(summary.metrics.assurance.routes_verified, ['home', 'loading']);
+  assert.deepEqual(summary.metrics.assurance.states_verified, ['loading']);
+});
+
+test('the prototype manifest declares route/state rows without executable prose', async () => {
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'aioson-vrt-matrix-'));
+  const owned = path.join(dir, '.aioson', 'briefings', 'orders');
+  await fs.mkdir(owned, { recursive: true });
+  await fs.writeFile(path.join(owned, 'prototype-manifest.md'), `---
+feature: orders
+status: draft
+---
+## Runtime matrix
+- entry: #/home
+- loading: #/orders?state=loading
+- validation: #/orders?state=invalid | state=error
+`, 'utf8');
+  assert.deepEqual(declaredRuntimeMatrix({ targetDir: dir, slug: 'orders' }), [
+    { name: 'entry', route: '#/home', state: null },
+    { name: 'loading', route: '#/orders?state=loading', state: 'loading' },
+    { name: 'validation', route: '#/orders?state=invalid', state: 'error' }
+  ]);
+});
+
+test('URL-only runtime becomes verified when the rendered craft probe completes', async () => {
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'aioson-vrt-assured-'));
+  const raw = (width) => ({
+    scroll_width: width, viewport_width: width, viewport_height: 740,
+    clipped: [], offscreen: [], small_targets: [], text_samples: [], primary: [],
+    assurance: {
+      probe_version: 2, max_font_size_px: 64,
+      fonts: { custom_used: ['atlas'], undelivered_families: [] },
+      media: { loaded: 1, broken: [] },
+      material: { techniques: ['gradients', 'shadows'] },
+      motion: { active: 1 }, states: { present: [], visible: [] }
+    }
+  });
+  const stub = stubBrowser({ 1280: raw(1280), 360: raw(360) });
+  const report = await runVerifyArtifact({
+    args: [dir],
+    options: { kind: 'visual', url: 'http://localhost:4173', runtime: true, browserLauncher: stub.launcher, json: true, suppressExitCode: true, 'no-persist': true },
+    logger: makeLogger()
+  });
+  assert.equal(report.verdict, 'pass');
+  assert.equal(report.ok, true);
+  assert.equal(report.metrics.runtime.assurance.craft_verified, true);
 });
 
 test('a missing browser is reported, never treated as a pass', async () => {

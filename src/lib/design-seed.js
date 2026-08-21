@@ -26,6 +26,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const os = require('node:os');
+const crypto = require('node:crypto');
 const {
   clampChroma,
   oklchToRgb,
@@ -54,6 +55,11 @@ function mulberry32(seed) {
     t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
+}
+
+function projectFingerprintId(targetDir) {
+  const normalized = path.resolve(String(targetDir || '.')).replace(/\\/g, '/').toLowerCase();
+  return crypto.createHash('sha256').update(normalized).digest('hex').slice(0, 16);
 }
 
 function pickWeighted(rng, pairs) {
@@ -323,11 +329,11 @@ function fingerprintMatchReason(delta, samePole) {
  * already-shipped hue family on the same pole rotates away by the golden
  * angle — diversity by construction, not by luck.
  */
-function generateSeedCandidates({ slug, register = null, count = 3, seed = 0, avoid = [] } = {}) {
+function generateSeedCandidates({ project = null, slug, register = null, count = 3, seed = 0, avoid = [] } = {}) {
   const normalizedRegister = register && REGISTERS.includes(String(register).toLowerCase())
     ? String(register).toLowerCase()
     : null;
-  const basis = `${String(slug || 'project')}|${normalizedRegister || ''}|${Number(seed) || 0}`;
+  const basis = `${String(project || 'project')}|${String(slug || 'surface')}|${normalizedRegister || ''}|${Number(seed) || 0}`;
   const hash = fnv1a(basis);
   const rng = mulberry32(hash);
 
@@ -363,7 +369,9 @@ function generateSeedCandidates({ slug, register = null, count = 3, seed = 0, av
     // wastes a slot, so re-pick a few times before accepting a repeat.
     const pairingPool = TYPEFACE_BANK.filter((p) => p.registers.includes(candidateRegister));
     let pairing = pickFrom(rng, pairingPool.length ? pairingPool : TYPEFACE_BANK);
-    for (let attempt = 0; attempt < 6 && usedDisplays.has(pairing.display); attempt += 1) {
+    const repeatedDisplay = (candidate) => avoid.some((entry) =>
+      entry && entry.display_face && String(entry.display_face).toLowerCase() === String(candidate.display).toLowerCase());
+    for (let attempt = 0; attempt < 8 && (usedDisplays.has(pairing.display) || repeatedDisplay(pairing)); attempt += 1) {
       pairing = pickFrom(rng, pairingPool.length ? pairingPool : TYPEFACE_BANK);
     }
     usedDisplays.add(pairing.display);
@@ -391,7 +399,7 @@ function generateSeedCandidates({ slug, register = null, count = 3, seed = 0, av
         note: composition.note,
         rhythm: pickFrom(rng, RHYTHMS),
         material: pickFrom(rng, MATERIALS),
-        finishing: FINISHING_FLOOR[pole]
+        finishing: finishingFloor(candidateRegister, pole)
       }
     });
   }
@@ -404,10 +412,18 @@ function generateSeedCandidates({ slug, register = null, count = 3, seed = 0, av
 // inherits it — because a legitimate draw applied without finishing is exactly
 // how a premium palette ships looking like generic output.
 const FINISHING_FLOOR = {
-  light: 'token a paper shadow vocabulary (soft layered shadows + inset highlight) on floating surfaces and a tinted soft wash per accent role for chips/fills — the drawn material sits on top of this floor, it never replaces it',
-  dark: 'token surface elevation the eye can read (steps or an inverted light plate for the stat moment), a layered shadow vocabulary and tinted washes per accent role — the drawn material sits on top of this floor, it never replaces it',
-  chromatic: 'token an ink-anchored shadow vocabulary tuned on the colored field plus tinted washes per accent role — the drawn material sits on top of this floor, it never replaces it'
+  technical: 'token a rule hierarchy, tonal elevation steps, tabular numerals, and restrained status washes; borders carry depth and shadows stay absent — the drawn material sits on top of this system, never replaces it',
+  quiet: 'token tonal elevation and one continuous ground atmosphere, with a single soft grounding treatment only when an object truly floats; silence remains finished without a universal shadow layer',
+  editorial: 'token ink/rule weights, plate borders, paper-tone steps, and caption/figure treatments; hierarchy comes from type and rules, never generic floating-card elevation',
+  material: 'token exactly one physical depth strategy across the surface (stacked-paper shadow OR bordered panels, never both), plus pigment washes and static texture at low opacity',
+  constructed: 'token overlap, outline weights, hard color planes, and grid-snapped layer order; scale and collision create depth, with shadows prohibited unless the brief explicitly earns an exception',
+  cinematic: 'token image-derived scrims, ambient-light washes, legibility gradients, and scene elevation; light from the media replaces generic panel shadows'
 };
+
+function finishingFloor(register, pole) {
+  const base = FINISHING_FLOOR[register] || FINISHING_FLOOR.technical;
+  return `${base} Ground calibration: ${pole}.`;
+}
 
 // ─── operator fingerprint registry ──────────────────────────────────────────
 // Written by verify:artifact from MEASURED surfaces (ground truth, auto-fires
@@ -434,7 +450,7 @@ function recordFingerprint(entry) {
   if (!entry || !entry.project || !Number.isFinite(entry.accent_hue)) return false;
   try {
     const registry = readRegistry();
-    const key = (e) => `${e.project}::${e.slug || ''}`;
+    const key = (e) => `${e.project_id || e.project}::${e.slug || ''}`;
     const entries = registry.entries.filter((e) => key(e) !== key(entry));
     entries.unshift({ ...entry, at: new Date().toISOString() });
     const file = registryPath();
@@ -455,16 +471,30 @@ function findRepetition(current, entries) {
   if (!current || !Number.isFinite(current.accent_hue)) return null;
   let hit = null;
   for (const entry of entries || []) {
-    if (!entry || entry.project === current.project || !Number.isFinite(entry.accent_hue)) continue;
+    if (!entry || !Number.isFinite(entry.accent_hue)) continue;
+    const sameProject = current.project_id && entry.project_id
+      ? current.project_id === entry.project_id
+      : entry.project === current.project;
+    if (sameProject) continue;
     const delta = hueDeltaDeg(entry.accent_hue, current.accent_hue);
-    const reason = fingerprintMatchReason(delta, entry.ground_pole === current.ground_pole);
+    const hueReason = fingerprintMatchReason(delta, entry.ground_pole === current.ground_pole);
+    const sameFace = Boolean(current.display_face && entry.display_face && current.display_face === entry.display_face);
+    const sameMode = Boolean(current.surface_mode && entry.surface_mode && current.surface_mode === entry.surface_mode);
+    const sameMaterial = Boolean(current.material_signature && entry.material_signature && current.material_signature === entry.material_signature);
+    const sameMotion = Boolean(current.motion_signature && entry.motion_signature && current.motion_signature === entry.motion_signature);
+    const structuralReason = sameFace && sameMode && (sameMaterial || sameMotion)
+      ? 'same type, surface mode, and finish/motion signature'
+      : null;
+    const reason = hueReason || structuralReason;
     if (!reason) continue;
     if (!hit || delta < hit.delta) {
       hit = {
         entry,
         delta: Math.round(delta),
         reason,
-        same_face: Boolean(current.display_face && entry.display_face && current.display_face === entry.display_face)
+        same_face: sameFace,
+        same_material: sameMaterial,
+        same_motion: sameMotion
       };
     }
   }
@@ -481,6 +511,9 @@ module.exports = {
   fingerprintMatchReason,
   fnv1a,
   mulberry32,
+  projectFingerprintId,
+  finishingFloor,
+  FINISHING_FLOOR,
   REGISTERS,
   SCHEMES,
   TYPEFACE_BANK,

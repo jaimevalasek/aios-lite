@@ -190,13 +190,68 @@ test('briefing approval freezes an owned prototype and unapproval returns it to 
   const dir = await makeProject();
   const logger = { log() {}, error() {} };
   const briefingDir = path.join(dir, '.aioson', 'briefings', 'idea-two');
-  await fs.writeFile(path.join(briefingDir, 'briefings.md'), '# Visual briefing\n', 'utf8');
-  await fs.writeFile(path.join(briefingDir, 'prototype.html'), '<button>Save</button>\n', 'utf8');
+  await fs.writeFile(path.join(briefingDir, 'briefings.md'), '# Visual briefing\n\nA decision workspace for saved orders.\n', 'utf8');
+  const filler = Array.from({ length: 40 }, (_, index) => `.f${index}{padding:var(--s);margin:var(--s);color:var(--fg);background:var(--bg)}`).join('\n');
+  await fs.writeFile(path.join(briefingDir, 'prototype.html'), `<!doctype html><style>
+    :root{--s:8px;--fg:#111;--bg:#fff}body{font-family:Georgia,serif;color:var(--fg);background:var(--bg)}
+    button:focus-visible{outline:2px solid var(--fg)}${filler}
+  </style><main id="main"><h1>Saved orders</h1><button>Save</button><table><thead><tr><th>Order</th><th>Status</th><th>Owner</th></tr></thead><tbody><tr><td>41</td><td>Ready</td><td>Ana</td></tr></tbody></table></main>\n`, 'utf8');
   await fs.writeFile(
     path.join(briefingDir, 'prototype-manifest.md'),
-    '---\nfeature: idea-two\nstatus: draft\napproved_at: null\n---\n\n# Prototype\n',
+    `---
+feature: idea-two
+status: draft
+approved_at: null
+identity: none
+---
+
+# Prototype
+
+## Visual direction
+- register: technical editorial
+- thesis: saved orders form one continuous decision ledger with evidence beside each action.
+- anti-goals: generic card dashboard, decorative gradient hero.
+- composition signature: a numbered ledger spine anchors every saved order and its next decision.
+
+## Runtime matrix
+- entry: #main
+
+## Quality evidence
+- verdict: pass
+- evidence: .aioson/context/features/idea-two/visual-evidence.json
+- craft: 0/5
+- runtime: waived — owner explicitly accepted static-only evidence for this fixture
+- routes: 0
+`,
     'utf8'
   );
+
+  const measured = await runVerifyArtifact({
+    args: [dir],
+    options: { kind: 'visual', slug: 'idea-two', advisory: true, json: true, suppressExitCode: true },
+    logger
+  });
+  assert.equal(measured.verdict, 'pass');
+
+  const incompleteMatrix = await runBriefingApprove({
+    args: [dir],
+    options: { slug: 'idea-two' },
+    logger
+  });
+  assert.equal(incompleteMatrix.error, 'prototype_runtime_matrix_missing');
+
+  const manifestPath = path.join(briefingDir, 'prototype-manifest.md');
+  const completeManifest = (await fs.readFile(manifestPath, 'utf8')).replace(
+    '- entry: #main',
+    '- entry: #main\n- loading: #loading | state=loading\n- empty: #empty | state=empty'
+  );
+  await fs.writeFile(manifestPath, completeManifest, 'utf8');
+  const refreshed = await runVerifyArtifact({
+    args: [dir],
+    options: { kind: 'visual', slug: 'idea-two', advisory: true, json: true, suppressExitCode: true },
+    logger
+  });
+  assert.equal(refreshed.verdict, 'pass');
 
   assert.equal((await runBriefingApprove({
     args: [dir],

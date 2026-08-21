@@ -16,6 +16,7 @@ const path = require('node:path');
 const { resolveTargetDir } = require('../lib/project-root');
 const {
   generateSeedCandidates,
+  projectFingerprintId,
   readRegistry,
   registryPath,
   REGISTERS
@@ -27,6 +28,7 @@ const GENERATOR = `aioson design:seed@${VERSION}`;
 async function runDesignSeed({ args, options = {}, logger }) {
   const targetDir = resolveTargetDir(args);
   const project = path.basename(path.resolve(targetDir));
+  const projectId = projectFingerprintId(targetDir);
   const slug = options.slug ? String(options.slug).trim() : null;
   const register = options.register ? String(options.register).trim().toLowerCase() : null;
 
@@ -42,13 +44,14 @@ async function runDesignSeed({ args, options = {}, logger }) {
   const seed = Number.isFinite(Number(options.seed)) ? Number(options.seed) : 0;
 
   const registry = readRegistry();
-  const avoid = registry.entries.filter((entry) => entry && entry.project !== project);
-  const result = generateSeedCandidates({ slug: slug || project, register, count, seed, avoid });
+  const avoid = registry.entries.filter((entry) => entry && (entry.project_id ? entry.project_id !== projectId : entry.project !== project));
+  const result = generateSeedCandidates({ project: projectId, slug: slug || project, register, count, seed, avoid });
 
   const payload = {
     generator: GENERATOR,
     ok: true,
     project,
+    project_id: projectId,
     slug,
     register: result.register,
     seed,

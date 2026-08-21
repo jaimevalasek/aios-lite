@@ -50,7 +50,7 @@ A stage that cannot complete fails the round at that stage: still write both res
 
 The chain does the building; you hold it to the benchmark bar. Resolve the completeness checklist for the product type from `.aioson/docs/benchmark/execution-playbook.md` — a game earns its core loop, feedback, progression, and restart; an app earns its core workflow end to end with credible data plus loading, empty, error, retry, and success states. No dead controls, placeholder panels, fake integrations, or a broken normal entrypoint. Keep secrets out of code, reports, and screenshots. Preserve unrelated pre-existing files.
 
-Validation before closing: the documented start/build path works from the run root, the core loop or workflow completes, and the result entrypoints exist inside the run root. Record the exact commands and honest outcomes; do not label a skipped check as passed.
+Validation before closing: the documented start/build path works from the run root, the core loop or workflow completes, and the result entrypoints exist inside the run root. For every visible delivery on either route, measure the actual deliverable (the full-route app, not a skipped prototype) with `aioson verify:artifact . --kind=visual --dir=<source-or-build> --url=<served-url> --runtime --screenshots --advisory`; exercise its primary route and loading/empty/error/success states, reference the produced screenshots, and record the exact verdict. A visual run that is unavailable or `UNVERIFIED` moves `completed` to `partial` unless the limitation makes the whole delivery unusable. Record exact commands and honest outcomes; do not label a skipped check as passed.
 
 ## Completion gate
 
@@ -78,7 +78,7 @@ Create these artifacts at the assigned run root:
 - the complete runnable delivery under the delivery root and in its normal source structure (full route), or the working prototype HTML (prototype route);
 - `benchmark-result.json` — compact machine-readable outcome, **exactly these top-level fields and no others** (the external parser rejects unknown fields and any other schema version);
 - `report.md` — human-readable evidence and run instructions;
-- optional screenshots or generated assets referenced by relative path.
+- screenshots for every visible `completed` delivery, or generated assets when used, referenced by relative path. Screenshots are optional only for a genuinely non-visual delivery.
 
 Replace the example content with run evidence; use empty arrays when no honest item exists.
 

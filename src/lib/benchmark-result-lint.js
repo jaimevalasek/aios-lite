@@ -31,6 +31,19 @@ function isRelativeContained(rel) {
   return true;
 }
 
+function isVisualDelivery(entrypoints, root) {
+  for (const rel of entrypoints || []) {
+    if (/\.(?:html?|jsx|tsx|vue|svelte)$/i.test(String(rel))) return true;
+    if (!/package\.json$/i.test(String(rel)) || !isRelativeContained(rel)) continue;
+    try {
+      const pkg = JSON.parse(fs.readFileSync(path.resolve(root, rel), 'utf8'));
+      const names = Object.keys({ ...(pkg.dependencies || {}), ...(pkg.devDependencies || {}) }).join(' ');
+      if (/\b(?:react|vue|vite|next|nuxt|svelte|astro|angular|solid-js|remix)\b/i.test(names)) return true;
+    } catch { /* the path validator reports missing/unreadable entrypoints elsewhere */ }
+  }
+  return false;
+}
+
 /**
  * @param {object} inputs
  * @param {string} inputs.file    absolute path to benchmark-result.json
@@ -96,7 +109,8 @@ function analyzeBenchmarkResult({ file, runRoot = null }) {
   }
 
   const pathsToCheck = [];
-  for (const entry of Array.isArray(data.entrypoints) ? data.entrypoints : []) pathsToCheck.push(['entrypoints', entry]);
+  const entrypoints = Array.isArray(data.entrypoints) ? data.entrypoints : [];
+  for (const entry of entrypoints) pathsToCheck.push(['entrypoints', entry]);
   const artifacts = data.artifacts && typeof data.artifacts === 'object' ? data.artifacts : null;
   if (!artifacts || typeof artifacts.report !== 'string') {
     issues.push('artifacts.report must point to the run report (report.md)');
@@ -105,6 +119,19 @@ function analyzeBenchmarkResult({ file, runRoot = null }) {
   }
   for (const shot of artifacts && Array.isArray(artifacts.screenshots) ? artifacts.screenshots : []) {
     pathsToCheck.push(['artifacts.screenshots', shot]);
+  }
+
+  const visualDelivery = isVisualDelivery(entrypoints, root);
+  const screenshots = artifacts && Array.isArray(artifacts.screenshots) ? artifacts.screenshots : [];
+  if (status === 'completed' && visualDelivery) {
+    if (screenshots.length === 0) {
+      issues.push('completed visual delivery requires at least one referenced screenshot — visual inspection cannot be an optional claim');
+    }
+    const visualValidation = validation.find((row) =>
+      row && row.status === 'passed' && /verify:artifact[\s\S]*--kind=visual[\s\S]*--runtime/i.test(String(row.command || '')));
+    if (!visualValidation) {
+      issues.push('completed visual delivery requires a passed `verify:artifact --kind=visual ... --runtime` validation row');
+    }
   }
 
   let missingPaths = 0;
@@ -133,9 +160,11 @@ function analyzeBenchmarkResult({ file, runRoot = null }) {
       validation_rows: validation.length,
       research_rows: research.length,
       known_limitations: Array.isArray(data.known_limitations) ? data.known_limitations.length : 0,
-      missing_paths: missingPaths
+      missing_paths: missingPaths,
+      visual_delivery: visualDelivery,
+      screenshots: screenshots.length
     }
   };
 }
 
-module.exports = { analyzeBenchmarkResult };
+module.exports = { analyzeBenchmarkResult, isVisualDelivery };

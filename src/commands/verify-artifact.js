@@ -229,7 +229,10 @@ const RULESETS = {
       id: 'identity',
       files: [ctx.file || `.aioson/briefings/${ctx.slug || 'MISSING'}/identity.md`],
       must_match: [
-        'generated_by',
+        '\\bkind:\\s*identity\\b',
+        '\\bscope:\\s*(?:exploration|briefing|brand)\\b',
+        '\\bsource:\\s*(?:references|intent)\\b',
+        '\\bgenerated_by:\\s*[^\\s]+',
         '## Design pillars', '## Palette', '## Typography', '## Spacing',
         '## Radius', '## Motion', '## Signature moves', '## Component structure notes'
       ],
@@ -494,6 +497,28 @@ function declaredSurfaceMode(ctx) {
   return null;
 }
 
+/**
+ * Read an optional route/state proof matrix from the owned prototype manifest:
+ *
+ * ## Runtime matrix
+ * - entry: #/home
+ * - loading: #/orders?state=loading
+ * - error: #/orders?state=error
+ *
+ * A state-named row owes a visible marker for that state in runtime telemetry.
+ */
+function declaredRuntimeMatrix(ctx) {
+  if (!ctx.slug) return [];
+  let manifest;
+  try {
+    manifest = fs.readFileSync(path.resolve(ctx.targetDir, '.aioson', 'briefings', ctx.slug, 'prototype-manifest.md'), 'utf8');
+  } catch {
+    return [];
+  }
+  const { parseRuntimeMatrix } = require('../lib/prototype-manifest-quality');
+  return parseRuntimeMatrix(manifest);
+}
+
 /** The axes the prototype floor is held on — the same numbers on both sides. */
 function conformanceAxes(m) {
   return {
@@ -522,7 +547,7 @@ function conformanceAxes(m) {
  * positive costs a sentence in the manifest, never a blocked stage.
  */
 const MOTION_AMBITION = /\banima(?:tion|ted|ç(?:ão|ões)|c(?:ao|oes))\b|\banimad[oa]s?\b|\bmotion\b|\bparallax\b|\bscroll[- ]?(?:driven|telling)\b|\bscrollytelling\b|\bwebgl\b|\bthree\.js\b|\bcanvas\b|\bmicro[- ]?intera(?:ction|ç(?:ão|ões))\b|\bcinemat(?:ic|ográfic[oa])\b/gi;
-const SIGNATURE_AMBITION = /\bfundo\s+animad[oa]\b|\bbackground\s+animad[oa]\b|\banimated\s+background\b|\bpe[çc]a[- ]assinatura\b|\bsignature\s+(?:piece|moment|motion)\b|\bhero\s+animad[oa]\b|\bgrain\b|\baurora\b|\bmesh\s+gradient\b|\bwebgl\b|\bthree\.js\b|\bcanvas\b/gi;
+const SIGNATURE_AMBITION = /\bfundo\s+animad[oa]\b|\bbackground\s+animad[oa]\b|\banimated\s+background\b|\bpe[çc]a[- ]assinatura\b|\bsignature\s+(?:piece|moment|motion)\b|\bhero\s+animad[oa]\b|\b(?:animated|moving)\s+(?:grain|noise)\b|\b(?:grain|noise)\s+animad[oa]\b|\baurora\b|\bmesh\s+gradient\b|\bwebgl\b|\bthree\.js\b|\bcanvas\b/gi;
 const MOTION_AMBITION_FLOOR = 3;
 
 /**
@@ -1155,15 +1180,6 @@ const ADAPTERS = {
     const runtimeTarget = ctx.runtime ? (ctx.url || sources.entry) : null;
     if (!result.applicable) {
       warnings.push(`visual telemetry not applicable: ${result.reason}`);
-      if (!runtimeTarget) {
-        return {
-          ok: true,
-          issues: [],
-          warnings,
-          checks: [{ id: 'visual', ok: true, detail: result.reason }],
-          metrics
-        };
-      }
     }
 
     // Slug mode resolves the feature-owned prototype, whose contract is the
@@ -1181,7 +1197,7 @@ const ADAPTERS = {
         if (!gap.met) {
           const measured = `${gap.delivered.keyframes} @keyframes, ${gap.delivered.animated_declarations} animated declarations, ${gap.delivered.ambient_loops} ambient loop(s), scroll reveal ${gap.delivered.scroll_reveal ? 'yes' : 'no'}, signature surface none`;
           warnings.push(gap.signature_asked
-            ? `motion ambition unanswered: the recorded sources name a signature moving surface (animated background, canvas/WebGL, grain or mesh) and the delivery has none — measured ${measured}. A signature piece is a deliverable, not a mood: build it, or record in the manifest which constraint killed it and what replaces it`
+            ? `motion ambition unanswered: the recorded sources name a signature moving surface (animated background, canvas/WebGL, animated noise/grain, aurora or mesh) and the delivery has none — measured ${measured}. Static grain is material, not motion. A moving signature is a deliverable, not a mood: build it, or record in the manifest which constraint killed it and what replaces it`
             : `motion ambition unanswered: the recorded sources ask for motion ${gap.asked} time(s) and the delivery carries no designed motion — measured ${measured}. Hover transitions are state feedback, not the animation that was asked for; add an entrance system with reduced-motion, a scroll-driven reveal, or an ambient surface, or record why not`);
         }
       }
@@ -1202,21 +1218,25 @@ const ADAPTERS = {
         if (body.length === 0) {
           issues.push('prototype-manifest.md has no filled `## Visual direction` — register, thesis, anti-goals, and the composition signature must be written before layout; an identity record supplies tokens, never the composition decision');
         }
-        metrics.manifest_visual_direction = body.length > 0;
+        const { validatePrototypeManifestQuality } = require('../lib/prototype-manifest-quality');
+        const manifestQuality = validatePrototypeManifestQuality(manifest);
+        if (body.length > 0 && !manifestQuality.direction.valid) {
+          warnings.push(`prototype-manifest.md \`## Visual direction\` is prose-shaped but not decision-grade — missing or placeholder: ${manifestQuality.direction.missing.join(', ')}; record the register, a product-specific thesis, at least two anti-goals, and one composition signature before another layout pass`);
+        }
+        metrics.manifest_visual_direction = manifestQuality.direction.valid;
+        metrics.manifest_runtime_matrix = manifestQuality.runtime_matrix;
 
         // A `## Quality evidence` section that is empty or still a placeholder
         // means the measurement ran nowhere — the exact misfire that let a
         // flat prototype ship with its evidence section reading "(filled after
         // measurement)". Warning tier: the manifest may legitimately not exist
         // yet mid-build; an EMPTY evidence section at verify time is the smell.
-        const evidence = manifest.match(/(?:^|\n)##\s+Quality evidence[^\n]*((?:\n(?!##\s)[^\n]*)*)/i);
+        const evidence = manifest.match(/(?:^|\n)##\s+Quality evidence\b/i);
         if (evidence) {
-          const evidenceBody = evidence[1].replace(/[_*()\s-]+/g, ' ').trim();
-          const placeholder = evidenceBody.length < 60 || /preenchid|filled after|to be filled|pendente|\btbd\b|\btodo\b/i.test(evidenceBody.slice(0, 80));
-          if (placeholder) {
-            warnings.push('prototype-manifest.md `## Quality evidence` is empty or a placeholder — the measured numbers (kind=visual metrics, fold outcome, walkthrough verdict) were never persisted; run the measurement and record it, or the done-gate is self-graded prose');
+          if (!manifestQuality.quality.valid) {
+            warnings.push(`prototype-manifest.md \`## Quality evidence\` is empty or a placeholder, or is not machine-bound — ${manifestQuality.quality.missing.join('; ') || 'no structured evidence'}; record verdict, evidence path, craft N/N, runtime outcome, and verified route count from the persisted report`);
           }
-          metrics.manifest_quality_evidence = !placeholder;
+          metrics.manifest_quality_evidence = manifestQuality.quality.valid;
         }
 
         // Identity provenance: an intent-first build (`identity: none`) whose
@@ -1250,6 +1270,8 @@ const ADAPTERS = {
       const collected = await collectRuntimeMeasurements({
         fileUrl: entryUrl,
         route: ctx.route || null,
+        routes: ctx.routes && ctx.routes.length > 0 ? ctx.routes : (ctx.route ? null : declaredRuntimeMatrix(ctx)),
+        screenshotDir: ctx.screenshotDir || null,
         launcher: ctx.browserLauncher || null
       });
       if (!collected.available) {
@@ -1295,21 +1317,29 @@ const ADAPTERS = {
     try {
       const pal = metrics.palette;
       if (pal && pal.accent_hue != null && pal.ground && metrics.craft && metrics.craft.measured) {
-        const { readRegistry, recordFingerprint, findRepetition } = require('../lib/design-seed');
+        const { readRegistry, recordFingerprint, findRepetition, projectFingerprintId } = require('../lib/design-seed');
         const current = {
           project: path.basename(path.resolve(ctx.targetDir)),
+          project_id: projectFingerprintId(ctx.targetDir),
           slug: ctx.slug || null,
           accent_hue: pal.accent_hue,
           ground_pole: pal.ground.pole,
           ground_hue: pal.ground.h,
           display_face: metrics.display_face || (metrics.font_families || [])[0] || null,
+          surface_mode: metrics.surface_mode && metrics.surface_mode.mode,
+          material_signature: metrics.craft && Array.isArray(metrics.craft.material_techniques)
+            ? metrics.craft.material_techniques.slice().sort().join('+')
+            : '',
+          motion_signature: metrics.motion && Array.isArray(metrics.motion.signature_kinds)
+            ? metrics.motion.signature_kinds.slice().sort().join('+')
+            : '',
           source: 'measured'
         };
         const repetition = findRepetition(current, readRegistry().entries);
         if (repetition) {
           const face = repetition.same_face ? ', same display face' : '';
-          warnings.push(`cross-project palette repetition: accent hue ~${pal.accent_hue}° on a ${pal.ground.pole} ground repeats recent project "${repetition.entry.project}" (Δ${repetition.delta}°, ${repetition.reason}${face}) — the model's favorite palette is reappearing across unrelated projects; draw a diversified start with \`aioson design:seed\` (or extract an identity from the owner's references), or record why these brands genuinely share the family`);
-          metrics.palette_repeat = { project: repetition.entry.project, delta_deg: repetition.delta, reason: repetition.reason, same_face: repetition.same_face };
+          warnings.push(`cross-project palette repetition / visual fingerprint: accent hue ~${pal.accent_hue}° on a ${pal.ground.pole} ground resembles recent project "${repetition.entry.project}" (Δ${repetition.delta}°, ${repetition.reason}${face}) — palette, type, material and motion fingerprints are compared so sameness cannot hide behind one changed color; draw a diversified start with \`aioson design:seed\` (or extract an identity from the owner's references), or record why these products genuinely share the family`);
+          metrics.palette_repeat = { project: repetition.entry.project, delta_deg: repetition.delta, reason: repetition.reason, same_face: repetition.same_face, same_material: repetition.same_material, same_motion: repetition.same_motion };
         }
         // A diagnostic run (`--no-persist`) compares but never records: a
         // measurement must not rewrite the operator's registry as a side
@@ -1318,9 +1348,15 @@ const ADAPTERS = {
       }
     } catch { /* fingerprinting is advisory — a broken registry never blocks the gate */ }
 
-    const ok = issues.length === 0;
+    const { deriveVisualVerdict } = require('../lib/visual-verdict');
+    const assurance = deriveVisualVerdict({ staticResult: result, metrics, runtimeRequested: ctx.runtime });
+    metrics.assurance = assurance;
+    const verdict = issues.length > 0 ? 'fail' : assurance.verdict;
+    const ok = verdict === 'pass';
     return {
       ok,
+      verdict,
+      ...(verdict === 'unverified' ? { unverified_reasons: assurance.reasons } : {}),
       issues,
       warnings,
       checks: [{ id: 'visual', ok, detail: issues.join('; ') || null }],
@@ -1341,7 +1377,21 @@ async function evaluateKind(kind, ctx, logger) {
   }
   if (RULESETS[kind]) {
     const { criteria } = RULESETS[kind](ctx);
-    return evaluateRuleset(criteria, ctx.targetDir);
+    const result = evaluateRuleset(criteria, ctx.targetDir);
+    if (kind === 'identity' && ctx.file) {
+      try {
+        const identity = fs.readFileSync(ctx.file, 'utf8');
+        const source = (identity.match(/^source:\s*([^\s#]+)\s*$/mi) || [])[1] || '';
+        const generatedBy = (identity.match(/^generated_by:\s*([^\s#]+)\s*$/mi) || [])[1] || '';
+        if (source === 'references' && generatedBy !== 'reference-identity-extract') {
+          const detail = '[identity:provenance] source: references requires generated_by: reference-identity-extract; an originated or hand-authored system must use source: intent';
+          result.issues.push(detail);
+          result.checks.push({ id: 'identity:provenance', ok: false, detail });
+          result.ok = false;
+        }
+      } catch { /* the ruleset already reports an unreadable identity file */ }
+    }
+    return result;
   }
   return null; // unknown
 }
@@ -1399,6 +1449,9 @@ async function runVerifyArtifact({ args, options = {}, logger }) {
 
   const runtime = Boolean(options.runtime);
   const route = options.route ? String(options.route).trim() : null;
+  const routes = Array.isArray(options.routes)
+    ? options.routes
+    : (options.routes ? String(options.routes).split(',').map((value) => value.trim()).filter(Boolean) : []);
   const url = options.url ? String(options.url).trim() : null;
   // `--conformance=<slug>`: hold this measurement to the prototype evidence
   // recorded for the feature (the implementers' session end threads it).
@@ -1407,9 +1460,15 @@ async function runVerifyArtifact({ args, options = {}, logger }) {
   // `--no-persist`: a diagnostic run reads and reports but writes nothing —
   // no context report, no operator fingerprint. Measuring is not mutating.
   const persist = !(options['no-persist'] || options.noPersist);
+  const screenshotOption = options['screenshot-dir'] || options.screenshotDir;
+  const screenshotDir = screenshotOption
+    ? resolveOperandPath(targetDir, String(screenshotOption).trim())
+    : (options.screenshots
+      ? path.join(targetDir, '.aioson', 'context', ...(slug ? ['features', slug] : []), 'visual-screenshots')
+      : null);
   const result = await evaluateKind(kind, {
     slug, targetDir, file, dir, noBuild, buildTimeout, buildCommand,
-    runtime, route, url, persist, conformance, surfaceMode, browserLauncher: options.browserLauncher || null
+    runtime, route, routes, url, persist, conformance, surfaceMode, screenshotDir, browserLauncher: options.browserLauncher || null
   }, logger);
 
   if (result === null) {
@@ -1423,8 +1482,12 @@ async function runVerifyArtifact({ args, options = {}, logger }) {
   // strict promotes warnings to blocking issues.
   const issues = strict ? [...result.issues, ...result.warnings] : [...result.issues];
   const warnings = strict ? [] : [...result.warnings];
-  const ok = issues.length === 0;
-  const blocking = !ok && !advisory;
+  const unverified = result.verdict === 'unverified' && issues.length === 0;
+  const ok = issues.length === 0 && !unverified;
+  // Missing evidence is never rewritten as success, but it is not a concrete
+  // defect either. Policy can promote warnings with --strict; absent that,
+  // UNVERIFIED remains a non-blocking epistemic state.
+  const blocking = issues.length > 0 && !advisory;
 
   const report = {
     generator: GENERATOR,
@@ -1434,6 +1497,8 @@ async function runVerifyArtifact({ args, options = {}, logger }) {
     mode: advisory ? 'advisory' : 'blocking',
     ok,
     blocking,
+    verdict: issues.length > 0 ? 'fail' : (unverified ? 'unverified' : 'pass'),
+    ...(unverified ? { unverified_reasons: result.unverified_reasons || [] } : {}),
     issues,
     warnings,
     checks: result.checks || []
@@ -1443,6 +1508,11 @@ async function runVerifyArtifact({ args, options = {}, logger }) {
   // point of the run, not decoration — a number that never reaches the caller
   // cannot be acted on.
   if (result.metrics) report.metrics = result.metrics;
+
+  if (kind === 'visual' && slug && !file && !dir) {
+    const { computeVisualInputFingerprint } = require('../lib/visual-evidence');
+    report.input_fingerprint = computeVisualInputFingerprint(targetDir, slug);
+  }
 
   // The CLI wrapper fails the process for any result carrying `ok: false`, which
   // would silently override --advisory at the shell — the command decided not to
@@ -1489,7 +1559,7 @@ async function runVerifyArtifact({ args, options = {}, logger }) {
     return report;
   }
 
-  const verdict = ok ? 'OK' : (advisory ? 'ADVISORY' : 'FAIL');
+  const verdict = report.verdict === 'unverified' ? 'UNVERIFIED' : (ok ? 'OK' : (advisory ? 'ADVISORY' : 'FAIL'));
   logger.log(`verify:artifact — kind=${kind}${slug ? ` slug=${slug}` : ''} — ${verdict}`);
   if (report.metrics) {
     const m = report.metrics;
@@ -1524,5 +1594,6 @@ module.exports = {
   scanSiteForLeaks,
   collectVisualSources,
   runSiteBuild,
-  evaluateCommitMessage
+  evaluateCommitMessage,
+  declaredRuntimeMatrix
 };

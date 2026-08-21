@@ -18,6 +18,7 @@ async function makeRun(overrides = {}) {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'aioson-bench-'));
   await fs.mkdir(path.join(dir, 'workspace'), { recursive: true });
   await fs.writeFile(path.join(dir, 'workspace', 'index.html'), '<!doctype html>', 'utf8');
+  await fs.writeFile(path.join(dir, 'workspace', 'final.png'), 'png-evidence', 'utf8');
   await fs.writeFile(path.join(dir, 'report.md'), '# Report', 'utf8');
   const data = {
     schema_version: 1,
@@ -28,9 +29,12 @@ async function makeRun(overrides = {}) {
     assumptions: [],
     research: [{ title: 'ref', url: 'https://example.com', applied_to: 'layout' }],
     features: ['save order'],
-    validation: [{ command: 'node --test', status: 'passed', evidence: 'exit 0' }],
+    validation: [
+      { command: 'node --test', status: 'passed', evidence: 'exit 0' },
+      { command: 'aioson verify:artifact . --kind=visual --url=http://127.0.0.1:4173 --runtime --screenshots --advisory', status: 'passed', evidence: 'visual report PASS' }
+    ],
     known_limitations: [],
-    artifacts: { report: 'report.md', screenshots: [] },
+    artifacts: { report: 'report.md', screenshots: ['workspace/final.png'] },
     ...overrides
   };
   await fs.writeFile(path.join(dir, 'benchmark-result.json'), JSON.stringify(data, null, 2), 'utf8');
@@ -65,6 +69,17 @@ test('completed with features but zero validation rows is blocked deterministica
   const dir = await makeRun({ validation: [], features: ['x'] });
   const result = analyzeBenchmarkResult({ file: path.join(dir, 'benchmark-result.json') });
   assert.ok(result.issues.some((i) => i.includes('zero validation rows')));
+});
+
+test('completed visual output cannot omit rendered telemetry or screenshots', async () => {
+  const dir = await makeRun({
+    validation: [{ command: 'node --test', status: 'passed', evidence: 'exit 0' }],
+    artifacts: { report: 'report.md', screenshots: [] }
+  });
+  const result = analyzeBenchmarkResult({ file: path.join(dir, 'benchmark-result.json') });
+  assert.ok(result.issues.some((issue) => /requires at least one referenced screenshot/.test(issue)));
+  assert.ok(result.issues.some((issue) => /--kind=visual.*--runtime/.test(issue)));
+  assert.equal(result.metrics.visual_delivery, true);
 });
 
 test('kind=benchmark-result is registered and resolves via --file through runVerifyArtifact', async () => {

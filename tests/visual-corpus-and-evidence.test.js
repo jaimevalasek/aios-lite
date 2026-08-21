@@ -232,7 +232,10 @@ test('--runtime with no HTML document is a reported state, and --url opens a ser
     options: { kind: 'visual', url: 'http://localhost:5173', runtime: true, advisory: true, json: true, suppressExitCode: true, browserLauncher: launcher },
     logger: makeLogger()
   });
-  assert.equal(served.ok, true, served.issues.join('\n'));
+  assert.equal(served.ok, false, 'layout-only runtime data cannot assert premium craft');
+  assert.equal(served.verdict, 'unverified');
+  assert.equal(served.blocking, false);
+  assert.ok(served.unverified_reasons.some((reason) => /craft assurance/i.test(reason)));
   assert.ok(visited.length > 0 && visited.every((u) => u === 'http://localhost:5173'), `expected the served URL, got ${visited.join(', ')}`);
   assert.equal(served.metrics.runtime.available, true);
   assert.equal(served.metrics.runtime.entry, 'http://localhost:5173');
@@ -323,12 +326,32 @@ test('the evidence block names an unmeasured prototype and a prototype edited af
     logger: makeLogger()
   });
   const proto = path.join(dir, '.aioson', 'briefings', SLUG, 'prototype.html');
-  const future = new Date(Date.now() + 60_000);
-  await fs.utimes(proto, future, future);
+  await fs.appendFile(proto, '\n<!-- changed after measurement -->\n', 'utf8');
   const stale = visualEvidenceBlock(dir, SLUG);
   assert.equal(stale.measured, true);
   assert.equal(stale.stale, true);
-  assert.match(formatVisualEvidence(stale), /STALE: the prototype changed after this measurement/);
+  assert.deepEqual(stale.stale_files, [`.aioson/briefings/${SLUG}/prototype.html`]);
+  assert.match(formatVisualEvidence(stale), /STALE: visual inputs changed after this measurement/);
+});
+
+test('content-addressed evidence follows local CSS assets, including root-relative urls', async () => {
+  const dir = await featureWithPrototype();
+  const owned = `.aioson/briefings/${SLUG}`;
+  await writeFile(dir, `${owned}/assets/theme.css`, '.hero { background-image: url("/visual-assets/catalog-hero.svg"); }\n');
+  await writeFile(dir, 'visual-assets/catalog-hero.svg', '<svg xmlns="http://www.w3.org/2000/svg"><rect width="10" height="10" fill="red"/></svg>\n');
+  const prototype = path.join(dir, owned, 'prototype.html');
+  await fs.appendFile(prototype, '\n<link rel="stylesheet" href="assets/theme.css">\n', 'utf8');
+
+  await runVerifyArtifact({
+    args: [dir],
+    options: { kind: 'visual', slug: SLUG, advisory: true, json: true, suppressExitCode: true },
+    logger: makeLogger()
+  });
+  await writeFile(dir, 'visual-assets/catalog-hero.svg', '<svg xmlns="http://www.w3.org/2000/svg"><circle cx="5" cy="5" r="5" fill="blue"/></svg>\n');
+
+  const stale = visualEvidenceBlock(dir, SLUG);
+  assert.equal(stale.stale, true);
+  assert.ok(stale.stale_files.includes('visual-assets/catalog-hero.svg'), stale.stale_files.join(', '));
 });
 
 test('feature:trace carries the visual block to QA; feature:close records it at closure', async () => {

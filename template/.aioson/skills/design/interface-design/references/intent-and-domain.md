@@ -14,7 +14,7 @@ Defaults disguise themselves as infrastructure. Craft means owning every decisio
 
 ## Design memory and continuity
 
-There is exactly one visual source of truth: the identity record. Resolve it as the PRD's `identity` binding, else the active `.aioson/explorations/{slug}/identity.md` (exploration work only), else the active `.aioson/briefings/{slug}/identity.md`, else `.aioson/context/identity.md`. It is the **extracted-from-references** design memory, distilled once from the user's own reference images (see `.aioson/docs/reference-identity.md`).
+There is exactly one persisted visual source of truth: the identity record. Resolve it as the PRD's `identity` binding, else the active `.aioson/explorations/{slug}/identity.md` (exploration work only), else the active `.aioson/briefings/{slug}/identity.md`, else `.aioson/context/identity.md`. Its frontmatter states `source: references` when distilled from the owner's references, or `source: intent` when it records a system already proven by an approved build. Never infer one source class from the other.
 
 When it exists:
 - Load its token sections and `## Component structure notes` before choosing a direction.
@@ -24,14 +24,14 @@ When it exists:
 
 Never create a second design-memory file outside `.aioson/` — a legacy `.interface-design/system.md` is superseded by the identity record and must not be treated as a competing authority.
 
-If no identity record exists and the task covers more than one screen or component family, create `.aioson/context/identity.md` (scope `brand`) with:
+If no identity record exists, stay in origination mode; the absent record must not be created early and then cited as authority for its own decisions. Once a build has been inspected and approved, reusable project-wide decisions may be persisted to `.aioson/context/identity.md` with `scope: brand` and `source: intent`:
 - Product context and UI intent
 - Chosen design direction and anti-goals
 - Token decisions (color, type, spacing, radius, depth, motion)
 - Core component patterns (navigation, card, table, form, modal, empty state)
 - Open constraints or decisions still pending
 
-One product should not look like it was designed from scratch on every screen.
+Until that approval, the feature manifest's Visual direction is the decision record. One product should not look like it was designed from scratch on every screen, but continuity cannot be manufactured by laundering an untested first guess into “identity”.
 
 ---
 

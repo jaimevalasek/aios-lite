@@ -16,7 +16,8 @@ test('Prototype Forge keeps a compact phased router and preserves enforceable bu
 
   assert.equal(kernel.length < 7000, true, `Prototype Forge kernel is ${kernel.length} chars`);
   assert.match(kernel, /build-contract\.md[\s\S]*quality-and-manifest\.md/i);
-  assert.match(kernel, /Do not load the quality reference before functional completeness/i);
+  assert.match(kernel, /quality-and-manifest\.md` before UI coding/i);
+  assert.match(kernel, /defer every polish\/check\/evidence step[\s\S]*operational completeness/i);
   assert.match(kernel, /identity\.md[\s\S]*overlays the one engine[\s\S]*second visual system/i);
   assert.match(kernel, /feature: \{slug\}/);
   assert.match(build, /hash routing[\s\S]*No network request/i);

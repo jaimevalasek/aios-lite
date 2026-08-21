@@ -56,3 +56,4 @@ Never bolt a management surface onto a product (a game, a toy, a visualizer) tha
 - responsive layout and keyboard/touch behavior appropriate to the product;
 - console/runtime output has no known blocking error;
 - result entrypoints exist and stay inside the run root.
+- for any visible delivery, the normal served entrypoint has a passed visual runtime report across desktop/mobile and the primary + reachable state routes, with at least one final screenshot referenced in the result; layout-only or `UNVERIFIED` telemetry is not a completed visual result.

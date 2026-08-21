@@ -25,6 +25,13 @@
  */
 
 const { parseCssColor, rgbToHex } = require('./color-math');
+const {
+  assessFontDelivery,
+  assessMediaEvidence,
+  assessModernCss,
+  assessMotion,
+  assessStates
+} = require('./visual-assurance');
 
 // Properties whose value should come from a design token, not a literal.
 const TOKENIZABLE = new Set([
@@ -52,48 +59,7 @@ const VOID_OR_OPAQUE = new Set([
   'script', 'style', 'br', 'img', 'input', 'hr', 'meta', 'link', 'source', 'track', 'area', 'col', 'embed', 'wbr'
 ]);
 
-// Presence markers for the states a finished surface is expected to render.
-// A missing marker is a warning, never a blocking finding, so these are matched
-// in the project's authoring languages: markup written in pt-BR would otherwise
-// report a state as absent purely because it was not named in English.
-const STATE_MARKERS = [
-  { state: 'loading', re: /\bis-loading\b|\bloading\b|\bskeleton\b|\bspinner\b|aria-busy|\bcarregando\b|\bcarregamento\b/i },
-  { state: 'empty', re: /\bempty-state\b|\bis-empty\b|\bempty\b|\bno-results\b|\bnenhum\b|\bvazio\b|\bsem-resultados\b/i },
-  { state: 'error', re: /\bis-error\b|\bhas-error\b|\berror-state\b|\berror\b|\berro\b|aria-invalid|\bfalha\b/i },
-  { state: 'disabled', re: /:disabled\b|\bdisabled\b|aria-disabled|\bdesabilitado\b|\bdesativado\b/i },
-  { state: 'focus', re: /:focus\b|:focus-visible\b|\bfocus-ring\b|\bfoco\b/i }
-];
-
 const INTERACTIVE = /<button|<input|<select|<textarea|<form|addEventListener|onclick=/i;
-
-// WHICH states a surface owes depends on what the surface does, not on whether
-// it has a button. A landing page whose only controls are a motion toggle and a
-// guided tour was told it lacked loading, empty and error markers — it has no
-// form, no request and no list, so it owes none of them. A gate that charges
-// every page for states it cannot have is a gate people learn to scroll past.
-const FOCUSABLE = /<button|<input|<select|<textarea|<a\s[^>]*href|tabindex\s*=|role\s*=\s*["'](?:button|link|tab|menuitem|switch|checkbox)["']/i;
-const CONTROLS = /<button|<input|<select|<textarea|role\s*=\s*["'](?:button|switch|checkbox|menuitem)["']/i;
-const DATA_ENTRY = /<input|<select|<textarea|<form\b|contenteditable/i;
-const ASYNC_WORK = /\bfetch\s*\(|XMLHttpRequest|\baxios\b|\$\.ajax|addEventListener\s*\(\s*['"]submit|\bon[Ss]ubmit\b|\.submit\s*\(|\buse(?:Query|Mutation|SWR)\b|sendBeacon/i;
-// A collection rendered FROM DATA. A static `<ul>` of navigation links is not
-// one, which is why the markup tag alone can never be the test.
-const COLLECTION = /<table\b|role\s*=\s*["'](?:grid|table|feed|listbox|treegrid)["']|aria-rowcount|\bdata-grid\b|\.map\s*\(|\bv-for\b|\{#each\b|\*ngFor\b/i;
-
-/**
- * What each state is owed BY — the capability that makes it REACHABLE.
- *
- * `focus` is the exception with no condition beyond being focusable: a visible
- * focus ring is an accessibility floor, not a workflow state. `disabled` hangs
- * on data entry or async work, never on the mere presence of a `<button>` —
- * a toggle that always works has no disabled state to draw.
- */
-const STATE_OWNERS = {
-  loading: (surface) => surface.data_entry || surface.async_work || surface.collections,
-  empty: (surface) => surface.collections,
-  error: (surface) => surface.data_entry || surface.async_work,
-  disabled: (surface) => surface.data_entry || surface.async_work,
-  focus: (surface) => surface.focusable
-};
 
 // ── interaction contracts (forms, confirmation, drag-and-drop, widgets) ──────
 // Lexical mirrors of the .aioson/rules/ interaction contracts. Same trade as
@@ -348,70 +314,7 @@ const CRAFT_MIN_DECLARATIONS = 150;
 const CRAFT_LEVER_FLOOR = 2; // warn at <= 2 of 5 active
 const DISPLAY_TYPE_FLOOR_PX = 56; // 3.5rem — where display typography starts
 
-// Families every OS ships (or ships a metric twin of): naming one of these
-// first is delivery-free by definition. Naming anything else WITHOUT an
-// @font-face or webfont link means most machines silently render the fallback.
-const OS_DEFAULT_FONT_STACKS = new Set([
-  'system-ui', '-apple-system', 'blinkmacsystemfont', 'ui-serif', 'ui-sans-serif',
-  'ui-monospace', 'ui-rounded', 'segoe ui', 'segoe ui variable', 'roboto', 'arial',
-  'helvetica', 'helvetica neue', 'georgia', 'times', 'times new roman', 'garamond',
-  'palatino', 'palatino linotype', 'book antiqua', 'iowan old style', 'charter',
-  'cambria', 'calibri', 'candara', 'constantia', 'corbel', 'optima', 'avenir',
-  'avenir next', 'seravek', 'verdana', 'tahoma', 'trebuchet ms', 'gill sans',
-  'courier', 'courier new', 'consolas', 'monaco', 'menlo', 'sfmono-regular',
-  'sf mono', 'sf pro', 'sf pro text', 'sf pro display', 'lucida grande',
-  'lucida sans', 'noto sans', 'noto serif', 'droid sans', 'cantarell', 'ubuntu',
-  'liberation sans', 'liberation serif', 'dejavu sans', 'dejavu serif',
-  'apple color emoji', 'segoe ui emoji', 'segoe ui symbol', 'noto color emoji',
-  'serif', 'sans-serif', 'monospace', 'cursive', 'fantasy', 'math', 'emoji'
-]);
 const CSS_WIDE_KEYWORDS = new Set(['inherit', 'initial', 'unset', 'revert', 'revert-layer']);
-
-// The build contract's one sanctioned external resource: font delivery hosts.
-const WEBFONT_HOST = /fonts\.googleapis\.com|fonts\.gstatic\.com|fonts\.bunny\.net|api\.fontshare\.com|cdn\.fontshare\.com|use\.typekit\.net|fonts\.cdnfonts\.com/i;
-
-// Scroll-driven reveal machinery — CSS-native or the vanilla JS idiom.
-const SCROLL_REVEAL = /IntersectionObserver|view-timeline|scroll-timeline|animation-timeline|@starting-style/i;
-// The properties a keyframe animates when it is painting a SURFACE rather than
-// reacting to a pointer: an ambient backdrop moves its own paint. A spinner or
-// a badge pulse animates transform/opacity and is not a signature piece, which
-// is why the name of the keyframe cannot be the test.
-const BACKDROP_PROPERTY = /(?:^|[;{\s])(?:background(?:-(?:position|image|size))?|filter|backdrop-filter|mask-position|mask-image|background-position-x|background-position-y)\s*:/i;
-
-/** The bodies of every `@keyframes` block, for asking what they actually animate. */
-function keyframeBodies(styleText) {
-  const bodies = [];
-  const source = String(styleText || '');
-  const re = /@keyframes\s+[\w-]+\s*\{/gi;
-  let match;
-  while ((match = re.exec(source))) {
-    let depth = 1;
-    let i = re.lastIndex;
-    while (i < source.length && depth > 0) {
-      if (source[i] === '{') depth += 1;
-      else if (source[i] === '}') depth -= 1;
-      i += 1;
-    }
-    bodies.push(source.slice(re.lastIndex, i - 1));
-    re.lastIndex = i;
-  }
-  return bodies;
-}
-
-// Modern CSS vocabulary probes. Each is a native, build-free feature of the
-// current platform; a full surface using NONE of them was authored in the
-// pre-2020 dialect — the measured shape of "looks dated" even when every
-// hygiene metric passes. Probes are (name, regex-over-css) pairs; scroll-driven
-// machinery is probed over the whole markup because the vanilla JS idiom counts.
-const MODERN_CSS_PROBES = [
-  { feature: 'container queries', re: /@container\b|container-type\s*:/i },
-  { feature: ':has()', re: /:has\(/i },
-  { feature: 'fluid clamp() type', re: /clamp\(/i },
-  { feature: 'oklch/color-mix', re: /oklch\(|oklab\(|color-mix\(/i },
-  { feature: 'subgrid', re: /\bsubgrid\b/i },
-  { feature: 'text-wrap balance', re: /text-wrap\s*:\s*(balance|pretty)/i },
-  { feature: 'aspect-ratio', re: /aspect-ratio\s*:/i }
-];
 
 /** Strip CSS comments so commented-out code never counts as a measurement. */
 function stripComments(css) {
@@ -1145,15 +1048,13 @@ function analyzeVisualSources({ html = '', css = '', components = '', surfaceMod
     if (name && !name.startsWith('var(') && !CSS_WIDE_KEYWORDS.has(name)) families.add(name);
   }
 
-  // Font delivery: does anything make a non-OS family actually render?
-  const fontFaceBlocks = (styleText.match(/@font-face\b/g) || []).length;
-  const webfontLinked =
-    WEBFONT_HOST.test(markup.match(/<link\b[^>]*>/gi)?.join('\n') || '') ||
-    WEBFONT_HOST.test(styleText.match(/@import\b[^;]+/gi)?.join('\n') || '');
-  const fontDelivered = fontFaceBlocks > 0 || webfontLinked;
-  const undeliveredFamilies = fontDelivered
-    ? []
-    : [...families].filter((f) => !OS_DEFAULT_FONT_STACKS.has(f));
+  // Delivery is bound to the family actually requested. An unrelated
+  // @font-face or a preconnect hint is infrastructure, not rendered type.
+  const fontDelivery = assessFontDelivery({ usedFamilies: families, markup, styleText });
+  const fontFaceBlocks = fontDelivery.font_face_blocks;
+  const webfontLinked = fontDelivery.webfont_linked;
+  const fontDelivered = fontDelivery.delivered;
+  const undeliveredFamilies = fontDelivery.undelivered_families;
 
   // Type scale: the largest resolved font-size is where display typography
   // lives (or does not). clamp() counts at its max arm.
@@ -1176,40 +1077,29 @@ function analyzeVisualSources({ html = '', css = '', components = '', surfaceMod
   const displayFace = resolveDisplayFace({ styleText, props, families });
 
   // ── motion ───────────────────────────────────────────────────────────────
-  const keyframes = (styleText.match(/@keyframes\b/g) || []).length;
-  const animated = decls.filter((d) => d.prop === 'animation' || d.prop === 'animation-name').length;
-  const hasReducedMotion = /prefers-reduced-motion/.test(styleText);
-  // A continuous surface that runs on its own — the "signature piece" a brief
-  // means by an animated background. Distinct from entrance reveals and from
-  // hover: nothing has to happen for the visitor to see it.
-  const ambientLoops = decls.filter((d) => d.prop === 'animation' && /\binfinite\b/i.test(d.value)).length;
-  // An animated backdrop is a keyframe that moves paint AND runs on its own —
-  // one `infinite` badge pulse is neither.
-  const animatedBackdrop = ambientLoops >= 1 && keyframeBodies(styleText).some((body) => BACKDROP_PROPERTY.test(body));
-  const paintedSurface = /<canvas\b/i.test(markup) || /\bWebGLRenderingContext\b|getContext\s*\(\s*['"]webgl|three(?:\.min)?\.js|\bTHREE\./i.test(markup);
-  const scrollDriven = /animation-timeline|scroll-timeline|view-timeline|\banimation\s*:[^;]*\bscroll\s*\(/i.test(styleText);
+  const motionAssessment = assessMotion({ markup, styleText });
+  const keyframes = motionAssessment.keyframes;
+  const animated = motionAssessment.animated_declarations;
+  const hasReducedMotion = motionAssessment.reduced_motion_effective;
+  const ambientLoops = motionAssessment.ambient_loops;
 
   // ── states ───────────────────────────────────────────────────────────────
   const corpus = `${markup}\n${styleText}`;
-  const statesPresent = STATE_MARKERS.filter((s) => s.re.test(corpus)).map((s) => s.state);
-  const statesMissing = STATE_MARKERS.filter((s) => !s.re.test(corpus)).map((s) => s.state);
   const interactive = INTERACTIVE.test(markup);
   // `states_missing` stays a plain measurement (which markers the corpus does
   // not carry). What is CHARGED is the intersection with what this surface can
   // actually reach.
-  const surfaceCapabilities = {
-    focusable: FOCUSABLE.test(markup),
-    controls: CONTROLS.test(markup),
-    data_entry: DATA_ENTRY.test(markup),
-    async_work: ASYNC_WORK.test(corpus),
-    collections: COLLECTION.test(markup)
-  };
-  const statesOwed = STATE_MARKERS.filter((s) => STATE_OWNERS[s.state](surfaceCapabilities)).map((s) => s.state);
-  const statesUnmet = statesOwed.filter((state) => !statesPresent.includes(state));
+  const stateEvidence = assessStates({ markup, styleText });
+  const statesPresent = stateEvidence.present;
+  const statesMissing = stateEvidence.missing;
+  const surfaceCapabilities = stateEvidence.capabilities;
+  const statesOwed = stateEvidence.owed;
+  const statesUnmet = stateEvidence.unmet;
 
   // ── structure ────────────────────────────────────────────────────────────
   const cardNesting = maxCardNesting(markup);
   const mediaElements = (markup.match(/<(img|video|canvas|picture)\b/gi) || []).length;
+  const mediaEvidence = assessMediaEvidence({ markup, styleText });
   const cardWall = maxCardSiblingRun(markup);
   const emoji = emojiGlyphs(markup);
   const emDash = emDashProse(markup);
@@ -1271,7 +1161,7 @@ function analyzeVisualSources({ html = '', css = '', components = '', surfaceMod
   const modernColor = (styleText.match(/color-mix\(|oklch\(|oklab\(/gi) || []).length;
   const backgroundImages = decls.filter((d) => (d.prop === 'background' || d.prop === 'background-image') && /url\(/i.test(d.value)).length;
   const transitionCount = decls.filter((d) => d.prop === 'transition' || d.prop === 'transition-property').length;
-  const scrollReveal = SCROLL_REVEAL.test(corpus);
+  const scrollReveal = motionAssessment.scroll_reveal;
 
   const materialTechniques = [
     gradientCount >= 2 && 'gradients',
@@ -1319,8 +1209,8 @@ function analyzeVisualSources({ html = '', css = '', components = '', surfaceMod
   );
   const unappliedFinish = [...unappliedEffectTokens, ...unappliedKeyframes.map((name) => `@keyframes ${name}`)];
 
-  const modernCss = MODERN_CSS_PROBES.filter((probe) => probe.re.test(styleText)).map((probe) => probe.feature);
-  if (scrollReveal) modernCss.push('scroll-driven reveals');
+  const modernCssAssessment = assessModernCss({ markup, styleText });
+  const modernCss = modernCssAssessment.features;
 
   // ── palette fingerprint ──────────────────────────────────────────────────
   // Which hue family this surface actually ships, as arithmetic: every color
@@ -1444,6 +1334,7 @@ function analyzeVisualSources({ html = '', css = '', components = '', surfaceMod
   const browserSurfaces = BROWSER_SURFACE_PROBES.filter((probe) => probe.re.test(styleText)).map((probe) => probe.name);
   const surface = detectSurfaceMode({ markup, maxFontPx, declared: surfaceMode });
   const operateMode = surface.mode === 'operate';
+  const familiarityMode = operateMode || surface.mode === 'read';
   const tells = scanGenerationTells({ markup, styleText, decls, props, families, craftMeasured, operateMode });
   // The levers the premium bar is made of. On an operate surface display
   // scale and evidence imagery are not the axis — data is the evidence and
@@ -1455,11 +1346,11 @@ function analyzeVisualSources({ html = '', css = '', components = '', surfaceMod
   // craft while delivering none of the motion its brief asked for. The lever
   // now asks whether motion was DESIGNED: a keyframe system that respects
   // reduced-motion, a scroll-driven reveal, or an ambient signature surface.
-  const signatureMotion = paintedSurface || animatedBackdrop || scrollDriven;
-  const motionDesigned = (keyframes >= 3 && hasReducedMotion) || scrollReveal || signatureMotion;
-  const motionTransitionOnly = !motionDesigned && transitionCount >= 12;
+  const signatureMotion = motionAssessment.signature;
+  const motionDesigned = motionAssessment.designed;
+  const motionTransitionOnly = motionAssessment.transition_only;
 
-  const levers = operateMode
+  const levers = familiarityMode
     ? {
       typeface: fontDelivered,
       material: materialTechniques.length >= 2,
@@ -1471,11 +1362,11 @@ function analyzeVisualSources({ html = '', css = '', components = '', surfaceMod
       display_scale: maxFontPx >= DISPLAY_TYPE_FLOOR_PX,
       material: materialTechniques.length >= 2,
       motion: motionDesigned,
-      evidence: mediaElements >= 1 || backgroundImages >= 1
+      evidence: mediaEvidence.status === 'verified'
     };
   const leverCount = Object.keys(levers).length;
   const activeLevers = Object.values(levers).filter(Boolean).length;
-  const leverFloor = operateMode ? 1 : CRAFT_LEVER_FLOOR;
+  const leverFloor = familiarityMode ? 1 : CRAFT_LEVER_FLOOR;
   const utility = utilityClassDensity(markup);
   const utilityStyled = !craftMeasured && utility.utility >= 40 && utility.share >= 0.5;
 
@@ -1490,12 +1381,7 @@ function analyzeVisualSources({ html = '', css = '', components = '', surfaceMod
     depth_counts: depth,
     font_families: [...families],
     display_face: displayFace,
-    font_delivery: {
-      font_face_blocks: fontFaceBlocks,
-      webfont_linked: webfontLinked,
-      delivered: fontDelivered,
-      undelivered_families: undeliveredFamilies
-    },
+    font_delivery: fontDelivery,
     max_font_size_px: maxFontPx || null,
     font_size_count: fontSizes.size,
     fluid_type: fluidType,
@@ -1504,22 +1390,7 @@ function analyzeVisualSources({ html = '', css = '', components = '', surfaceMod
     reduced_motion_handled: hasReducedMotion,
     // The motion record, so "premium animation" stops being a matter of taste:
     // what runs on its own, what runs on scroll, and what only runs on hover.
-    motion: {
-      designed: motionDesigned,
-      transition_only: motionTransitionOnly,
-      transitions: transitionCount,
-      keyframes,
-      animated_declarations: animated,
-      ambient_loops: ambientLoops,
-      signature: signatureMotion,
-      signature_kinds: [
-        paintedSurface && 'painted surface (canvas/WebGL)',
-        animatedBackdrop && 'animated backdrop',
-        scrollDriven && 'scroll-driven'
-      ].filter(Boolean),
-      scroll_reveal: scrollReveal,
-      reduced_motion_handled: hasReducedMotion
-    },
+    motion: motionAssessment,
     states_present: statesPresent,
     states_missing: statesMissing,
     interactive_surface: interactive,
@@ -1536,6 +1407,7 @@ function analyzeVisualSources({ html = '', css = '', components = '', surfaceMod
     primary_marker: hasPrimaryMarker,
     tour_marker: hasTourMarker,
     media_elements: mediaElements,
+    media_evidence: mediaEvidence,
     native_dialog_calls: nativeDialogs,
     structured_inputs_without_semantics: unmaskedInputs,
     destructive_controls: destructiveControls,
@@ -1574,7 +1446,8 @@ function analyzeVisualSources({ html = '', css = '', components = '', surfaceMod
       background_images: backgroundImages,
       transition_declarations: transitionCount,
       scroll_reveal: scrollReveal,
-      modern_css: modernCss
+      modern_css: modernCss,
+      modern_css_capabilities: modernCssAssessment
     }
   };
 
@@ -1587,8 +1460,8 @@ function analyzeVisualSources({ html = '', css = '', components = '', surfaceMod
   for (const selector of blobs.slice(0, 5)) {
     issues.push(`decorative blob: \`${selector}\` is absolutely positioned, fully rounded and blurred — decoration standing in for product evidence`);
   }
-  if ((keyframes > 0 || animated > 0) && !hasReducedMotion) {
-    issues.push(`${keyframes} keyframe animation(s) and ${animated} animated declaration(s) with no \`prefers-reduced-motion\` block`);
+  if (motionAssessment.applied_keyframes > 0 && !hasReducedMotion) {
+    issues.push(`${motionAssessment.applied_keyframes} applied keyframe animation(s) and ${animated} animated declaration(s) with no effective \`prefers-reduced-motion\` override`);
   }
   if (cardNesting >= 3) {
     issues.push(`card containers nested ${cardNesting} deep — use rows, dividers, inset sections or a dialog instead of another card`);
@@ -1670,15 +1543,15 @@ function analyzeVisualSources({ html = '', css = '', components = '', surfaceMod
   if (craftMeasured && activeLevers <= leverFloor) {
     const missing = [];
     if (!levers.typeface) missing.push(`a delivered typeface (${fontFaceBlocks} @font-face, webfont link ${webfontLinked ? 'present' : 'absent'})`);
-    if (!operateMode && !levers.display_scale) missing.push(`display-scale type (largest font-size ${maxFontPx || 0}px, floor ${DISPLAY_TYPE_FLOOR_PX}px)`);
+    if (!familiarityMode && !levers.display_scale) missing.push(`display-scale type (largest font-size ${maxFontPx || 0}px, floor ${DISPLAY_TYPE_FLOOR_PX}px)`);
     if (!levers.material) missing.push(`material depth (${gradientCount} gradients, ${layeredShadows} layered shadows, ${depth.blur} blur, grain ${grainNoise ? 'yes' : 'no'})`);
     if (!levers.motion) missing.push(`motion choreography (${keyframes} keyframes, ${animated} animated declarations, ${transitionCount} transitions, no scroll reveal, no signature surface)`);
-    if (!operateMode && !levers.evidence) missing.push(`evidence imagery (${mediaElements} media elements, ${backgroundImages} CSS image layers)`);
-    if (operateMode && !levers.chrome) missing.push(`themed browser chrome (${browserSurfaces.length}/6 of ::selection, caret, scrollbar, :focus-visible, underline tuning, tabular numerals)`);
-    const bar = operateMode
-      ? 'An operate surface earns familiarity, not ornament — its premium axis is precision: a delivered workhorse face, a tokened finish on floating surfaces, 150–250ms state feedback, and browser chrome themed from its own palette (vq-026)'
+    if (!familiarityMode && !levers.evidence) missing.push(`verified evidence imagery (${mediaEvidence.verified} verified, ${mediaEvidence.unverified} awaiting runtime verification)`);
+    if (familiarityMode && !levers.chrome) missing.push(`themed browser chrome (${browserSurfaces.length}/6 of ::selection, caret, scrollbar, :focus-visible, underline tuning, tabular numerals)`);
+    const bar = familiarityMode
+      ? `A ${surface.mode} surface earns familiarity, not ornament — its premium axis is precision: a delivered workhorse face, a tokened finish on floating surfaces, 150–250ms state feedback, and browser chrome themed from its own palette (vq-026)`
       : 'Hygiene alone reads as a default document, not a designed product; each lever is optional, the floor is not (visual-effects.md owns the vocabulary, the register\'s premium bar owns the shape)';
-    warnings.push(`craft floor: ${activeLevers}/${leverCount} premium levers active${operateMode ? ' (operate surface)' : ''} — missing: ${missing.join('; ')}. ${bar}`);
+    warnings.push(`craft floor: ${activeLevers}/${leverCount} premium levers active${familiarityMode ? ` (${surface.mode} surface)` : ''} — missing: ${missing.join('; ')}. ${bar}`);
   }
   // The motion lever used to light on hover transitions alone, so a page with
   // one keyframe scored the same as a choreographed one. Naming the state is
@@ -1687,14 +1560,14 @@ function analyzeVisualSources({ html = '', css = '', components = '', surfaceMod
     warnings.push(`motion is hover-only: ${transitionCount} transitions, ${keyframes} @keyframes, ${animated} animated declarations, no scroll reveal and no signature surface — state feedback is hygiene, not choreography. A surface reads animated when something moves without being poked: an ambient backdrop, a scroll-driven reveal, or an entrance system with reduced-motion handled (visual-effects.md owns the vocabulary)`);
   }
   if (craftMeasured && levers.material && materialDepth.length <= 2) {
-    warnings.push(`shallow material system: the material lever rests on ${materialDepth.join(' + ') || 'modern color alone'} (finish depth ${materialDepth.length}/7) — a drawn palette with no system-level finish is the measured shape of generic AI output even when every hue is right. Token the finish so every route inherits it: a layered shadow vocabulary on floating surfaces, tinted washes for chips and fills, texture or blend where the register allows. The signature material is the top note, never the whole system`);
+    warnings.push(`shallow material system: the material lever rests on ${materialDepth.join(' + ') || 'modern color alone'} (finish depth ${materialDepth.length}/7) — a drawn palette with no system-level finish is the measured shape of generic AI output even when every hue is right. Token the finish so every route inherits it: register-sanctioned depth (rules/tonal steps/overlap where shadows are forbidden; a shadow strategy only where allowed), tinted washes, texture or blend at the declared dosage. The signature material is the top note, never the whole system`);
   }
   if (craftMeasured && unappliedFinish.length > 0) {
     const sample = unappliedFinish.slice(0, 5).join(', ');
     warnings.push(`declared finish never applied: ${sample}${unappliedFinish.length > 5 ? ', …' : ''} — effects that exist only in the stylesheet decorate the code while the user sees flat; wire each one to a real surface or delete it. Dead declarations are not craft, and they read as leftovers in review`);
   }
-  if (craftMeasured && modernCss.length === 0) {
-    warnings.push('authored in pre-2020 CSS only — none of: container queries, :has(), fluid clamp() type, oklch/color-mix, subgrid, text-wrap balance, aspect-ratio, scroll-driven reveals. The current platform repertoire is absent, which is the measured shape of "looks dated"; adopt the features the surface earns (visual-effects.md, Modern baseline)');
+  if (craftMeasured && modernCssAssessment.active_capabilities < 2) {
+    warnings.push(`modern CSS breadth ${modernCssAssessment.active_capabilities}/${modernCssAssessment.capability_count} capabilities — one isolated feature cannot modernize a whole surface; look across architecture, responsive composition, color, typography, interaction, motion, and performance. A zero-width result is the pre-2020 dialect; adopt only the capabilities the product earns (visual-effects.md, Modern baseline)`);
   }
 
   // ── generation tells + browser chrome ────────────────────────────────────

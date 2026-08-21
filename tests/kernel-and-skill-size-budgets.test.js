@@ -69,7 +69,7 @@ const KERNEL_CEILINGS = {
 const DEFAULT_KERNEL_CEILING = 8000;
 
 const SKILL_RATCHETS = {
-  'design/interface-design/SKILL.md': 9216 // recorded debt: 9058 chars; may only shrink
+  'design/interface-design/SKILL.md': 8960 // recorded debt: 8813 chars; may only shrink
 };
 
 function walk(dir, out = []) {
