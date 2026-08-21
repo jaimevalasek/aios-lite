@@ -56,7 +56,7 @@ function summarizeVisualEvidence(report) {
   const m = (report && report.metrics) || {};
   const parts = [];
   if (m.craft && m.craft.measured) {
-    parts.push(`craft ${m.craft.active_levers}/5`, `materials ${m.craft.material_depth ?? 0}/7`);
+    parts.push(`craft ${m.craft.active_levers}/${m.craft.lever_count || 5}`, `materials ${m.craft.material_depth ?? 0}/7`);
   }
   parts.push(`tells ${m.tells ? m.tells.active : 0}`);
   if (m.palette && m.palette.accent_hue != null && m.palette.ground) {

@@ -222,6 +222,88 @@ const PROTOTYPE_ANCHOR = /data-aioson-id\s*=/i;
 const PRIMARY_MARKER = /data-aioson-primary\b/i;
 const TOUR_MARKER = /data-aioson-tour\b/i;
 
+// ── surface mode (vq-026) ────────────────────────────────────────────────────
+// What did the visitor come here to do? The premium bar flips with the answer:
+// an operate surface (dashboard, admin, editor, settings, recurring CRUD) earns
+// familiarity — one workhorse family, fixed scale, restrained accent — and the
+// craft floor is spent on precision, density and themed browser chrome, not on
+// display type and atmosphere. Without this detector the telemetry pushed
+// against its own node: an admin table was told its display face was saturated
+// and its hero type too small. Measured from structure; a declared mode (the
+// prototype manifest's `surface_mode`) outranks the detection.
+const OPERATE_SIGNALS = [
+  { name: 'management markers', weight: 2, test: (markup) => MANAGEMENT_MARKERS.test(markup) },
+  { name: 'data table', weight: 2, test: (markup) => /<table\b/i.test(markup) && (markup.match(/<th\b/gi) || []).length >= 3 },
+  { name: 'data grid', weight: 1, test: (markup) => /role\s*=\s*["'](?:grid|treegrid)["']|aria-rowcount|\bdata-grid\b|\bag-grid\b|\bdatagrid\b/i.test(markup) },
+  { name: 'sidebar shell', weight: 1, test: (markup) => /<main\b/i.test(markup) && /<aside\b|class\s*=\s*["'][^"']*\b(?:sidebar|sidenav|side-nav|app-shell|workspace|topbar)\b/i.test(markup) },
+  { name: 'dense forms', weight: 1, test: (markup) => (markup.match(/<(?:input|select|textarea)\b/gi) || []).length >= 6 },
+  { name: 'board / drag-and-drop', weight: 1, test: (markup) => KANBAN_MARKERS.test(markup) || DND_MARKERS.test(markup) },
+  { name: 'toolbar / tabs', weight: 1, test: (markup) => /role\s*=\s*["'](?:toolbar|tablist|menubar)["']|class\s*=\s*["'][^"']*\b(?:toolbar|tabs|tablist)\b/i.test(markup) }
+];
+const MARKETING_SECTION = /(?:class|id)\s*=\s*["'][^"']*\b(?:pricing|testimonials?|depoimentos?|faq|features?|beneficios|benefits|cta|newsletter|clientes|clients|logos|planos|plans|manifesto|showcase)\b/gi;
+const BRAND_SIGNALS = [
+  { name: 'display type', weight: 2, test: (markup, ctx) => ctx.maxFontPx >= DISPLAY_TYPE_FLOOR_PX },
+  { name: 'hero section', weight: 2, test: (markup) => /class\s*=\s*["'][^"']*\bhero\b/i.test(markup) },
+  { name: 'marketing sections', weight: 1, test: (markup) => (markup.match(MARKETING_SECTION) || []).length >= 2 },
+  { name: 'section rhythm', weight: 1, test: (markup) => (markup.match(/<section\b/gi) || []).length >= 4 },
+  { name: 'landing markers', weight: 1, test: (markup) => /<title[^>]*>[^<]*\b(?:landing|home|site|oficial|official)\b/i.test(markup) || /class\s*=\s*["'][^"']*\blanding\b/i.test(markup) }
+];
+const SURFACE_MODE_FLOOR = 3;
+const DECLARED_MODES = new Map([
+  ['operate', 'operate'], ['operar', 'operate'], ['admin', 'operate'], ['dashboard', 'operate'], ['tool', 'operate'], ['app', 'operate'],
+  ['brand', 'brand'], ['persuade', 'brand'], ['persuadir', 'brand'], ['decide', 'brand'], ['decidir', 'brand'], ['landing', 'brand'], ['site', 'brand'], ['marketing', 'brand'], ['showcase', 'brand'], ['inhabit', 'brand'], ['habitar', 'brand'],
+  ['read', 'read'], ['ler', 'read'], ['editorial', 'read'], ['docs', 'read'], ['documentation', 'read']
+]);
+
+/**
+ * Surface mode of the corpus: 'operate' | 'brand' | 'read' | 'mixed' | 'unknown',
+ * with the signals that decided it. `declared` (manifest) wins when valid.
+ */
+function detectSurfaceMode({ markup, maxFontPx, declared = null }) {
+  const declaredMode = declared ? DECLARED_MODES.get(String(declared).trim().toLowerCase()) : null;
+  const ctx = { maxFontPx };
+  const operate = OPERATE_SIGNALS.filter((s) => s.test(markup, ctx));
+  const brand = BRAND_SIGNALS.filter((s) => s.test(markup, ctx));
+  const operateScore = operate.reduce((sum, s) => sum + s.weight, 0);
+  const brandScore = brand.reduce((sum, s) => sum + s.weight, 0);
+  // Mixed only when both bars are genuinely in play — a dashboard with one
+  // `.hero` panel and a few sections is an operate surface, not a tie.
+  let detected = 'unknown';
+  const both = operateScore >= SURFACE_MODE_FLOOR && brandScore >= SURFACE_MODE_FLOOR;
+  const close = Math.min(operateScore, brandScore) >= Math.max(operateScore, brandScore) * 0.6;
+  if (both && close) detected = 'mixed';
+  else if (operateScore >= SURFACE_MODE_FLOOR && operateScore >= brandScore) detected = 'operate';
+  else if (brandScore >= SURFACE_MODE_FLOOR) detected = 'brand';
+  return {
+    mode: declaredMode || detected,
+    source: declaredMode ? 'declared' : 'detected',
+    detected,
+    operate_score: operateScore,
+    brand_score: brandScore,
+    operate_signals: operate.map((s) => s.name),
+    brand_signals: brand.map((s) => s.name)
+  };
+}
+
+// Utility-class styling (Tailwind and friends) keeps its decisions in class
+// attributes, not declarations: a corpus can carry 10–149 authored declarations
+// and thousands of utility tokens. That is an app the static craft axis cannot
+// read — a reported state, not a fragment to stay silent about.
+const UTILITY_CLASS_TOKEN = /^(?:(?:sm|md|lg|xl|2xl|hover|focus|active|dark|group-hover|disabled|first|last|odd|even):)*(?:flex|grid|block|inline(?:-\w+)?|hidden|relative|absolute|fixed|sticky|container|truncate|sr-only|[pm][xytblr]?-\d+(?:\.\d+)?|-?[pm][xytblr]?-\d|gap(?:-[xy])?-\d+|w-(?:\d+|full|screen|auto|\[.+\])|h-(?:\d+|full|screen|auto|\[.+\])|min-[wh]-\w+|max-[wh]-\w+|text-(?:[a-z]+-\d{2,3}|xs|sm|base|lg|xl|\dxl|left|center|right|white|black)|bg-(?:[a-z]+-\d{2,3}|white|black|transparent)|border(?:-[a-z]+-\d{2,3}|-\d|-t|-b|-l|-r)?|rounded(?:-\w+)?|shadow(?:-\w+)?|font-(?:\w+)|leading-\w+|tracking-\w+|items-\w+|justify-\w+|self-\w+|space-[xy]-\d+|overflow-\w+|z-\d+|opacity-\d+|transition(?:-\w+)?|duration-\d+|ease-\w+|cursor-\w+|select-\w+|outline-\w+|ring(?:-\w+)?|divide-\w+|col-span-\d+|row-span-\d+|grid-cols-\d+|order-\d+|object-\w+|aspect-\w+|place-\w+|antialiased|uppercase|lowercase|capitalize|italic|underline|whitespace-\w+)$/;
+
+/** Share of class tokens that read as utility classes, with the count. */
+function utilityClassDensity(markup) {
+  let tokens = 0;
+  let utility = 0;
+  for (const attr of String(markup || '').matchAll(/class\s*=\s*["']([^"']+)["']/gi)) {
+    for (const token of attr[1].split(/\s+/).filter(Boolean)) {
+      tokens += 1;
+      if (UTILITY_CLASS_TOKEN.test(token)) utility += 1;
+    }
+  }
+  return { tokens, utility, share: tokens ? Math.round((utility / tokens) * 100) / 100 : 0 };
+}
+
 // ── craft floor (the measured half of "premium") ─────────────────────────────
 // Hygiene metrics prove discipline; none of them can see ambition. A surface
 // with perfect tokens, perfect rhythm and OS-default typography reads as a
@@ -721,7 +803,7 @@ function hasChromaticColor(value, chromaFloor = 0.07) {
  * generative prior converges on; the exemptions are the contexts where the
  * same device is a deliberate design decision.
  */
-function scanGenerationTells({ markup, styleText, decls, props, families, craftMeasured }) {
+function scanGenerationTells({ markup, styleText, decls, props, families, craftMeasured, operateMode = false }) {
   const resolve = (value) => resolveCustomProps(value, props);
 
   // gradient text — emphasis by paint instead of weight or size.
@@ -834,6 +916,11 @@ function scanGenerationTells({ markup, styleText, decls, props, families, craftM
       saturatedOnlyFamily = true;
     }
   }
+  // An operate surface earns familiarity: a workhorse face in its display
+  // role is the reason, not the default (vq-026). The faces are still
+  // reported, as sanctioned, never as a tell.
+  const sanctionedFaces = operateMode ? [...saturatedFaces] : [];
+  if (operateMode) saturatedFaces.clear();
 
   // bounce/elastic easing — keywords or an overshooting cubic-bezier.
   let bounceEasing = 0;
@@ -916,6 +1003,7 @@ function scanGenerationTells({ markup, styleText, decls, props, families, craftM
     const list = [...saturatedFaces].join(', ');
     warnings.push(`generation tell: saturated display face in the display role (${list}${saturatedOnlyFamily ? ', as the only family' : ''}) — the faces every model reaches for by reflex, so the reader cannot tell a choice from a default; unless an extracted identity or a named brand reason pins this face, take the draw's pairing or another face with a point of view`);
   }
+  counts.sanctioned_faces = sanctionedFaces;
   if (bounceEasing > 0) {
     warnings.push(`generation tell: ${bounceEasing} bounce/elastic easing(s) — real objects decelerate, they do not wobble; use ease-out and spend the personality on choreography, not physics cosplay`);
   }
@@ -941,7 +1029,7 @@ function scanGenerationTells({ markup, styleText, decls, props, families, craftM
  * @param {{html?: string, css?: string, components?: string}} sources
  * @returns {{applicable: boolean, metrics: object, issues: string[], warnings: string[]}}
  */
-function analyzeVisualSources({ html = '', css = '', components = '' } = {}) {
+function analyzeVisualSources({ html = '', css = '', components = '', surfaceMode = null } = {}) {
   const component = componentSources(components);
   const markup = `${stripHtmlComments(html)}\n${component.markup}`;
   const styleText = stripComments(`${extractStyleBlocks(markup)}\n${String(css || '')}\n${component.css}`);
@@ -1279,15 +1367,32 @@ function analyzeVisualSources({ html = '', css = '', components = '' } = {}) {
 
   const craftMeasured = decls.length >= CRAFT_MIN_DECLARATIONS;
   const browserSurfaces = BROWSER_SURFACE_PROBES.filter((probe) => probe.re.test(styleText)).map((probe) => probe.name);
-  const tells = scanGenerationTells({ markup, styleText, decls, props, families, craftMeasured });
-  const levers = {
-    typeface: fontDelivered,
-    display_scale: maxFontPx >= DISPLAY_TYPE_FLOOR_PX,
-    material: materialTechniques.length >= 2,
-    motion: (keyframes >= 3 && hasReducedMotion) || scrollReveal || transitionCount >= 12,
-    evidence: mediaElements >= 1 || backgroundImages >= 1
-  };
+  const surface = detectSurfaceMode({ markup, maxFontPx, declared: surfaceMode });
+  const operateMode = surface.mode === 'operate';
+  const tells = scanGenerationTells({ markup, styleText, decls, props, families, craftMeasured, operateMode });
+  // The levers the premium bar is made of. On an operate surface display
+  // scale and evidence imagery are not the axis — data is the evidence and
+  // app chrome runs a fixed scale — so the floor is typeface, material,
+  // motion, and themed browser chrome (vq-026).
+  const levers = operateMode
+    ? {
+      typeface: fontDelivered,
+      material: materialTechniques.length >= 2,
+      motion: (keyframes >= 3 && hasReducedMotion) || scrollReveal || transitionCount >= 12,
+      chrome: browserSurfaces.length >= 2
+    }
+    : {
+      typeface: fontDelivered,
+      display_scale: maxFontPx >= DISPLAY_TYPE_FLOOR_PX,
+      material: materialTechniques.length >= 2,
+      motion: (keyframes >= 3 && hasReducedMotion) || scrollReveal || transitionCount >= 12,
+      evidence: mediaElements >= 1 || backgroundImages >= 1
+    };
+  const leverCount = Object.keys(levers).length;
   const activeLevers = Object.values(levers).filter(Boolean).length;
+  const leverFloor = operateMode ? 1 : CRAFT_LEVER_FLOOR;
+  const utility = utilityClassDensity(markup);
+  const utilityStyled = !craftMeasured && utility.utility >= 40 && utility.share >= 0.5;
 
   const metrics = {
     declarations: decls.length,
@@ -1338,9 +1443,16 @@ function analyzeVisualSources({ html = '', css = '', components = '' } = {}) {
       present: tells.active,
       ...tells.counts
     },
+    surface_mode: surface,
+    utility_classes: utility,
     craft: {
       measured: craftMeasured,
+      ...(craftMeasured ? {} : { reason: utilityStyled
+        ? `utility-class styling (${utility.utility} utility tokens, ${Math.round(utility.share * 100)}% of class tokens) keeps its decisions out of declarations — measure the rendered surface (--file=<built index.html> or --url=<served app>, with --runtime)`
+        : `fewer than ${CRAFT_MIN_DECLARATIONS} authored declarations (${decls.length}) — fragments and fixtures are not measured for craft` }),
+      mode: surface.mode,
       active_levers: activeLevers,
+      lever_count: leverCount,
       levers,
       material_techniques: materialTechniques,
       material_depth: materialDepth.length,
@@ -1439,14 +1551,21 @@ function analyzeVisualSources({ html = '', css = '', components = '' } = {}) {
       warnings.push(`typography never leaves the OS default stacks (${sample}) — the most visible "cheap default" tell there is; a premium surface delivers one real typeface (webfont link or embedded @font-face) with a credible fallback that preserves hierarchy`);
     }
   }
-  if (craftMeasured && activeLevers <= CRAFT_LEVER_FLOOR) {
+  if (utilityStyled) {
+    warnings.push(`craft not measured statically: utility-class styling (${utility.utility} utility tokens across ${utility.tokens} class tokens) keeps typeface, material, finish and chrome out of the ${decls.length} authored declarations — this is an unmeasured surface, not a passed one; measure the rendered result with --file=<built index.html> or --url=<served app> and --runtime`);
+  }
+  if (craftMeasured && activeLevers <= leverFloor) {
     const missing = [];
     if (!levers.typeface) missing.push(`a delivered typeface (${fontFaceBlocks} @font-face, webfont link ${webfontLinked ? 'present' : 'absent'})`);
-    if (!levers.display_scale) missing.push(`display-scale type (largest font-size ${maxFontPx || 0}px, floor ${DISPLAY_TYPE_FLOOR_PX}px)`);
+    if (!operateMode && !levers.display_scale) missing.push(`display-scale type (largest font-size ${maxFontPx || 0}px, floor ${DISPLAY_TYPE_FLOOR_PX}px)`);
     if (!levers.material) missing.push(`material depth (${gradientCount} gradients, ${layeredShadows} layered shadows, ${depth.blur} blur, grain ${grainNoise ? 'yes' : 'no'})`);
     if (!levers.motion) missing.push(`motion choreography (${keyframes} keyframes, ${transitionCount} transitions, no scroll reveal)`);
-    if (!levers.evidence) missing.push(`evidence imagery (${mediaElements} media elements, ${backgroundImages} CSS image layers)`);
-    warnings.push(`craft floor: ${activeLevers}/5 premium levers active — missing: ${missing.join('; ')}. Hygiene alone reads as a default document, not a designed product; each lever is optional, the floor is not (visual-effects.md owns the vocabulary, the register's premium bar owns the shape)`);
+    if (!operateMode && !levers.evidence) missing.push(`evidence imagery (${mediaElements} media elements, ${backgroundImages} CSS image layers)`);
+    if (operateMode && !levers.chrome) missing.push(`themed browser chrome (${browserSurfaces.length}/6 of ::selection, caret, scrollbar, :focus-visible, underline tuning, tabular numerals)`);
+    const bar = operateMode
+      ? 'An operate surface earns familiarity, not ornament — its premium axis is precision: a delivered workhorse face, a tokened finish on floating surfaces, 150–250ms state feedback, and browser chrome themed from its own palette (vq-026)'
+      : 'Hygiene alone reads as a default document, not a designed product; each lever is optional, the floor is not (visual-effects.md owns the vocabulary, the register\'s premium bar owns the shape)';
+    warnings.push(`craft floor: ${activeLevers}/${leverCount} premium levers active${operateMode ? ' (operate surface)' : ''} — missing: ${missing.join('; ')}. ${bar}`);
   }
   if (craftMeasured && levers.material && materialDepth.length <= 2) {
     warnings.push(`shallow material system: the material lever rests on ${materialDepth.join(' + ') || 'modern color alone'} (finish depth ${materialDepth.length}/7) — a drawn palette with no system-level finish is the measured shape of generic AI output even when every hue is right. Token the finish so every route inherits it: a layered shadow vocabulary on floating surfaces, tinted washes for chips and fills, texture or blend where the register allows. The signature material is the top note, never the whole system`);

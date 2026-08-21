@@ -98,7 +98,7 @@ function summarizeVisualRun(report, dir) {
   if (!report || report.kind !== 'visual' || !report.metrics) return null;
   const m = report.metrics;
   const parts = [];
-  if (m.craft && m.craft.measured) parts.push(`craft ${m.craft.active_levers}/5`, `materials ${m.craft.material_depth ?? 0}/7`);
+  if (m.craft && m.craft.measured) parts.push(`craft ${m.craft.active_levers}/${m.craft.lever_count || 5}`, `materials ${m.craft.material_depth ?? 0}/7`);
   else if (typeof m.declarations === 'number') parts.push(`craft not measured (${m.declarations} declarations)`);
   parts.push(`tells ${m.tells ? m.tells.active : 0}`);
   if (m.conformance) {

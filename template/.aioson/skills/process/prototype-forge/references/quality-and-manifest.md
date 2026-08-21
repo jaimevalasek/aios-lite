@@ -27,6 +27,7 @@ The manifest includes:
 - explicit “mock only — refresh resets, no backend”
 - `draft` or `locked-at: {ref}`
 - `## Visual direction`: register, thesis, anti-goals, signature move (authored before layout — see above)
+- frontmatter `surface_mode:` — `operate`, `brand` (persuade/inhabit), or `read` — what the visitor came to do on this surface. The telemetry detects it from structure (sidebar + data table + toolbar reads as operate; hero + display type + marketing sections as brand); the declaration outranks the detection, and on an operate surface the premium bar is measured as precision (delivered workhorse face, tokened finish, state motion, themed chrome — `craft N/4 (operate)`) instead of display type and atmosphere
 - `## Quality evidence`: checks and limitations, including the tour, the `data-aioson-primary` fold outcome, the signature microinteractions, the first-contact walkthrough verdict, and the `kind=visual` verdict line with its craft levers (`type max | font | craft N/5`) — an empty or placeholder evidence section is itself a measured warning, because it means the numbers ran nowhere
 - `## Delegation provenance` only when another model was explicitly used
 

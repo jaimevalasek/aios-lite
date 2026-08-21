@@ -468,6 +468,32 @@ function collectVisualSources({ targetDir, file, dir, slug }) {
   };
 }
 
+/**
+ * The surface mode the prototype manifest declares for a slug run, or null.
+ * Frontmatter `surface_mode:` / `mode:` first; then a `mode:`/`surface:`
+ * bullet inside `## Visual direction`.
+ */
+function declaredSurfaceMode(ctx) {
+  if (!ctx.slug) return null;
+  let manifest;
+  try {
+    manifest = fs.readFileSync(path.resolve(ctx.targetDir, '.aioson', 'briefings', ctx.slug, 'prototype-manifest.md'), 'utf8');
+  } catch {
+    return null;
+  }
+  const front = manifest.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+  if (front) {
+    const line = front[1].match(/^(?:surface_mode|mode)\s*:\s*["']?([A-Za-z-]+)/mi);
+    if (line) return line[1];
+  }
+  const section = manifest.match(/(?:^|\n)##\s+Visual direction[^\n]*((?:\n(?!##\s)[^\n]*)*)/i);
+  if (section) {
+    const bullet = section[1].match(/^\s*[-*]\s*(?:surface[ _-]?mode|mode|surface)\s*:\s*["']?([A-Za-z-]+)/mi);
+    if (bullet) return bullet[1];
+  }
+  return null;
+}
+
 /** The axes the prototype floor is held on — the same numbers on both sides. */
 function conformanceAxes(m) {
   return {
@@ -974,7 +1000,11 @@ const ADAPTERS = {
     }
 
     const { analyzeVisualSources } = require('../lib/visual-telemetry');
-    const result = analyzeVisualSources(sources);
+    // A declared surface mode outranks detection: the prototype manifest names
+    // what the visitor came to do (`surface_mode: operate|brand|read` in its
+    // frontmatter, or a `mode:` bullet under `## Visual direction`), and
+    // `--surface-mode=` says it for a directory run.
+    const result = analyzeVisualSources({ ...sources, surfaceMode: ctx.surfaceMode || declaredSurfaceMode(ctx) });
 
     const issues = [...result.issues];
     const warnings = [...result.warnings];
@@ -1233,12 +1263,13 @@ async function runVerifyArtifact({ args, options = {}, logger }) {
   // `--conformance=<slug>`: hold this measurement to the prototype evidence
   // recorded for the feature (the implementers' session end threads it).
   const conformance = options.conformance ? String(options.conformance).trim() : null;
+  const surfaceMode = options['surface-mode'] || options.surfaceMode ? String(options['surface-mode'] || options.surfaceMode).trim() : null;
   // `--no-persist`: a diagnostic run reads and reports but writes nothing —
   // no context report, no operator fingerprint. Measuring is not mutating.
   const persist = !(options['no-persist'] || options.noPersist);
   const result = await evaluateKind(kind, {
     slug, targetDir, file, dir, noBuild, buildTimeout, buildCommand,
-    runtime, route, url, persist, conformance, browserLauncher: options.browserLauncher || null
+    runtime, route, url, persist, conformance, surfaceMode, browserLauncher: options.browserLauncher || null
   }, logger);
 
   if (result === null) {
@@ -1324,7 +1355,7 @@ async function runVerifyArtifact({ args, options = {}, logger }) {
     const m = report.metrics;
     const pct = m.token_adherence_pct === null || m.token_adherence_pct === undefined ? 'n/a' : `${m.token_adherence_pct}%`;
     const craft = m.craft && m.craft.measured
-      ? ` | type max ${m.max_font_size_px || 0}px | font ${m.font_delivery && m.font_delivery.delivered ? 'delivered' : 'not delivered'} | craft ${m.craft.active_levers}/5 | materials ${m.craft.material_depth ?? 0}/7`
+      ? ` | type max ${m.max_font_size_px || 0}px | font ${m.font_delivery && m.font_delivery.delivered ? 'delivered' : 'not delivered'} | craft ${m.craft.active_levers}/${m.craft.lever_count || 5}${m.craft.mode && m.craft.mode !== 'unknown' ? ` (${m.craft.mode})` : ''} | materials ${m.craft.material_depth ?? 0}/7`
       : '';
     const tells = m.tells && m.tells.active > 0 ? ` | tells ${m.tells.active}` : '';
     const palette = m.palette && m.palette.accent_hue != null && m.palette.ground
