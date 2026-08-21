@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.60.0] - 2026-08-21
+
+### Added
+- **`aioson commit:prepare . <path...>` — explicit operands stage through the engine.** Files or directories named after the project path are resolved against the status snapshot, pre-excluded by the guard's path rules (`excludedByGuard`), reported when they carry no change (`unmatchedOperands`) and staged without the picker — valid in `--agent-safe --mode=headless`, so `@committer` no longer has to run raw `git add` when the user names paths.
+- **Staging runs in two lanes, chunked and retried (`src/lib/git-stage.js`).** Tracked paths go through `git add -u --`, which never consults ignore rules and stages deletions; untracked paths go through `git add --`. Long lists are split under the command-line ceiling and `index.lock` contention is retried. A refusal now surfaces git's own lines with the per-file EOL warnings stripped (`gitMessage`), the failing lane, `failedPaths`, `stagedBeforeFailure` and the exit status — never the multi-kilobyte command echo.
+- **Tracked-but-ignored managed files are measured, not described.** The installer writes the AIOSON ignore policy (`.aioson/tasks/`, `.aioson/skills/`, `.aioson/schemas/`…) into every project; projects that had committed those files before the line existed kept them tracked, every `aioson update` rewrote them, `git status` kept listing them and a plain `git add -- <path>` refused them. `aioson update` and `aioson setup` now list them via `git ls-files -ci --exclude-standard` and print the exact `git rm -r --cached` remedy (directories collapsed only when no policy line re-includes something inside them); `commit:prepare` badges them WARN in the picker and reports `trackedIgnored` in its result and in `commit-prep.json`. Advisory everywhere — never a block.
+
+### Fixed
+- **The generic secret heuristic stops crying wolf on UI strings.** Translation resources are recognized by locale-named basename (`messages/pt-BR.json`, `app_en.arb`, `translation.en_US.yml`), by directory (`lang/`, `l10n/`, `intl/`, `nls/` join `i18n/`, `locales/`, `translations/`) and by format (`.po/.pot/.arb/.xlf/.xliff/.resx/.strings/.stringsdict/.ftl`); generic findings inside them become suppressed notices that remain visible in the audit trail. Identifiers where every term after the last credential noun is a descriptor (`confirm_password_label`, `PLAY_LOGIN_TOKEN_LABEL`, `API_KEY_HEADER`, `TOKEN_TTL`), mask values (`••••••••`) and label words (`"Password"`, `"Senha"`) are not credentials in any file; word-shaped symbol names under `token` keys — the shape of lint/AST reports, including the framework's own `rules-check.json` — are suppressed as notices. A runtime `PASSWORD` holding a real literal, `password_reset_token` (noun last) and random-looking token values still warn; provider-key rules apply everywhere. One consumer project had accumulated seven `contentAllowRules` to silence these shapes; replayed read-only, its 68 findings drop to zero.
+- **`@committer` reads the engine's failure, not git's echo.** The kernel stages user-named paths through `commit:prepare` operands, consults `gitMessage`/`failedPaths` on failure and shows the `trackedIgnored` remedy once without blocking; the four preparation-command variants collapsed into one line to stay inside the kernel's size ratchet.
+
 ## [1.59.1] - 2026-08-21
 
 ### Fixed
