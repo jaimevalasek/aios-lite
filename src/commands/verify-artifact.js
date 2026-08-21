@@ -506,6 +506,81 @@ function conformanceAxes(m) {
   };
 }
 
+/**
+ * A corpus whose styling decisions live in class attributes instead of
+ * declarations. Nothing static reads it — typeface, display scale and dialect
+ * all read as absent, so comparing them against a prototype would invent
+ * regressions. Hand-authored CSS under the craft floor is a different case:
+ * too thin for a craft SCORE, perfectly readable on every other axis.
+ */
+function isUtilityStyled(m) {
+  const utility = m.utility_classes;
+  return Boolean(utility && utility.utility >= 40 && utility.share >= 0.5);
+}
+
+/**
+ * Hold one measurement to a prototype's measured floor, and say exactly how
+ * much of it was actually held.
+ *
+ * The craft score needs 150 authored declarations; tells, typeface delivery,
+ * display scale and CSS dialect do not. Bailing out of every axis because the
+ * SCORE was unavailable left `regressed: []` on a comparison that never ran —
+ * which downstream read as a pass. So the axes are compared independently, and
+ * what could not be compared is named rather than assumed green.
+ *
+ * @returns {{prototype:object|null, implementation:object|null, state:'compared'|'partial'|'not-compared', compared:string[], not_compared:string[], regressed:string[], reason:string|null}}
+ */
+function compareToPrototype(proto, metrics, slug) {
+  if (!proto) {
+    return {
+      prototype: null,
+      implementation: null,
+      state: 'not-compared',
+      compared: [],
+      not_compared: ['craft', 'materials', 'tells', 'typeface', 'display type', 'modern CSS'],
+      regressed: [],
+      reason: `no recorded prototype evidence for ${slug} — nothing to hold the implementation to`
+    };
+  }
+  const before = conformanceAxes(proto);
+  const after = conformanceAxes(metrics);
+  const craftMeasured = Boolean(metrics.craft && metrics.craft.measured);
+  const utilityStyled = isUtilityStyled(metrics);
+  const compared = [];
+  const notCompared = [];
+  const regressed = [];
+
+  if (craftMeasured && before.craft !== null) {
+    compared.push('craft', 'materials');
+    if (after.craft < before.craft) regressed.push(`craft ${before.craft}/5 → ${after.craft}/5`);
+    if (before.materials !== null && after.materials < before.materials) regressed.push(`materials ${before.materials}/7 → ${after.materials}/7`);
+  } else {
+    notCompared.push('craft', 'materials');
+  }
+
+  // Readable from markup and authored CSS alike — a thin hand-written surface
+  // still declares its typeface, its display size and its dialect. Only a
+  // utility-class build keeps them somewhere static telemetry cannot look.
+  if (utilityStyled) {
+    notCompared.push('tells', 'typeface', 'display type', 'modern CSS');
+  } else {
+    compared.push('tells', 'typeface', 'display type', 'modern CSS');
+    if (after.tells > before.tells) regressed.push(`tells ${before.tells} → ${after.tells}`);
+    if (before.font_delivered && !after.font_delivered) regressed.push('typeface delivered → OS fallback');
+    if (before.display_px >= 56 && after.display_px < 56) regressed.push(`display type ${before.display_px}px → ${after.display_px}px`);
+    if (before.modern_css > 0 && after.modern_css === 0) regressed.push('modern CSS baseline → pre-2020 dialect');
+  }
+
+  const state = compared.length === 0 ? 'not-compared' : (notCompared.length > 0 ? 'partial' : 'compared');
+  let reason = null;
+  if (notCompared.length > 0) {
+    reason = utilityStyled
+      ? `${notCompared.join(', ')} not compared: utility-class styling keeps its decisions out of the ${metrics.declarations} authored declarations — compare the served app with --url=<http://…> --runtime`
+      : `${notCompared.join(', ')} not compared: implementation craft not measured statically (${metrics.declarations} declarations)`;
+  }
+  return { prototype: before, implementation: after, state, compared, not_compared: notCompared, regressed, reason };
+}
+
 /** The corpus of a `--url`-only run: nothing static to read, a browser to open. */
 function emptyVisualSources() {
   return { html: '', css: '', components: '', files: [], entry: null, corpus: { documents: 0, stylesheets: 0, components: 0, files_total: 0, truncated: 0 } };
@@ -1122,25 +1197,17 @@ const ADAPTERS = {
       const { readVisualEvidence } = require('../lib/visual-evidence');
       const evidence = readVisualEvidence(ctx.targetDir, ctx.conformance);
       const proto = evidence && evidence.metrics;
-      if (!proto) {
-        metrics.conformance = { prototype: null, regressed: [], reason: `no recorded prototype evidence for ${ctx.conformance} — nothing to hold the implementation to` };
-      } else if (!(metrics.craft && metrics.craft.measured)) {
-        metrics.conformance = { prototype: conformanceAxes(proto), implementation: null, regressed: [], reason: `implementation craft not measured statically (${metrics.declarations} declarations) — a utility-class build is compared with --url=<served app> --runtime` };
-        warnings.push(`visual conformance not measurable statically: ${metrics.declarations} authored declarations — measure the served app with --url=<http://…> --runtime, or state the outcome`);
-      } else {
-        const before = conformanceAxes(proto);
-        const after = conformanceAxes(metrics);
-        const regressed = [];
-        if (before.craft !== null && after.craft < before.craft) regressed.push(`craft ${before.craft}/5 → ${after.craft}/5`);
-        if (before.materials !== null && after.materials < before.materials) regressed.push(`materials ${before.materials}/7 → ${after.materials}/7`);
-        if (after.tells > before.tells) regressed.push(`tells ${before.tells} → ${after.tells}`);
-        if (before.font_delivered && !after.font_delivered) regressed.push('typeface delivered → OS fallback');
-        if (before.display_px >= 56 && after.display_px < 56) regressed.push(`display type ${before.display_px}px → ${after.display_px}px`);
-        if (before.modern_css > 0 && after.modern_css === 0) regressed.push('modern CSS baseline → pre-2020 dialect');
-        metrics.conformance = { prototype: before, implementation: after, regressed };
-        if (regressed.length > 0) {
-          warnings.push(`visual conformance: the implementation regressed below the approved prototype's measured floor — ${regressed.join(', ')}; the real stack makes the craft easier, not harder: restore it or record the deviation in the PRD as approved`);
-        }
+      const conformance = compareToPrototype(proto, metrics, ctx.conformance);
+      metrics.conformance = conformance;
+      // An axis nobody could read is not an axis that passed. Saying so here is
+      // what keeps `regressed: []` from reading as a verdict downstream.
+      if (conformance.state === 'not-compared') {
+        warnings.push(`visual conformance NOT measured: ${conformance.reason} — this surface was not held to any prototype floor; record the outcome instead of assuming it`);
+      } else if (conformance.state === 'partial') {
+        warnings.push(`visual conformance partial: ${conformance.reason} — the rest of the floor was held; measure the served app with --url=<http://…> --runtime to close the gap`);
+      }
+      if (conformance.regressed.length > 0) {
+        warnings.push(`visual conformance: the implementation regressed below the approved prototype's measured floor — ${conformance.regressed.join(', ')}; the real stack makes the craft easier, not harder: restore it or record the deviation in the PRD as approved`);
       }
     }
 

@@ -22,8 +22,38 @@ const { execFileSync } = require('node:child_process');
 const { parsePorcelain } = require('./git-baseline');
 const { matchGlob } = require('./glob-match');
 
-/** Estado do framework não é superfície de revisão (mesmo precedente do git-baseline). */
-const FRAMEWORK_STATE_GLOB = '.aioson/**';
+/**
+ * Estado do framework não é superfície de revisão (mesmo precedente do
+ * git-baseline).
+ *
+ * `.aioson/**` sozinho era assimétrico: `aioson setup` grava metade do harness
+ * FORA de `.aioson/` — os kernels por client (`.claude/`, `.codex/`,
+ * `.opencode/`), os arquivos de instrução na raiz e `agents/_shared/`. Com só
+ * o primeiro excluído, a primeira feature de um projeto novo era reportada com
+ * dezenas de "arquivos entregues que nenhuma linha do plano declara", e o
+ * arquivo de drift REAL saía truncado da mensagem. O instalador não entrega
+ * feature: o que ele escreve não é escopo dela, esteja onde estiver.
+ *
+ * `.gitignore` fica de fora da lista de propósito — é arquivo legítimo do
+ * projeto, que o setup apenas semeia.
+ */
+const FRAMEWORK_STATE_GLOBS = [
+  '.aioson/**',
+  '.claude/**',
+  '.codex/**',
+  '.opencode/**',
+  '.agents/**',
+  'agents/_shared/**',
+  'CLAUDE.md',
+  'CLAUDE.local.md',
+  'AGENTS.md',
+  'OPENCODE.md'
+];
+
+/** O caminho é estado do harness (instalado), não entrega de feature. */
+function isFrameworkState(filePath) {
+  return FRAMEWORK_STATE_GLOBS.some((pattern) => matchGlob(pattern, filePath));
+}
 
 const DEFAULT_MAX_DIFF_BYTES = 200000;
 
@@ -119,7 +149,8 @@ function resolveBase(targetDir, planDir, baseRef, slug = null) {
  * reviewer's. Never throws: outside a git repo returns `{ ok: false }`.
  *
  * Status letters are git's (`A`dded, `M`odified, `D`eleted, `R`enamed…);
- * renames keep the destination path. Framework state (`.aioson/**`) is not a
+ * renames keep the destination path. Framework state (`FRAMEWORK_STATE_GLOBS`
+ * — everything the installer writes, inside `.aioson/` and out) is not a
  * delivery surface and is left out, as the review payload already does for
  * untracked files.
  *
@@ -136,9 +167,9 @@ function deliveredChangeSet(targetDir, planDir, { baseRef, slug } = {}) {
         const [status, ...rest] = line.split('\t');
         return { status: status.charAt(0), path: rest[rest.length - 1] };
       })
-      .filter((entry) => entry.path && !matchGlob(FRAMEWORK_STATE_GLOB, entry.path));
+      .filter((entry) => entry.path && !isFrameworkState(entry.path));
     const untracked = parsePorcelain(git(targetDir, ['status', '--porcelain', '-uall']))
-      .filter((entry) => entry.status === 'added' && !matchGlob(FRAMEWORK_STATE_GLOB, entry.path))
+      .filter((entry) => entry.status === 'added' && !isFrameworkState(entry.path))
       .map((entry) => entry.path);
     return { ok: true, base: resolved.base, baseSource: resolved.source, changedFiles, untracked };
   } catch {
@@ -247,7 +278,7 @@ function buildReviewPayload(targetDir, planDir, opts = {}) {
       });
 
     untracked = parsePorcelain(git(targetDir, ['status', '--porcelain', '-uall']))
-      .filter((entry) => entry.status === 'added' && !matchGlob(FRAMEWORK_STATE_GLOB, entry.path))
+      .filter((entry) => entry.status === 'added' && !isFrameworkState(entry.path))
       .map((entry) => entry.path);
 
     diffResult = truncateDiff(git(targetDir, ['diff', base]), maxDiffBytes);

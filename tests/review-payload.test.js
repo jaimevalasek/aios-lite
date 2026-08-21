@@ -8,7 +8,7 @@ const path = require('node:path');
 const os = require('node:os');
 const { execFileSync } = require('node:child_process');
 
-const { buildReviewPayload, resolveBase, truncateDiff } = require('../src/harness/review-payload');
+const { buildReviewPayload, resolveBase, truncateDiff, deliveredChangeSet } = require('../src/harness/review-payload');
 const { runHarnessValidate } = require('../src/commands/harness');
 
 function makeLogger() {
@@ -255,4 +255,59 @@ test('harness:validate: --no-diff omite o payload', async () => {
   assert.strictEqual(result.reviewPayload, null);
   const prompt = fsSync.readFileSync(result.promptPath, 'utf8');
   assert.ok(!prompt.includes('## Review payload'), 'payload não deve ser anexado com --no-diff');
+});
+
+test('deliveredChangeSet: o andaime que o INSTALADOR grava nunca é entrega da feature', async () => {
+  // `.aioson/**` sozinho era assimétrico: `aioson setup` grava metade do
+  // harness FORA de `.aioson/` — kernels por client, arquivos de instrução na
+  // raiz, `agents/_shared/`. Quando o setup cai na mesma janela de diff da
+  // primeira feature, o drift saía com dezenas de "arquivos entregues que o
+  // plano não declara" e o arquivo de drift REAL saía truncado da mensagem.
+  const dir = await makeGitRepo();
+  const slug = 'checkout';
+  const installed = [
+    '.claude/settings.json',
+    '.claude/agents/aioson-researcher.md',
+    '.claude/commands/aioson/agent/dev.md',
+    '.codex/permissions.json',
+    '.opencode/permissions.yaml',
+    '.agents/hooks.json',
+    'agents/_shared/memory-capture-directive.md',
+    'CLAUDE.md',
+    'CLAUDE.local.md',
+    'AGENTS.md',
+    'OPENCODE.md',
+    '.aioson/config.md'
+  ];
+  const delivered = ['src/checkout.js', 'app/index.html', '.gitignore', 'agents/router.ts'];
+  for (const rel of [...installed, ...delivered]) {
+    await fs.mkdir(path.dirname(path.join(dir, rel)), { recursive: true });
+    await fs.writeFile(path.join(dir, rel), 'x\n', 'utf8');
+  }
+  await fs.mkdir(path.join(dir, '.aioson', 'context'), { recursive: true });
+  await fs.writeFile(path.join(dir, '.aioson', 'context', `prd-${slug}.md`), '# prd\n', 'utf8');
+  git(dir, ['add', '-A']);
+  git(dir, ['commit', '-m', `feat(${slug}): setup e primeira feature no mesmo commit`]);
+
+  const changeSet = deliveredChangeSet(dir, path.join(dir, '.aioson', 'plans', slug), { slug });
+  assert.strictEqual(changeSet.ok, true);
+  const paths = changeSet.changedFiles.map((entry) => entry.path).sort();
+
+  // `.gitignore` e um `agents/` de verdade são do projeto — só `agents/_shared`
+  // é do instalador.
+  assert.deepStrictEqual(paths, ['.gitignore', 'agents/router.ts', 'app/index.html', 'src/checkout.js']);
+  for (const rel of installed) {
+    assert.ok(!paths.includes(rel), `${rel} é estado do harness, não entrega da feature`);
+  }
+});
+
+test('deliveredChangeSet: o andaime também sai da lista de untracked', async () => {
+  const dir = await makeGitRepo();
+  for (const rel of ['.claude/settings.json', 'CLAUDE.md', 'agents/_shared/x.md', 'src/real.js']) {
+    await fs.mkdir(path.dirname(path.join(dir, rel)), { recursive: true });
+    await fs.writeFile(path.join(dir, rel), 'x\n', 'utf8');
+  }
+  const changeSet = deliveredChangeSet(dir, path.join(dir, '.aioson', 'plans', 'x'), { slug: 'x' });
+  assert.strictEqual(changeSet.ok, true);
+  assert.deepStrictEqual(changeSet.untracked.sort(), ['src/real.js']);
 });

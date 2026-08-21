@@ -51,9 +51,10 @@ async function runDecisionAdd({ args, options = {}, logger }) {
       owner: options.owner ? String(options.owner).trim() : 'human',
       raisedBy: options.by ? String(options.by).trim() : null
     });
-    const payload = { ok: true, feature: slug, item: result.item, checkpoint_status: result.status, path: result.path };
+    const payload = { ok: true, feature: slug, item: result.item, checkpoint_status: result.status, path: result.path, reopened: result.reopened };
     if (options.json) return payload;
     logger.log(`decision:add — ${slug} ${result.item.id} recorded (${result.item.classification}, ${result.item.status}); checkpoint ${result.status}`);
+    if (result.reopened) logger.log(`  REOPENED: ${result.item.id} was already resolved and its substance changed — the earlier answer is history (superseded_resolutions), not this decision's answer.`);
     if (result.status === 'pending') logger.log('  workflow:next will not advance this feature until a human runs decision:resolve (or passes --force).');
     return payload;
   } catch (error) {

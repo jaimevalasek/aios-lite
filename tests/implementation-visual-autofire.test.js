@@ -159,10 +159,86 @@ test('an implementation that holds the floor reports it, and a feature without p
   const report = readVisualImplementation(dir, SLUG);
   assert.match(report.metrics.conformance.reason, /no recorded prototype evidence/);
 
+  // The record says the comparison was impossible; the one-line verdict must
+  // not say the opposite.
+  assert.equal(report.metrics.conformance.state, 'not-compared');
+  assert.deepEqual(report.metrics.conformance.compared, []);
+  assert.match(noEvidence.reason, /NOT compared to a prototype floor/);
+  assert.doesNotMatch(noEvidence.reason, /holds the prototype floor/);
+  assert.match(formatVisualEvidence(visualEvidenceBlock(dir, SLUG)), /NOT compared to a prototype floor/);
+
   await runVerifyArtifact({ args: [dir], options: { kind: 'visual', slug: SLUG, advisory: true, json: true, suppressExitCode: true }, logger: { log() {}, error() {} } });
   const holds = await verifyAgentArtifact({ targetDir: dir, agent: 'dev', options: {} });
   assert.equal(holds.regressed, undefined);
   assert.match(holds.reason, /holds the prototype floor/);
+  // …and that one IS earned: every axis was compared.
+  assert.equal(readVisualImplementation(dir, SLUG).metrics.conformance.state, 'compared');
+});
+
+// A hand-authored surface too thin for a craft SCORE (under 150 declarations)
+// still declares its typeface, its display size and its dialect. Bailing out of
+// every axis because one of them was unavailable left `regressed: []` on a
+// comparison that never ran — which the session-end line read as a pass.
+function thinCss() {
+  return `:root { --bg: #ffffff; --fg: #111827; --accent: #4f46e5; --line: #e5e7eb; --r1: 10px; --s2: 8px; --s4: 16px; }
+body { margin: 0; background: var(--bg); color: var(--fg); font-family: system-ui, sans-serif; line-height: 1.5; }
+h1 { font-size: 2rem; margin: 0 0 var(--s2); }
+.item { display: flex; justify-content: space-between; padding: var(--s2) 0; border-bottom: 1px solid var(--line); }
+.btn { background: var(--accent); color: #fff; border: 0; border-radius: var(--r1); padding: var(--s4); font-weight: 600; }
+.btn:focus-visible { outline: 2px solid var(--accent); }
+.btn:disabled { opacity: .5; }
+.is-loading { opacity: .6; }
+.empty-state { padding: var(--s4); }
+.error-state { color: #b91c1c; }`;
+}
+
+// A utility-class build keeps typeface, scale and dialect in class attributes,
+// where static telemetry cannot read them — comparing those axes would invent
+// regressions, so they must stay NOT COMPARED rather than fail.
+function utilityBuildHtml() {
+  const rows = Array.from({ length: 14 }, (_, i) => `<div class="flex items-center justify-between gap-4 px-4 py-2"><span class="text-sm font-medium">Row ${i}</span></div>`).join('');
+  return `<!doctype html><html><head><style>
+:root { --bg: #0f0d0a; --fg: #f3ede4; --accent: #8b5cf6; --line: rgba(243,237,228,.12); }
+body { background: var(--bg); color: var(--fg); margin: 0; padding: 0; }
+.prose a { color: var(--accent); text-decoration: underline; }
+h1 { font-size: 1.5rem; line-height: 1.2; }
+.sr-help { position: absolute; clip: rect(0,0,0,0); }
+</style></head><body><main class="mx-auto max-w-4xl px-4 py-8"><h1 class="text-lg font-bold">Catalog</h1>${rows}</main></body></html>`;
+}
+
+test('a craft score it cannot compute never becomes a pass: the readable axes are still held to the prototype', async () => {
+  const dir = await featureRepo();
+  await runVerifyArtifact({ args: [dir], options: { kind: 'visual', slug: SLUG, advisory: true, json: true, suppressExitCode: true }, logger: { log() {}, error() {} } });
+
+  await write(dir, 'src/ui/index.html', '<!doctype html><html><head><link rel="stylesheet" href="./app.css"><title>Catalog</title></head><body><main><h1>Catalog</h1><button class="btn">Go</button></main></body></html>\n');
+  await write(dir, 'src/ui/app.css', thinCss());
+  const done = await verifyAgentArtifact({ targetDir: dir, agent: 'dev', options: {} });
+
+  const conformance = readVisualImplementation(dir, SLUG).metrics.conformance;
+  assert.equal(conformance.state, 'partial', JSON.stringify(conformance));
+  assert.deepEqual(conformance.not_compared, ['craft', 'materials']);
+  assert.deepEqual(conformance.compared, ['tells', 'typeface', 'display type', 'modern CSS']);
+  assert.ok(
+    conformance.regressed.some((row) => /^display type \d+px → \d+px$/.test(row)),
+    `the display-type drop is measurable without a craft score: ${JSON.stringify(conformance.regressed)}`
+  );
+  assert.match(done.reason, /REGRESSED vs prototype/);
+  assert.doesNotMatch(done.reason, /holds the prototype floor/);
+});
+
+test('a utility-class build names the axes nothing could read, and invents no regression on them', async () => {
+  const dir = await featureRepo();
+  await runVerifyArtifact({ args: [dir], options: { kind: 'visual', slug: SLUG, advisory: true, json: true, suppressExitCode: true }, logger: { log() {}, error() {} } });
+
+  await write(dir, 'src/ui/index.html', utilityBuildHtml());
+  const done = await verifyAgentArtifact({ targetDir: dir, agent: 'dev', options: {} });
+
+  const conformance = readVisualImplementation(dir, SLUG).metrics.conformance;
+  assert.equal(conformance.state, 'not-compared', JSON.stringify(conformance));
+  assert.deepEqual(conformance.regressed, [], 'a surface nothing could read must not be charged with regressions');
+  assert.match(conformance.reason, /utility-class styling/);
+  assert.match(done.reason, /NOT compared to a prototype floor/);
+  assert.doesNotMatch(done.reason, /holds the prototype floor/);
 });
 
 test('site-forge carries the visual rider over its deliverable, and the engine installs under every profile', () => {

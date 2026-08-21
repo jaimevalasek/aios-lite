@@ -173,6 +173,17 @@ test('bound by a doc, size findings are advisory MED with the doctrine threshold
   assert.equal(report.coverage.docs.total, 1);
   assert.equal(report.coverage.docs.enforced, 1);
   assert.deepEqual(report.rules_enforced.map((r) => r.enforcement).sort(), ['file-size', 'function-size']);
+
+  // …and each row counts ITS OWN checker. A row is one (document × checker)
+  // pair, so a count keyed only on the document reported every row with the
+  // sum of both — this doc is the first to declare two, and the summary said
+  // 2 file-size violations next to a findings list holding exactly 1.
+  const byEnforcement = Object.fromEntries(report.rules_enforced.map((row) => [row.enforcement, row.violations]));
+  assert.deepEqual(byEnforcement, { 'file-size': fileSize.length, 'function-size': fnSize.length });
+  assert.deepEqual(byEnforcement, { 'file-size': 1, 'function-size': 1 });
+  const human = [];
+  await runRulesCheck({ args: [dir], options: { suppressExitCode: true }, logger: { log: (m = '') => human.push(String(m)), error() {} } });
+  assert.equal(human.filter((line) => /code-size-limits .*\(1\)$/.test(line)).length, 2, human.join('\n'));
 });
 
 test('a project rule makes the size limit law: HIGH, blocking, and its thresholds outrank the doc', async () => {

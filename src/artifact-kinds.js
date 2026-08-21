@@ -102,9 +102,18 @@ function summarizeVisualRun(report, dir) {
   else if (typeof m.declarations === 'number') parts.push(`craft not measured (${m.declarations} declarations)`);
   parts.push(`tells ${m.tells ? m.tells.active : 0}`);
   if (m.conformance) {
-    parts.push(m.conformance.regressed.length > 0
-      ? `REGRESSED vs prototype: ${m.conformance.regressed.join(', ')}`
-      : 'holds the prototype floor');
+    // `regressed: []` means "nothing regressed on the axes that were compared",
+    // which is a pass only when something WAS compared. A comparison that never
+    // ran used to reach this line as "holds the prototype floor" — a verdict on
+    // a measurement that does not exist.
+    const c = m.conformance;
+    const compared = Array.isArray(c.compared) ? c.compared : null;
+    const notCompared = Array.isArray(c.not_compared) ? c.not_compared : [];
+    const nothingCompared = c.state === 'not-compared' || (compared && compared.length === 0);
+    if (c.regressed.length > 0) parts.push(`REGRESSED vs prototype: ${c.regressed.join(', ')}`);
+    else if (nothingCompared) parts.push('NOT compared to a prototype floor');
+    else if (notCompared.length > 0) parts.push(`holds the prototype floor (${notCompared.join(', ')} not compared)`);
+    else parts.push('holds the prototype floor');
   }
   parts.push(`${(report.warnings || []).length} warning(s)`);
   return `${dir ? `${dir}: ` : ''}${parts.join(' | ')} — see .aioson/context/verify-artifact-visual.json`;

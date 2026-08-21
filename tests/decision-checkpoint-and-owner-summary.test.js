@@ -110,6 +110,64 @@ test('decision:add records a blocking decision the workflow refuses to advance p
   assert.ok(human.lines.some((l) => /◼ DEC-01 .*→ at shipment \(jaime/.test(l)), human.lines.join('\n'));
 });
 
+test('a resolved id raised again for a different question is REOPENED — a human\'s answer never migrates to a question they never saw', async () => {
+  const dir = await project();
+  const raise = (fields) => runDecisionAdd({
+    args: [dir],
+    options: {
+      feature: SLUG, id: 'DEC-01', classification: 'blocking-decision',
+      question: 'Charge at order or at shipment?', evidence: 'PRD and plan disagree',
+      consequence: 'Refund semantics differ', recommendation: 'Charge at shipment',
+      json: true, ...fields
+    },
+    logger: silent
+  });
+
+  await raise({ by: '@sheldon' });
+  const resolved = await runDecisionResolve({ args: [dir], options: { feature: SLUG, id: 'DEC-01', choice: 'at shipment', by: 'jaime', json: true }, logger: silent });
+  assert.equal(resolved.checkpoint_status, 'clear');
+
+  // Ids are picked by the agent that raises them and a fresh context restarts
+  // at DEC-01, so a later stage reusing the id is routine. Inheriting the
+  // resolution attributed a human's answer to a question they never saw AND
+  // left the gate open on a decision nobody made.
+  const reraised = await raise({ question: 'Should we store the card on file?', evidence: 'LGPD', consequence: 'Retention risk', recommendation: 'Do not store', by: '@dev' });
+  assert.equal(reraised.ok, true, JSON.stringify(reraised));
+  assert.equal(reraised.reopened, true);
+  assert.equal(reraised.item.status, 'pending');
+  assert.equal(reraised.item.resolution, undefined, 'the stale answer must not survive on the item');
+  assert.equal(reraised.checkpoint_status, 'pending');
+  assert.deepEqual(reraised.item.superseded_resolutions.map((entry) => [entry.choice, entry.answered]), [['at shipment', 'Charge at order or at shipment?']]);
+
+  const stored = await readDecisionCheckpoint(dir, SLUG);
+  assert.equal(stored.ok, true, stored.errors.join('; '));
+  assert.equal(stored.checkpoint.items[0].resolution, undefined, 'Object.assign never removes a key — the writer has to');
+  assert.deepEqual(stored.pending.map((item) => item.id), ['DEC-01']);
+  // The gate blocks again, which is the whole point of reopening.
+  await assert.rejects(() => assertManifestNotPending(dir, SLUG, false), /pending decision\(s\): DEC-01/);
+
+  const human = logger();
+  await runDecisionAdd({
+    args: [dir],
+    options: {
+      feature: SLUG, id: 'DEC-01', question: 'Should we store the card on file?', evidence: 'LGPD',
+      consequence: 'Retention risk', recommendation: 'Do not store', by: '@dev'
+    },
+    logger: human
+  });
+  assert.ok(human.lines.some((line) => /REOPENED/.test(line)) === false, 'still pending — nothing to reopen twice');
+
+  // Re-recording the SAME substance after a resolution is idempotent: an agent
+  // restating a settled decision must not reopen the gate.
+  const settled = await runDecisionResolve({ args: [dir], options: { feature: SLUG, id: 'DEC-01', choice: 'do not store', by: 'jaime', json: true }, logger: silent });
+  assert.equal(settled.checkpoint_status, 'clear');
+  const restated = await raise({ question: 'Should we store the card on file?', evidence: 'LGPD', consequence: 'Retention risk', recommendation: 'Do not store', by: '@dev' });
+  assert.equal(restated.reopened, false);
+  assert.equal(restated.item.status, 'included');
+  assert.equal(restated.item.resolution.choice, 'do not store');
+  assert.equal(restated.checkpoint_status, 'clear');
+});
+
 test('feature:summary renders the owner summary from the recorded chain, in the project language, jargon translated', async () => {
   const dir = await project({ language: 'pt-BR' });
   await write(dir, '.aioson/skills/process/decision-presentation/references/jargon-map.pt-BR.yaml', 'version: 1\nlanguage: pt-BR\nterms:\n  PRD:\n    translation: "documento do produto"\n    context: "x"\n    examples: ["PRD"]\n  "Gate A":\n    translation: "primeiro checkpoint"\n    context: "y"\n    examples: ["Gate A"]\n');

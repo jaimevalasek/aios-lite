@@ -54,6 +54,53 @@ test('absence is measured against the prose: rule language with no table warns; 
   assert.equal(quiet.warnings.some((w) => /Business Rules/.test(w)), false, quiet.warnings.join('\n'));
 });
 
+test('the pt-BR normative register is visible to the detector: `deverá` counts, and the reflexive `se` is not a branch', () => {
+  // `\b` is ASCII-only in JS, so a trailing boundary after `á` never matches and
+  // `deverá` / `deverão` — the standard form of a Brazilian requirements
+  // document — was invisible to a check whose whole subject is that prose. The
+  // audience the detector exists for was the one audience it could not read.
+  const normative = basePrd(
+    '\n## Fluxo\n\nO sistema deverá validar o cartão antes de cobrar. O total deverá ser positivo.\n'
+    + 'Os campos de endereço deverão ser preenchidos. As confirmações são obrigatórias.\n'
+  );
+  const measured = analyzePrd({ prd: normative });
+  const ruleWarning = measured.warnings.find((w) => /and no ## Business Rules table/.test(w));
+  assert.ok(ruleWarning, measured.warnings.join('\n'));
+  assert.match(ruleWarning, /^4 rule-language occurrences/);
+
+  // Its unaccented siblings and the plural stay counted; the gerund does not.
+  const unaccented = analyzePrd({ prd: basePrd('\n## Fluxo\n\nO job deverao rodar. As regras sao obrigatorias. O saldo deveria fechar.\n') })
+    .warnings.find((w) => /and no ## Business Rules table/.test(w));
+  assert.match(unaccented, /^3 rule-language occurrences/);
+  assert.equal(
+    analyzePrd({ prd: basePrd('\n## Fluxo\n\nEstamos devendo o relatório. A devedora paga. O devedor some.\n') }).warnings.some((w) => /rule-language/.test(w)),
+    false,
+    '`devendo` / `devedora` are not normative — the boundary must still close on the right'
+  );
+
+  // `se` opens a conditional clause; everywhere else it is the reflexive
+  // pronoun, and counting it made ordinary pt-BR grammar trip the floor.
+  const reflexive = basePrd(
+    '\n## Fluxo\n\nO usuário se cadastra e o pedido se confirma. Trata-se de um fluxo linear.\n'
+    + 'O carrinho se mantém intacto, o histórico se preserva e o recibo se arquiva sozinho.\n'
+  );
+  assert.equal(
+    analyzePrd({ prd: reflexive }).warnings.some((w) => /and no ## Decision Branches table/.test(w)),
+    false,
+    'seven reflexive pronouns are grammar, not seven unenumerated branches'
+  );
+
+  const conditional = basePrd(
+    '\n## Fluxo\n\nSe o cartão falhar, avise o cliente. Se o estoque acabar, cancele.\n'
+    + '- Se o endereço estiver incompleto, bloqueie.\n\nQuando o pagamento aprovar, envie o e-mail. '
+    + 'Caso o cliente desista, estorne. Senão, siga o fluxo padrão.\n'
+  );
+  assert.ok(
+    analyzePrd({ prd: conditional }).warnings.some((w) => /and no ## Decision Branches table/.test(w)),
+    'a clause-opening `se`, a bulleted `Se`, quando, caso and senão are branches'
+  );
+});
+
 test('decision branches: linted when present, and conditional prose with no table warns', () => {
   const branches = `\n## Decision Branches\n\n| Branch | Condition | Expected behavior | AC |\n|---|---|---|---|\n| BR-01 | account active on day 1 | one invoice is generated and emailed | AC-${SLUG}-01 |\n| BR-02 | account cancelled before day 1 | no invoice; the cancellation notice is the last email | AC-${SLUG}-02 |\n| BR-03 | payment method expired | invoice generated, payment deferred with a warning email | |\n`;
   const result = analyzePrd({ prd: basePrd(branches) });

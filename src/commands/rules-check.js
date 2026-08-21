@@ -461,6 +461,10 @@ async function runRulesCheck({ args, options = {}, logger }) {
         severity: authority === 'binding' ? finding.severity : downgrade(finding.severity),
         authority,
         rule: declaredBy[0],
+        // One document may declare several checkers (`enforcement: [file-size,
+        // function-size]`), and each gets its own row: the row's count has to
+        // be the checker's findings, not the document's.
+        checker: checkerId,
         declared_by: declaredBy
       });
     }
@@ -502,10 +506,13 @@ async function runRulesCheck({ args, options = {}, logger }) {
   }
   const live = findings.filter((finding) => !finding.baselined);
   // A rule's verdict is about what is still outstanding, so accepted debt does
-  // not keep it red forever.
+  // not keep it red forever. A row is one (document × checker) pair, so it is
+  // counted on both — keyed only on the document, a doc declaring two checkers
+  // reported each row with the sum of both.
+  const ownedBy = (rule) => (finding) => finding.declared_by.includes(rule.name) && finding.checker === rule.enforcement;
   for (const rule of enforced) {
-    rule.violations = live.filter((finding) => finding.declared_by.includes(rule.name)).length;
-    rule.accepted_debt = findings.filter((finding) => finding.baselined && finding.declared_by.includes(rule.name)).length;
+    rule.violations = live.filter(ownedBy(rule)).length;
+    rule.accepted_debt = findings.filter((finding) => finding.baselined && ownedBy(rule)(finding)).length;
     rule.ok = rule.violations === 0;
   }
 

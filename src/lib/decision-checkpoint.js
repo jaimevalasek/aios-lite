@@ -99,10 +99,27 @@ async function loadOrCreate(targetDir, slug) {
   return current.checkpoint;
 }
 
+// The fields that make a decision the decision it is. A resolution answers
+// THESE; change them and the recorded answer no longer belongs to the question.
+const DECISION_SUBSTANCE = ['question', 'evidence', 'omission_consequence', 'recommendation', 'classification', 'options'];
+
+function sameSubstance(existing, next) {
+  return DECISION_SUBSTANCE.every((field) => JSON.stringify(existing[field] ?? null) === JSON.stringify(next[field] ?? null));
+}
+
 /**
  * Record (or update) one decision item. Required fields mirror the schema —
  * a decision without evidence, consequence and recommendation is a question,
  * not a checkpoint. Returns the written item.
+ *
+ * Ids are chosen by the agent that raises the decision, and a fresh agent
+ * context restarts them at DEC-01. So re-adding an id that is already RESOLVED
+ * is routine — and inheriting that resolution would attribute a human's answer
+ * to a question they never saw, and leave the gate open on a decision nobody
+ * made. A resolved id whose substance changed is therefore reopened: status
+ * back to pending, the old resolution kept as history under
+ * `superseded_resolutions`, never as this decision's answer. Re-adding the
+ * same substance stays idempotent.
  */
 async function addDecision(targetDir, slug, {
   id, question, classification = 'blocking-decision', evidence, omissionConsequence, recommendation,
@@ -117,25 +134,42 @@ async function addDecision(targetDir, slug, {
   const checkpoint = await loadOrCreate(targetDir, slug);
   const now = new Date().toISOString();
   const existing = checkpoint.items.find((item) => item.id === id);
-  const item = {
-    ...(existing || {}),
-    id,
+  const substance = {
     classification,
-    status: existing && existing.status !== 'pending' ? existing.status : 'pending',
     question: String(question).trim(),
     evidence: String(evidence).trim(),
     omission_consequence: String(omissionConsequence).trim(),
     recommendation: String(recommendation).trim(),
-    options: Array.isArray(options) ? options.filter(Boolean) : [],
+    options: Array.isArray(options) ? options.filter(Boolean) : []
+  };
+  const wasResolved = Boolean(existing) && existing.status !== 'pending';
+  const reopened = wasResolved && !sameSubstance(existing, substance);
+  const item = {
+    ...(existing || {}),
+    id,
+    ...substance,
+    status: wasResolved && !reopened ? existing.status : 'pending',
     owner,
     raised_by: raisedBy || (existing && existing.raised_by) || null,
     raised_at: (existing && existing.raised_at) || now,
     updated_at: now
   };
-  if (existing) Object.assign(existing, item);
-  else checkpoint.items.push(item);
+  if (reopened) {
+    item.superseded_resolutions = [
+      ...(existing.superseded_resolutions || []),
+      { ...(existing.resolution || {}), answered: existing.question || null, superseded_at: now }
+    ].filter((entry) => entry && entry.choice);
+    delete item.resolution;
+  }
+  if (existing) {
+    Object.assign(existing, item);
+    // Object.assign never removes a key: the stale answer has to go explicitly.
+    if (reopened) delete existing.resolution;
+  } else {
+    checkpoint.items.push(item);
+  }
   const filePath = await writeCheckpoint(targetDir, slug, checkpoint);
-  return { item, status: checkpoint.status, path: filePath };
+  return { item, status: checkpoint.status, path: filePath, reopened };
 }
 
 /**

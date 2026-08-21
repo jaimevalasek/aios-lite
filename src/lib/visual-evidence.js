@@ -77,11 +77,17 @@ function visualEvidenceBlock(targetDir, slug) {
   const hasPrototype = fs.existsSync(proto);
   const report = readVisualEvidence(targetDir, slug);
   const implementationReport = readVisualImplementation(targetDir, slug);
+  const conformance = (implementationReport && implementationReport.metrics && implementationReport.metrics.conformance) || null;
   const implementation = implementationReport
     ? {
       measured_at: implementationReport.measured_at || null,
       summary: summarizeVisualEvidence(implementationReport),
-      regressed: (implementationReport.metrics && implementationReport.metrics.conformance && implementationReport.metrics.conformance.regressed) || [],
+      regressed: (conformance && conformance.regressed) || [],
+      // No regressions on zero compared axes is silence, not a pass. The
+      // reviewer line carries which state this actually is.
+      conformance_state: (conformance && conformance.state) || 'not-compared',
+      not_compared: (conformance && conformance.not_compared) || [],
+      conformance_reason: (conformance && conformance.reason) || null,
       evidence: `.aioson/context/features/${slug}/${VISUAL_IMPLEMENTATION_FILE}`
     }
     : null;
@@ -122,11 +128,25 @@ function visualEvidenceBlock(targetDir, slug) {
   };
 }
 
+/**
+ * What the implementation's comparison to the prototype actually says. An
+ * empty `regressed` list on a comparison that never ran is not a floor held —
+ * the reviewer reads which of the two it is.
+ */
+function conformanceVerdict(implementation) {
+  if (implementation.regressed.length > 0) return ` — REGRESSED vs prototype: ${implementation.regressed.join(', ')}`;
+  if (implementation.conformance_state === 'not-compared') {
+    return ` — NOT compared to a prototype floor${implementation.conformance_reason ? `: ${implementation.conformance_reason}` : ''}`;
+  }
+  if (implementation.not_compared.length > 0) return ` — holds the prototype floor (${implementation.not_compared.join(', ')} not compared)`;
+  return '';
+}
+
 /** Human line for the block — the same text in feature:trace and feature:close. */
 function formatVisualEvidence(block) {
   if (!block) return null;
   const implementation = block.implementation
-    ? ` | implementation: ${block.implementation.summary}${block.implementation.regressed.length > 0 ? ` — REGRESSED vs prototype: ${block.implementation.regressed.join(', ')}` : ''}`
+    ? ` | implementation: ${block.implementation.summary}${conformanceVerdict(block.implementation)}`
     : '';
   if (!block.measured) return `visual evidence: ${block.reason}${implementation}`;
   return `visual evidence: ${block.summary}${block.stale ? ' — STALE: the prototype changed after this measurement; re-run kind=visual' : ''} (${block.evidence})${implementation}`;

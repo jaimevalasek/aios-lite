@@ -34,11 +34,21 @@ const PATH_TOKEN = /[\w@.-]+(?:\/[\w@.-]+)+\.[a-z]{1,6}\b/g;
 
 // Rule language in prose — the signal that rules exist and were not tabled.
 // Bilingual: PRDs are written in the project's conversation language.
-const RULE_LANGUAGE = /\b(?:must(?:\s+not)?|never|always|only\s+if|cannot|may\s+not|shall(?:\s+not)?|nunca|sempre|somente\s+se|apenas\s+se|n[aã]o\s+pode|deve(?:m|r[aá])?(?:\s+n[aã]o)?|obrigat[oó]ri[ao])\b/gi;
+//
+// The boundaries are Latin-aware, not `\b`. JS treats an accented vowel as a
+// NON-word character, so `deve(?:r[aá])?\b` could never match `deverá`: the
+// trailing boundary fails after `á`, and backtracking to `deve` fails on the
+// following `r`. That silently blinded the detector to `deverá` / `deverão` —
+// the standard normative form of a Brazilian requirements document, and so
+// exactly the prose this check exists to notice.
+const RULE_LANGUAGE =/(?<![\wÀ-ɏ])(?:must(?:\s+not)?|never|always|only\s+if|cannot|may\s+not|shall(?:\s+not)?|nunca|sempre|somente\s+se|apenas\s+se|n[aã]o\s+podem?|dever[aáã]o?|deveriam?|devem|deve|obrigat[oó]ri[ao]s?)(?![\wÀ-ɏ])/gi;
 const RULE_LANGUAGE_FLOOR = 3;
 // Conditional clauses in prose — the branches nobody enumerated.
-// `se` (pt) counts only as a standalone word followed by a space, never inside one.
-const CONDITIONAL_LANGUAGE = /\b(?:if|when|whenever|unless|otherwise|else|in\s+case|quando|caso|sen[aã]o|a\s+menos\s+que|exceto)\b|(?:^|[\s(])se\s/gim;
+// `se` (pt) is a conditional only where it OPENS a clause: line start, a list
+// bullet, or after sentence/comma punctuation. Everywhere else it is the
+// reflexive pronoun — "o usuário se cadastra", "trata-se de" — which is not a
+// branch, and counting it made a long pt-BR PRD trip the floor on grammar.
+const CONDITIONAL_LANGUAGE = /(?<![\wÀ-ɏ])(?:if|when|whenever|unless|otherwise|else|in\s+case|quando|caso|sen[aã]o|a\s+menos\s+que|exceto)(?![\wÀ-ɏ])|(?:^|[.;:!?,)\]]|\n)\s*(?:[-*>]\s*)?se\s/gim;
 const CONDITIONAL_LANGUAGE_FLOOR = 6;
 
 const MATERIAL_STATES = [
