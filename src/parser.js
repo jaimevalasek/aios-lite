@@ -33,6 +33,9 @@ const BOOLEAN_FLAGS = new Set([
   // verify:artifact — pure booleans; `--advisory .` / `--no-build .` /
   // `--runtime .` must not swallow the path positional.
   'advisory', 'no-build', 'runtime',
+  // browser:run / verify:artifact — pure booleans; `--prototype .` /
+  // `--continue .` / `--no-persist .` must not swallow the path positional.
+  'prototype', 'continue', 'no-persist',
   // init/install/update hooks default and hooks:install guard opt-outs —
   // pure booleans; `--no-hooks .` / `--no-guard .` must not swallow the path.
   'no-hooks', 'no-guard',

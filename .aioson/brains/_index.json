@@ -14,12 +14,12 @@
     },
     {
       "id": "dev/patterns",
-      "agents": ["dev", "deyvin", "pair"],
-      "tags": ["security", "shell", "injection", "git", "commit", "context", "bootstrap", "cache", "editing", "tooling", "process", "verification", "discipline", "node", "child-process", "build", "resources", "rust"],
-      "desc": "Implementation patterns @dev defaults to — security, shell discipline, git mechanics, editing hygiene, validated-slice loop, build-resource caps",
+      "agents": ["dev", "deyvin", "pair", "qa", "tester", "shakedown"],
+      "tags": ["security", "shell", "injection", "git", "commit", "context", "bootstrap", "cache", "editing", "tooling", "process", "verification", "discipline", "node", "child-process", "build", "resources", "rust", "browser", "qa", "evidence", "smoke"],
+      "desc": "Implementation patterns @dev defaults to — security, shell discipline, git mechanics, editing hygiene, validated-slice loop, build-resource caps, browser-walkthrough evidence over prose",
       "path": ".aioson/brains/dev/patterns.brain.json",
-      "nodes": 6,
-      "updated": "2026-08-12"
+      "nodes": 7,
+      "updated": "2026-08-21"
     },
     {
       "id": "design/visual-quality",

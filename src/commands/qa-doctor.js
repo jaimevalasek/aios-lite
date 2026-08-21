@@ -25,6 +25,7 @@ function formatPrefix(check, t) {
 // Resolved from the project under test first, then from the CLI's own tree —
 // the same order `aioson doctor` uses, so the two never disagree.
 const { loadPlaywright } = require('../lib/playwright-loader');
+const { probeBrowsers, modeLabel } = require('../lib/browser-session');
 
 async function checkTargetUrl(url) {
   if (!url) return { reachable: false, error: 'no_url' };
@@ -66,25 +67,8 @@ async function runQaDoctor({ args, options = {}, logger, t }) {
     pw ? '' : t('qa_doctor.playwright_missing_hint')
   ));
 
-  // Check 2 — Chromium binary
-  if (pw) {
-    let chromiumOk = false;
-    try {
-      const execPath = pw.chromium.executablePath();
-      chromiumOk = Boolean(execPath) && await exists(execPath);
-    } catch {
-      chromiumOk = false;
-    }
-    checks.push(makeCheck(
-      'chromium.binary',
-      chromiumOk,
-      'error',
-      chromiumOk ? t('qa_doctor.chromium_ok') : t('qa_doctor.chromium_missing'),
-      chromiumOk ? '' : t('qa_doctor.chromium_missing_hint')
-    ));
-  }
-
-  // Check 3 — Config file
+  // Config is read before the browser probe: `browser.cdp` / `browser.channel`
+  // in aios-qa.config.json are part of how a browser is resolved.
   const configExists = await exists(configPath);
   let config = null;
   let configParsed = false;
@@ -99,6 +83,58 @@ async function runQaDoctor({ args, options = {}, logger, t }) {
       configError = err.message;
     }
   }
+
+  // Check 2 — a browser. Three ways to have one: the bundled Chromium, an
+  // installed Chrome/Edge (channel), or a CDP endpoint the operator already
+  // runs. Only "none of them" is an error; a missing bundle with Chrome on
+  // the box is a note, not a blocker.
+  let browsers = null;
+  if (pw) {
+    browsers = await probeBrowsers({ projectDir: targetDir, playwright: pw, config, cdp: String(options.cdp || ''), channel: String(options.browser || '') });
+    const bundledOk = browsers.modes.bundled.available;
+    const fallbackLabel = browsers.preferred && browsers.preferred !== 'bundled' ? modeLabel(browsers.preferred, browsers.modes[browsers.preferred]) : '';
+    checks.push(makeCheck(
+      'chromium.binary',
+      bundledOk,
+      browsers.preferred ? 'warn' : 'error',
+      bundledOk
+        ? t('qa_doctor.chromium_ok')
+        : (fallbackLabel ? t('qa_doctor.chromium_missing_fallback', { label: fallbackLabel }) : t('qa_doctor.chromium_missing')),
+      bundledOk ? '' : t('qa_doctor.chromium_missing_hint')
+    ));
+    checks.push(makeCheck(
+      'browser.chrome',
+      browsers.modes.chrome.available,
+      'info',
+      browsers.modes.chrome.available ? t('qa_doctor.browser_chrome_ok', { binary: browsers.modes.chrome.binary }) : t('qa_doctor.browser_chrome_missing')
+    ));
+    checks.push(makeCheck(
+      'browser.msedge',
+      browsers.modes.msedge.available,
+      'info',
+      browsers.modes.msedge.available ? t('qa_doctor.browser_edge_ok', { binary: browsers.modes.msedge.binary }) : t('qa_doctor.browser_edge_missing')
+    ));
+    if (browsers.request.cdp) {
+      checks.push(makeCheck(
+        'browser.cdp',
+        browsers.modes.cdp.available,
+        'warn',
+        browsers.modes.cdp.available
+          ? t('qa_doctor.browser_cdp_ok', { endpoint: browsers.modes.cdp.endpoint, browser: browsers.modes.cdp.browser })
+          : t('qa_doctor.browser_cdp_unreachable', { endpoint: browsers.modes.cdp.endpoint }),
+        browsers.modes.cdp.available ? '' : t('qa_doctor.browser_cdp_hint')
+      ));
+    }
+    checks.push(makeCheck(
+      'browser.available',
+      Boolean(browsers.preferred),
+      'error',
+      browsers.preferred ? t('qa_doctor.browser_preferred', { label: modeLabel(browsers.preferred, browsers.modes[browsers.preferred]) }) : t('qa_doctor.browser_none'),
+      browsers.preferred ? '' : t('qa_doctor.browser_none_hint')
+    ));
+  }
+
+  // Check 3 — Config file
 
   if (!configExists) {
     checks.push(makeCheck('config.exists', false, 'error', t('qa_doctor.config_missing'), t('qa_doctor.config_missing_hint')));
@@ -154,6 +190,7 @@ async function runQaDoctor({ args, options = {}, logger, t }) {
     configExists,
     configParsed,
     url: configUrl,
+    browser: browsers ? { preferred: browsers.preferred, modes: browsers.modes, request: browsers.request } : null,
     checks,
     summary
   };

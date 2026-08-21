@@ -215,6 +215,10 @@ module.exports = {
       'aioson qa:run [path] [--url=<app-url>] [--persona=naive|hacker|power|mobile] [--headed] [--html] [--json] [--locale=es]',
     help_qa_scan:
       'aioson qa:scan [path] [--url=<app-url>] [--depth=3] [--max-pages=50] [--headed] [--html] [--json] [--locale=es]',
+    help_browser_run:
+      'aioson browser:run [path] --script=<walkthrough.json> [--url=<url-app>|--file=<html>] [--slug=<feature>] [--prototype] [--cdp=<endpoint>] [--browser=chrome|msedge|chromium] [--headed] [--continue] [--out=<dir>] [--no-persist] [--json] [--locale=es]',
+    help_browser_snapshot:
+      'aioson browser:snapshot [path] --url=<url-pagina>|--file=<html> [--target=<locator>] [--max-lines=80] [--cdp=<endpoint>] [--browser=chrome|msedge|chromium] [--headed] [--json] [--locale=es]',
     help_qa_report:
       'aioson qa:report [path] [--html] [--json] [--locale=es]',
     help_pentester_report:
@@ -1084,7 +1088,46 @@ module.exports = {
     context_ok: 'project.context.md encontrado — las pruebas se enriqueceran con contexto del proyecto.',
     context_missing: 'project.context.md no encontrado — ejecutando en modo generico.',
     prd_ok: 'prd.md encontrado — {count} criterios de aceptacion mapeados como escenarios de prueba.',
-    prd_missing: 'prd.md no encontrado — se omitira el mapeo de cobertura AC.'
+    prd_missing: 'prd.md no encontrado — se omitira el mapeo de cobertura AC.',
+    browser_cdp_ok: 'Endpoint CDP alcanzable ({endpoint}): {browser}.',
+    browser_cdp_unreachable: 'Endpoint CDP no alcanzable ({endpoint}).',
+    browser_cdp_hint: 'Inicia el navegador con --remote-debugging-port=9222 (con --user-data-dir dedicado) o actívalo en chrome://inspect/#remote-debugging.',
+    browser_chrome_ok: 'Google Chrome instalado ({binary}) - utilizable con --browser=chrome.',
+    browser_chrome_missing: 'Google Chrome no detectado.',
+    browser_edge_ok: 'Microsoft Edge instalado ({binary}) - utilizable con --browser=msedge.',
+    browser_edge_missing: 'Microsoft Edge no detectado.',
+    browser_preferred: 'Navegador por defecto para qa:run / browser:run: {label}.',
+    browser_none: 'Ningún navegador disponible: sin Chromium empaquetado, sin Chrome/Edge instalado, sin endpoint CDP.',
+    browser_none_hint: 'Instala Google Chrome, ejecuta `npx playwright install chromium` o conecta con --cdp=http://127.0.0.1:9222.',
+    chromium_missing_fallback: 'Chromium empaquetado no encontrado - usando {label}.'
+  },
+  browser_run: {
+    script_missing: 'No se indicó un script de walkthrough.',
+    script_missing_hint: 'Pasa --script=<walkthrough.json> (gramática de pasos en .aioson/docs/qa/browser-walkthrough.md).',
+    script_invalid: 'Script de walkthrough inválido: {errors}',
+    failed: 'El walkthrough no pudo ejecutarse: {error} {detail}',
+    hint: '  Pista: {hint}',
+    header: 'Walkthrough "{name}" -> {target} [{browser}]',
+    step_ok: '  ok    #{index} {action}: {detail} ({ms}ms)',
+    step_fail: '  FALLO #{index} {action}: {error}',
+    failure_snapshot: '  Página en el momento del fallo (aria snapshot):',
+    ids_title: 'Ids probados:',
+    id_line: '  {id}: {status} (pasos {steps})',
+    warning: 'Aviso: {warning}',
+    console_summary: 'Consola: {errors} errores, {page_errors} errores de página, {warnings} avisos.',
+    verdict_pass: 'Walkthrough PASS: {passed}/{total} pasos ok.',
+    verdict_fail: 'Walkthrough FAIL: {passed}/{total} pasos ok ({planned} planificados).',
+    report_written: 'Informe escrito: {path}',
+    replay: 'Replay: {command}'
+  },
+  browser_snapshot: {
+    target_missing: 'No se indicó una página.',
+    target_missing_hint: 'Pasa --url=<url-pagina> o --file=<html>.',
+    failed: 'El snapshot no pudo ejecutarse: {error} {detail}',
+    header: 'Snapshot de {url} - "{title}" [{browser}]',
+    login_wall: 'Cayó en una pantalla de login: conecta al navegador ya autenticado con --cdp en vez de scriptar credenciales.',
+    empty: '(árbol de accesibilidad vacío)',
+    truncated: '... {shown} de {total} líneas mostradas (sube --max-lines para ver más).'
   },
   qa_init: {
     context_found: 'Contexto encontrado: proyecto={name}, url={url}',
@@ -1100,6 +1143,7 @@ module.exports = {
     step_run: '2. Ejecutar pruebas en el navegador: aioson qa:run'
   },
   qa_run: {
+    browser_unavailable: 'Navegador no disponible ({error}). {hint}',
     playwright_missing: 'Playwright no esta instalado. Ejecuta: npm install -g playwright && npx playwright install chromium',
     config_missing: 'aios-qa.config.json no encontrado. Ejecuta: aioson qa:init --url=<url-de-tu-app>',
     url_missing: 'Ninguna URL configurada. Agrega url a aios-qa.config.json o usa --url=<app-url>.',
@@ -1117,6 +1161,7 @@ module.exports = {
     html_report_written: 'Reporte HTML escrito: {path}'
   },
   qa_scan: {
+    browser_unavailable: 'Navegador no disponible ({error}). {hint}',
     playwright_missing: 'Playwright no esta instalado. Ejecuta: npm install -g playwright && npx playwright install chromium',
     config_missing: 'aios-qa.config.json no encontrado. Ejecuta: aioson qa:init --url=<url-de-tu-app>',
     url_missing: 'Ninguna URL configurada. Agrega url a aios-qa.config.json o usa --url=<app-url>.',

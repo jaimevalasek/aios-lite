@@ -54,6 +54,7 @@ const { runLocaleDiff } = require('./commands/locale-diff');
 const { runQaDoctor } = require('./commands/qa-doctor');
 const { runQaInit } = require('./commands/qa-init');
 const { runQaRun } = require('./commands/qa-run');
+const { runBrowserRun, runBrowserSnapshot } = require('./commands/browser-run');
 const { runQaScan } = require('./commands/qa-scan');
 const { runQaReport } = require('./commands/qa-report');
 const { runPentesterReport, runPentesterCoverage } = require('./commands/pentester-report');
@@ -389,6 +390,10 @@ const JSON_SUPPORTED_COMMANDS = new Set([
   'qa-run',
   'qa:scan',
   'qa-scan',
+  'browser:run',
+  'browser-run',
+  'browser:snapshot',
+  'browser-snapshot',
   'qa:report',
   'qa-report',
   'pentester:report',
@@ -1106,6 +1111,8 @@ function printHelp(t, logger) {
   logHelpLine(t, logger, 'cli.help_qa_init');
   logHelpLine(t, logger, 'cli.help_qa_run');
   logHelpLine(t, logger, 'cli.help_qa_scan');
+  logHelpLine(t, logger, 'cli.help_browser_run');
+  logHelpLine(t, logger, 'cli.help_browser_snapshot');
   logHelpLine(t, logger, 'cli.help_qa_report');
   logHelpLine(t, logger, 'cli.help_pentester_report');
   logHelpLine(t, logger, 'cli.help_pentester_coverage');
@@ -1582,6 +1589,10 @@ async function main() {
       result = await runQaRun({ args, options, logger: commandLogger, t });
     } else if (command === 'qa:scan' || command === 'qa-scan') {
       result = await runQaScan({ args, options, logger: commandLogger, t });
+    } else if (command === 'browser:run' || command === 'browser-run') {
+      result = await runBrowserRun({ args, options, logger: commandLogger, t });
+    } else if (command === 'browser:snapshot' || command === 'browser-snapshot') {
+      result = await runBrowserSnapshot({ args, options, logger: commandLogger, t });
     } else if (command === 'qa:report' || command === 'qa-report') {
       result = await runQaReport({ args, options, logger: commandLogger, t });
     } else if (command === 'pentester:report' || command === 'pentester-report') {

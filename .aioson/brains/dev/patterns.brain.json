@@ -3,7 +3,7 @@
   "agent": "dev",
   "domain": "patterns",
   "desc": "Implementation patterns @dev should default to. Quality-scored, anti-pattern aware. Seed nodes — extend with new q≥4 patterns after each significant slice.",
-  "updated": "2026-08-12",
+  "updated": "2026-08-21",
   "nodes": [
     {
       "id": "dev-001",
@@ -87,6 +87,20 @@
       "date": "2026-08-12",
       "not": "firing cargo build and cargo test concurrently, or full builds in parallel worktrees — cargo's target lock does not protect across projects or worktrees",
       "warn": "cc-based build scripts share cargo's jobserver so the jobs cap bounds them; cmake-driven ones only obey CMAKE_BUILD_PARALLEL_LEVEL",
+      "see": ["dev-005"]
+    },
+    {
+      "id": "dev-007",
+      "title": "a user-facing capability is proven by a replayable browser walkthrough, never by prose",
+      "tags": ["verification", "browser", "qa", "evidence", "smoke", "discipline"],
+      "q": 5,
+      "v": "BEST_PRACTICE",
+      "s": "\"Verified in the browser\" written by the model that built (or is judging) the surface is a claim, not evidence: the gate that only checks the shape of the sentence lets every such claim through. Evidence is a walkthrough script anyone can replay — locate by the accessibility tree (role/name, label, text), act, then expect the visible result, prove the real boundary from captured network traffic, and re-read persisted state after a reload — with each step tagged by the AC/PROM it proves, run through `aioson browser:run` so the per-id verdict lands where ac:test-audit, Gate D, and feature:trace read it. Write your own steps; Dev's spec files are a parallel fixture, not the production path.",
+      "p": "snapshot (aria tree) → goto → click role=button[name=\"Save\"] boundary=\"POST /api/x -> 201\" ac=AC-02 → expect text → reload → expect persisted row; report path cited in the QA smoke fields",
+      "src": "AIOSON supervised session: a QA report's production smoke read 'Trigger: not executed / Real boundary: not reached' while every gate stayed green because the smoke section was validated as prose shape only",
+      "date": "2026-08-21",
+      "not": "a screenshot of the entry page per AC labelled 'Documented'; a toast asserted with no reload; a PASS row whose only evidence is the sentence that says so",
+      "warn": "a prototype walkthrough (PROM-*) proves the design contract, never the delivered AC; at a login wall attach to the operator's signed-in browser (--cdp), never script credentials",
       "see": ["dev-005"]
     }
   ]

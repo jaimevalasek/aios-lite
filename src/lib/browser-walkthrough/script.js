@@ -1,0 +1,199 @@
+'use strict';
+
+/**
+ * Walkthrough script contract: constants, validation/normalization, loading,
+ * plus the small shared helpers (sanitization, clipping, polling) every other
+ * part of the runner uses.
+ */
+
+const fs = require('node:fs/promises');
+const crypto = require('node:crypto');
+
+const SCHEMA = 1;
+const DEFAULT_TIMEOUT_MS = 10000;
+const DEFAULT_BOUNDARY_WAIT_MS = 3000;
+const DEFAULT_SNAPSHOT_LINES = 80;
+const MAX_SNAPSHOT_LINES = 400;
+const MAX_CONSOLE_SAMPLES = 20;
+const MAX_NETWORK_ROWS = 200;
+const ID_RE = /\b(?:AC|PROM|CAP|REQ)-[A-Za-z0-9][\w.-]*/gi;
+const SENSITIVE_TARGET_RE = /pass|senha|secret|token|pin\b|cvv|otp|mfa|credential|chave|api[-_ ]?key/i;
+const LOGIN_WALL_RE = /(?:^|\/)(?:login|log-in|signin|sign-in|auth|sso|entrar)(?:\/|$|\?)/i;
+const ACTIONS = new Set(['goto', 'reload', 'back', 'click', 'dblclick', 'hover', 'fill', 'type', 'press', 'select', 'check', 'uncheck', 'wait', 'expect', 'snapshot', 'screenshot', 'eval']);
+
+// ---------------------------------------------------------------------------
+// Script
+// ---------------------------------------------------------------------------
+
+function idsOf(value) {
+  const list = Array.isArray(value) ? value : [value];
+  const out = [];
+  for (const item of list) {
+    for (const match of String(item || '').match(ID_RE) || []) {
+      const id = match.toUpperCase().replace(/[.,;:]+$/, '');
+      if (!out.includes(id)) out.push(id);
+    }
+  }
+  return out;
+}
+
+/**
+ * Validate a parsed script. Returns `{ ok, errors, script }` with defaults
+ * applied; never throws.
+ */
+function normalizeScript(raw) {
+  const errors = [];
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+    return { ok: false, errors: ['script must be a JSON object with a `steps` array'], script: null };
+  }
+  const steps = Array.isArray(raw.steps) ? raw.steps : null;
+  if (!steps || steps.length === 0) errors.push('`steps` must be a non-empty array');
+  const normalized = [];
+  (steps || []).forEach((step, index) => {
+    if (!step || typeof step !== 'object') {
+      errors.push(`step ${index}: must be an object`);
+      return;
+    }
+    const action = String(step.do || step.action || '').toLowerCase();
+    if (!ACTIONS.has(action)) {
+      errors.push(`step ${index}: unknown action "${action || '(missing)'}" (known: ${[...ACTIONS].join(', ')})`);
+      return;
+    }
+    if (action === 'goto' && !step.url) errors.push(`step ${index}: goto needs \`url\``);
+    if (['click', 'dblclick', 'hover', 'fill', 'type', 'select', 'check', 'uncheck'].includes(action) && !step.target) {
+      errors.push(`step ${index}: ${action} needs \`target\``);
+    }
+    if (['fill', 'type', 'select'].includes(action) && step.value === undefined) errors.push(`step ${index}: ${action} needs \`value\``);
+    if (action === 'press' && !step.key) errors.push(`step ${index}: press needs \`key\``);
+    if (action === 'eval' && !step.expression) errors.push(`step ${index}: eval needs \`expression\``);
+    if (action === 'expect' && !expectKind(step)) errors.push(`step ${index}: expect needs one of visible|hidden|text|contains|value|url|title|count|min|enabled|disabled|checked`);
+    if (action === 'wait' && !(step.ms || step.target || step.url || step.text || step.idle)) errors.push(`step ${index}: wait needs ms|target|url|text|idle`);
+    normalized.push({
+      ...step,
+      do: action,
+      ids: idsOf([step.ac, step.prom, step.ids, step.proves]),
+      index
+    });
+  });
+  const script = {
+    name: String(raw.name || 'walkthrough').replace(/[^\w.-]+/g, '-').replace(/^-+|-+$/g, '') || 'walkthrough',
+    feature: raw.feature ? String(raw.feature) : '',
+    scope: raw.scope === 'prototype' ? 'prototype' : 'delivery',
+    url: raw.url ? String(raw.url) : '',
+    file: raw.file ? String(raw.file) : '',
+    viewport: raw.viewport && Number(raw.viewport.width) > 0 && Number(raw.viewport.height) > 0
+      ? { width: Number(raw.viewport.width), height: Number(raw.viewport.height) }
+      : { width: 1280, height: 720 },
+    timeout: Number(raw.timeout) > 0 ? Number(raw.timeout) : DEFAULT_TIMEOUT_MS,
+    boundary_wait: Number(raw.boundary_wait) > 0 ? Number(raw.boundary_wait) : DEFAULT_BOUNDARY_WAIT_MS,
+    continue: Boolean(raw.continue),
+    snapshot_lines: clampLines(raw.snapshot_lines),
+    steps: normalized
+  };
+  return { ok: errors.length === 0, errors, script };
+}
+
+function clampLines(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n) || n <= 0) return DEFAULT_SNAPSHOT_LINES;
+  return Math.min(Math.floor(n), MAX_SNAPSHOT_LINES);
+}
+
+function expectKind(step) {
+  for (const key of ['visible', 'hidden', 'text', 'contains', 'value', 'url', 'title', 'count', 'min', 'enabled', 'disabled', 'checked']) {
+    if (step[key] !== undefined) return key;
+  }
+  return '';
+}
+
+async function loadScript(scriptPath) {
+  let raw;
+  try {
+    raw = await fs.readFile(scriptPath, 'utf8');
+  } catch (error) {
+    return { ok: false, errors: [`cannot read script: ${error.message}`], script: null, raw: '' };
+  }
+  let parsed;
+  try {
+    parsed = JSON.parse(raw);
+  } catch (error) {
+    return { ok: false, errors: [`script is not valid JSON: ${error.message}`], script: null, raw };
+  }
+  return { ...normalizeScript(parsed), raw };
+}
+
+// ---------------------------------------------------------------------------
+// Sanitization — what the report may carry
+// ---------------------------------------------------------------------------
+
+function sanitizeUrl(value) {
+  const text = String(value || '');
+  try {
+    const u = new URL(text);
+    u.username = '';
+    u.password = '';
+    u.search = '';
+    u.hash = '';
+    return u.toString();
+  } catch {
+    return text.replace(/[?#].*$/, '');
+  }
+}
+
+function maskedValue(step) {
+  if (step.mask === true) return true;
+  return SENSITIVE_TARGET_RE.test(String(step.target || '')) || SENSITIVE_TARGET_RE.test(String(step.note || ''));
+}
+
+function clip(text, max = 400) {
+  const s = String(text === undefined ? '' : text);
+  return s.length > max ? `${s.slice(0, max)}…` : s;
+}
+
+function sha256(text) {
+  return crypto.createHash('sha256').update(String(text)).digest('hex');
+}
+
+// ---------------------------------------------------------------------------
+// Polling assertions (no @playwright/test dependency)
+// ---------------------------------------------------------------------------
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+async function until(check, timeoutMs, { interval = 100, now = Date.now, wait = sleep } = {}) {
+  const started = now();
+  let last = { ok: false, detail: '' };
+  for (;;) {
+    try {
+      last = await check();
+      if (last && last.ok) return last;
+    } catch (error) {
+      last = { ok: false, detail: String(error && error.message || error) };
+    }
+    if (now() - started >= timeoutMs) return last || { ok: false, detail: 'timeout' };
+    await wait(interval);
+  }
+}
+
+module.exports = {
+  SCHEMA,
+  ACTIONS,
+  DEFAULT_TIMEOUT_MS,
+  DEFAULT_BOUNDARY_WAIT_MS,
+  DEFAULT_SNAPSHOT_LINES,
+  MAX_SNAPSHOT_LINES,
+  MAX_CONSOLE_SAMPLES,
+  MAX_NETWORK_ROWS,
+  LOGIN_WALL_RE,
+  idsOf,
+  normalizeScript,
+  clampLines,
+  expectKind,
+  loadScript,
+  sanitizeUrl,
+  maskedValue,
+  clip,
+  sha256,
+  sleep,
+  until
+};

@@ -49,6 +49,7 @@ const {
   missingSection,
   genericEvidence
 } = require('./feature-completeness-format');
+const { readBrowserEvidence } = require('./browser-evidence');
 
 function validateProductCapabilityMap(content, artifact) {
   const findings = [];
@@ -588,6 +589,29 @@ async function validateExecutionEvidence(
           }
         }
       }
+    }
+  }
+
+  // A QA PASS row is a human claim; a failed browser walkthrough for the same
+  // AC is a machine measurement taken on the real application. When the latest
+  // measurement says fail, the claim does not stand until the walkthrough is
+  // re-run green — the gate never takes prose over a replayable script.
+  const browserEvidence = readBrowserEvidence(targetDir, slug);
+  if (browserEvidence.ids.size > 0) {
+    const contradicted = [];
+    for (const [, acRows] of evidenceByCap) {
+      for (const [ac, row] of acRows) {
+        const measured = browserEvidence.ids.get(ac.toUpperCase());
+        if (row.passed && measured && measured.status === 'fail' && !contradicted.includes(ac.toUpperCase())) contradicted.push(ac.toUpperCase());
+      }
+    }
+    if (contradicted.length > 0) {
+      findings.push(finding(
+        'execution',
+        'qa_pass_contradicts_browser_evidence',
+        `QA records PASS for ${contradicted.join(', ')} but the latest browser walkthrough failed them — re-run the walkthrough green or change the verdict`,
+        artifact
+      ));
     }
   }
 

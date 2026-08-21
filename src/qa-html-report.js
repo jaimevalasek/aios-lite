@@ -148,7 +148,7 @@ function sevColor(sev) {
 }
 
 function acStatusClass(status) {
-  const map = { Covered: 'covered', Partial: 'partial', Missing: 'missing', Documented: 'documented' };
+  const map = { Covered: 'covered', Partial: 'partial', Missing: 'missing', Documented: 'documented', 'Not exercised': 'documented' };
   return map[status] || 'documented';
 }
 

@@ -93,6 +93,8 @@ It returns every promise with its decision/caps, every capability with its ACs, 
 7. Observe the real state change and visible output.
 8. Record PASS/FAIL with exact evidence.
 
+For a browser-reachable surface, steps 5-8 are a walkthrough you write, not prose: load `.aioson/docs/qa/browser-walkthrough.md`, read the page with `aioson browser:snapshot . --url=<entry>`, tag your own steps (never Dev's spec files) with the AC ids and a `boundary`, and run `aioson browser:run . --script=<file> --url=<entry> --slug={slug}`; the smoke fields cite its report path. `feature:trace` returns `browser` — `measured: false` on a web delivery is a finding to name. At a login wall attach to the operator's signed-in Chrome with `--cdp`; never script credentials.
+
 Run `aioson rules:check . --changed`. A `HIGH` is a project rule being violated and is a FAIL on its own, whatever the PRD, the plan, or a dossier deviation says — route it back as a correction packet naming the rule. `MED` findings come from docs and process skills, which are craft rather than law: report them as advice, never as the blocker.
 
 Run broader regression tests proportional to the changed surface. Invoke `@pentester` only for triggered sensitive surfaces or suspicious findings; invoke `@tester` only when deeper coverage is enabled and useful.

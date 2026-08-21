@@ -21,6 +21,7 @@ const SENSITIVE_FILE_PATHS = [
 
 // Resolved from the project under test first, then from the CLI's own tree.
 const { loadPlaywright } = require('../lib/playwright-loader');
+const { openBrowser } = require('../lib/browser-session');
 
 async function loadConfig(targetDir) {
   try {
@@ -276,9 +277,25 @@ async function runQaScan({ args, options = {}, logger, t }) {
   logger.log(t('qa_scan.crawling', { depth: maxDepth, pages: maxPages }));
   await ensureDir(screenshotsDir);
 
-  const browser = await pw.chromium.launch({ headless: !headed });
-  const context = await browser.newContext({ viewport: { width: 1280, height: 720 } });
-  const page = await context.newPage();
+  // One resolver for every browser surface: --cdp attaches to the operator's
+  // running Chrome, --browser=chrome|msedge launches the installed one, and
+  // the bundled Chromium stays the default when present.
+  const session = await openBrowser({
+    projectDir: targetDir,
+    playwright: pw,
+    config,
+    cdp: String(options.cdp || ''),
+    channel: String(options.browser || ''),
+    headless: !headed,
+    viewport: { width: 1280, height: 720 }
+  });
+  if (!session.ok) {
+    logger.error(t('qa_scan.browser_unavailable', { error: session.error, hint: session.hint || '' }));
+    process.exitCode = 1;
+    return { ok: false, error: session.error, hint: session.hint || '' };
+  }
+  const browser = session.browser;
+  const page = await session.newPage();
 
   try {
     // Phase 1: crawl all routes
@@ -330,7 +347,7 @@ async function runQaScan({ args, options = {}, logger, t }) {
     if (options.json) return output;
     return output;
   } finally {
-    await browser.close().catch(() => {});
+    await session.close().catch(() => {});
   }
 }
 

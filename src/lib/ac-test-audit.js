@@ -355,6 +355,8 @@ async function readHarnessReport(targetDir, slug) {
 // keeps its teeth. Rows count only with result PASS and non-generic evidence,
 // exactly mirroring validateExecutionEvidence. Keyed lowercase; reads live
 // then archived (A6).
+const { readBrowserEvidence, browserEvidenceFor } = require('./browser-evidence');
+
 const AUTOMATED_EVIDENCE_RE = /test|spec|assert|automat|unit|integra|e2e|playwright|cypress|vitest|jest|check/i;
 
 async function readTextFirst(paths) {
@@ -493,6 +495,10 @@ async function auditAcceptanceCriteriaTests(targetDir, slug, options = {}) {
 
   const contract = await readHarnessContract(targetDir, slug);
   const harnessReport = await readHarnessReport(targetDir, slug);
+  // Walkthroughs driven through a real browser (browser:run --slug) are
+  // automated evidence too: the script is the reproduction, the report the
+  // per-AC verdict. Read once, consulted per criterion.
+  const browserEvidence = readBrowserEvidence(targetDir, slug);
   const qaEvidence = acceptQaEvidence
     ? await collectQaEvidence(targetDir, slug)
     : new Map();
@@ -515,7 +521,8 @@ async function auditAcceptanceCriteriaTests(targetDir, slug, options = {}) {
         evidence: `QA report records concrete PASS evidence for ${criterion.id} (PRD declares manual verification: ${declared})`
       }]
       : [];
-    const evidence = [...testEvidence, ...harnessEvidence, ...qaRowEvidence];
+    const browserRows = browserEvidenceFor(criterion.id, browserEvidence);
+    const evidence = [...testEvidence, ...harnessEvidence, ...browserRows, ...qaRowEvidence];
     return {
       ac: criterion.id,
       status: evidence.length > 0 ? 'covered' : (weakEvidence.length > 0 ? 'weak' : 'missing'),
@@ -535,6 +542,7 @@ async function auditAcceptanceCriteriaTests(targetDir, slug, options = {}) {
     criteria_required: requireCriteria,
     assertion_signals_required: requireAssertions,
     qa_evidence_accepted: acceptQaEvidence,
+    browser_covered: items.filter((item) => item.evidence.some((e) => e.kind === 'browser')).length,
     test_files_scanned: testContents.length
   };
 

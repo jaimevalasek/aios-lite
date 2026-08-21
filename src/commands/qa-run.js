@@ -33,6 +33,8 @@ const DEBUG_ROUTES = [
 // Resolved from the project under test first, then from the CLI's own tree —
 // a global or linked CLI shares no node_modules with the project.
 const { loadPlaywright } = require('../lib/playwright-loader');
+const { openBrowser } = require('../lib/browser-session');
+const { readBrowserEvidence } = require('../lib/browser-evidence');
 
 // --- Config ---
 async function loadConfig(targetDir) {
@@ -662,25 +664,53 @@ function parseAcItems(prdContent) {
   return items.slice(0, 20);
 }
 
-async function runAcCoverage(page, baseUrl, prdPath, screenshotsDir) {
+// An AC is exercised by a walkthrough step tagged with its id (browser:run
+// --slug), never by a screenshot of the entry page: the old per-AC
+// "Documented" row was the same home screenshot twelve times, and read as
+// coverage. Rows now carry the walkthrough verdict when one proved the AC,
+// and say `Not exercised` otherwise.
+async function runAcCoverage(page, baseUrl, prdPath, screenshotsDir, targetDir) {
   const prdContent = await readTextIfExists(prdPath);
   const acItems = parseAcItems(prdContent);
   if (acItems.length === 0) return [];
 
   await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: 15000 }).catch(() => {});
+  const entryShot = path.join(screenshotsDir, 'entry.png');
+  await page.screenshot({ path: entryShot, fullPage: false }).catch(() => {});
+  const proven = await collectWalkthroughIds(targetDir);
 
-  const coverage = [];
-  for (const ac of acItems) {
-    const screenshotFile = path.join(screenshotsDir, `${ac.id}.png`);
-    await page.screenshot({ path: screenshotFile, fullPage: false }).catch(() => {});
-    coverage.push({
+  return acItems.map((ac) => {
+    const row = proven.get(String(ac.id).toUpperCase());
+    const status = row ? (row.status === 'pass' ? 'Covered' : (row.status === 'fail' ? 'Missing' : 'Partial')) : 'Not exercised';
+    return {
       id: ac.id,
       description: ac.description,
-      status: 'Documented',
-      screenshot: screenshotFile
-    });
+      status,
+      walkthrough: row ? row.report : '',
+      screenshot: row ? '' : entryShot
+    };
+  });
+}
+
+// Every delivery walkthrough report under .aioson/context/features/*/browser/
+// — qa:run has no feature slug, so it reads them all.
+async function collectWalkthroughIds(targetDir) {
+  const ids = new Map();
+  const featuresDir = path.join(targetDir, '.aioson', 'context', 'features');
+  let slugs = [];
+  try {
+    slugs = (await fs.readdir(featuresDir, { withFileTypes: true })).filter((d) => d.isDirectory()).map((d) => d.name);
+  } catch {
+    return ids;
   }
-  return coverage;
+  for (const slug of slugs) {
+    const evidence = readBrowserEvidence(targetDir, slug);
+    for (const [id, row] of evidence.ids) {
+      const current = ids.get(id);
+      if (!current || String(current.finished_at).localeCompare(String(row.finished_at)) < 0) ids.set(id, row);
+    }
+  }
+  return ids;
 }
 
 // ============================================================
@@ -736,7 +766,10 @@ function buildMarkdownReport(projectName, url, findings, acCoverage, perf, mode)
   const c = bySev('critical').length, h = bySev('high').length, m = bySev('medium').length, l = bySev('low').length;
   md += `### Summary\n`;
   md += `- Critical: ${c} | High: ${h} | Medium: ${m} | Low: ${l}\n`;
-  if (acCoverage.length > 0) md += `- AC documented: ${acCoverage.length}\n`;
+  if (acCoverage.length > 0) {
+    const exercised = acCoverage.filter((ac) => ac.status !== 'Not exercised').length;
+    md += `- AC exercised by walkthroughs: ${exercised}/${acCoverage.length}${exercised < acCoverage.length ? ' (bind the rest with aioson browser:run --slug=<feature>)' : ''}\n`;
+  }
 
   return md;
 }
@@ -801,9 +834,25 @@ async function runQaRun({ args, options = {}, logger, t }) {
   logger.log(t('qa_run.starting', { url }));
   await ensureDir(screenshotsDir);
 
-  const browser = await pw.chromium.launch({ headless: !headed });
-  const context = await browser.newContext({ viewport: { width: 1280, height: 720 } });
-  const page = await context.newPage();
+  // One resolver for every browser surface: --cdp attaches to the operator's
+  // running Chrome, --browser=chrome|msedge launches the installed one, and
+  // the bundled Chromium stays the default when present.
+  const session = await openBrowser({
+    projectDir: targetDir,
+    playwright: pw,
+    config,
+    cdp: String(options.cdp || ''),
+    channel: String(options.browser || ''),
+    headless: !headed,
+    viewport: { width: 1280, height: 720 }
+  });
+  if (!session.ok) {
+    logger.error(t('qa_run.browser_unavailable', { error: session.error, hint: session.hint || '' }));
+    process.exitCode = 1;
+    return { ok: false, error: session.error, hint: session.hint || '' };
+  }
+  const browser = session.browser;
+  const page = await session.newPage();
 
   page.on('console', (msg) => consoleLogs.push({ type: msg.type(), text: msg.text() }));
   page.on('request', (req) => networkRequests.push({ url: req.url(), method: req.method() }));
@@ -839,7 +888,7 @@ async function runQaRun({ args, options = {}, logger, t }) {
 
     // AC coverage
     logger.log(t('qa_run.ac_scenarios'));
-    const acCoverage = await runAcCoverage(page, url, prdPath, screenshotsDir).catch(() => []);
+    const acCoverage = await runAcCoverage(page, url, prdPath, screenshotsDir, targetDir).catch(() => []);
 
     // Write reports
     const { mdPath, jsonPath } = await writeReports(targetDir, projectName, url, findings, acCoverage, perf, 'run');
@@ -867,7 +916,7 @@ async function runQaRun({ args, options = {}, logger, t }) {
     if (options.json) return output;
     return output;
   } finally {
-    await browser.close().catch(() => {});
+    await session.close().catch(() => {});
   }
 }
 

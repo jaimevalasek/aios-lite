@@ -17,6 +17,7 @@ const path = require('node:path');
 const { analyzeFeatureCompleteness } = require('../lib/feature-completeness');
 const { resolveTargetDir } = require('../lib/project-root');
 const { visualEvidenceBlock, formatVisualEvidence } = require('../lib/visual-evidence');
+const { browserEvidenceBlock, formatBrowserEvidence } = require('../lib/browser-evidence');
 
 function upper(value) {
   return String(value || '').toUpperCase();
@@ -89,6 +90,9 @@ async function runFeatureTrace({ args, options = {}, logger }) {
   // the numbers without re-running the measurement — or sees that a visible
   // surface was never measured. Null when the feature has no prototype.
   const visual = visualEvidenceBlock(targetDir, slug);
+  // Whether the delivery was ever driven in a real browser, and which ids
+  // the walkthroughs proved — advisory, read by QA before it writes its own.
+  const browser = browserEvidenceBlock(targetDir, slug);
 
   const result = {
     ok: true,
@@ -101,6 +105,7 @@ async function runFeatureTrace({ args, options = {}, logger }) {
     acs: acRows.map((row) => ({ ac: row.ac, caps: row.caps || [], behavior: row.behavior || null })),
     gaps: (analysis.findings || []).map((f) => ({ stage: f.stage, check: f.check, message: f.message })),
     visual,
+    browser,
     summary: analysis.summary || null
   };
 
@@ -115,6 +120,8 @@ async function runFeatureTrace({ args, options = {}, logger }) {
   }
   const visualLine = formatVisualEvidence(visual);
   if (visualLine) logger.log(`  ${visualLine}`);
+  const browserLine = formatBrowserEvidence(browser);
+  if (browserLine) logger.log(`  ${browserLine}`);
   if (result.gaps.length > 0) {
     logger.log(`  gaps: ${result.gaps.length}`);
     for (const gap of result.gaps.slice(0, 8)) logger.log(`    [${gap.stage}] ${gap.check}: ${gap.message}`);
