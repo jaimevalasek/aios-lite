@@ -1,7 +1,7 @@
 ---
 name: visual-effects
 description: Effect, background, and asset vocabulary with the cost, accessibility, and evidence contracts that make premium surfaces cheap to build and safe to ship
-agents: [dev, deyvin, briefing-refiner]
+agents: [dev, deyvin, briefing-refiner, ux-ui, site-forge]
 priority: 10
 version: 1.0.0
 modes: [executing]

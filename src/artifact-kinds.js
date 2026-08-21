@@ -33,7 +33,25 @@ const AGENT_ARTIFACT_KIND = {
   'design-hybrid-forge': { kind: 'hybrid-skill', needs: 'slug' },
   copywriter: { kind: 'copy', needs: 'slug' },
   orache: { kind: 'orache-report', needs: 'file' },
-  'site-forge': { kind: 'site', needs: 'dir', opts: { noBuild: true } },
+  // A forged site is an interface: its build is proven by kind=site, its
+  // craft, tells and materials by the same measured floor every other visual
+  // producer passes — keyed on the deliverable directory it already receives.
+  'site-forge': {
+    kind: 'site', needs: 'dir', opts: { noBuild: true },
+    also: [{ kind: 'visual', needs: 'dir' }]
+  },
+  // The implementers. Their artifact is code, and the one surface nothing
+  // measured was the shipped front-end — the prototype auto-fired because it
+  // had an owner and a path; the implementation had neither. `interfaceDir`
+  // resolves the directory from the feature's delivered change set (common
+  // ancestor of the changed html/css/tsx/vue… files; a backend-only change
+  // resolves to nothing and skips — a state, not a finding), and `conformance`
+  // compares the measurement with the prototype's recorded evidence, so a
+  // regression below the approved floor is a number in the session end, not
+  // a memory the agent had to keep.
+  dev: { kind: 'visual', needs: 'dir', featureSlugged: true, interfaceDir: true, conformance: true },
+  qa: { kind: 'visual', needs: 'dir', featureSlugged: true, interfaceDir: true, conformance: true },
+  deyvin: { kind: 'visual', needs: 'dir', featureSlugged: true, interfaceDir: true, conformance: true },
   // The refiner's session end proves BOTH halves of its output: the review
   // surface AND the prototype's measured craft. `skipIfMissing` keeps the
   // visual gate quiet for genuinely non-visual features (no prototype.html).
@@ -75,6 +93,23 @@ function hasHtmlSurface(dir, depth = 0) {
 
 const NEEDS_FLAG = { slug: '--slug=<slug>', file: '--file=<path>', dir: '--dir=<dir>' };
 
+/** The one-line verdict of a passing visual measurement — numbers, not "ok". */
+function summarizeVisualRun(report, dir) {
+  if (!report || report.kind !== 'visual' || !report.metrics) return null;
+  const m = report.metrics;
+  const parts = [];
+  if (m.craft && m.craft.measured) parts.push(`craft ${m.craft.active_levers}/5`, `materials ${m.craft.material_depth ?? 0}/7`);
+  else if (typeof m.declarations === 'number') parts.push(`craft not measured (${m.declarations} declarations)`);
+  parts.push(`tells ${m.tells ? m.tells.active : 0}`);
+  if (m.conformance) {
+    parts.push(m.conformance.regressed.length > 0
+      ? `REGRESSED vs prototype: ${m.conformance.regressed.join(', ')}`
+      : 'holds the prototype floor');
+  }
+  parts.push(`${(report.warnings || []).length} warning(s)`);
+  return `${dir ? `${dir}: ` : ''}${parts.join(' | ')} — see .aioson/context/verify-artifact-visual.json`;
+}
+
 /** Resolve an agent name (with or without a leading @) to its artifact mapping, or null. */
 function resolveAgentArtifact(agent) {
   const name = String(agent || '').trim().replace(/^@/, '');
@@ -98,18 +133,47 @@ async function verifyAgentArtifact({ targetDir, agent, options = {} }) {
   const mapping = resolveAgentArtifact(agent);
   if (!mapping) return null;
 
+  // The active feature, when the caller threaded none. Resolved once per
+  // done-gate and only for mappings that need a slug — `agent:done` lines in
+  // the kernels rarely carry --feature, and the prototype evidence, the
+  // conformance comparison and the interface root all hang off the slug.
+  let activeFeature;
+  const resolveFeature = async () => {
+    if (activeFeature !== undefined) return activeFeature;
+    activeFeature = null;
+    try {
+      const { resolveActiveFeature } = require('./commands/feature-current');
+      const active = await resolveActiveFeature(targetDir);
+      if (active && active.slug && !active.ambiguous) activeFeature = active.slug;
+    } catch {
+      activeFeature = null;
+    }
+    return activeFeature;
+  };
+
   const runOne = async (m) => {
     const { kind, needs } = m;
-    const feature = options.feature ? String(options.feature).trim() : null;
+    const explicitFeature = options.feature ? String(options.feature).trim() : null;
+    const feature = explicitFeature || (m.featureSlugged ? await resolveFeature() : null);
     const slug = options.slug
       ? String(options.slug).trim()
       : (m.featureSlugged && feature ? feature : null);
     const file = options.file ? String(options.file).trim() : null;
     // A secondary kind may derive its directory from the slug (`dir` template)
     // when the caller threaded none — the pilot lives at a contract path.
-    const dir = options.dir
+    let dir = options.dir
       ? String(options.dir).trim()
       : (m.dir && slug ? m.dir.replace('{slug}', slug) : null);
+
+    // The implementers' interface root comes from the delivered change set.
+    let interfaceFiles = null;
+    if (!dir && m.interfaceDir) {
+      const { resolveInterfaceDir } = require('./lib/interface-root');
+      const resolved = resolveInterfaceDir(targetDir, { slug });
+      if (!resolved.dir) return { kind, ok: true, skipped: true, reason: resolved.reason };
+      dir = resolved.dir;
+      interfaceFiles = resolved.files;
+    }
 
     if (m.skipIfNoHtml) {
       const rel = m.skipIfNoHtml.replace('{slug}', slug || '');
@@ -155,6 +219,7 @@ async function verifyAgentArtifact({ targetDir, agent, options = {} }) {
           advisory: true,
           suppressExitCode: true,
           json: true,
+          ...(m.conformance && slug ? { conformance: slug } : {}),
           ...(m.opts && m.opts.noBuild ? { 'no-build': true } : {})
         },
         logger: { log() {}, error() {}, warn() {} }
@@ -163,13 +228,22 @@ async function verifyAgentArtifact({ targetDir, agent, options = {} }) {
       const issues = report.issues || [];
       const head = issues.slice(0, 3).join('; ');
       const more = issues.length > 3 ? ` (+${issues.length - 3} more)` : '';
+      // A measurement that passed its blocking tier still carries the numbers
+      // the session end exists to surface — craft, tells, materials, and the
+      // conformance delta against the prototype — so the reason line names
+      // them instead of reading as a bare "ok".
+      const conformance = report.metrics && report.metrics.conformance;
+      const regressed = conformance && Array.isArray(conformance.regressed) ? conformance.regressed : [];
+      const measuredLine = summarizeVisualRun(report, dir);
       return {
         kind,
         ok: Boolean(report.ok),
         skipped: false,
         issues,
+        ...(interfaceFiles ? { interface_files: interfaceFiles.length, dir } : {}),
+        ...(regressed.length > 0 ? { regressed } : {}),
         reason: report.ok
-          ? null
+          ? measuredLine
           : `${head}${more} — advisory; see .aioson/context/verify-artifact-${kind}.json`
       };
     } catch {

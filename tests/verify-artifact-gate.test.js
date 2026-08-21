@@ -36,8 +36,13 @@ test('resolveAgentArtifact maps the periphery and ignores everyone else', () => 
   assert.equal(resolveAgentArtifact('profiler-researcher').kind, 'research-report');
   assert.equal(resolveAgentArtifact('orache').needs, 'file');
   assert.equal(resolveAgentArtifact('site-forge').needs, 'dir');
-  // workflow + non-artifact agents resolve to null (no auto-fire for them)
-  for (const a of ['dev', 'qa', 'product', 'sheldon', 'orchestrator', '', undefined]) {
+  // The implementers map to the visual measurement of the shipped front-end
+  // (interface root resolved from the delivered change set, held to the
+  // prototype's evidence); spec authorities and the orchestrator stay null.
+  for (const a of ['dev', 'qa', 'deyvin']) {
+    assert.deepEqual(resolveAgentArtifact(a), { kind: 'visual', needs: 'dir', featureSlugged: true, interfaceDir: true, conformance: true });
+  }
+  for (const a of ['product', 'sheldon', 'planner', 'orchestrator', '', undefined]) {
     assert.equal(resolveAgentArtifact(a), null, `expected null for "${a}"`);
   }
 });
@@ -76,9 +81,15 @@ test('briefing-refiner auto-fires the visual gate next to the review gate — an
   assert.match(liveVisual.reason, /verify-artifact-visual\.json/);
 });
 
-test('verifyAgentArtifact returns null for an agent with no artifact', async () => {
-  assert.equal(await verifyAgentArtifact({ targetDir: tmpDir(), agent: 'dev' }), null);
+test('verifyAgentArtifact returns null for an agent with no artifact, and a state for an implementer outside git', async () => {
   assert.equal(await verifyAgentArtifact({ targetDir: tmpDir(), agent: '@product' }), null);
+  // dev maps to the front-end measurement; with no git to resolve the changed
+  // interface files from, the done-gate reports the state and never fails.
+  const dev = await verifyAgentArtifact({ targetDir: tmpDir(), agent: 'dev' });
+  assert.equal(dev.kind, 'visual');
+  assert.equal(dev.skipped, true);
+  assert.equal(dev.ok, true);
+  assert.match(dev.reason, /git is unavailable|no interface sources/);
 });
 
 test('verifyAgentArtifact hints (skipped, never fails) when a locator-keyed kind has no locator', async () => {

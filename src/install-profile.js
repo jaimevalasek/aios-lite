@@ -40,6 +40,8 @@ const DESIGN_IDS = [
 
 // Special value meaning "install all design skills"
 const DESIGN_ALL = 'all';
+// The framework's single aesthetic source (intent-first engine); always installed.
+const DESIGN_ENGINE_ID = 'interface-design';
 
 // Caminhos de locale por código
 const LOCALE_IDS = ['en', 'es', 'fr', 'pt-BR'];
@@ -104,6 +106,12 @@ function shouldIncludeForProfile(rel, profile) {
   const designMatch = rel.match(/^\.aioson\/skills\/design\/([^/]+)\//);
   if (designMatch) {
     const skillId = designMatch[1];
+    // The one design ENGINE is not a preset. Every visual producer (the
+    // refiner, dev, ux-ui, a squad's ui-specialist) resolves a blank
+    // `design_skill` to it, so a profile that declines the preset catalog
+    // still ships the engine — otherwise the framework points at a file the
+    // consumer never received.
+    if (skillId === DESIGN_ENGINE_ID) return true;
     const chosen = profile.design || 'none';
     if (chosen === DESIGN_ALL) return true;
     if (Array.isArray(chosen)) return chosen.includes(skillId);
@@ -121,5 +129,6 @@ module.exports = {
   DESIGN_IDS,
   LOCALE_IDS,
   ALWAYS_INSTALL,
-  DEFAULT_PROFILE
+  DEFAULT_PROFILE,
+  DESIGN_ENGINE_ID
 };

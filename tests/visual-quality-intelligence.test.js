@@ -292,7 +292,7 @@ test('the routed visual-implementation doc carries the criteria dev no longer in
   assert.match(template, /replaceability test/i);
   assert.match(template, /identity/i);
   // The routing frontmatter is what makes the doc reachable at all.
-  assert.match(template, /^agents: \[dev, deyvin\]$/m);
+  assert.match(template, /^agents: \[dev, deyvin, qa, ux-ui, site-forge\]$/m);
   assert.match(template, /^load_tier: trigger$/m);
   // A project rule must outrank the brain, or a client design system cannot win.
   // The statement itself lives in one place — brain node vq-000 — so it cannot drift.
@@ -311,7 +311,7 @@ test('the effect and asset vocabulary is framework-level, routed, and honest abo
   // Routing frontmatter is what makes it reachable at all; without load_tier it
   // would either never load or load for every non-visual feature.
   assert.match(template, /^load_tier: trigger$/m);
-  assert.match(template, /^agents: \[dev, deyvin, briefing-refiner\]$/m);
+  assert.match(template, /^agents: \[dev, deyvin, briefing-refiner, ux-ui, site-forge\]$/m);
 
   // The two contracts that make an effect shippable rather than merely pretty.
   assert.match(template, /prefers-reduced-motion/);

@@ -20,6 +20,9 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const VISUAL_EVIDENCE_FILE = 'visual-evidence.json';
+// The implementation's measurement (the implementers' session end, held to the
+// prototype's floor) — the other half of the feature's visual record.
+const VISUAL_IMPLEMENTATION_FILE = 'visual-implementation.json';
 
 function visualEvidencePath(targetDir, slug) {
   return path.join(targetDir, '.aioson', 'context', 'features', slug, VISUAL_EVIDENCE_FILE);
@@ -29,14 +32,23 @@ function prototypePath(targetDir, slug) {
   return path.join(targetDir, '.aioson', 'briefings', slug, 'prototype.html');
 }
 
-/** The persisted kind=visual report of a feature's prototype, or null. */
-function readVisualEvidence(targetDir, slug) {
+function readVisualReport(file) {
   try {
-    const parsed = JSON.parse(fs.readFileSync(visualEvidencePath(targetDir, slug), 'utf8'));
+    const parsed = JSON.parse(fs.readFileSync(file, 'utf8'));
     return parsed && parsed.kind === 'visual' ? parsed : null;
   } catch {
     return null;
   }
+}
+
+/** The persisted kind=visual report of a feature's prototype, or null. */
+function readVisualEvidence(targetDir, slug) {
+  return readVisualReport(visualEvidencePath(targetDir, slug));
+}
+
+/** The persisted kind=visual report of a feature's implementation, or null. */
+function readVisualImplementation(targetDir, slug) {
+  return readVisualReport(path.join(targetDir, '.aioson', 'context', 'features', slug, VISUAL_IMPLEMENTATION_FILE));
 }
 
 /** One line of the numbers a reviewer needs — the verdict of the measurement, not its prose. */
@@ -64,14 +76,26 @@ function visualEvidenceBlock(targetDir, slug) {
   const proto = prototypePath(targetDir, slug);
   const hasPrototype = fs.existsSync(proto);
   const report = readVisualEvidence(targetDir, slug);
-  if (!report && !hasPrototype) return null;
+  const implementationReport = readVisualImplementation(targetDir, slug);
+  const implementation = implementationReport
+    ? {
+      measured_at: implementationReport.measured_at || null,
+      summary: summarizeVisualEvidence(implementationReport),
+      regressed: (implementationReport.metrics && implementationReport.metrics.conformance && implementationReport.metrics.conformance.regressed) || [],
+      evidence: `.aioson/context/features/${slug}/${VISUAL_IMPLEMENTATION_FILE}`
+    }
+    : null;
+  if (!report && !hasPrototype && !implementation) return null;
   if (!report) {
     return {
       measured: false,
-      prototype: true,
+      prototype: hasPrototype,
       stale: false,
-      reason: `prototype present but never measured — run: aioson verify:artifact . --kind=visual --slug=${slug} --advisory`,
-      summary: null
+      reason: hasPrototype
+        ? `prototype present but never measured — run: aioson verify:artifact . --kind=visual --slug=${slug} --advisory`
+        : 'no prototype recorded for this feature',
+      summary: null,
+      implementation
     };
   }
   // A prototype edited after its measurement carries numbers for a surface
@@ -93,21 +117,27 @@ function visualEvidenceBlock(targetDir, slug) {
     issues: (report.issues || []).length,
     warnings: (report.warnings || []).length,
     summary: summarizeVisualEvidence(report),
-    evidence: `.aioson/context/features/${slug}/${VISUAL_EVIDENCE_FILE}`
+    evidence: `.aioson/context/features/${slug}/${VISUAL_EVIDENCE_FILE}`,
+    implementation
   };
 }
 
 /** Human line for the block — the same text in feature:trace and feature:close. */
 function formatVisualEvidence(block) {
   if (!block) return null;
-  if (!block.measured) return `visual evidence: ${block.reason}`;
-  return `visual evidence: ${block.summary}${block.stale ? ' — STALE: the prototype changed after this measurement; re-run kind=visual' : ''} (${block.evidence})`;
+  const implementation = block.implementation
+    ? ` | implementation: ${block.implementation.summary}${block.implementation.regressed.length > 0 ? ` — REGRESSED vs prototype: ${block.implementation.regressed.join(', ')}` : ''}`
+    : '';
+  if (!block.measured) return `visual evidence: ${block.reason}${implementation}`;
+  return `visual evidence: ${block.summary}${block.stale ? ' — STALE: the prototype changed after this measurement; re-run kind=visual' : ''} (${block.evidence})${implementation}`;
 }
 
 module.exports = {
   VISUAL_EVIDENCE_FILE,
+  VISUAL_IMPLEMENTATION_FILE,
   visualEvidencePath,
   readVisualEvidence,
+  readVisualImplementation,
   summarizeVisualEvidence,
   visualEvidenceBlock,
   formatVisualEvidence

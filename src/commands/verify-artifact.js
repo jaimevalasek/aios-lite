@@ -30,7 +30,7 @@ const { spawnSync } = require('node:child_process');
 
 const { evaluateStaticCriterion } = require('../harness/static-criteria');
 const { resolveTargetDir, resolveOperandPath } = require('../lib/project-root');
-const { VISUAL_EVIDENCE_FILE } = require('../lib/visual-evidence');
+const { VISUAL_EVIDENCE_FILE, VISUAL_IMPLEMENTATION_FILE } = require('../lib/visual-evidence');
 
 const VERSION = '1.0.0';
 const GENERATOR = `aioson verify:artifact@${VERSION}`;
@@ -465,6 +465,18 @@ function collectVisualSources({ targetDir, file, dir, slug }) {
     files: bucket.files,
     entry: bucket.entry,
     corpus: bucket.corpus
+  };
+}
+
+/** The axes the prototype floor is held on — the same numbers on both sides. */
+function conformanceAxes(m) {
+  return {
+    craft: m.craft && m.craft.measured ? m.craft.active_levers : null,
+    materials: m.craft && m.craft.measured ? (m.craft.material_depth ?? 0) : null,
+    tells: m.tells ? m.tells.active : 0,
+    font_delivered: Boolean(m.font_delivery && m.font_delivery.delivered),
+    display_px: Number(m.max_font_size_px) || 0,
+    modern_css: m.craft && Array.isArray(m.craft.modern_css) ? m.craft.modern_css.length : 0
   };
 }
 
@@ -1073,6 +1085,35 @@ const ADAPTERS = {
       }
     }
 
+    // Conformance: the approved prototype's measured verdict is the floor of
+    // its implementation. "Craft regressing in translation" was a prose duty in
+    // the dev doctrine; with the prototype's evidence recorded, it is a delta.
+    if (ctx.conformance) {
+      const { readVisualEvidence } = require('../lib/visual-evidence');
+      const evidence = readVisualEvidence(ctx.targetDir, ctx.conformance);
+      const proto = evidence && evidence.metrics;
+      if (!proto) {
+        metrics.conformance = { prototype: null, regressed: [], reason: `no recorded prototype evidence for ${ctx.conformance} — nothing to hold the implementation to` };
+      } else if (!(metrics.craft && metrics.craft.measured)) {
+        metrics.conformance = { prototype: conformanceAxes(proto), implementation: null, regressed: [], reason: `implementation craft not measured statically (${metrics.declarations} declarations) — a utility-class build is compared with --url=<served app> --runtime` };
+        warnings.push(`visual conformance not measurable statically: ${metrics.declarations} authored declarations — measure the served app with --url=<http://…> --runtime, or state the outcome`);
+      } else {
+        const before = conformanceAxes(proto);
+        const after = conformanceAxes(metrics);
+        const regressed = [];
+        if (before.craft !== null && after.craft < before.craft) regressed.push(`craft ${before.craft}/5 → ${after.craft}/5`);
+        if (before.materials !== null && after.materials < before.materials) regressed.push(`materials ${before.materials}/7 → ${after.materials}/7`);
+        if (after.tells > before.tells) regressed.push(`tells ${before.tells} → ${after.tells}`);
+        if (before.font_delivered && !after.font_delivered) regressed.push('typeface delivered → OS fallback');
+        if (before.display_px >= 56 && after.display_px < 56) regressed.push(`display type ${before.display_px}px → ${after.display_px}px`);
+        if (before.modern_css > 0 && after.modern_css === 0) regressed.push('modern CSS baseline → pre-2020 dialect');
+        metrics.conformance = { prototype: before, implementation: after, regressed };
+        if (regressed.length > 0) {
+          warnings.push(`visual conformance: the implementation regressed below the approved prototype's measured floor — ${regressed.join(', ')}; the real stack makes the craft easier, not harder: restore it or record the deviation in the PRD as approved`);
+        }
+      }
+    }
+
     // Cross-project palette repetition. Each surface can pass every gate alone
     // while the operator's projects all land on the model's favorite palette —
     // the fingerprint registry (operator-local, best-effort) is the only place
@@ -1189,12 +1230,15 @@ async function runVerifyArtifact({ args, options = {}, logger }) {
   const runtime = Boolean(options.runtime);
   const route = options.route ? String(options.route).trim() : null;
   const url = options.url ? String(options.url).trim() : null;
+  // `--conformance=<slug>`: hold this measurement to the prototype evidence
+  // recorded for the feature (the implementers' session end threads it).
+  const conformance = options.conformance ? String(options.conformance).trim() : null;
   // `--no-persist`: a diagnostic run reads and reports but writes nothing —
   // no context report, no operator fingerprint. Measuring is not mutating.
   const persist = !(options['no-persist'] || options.noPersist);
   const result = await evaluateKind(kind, {
     slug, targetDir, file, dir, noBuild, buildTimeout, buildCommand,
-    runtime, route, url, persist, browserLauncher: options.browserLauncher || null
+    runtime, route, url, persist, conformance, browserLauncher: options.browserLauncher || null
   }, logger);
 
   if (result === null) {
@@ -1252,6 +1296,14 @@ async function runVerifyArtifact({ args, options = {}, logger }) {
         fs.mkdirSync(evidenceDir, { recursive: true });
         fs.writeFileSync(path.join(evidenceDir, VISUAL_EVIDENCE_FILE), JSON.stringify({ ...report, measured_at: new Date().toISOString() }, null, 2), 'utf8');
         report.evidence = `.aioson/context/features/${slug}/${VISUAL_EVIDENCE_FILE}`;
+      }
+      // The implementation's measurement lives next to the prototype's, so the
+      // feature carries both halves of its visual record to trace and close.
+      if (kind === 'visual' && conformance) {
+        const evidenceDir = path.join(ctxDir, 'features', conformance);
+        fs.mkdirSync(evidenceDir, { recursive: true });
+        fs.writeFileSync(path.join(evidenceDir, VISUAL_IMPLEMENTATION_FILE), JSON.stringify({ ...report, measured_at: new Date().toISOString() }, null, 2), 'utf8');
+        report.implementation_evidence = `.aioson/context/features/${conformance}/${VISUAL_IMPLEMENTATION_FILE}`;
       }
     } catch {
       // best-effort persistence — never fail the gate on a write error
