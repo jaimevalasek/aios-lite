@@ -115,3 +115,18 @@ test('architecture decisions in the plan: optional, linted when present, and car
   }
   assert.ok(broken.findings.every((f) => !/architecture/.test(f.check) || f.stage === 'plan'), 'ADR findings belong to the plan stage (planner)');
 });
+
+test('interface contract in the plan: the stack-agnostic I/O per boundary, optional and linted when present', async () => {
+  const good = await project(`\n## Interface Contract\n\n| Interface | Boundary | Input | Output | Failure | CAP |\n|---|---|---|---|---|---|\n| IF-01 | POST /invoices/run (scheduler) | { period: YYYY-MM } | { generated: n, skipped: n } | 409 when the period was already run; 422 on a malformed period | CAP-${SLUG}-01 |\n`);
+  const ok = await analyzeFeatureCompleteness(good, SLUG, {});
+  assert.equal(ok.findings.filter((f) => /interface_contract/.test(f.check)).length, 0, JSON.stringify(ok.findings));
+  assert.equal(ok.interface_contract.rows.length, 1);
+  assert.deepEqual(ok.interface_contract.rows[0].caps, [`CAP-${SLUG}-01`]);
+
+  const bad = await project(`\n## Interface Contract\n\n| Interface | Boundary | Input | Output | Failure | CAP |\n|---|---|---|---|---|---|\n| x | | tbd | | | CAP-nope-9 |\n| IF-01 | POST /a | { a } | { b } | 500 | CAP-${SLUG}-01 |\n| IF-01 | POST /b | { a } | { b } | 500 | CAP-${SLUG}-01 |\n`);
+  const broken = await analyzeFeatureCompleteness(bad, SLUG, {});
+  const checks = broken.findings.filter((f) => /interface_contract/.test(f.check)).map((f) => f.check);
+  for (const expected of ['interface_contract_id_invalid', 'interface_contract_boundary_missing', 'interface_contract_input_missing', 'interface_contract_output_missing', 'interface_contract_failure_missing', 'interface_contract_cap_unknown', 'interface_contract_duplicate']) {
+    assert.ok(checks.includes(expected), `expected ${expected} in ${checks.join(', ')}`);
+  }
+});

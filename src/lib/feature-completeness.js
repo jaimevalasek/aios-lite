@@ -12,6 +12,7 @@ const {
   validateCurrentSystemFit,
   validateImplementationDelta,
   validateArchitectureDecisions,
+  validateInterfaceContract,
   validateEngineeringControls
 } = require('./feature-repository-fit');
 const { validatePrototypeBinding } = require('./prototype-binding');
@@ -827,6 +828,7 @@ async function analyzeFeatureCompleteness(targetDir, slug, options = {}) {
   let delivery = { findings: [], rows: [] };
   let engineeringControls = { findings: [], rows: [], explicitNone: false };
   let architectureDecisions = { findings: [], rows: [] };
+  let interfaceContract = { findings: [], rows: [] };
   let implementationDelta = { findings: [], rows: [] };
   let execution = { findings: [], ledger: null, coveredCaps: [] };
   let prototypeBinding = {
@@ -891,6 +893,12 @@ async function analyzeFeatureCompleteness(targetDir, slug, options = {}) {
       artifact: artifacts.implementation_plan.path || `implementation-plan-${slug}.md`,
       toolkit: repositoryFitToolkit
     });
+    interfaceContract = validateInterfaceContract({
+      content: inputs.plan,
+      artifact: artifacts.implementation_plan.path || `implementation-plan-${slug}.md`,
+      productMap,
+      toolkit: { ...repositoryFitToolkit, extractIds, CAP_ID_RE }
+    });
     implementationDelta = await validateImplementationDelta({
       targetDir,
       content: inputs.plan,
@@ -914,7 +922,7 @@ async function analyzeFeatureCompleteness(targetDir, slug, options = {}) {
       ))
     );
     stageFindings.specification.push(...acceptance.findings);
-    stageFindings.plan.push(...delivery.findings, ...engineeringControls.findings, ...architectureDecisions.findings, ...implementationDelta.findings);
+    stageFindings.plan.push(...delivery.findings, ...engineeringControls.findings, ...architectureDecisions.findings, ...interfaceContract.findings, ...implementationDelta.findings);
     if (options.includeExecution && delivery.findings.length === 0) {
       execution = await validateExecutionEvidence(
         targetDir,
@@ -987,6 +995,7 @@ async function analyzeFeatureCompleteness(targetDir, slug, options = {}) {
     leverage_matrix: { rows: implementationDelta.rows },
     engineering_controls: engineeringControls,
     architecture_decisions: architectureDecisions,
+    interface_contract: interfaceContract,
     implementation_delta: implementationDelta,
     delivery_plan: delivery,
     execution_evidence: execution,

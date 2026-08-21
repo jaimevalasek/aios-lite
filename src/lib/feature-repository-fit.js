@@ -506,11 +506,91 @@ function validateArchitectureDecisions({ content, artifact, toolkit }) {
   return { findings, rows };
 }
 
+/**
+ * `## Interface Contract` — the plan's I/O contract per boundary, optional and
+ * linted when present: `| Interface | Boundary | Input | Output | Failure | CAP |`.
+ *
+ * The PRD is behavior-level by contract and the plan named paths, not
+ * contracts — so the shape of what crosses a boundary (what goes in, what
+ * comes out, what happens when it fails) was whatever the implementer typed.
+ * A stack-agnostic I/O row is the part of a specification that transpiles:
+ * the same contract holds in Go, TypeScript or Rust, which is what lets the
+ * implementation language stay a deployment detail.
+ */
+function validateInterfaceContract({ content, artifact, productMap, toolkit }) {
+  const findings = [];
+  const section = toolkit.extractSection(content, [
+    'Interface Contract',
+    'Interface Contracts',
+    'I/O Contract',
+    'Contrato de Interface',
+    'Contratos de Interface',
+    'Contrato de I/O'
+  ]);
+  if (!section) return { findings, rows: [] };
+
+  const table = toolkit.parseFirstMarkdownTable(section);
+  if (!table) {
+    findings.push(toolkit.finding('plan', 'interface_contract_invalid', 'Interface Contract must contain its table (Interface | Boundary | Input | Output | Failure | CAP) or be removed', artifact));
+    return { findings, rows: [] };
+  }
+  for (const bad of table.malformed) {
+    findings.push(toolkit.finding('plan', 'interface_contract_row_malformed', `Interface Contract row ${bad.row} has ${bad.cells} cell(s), expected ${table.headers.length}; escape literal pipes as \\|`, artifact));
+  }
+  const columns = toolkit.mapColumns(table, {
+    id: ['Interface', 'IF', 'Id', 'ID', 'Contract'],
+    boundary: ['Boundary', 'Endpoint', 'Fronteira', 'Limite'],
+    input: ['Input', 'Request', 'Entrada'],
+    output: ['Output', 'Response', 'Saida', 'Saída'],
+    failure: ['Failure', 'Failures', 'Errors', 'Falha', 'Falhas', 'Erros'],
+    cap: ['CAP', 'Capability', 'Capacidade']
+  });
+  if (columns.missing.length > 0) {
+    findings.push(toolkit.finding('plan', 'interface_contract_columns', `Interface Contract missing column(s): ${columns.missing.join(', ')}`, artifact));
+    return { findings, rows: [] };
+  }
+
+  const knownCaps = new Set((productMap.allCaps || []).map((cap) => cap.toLowerCase()));
+  const rows = [];
+  const seen = new Set();
+  table.rows.forEach((row, index) => {
+    const id = toolkit.cleanCell(row[columns.indexes.id]);
+    const boundary = toolkit.cleanCell(row[columns.indexes.boundary]);
+    const input = toolkit.cleanCell(row[columns.indexes.input]);
+    const output = toolkit.cleanCell(row[columns.indexes.output]);
+    const failure = toolkit.cleanCell(row[columns.indexes.failure]);
+    const caps = toolkit.extractIds(row[columns.indexes.cap], toolkit.CAP_ID_RE);
+    const rowNumber = index + 1;
+    const label = id || `row ${rowNumber}`;
+
+    if (!/^IF-[A-Za-z0-9][\w-]*$/.test(id)) {
+      findings.push(toolkit.finding('plan', 'interface_contract_id_invalid', `Interface Contract row ${rowNumber} must carry a stable IF-* id`, artifact));
+    } else if (seen.has(id.toUpperCase())) {
+      findings.push(toolkit.finding('plan', 'interface_contract_duplicate', `duplicate interface id: ${id}`, artifact));
+    }
+    seen.add(id.toUpperCase());
+    if (toolkit.isPlaceholder(boundary)) findings.push(toolkit.finding('plan', 'interface_contract_boundary_missing', `${label} names no boundary — the route, command, event, function or file it crosses`, artifact));
+    if (toolkit.isPlaceholder(input)) findings.push(toolkit.finding('plan', 'interface_contract_input_missing', `${label} declares no input — fields and types that go in, or "none"`, artifact));
+    if (toolkit.isPlaceholder(output)) findings.push(toolkit.finding('plan', 'interface_contract_output_missing', `${label} declares no output — what comes out on success`, artifact));
+    if (toolkit.isPlaceholder(failure)) findings.push(toolkit.finding('plan', 'interface_contract_failure_missing', `${label} declares no failure contract — what the caller sees when it fails is half the interface`, artifact));
+    if (caps.length === 0) findings.push(toolkit.finding('plan', 'interface_contract_cap_missing', `${label} binds no capability — cite the CAP-* it serves`, artifact));
+    for (const cap of caps) {
+      if (!knownCaps.has(cap.toLowerCase())) findings.push(toolkit.finding('plan', 'interface_contract_cap_unknown', `${label} cites undeclared capability ${cap}`, artifact));
+    }
+    rows.push({ id, boundary, input, output, failure, caps });
+  });
+  if (table.rows.length === 0) {
+    findings.push(toolkit.finding('plan', 'interface_contract_empty', 'Interface Contract has no rows — declare the interfaces or remove the section', artifact));
+  }
+  return { findings, rows };
+}
+
 module.exports = {
   validateCurrentSystemFit,
   validateImplementationDelta,
   validateEngineeringControls,
   validateArchitectureDecisions,
+  validateInterfaceContract,
   FIT_DECISIONS,
   DELTA_ACTIONS
 };
