@@ -150,6 +150,24 @@ O prompt de uma unidade é o **perfil dev-lane** (as seções `## Implementation
 
 `verify:artifact --kind=execution-plan` é o gate de frescor: falha quando o plano, o arquivo de papéis, as faixas do manifesto, um prompt gerado ou uma assinatura de host deixaram de corresponder ao compilado (`plan_digest_stale`, `roles_changed`, `manifest_lanes_diverged`, `prompt_stale`, `signature_missing`) e avisa quando o kernel do dev mudou desde então (`dev_profile_stale`). Dispara automaticamente no `agent:done` do planner e fica em silêncio para features que nunca compilaram um plano.
 
+### Rodando o plano (`execution:run`, `execution:decide`, `execution:status`)
+
+```bash
+aioson execution:run . --feature=minha-feature --preflight --json   # só o preflight determinístico
+aioson execution:run . --feature=minha-feature                      # linhas ao vivo no stdout; --json move-as para stderr
+aioson execution:decide . --feature=minha-feature --unit=phase-2 --choice=fallback:qwen/qwen-3.8-max
+aioson execution:run . --feature=minha-feature --resume
+aioson execution:status . --feature=minha-feature --json
+```
+
+O run segura o lease de dispatcher da feature durante toda a vida (um `agent:execution:dispatch` direto não se intercala) e percorre o plano onda a onda. Cada unidade de faixa é um pipeline `dev → qa`: o papel dev da faixa roda a unidade como processo externo efêmero com `sandbox_mode: workspace-write` (os flags não assistidos do registro — `codex exec --sandbox workspace-write`, nunca o bypass de aprovações), escreve o relatório JSON vinculado e morre; o papel qa da faixa então revisa e testa com o **perfil qa-lane** (o `## Risk-first checklist` extraído do `qa.md` instalado mais as regras de revisão), pode corrigir no máximo `qa.max_fix_files` arquivos entre os arquivos da própria unidade e relata o resto como achados. Correções são **medidas**, não confiadas: a árvore é fotografada antes e depois da revisão (git; sem git a revisão roda mesmo assim e a medição é reportada como ausente) — arquivo da unidade alterado que o revisor não listou é `undeclared_correction`, mais arquivos da unidade alterados que o teto é `corrections_cap_exceeded`; no nível da onda, arquivo alterado dentro dos write paths de uma faixa mas fora de toda unidade é `lane_scope_drift`, e fora de toda faixa é `unowned_change`. Até `parallel.max_concurrent_lanes` pipelines rodam ao mesmo tempo. Unidades de integração (arquivos fora de toda faixa) nunca são spawnadas: o run termina `completed` com elas listadas para o DEV da sessão.
+
+Nada decide em silêncio. Uma unidade cujo papel dev não consegue iniciar (`executable_not_found`, `auth`, `capacity`, `invalid_model` …), estoura o tempo, quebra, não escreve o relatório vinculado ou reporta `FAIL`/`BLOCKED` — ou cujo revisor não consegue rodar — deixa um `decision_required` em `.aioson/context/execution-state-{slug}.json` e um evento `decision_required` na telemetria de execução daquela unidade (`agent_execution_events`, a tabela que um cliente supervisor já consulta); as outras unidades da onda terminam e o run pausa com `status: decision_required`. `execution:decide` responde por unidade — `retry`, `fallback:<host>/<modelo>[/<effort>]` (o fallback precisa de assinatura de host válida), `skip` (estágio dev: o dono da integração implementa, registrado como `unit_skipped`), `skip-qa` (estágio qa: registrado como `qa_skipped`), `abort` — e registra a decisão (`decision_applied`); `execution:run --resume` continua de forma idempotente: unidades aprovadas nunca rodam de novo, e um plano ou manifesto alterado desde o início do run recusa com `run_state_stale` (`--fresh` recomeça). Uma revisão reprovada (veredito `FAIL`) é achado para a integração, não bloqueio.
+
+Vida é medida, não declarada: cada processo de unidade envia sua saída para a telemetria, e uma unidade sem saída **e** sem mudança de arquivo sob os write paths da faixa por `stallMs` (padrão 5 min) é marcada `stalled` (evento, linha ao vivo, flag no estado) — nunca silêncio. O canal ao vivo é o fluxo do motor de uma linha por evento (`[execution] wave 1 · phase-2 · dev started kimi/kimi-k3`), independente de o CLI do host transmitir algo.
+
+`execution:status` é o ledger consolidado: resumo do run, ondas, status dev/qa por unidade com hosts, vereditos, caminhos de relatório, correções e achados (dev, qa e nível de run), decisões pendentes com suas dicas, unidades de integração, `resume_command`.
+
 ## Fallback somente explícito
 
 CLI ausente, capability incompatível ou modelo indisponível pausa a execução. O modelo do chat atual nunca pode imitar silenciosamente o modelo solicitado.

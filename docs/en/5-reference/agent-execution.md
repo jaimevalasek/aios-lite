@@ -150,6 +150,24 @@ A unit prompt is the **dev-lane profile** (the `## Implementation strategy` and 
 
 `verify:artifact --kind=execution-plan` is the freshness gate: it fails when the plan, the roles file, the manifest lanes, a generated prompt or a host signature no longer match what was compiled (`plan_digest_stale`, `roles_changed`, `manifest_lanes_diverged`, `prompt_stale`, `signature_missing`) and warns when the dev kernel changed since (`dev_profile_stale`). It auto-fires at the planner's `agent:done` and stays silent for features that never compiled a plan.
 
+### Running the plan (`execution:run`, `execution:decide`, `execution:status`)
+
+```bash
+aioson execution:run . --feature=my-feature --preflight --json   # deterministic preflight only
+aioson execution:run . --feature=my-feature                      # live lines on stdout; --json moves them to stderr
+aioson execution:decide . --feature=my-feature --unit=phase-2 --choice=fallback:qwen/qwen-3.8-max
+aioson execution:run . --feature=my-feature --resume
+aioson execution:status . --feature=my-feature --json
+```
+
+The run holds the feature's dispatcher lease for its whole life (a direct `agent:execution:dispatch` cannot interleave) and walks the plan wave by wave. Every lane unit is a pipeline `dev → qa`: the lane's dev role runs the unit as an ephemeral external process with `sandbox_mode: workspace-write` (the registry's unattended flags — `codex exec --sandbox workspace-write`, never the approvals bypass), writes the bound JSON report and dies; the lane's qa role then reviews and tests it with the **qa-lane profile** (the `## Risk-first checklist` extracted from the installed `qa.md` plus the review rules), may fix at most `qa.max_fix_files` files among the unit's own files, and reports the rest as findings. Corrections are **measured**, not trusted: the worktree is snapshotted before and after the review (git; without git the review still runs and the measurement is reported as absent) — a changed unit file the reviewer did not list is `undeclared_correction`, more changed unit files than the cap is `corrections_cap_exceeded`; at wave level a changed file inside a lane's write paths that belongs to no unit is `lane_scope_drift`, and one outside every lane is `unowned_change`. Up to `parallel.max_concurrent_lanes` pipelines run at once. Integration units (files outside every lane) are never spawned: the run ends `completed` with them listed for the session DEV.
+
+Nothing decides silently. A unit whose dev role cannot start (`executable_not_found`, `auth`, `capacity`, `invalid_model` …), times out, crashes, misses its bound report or reports `FAIL`/`BLOCKED` — or whose reviewer cannot run — leaves a `decision_required` in `.aioson/context/execution-state-{slug}.json` and a `decision_required` event on that unit's execution telemetry (`agent_execution_events`, the table a supervising client already polls); the other units of the wave finish, then the run pauses with `status: decision_required`. `execution:decide` answers per unit — `retry`, `fallback:<host>/<model>[/<effort>]` (the fallback must carry a valid host signature), `skip` (dev stage: the integration owner implements it, recorded as `unit_skipped`), `skip-qa` (qa stage: recorded as `qa_skipped`), `abort` — and records the decision (`decision_applied`); `execution:run --resume` continues idempotently: passed units are never re-run, a plan or manifest that changed since the run started refuses with `run_state_stale` (`--fresh` starts over). A failed review (`FAIL` verdict) is a finding for integration, not a block.
+
+Life is measured, not reported: every unit process streams its output into the telemetry, and a unit with no output **and** no file change under its lane write paths for `stallMs` (default 5 min) is marked `stalled` (an event, a live line, a flag in the state) — never silently. The live channel itself is the engine's one-line-per-event stream (`[execution] wave 1 · phase-2 · dev started kimi/kimi-k3`), independent of whether the host CLI streams anything.
+
+`execution:status` is the consolidated ledger: run summary, waves, per-unit dev/qa status with hosts, verdicts, report paths, corrections and findings (dev, qa and run-level), pending decisions with their hints, integration units, `resume_command`.
+
 ## Explicit fallback only
 
 Missing CLI, unsupported capability, or unavailable model pauses execution. The active chat must never imitate the requested model.

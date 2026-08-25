@@ -33,6 +33,9 @@ const BOOLEAN_FLAGS = new Set([
   // host:signature / learning:rollback / pentester:report — pure boolean;
   // `--list .` must not swallow the path positional.
   'list',
+  // execution:run — pure booleans; `--preflight .` / `--resume .` / `--fresh .`
+  // must not swallow the path positional.
+  'preflight', 'resume', 'fresh',
   // verify:artifact — pure booleans; `--advisory .` / `--no-build .` /
   // `--runtime .` must not swallow the path positional.
   'advisory', 'no-build', 'runtime',

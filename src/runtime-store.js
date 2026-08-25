@@ -2727,7 +2727,10 @@ function appendExecutionEvent(db, runOrCorrelation, event) {
     ? db.prepare('SELECT * FROM agent_execution_runs WHERE telemetry_run_id=?').get(runOrCorrelation)
     : findExecutionRun(db,runOrCorrelation);
   if (!run) throw new Error('execution_run_not_found');
-  const allowed = new Set(['run_created','process_started','state_changed','output','retry','fallback','timeout','report_attached','output_truncated','recovered','diagnostic']);
+  // decision_required / decision_applied / stalled / progress: emitted by the
+  // orchestrated-execution engine (execution:run) so a supervising client that
+  // already polls this database can raise the decision dialog and show life.
+  const allowed = new Set(['run_created','process_started','state_changed','output','retry','fallback','timeout','report_attached','output_truncated','recovered','diagnostic','decision_required','decision_applied','stalled','progress']);
   if (!allowed.has(event.type)) throw new Error('execution_event_type_invalid');
   const sanitize=(value,depth=0)=>{if(depth>4)return'[TRUNCATED]';if(typeof value==='string')return value.replace(/(authorization\s*[:=]\s*(?:bearer\s+)?|api[_-]?key\s*[:=]\s*|token\s*[:=]\s*|password\s*[:=]\s*)[^\s,;]+/gi,'$1[REDACTED]').slice(0,2000);if(Array.isArray(value))return value.slice(0,25).map(v=>sanitize(v,depth+1));if(value&&typeof value==='object'){const out={};for(const key of Object.keys(value).slice(0,25))out[String(key).slice(0,100)]=sanitize(value[key],depth+1);return out}return value};
   const safeSummary=sanitize(String(event.safe_summary||''));const safePayload=event.payload?sanitize(event.payload):null;

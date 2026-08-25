@@ -1154,3 +1154,27 @@ aioson execution:compile [path] --feature=<slug> [--dry-run] [--json]
 
 Compiles the planner's `## Development execution lanes` and `## Execution Sequence` tables, crossed with the roles file and the host signatures, into `.aioson/context/execution-plan-<slug>.json` (units = phase × lane or integration owned by dev, waves, per-unit capabilities/acceptance criteria/verification, roles per lane, source digests), one prompt per lane unit and per lane under `.aioson/context/execution-prompts/<slug>/` (the dev-lane profile derived from the installed `dev.md` + the unit contract + the PRD/plan rows of that unit's capabilities), and updates only `development_lanes` and `orchestration.execution` in `agent-execution-<slug>.json`. Refuses with named findings and writes nothing when the tables, ownership, waves, roles, signatures or the dev kernel are not right (`lanes_table_missing`, `no_wave_column`, `phase_mixed_ownership`, `wave_file_overlap`, `integration_before_lanes`, `lane_write_paths_overlap`, `lane_without_role`, `qa_role_missing`, `role_signature_missing|expired|invalid`, `dev_kernel_missing`, …); exit 1 on refusal. `--dry-run` computes the plan and findings without writing. The compiled plan is verified by `verify:artifact --kind=execution-plan --slug=<slug>` (digest-bound to the plan, the roles, the manifest lanes, the prompts and the signatures), which auto-fires at the planner's `agent:done` and stays silent for features that never compiled one.
 
+## execution:run
+
+```bash
+aioson execution:run [path] --feature=<slug> [--preflight] [--resume] [--fresh] [--wave=<n>] [--json]
+```
+
+Runs the compiled plan: wave by wave, every lane unit as a `dev → qa` pipeline of ephemeral external processes (the lane's dev role implements the unit inside its files with the host's unattended write mode and a bound JSON report; the lane's qa role reviews and tests it with the qa-lane profile, may apply at most `qa.max_fix_files` measured corrections among the unit files, reports the rest as findings), up to `parallel.max_concurrent_lanes` pipelines at once. The deterministic preflight (`--preflight` stops there) is `verify:artifact kind=execution-plan` plus a valid manifest and every role host resolvable on PATH. The run holds the feature's dispatcher lease (a direct `agent:execution:dispatch` cannot interleave; `run_lease_held` otherwise) and writes `.aioson/context/execution-state-<slug>.json` after every transition. A unit that cannot run, times out, crashes, misses its bound report or reports `FAIL`/`BLOCKED` — or whose reviewer cannot run — leaves a `decision_required` (state + a `decision_required` event on the unit's execution telemetry); the wave finishes and the run pauses (exit 1, `decisions_pending[]` with hints). `--resume` continues idempotently after `execution:decide` (passed units are never re-run; `run_state_stale` when the plan or manifest changed since; `--fresh` discards the previous run). Wave-level scope drift (`lane_scope_drift`, `unowned_change`) and unit silence (`stalled`: no output and no file change under the lane write paths for 5 min) are measured and reported, never guessed. Live lines (`[execution] wave 1 · phase-2 · dev started kimi/kimi-k3`) go to stdout, or to stderr with `--json` so the JSON document stays the only stdout. Integration units (files outside every lane) are listed for the session DEV, never spawned.
+
+## execution:decide
+
+```bash
+aioson execution:decide [path] --feature=<slug> --unit=<unit-id> --choice=retry|fallback:<host>/<model>[/<effort>]|skip|skip-qa|abort [--json]
+```
+
+Answers a pending decision of one unit, between runs (refuses `run_active` while the feature lease is held). `retry` re-queues the stage; `fallback:` re-queues it on another host/model — which must carry a valid host signature (`fallback_signature_missing` otherwise) and, for an effort, a host that accepts one; `skip` (dev stage) hands the unit to the integration owner and records `unit_skipped`; `skip-qa` (qa stage) keeps the implementation and records `qa_skipped`; `abort` cancels the run. The decision is recorded in the state (`decisions[]`) and as a `decision_applied` telemetry event; the answer carries the `resume_command`.
+
+## execution:status
+
+```bash
+aioson execution:status [path] --feature=<slug> [--json]
+```
+
+The consolidated ledger of the current run: summary (status, waves, unit counts, pending decisions), waves with their units, per-unit dev/qa status (host, model, verdict, reason, report path, findings, measured corrections, cap breaches), all findings (dev, qa, run-level scope), decisions applied and pending, integration units and `resume_command`. Read-only; exit 0 even with no run (`compiled, not started` / `no execution plan compiled`).
+
