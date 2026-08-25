@@ -1143,9 +1143,20 @@ async function finalizeCurrentStage(targetDir, config, state, stageName) {
   let auditCodeSummary = null;
   let rulesCheckSummary = null;
   let scopeDriftSummary = null;
+  let executionSummary = null;
 
   // ── Harness Done Gate ───────────────────────────────────────────────────
   if (state.mode === 'feature' && state.featureSlug) {
+    // ── Orchestrated execution gate ─────────────────────────────────────────
+    // With orchestrated execution selected in the manifest, the planner stage
+    // cannot complete on a missing or stale compiled plan — "does not run
+    // without models per role" is an engine gate here, not a prompt line. DEV
+    // gets an advisory when the compiled lanes never ran to completion.
+    const executionGate = await inspectExecutionGate(targetDir, state.featureSlug, normalizedStage);
+    if (executionGate.blocking) {
+      throw new Error(executionGate.message);
+    }
+    if (executionGate.mode === 'orchestrated') executionSummary = executionGate;
     if (normalizedStage === 'dev') {
       const chainGate = await inspectChainHandoffGate(targetDir, {
         featureSlug: state.featureSlug,
@@ -1507,7 +1518,8 @@ async function finalizeCurrentStage(targetDir, config, state, stageName) {
     ...(correctionCycleReset ? { correctionCycleReset } : {}),
     ...(auditCodeSummary ? { auditCode: auditCodeSummary } : {}),
     ...(rulesCheckSummary ? { rulesCheck: rulesCheckSummary } : {}),
-    ...(scopeDriftSummary ? { scopeDrift: scopeDriftSummary } : {})
+    ...(scopeDriftSummary ? { scopeDrift: scopeDriftSummary } : {}),
+    ...(executionSummary ? { execution: executionSummary } : {})
   };
 }
 
@@ -1903,6 +1915,125 @@ function buildStageActivationContext(state, stageName, dependencies, scopeCheckM
   ].join('\n');
 }
 
+/**
+ * Orchestrated execution — deterministic pins for the stages that touch it.
+ * Empty (byte-identical prompts) whenever the project has not unlocked the
+ * orchestrated path: no roles file, no signed roles, no orchestrated manifest.
+ *
+ *   planner:            the offer (roles unlocked + every role signed) → ask
+ *                       once, tables, compile; a stale compiled plan → recompile.
+ *   dev / orchestrator: the manifest says orchestrated → run the engine, answer
+ *                       decisions, integrate from the ledger. The routed doc
+ *                       carries the protocol; the pin carries the STATE.
+ *
+ * Never throws: an unreadable roles file or plan yields no pin, not a broken
+ * activation.
+ */
+async function buildExecutionActivationContext(targetDir, state, stageName) {
+  if (state.mode !== 'feature' || !state.featureSlug) return '';
+  if (!['planner', 'dev', 'orchestrator'].includes(stageName)) return '';
+  const slug = state.featureSlug;
+  try {
+    if (stageName === 'planner') {
+      const { offerExecution } = require('../lib/execution-roles');
+      const { readExecutionPlan, verifyExecutionPlan } = require('../agent-execution/execution-plan');
+      const offer = await offerExecution(targetDir);
+      if (!offer.available) return '';
+      const roles = Object.entries(offer.roles.roles)
+        .map(([key, role]) => `${key}=${role.host}/${role.model}${role.reasoning_effort ? `/${role.reasoning_effort}` : ''}`)
+        .join(', ');
+      const lines = [
+        `Orchestrated execution: AVAILABLE (roles signed on this machine: ${roles}).`,
+        'Ask the user once (AskUserQuestion): single DEV (default, as today) or orchestrated lanes with these roles. '
+        + 'On orchestrated: add the `## Development execution lanes` and `## Execution Sequence` tables to the plan, then run '
+        + `\`aioson execution:compile . --feature=${slug}\` before completing — with orchestrated execution selected, the planner stage cannot complete on a missing or stale compiled plan.`
+      ];
+      const compiled = await readExecutionPlan(targetDir, slug);
+      if (compiled.exists) {
+        const verified = await verifyExecutionPlan(targetDir, slug);
+        lines.push(verified.ok
+          ? `Compiled execution plan: fresh (${compiled.plan?.summary?.units ?? '?'} units, ${compiled.plan?.summary?.waves ?? '?'} waves). Editing the plan tables requires recompiling.`
+          : `Compiled execution plan: STALE — ${verified.issues[0] || 'recompile'}`);
+      }
+      return lines.join('\n');
+    }
+    const { loadManifest, resolveExecutionMode } = require('../agent-execution/manifest');
+    const loaded = await loadManifest(targetDir, slug);
+    if (!loaded.exists || !loaded.ok || resolveExecutionMode(loaded.manifest) !== 'orchestrated') return '';
+    const { statusExecution } = require('../agent-execution/execution-run');
+    const status = await statusExecution({ projectDir: targetDir, feature: slug });
+    const lines = [
+      "Orchestrated execution: this feature's lanes run as external processes — follow `.aioson/docs/dev/execution-lanes.md` § Compiled orchestrated execution."
+    ];
+    if (!status.run) {
+      lines.push(`Run state: ${status.compiled ? 'compiled, not started' : `NOT COMPILED — run: aioson execution:compile . --feature=${slug}`}.`);
+      lines.push(`Next: aioson execution:run . --feature=${slug} --preflight --json, then aioson execution:run . --feature=${slug}; answer decisions with execution:decide; integrate from aioson execution:status . --feature=${slug} --json.`);
+    } else {
+      const run = status.run;
+      lines.push(`Run state: ${run.status}${run.reason ? ` (${run.reason})` : ''} — lane units passed ${run.units.passed}/${run.units.lane}, qa passed ${run.units.qa_passed}, findings ${status.findings.length}, decisions pending ${run.decisions_pending.length}.`);
+      for (const decision of run.decisions_pending) {
+        lines.push(`Decision pending: ${decision.unit} [${decision.stage}] ${decision.reason} → ${decision.hint}`);
+      }
+      if (status.resume_command) lines.push(`Resume: ${status.resume_command}`);
+      if (run.status === 'completed') {
+        lines.push(`Integration units for dev: ${(status.integration?.units || []).join(', ') || 'none'}; resolve every finding in the ledger before completing DEV.`);
+      }
+    }
+    return lines.join('\n');
+  } catch {
+    return '';
+  }
+}
+
+/**
+ * The orchestrated-execution stage gate. Only when the manifest selects
+ * `orchestration.execution: orchestrated`:
+ *   planner completion → BLOCKS on a missing/stale compiled plan (the plan
+ *                        must be recompiled after every table edit);
+ *   dev completion     → ADVISORY when the compiled lanes never ran to
+ *                        completion (the ledger may hold unresolved findings).
+ * Any other manifest → no gate, no output (the single-DEV route is untouched).
+ */
+async function inspectExecutionGate(targetDir, slug, stage) {
+  const none = { blocking: false, advisory: false };
+  if (!['planner', 'dev'].includes(stage)) return none;
+  try {
+    const { loadManifest, resolveExecutionMode } = require('../agent-execution/manifest');
+    const loaded = await loadManifest(targetDir, slug);
+    if (!loaded.exists || !loaded.ok || resolveExecutionMode(loaded.manifest) !== 'orchestrated') return none;
+    const { verifyExecutionPlan } = require('../agent-execution/execution-plan');
+    const verified = await verifyExecutionPlan(targetDir, slug);
+    if (stage === 'planner') {
+      if (verified.ok) return { blocking: false, advisory: false, mode: 'orchestrated', plan: 'fresh' };
+      return {
+        blocking: true,
+        advisory: false,
+        mode: 'orchestrated',
+        plan: 'stale',
+        issues: verified.issues,
+        message: `[Execution Plan BLOCKED] orchestrated execution is selected for "${slug}" but the compiled plan is missing or stale: ${verified.issues[0]}. Run: aioson execution:compile . --feature=${slug} (or set orchestration.execution back to single in agent-execution-${slug}.json).`
+      };
+    }
+    const { statusExecution } = require('../agent-execution/execution-run');
+    const status = await statusExecution({ projectDir: targetDir, feature: slug });
+    const runStatus = status.run ? status.run.status : 'not_started';
+    if (runStatus === 'completed' && verified.ok) {
+      return { blocking: false, advisory: false, mode: 'orchestrated', plan: 'fresh', run: 'completed', findings: status.findings.length };
+    }
+    return {
+      blocking: false,
+      advisory: true,
+      mode: 'orchestrated',
+      plan: verified.ok ? 'fresh' : 'stale',
+      run: runStatus,
+      decisions_pending: (status.decisions_pending || []).map((item) => item.unit),
+      message: `orchestrated execution is selected but the run is ${runStatus}${verified.ok ? '' : ' and the compiled plan is stale'} — DEV is completing without the compiled lanes; the ledger (aioson execution:status . --feature=${slug}) may hold unresolved findings`
+    };
+  } catch (error) {
+    return { blocking: false, advisory: true, mode: 'orchestrated', error: error.message };
+  }
+}
+
 async function activateStage(
   targetDir,
   state,
@@ -2028,8 +2159,10 @@ async function activateStage(
     agent: stageName,
     featureSlug: state.featureSlug || null
   });
+  const executionActivationContext = await buildExecutionActivationContext(targetDir, state, stageName);
   const activationContext = [
     buildStageActivationContext(state, stageName, dependencies, scopeCheckMode),
+    executionActivationContext,
     verificationBriefing && verificationBriefing.briefing,
     generatedContext,
     chainActivationContext
@@ -2593,6 +2726,8 @@ module.exports = {
   applySkip,
   activateStage,
   runWorkflowNext,
+  buildExecutionActivationContext,
+  inspectExecutionGate,
   assertManifestNotPending,
   PENDING_STATE_WHITELIST,
   shouldRouteToValidator,

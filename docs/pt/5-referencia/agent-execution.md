@@ -150,6 +150,15 @@ O prompt de uma unidade é o **perfil dev-lane** (as seções `## Implementation
 
 `verify:artifact --kind=execution-plan` é o gate de frescor: falha quando o plano, o arquivo de papéis, as faixas do manifesto, um prompt gerado ou uma assinatura de host deixaram de corresponder ao compilado (`plan_digest_stale`, `roles_changed`, `manifest_lanes_diverged`, `prompt_stale`, `signature_missing`) e avisa quando o kernel do dev mudou desde então (`dev_profile_stale`). Dispara automaticamente no `agent:done` do planner e fica em silêncio para features que nunca compilaram um plano.
 
+### Roteamento
+
+A cadeia canônica não muda (`@product → @sheldon → @planner → @dev → @qa`); o caminho orquestrado é servido por pinos e gates determinísticos dentro do `workflow:next`, então um projeto que nunca o destravou recebe prompts byte a byte idênticos:
+
+- **Ativação do planner** — quando `execution:offer` responde `available` (arquivo de destravamento + todo papel assinado), o contexto de ativação pina a oferta (papéis, a escolha de uma pergunta só, o comando de compile) e, quando existe plano compilado, se está fresco ou obsoleto. Nada é pinado caso contrário.
+- **Conclusão do planner** — com `orchestration.execution: orchestrated` no manifesto, `workflow:next --complete=planner` é **bloqueado** com plano compilado ausente ou obsoleto (`[Execution Plan BLOCKED]` … `aioson execution:compile`). É o gate "não roda sem modelos por papel", no motor.
+- **Ativação do DEV / @orchestrator** — com o manifesto orquestrado, o contexto de ativação pina o estado do run (`compiled, not started` / decisões pendentes com suas dicas / `completed` com as unidades de integração) e aponta para o doc roteado `.aioson/docs/dev/execution-lanes.md` § Compiled orchestrated execution, que carrega o protocolo (`execution:run` → `execution:decide` → `--resume` → `execution:status` → integrar → concluir DEV como sempre). `@orchestrator` segue como desvio explícito cujo kernel roda o mesmo motor e entrega o ledger ao `@dev`.
+- **Conclusão do DEV** — resumo `execution` advisory no resultado quando as faixas compiladas nunca rodaram até o fim (`run: not_started | decision_required | …`); nunca bloqueia.
+
 ### Rodando o plano (`execution:run`, `execution:decide`, `execution:status`)
 
 ```bash

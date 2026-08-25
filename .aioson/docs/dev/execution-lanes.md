@@ -9,6 +9,16 @@ triggers: [development_lanes, split execution, agent:execution:dispatch, lane]
 
 Development lanes are an execution mechanism, not new canonical agents or specification stages. Use them only when `development_lanes.strategy: split` and the individual lane is explicitly enabled in `agent-execution-{slug}.json`; classification never enables them.
 
+## Compiled orchestrated execution
+
+When `.aioson/context/execution-plan-{slug}.json` exists (the planner compiled orchestrated lanes with `aioson execution:compile` from the roles the supervising client unlocked), the lanes run as one engine-driven run — never by hand, never one dispatch at a time:
+
+1. `aioson execution:run . --feature={slug} --preflight --json` — refuses on a stale plan, an invalid manifest or a role host missing from PATH. Fix the cause (recompile, sign, install); never bypass.
+2. `aioson execution:run . --feature={slug}` — waves of `dev → qa` pipelines, one line per event, integration units left to you. A unit that cannot run or did not pass pauses the run with `decision_required`: read the hint, decide with `aioson execution:decide . --feature={slug} --unit=<id> --choice=retry|fallback:<host>/<model>|skip|skip-qa|abort` (ask the user when the choice is theirs — a fallback host must be signed), then `aioson execution:run . --feature={slug} --resume`.
+3. `aioson execution:status . --feature={slug} --json` — the ledger: integration units (yours), the lane reviewers' findings and corrections, run findings (`lane_scope_drift`, `unowned_change`, `corrections_cap_exceeded`, `unit_skipped`, `qa_skipped`), report paths. Implement the integration units, resolve every finding, run the complete planned verification, then complete DEV exactly as usual. Never re-run a passed unit by hand; never edit the compiled prompts; QA keeps the single delivery verdict.
+
+## Sequential dispatch (no compiled plan)
+
 For each enabled lane:
 
 1. Confirm its `host`, `model`, exact `write_paths`, and configured prompt path.

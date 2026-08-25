@@ -91,17 +91,19 @@ async function atomicWrite(file, value) {
   const tmp = `${file}.${process.pid}.${crypto.randomUUID()}.tmp`;
   await fs.writeFile(tmp, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
   // Windows refuses a rename onto a file another handle still holds (EPERM/
-  // EBUSY) — an indexer, a watcher, a reader mid-poll. Retry briefly.
+  // EBUSY) — an indexer, an antivirus scan, a reader mid-poll. Under load
+  // those holds last longer than a few milliseconds: retry with a growing
+  // backoff (~1.4s in total) before giving up.
   for (let attempt = 0; ; attempt += 1) {
     try {
       await fs.rename(tmp, file);
       return;
     } catch (error) {
-      if (!['EPERM', 'EBUSY', 'EACCES'].includes(error.code) || attempt >= 5) {
+      if (!['EPERM', 'EBUSY', 'EACCES'].includes(error.code) || attempt >= 10) {
         await fs.rm(tmp, { force: true }).catch(() => {});
         throw error;
       }
-      await new Promise((resolve) => setTimeout(resolve, 20 * (attempt + 1)));
+      await new Promise((resolve) => setTimeout(resolve, 25 * (attempt + 1)));
     }
   }
 }

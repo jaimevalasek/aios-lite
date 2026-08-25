@@ -150,6 +150,15 @@ A unit prompt is the **dev-lane profile** (the `## Implementation strategy` and 
 
 `verify:artifact --kind=execution-plan` is the freshness gate: it fails when the plan, the roles file, the manifest lanes, a generated prompt or a host signature no longer match what was compiled (`plan_digest_stale`, `roles_changed`, `manifest_lanes_diverged`, `prompt_stale`, `signature_missing`) and warns when the dev kernel changed since (`dev_profile_stale`). It auto-fires at the planner's `agent:done` and stays silent for features that never compiled a plan.
 
+### Routing
+
+The canonical chain does not change (`@product → @sheldon → @planner → @dev → @qa`); the orchestrated path is served by deterministic pins and gates inside `workflow:next`, so a project that never unlocked it gets byte-identical prompts:
+
+- **Planner activation** — when `execution:offer` answers `available` (unlock file + every role signed), the activation context pins the offer (roles, the one-question choice, the compile command) and, when a compiled plan exists, whether it is fresh or stale. Nothing is pinned otherwise.
+- **Planner completion** — with `orchestration.execution: orchestrated` in the manifest, `workflow:next --complete=planner` is **blocked** on a missing or stale compiled plan (`[Execution Plan BLOCKED]` … `aioson execution:compile`). This is the "does not run without models per role" gate, in the engine.
+- **DEV / @orchestrator activation** — with the manifest orchestrated, the activation context pins the run state (`compiled, not started` / pending decisions with their hints / `completed` with the integration units) and points to the routed doc `.aioson/docs/dev/execution-lanes.md` § Compiled orchestrated execution, which carries the protocol (`execution:run` → `execution:decide` → `--resume` → `execution:status` → integrate → complete DEV as usual). `@orchestrator` stays an explicit detour whose kernel runs the same engine and hands the ledger to `@dev`.
+- **DEV completion** — advisory `execution` summary in the result when the compiled lanes never ran to completion (`run: not_started | decision_required | …`); never a block.
+
 ### Running the plan (`execution:run`, `execution:decide`, `execution:status`)
 
 ```bash

@@ -13,10 +13,23 @@ Coordinate an explicitly requested parallel or cross-cutting execution problem. 
 3. Read `.aioson/context/features/{slug}/dossier.md` when present.
 4. Run `aioson context:brief . --agent=orchestrator --mode=executing --task="<coordination need>" --paths="<planned paths>" 2>/dev/null || true`.
 5. Inspect the exact repository paths and dependencies that justify coordination.
+6. Run `aioson execution:status . --feature={slug} --json`. When `.aioson/context/execution-plan-{slug}.json` exists, the feature runs the **compiled orchestrated execution** below; otherwise the legacy ledger applies.
 
 If the plan is missing or not approved, return to Planner. If the work is not genuinely parallel/cross-cutting, return to Dev with the existing plan.
 
-## Coordination contract
+## Compiled orchestrated execution (`execution-plan-{slug}.json` present)
+
+The planner compiled the lanes from its tables and the roles the supervising client unlocked (`execution:compile`); the engine runs them. Your judgment is the review before and between runs — never the spawning, never the ledger by hand:
+
+1. Preflight: `aioson execution:run . --feature={slug} --preflight --json`. Deterministic — stale plan, invalid manifest, unsigned role, host missing from PATH. Fix the cause (recompile through @planner, sign with `host:signature`, install); never bypass.
+2. Review the compiled graph, not the plan prose: the waves, units, files and capabilities in `execution-plan-{slug}.json`. Judge only what a reader can judge — does the wave order respect dependencies, did a shared file land in a solo wave, is a lane starved (`lane_without_units`)? A wrong graph goes back to @planner (the tables), never to a hand-edited JSON or prompt.
+3. Run: `aioson execution:run . --feature={slug}` — waves of `dev → qa` pipelines, one line per event, `parallel.max_concurrent_lanes` at once. Narrate to the user only at checkpoints (wave completed, decision pending, run completed) from `execution:status`; the live lines are the engine's, not yours.
+4. Decisions: a unit that cannot run or did not pass pauses the run with `decision_required` (its `choices` and hint are in the result and in `execution:status`). Decide with `aioson execution:decide . --feature={slug} --unit=<id> --choice=retry|fallback:<host>/<model>[/<effort>]|skip|skip-qa|abort` — a fallback host must carry a valid signature. Ask the user (one AskUserQuestion) when the choice is theirs: another model, skipping a unit, aborting. Then `aioson execution:run . --feature={slug} --resume`.
+5. Ledger: `aioson execution:status . --feature={slug} --json` — integration units, the lane reviewers' findings and measured corrections, run findings (`lane_scope_drift`, `unowned_change`, `corrections_cap_exceeded`, `unit_skipped`, `qa_skipped`), report paths. Hand it to `@dev` as the execution state: DEV implements the integration units, resolves the findings, runs the complete planned verification and owns the stage. QA remains the independent delivery reviewer.
+
+Never re-run a passed unit by hand, never edit a compiled prompt, never edit the lanes of `agent-execution-{slug}.json` by hand — recompile.
+
+## Coordination contract (legacy ledger — no compiled plan)
 
 - Decompose only approved plan phases.
 - Materialize lanes with the engine — never track ownership, conflicts, or the ledger by hand:

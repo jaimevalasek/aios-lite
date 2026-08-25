@@ -123,7 +123,7 @@ The transitive authority chain must remain complete: every required `PROM-*` res
 
 `## Engineering Controls` is required but proportional. Add one row per material concern and connect it to a phase verification; when no cross-cutting concern is triggered, state that explicitly with the exact boundaries inspected instead of filling the table with generic controls. These rows are coverage seeds for Dev, QA, and any explicitly enabled Tester/Pentester—they do not activate a specialist or create another gate.
 
-When split execution was explicitly requested, add one compact section to the same implementation plan:
+When `aioson execution:offer . --feature={slug} --json` answers `available: true`, ask once (AskUserQuestion): single DEV (default) or orchestrated lanes. On orchestrated or explicitly requested split execution, add one compact section to the plan:
 
 ```markdown
 ## Development execution lanes
@@ -133,9 +133,9 @@ When split execution was explicitly requested, add one compact section to the sa
 | frontend | opencode | provider/model-id | src/ui/Example.tsx, tests/ui/Example.test.tsx | dev |
 ```
 
-Then update the existing `agent-execution-{slug}.json` runtime manifest with the same disjoint scopes. Do not create an architecture document or a second plan. A host is a registered CLI adapter; a model may be supplied by that host/provider. Fallback to the current Codex session is forbidden unless the manifest explicitly declares the fallback and its activation reason. Keep shared integration files with DEV rather than assigning the same path to two lanes.
+`aioson execution:compile . --feature={slug}` derives the manifest lanes and unit prompts from these tables (never hand-edit; refuses with named findings). A host is a registered CLI adapter; a model is that host's identifier. Keep shared integration files with DEV rather than assigning the same path to two lanes.
 
-When the feature will run the compiled harness lane (`.aioson/plans/{slug}/harness-contract.json` exists or the user requests `@forge-run`), add one `## Execution Sequence` table to the same plan — `forge:compile` refuses without it; the normal Dev lane never needs it:
+When the feature will run orchestrated lanes or the compiled harness lane (`.aioson/plans/{slug}/harness-contract.json` exists or the user requests `@forge-run`), add one `## Execution Sequence` table to the same plan — `execution:compile` and `forge:compile` refuse without it; the normal Dev lane never needs it:
 
 ```markdown
 ## Execution Sequence
