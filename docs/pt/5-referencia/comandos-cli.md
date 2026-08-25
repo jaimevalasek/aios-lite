@@ -639,6 +639,7 @@ O dossier é o ponto único de verdade de uma feature em andamento: spec, plano,
 | Comando | O que faz | Quando usar |
 |---|---|---|
 | `tool:capabilities` | Expõe o mapa de capacidades por cliente AI (suporte a `--resume`, comando de instalação, etc.) | Quando integração externa (AIOSON Play, IDE extensions) precisa saber o que cada tool suporta; aceita `--tool=claude` e `--json` |
+| `host:signature` | Sonda e registra se `(host, modelo, effort)` funciona nesta máquina (CLI instalado, login, modelo aceito, effort suportado) em `~/.aioson/hosts/signatures.json`; `--status` e `--list` são somente leitura | Antes de despachar faixas/agentes em outro host/modelo; `agent:execution:validate --strict` exige assinatura válida para toda entrada habilitada. Aceita `--host`, `--model`, `--effort`, `--ttl`, `--timeout`, `--json` |
 
 ---
 

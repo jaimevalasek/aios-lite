@@ -80,7 +80,26 @@ Use faixas somente quando o usuário ou o plano aprovado pedir hosts/modelos dif
 
 O DEV cria o prompt curto de runtime a partir do PRD e do plano aprovados, despacha as faixas habilitadas sequencialmente no worktree compartilhado, confere o diff contra `write_paths`, integra as fronteiras compartilhadas e roda a verificação completa. O relatório vincula a identidade da faixa e seus caminhos declarados.
 
-Os adaptadores registrados atualmente incluem Codex, Claude Code, OpenCode e Kimi Code. Um host novo precisa de adaptador para manter resolução de executável, capabilities, argumentos, redação e telemetria em modo fail-closed.
+Os hosts vêm de um registro único (`src/lib/tool-capabilities.js`, exposto por `aioson tool:capabilities --json`): Claude Code, Codex, OpenCode, Kimi Code e Qwen Code são despacháveis; Grok é conhecido só pela superfície interativa até ter um adaptador não-interativo. Um host novo precisa de adaptador para manter resolução de executável, capabilities, argumentos, redação e telemetria em modo fail-closed.
+
+## Assinaturas de host
+
+Uma assinatura é a prova, no nível da máquina, de que uma combinação `(host, modelo, effort)` realmente funciona aqui — CLI instalado, login válido, ID de modelo aceito, effort suportado — registrada antes de qualquer despacho, em vez de descoberta como `executable_not_found` / `auth` / `invalid_model` no meio de uma execução.
+
+```bash
+aioson host:signature . --host=kimi --model=kimi-k3
+aioson host:signature . --host=codex --model=gpt-5.6 --effort=high --ttl=24
+aioson host:signature . --host=kimi --model=kimi-k3 --status --json
+aioson host:signature . --list --json
+aioson agent:execution:validate . --feature=minha-feature --strict --json
+```
+
+A sonda monta exatamente o argv que o adaptador de execução usaria (mesmos flags não-interativos, modo read-only do provedor), roda num diretório temporário vazio com um prompt de uma palavra e classifica a saída pela normalização de erros do próprio adaptador. Nunca lê contexto de projeto e nunca escreve dentro de um projeto. O resultado fica em `~/.aioson/hosts/signatures.json` (override: `AIOSON_HOST_SIGNATURES`), chaveado por host, modelo e effort, com TTL (padrão 24h).
+
+- Recusas são determinísticas a partir do registro: `unknown_host`, `unsupported_host_execution` (host só interativo), `effort_unsupported_by_host`, `invalid_reasoning_effort`.
+- Resultados da sonda: `valid`, ou `invalid` com `executable_not_found` (trazendo o comando de instalação), `auth`, `invalid_model`, `capacity`, `timeout`, `crash`.
+- `--status` e `--list` são somente leitura e sempre saem com 0; a resposta está no campo `state` (`valid | expired | invalid | missing`).
+- `agent:execution:validate --strict` exige assinatura válida e não expirada para todo agente e faixa **habilitados** (entradas desligadas são ignoradas) e reporta fallbacks declarados sem assinatura como aviso. Sem `--strict`, o manifesto mantém o contrato `validated_at_dispatch` inalterado.
 
 ## Fallback somente explícito
 

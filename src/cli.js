@@ -146,6 +146,7 @@ const {
 const {
   runToolCapabilities,
 } = require('./commands/tool-capabilities');
+const { runHostSignature } = require('./commands/host-signature');
 const { runScaffoldComplete } = require('./commands/scaffold-complete');
 const {
   runCloudImportSquad,
@@ -700,6 +701,8 @@ const JSON_SUPPORTED_COMMANDS = new Set([
   'live-list',
   'tool:capabilities',
   'tool-capabilities',
+  'host:signature',
+  'host-signature',
   'scaffold:complete',
   'scaffold-complete',
   'deliver',
@@ -1843,6 +1846,8 @@ async function main() {
       result = await runLiveList({ args, options, logger: commandLogger, t });
     } else if (command === 'tool:capabilities' || command === 'tool-capabilities') {
       result = await runToolCapabilities({ args, options, logger: commandLogger, t });
+    } else if (command === 'host:signature' || command === 'host-signature') {
+      result = await runHostSignature({ args, options, logger: commandLogger, t });
     } else if (command === 'scaffold:complete' || command === 'scaffold-complete') {
       result = await runScaffoldComplete({ args, options, logger: commandLogger, t });
     } else if (command === 'deliver') {

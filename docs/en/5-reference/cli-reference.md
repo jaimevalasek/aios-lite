@@ -1126,3 +1126,15 @@ For a staged scan, `git:guard` reads `.aioson/git-guard.json` from the Git index
 
 The generic secret heuristic skips credential descriptors (`confirm_password_label`, `API_KEY_HEADER`, `TOKEN_TTL`), mask and label values (`••••••••`, `"Password"`), and suppresses — as visible notices — findings inside localization resources (`i18n/`, `locales/`, `lang/`, locale-named files such as `messages/pt-BR.json`, `.po/.arb/.xliff/.resx`) and word-shaped symbol names under `token` keys (lint/AST reports). Provider-key rules still apply everywhere.
 
+## host:signature
+
+```bash
+aioson host:signature [path] --host=<claude|codex|opencode|kimi|qwen> [--model=<id>|configured-default] [--effort=<level>] [--ttl=<hours>] [--timeout=<ms>] [--json]
+aioson host:signature [path] --host=<host> [--model=<id>] [--effort=<level>] --status [--json]
+aioson host:signature [path] --list [--json]
+```
+
+Probes whether a `(host, model, effort)` combination actually works on this machine — CLI installed, login valid, model id accepted, effort supported — and records the result in `~/.aioson/hosts/signatures.json` (override: `AIOSON_HOST_SIGNATURES`) with a TTL (default 24h). The probe uses the exact non-interactive argv of the execution adapter in provider read-only mode, inside an empty temporary directory, with a one-word prompt; it never touches a project. Hosts come from the single registry behind `tool:capabilities`; interactive-only hosts (Grok) are refused with `unsupported_host_execution`.
+
+The probe's exit code is the verdict (`ok` = signature valid; `reason` carries `executable_not_found` with the install command, `auth`, `invalid_model`, `capacity`, `timeout`, `crash`, `effort_unsupported_by_host`). `--status` and `--list` are read-only and always exit 0; read the `state` field (`valid | expired | invalid | missing`). `aioson agent:execution:validate --feature=<slug> --strict` requires a valid signature for every enabled agent and lane of the manifest and warns on unsigned declared fallbacks; without `--strict` the manifest keeps its `validated_at_dispatch` contract.
+

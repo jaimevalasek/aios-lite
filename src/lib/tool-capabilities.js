@@ -1,17 +1,26 @@
 'use strict';
 
-// Capabilities map for the AI CLIs that AIOSON can spawn via `aioson live:start`.
+// Single host registry for the AI CLIs AIOSON can spawn.
+//
+// One entry per CLI feeds three consumers, so there is exactly one list to
+// keep in sync when a host is added or a flag changes:
+//   - `aioson live:start` (interactive/PTY): `--resume[=last|<id>]` and
+//     `--permission-mode=yolo` map to the right argv through this table.
+//   - `aioson tool:capabilities`: exposes the map as JSON to UI clients
+//     (e.g. AIOSON Play) so they never duplicate the lookup.
+//   - `src/agent-execution/capabilities.js`: derives the per-host EXECUTION
+//     capability matrix (non-interactive external processes dispatched by the
+//     agent-execution manifest and probed by `aioson host:signature`) from the
+//     `execution` block. A host without an `execution` block is known to the
+//     interactive surface but is NOT dispatchable and cannot be signed until a
+//     non-interactive adapter exists under src/agent-execution/adapters/.
+//
 // Each CLI persists conversation history in its own per-cwd location, so
-// "continue last conversation" is achieved by passing the right resume flag
-// at spawn time — AIOSON never has to track an internal session ID.
+// "continue last conversation" is achieved by passing the right resume flag at
+// spawn time — AIOSON never has to track an internal session ID.
 //
-// Used by:
-//   - `aioson live:start --resume[=last|<id>]` to map to the correct argv
-//   - `aioson live:start --permission-mode=yolo` to map to the correct argv
-//   - `aioson tool:capabilities` to expose this map as JSON to UI clients
-//     (e.g. AIOSON Play) so they don't duplicate the lookup.
-//
-// Keep entries minimal and source-of-truth here. Adding a new CLI = one entry.
+// Keep entries minimal and source-of-truth here. Adding a new CLI = one entry
+// (+ one adapter when it should be dispatchable).
 const TOOL_CAPS = {
   claude: {
     install_command: 'npm install -g @anthropic-ai/claude-code',
@@ -24,6 +33,11 @@ const TOOL_CAPS = {
     session_picker: ['--resume'],
     supports_yolo: true,
     yolo_args: ['--dangerously-skip-permissions'],
+    execution: {
+      additional_workspaces: true,
+      model_catalog: false,
+      reasoning_effort: false,
+    },
   },
   codex: {
     install_command: 'npm install -g @openai/codex',
@@ -36,6 +50,11 @@ const TOOL_CAPS = {
     session_picker: ['resume'],
     supports_yolo: true,
     yolo_args: ['--dangerously-bypass-approvals-and-sandbox'],
+    execution: {
+      additional_workspaces: true,
+      model_catalog: true,
+      reasoning_effort: true,
+    },
   },
   opencode: {
     install_command: 'npm install -g opencode-ai',
@@ -48,6 +67,62 @@ const TOOL_CAPS = {
     session_picker: null,
     supports_yolo: false,
     yolo_args: null,
+    execution: {
+      additional_workspaces: false,
+      model_catalog: false,
+      reasoning_effort: false,
+    },
+  },
+  kimi: {
+    install_command: 'npm install -g @moonshot-ai/kimi-code',
+    binary: 'kimi',
+    supports_resume: false,
+    resume_last: null,
+    supports_session_id: false,
+    resume_session_id: null,
+    supports_session_picker: false,
+    session_picker: null,
+    // Kimi Code distinguishes `--yolo` (may still ask) from `--auto` (fully
+    // unattended); unattended is what a permission-mode=yolo caller means.
+    supports_yolo: true,
+    yolo_args: ['--auto'],
+    execution: {
+      additional_workspaces: true,
+      model_catalog: false,
+      reasoning_effort: false,
+    },
+  },
+  qwen: {
+    install_command: 'npm install -g @qwen-code/qwen-code',
+    binary: 'qwen',
+    supports_resume: false,
+    resume_last: null,
+    supports_session_id: false,
+    resume_session_id: null,
+    supports_session_picker: false,
+    session_picker: null,
+    supports_yolo: true,
+    yolo_args: ['--yolo'],
+    execution: {
+      additional_workspaces: false,
+      model_catalog: false,
+      reasoning_effort: false,
+    },
+  },
+  grok: {
+    install_command: 'npm install -g @xai-official/grok',
+    binary: 'grok',
+    supports_resume: false,
+    resume_last: null,
+    supports_session_id: false,
+    resume_session_id: null,
+    supports_session_picker: false,
+    session_picker: null,
+    supports_yolo: true,
+    yolo_args: ['--yolo'],
+    // No verified non-interactive contract yet: interactive only, not
+    // dispatchable, not signable.
+    execution: null,
   },
 };
 
@@ -59,6 +134,18 @@ function getToolCapabilities(tool) {
 
 function listSupportedTools() {
   return Object.keys(TOOL_CAPS).sort();
+}
+
+// Hosts that can run as non-interactive external processes (agent-execution
+// dispatch + host:signature). Interactive-only entries are excluded.
+function listExecutionHosts() {
+  return Object.keys(TOOL_CAPS).filter((tool) => Boolean(TOOL_CAPS[tool].execution)).sort();
+}
+
+function getExecutionCapabilities(tool) {
+  const caps = getToolCapabilities(tool);
+  if (!caps || !caps.execution) return null;
+  return { binary: caps.binary, install_command: caps.install_command, ...caps.execution };
 }
 
 // Resolve the argv prefix to add to the CLI spawn so it resumes a conversation.
@@ -111,7 +198,9 @@ function resolvePermissionModeArgs(tool, permissionMode) {
 module.exports = {
   TOOL_CAPS,
   getToolCapabilities,
+  getExecutionCapabilities,
   listSupportedTools,
+  listExecutionHosts,
   resolveResumeArgs,
   resolvePermissionModeArgs,
 };

@@ -420,6 +420,8 @@ module.exports = {
       'aioson runtime:session:status [path] --agent=<name> [--limit=8] [--watch=2] [--json] [--locale=en]',
     help_runtime_emit:
       'aioson runtime:emit [path] --agent=<name> [--type=<event>] [--summary=<text>] [--title=<text>] [--refs=<file[,file2]>] [--used-skills=<id[,id2]>] [--plan-step=<id>] [--meta=<json>] [--json] [--locale=en]',
+    help_host_signature:
+      'aioson host:signature [path] --host=claude|codex|opencode|kimi|qwen [--model=<id>|configured-default] [--effort=low|medium|high|xhigh|max|ultra] [--ttl=<hours>] [--timeout=<ms>] [--status] [--list] [--json] [--locale=en]',
     help_live_start:
       'aioson live:start [path] --tool=codex|claude|opencode --agent=<name> [--tool-bin=<binary>] [--permission-mode=default|yolo] [--tool-args=<args>] [--title=<text>] [--goal=<text>] [--plan=<file>] [--session=<key>] [--message=<text>] [--attach] [--no-launch] [--tmux] [--json] [--locale=en]',
     help_live_status:
