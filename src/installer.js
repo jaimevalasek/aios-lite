@@ -286,6 +286,10 @@ async function listFilesRecursive(dir) {
  */
 function shouldSkipTemplatePath(rel, profile = null) {
   if (rel === '.gitignore') return 'merge-only';
+  // Local-only runtime state (aios.sqlite, live sessions) never ships from a
+  // template: a stray database under template/.aioson/runtime/ would be copied
+  // over the project's own runtime on update and silently erase its history.
+  if (rel === '.aioson/runtime' || rel.startsWith('.aioson/runtime/')) return 'runtime-state';
   if (rel === '.aioson/context/.gitkeep') return false;
   if (rel === '.aioson/context/design-doc.md') return false; // framework default — copied on fresh install, project-local on update
   if (rel === '.aioson/context/_archived/.gitkeep') return false; // active-learning-loop Phase 3 archive convention
@@ -596,6 +600,7 @@ module.exports = {
   ensureGitignoreEntry,
   ensureGitignoreEntries,
   ensureProjectGitignorePolicy,
+  shouldSkipTemplatePath,
   ensureGitGuardBaseline,
   GIT_GUARD_BASELINE_BLOCK_PATHS,
   countProjectFiles
