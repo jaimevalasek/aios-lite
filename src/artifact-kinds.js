@@ -33,6 +33,16 @@ const AGENT_ARTIFACT_KIND = {
   'design-hybrid-forge': { kind: 'hybrid-skill', needs: 'slug' },
   copywriter: { kind: 'copy', needs: 'slug' },
   orache: { kind: 'orache-report', needs: 'file' },
+  // The planner's spec artifacts stay under the workflow gates (Gate C), not
+  // here. Its one DERIVED artifact — the compiled orchestrated-execution plan —
+  // is digest-bound to the plan it was compiled from, so a plan edited after
+  // `execution:compile` is caught at the planner's session end instead of at
+  // `execution:run`. Single-DEV features never compile one: `skipIfMissing`
+  // keeps the gate silent for them.
+  planner: {
+    kind: 'execution-plan', needs: 'slug', featureSlugged: true,
+    skipIfMissing: '.aioson/context/execution-plan-{slug}.json'
+  },
   // A forged site is an interface: its build is proven by kind=site, its
   // craft, tells and materials by the same measured floor every other visual
   // producer passes — keyed on the deliverable directory it already receives.

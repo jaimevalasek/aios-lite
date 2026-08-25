@@ -208,6 +208,7 @@ const { runPrototypeCheck } = require('./commands/prototype-check');
 const { runVerifyImplementation } = require('./commands/verify-implementation');
 const { runVerificationPlan } = require('./commands/verification-plan');
 const { runAgentExecution } = require('./commands/agent-execution');
+const { runExecution } = require('./commands/execution');
 const { runDelegationPlan, runDelegationRun } = require('./commands/delegation');
 const { runSizing } = require('./commands/sizing');
 const { runDetectTestRunner } = require('./commands/detect-test-runner');
@@ -703,6 +704,10 @@ const JSON_SUPPORTED_COMMANDS = new Set([
   'tool-capabilities',
   'host:signature',
   'host-signature',
+  'execution:offer',
+  'execution-offer',
+  'execution:compile',
+  'execution-compile',
   'scaffold:complete',
   'scaffold-complete',
   'deliver',
@@ -1198,6 +1203,9 @@ function printHelp(t, logger) {
   logHelpLine(t, logger, 'cli.help_runtime_session_finish');
   logHelpLine(t, logger, 'cli.help_runtime_session_status');
   logHelpLine(t, logger, 'cli.help_runtime_emit');
+  logHelpLine(t, logger, 'cli.help_host_signature');
+  logHelpLine(t, logger, 'cli.help_execution_offer');
+  logHelpLine(t, logger, 'cli.help_execution_compile');
   logHelpLine(t, logger, 'cli.help_live_start');
   logHelpLine(t, logger, 'cli.help_live_status');
   logHelpLine(t, logger, 'cli.help_live_handoff');
@@ -1999,6 +2007,9 @@ async function main() {
     } else if (command.startsWith('agent:execution:') || command.startsWith('agent-execution-')) {
       const sub = command.replace(/^agent:execution:|^agent-execution-/, '');
       result = await runAgentExecution({ args, options: { ...options, sub }, logger: commandLogger });
+    } else if (command.startsWith('execution:') || command.startsWith('execution-')) {
+      const sub = command.replace(/^execution:|^execution-/, '');
+      result = await runExecution({ args, options: { ...options, sub }, logger: commandLogger });
     } else if (command === 'prototype:check' || command === 'prototype-check') {
       result = await runPrototypeCheck({ args, options, logger: commandLogger });
     } else if (command === 'verify:implementation' || command === 'verify-implementation') {

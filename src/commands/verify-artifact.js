@@ -243,7 +243,7 @@ const RULESETS = {
 
 // Kinds whose target file path is keyed by --slug; without it we cannot resolve
 // the artifact, so fail with a clear usage error instead of a `null/` path.
-const REQUIRES_SLUG = new Set(['genome', 'research-report', 'enriched-profile', 'hybrid-skill', 'copy', 'review', 'sources', 'briefing', 'test-report', 'squad-pilot']);
+const REQUIRES_SLUG = new Set(['genome', 'research-report', 'enriched-profile', 'hybrid-skill', 'copy', 'review', 'sources', 'briefing', 'test-report', 'squad-pilot', 'execution-plan']);
 
 // Kinds whose artifact has a date-stamped / caller-known path — resolved via
 // --file=<path> rather than derived from a slug.
@@ -754,6 +754,30 @@ const ADAPTERS = {
   // present, no external resources, an embedded source_hash, and a feedback
   // JSON that passes the canonical schema. Staleness (briefings.md changed
   // after generation, e.g. right after an apply) is a warning, not a failure.
+  // execution:compile — the compiled orchestrated-execution plan is a derived
+  // artifact: it is only true while the plan, the roles file, the manifest
+  // lanes, the generated prompts and the host signatures it was compiled from
+  // are unchanged. Every check is a digest or a lookup — no judgment.
+  'execution-plan': async (ctx) => {
+    if (!ctx.slug) {
+      return { ok: false, issues: ['kind=execution-plan requires --slug=<feature-slug>'], warnings: [], checks: [] };
+    }
+    const { verifyExecutionPlan } = require('../agent-execution/execution-plan');
+    let result;
+    try {
+      result = await verifyExecutionPlan(ctx.targetDir, ctx.slug);
+    } catch (err) {
+      return { ok: false, issues: [`execution plan could not be verified: ${err.message}`], warnings: [], checks: [] };
+    }
+    return {
+      ok: result.ok,
+      issues: result.issues,
+      warnings: result.warnings,
+      checks: result.checks,
+      ...(result.metrics ? { metrics: result.metrics } : {})
+    };
+  },
+
   review: async (ctx) => {
     if (!ctx.slug) {
       return { ok: false, issues: ['kind=review requires --slug=<briefing-slug>'], warnings: [], checks: [] };

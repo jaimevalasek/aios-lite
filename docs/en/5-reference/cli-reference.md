@@ -1138,3 +1138,19 @@ Probes whether a `(host, model, effort)` combination actually works on this mach
 
 The probe's exit code is the verdict (`ok` = signature valid; `reason` carries `executable_not_found` with the install command, `auth`, `invalid_model`, `capacity`, `timeout`, `crash`, `effort_unsupported_by_host`). `--status` and `--list` are read-only and always exit 0; read the `state` field (`valid | expired | invalid | missing`). `aioson agent:execution:validate --feature=<slug> --strict` requires a valid signature for every enabled agent and lane of the manifest and warns on unsigned declared fallbacks; without `--strict` the manifest keeps its `validated_at_dispatch` contract.
 
+## execution:offer
+
+```bash
+aioson execution:offer [path] [--feature=<slug>] [--json]
+```
+
+Answers whether the orchestrated execution path (compiled lanes as parallel external processes, one host/model per role) is available in this project on this machine: `.aioson/config/execution-roles.json` present, valid and enabled — the unlock file the supervising desktop client writes; the framework never does — **and** every declared role signed (`host:signature`) and unexpired. `available:false` carries `reason` (`roles_file_missing | roles_disabled | roles_invalid | signature_missing | signature_expired | signature_invalid`) and, for signatures, the `missing[]` roles with their `host:signature` hint. With `--feature` it also describes the plan (`lanes_table`, `execution_sequence`) and the compiled state (`compiled.exists`, `compiled.fresh`, `compiled.issues`). Always exits 0 — it is a question, not a gate. See [Agent execution — Orchestrated execution](agent-execution.md#orchestrated-execution-roles-offer-compile).
+
+## execution:compile
+
+```bash
+aioson execution:compile [path] --feature=<slug> [--dry-run] [--json]
+```
+
+Compiles the planner's `## Development execution lanes` and `## Execution Sequence` tables, crossed with the roles file and the host signatures, into `.aioson/context/execution-plan-<slug>.json` (units = phase × lane or integration owned by dev, waves, per-unit capabilities/acceptance criteria/verification, roles per lane, source digests), one prompt per lane unit and per lane under `.aioson/context/execution-prompts/<slug>/` (the dev-lane profile derived from the installed `dev.md` + the unit contract + the PRD/plan rows of that unit's capabilities), and updates only `development_lanes` and `orchestration.execution` in `agent-execution-<slug>.json`. Refuses with named findings and writes nothing when the tables, ownership, waves, roles, signatures or the dev kernel are not right (`lanes_table_missing`, `no_wave_column`, `phase_mixed_ownership`, `wave_file_overlap`, `integration_before_lanes`, `lane_write_paths_overlap`, `lane_without_role`, `qa_role_missing`, `role_signature_missing|expired|invalid`, `dev_kernel_missing`, …); exit 1 on refusal. `--dry-run` computes the plan and findings without writing. The compiled plan is verified by `verify:artifact --kind=execution-plan --slug=<slug>` (digest-bound to the plan, the roles, the manifest lanes, the prompts and the signatures), which auto-fires at the planner's `agent:done` and stays silent for features that never compiled one.
+

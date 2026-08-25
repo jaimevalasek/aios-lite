@@ -98,6 +98,32 @@ function defaults(feature, host = 'codex', { cycleLimits } = {}) {
   };
 }
 
+/**
+ * `orchestration.execution` — `single` (default; absent on every manifest that
+ * predates the field) or `orchestrated` (set by `execution:compile`).
+ */
+function resolveExecutionMode(manifest) {
+  const value = manifest && manifest.orchestration && manifest.orchestration.execution;
+  return value === 'orchestrated' ? 'orchestrated' : 'single';
+}
+
+/** Validate then atomically rewrite the manifest (tmp + rename). */
+async function writeManifest(projectDir, feature, manifest) {
+  const file = manifestPath(projectDir, feature);
+  const validation = validateManifest(manifest, feature);
+  if (!validation.ok) {
+    const error = new Error('agent execution manifest invalid');
+    error.code = 'manifest_invalid';
+    error.errors = validation.errors;
+    throw error;
+  }
+  await fs.mkdir(path.dirname(file), { recursive: true });
+  const tmp = `${file}.${process.pid}.${crypto.randomUUID()}.tmp`;
+  await fs.writeFile(tmp, `${JSON.stringify(manifest, null, 2)}\n`, 'utf8');
+  await fs.rename(tmp, file);
+  return { path: file, digest: digest(manifest) };
+}
+
 function resolveOrchestrationPolicy(manifest) {
   const value = manifest && manifest.orchestration;
   return {
@@ -285,7 +311,9 @@ module.exports = {
   resolveDevelopmentLane,
   resolveDevelopmentLaneExecution,
   resolveExecutionEntry,
+  resolveExecutionMode,
   resolveExecutionTarget,
   resolveOrchestrationPolicy,
-  resolveChainWorkPolicy
+  resolveChainWorkPolicy,
+  writeManifest
 };

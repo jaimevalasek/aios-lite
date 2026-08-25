@@ -420,6 +420,10 @@ module.exports = {
       'aioson runtime:emit [path] --agent=<nome> [--type=<evento>] [--summary=<texto>] [--title=<texto>] [--refs=<arquivo[,arquivo2]>] [--used-skills=<id[,id2]>] [--plan-step=<id>] [--meta=<json>] [--json] [--locale=pt-BR]',
     help_host_signature:
       'aioson host:signature [path] --host=claude|codex|opencode|kimi|qwen [--model=<id>|configured-default] [--effort=low|medium|high|xhigh|max|ultra] [--ttl=<horas>] [--timeout=<ms>] [--status] [--list] [--json] [--locale=pt-BR]',
+    help_execution_offer:
+      'aioson execution:offer [path] [--feature=<slug>] [--json] [--locale=pt-BR]',
+    help_execution_compile:
+      'aioson execution:compile [path] --feature=<slug> [--dry-run] [--json] [--locale=pt-BR]',
     help_live_start:
       'aioson live:start [path] --tool=codex|claude|opencode --agent=<nome> [--tool-bin=<binario>] [--permission-mode=default|yolo] [--tool-args=<args>] [--title=<texto>] [--goal=<texto>] [--plan=<arquivo>] [--session=<chave>] [--message=<texto>] [--attach] [--no-launch] [--tmux] [--json] [--locale=pt-BR]',
     help_live_status:

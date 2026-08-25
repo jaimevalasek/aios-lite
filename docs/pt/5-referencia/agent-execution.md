@@ -101,6 +101,55 @@ A sonda monta exatamente o argv que o adaptador de execução usaria (mesmos fla
 - `--status` e `--list` são somente leitura e sempre saem com 0; a resposta está no campo `state` (`valid | expired | invalid | missing`).
 - `agent:execution:validate --strict` exige assinatura válida e não expirada para todo agente e faixa **habilitados** (entradas desligadas são ignoradas) e reporta fallbacks declarados sem assinatura como aviso. Sem `--strict`, o manifesto mantém o contrato `validated_at_dispatch` inalterado.
 
+## Execução orquestrada (papéis, offer, compile)
+
+O caminho orquestrado roda as faixas do planner como processos externos paralelos, cada um com o host/modelo de um **papel**. Ele é destravado por um único arquivo de projeto que o cliente desktop supervisor escreve depois de validar as assinaturas — o framework nunca o escreve e nunca o distribui em `template/`. Ausente, desligado ou inválido, a opção não existe e a rota de DEV único fica byte a byte como é hoje.
+
+```json
+// .aioson/config/execution-roles.json
+{
+  "version": 1,
+  "source": "aioson-play",
+  "enabled": true,
+  "roles": {
+    "backend_dev":  { "host": "codex", "model": "gpt-5.6",         "reasoning_effort": "high" },
+    "frontend_dev": { "host": "kimi",  "model": "kimi-k3",         "reasoning_effort": null },
+    "qa":           { "host": "claude", "model": "claude-sonnet-5", "reasoning_effort": null }
+  },
+  "parallel": { "max_concurrent_lanes": 2 },
+  "on_unavailable": "ask"
+}
+```
+
+Papéis são snake_case: `{lane}_dev` (obrigatório por faixa), `qa` (o revisor de faixa, obrigatório), `{lane}_qa` (override opcional que herda de `qa`) e `integration_dev` (modelo opcional para a passada de integração). Hosts vêm do registro (`tool:capabilities`), effort só é aceito onde o host declara suporte, segredos são recusados.
+
+```bash
+aioson execution:offer . --feature=minha-feature --json      # disponível? (papéis + assinaturas; tabelas do plano; estado compilado)
+aioson execution:compile . --feature=minha-feature --json    # tabelas + papéis → plano de execução, prompts, faixas do manifesto
+aioson execution:compile . --feature=minha-feature --dry-run --json
+aioson verify:artifact . --kind=execution-plan --slug=minha-feature
+```
+
+`execution:offer` responde `available` só quando o arquivo de papéis está presente, válido e habilitado **e** todo papel declarado tem assinatura válida e não expirada nesta máquina; caso contrário `reason` nomeia o primeiro bloqueio (`roles_file_missing | roles_disabled | roles_invalid | signature_missing | signature_expired | signature_invalid`). Sempre sai com 0 — é uma pergunta, não um gate.
+
+`execution:compile` lê as tabelas `## Development execution lanes` e `## Execution Sequence` do plano e recusa com achados nomeados, sem escrever nada:
+
+| Achado | Significado |
+|---|---|
+| `lanes_table_missing`, `lanes_table_invalid`, `no_wave_column` | as tabelas do planner estão ausentes ou não parseiam |
+| `lane_write_paths_overlap`, `unsafe_path`, `lane_id_invalid`, `too_many_lanes` | faixas não são disjuntas, escapam do projeto ou excedem o limite do manifesto |
+| `phase_mixed_ownership` | uma fase toca arquivos de duas faixas (ou de uma faixa mais arquivos sem dono) — divida-a, ou mova os arquivos compartilhados para uma onda solo posterior do dev |
+| `wave_file_overlap` | duas fases da mesma onda compartilham um arquivo |
+| `integration_before_lanes`, `no_lane_units` | trabalho de integração (arquivos fora de toda faixa) agendado antes das ondas de faixa, ou nenhuma fase cai numa faixa |
+| `lane_without_role`, `qa_role_missing`, `role_signature_missing|expired|invalid` | o arquivo de papéis não tem o `{lane}_dev` da faixa, não tem revisor, ou o papel não está assinado aqui (cada um traz a dica do `host:signature`) |
+| `dev_kernel_missing`, `dev_profile_sections_missing` | o `.aioson/agents/dev.md` instalado está ausente ou perdeu as seções das quais o perfil de faixa deriva |
+
+Em sucesso escreve `.aioson/context/execution-plan-{slug}.json` — unidades (fase × faixa, ou integração do dev), ondas, capacidades/critérios de aceite/comandos de verificação por unidade, os papéis por faixa e os digests de tudo de que foi compilado — mais um prompt por unidade de faixa e por faixa em `.aioson/context/execution-prompts/{slug}/`, e atualiza **somente** `development_lanes` (estratégia `split`, as faixas compiladas com seu bloco `qa`, faixas que saíram do plano desligadas) e `orchestration.execution: orchestrated` no manifesto. Todo o resto do manifesto — agentes da sessão, política de capacidade, fallbacks declarados, caminhos de relatório customizados, um `qa.max_fix_files` do operador — é preservado.
+
+O prompt de uma unidade é o **perfil dev-lane** (as seções `## Implementation strategy` e `## Execution invariants` extraídas do `dev.md` instalado, mais as regras de faixa: nenhum comando de posse de estágio, só os arquivos da unidade, verificação real, o relatório JSON vinculado) seguido do contrato da unidade e das linhas do PRD/plano das capacidades daquela unidade — nunca os documentos inteiros. Avisos (`lane_role_mismatch`, `self_review_same_model`, `cap_without_unit`, `unit_without_cap`, `prd_missing`, `lane_without_units`, `active_run_state`) ficam registrados no plano e nunca bloqueiam.
+
+`verify:artifact --kind=execution-plan` é o gate de frescor: falha quando o plano, o arquivo de papéis, as faixas do manifesto, um prompt gerado ou uma assinatura de host deixaram de corresponder ao compilado (`plan_digest_stale`, `roles_changed`, `manifest_lanes_diverged`, `prompt_stale`, `signature_missing`) e avisa quando o kernel do dev mudou desde então (`dev_profile_stale`). Dispara automaticamente no `agent:done` do planner e fica em silêncio para features que nunca compilaram um plano.
+
 ## Fallback somente explícito
 
 CLI ausente, capability incompatível ou modelo indisponível pausa a execução. O modelo do chat atual nunca pode imitar silenciosamente o modelo solicitado.

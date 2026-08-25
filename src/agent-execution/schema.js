@@ -27,7 +27,17 @@ const ROOT_KEYS = [
   'chain_work_policy'
 ];
 const AGENT_KEYS = ['enabled', 'host', 'mode', 'model', 'reasoning_effort', 'writable_roots', 'fallbacks', 'report'];
-const LANE_KEYS = [...AGENT_KEYS, 'prompt', 'write_paths'];
+// `qa` (optional, additive): the lane's own reviewer for the orchestrated path —
+// a second process/model that reviews and tests the lane's units and may apply
+// bounded fixes (`max_fix_files`). Absent → the lane has no lane-level QA and
+// the feature's single @qa verdict stays the only review, exactly as today.
+const LANE_KEYS = [...AGENT_KEYS, 'prompt', 'write_paths', 'qa'];
+const LANE_QA_KEYS = ['host', 'model', 'reasoning_effort', 'report', 'fallbacks', 'max_fix_files'];
+const MAX_QA_FIX_FILES = 20;
+// `orchestration.execution` (optional, additive): `single` (default — DEV
+// implements everything in the session) or `orchestrated` (compiled lanes run
+// as parallel external processes via `execution:run`; DEV integrates).
+const EXECUTION_MODES = ['single', 'orchestrated'];
 const SECRET_KEY = /token|secret|password|authorization|api[_-]?key/i;
 const SAFE_ID = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
@@ -82,6 +92,37 @@ function validateFallbacks(fallbacks, basePath, add) {
   });
 }
 
+function validateLaneQa(qa, basePath, add) {
+  if (!isPlainObject(qa)) {
+    add(basePath, 'must be an object');
+    return;
+  }
+  for (const key of Object.keys(qa)) {
+    if (!LANE_QA_KEYS.includes(key)) {
+      add(`${basePath}.${key}`, SECRET_KEY.test(key)
+        ? 'secret fields are forbidden; use environment configuration'
+        : 'unknown field');
+    }
+  }
+  if (!HOSTS.includes(qa.host)) add(`${basePath}.host`, `must be one of ${HOSTS.join(', ')}`);
+  if (typeof qa.model !== 'string' || !qa.model.trim()) {
+    add(`${basePath}.model`, 'must be a non-empty model id');
+  } else if (qa.model.length > MAX_MODEL_NAME_LENGTH) {
+    add(`${basePath}.model`, `must be at most ${MAX_MODEL_NAME_LENGTH} characters`);
+  }
+  if (qa.reasoning_effort !== undefined && !REASONING_EFFORTS.includes(qa.reasoning_effort)) {
+    add(`${basePath}.reasoning_effort`, `must be one of ${REASONING_EFFORTS.join(', ')}`);
+  }
+  if (typeof qa.report !== 'string' || !qa.report.includes('{run_id}')) {
+    add(`${basePath}.report`, 'must include {run_id}');
+  }
+  if (qa.fallbacks !== undefined) validateFallbacks(qa.fallbacks, `${basePath}.fallbacks`, add);
+  if (qa.max_fix_files !== undefined
+    && (!Number.isInteger(qa.max_fix_files) || qa.max_fix_files < 0 || qa.max_fix_files > MAX_QA_FIX_FILES)) {
+    add(`${basePath}.max_fix_files`, `must be an integer between 0 and ${MAX_QA_FIX_FILES}`);
+  }
+}
+
 function validateExecutionEntry(entry, basePath, add, { lane = false } = {}) {
   if (!isPlainObject(entry)) {
     add(basePath, 'is required');
@@ -134,6 +175,7 @@ function validateExecutionEntry(entry, basePath, add, { lane = false } = {}) {
         add(`${basePath}.write_paths`, 'must declare at least one path when the lane is enabled');
       }
     }
+    if (entry.qa !== undefined) validateLaneQa(entry.qa, `${basePath}.qa`, add);
   }
 }
 
@@ -172,12 +214,15 @@ function validateOrchestration(value, add) {
     return;
   }
   for (const key of Object.keys(value)) {
-    if (!['mode', 'max_checkpoints', 'stop_conditions'].includes(key)) {
+    if (!['mode', 'max_checkpoints', 'stop_conditions', 'execution'].includes(key)) {
       add(`$.orchestration.${key}`, 'unknown field');
     }
   }
   if (!ORCHESTRATION_MODES.includes(value.mode)) {
     add('$.orchestration.mode', `must be one of ${ORCHESTRATION_MODES.join(', ')}`);
+  }
+  if (value.execution !== undefined && !EXECUTION_MODES.includes(value.execution)) {
+    add('$.orchestration.execution', `must be one of ${EXECUTION_MODES.join(', ')}`);
   }
   if (!Number.isInteger(value.max_checkpoints) || value.max_checkpoints < 1 || value.max_checkpoints > 50) {
     add('$.orchestration.max_checkpoints', 'must be an integer between 1 and 50');
@@ -311,8 +356,11 @@ function validateManifest(value, expectedFeature) {
 
 module.exports = {
   AGENTS,
+  EXECUTION_MODES,
   FALLBACK_REASONS,
   HOSTS,
+  LANE_QA_KEYS,
+  MAX_QA_FIX_FILES,
   MAX_DEVELOPMENT_LANES,
   MAX_MODEL_NAME_LENGTH,
   MANIFEST_VERSIONS,

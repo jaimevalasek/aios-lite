@@ -101,6 +101,55 @@ The probe builds the exact argv the execution adapter would use (same non-intera
 - `--status` and `--list` are read-only and always exit 0; their answer is the `state` field (`valid | expired | invalid | missing`).
 - `agent:execution:validate --strict` requires a valid, unexpired signature for every **enabled** agent and lane (disabled entries are ignored) and reports unsigned declared fallbacks as warnings. Without `--strict` the manifest keeps its `validated_at_dispatch` contract unchanged.
 
+## Orchestrated execution (roles, offer, compile)
+
+The orchestrated path runs the planner's lanes as parallel external processes, each with the host/model of a **role**. It is unlocked by one project file the supervising desktop client writes after validating the signatures — the framework never writes it and never ships it in `template/`. Absent, disabled or invalid, the option does not exist and the single-DEV route is byte-for-byte what it is today.
+
+```json
+// .aioson/config/execution-roles.json
+{
+  "version": 1,
+  "source": "aioson-play",
+  "enabled": true,
+  "roles": {
+    "backend_dev":  { "host": "codex", "model": "gpt-5.6",         "reasoning_effort": "high" },
+    "frontend_dev": { "host": "kimi",  "model": "kimi-k3",         "reasoning_effort": null },
+    "qa":           { "host": "claude", "model": "claude-sonnet-5", "reasoning_effort": null }
+  },
+  "parallel": { "max_concurrent_lanes": 2 },
+  "on_unavailable": "ask"
+}
+```
+
+Roles are snake_case: `{lane}_dev` (required per lane), `qa` (the lane-level reviewer, required), `{lane}_qa` (optional override that inherits from `qa`) and `integration_dev` (optional model for the integration pass). Hosts come from the registry (`tool:capabilities`), a reasoning effort is accepted only where the host declares it, secrets are refused.
+
+```bash
+aioson execution:offer . --feature=my-feature --json      # available? (roles + signatures; plan tables; compiled state)
+aioson execution:compile . --feature=my-feature --json    # tables + roles → execution plan, prompts, manifest lanes
+aioson execution:compile . --feature=my-feature --dry-run --json
+aioson verify:artifact . --kind=execution-plan --slug=my-feature
+```
+
+`execution:offer` answers `available` only when the roles file is present, valid and enabled **and** every declared role carries a valid, unexpired signature on this machine; otherwise `reason` names the first blocker (`roles_file_missing | roles_disabled | roles_invalid | signature_missing | signature_expired | signature_invalid`). It always exits 0 — it is a question, not a gate.
+
+`execution:compile` reads the plan's `## Development execution lanes` and `## Execution Sequence` tables and refuses with named findings, writing nothing:
+
+| Finding | Meaning |
+|---|---|
+| `lanes_table_missing`, `lanes_table_invalid`, `no_wave_column` | the planner tables are absent or unparseable |
+| `lane_write_paths_overlap`, `unsafe_path`, `lane_id_invalid`, `too_many_lanes` | lanes are not disjoint, escape the project or exceed the manifest limit |
+| `phase_mixed_ownership` | one phase touches files of two lanes (or a lane plus unowned files) — split it, or move shared files to a later solo wave owned by dev |
+| `wave_file_overlap` | two phases of the same wave share a file |
+| `integration_before_lanes`, `no_lane_units` | integration work (files outside every lane) is scheduled before the lane waves, or no phase falls in a lane at all |
+| `lane_without_role`, `qa_role_missing`, `role_signature_missing|expired|invalid` | the roles file lacks a lane's `{lane}_dev`, lacks a reviewer, or the role is not signed here (each carries the `host:signature` hint) |
+| `dev_kernel_missing`, `dev_profile_sections_missing` | the installed `.aioson/agents/dev.md` is absent or lost the sections the lane profile derives from |
+
+On success it writes `.aioson/context/execution-plan-{slug}.json` — units (phase × lane, or integration owned by dev), waves, per-unit capabilities/acceptance criteria/verification commands, the roles per lane and the digests of everything it was compiled from — plus one prompt per lane unit and per lane under `.aioson/context/execution-prompts/{slug}/`, and updates **only** `development_lanes` (strategy `split`, the compiled lanes with their `qa` block, lanes that left the plan disabled) and `orchestration.execution: orchestrated` in the manifest. Everything else in the manifest — session agents, capacity policy, declared fallbacks, custom report paths, an operator's `qa.max_fix_files` — is preserved.
+
+A unit prompt is the **dev-lane profile** (the `## Implementation strategy` and `## Execution invariants` sections extracted from the installed `dev.md`, plus the lane rules: no stage-ownership commands, only the unit's files, real verification, the bound JSON report) followed by the unit contract and the PRD/plan rows of that unit's capabilities — never the whole documents. Warnings (`lane_role_mismatch`, `self_review_same_model`, `cap_without_unit`, `unit_without_cap`, `prd_missing`, `lane_without_units`, `active_run_state`) are recorded in the plan and never block.
+
+`verify:artifact --kind=execution-plan` is the freshness gate: it fails when the plan, the roles file, the manifest lanes, a generated prompt or a host signature no longer match what was compiled (`plan_digest_stale`, `roles_changed`, `manifest_lanes_diverged`, `prompt_stale`, `signature_missing`) and warns when the dev kernel changed since (`dev_profile_stale`). It auto-fires at the planner's `agent:done` and stays silent for features that never compiled a plan.
+
 ## Explicit fallback only
 
 Missing CLI, unsupported capability, or unavailable model pauses execution. The active chat must never imitate the requested model.

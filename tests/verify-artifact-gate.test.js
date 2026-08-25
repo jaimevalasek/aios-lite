@@ -42,7 +42,14 @@ test('resolveAgentArtifact maps the periphery and ignores everyone else', () => 
   for (const a of ['dev', 'qa', 'deyvin']) {
     assert.deepEqual(resolveAgentArtifact(a), { kind: 'visual', needs: 'dir', featureSlugged: true, interfaceDir: true, conformance: true });
   }
-  for (const a of ['product', 'sheldon', 'planner', 'orchestrator', '', undefined]) {
+  // The planner's spec artifacts stay under Gate C; its one DERIVED artifact —
+  // the compiled orchestrated-execution plan — is digest-bound to the plan, so
+  // it rides the session end, silent when the feature never compiled one.
+  assert.deepEqual(resolveAgentArtifact('planner'), {
+    kind: 'execution-plan', needs: 'slug', featureSlugged: true,
+    skipIfMissing: '.aioson/context/execution-plan-{slug}.json'
+  });
+  for (const a of ['product', 'sheldon', 'orchestrator', '', undefined]) {
     assert.equal(resolveAgentArtifact(a), null, `expected null for "${a}"`);
   }
 });

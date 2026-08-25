@@ -12,7 +12,7 @@ Development lanes are an execution mechanism, not new canonical agents or specif
 For each enabled lane:
 
 1. Confirm its `host`, `model`, exact `write_paths`, and configured prompt path.
-2. Create the short runtime prompt at that path from the approved PRD/plan and repository evidence. It must name the assigned phase/CAPs, allowed paths, focused verification, and what the lane must leave for DEV integration. It is not another spec.
+2. Create the short runtime prompt at that path from the approved PRD/plan and repository evidence. It must name the assigned phase/CAPs, allowed paths, focused verification, and what the lane must leave for DEV integration. It is not another spec. When `.aioson/context/execution-plan-{slug}.json` exists, the lanes and their prompts were compiled by `aioson execution:compile` from the plan tables and the roles file — never hand-edit them; `aioson verify:artifact . --kind=execution-plan --slug={slug}` must pass before any dispatch, and a stale plan is recompiled, not patched.
 3. Dispatch enabled lanes sequentially in the shared worktree:
 
    ```bash
