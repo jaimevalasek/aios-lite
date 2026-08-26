@@ -38,6 +38,7 @@ const { gitChangedFiles } = require('../harness/detect-runtime-feature');
 const { listSourceFiles, readText, CODE_EXTS, IGNORE_DIRS } = require('./audit-code');
 const { scanNamingLanguage } = require('../lib/naming-language');
 const { measureFile } = require('../lib/code-size');
+const { buildModuleGraph, cyclePath, MODULE_EXTS } = require('../lib/module-graph');
 const { resolveTargetDir } = require('../lib/project-root');
 
 const VERSION = '1.0.0';
@@ -207,8 +208,83 @@ const ENFORCERS = Object.freeze({
       }
       return findings;
     }
+  },
+
+  // Coupling limits — the boundaries. The graph is the whole tree (fan-in and
+  // cycles are properties of the tree, not of the changed files); findings are
+  // reported for the files under check, so a legacy tangle is charged only
+  // where a slice touches it, or counted once by `--baseline`.
+  'module-fan-out': {
+    id: 'module-fan-out',
+    surface: 'code',
+    summary: 'a module imports at most its limit of internal modules — coupling is counted, not felt',
+    run({ targetDir, files, documents }) {
+      const limit = sizeThreshold(documents, 'max_module_fan_out', 15);
+      const graph = moduleGraphOf(targetDir);
+      const findings = [];
+      for (const { rel } of files) {
+        const node = graph.nodes.get(rel);
+        if (!node || node.exempt || node.composition_root || node.fan_out <= limit) continue;
+        findings.push({
+          category: 'MODULE_FAN_OUT',
+          severity: 'HIGH',
+          message: `imports ${node.fan_out} internal modules (limit ${limit}) — this file orchestrates too much of the tree; group what it pulls in behind one boundary it owns, or split it by responsibility`,
+          file: rel,
+          line: 1,
+          token: 'module-fan-out',
+          snippet: `fan-out ${node.fan_out}, fan-in ${node.fan_in}: ${node.imports.slice(0, 6).join(', ')}${node.imports.length > 6 ? ', …' : ''}`
+        });
+      }
+      return findings;
+    }
+  },
+
+  'import-cycle': {
+    id: 'import-cycle',
+    surface: 'code',
+    summary: 'no import cycles — a module never depends on something that depends on it',
+    run({ targetDir, files }) {
+      const graph = moduleGraphOf(targetDir);
+      const findings = [];
+      for (const { rel } of files) {
+        const node = graph.nodes.get(rel);
+        if (!node || node.exempt) continue;
+        const trail = cyclePath(graph, rel);
+        if (!trail) continue;
+        const members = graph.cycles.find((cycle) => cycle.includes(rel)) || [rel];
+        findings.push({
+          category: 'IMPORT_CYCLE',
+          severity: 'HIGH',
+          message: `part of an import cycle (${members.length} modules): ${trail.join(' → ')} — break it with an interface the lower module owns, or move the shared piece below both`,
+          file: rel,
+          line: 1,
+          token: members.join('>'),
+          snippet: trail.join(' → ').slice(0, 200)
+        });
+      }
+      return findings;
+    }
   }
 });
+
+// The module graph of the whole tree, built once per check even when two
+// checkers and the divergence pass ask for it.
+const moduleGraphCache = new Map();
+function moduleGraphOf(targetDir) {
+  const key = path.resolve(targetDir);
+  if (moduleGraphCache.has(key)) return moduleGraphCache.get(key);
+  const files = [];
+  for (const abs of listSourceFiles(targetDir, MODULE_EXTS, SOURCE_IGNORE_DIRS)) {
+    const rel = path.relative(targetDir, abs).split(path.sep).join('/');
+    if (GENERATED_FILE.test(path.basename(rel)) || GENERATED_PATH.test(rel)) continue;
+    const content = readText(abs);
+    if (content === null) continue;
+    files.push({ rel, lines: content.split('\n') });
+  }
+  const graph = buildModuleGraph(files);
+  moduleGraphCache.set(key, graph);
+  return graph;
+}
 
 /**
  * A numeric threshold declared by the documents binding a checker. A binding
@@ -388,6 +464,8 @@ function loadFiles(targetDir, absPaths) {
 // ─── run ──────────────────────────────────────────────────────────────────────
 
 async function runRulesCheck({ args, options = {}, logger }) {
+  // The module graph memo spans one check: a tree changes between checks.
+  moduleGraphCache.clear();
   const targetDir = resolveTargetDir(args);
   const suppressExitCode = Boolean(options.suppressExitCode);
   const strict = Boolean(options.strict);

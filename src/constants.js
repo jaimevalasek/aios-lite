@@ -143,6 +143,7 @@ const MANAGED_FILES = [
   '.aioson/docs/dev/simple-plan-lane.md',
   '.aioson/docs/quality/code-health-analysis.md',
   '.aioson/docs/quality/code-size-limits.md',
+  '.aioson/docs/quality/coupling-limits.md',
   '.aioson/docs/qa/browser-walkthrough.md',
   '.aioson/skills/process/decision-presentation/SKILL.md',
   '.aioson/skills/process/decision-presentation/references/jargon-map.en.yaml',
