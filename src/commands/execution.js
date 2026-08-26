@@ -9,8 +9,10 @@
  *                                  tables and compiled state)
  *   execution:compile --feature    planner tables + roles → execution plan,
  *                                  unit prompts, manifest lanes
+ *   execution:graph   --feature    the compiled plan drawn as a graph (ascii |
+ *                                  mermaid | json), run state laid over it
  *
- * Both read-only on refusal; `offer` never fails the process.
+ * All read-only on refusal; `offer` never fails the process.
  */
 
 const fs = require('node:fs/promises');
@@ -26,8 +28,9 @@ const {
   verifyExecutionPlan
 } = require('../agent-execution/execution-plan');
 const { runExecution, decideExecution, statusExecution } = require('../agent-execution/execution-run');
+const { graphExecution, FORMATS: GRAPH_FORMATS } = require('../agent-execution/execution-graph');
 
-const SUBCOMMANDS = ['offer', 'compile', 'run', 'decide', 'status'];
+const SUBCOMMANDS = ['offer', 'compile', 'run', 'decide', 'status', 'graph'];
 
 /** One line per engine event — the live channel that does not depend on the host streaming. */
 function formatProgress(event) {
@@ -44,7 +47,7 @@ function formatProgress(event) {
     case 'decision_required':
       return `${where}: DECISION REQUIRED (${event.reason}) → ${event.hint}`;
     case 'scope':
-      return `wave ${event.wave}: ${event.check} ${event.path}${event.lane ? ` (lane ${event.lane})` : ''}`;
+      return `wave ${event.wave}${event.unit ? ` · ${event.unit}` : ''}: ${event.check} ${event.path}${event.lane ? ` (lane ${event.lane})` : ''}`;
     default:
       return JSON.stringify(event);
   }
@@ -104,7 +107,7 @@ function logCompile(logger, result) {
   if (result.ok) {
     const s = result.summary || {};
     logger.log(`${result.dry_run ? 'Execution plan (dry run)' : 'Execution plan compiled'}: ${result.path}`);
-    logger.log(`  lanes ${s.lanes} | units ${s.units} (lane ${s.lane_units}, integration ${s.integration_units}) | waves ${s.waves} | processes ${s.processes}`);
+    logger.log(`  lanes ${s.lanes} | units ${s.units} (lane ${s.lane_units}, integration ${s.integration_units}) | waves ${s.waves}${s.edges ? ` | edges ${s.edges}` : ''} | processes ${s.processes}`);
     if (result.manifest) {
       logger.log(`  manifest: ${result.manifest.path}${result.dry_run ? (result.manifest.would_create ? ' (would be created)' : ' (would be updated)') : (result.manifest.created ? ' (created)' : ' (updated)')}`);
     }
@@ -214,6 +217,18 @@ async function runExecutionCommand({ args, options = {}, logger, env = process.e
         for (const decision of result.decisions_pending) logger.log(`  ? ${decision.unit} [${decision.stage}] ${decision.reason} → ${decision.hint}`);
         if (result.resume_command) logger.log(`Resume: ${result.resume_command}`);
       }
+    }
+    return result;
+  }
+
+  if (sub === 'graph') {
+    if (!feature) return { ok: false, reason: 'feature_required', message: 'Use --feature=<slug>' };
+    const format = String(options.format || 'ascii').trim().toLowerCase();
+    if (!GRAPH_FORMATS.includes(format)) return { ok: false, reason: 'invalid_format', valid: GRAPH_FORMATS, message: `Use --format=${GRAPH_FORMATS.join('|')}` };
+    const result = await graphExecution({ projectDir, feature, format });
+    if (!options.json) {
+      if (result.ok) logger.log(result.rendered.replace(/\n$/, ''));
+      else logger.error(`Execution graph unavailable (${result.reason})${result.message ? `: ${result.message}` : ''}`);
     }
     return result;
   }

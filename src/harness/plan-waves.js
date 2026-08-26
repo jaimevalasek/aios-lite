@@ -5,11 +5,12 @@
  * (convenções do @planner — Fase 4/5 do plano de verificação executável).
  *
  * - `parseExecutionWaves`: tabela "Execution Sequence" (Phase|Wave|Files|
- *   Scope|Done when). Compartilhada entre `spec:analyze` (check
+ *   Scope|Done when|[Depends on]). Compartilhada entre `spec:analyze` (check
  *   wave_file_overlap), `forge:compile` (spec → workflow script) e
- *   `execution:compile` (unidades fase × lane). Sem coluna Wave a função
- *   retorna null — chamadores tratam como "convenção ausente" (retrocompat
- *   com planos antigos).
+ *   `execution:compile` (unidades fase × lane + arestas). Sem coluna Wave a
+ *   função retorna null — chamadores tratam como "convenção ausente"
+ *   (retrocompat com planos antigos). A coluna `Depends on` é opcional: sem
+ *   ela, `depends` é vazio e a onda continua sendo a barreira.
  * - `parseDevelopmentLanes`: tabela "Development execution lanes" (Lane|Host|
  *   Model|Exact write paths|Integration owner). Sem a seção retorna null.
  */
@@ -39,6 +40,25 @@ function splitPathCell(value) {
  *   `files` é minúsculo (comparação de overlap independente de plataforma);
  *   `files_raw` preserva o caso escrito no plano (contrato de escrita da unidade).
  */
+/**
+ * Célula `Depends on`: nomes de fase separados por vírgula/`;`/`<br>`;
+ * sufixo `(dev)` = portão after_dev (basta o implementador passar), sem
+ * sufixo ou `(qa)` = after_qa (a revisão da lane terminou). Vazio, `-`,
+ * `—`, `none` → nenhuma aresta (a onda continua sendo a barreira).
+ */
+function parseDependsCell(value) {
+  return String(value || '')
+    .split(/,|;|<br\s*\/?\s*>/i)
+    .map((token) => token.replace(/`/g, '').trim())
+    .filter((token) => token && !/^(?:-+|—|none|nenhuma?|n\/a)$/i.test(token))
+    .map((token) => {
+      const match = token.match(/^(.+?)\s*\((dev|qa|implemented|reviewed)\)$/i);
+      if (!match) return { phase: token, gate: 'after_qa' };
+      const kind = match[2].toLowerCase();
+      return { phase: match[1].trim(), gate: kind === 'dev' || kind === 'implemented' ? 'after_dev' : 'after_qa' };
+    });
+}
+
 function parseExecutionWaves(content) {
   const lines = String(content || '').split(/\r?\n/);
   let columns = null;
@@ -61,7 +81,8 @@ function parseExecutionWaves(content) {
           wave: lower.indexOf('wave'),
           files: lower.findIndex((c) => c.includes('file')),
           scope: lower.findIndex((c) => c.includes('scope')),
-          done: lower.findIndex((c) => c.includes('done'))
+          done: lower.findIndex((c) => c.includes('done')),
+          depends: lower.findIndex((c) => /depend|^after\b|ap[oó]s|requires/.test(c))
         };
       }
       continue;
@@ -72,13 +93,16 @@ function parseExecutionWaves(content) {
     const wave = parseInt(cells[columns.wave], 10);
     if (!Number.isInteger(wave)) continue;
     const filesRaw = splitPathCell(cells[columns.files]);
+    const dependsRaw = columns.depends >= 0 ? (cells[columns.depends] || '') : '';
     rows.push({
       phase: cells[columns.phase] || `row ${rows.length + 1}`,
       wave,
       files: filesRaw.map((f) => f.toLowerCase()),
       files_raw: filesRaw,
       scope: columns.scope >= 0 ? (cells[columns.scope] || '') : '',
-      done: columns.done >= 0 ? (cells[columns.done] || '') : ''
+      done: columns.done >= 0 ? (cells[columns.done] || '') : '',
+      depends_raw: dependsRaw,
+      depends: parseDependsCell(dependsRaw)
     });
   }
 
@@ -160,4 +184,4 @@ function parseDevelopmentLanes(content) {
   return { rows, malformed, missing_columns: [] };
 }
 
-module.exports = { parseExecutionWaves, groupByWave, parseDevelopmentLanes, splitPathCell, LANES_HEADINGS };
+module.exports = { parseExecutionWaves, parseDependsCell, groupByWave, parseDevelopmentLanes, splitPathCell, LANES_HEADINGS };

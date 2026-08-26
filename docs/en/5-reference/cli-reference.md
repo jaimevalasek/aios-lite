@@ -1178,3 +1178,11 @@ aioson execution:status [path] --feature=<slug> [--json]
 
 The consolidated ledger of the current run: summary (status, waves, unit counts, pending decisions), waves with their units, per-unit dev/qa status (host, model, verdict, reason, report path, findings, measured corrections, cap breaches), all findings (dev, qa, run-level scope), decisions applied and pending, integration units and `resume_command`. Read-only; exit 0 even with no run (`compiled, not started` / `no execution plan compiled`).
 
+## execution:graph
+
+```bash
+aioson execution:graph [path] --feature=<slug> [--format=ascii|mermaid|json] [--json]
+```
+
+The compiled execution plan drawn as the graph it is: nodes are the units (lane units and the integration units the session DEV runs after the lanes), edges are the passage rules — the explicit `Depends on` edges (`after_dev` / `after_qa`) and, for units that declare none, the implicit wave-barrier edges from the previous wave. When a run state exists it is laid over the nodes (dev/qa status, host, verdict, pending decision) and over the waves. `ascii` is the terminal view, `mermaid` renders in any client that draws it, `json` is the structured document a supervising client consumes; `--json` wraps the document with `rendered`. Read-only; exit 1 only when no plan was compiled (`plan_not_compiled`) or the format is unknown.
+

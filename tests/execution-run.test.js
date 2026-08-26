@@ -663,3 +663,86 @@ test('CLI: execution:run/decide/status exit codes and arguments; --preflight/--r
   assert.match(help.stdout, /aioson execution:decide \[path\] --feature=<slug> --unit=<unit-id> --choice=/);
   assert.match(help.stdout, /aioson execution:status \[path\] --feature=<slug>/);
 });
+
+// ───────────────────────── graph engineering: readiness scheduling over explicit edges ─────────────────────────
+
+const PLAN_DEPS = PLAN.replace(
+  [
+    '| Phase | Wave | Files | Scope | Done when |',
+    '|---|---|---|---|---|',
+    '| 1 | 1 | src/api/orders.ts, tests/api/orders.test.ts | CAP-orders-api | npm test -- orders.api passes |',
+    '| 2 | 1 | src/ui/Orders.tsx, tests/ui/Orders.test.tsx | CAP-orders-ui | npm test -- orders.ui passes |',
+    '| 3 | 2 | src/app.ts | CAP-orders-wire | npm test -- app passes |'
+  ].join('\n'),
+  [
+    '| Phase | Wave | Files | Scope | Done when | Depends on |',
+    '|---|---|---|---|---|---|',
+    '| 1 | 1 | src/api/orders.ts, tests/api/orders.test.ts | CAP-orders-api | npm test -- orders.api passes | |',
+    '| 2 | 1 | src/ui/Orders.tsx, tests/ui/Orders.test.tsx | CAP-orders-ui | npm test -- orders.ui passes | |',
+    '| 3 | 2 | src/ui/OrdersList.tsx | CAP-orders-ui | npm test -- orders.ui passes | 2 (dev) |',
+    '| 4 | 2 | src/api/orders-report.ts | CAP-orders-api | npm test -- orders.api passes | 1, 2 |',
+    '| 5 | 3 | src/app.ts | CAP-orders-wire | npm test -- app passes | |'
+  ].join('\n')
+);
+
+test('explicit edges schedule by readiness: a dependent starts as soon as its own dependencies allow (after_dev while the review still runs; after_qa once both reviews ended) instead of waiting for the slowest unit of the previous wave', async (t) => {
+  // Three slots so the pool never masks the gates: phase-3 needs a free slot the moment phase-2's implementer passes.
+  const ctx = await setup(t, { roles: { ...ROLES, parallel: { max_concurrent_lanes: 3 } } });
+  await fs.writeFile(path.join(ctx.dir, '.aioson', 'context', `implementation-plan-${SLUG}.md`), PLAN_DEPS, 'utf8');
+  const compiled = await runCommand({ args: [ctx.dir], options: { sub: 'compile', feature: SLUG, json: true }, logger, env: ctx.env });
+  assert.equal(compiled.ok, true, JSON.stringify(compiled.errors));
+  assert.equal(compiled.summary.edges, 3);
+
+  // backend phase-1 is slow; frontend phase-2 is fast but its review is slow.
+  const script = { 'dev:phase-1': { delay_ms: 320 }, 'dev:phase-2': { delay_ms: 20 }, 'qa:phase-2': { delay_ms: 220 } };
+  const fakes = adapters(script, { delayMs: 20 });
+  const events = [];
+  const result = await run(ctx, { registry: fakes.registry, events });
+  assert.equal(result.ok, true, JSON.stringify(result));
+  assert.equal(result.status, 'completed');
+  assert.equal(result.summary.units.passed, 4);
+  assert.deepEqual(result.integration.units, ['phase-5']);
+
+  const at = (key) => fakes.log.find((e) => e.key === key);
+  assert.ok(at('dev:phase-3').start < at('dev:phase-1').end, 'phase-3 (wave 2, depends on phase-2 dev) started while phase-1 (wave 1) was still implementing — no wave barrier');
+  assert.ok(at('dev:phase-3').start >= at('dev:phase-2').end, 'after_dev: phase-3 waited for phase-2\'s implementer');
+  assert.ok(at('dev:phase-3').start < at('qa:phase-2').end, 'after_dev: phase-3 did not wait for phase-2\'s review');
+  assert.ok(at('dev:phase-4').start >= at('qa:phase-1').end && at('dev:phase-4').start >= at('qa:phase-2').end, 'after_qa: phase-4 waited for both reviews');
+  assert.ok(fakes.log.every((e) => e.active_at_start <= 3), 'the pool cap still holds');
+
+  const kinds = events.map((e) => `${e.type}:${e.status || ''}:${e.wave || ''}`);
+  assert.ok(kinds.indexOf('wave:started:2') < kinds.indexOf('wave:completed:1'), 'wave 2 opened before wave 1 closed');
+  assert.equal(kinds.at(-1), 'run:completed:');
+  const state = await readState(ctx);
+  assert.deepEqual(state.waves.map((w) => [w.wave, w.status]), [[1, 'completed'], [2, 'completed'], [3, 'integration']]);
+  assert.deepEqual(state.findings, [], 'concurrent windows attribute every changed file to an active unit');
+
+  const ledger = await status(ctx);
+  assert.equal(ledger.run.status, 'completed');
+});
+
+test('a dependency that needs a decision holds only its dependents: independent units keep going, the run pauses once nothing else can start, and --resume continues from the graph', async (t) => {
+  const ctx = await setup(t);
+  await fs.writeFile(path.join(ctx.dir, '.aioson', 'context', `implementation-plan-${SLUG}.md`), PLAN_DEPS, 'utf8');
+  assert.equal((await runCommand({ args: [ctx.dir], options: { sub: 'compile', feature: SLUG, json: true }, logger, env: ctx.env })).ok, true);
+  let frontendCalls = 0;
+  const script = { 'dev:phase-2': () => (frontendCalls++ === 0 ? { fail: 'capacity' } : {}), 'dev:phase-1': { delay_ms: 60 } };
+  const fakes = adapters(script);
+  let result = await run(ctx, { registry: fakes.registry });
+  assert.equal(result.status, 'decision_required');
+  assert.deepEqual(result.decisions_pending.map((d) => d.unit), ['phase-2']);
+  let state = await readState(ctx);
+  assert.equal(state.units['phase-1'].qa.status, 'passed', 'the independent wave-1 unit finished');
+  assert.equal(state.units['phase-3'].status, 'pending', 'phase-3 depends on phase-2 (dev) — held');
+  assert.equal(state.units['phase-4'].status, 'pending', 'phase-4 depends on phase-2 (qa) — held');
+  assert.equal(state.waves[0].status, 'decision_required');
+
+  assert.equal((await decide(ctx, 'phase-2', 'retry')).ok, true);
+  result = await run(ctx, { registry: fakes.registry, extra: { resume: true } });
+  assert.equal(result.ok, true, JSON.stringify(result));
+  assert.equal(result.status, 'completed');
+  assert.equal(fakes.log.filter((e) => e.key === 'dev:phase-1').length, 1, 'resume never re-runs a passed unit');
+  state = await readState(ctx);
+  assert.equal(state.units['phase-3'].qa.status, 'passed');
+  assert.equal(state.units['phase-4'].qa.status, 'passed');
+});

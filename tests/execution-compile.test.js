@@ -292,11 +292,13 @@ test('execution:compile — units per phase × lane, waves, per-unit prompts wit
   assert.equal(result.ok, true, JSON.stringify(result.errors));
   assert.equal(result.path, `.aioson/context/execution-plan-${SLUG}.json`);
   assert.deepEqual(result.warnings, []);
-  assert.deepEqual(result.summary, { lanes: 2, units: 3, lane_units: 2, integration_units: 1, waves: 2, processes: 4 });
+  assert.deepEqual(result.summary, { lanes: 2, units: 3, lane_units: 2, integration_units: 1, waves: 2, edges: 0, processes: 4 });
 
   const { plan } = await readExecutionPlan(dir, SLUG);
-  assert.equal(plan.version, 1);
+  assert.equal(plan.version, 2);
   assert.equal(plan.feature, SLUG);
+  assert.equal(plan.scheduling, 'waves');
+  assert.deepEqual(plan.edges, []);
   assert.deepEqual(plan.lanes.backend.dev, {
     role: 'backend_dev', host: 'codex', model: 'gpt-5.6', reasoning_effort: 'high',
     signature: { state: 'valid', checked_at: '2026-08-25T10:00:00.000Z', expires_at: '2999-01-01T00:00:00.000Z' }
@@ -315,6 +317,7 @@ test('execution:compile — units per phase × lane, waves, per-unit prompts wit
   assert.deepEqual(u1.caps, ['CAP-orders-api']);
   assert.deepEqual(u1.acs, ['AC-orders-01']);
   assert.deepEqual(u1.verification, [{ cap: 'CAP-orders-api', command: 'npm test -- orders.api' }]);
+  assert.deepEqual(u1.depends_on, []);
   assert.equal(u1.prompt, `.aioson/context/execution-prompts/${SLUG}/phase-1.md`);
   assert.equal(u1.report, `.aioson/context/reports/${SLUG}/{run_id}/phase-1.json`);
   assert.equal(u1.qa_report, `.aioson/context/reports/${SLUG}/{run_id}/phase-1-qa.json`);
@@ -383,7 +386,7 @@ test('execution:compile — units per phase × lane, waves, per-unit prompts wit
   const verified = await verifyExecutionPlan(dir, SLUG, { env });
   assert.equal(verified.ok, true, JSON.stringify(verified.issues));
   assert.deepEqual(verified.issues, []);
-  assert.deepEqual(verified.checks.map((c) => c.id), ['execution-plan:present', 'execution-plan:plan-digest', 'execution-plan:roles', 'execution-plan:dev-profile', 'execution-plan:manifest', 'execution-plan:signatures', 'execution-plan:prompts', 'execution-plan:waves']);
+  assert.deepEqual(verified.checks.map((c) => c.id), ['execution-plan:present', 'execution-plan:plan-digest', 'execution-plan:roles', 'execution-plan:dev-profile', 'execution-plan:manifest', 'execution-plan:signatures', 'execution-plan:prompts', 'execution-plan:waves', 'execution-plan:edges']);
   assert.ok(verified.checks.every((c) => c.ok));
   assert.deepEqual(verified.metrics, result.summary);
 
@@ -550,7 +553,7 @@ test('verify:artifact --kind=execution-plan runs through the command and auto-fi
   assert.equal(report.kind, 'execution-plan');
   assert.equal(report.verdict, 'pass');
   assert.equal(report.exitCode, 0);
-  assert.deepEqual(report.metrics, { lanes: 2, units: 3, lane_units: 2, integration_units: 1, waves: 2, processes: 4 });
+  assert.deepEqual(report.metrics, { lanes: 2, units: 3, lane_units: 2, integration_units: 1, waves: 2, edges: 0, processes: 4 });
 
   const fired = await verifyAgentArtifact({ targetDir: dir, agent: 'planner', options: { feature: SLUG } });
   assert.equal(fired.skipped, false);
@@ -637,4 +640,122 @@ test('CLI: execution:offer exits 0 whether or not the path is available; executi
   assert.match(help.stdout, /aioson execution:offer \[path\] \[--feature=<slug>\]/);
   assert.match(help.stdout, /aioson execution:compile \[path\] --feature=<slug> \[--dry-run\]/);
   assert.match(help.stdout, /aioson host:signature \[path\]/);
+});
+
+// ───────────────────────── graph engineering: `Depends on` → edges ─────────────────────────
+
+const { parseDependsCell } = require('../src/harness/plan-waves');
+
+const PLAN_DEPS = PLAN.replace(
+  [
+    '## Execution Sequence',
+    '| Phase | Wave | Files | Scope | Done when |',
+    '|---|---|---|---|---|',
+    '| 1 | 1 | src/api/orders.ts, tests/api/orders.test.ts | CAP-orders-api | npm test -- orders.api passes |',
+    '| 2 | 1 | src/ui/Orders.tsx, tests/ui/Orders.test.tsx | CAP-orders-ui | npm test -- orders.ui passes |',
+    '| 3 | 2 | src/app.ts | CAP-orders-wire | npm test -- app passes |'
+  ].join('\n'),
+  [
+    '## Execution Sequence',
+    '| Phase | Wave | Files | Scope | Done when | Depends on |',
+    '|---|---|---|---|---|---|',
+    '| 1 | 1 | src/api/orders.ts, tests/api/orders.test.ts | CAP-orders-api | npm test -- orders.api passes | |',
+    '| 2 | 1 | src/ui/Orders.tsx, tests/ui/Orders.test.tsx | CAP-orders-ui | npm test -- orders.ui passes | - |',
+    '| 3 | 2 | src/ui/OrdersList.tsx | CAP-orders-ui | npm test -- orders.ui passes | 2 (dev) |',
+    '| 4 | 2 | src/api/orders-report.ts | CAP-orders-api | npm test -- orders.api passes | 1, Phase 2 |',
+    '| 5 | 3 | src/app.ts | CAP-orders-wire | npm test -- app passes | |'
+  ].join('\n')
+);
+
+test('plan-waves: the optional Depends on cell parses phase names with their gates; absent column yields no edges', () => {
+  assert.deepEqual(parseDependsCell('1, Phase 2 (dev); `3` (qa), -, none, (implemented) 4'), [
+    { phase: '1', gate: 'after_qa' },
+    { phase: 'Phase 2', gate: 'after_dev' },
+    { phase: '3', gate: 'after_qa' },
+    { phase: '(implemented) 4', gate: 'after_qa' }
+  ]);
+  assert.deepEqual(parseDependsCell(''), []);
+  assert.deepEqual(parseDependsCell('—'), []);
+  const { parseExecutionWaves } = require('../src/harness/plan-waves');
+  const rows = parseExecutionWaves(PLAN_DEPS);
+  assert.deepEqual(rows.map((row) => row.depends), [[], [], [{ phase: '2', gate: 'after_dev' }], [{ phase: '1', gate: 'after_qa' }, { phase: 'Phase 2', gate: 'after_qa' }], []]);
+  assert.equal(rows[2].depends_raw, '2 (dev)');
+  assert.deepEqual(parseExecutionWaves(PLAN).map((row) => row.depends), [[], [], []]);
+});
+
+test('execution:compile — Depends on becomes typed edges: depends_on per unit, edges[], scheduling, prompts name them; the cross-lane edge warns without an Interface Contract and is silent with one', async (t) => {
+  const { dir, env } = await setup(t, { plan: PLAN_DEPS });
+  const result = await compile(dir, env);
+  assert.equal(result.ok, true, JSON.stringify(result.errors));
+  assert.deepEqual(result.summary, { lanes: 2, units: 5, lane_units: 4, integration_units: 1, waves: 3, edges: 3, processes: 8 });
+  assert.deepEqual(result.warnings.map((w) => w.check), ['dependency_cross_lane_without_contract']);
+  assert.match(result.warnings[0].message, /"4" \(backend\) depends on "2" \(frontend\)/);
+
+  const { plan } = await readExecutionPlan(dir, SLUG);
+  assert.equal(plan.version, 2);
+  assert.equal(plan.scheduling, 'dependencies');
+  assert.deepEqual(plan.edges, [
+    { from: 'phase-2', to: 'phase-3', gate: 'after_dev' },
+    { from: 'phase-1', to: 'phase-4', gate: 'after_qa' },
+    { from: 'phase-2', to: 'phase-4', gate: 'after_qa' }
+  ]);
+  const byId = Object.fromEntries(plan.units.map((unit) => [unit.id, unit]));
+  assert.deepEqual(byId['phase-3'].depends_on, [{ unit: 'phase-2', gate: 'after_dev' }]);
+  assert.deepEqual(byId['phase-4'].depends_on, [{ unit: 'phase-1', gate: 'after_qa' }, { unit: 'phase-2', gate: 'after_qa' }]);
+  assert.deepEqual(byId['phase-1'].depends_on, []);
+  assert.equal(byId['phase-5'].owner, 'integration');
+
+  const prompt3 = await fs.readFile(path.join(dir, byId['phase-3'].prompt), 'utf8');
+  assert.match(prompt3, /- Depends on: phase-2 \(after its implementation\) — their files are done work you build on, never files you edit/);
+  const prompt1 = await fs.readFile(path.join(dir, byId['phase-1'].prompt), 'utf8');
+  assert.doesNotMatch(prompt1, /Depends on/, 'a unit without edges keeps the wave contract only');
+  const lanePrompt = await fs.readFile(path.join(dir, plan.lanes.backend.prompt), 'utf8');
+  assert.match(lanePrompt, /phase-4: phase 4, wave 2 — src\/api\/orders-report\.ts \(depends on phase-1 after its review, phase-2 after its review\)/);
+
+  const verified = await verifyExecutionPlan(dir, SLUG, { env });
+  assert.equal(verified.ok, true, JSON.stringify(verified.issues));
+  assert.ok(verified.checks.find((c) => c.id === 'execution-plan:edges').ok);
+
+  // A hand-edited edge (gate, direction) is caught by the freshness gate.
+  const planFile = path.join(dir, `.aioson/context/execution-plan-${SLUG}.json`);
+  const edited = JSON.parse(await fs.readFile(planFile, 'utf8'));
+  edited.edges[0] = { from: 'phase-3', to: 'phase-2', gate: 'after_dev' };
+  await fs.writeFile(planFile, JSON.stringify(edited, null, 2));
+  const stale = await verifyExecutionPlan(dir, SLUG, { env });
+  assert.equal(stale.ok, false);
+  assert.match(stale.issues.join('\n'), /edges_inconsistent: .*does not move to a later wave.*phase-3 depends on phase-2 \(after_dev\) but no such edge is compiled/);
+
+  // With an Interface Contract in the PRD the cross-lane edge is a declared boundary — no warning.
+  const contracted = await setup(t, { plan: PLAN_DEPS, prd: `${PRD}\n## Interface Contract\n| Producer | Consumer | Contract |\n|---|---|---|\n| backend | frontend | GET /orders → Order[] |\n` });
+  const quiet = await compile(contracted.dir, contracted.env);
+  assert.equal(quiet.ok, true);
+  assert.deepEqual(quiet.warnings, []);
+});
+
+test('execution:compile refuses a broken graph with named findings — unknown phase, self-dependency, same-or-later wave, integration dependency, cycle', async (t) => {
+  const unknown = await setup(t, { plan: PLAN_DEPS.replace('| 2 (dev) |', '| 9 |') });
+  let result = await compile(unknown.dir, unknown.env);
+  assert.equal(result.reason, 'compile_refused');
+  assert.ok(checks(result).includes('dependency_unknown'), checks(result).join(','));
+  assert.match(result.errors.find((e) => e.check === 'dependency_unknown').message, /phase "3" depends on "9"/);
+
+  const self = await setup(t, { plan: PLAN_DEPS.replace('| 2 (dev) |', '| 3 |') });
+  result = await compile(self.dir, self.env);
+  assert.ok(checks(result).includes('dependency_self'), checks(result).join(','));
+
+  const sameWave = await setup(t, { plan: PLAN_DEPS.replace('| 1, Phase 2 |', '| 3 |') });
+  result = await compile(sameWave.dir, sameWave.env);
+  assert.ok(checks(result).includes('dependency_wave_violation'), checks(result).join(','));
+  assert.match(result.errors.find((e) => e.check === 'dependency_wave_violation').message, /phase "4" \(wave 2\) depends on "3" \(wave 2\)/);
+
+  const cycle = await setup(t, { plan: PLAN_DEPS.replace('| 1, Phase 2 |', '| 3 |').replace('| 2 (dev) |', '| 4 |') });
+  result = await compile(cycle.dir, cycle.env);
+  assert.ok(checks(result).includes('cycle_detected'), checks(result).join(','));
+  assert.match(result.errors.find((e) => e.check === 'cycle_detected').message, /phase-3, phase-4/);
+
+  const onIntegration = await setup(t, { plan: PLAN_DEPS.replace('| 5 | 3 | src/app.ts | CAP-orders-wire | npm test -- app passes | |', '| 5 | 3 | src/app.ts | CAP-orders-wire | npm test -- app passes | |\n| 6 | 4 | src/ui/Extra.tsx | CAP-orders-ui | npm test -- orders.ui passes | 5 |') });
+  result = await compile(onIntegration.dir, onIntegration.env);
+  assert.ok(checks(result).includes('dependency_on_integration'), checks(result).join(','));
+
+  for (const { dir } of [unknown, self, sameWave, cycle, onIntegration]) assert.equal((await readExecutionPlan(dir, SLUG)).exists, false, 'a refused compile writes nothing');
 });

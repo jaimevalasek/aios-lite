@@ -430,6 +430,8 @@ module.exports = {
       'aioson execution:decide [path] --feature=<slug> --unit=<id-da-unidade> --choice=retry|fallback:<host>/<modelo>[/<effort>]|skip|skip-qa|abort [--json] [--locale=pt-BR]',
     help_execution_status:
       'aioson execution:status [path] --feature=<slug> [--json] [--locale=pt-BR]',
+    help_execution_graph:
+      'aioson execution:graph [path] --feature=<slug> [--format=ascii|mermaid|json] [--json] [--locale=pt-BR]',
     help_live_start:
       'aioson live:start [path] --tool=codex|claude|opencode --agent=<nome> [--tool-bin=<binario>] [--permission-mode=default|yolo] [--tool-args=<args>] [--title=<texto>] [--goal=<texto>] [--plan=<arquivo>] [--session=<chave>] [--message=<texto>] [--attach] [--no-launch] [--tmux] [--json] [--locale=pt-BR]',
     help_live_status:

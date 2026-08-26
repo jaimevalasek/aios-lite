@@ -52,8 +52,10 @@ const {
   digest: manifestDigest
 } = require('./manifest');
 
-const EXECUTION_PLAN_VERSION = 1;
-const GENERATOR = 'aioson execution:compile@1';
+const EXECUTION_PLAN_VERSION = 2;
+const GENERATOR = 'aioson execution:compile@2';
+/** Passage rules of an edge: the dependent starts after the implementer passed, or after the lane review finished. */
+const DEPENDENCY_GATES = ['after_dev', 'after_qa'];
 const DEFAULT_QA_MAX_FIX_FILES = 3;
 const TERMINAL_RUN_STATES = ['approved', 'failed', 'cancelled'];
 const SAFE_ID = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -206,6 +208,10 @@ function markdownTable(headers, rows) {
   ].join('\n');
 }
 
+function describeGate(gate) {
+  return gate === 'after_dev' ? 'after its implementation' : 'after its review';
+}
+
 function unitContractLines(feature, unit, lane, maxWave) {
   const lines = [
     `# Unit contract — ${feature} / ${unit.id}`,
@@ -213,6 +219,9 @@ function unitContractLines(feature, unit, lane, maxWave) {
     `- Feature: ${feature}`,
     `- Lane: ${unit.lane} (write paths: ${lane.write_paths.join(', ')})`,
     `- Phase: ${unit.phase} — wave ${unit.wave} of ${maxWave}`,
+    ...(Array.isArray(unit.depends_on) && unit.depends_on.length > 0
+      ? [`- Depends on: ${unit.depends_on.map((dep) => `${dep.unit} (${describeGate(dep.gate)})`).join(', ')} — their files are done work you build on, never files you edit`]
+      : []),
     `- Scope: ${unit.scope || '(see plan)'}`,
     `- Capabilities: ${unit.caps.length ? unit.caps.join(', ') : '(none cited — see scope)'}`,
     `- Acceptance criteria: ${unit.acs.length ? unit.acs.join(', ') : '(none cited)'}`,
@@ -254,7 +263,7 @@ function renderLanePrompt({ feature, lane, laneId, units, maxWave, profileText }
     '',
     `- Write paths: ${lane.write_paths.join(', ')}`,
     `- Units in wave order (${units.length}); units of other lanes run concurrently on disjoint files:`,
-    ...units.map((unit) => `  - ${unit.id}: phase ${unit.phase}, wave ${unit.wave} — ${unit.files.join(', ')}`),
+    ...units.map((unit) => `  - ${unit.id}: phase ${unit.phase}, wave ${unit.wave} — ${unit.files.join(', ')}${Array.isArray(unit.depends_on) && unit.depends_on.length > 0 ? ` (depends on ${unit.depends_on.map((dep) => `${dep.unit} ${describeGate(dep.gate)}`).join(', ')})` : ''}`),
     ''
   ];
   for (const unit of units) parts.push(...unitContractLines(feature, unit, lane, maxWave), '');
@@ -364,6 +373,7 @@ function compileExecutionPlan({ feature, planContent, prdContent, roles, signatu
   }
   const units = [];
   const usedIds = new Set();
+  const dependencyRows = new Map();
   for (const row of rows || []) {
     let base = slugifyId(row.phase) || String(units.length + 1);
     let id = `phase-${base}`;
@@ -402,8 +412,10 @@ function compileExecutionPlan({ feature, planContent, prdContent, roles, signatu
       done: row.done,
       caps,
       acs,
-      verification: []
+      verification: [],
+      depends_on: []
     });
+    dependencyRows.set(id, Array.isArray(row.depends) ? row.depends : []);
   }
   if (laneOrder.some((laneId) => lanes[laneId])) {
     for (const laneId of laneOrder) {
@@ -438,6 +450,61 @@ function compileExecutionPlan({ feature, planContent, prdContent, roles, signatu
   for (const unit of units) {
     if (laneOrder.includes(unit.id)) error('unit_lane_id_collision', `unit id "${unit.id}" collides with a lane id`, { unit: unit.id });
   }
+
+  // ── dependencies → edges (explicit passage rules; no column = the wave barrier) ──
+  const unitByPhase = new Map();
+  for (const unit of units) {
+    const label = String(unit.phase).trim().toLowerCase();
+    if (!unitByPhase.has(label)) unitByPhase.set(label, unit);
+    if (unit.phase_number !== null && !unitByPhase.has(`#${unit.phase_number}`)) unitByPhase.set(`#${unit.phase_number}`, unit);
+  }
+  const resolvePhaseRef = (ref) => {
+    const key = String(ref).trim().toLowerCase();
+    if (unitByPhase.has(key)) return unitByPhase.get(key);
+    const number = phaseNumber(ref);
+    if (number !== null && unitByPhase.has(`#${number}`)) return unitByPhase.get(`#${number}`);
+    return units.find((unit) => unit.id === key) || null;
+  };
+  const edges = [];
+  const interfaceContract = prdContent ? extractSection(prdContent, ['Interface Contract', 'Contrato de Interface']) !== null : false;
+  const crossLaneWarned = new Set();
+  for (const unit of units) {
+    const seen = new Set();
+    for (const dep of dependencyRows.get(unit.id) || []) {
+      const target = resolvePhaseRef(dep.phase);
+      if (!target) {
+        error('dependency_unknown', `phase "${unit.phase}" depends on "${dep.phase}", which is not a phase of the Execution Sequence`, { phase: unit.phase, dependency: dep.phase });
+        continue;
+      }
+      if (target.id === unit.id) {
+        error('dependency_self', `phase "${unit.phase}" depends on itself`, { phase: unit.phase });
+        continue;
+      }
+      if (seen.has(target.id)) continue;
+      seen.add(target.id);
+      if (!DEPENDENCY_GATES.includes(dep.gate)) {
+        error('dependency_gate_invalid', `phase "${unit.phase}" depends on "${target.phase}" with gate "${dep.gate}" — use (dev) or (qa)`, { phase: unit.phase, dependency: target.phase });
+        continue;
+      }
+      if (target.wave >= unit.wave) {
+        error('dependency_wave_violation', `phase "${unit.phase}" (wave ${unit.wave}) depends on "${target.phase}" (wave ${target.wave}) — a dependency must sit in an earlier wave`, { phase: unit.phase, dependency: target.phase, wave: unit.wave, dependency_wave: target.wave });
+      }
+      if (unit.owner === 'lane' && target.owner === 'integration') {
+        error('dependency_on_integration', `phase "${unit.phase}" depends on "${target.phase}", integration work the session DEV runs after the lanes — assign "${target.phase}" to a lane or schedule "${unit.phase}" as integration too`, { phase: unit.phase, dependency: target.phase });
+      }
+      if (unit.owner === 'lane' && target.owner === 'lane' && unit.lane !== target.lane && !interfaceContract) {
+        const key = `${target.lane}>${unit.lane}`;
+        if (!crossLaneWarned.has(key)) {
+          crossLaneWarned.add(key);
+          warn('dependency_cross_lane_without_contract', `"${unit.phase}" (${unit.lane}) depends on "${target.phase}" (${target.lane}) but the PRD has no \`## Interface Contract\` section — the shared boundary lives only in prose`, { from: target.id, to: unit.id, lanes: [target.lane, unit.lane] });
+        }
+      }
+      unit.depends_on.push({ unit: target.id, gate: dep.gate });
+      edges.push({ from: target.id, to: unit.id, gate: dep.gate });
+    }
+  }
+  const cyclic = topologicalRemainder(units.map((unit) => unit.id), edges);
+  if (cyclic.length > 0) error('cycle_detected', `the dependencies form a cycle through ${cyclic.join(', ')} — passage rules must form an acyclic graph`, { units: cyclic });
 
   // ── excerpts: CAPs → ACs, verification commands ──────────────────────────
   const excerpts = readPlanExcerpts(planContent, prdContent);
@@ -531,7 +598,9 @@ function compileExecutionPlan({ feature, planContent, prdContent, roles, signatu
     })),
     parallel: { max_concurrent_lanes: roles?.parallel?.max_concurrent_lanes || 1 },
     on_unavailable: roles?.on_unavailable || 'ask',
+    scheduling: edges.length > 0 ? 'dependencies' : 'waves',
     waves,
+    edges,
     units,
     integration: {
       owner: 'dev',
@@ -545,10 +614,36 @@ function compileExecutionPlan({ feature, planContent, prdContent, roles, signatu
       lane_units: laneUnits.length,
       integration_units: integrationUnits.length,
       waves: waves.length,
+      edges: edges.length,
       processes: laneUnits.length * 2
     }
   };
   return { errors, warnings, plan, prompts };
+}
+
+/**
+ * Kahn's algorithm over explicit edges: the ids that never reach indegree 0
+ * are on (or behind) a cycle. Empty result = acyclic.
+ */
+function topologicalRemainder(ids, edges) {
+  const indegree = new Map(ids.map((id) => [id, 0]));
+  const out = new Map(ids.map((id) => [id, []]));
+  for (const edge of edges || []) {
+    if (!indegree.has(edge.from) || !indegree.has(edge.to)) continue;
+    indegree.set(edge.to, indegree.get(edge.to) + 1);
+    out.get(edge.from).push(edge.to);
+  }
+  const queue = ids.filter((id) => indegree.get(id) === 0);
+  const visited = new Set();
+  while (queue.length > 0) {
+    const id = queue.shift();
+    visited.add(id);
+    for (const next of out.get(id)) {
+      indegree.set(next, indegree.get(next) - 1);
+      if (indegree.get(next) === 0) queue.push(next);
+    }
+  }
+  return ids.filter((id) => !visited.has(id));
 }
 
 /** Apply the compiled lanes to the manifest — ONLY development_lanes + orchestration.execution. */
@@ -866,12 +961,36 @@ async function verifyExecutionPlan(projectDir, featureInput, { env = process.env
   check('execution-plan:waves', waveIssues.length === 0, waveIssues.join('; ') || null);
   if (waveIssues.length > 0) issues.push(`waves_inconsistent: ${waveIssues.join('; ')} — run: ${recompile}`);
 
+  // edges: every endpoint exists, gates are known, an edge moves to a later wave, no cycle, depends_on mirrors edges
+  const edgeIssues = [];
+  const unitIndex = new Map((plan.units || []).map((unit) => [unit.id, unit]));
+  for (const edge of plan.edges || []) {
+    const from = unitIndex.get(edge.from);
+    const to = unitIndex.get(edge.to);
+    if (!from || !to) {
+      edgeIssues.push(`edge ${edge.from} → ${edge.to} names an unknown unit`);
+      continue;
+    }
+    if (!DEPENDENCY_GATES.includes(edge.gate)) edgeIssues.push(`edge ${edge.from} → ${edge.to} has gate ${edge.gate}`);
+    if (!(from.wave < to.wave)) edgeIssues.push(`edge ${edge.from} (wave ${from.wave}) → ${edge.to} (wave ${to.wave}) does not move to a later wave`);
+  }
+  for (const unit of plan.units || []) {
+    for (const dep of unit.depends_on || []) {
+      if (!(plan.edges || []).some((edge) => edge.from === dep.unit && edge.to === unit.id && edge.gate === dep.gate)) edgeIssues.push(`${unit.id} depends on ${dep.unit} (${dep.gate}) but no such edge is compiled`);
+    }
+  }
+  const cyclic = topologicalRemainder([...unitIndex.keys()], plan.edges || []);
+  if (cyclic.length > 0) edgeIssues.push(`cycle through ${cyclic.join(', ')}`);
+  check('execution-plan:edges', edgeIssues.length === 0, edgeIssues.join('; ') || null);
+  if (edgeIssues.length > 0) issues.push(`edges_inconsistent: ${edgeIssues.join('; ')} — run: ${recompile}`);
+
   const metrics = plan.summary ? { ...plan.summary } : null;
   return { ok: issues.length === 0, issues, warnings, checks, metrics };
 }
 
 module.exports = {
   DEFAULT_QA_MAX_FIX_FILES,
+  DEPENDENCY_GATES,
   EXECUTION_PLAN_VERSION,
   applyPlanToManifest,
   compileExecutionPlan,
@@ -883,6 +1002,7 @@ module.exports = {
   readExecutionPlan,
   renderLanePrompt,
   renderUnitPrompt,
+  topologicalRemainder,
   verifyExecutionPlan,
   writePathsOverlap
 };

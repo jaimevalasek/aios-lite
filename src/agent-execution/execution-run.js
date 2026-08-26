@@ -3,12 +3,16 @@
 /**
  * execution:run — the orchestrator's engine for a compiled execution plan.
  *
- * One run = the lane units of `execution-plan-{slug}.json`, wave by wave.
- * Inside a wave every lane unit is a pipeline `dev → qa`: the dev role's host
- * process implements the unit (ephemeral, bounded to the unit's files, bound
- * JSON report), then the lane's qa role reviews and tests it, may apply a
- * measured, capped set of corrections inside the unit's own files, and reports
- * the rest as findings for the integration owner (the session's @dev). Up to
+ * One run = the lane units of `execution-plan-{slug}.json`, scheduled by
+ * readiness: a unit starts when every passage rule into it is satisfied — its
+ * explicit edges (the plan's `Depends on`, gates `after_dev` / `after_qa`) or,
+ * for a unit that declares none, the wave barrier (every lane unit of every
+ * earlier wave finished). Without explicit edges this is the wave-by-wave run.
+ * Every lane unit is a pipeline `dev → qa`: the dev role's host process
+ * implements the unit (ephemeral, bounded to the unit's files, bound JSON
+ * report), then the lane's qa role reviews and tests it, may apply a measured,
+ * capped set of corrections inside the unit's own files, and reports the rest
+ * as findings for the integration owner (the session's @dev). Up to
  * `parallel.max_concurrent_lanes` pipelines run at once.
  *
  * Nothing here is a judgment call: the preflight is `verify:artifact
@@ -228,18 +232,25 @@ function laneOwning(plan, filePath) {
   return null;
 }
 
-function measureWaveScope({ before, after, plan, wave, units }) {
+/**
+ * Scope of one unit's window: every file that changed between the unit's
+ * start and its end must belong to a unit that was active at some point of
+ * that window (the unit itself or a concurrent one). Anything else is drift
+ * inside a lane (`lane_scope_drift`) or an integration file touched by a lane
+ * (`unowned_change`).
+ */
+function measureWindowScope({ before, after, plan, wave, unit, units }) {
   const changed = diffBaselines(before, after);
   if (!changed) return { measured: false, changed: [], findings: [] };
-  const unitFiles = new Set(units.flatMap((unit) => unit.files.map((f) => f.toLowerCase())));
+  const unitFiles = new Set(units.flatMap((item) => item.files.map((f) => f.toLowerCase())));
   const findings = [];
   for (const p of changed) {
     if (unitFiles.has(p.toLowerCase())) continue;
     const lane = laneOwning(plan, p);
     if (lane) {
-      findings.push({ check: 'lane_scope_drift', wave, lane, path: p, message: `wave ${wave}: ${p} changed inside lane "${lane}" write paths but belongs to no unit of this wave` });
+      findings.push({ check: 'lane_scope_drift', wave, unit, lane, path: p, message: `wave ${wave} (${unit}): ${p} changed inside lane "${lane}" write paths but belongs to no unit active in this window` });
     } else {
-      findings.push({ check: 'unowned_change', wave, path: p, message: `wave ${wave}: ${p} changed outside every lane — integration files belong to the session DEV` });
+      findings.push({ check: 'unowned_change', wave, unit, path: p, message: `wave ${wave} (${unit}): ${p} changed outside every lane — integration files belong to the session DEV` });
     }
   }
   return { measured: true, changed, findings };
@@ -555,17 +566,6 @@ async function preflightExecution(projectDir, featureInput, { env = process.env,
 
 // ─── the run ───
 
-async function runPool(tasks, limit) {
-  let next = 0;
-  const workers = Array.from({ length: Math.max(1, Math.min(limit, tasks.length)) }, async () => {
-    while (next < tasks.length) {
-      const task = tasks[next++];
-      await task();
-    }
-  });
-  await Promise.all(workers);
-}
-
 async function runExecution({
   projectDir,
   feature: featureInput,
@@ -719,6 +719,24 @@ async function runExecution({
       await persist();
     };
 
+    // The scheduler sleeps until a pipeline ends or a dependency's implementer
+    // passes — an `after_dev` edge releases its dependent mid-pipeline.
+    let wake = null;
+    let pendingWake = false;
+    const wakeUp = () => {
+      if (wake) {
+        const resume = wake;
+        wake = null;
+        resume();
+      } else {
+        pendingWake = true;
+      }
+    };
+    const sleep = async () => {
+      if (!pendingWake) await new Promise((resolve) => { wake = resolve; });
+      pendingWake = false;
+    };
+
     const runUnitPipeline = async (unitId) => {
       const unit = planUnits[unitId];
       const lane = plan.lanes[unit.lane];
@@ -745,6 +763,7 @@ async function runExecution({
           unitState.status = 'passed';
           if (unitState.qa.status !== 'skipped') unitState.qa = { status: 'pending' };
           await persist();
+          wakeUp();
         } else if (outcome.kind === 'aborted') {
           unitState.status = 'pending';
           unitState.dev = { status: 'pending', aborted_reason: outcome.reason };
@@ -808,58 +827,167 @@ async function runExecution({
       }
     };
 
-    for (const wave of state.waves) {
-      const laneUnitIds = wave.units.filter((id) => state.units[id]?.owner === 'lane');
-      const runnable = laneUnitIds.filter((id) => {
-        const unitState = state.units[id];
-        return unitState.status === 'pending' || (unitState.status === 'passed' && unitState.qa.status === 'pending');
-      });
-      if (runnable.length === 0) {
-        if (wave.status !== 'completed') {
-          wave.status = laneUnitIds.length === 0 ? 'integration' : 'completed';
-          await persist();
+    // ─── readiness scheduler ───
+    // The graph's passage rules decide who starts: a unit with explicit edges
+    // waits for exactly those (after_dev: the dependency's implementer passed;
+    // after_qa: its lane review finished — or the unit was skipped by
+    // decision); a unit without edges waits for the wave barrier. The pool
+    // is bounded by max_concurrent_lanes; `--wave=N` never launches beyond N.
+    const waveLimit = stopAfterWave === null ? null : Number(stopAfterWave);
+    const laneIds = (plan.units || [])
+      .map((unit, index) => ({ unit, index }))
+      .filter(({ unit }) => unit.owner === 'lane')
+      .sort((a, b) => (a.unit.wave - b.unit.wave) || (a.index - b.index))
+      .map(({ unit }) => unit.id);
+    const devDone = (u) => u.status === 'skipped' || u.status === 'passed';
+    const pipelineDone = (u) => u.status === 'skipped' || (u.status === 'passed' && ['passed', 'failed', 'skipped'].includes(u.qa?.status));
+    const runnable = (id) => {
+      const u = state.units[id];
+      return u.status === 'pending' || (u.status === 'passed' && u.qa?.status === 'pending');
+    };
+    const laneUnitsBefore = (wave) => laneIds.filter((id) => state.units[id].wave < wave);
+    const gateSatisfied = (dep) => {
+      const target = state.units[dep.unit];
+      if (!target || target.owner !== 'lane') return true;
+      return dep.gate === 'after_dev' ? devDone(target) : pipelineDone(target);
+    };
+    const isReady = (id) => {
+      if (!runnable(id)) return false;
+      const u = state.units[id];
+      if (waveLimit !== null && u.wave > waveLimit) return false;
+      const deps = planUnits[id].depends_on || [];
+      if (deps.length > 0) return deps.every(gateSatisfied);
+      return laneUnitsBefore(u.wave).every((other) => pipelineDone(state.units[other]));
+    };
+    const refreshWaves = () => {
+      for (const wave of state.waves) {
+        const members = wave.units.filter((id) => state.units[id]?.owner === 'lane').map((id) => state.units[id]);
+        if (members.length === 0) {
+          const reached = laneUnitsBefore(wave.wave).every((id) => pipelineDone(state.units[id])) && (waveLimit === null || wave.wave <= waveLimit);
+          if (reached) wave.status = 'integration';
+          else if (wave.status !== 'integration') wave.status = 'pending';
+          continue;
         }
-        continue;
+        if (members.some((u) => u.status === 'decision_required')) wave.status = 'decision_required';
+        else if (members.every(pipelineDone)) wave.status = 'completed';
+        else if (members.some((u) => u.status === 'running' || u.qa?.status === 'running' || devDone(u))) wave.status = 'running';
+        else wave.status = 'pending';
       }
-      wave.status = 'running';
-      state.current_wave = wave.wave;
-      await persist();
-      emit({ type: 'wave', status: 'started', wave: wave.wave, units: runnable });
-      const before = await gitBaseline(projectDir).catch(() => null);
-      await runPool(runnable.map((id) => () => runUnitPipeline(id)), state.parallel.max_concurrent_lanes);
-      const after = await gitBaseline(projectDir).catch(() => null);
-      const scope = measureWaveScope({ before, after, plan, wave: wave.wave, units: runnable.map((id) => planUnits[id]) });
-      state.scope.measured = scope.measured;
-      state.scope.waves[wave.wave] = { measured: scope.measured, changed: scope.changed, findings: scope.findings.map((f) => f.check) };
-      const SCOPE_CHECKS = ['lane_scope_drift', 'unowned_change'];
-      state.findings = [...state.findings.filter((f) => !(f.wave === wave.wave && SCOPE_CHECKS.includes(f.check))), ...scope.findings];
-      for (const finding of scope.findings) emit({ type: 'scope', wave: wave.wave, check: finding.check, path: finding.path, lane: finding.lane || null });
+      const open = laneIds.filter((id) => !pipelineDone(state.units[id]));
+      state.current_wave = open.length > 0 ? Math.min(...open.map((id) => state.units[id].wave)) : (laneIds.length > 0 ? Math.max(...laneIds.map((id) => state.units[id].wave)) : null);
+    };
 
-      if (monitor.lost) {
-        wave.status = 'paused';
-        state.status = 'paused';
-        state.reason = 'lease_lost';
-        await persist();
-        return { ok: false, status: 'paused', reason: 'lease_lost', feature, run_id: state.run_id, path: runStateRelative(feature), resume_command: resumeCommand(feature), summary: summarizeState(state, feature), exitCode: 1 };
+    // Scope is measured per unit window (start → end of its pipeline): a
+    // changed file must belong to a unit active somewhere in that window.
+    let seq = 0;
+    const windows = new Map();
+    const intervals = [];
+    const SCOPE_CHECKS = ['lane_scope_drift', 'unowned_change'];
+    const settleWindow = async (unitId) => {
+      const win = windows.get(unitId);
+      windows.delete(unitId);
+      if (!win) return;
+      win.end = ++seq;
+      intervals.push({ unit: unitId, start: win.start, end: win.end });
+      const after = await gitBaseline(projectDir).catch(() => null);
+      const overlapping = new Set([unitId]);
+      for (const other of intervals) if (other.start < win.end && other.end > win.start) overlapping.add(other.unit);
+      for (const [other, live] of windows) if (live.start < win.end) overlapping.add(other);
+      const unit = planUnits[unitId];
+      const scope = measureWindowScope({ before: win.before, after, plan, wave: unit.wave, unit: unitId, units: [...overlapping].map((id) => planUnits[id]) });
+      state.scope.measured = state.scope.measured === false ? false : scope.measured;
+      const waveScope = state.scope.waves[unit.wave] || { measured: scope.measured, changed: [], findings: [] };
+      waveScope.measured = waveScope.measured && scope.measured;
+      waveScope.changed = [...new Set([...waveScope.changed, ...scope.changed])];
+      state.scope.waves[unit.wave] = waveScope;
+      for (const finding of scope.findings) {
+        if (state.findings.some((f) => SCOPE_CHECKS.includes(f.check) && f.check === finding.check && f.path === finding.path)) continue;
+        state.findings.push(finding);
+        waveScope.findings.push(finding.check);
+        emit({ type: 'scope', wave: unit.wave, unit: unitId, check: finding.check, path: finding.path, lane: finding.lane || null });
       }
-      const decisions = pendingDecisions(state, feature);
-      if (decisions.length > 0) {
-        wave.status = 'decision_required';
-        state.status = 'decision_required';
-        state.reason = 'decision_pending';
+    };
+
+    const running = new Map();
+    const startedWaves = new Set();
+    const completedWaves = new Set();
+    const launch = async (unitId) => {
+      const unit = planUnits[unitId];
+      const wave = state.waves.find((w) => w.wave === unit.wave);
+      if (!startedWaves.has(unit.wave)) {
+        startedWaves.add(unit.wave);
+        if (wave) wave.status = 'running';
+        state.current_wave = unit.wave;
         await persist();
-        emit({ type: 'wave', status: 'decision_required', wave: wave.wave, decisions: decisions.map((d) => d.unit) });
-        return { ok: false, status: 'decision_required', reason: 'decision_pending', feature, run_id: state.run_id, path: runStateRelative(feature), decisions_pending: decisions, resume_command: resumeCommand(feature), summary: summarizeState(state, feature), findings: state.findings, exitCode: 1 };
+        emit({ type: 'wave', status: 'started', wave: unit.wave, units: wave ? wave.units.filter((id) => state.units[id]?.owner === 'lane' && runnable(id)) : [unitId] });
       }
-      wave.status = 'completed';
+      const before = await gitBaseline(projectDir).catch(() => null);
+      windows.set(unitId, { start: ++seq, end: null, before });
+      running.set(unitId, runUnitPipeline(unitId).catch(() => {}).then(() => {
+        finished.push(unitId);
+        wakeUp();
+      }));
+    };
+    const finished = [];
+
+    while (true) {
+      if (!monitor.lost) {
+        while (running.size < state.parallel.max_concurrent_lanes) {
+          const next = laneIds.find((id) => !running.has(id) && isReady(id));
+          if (!next) break;
+          await launch(next);
+        }
+      }
+      if (running.size === 0) break;
+      await sleep();
+      while (finished.length > 0) {
+        const id = finished.shift();
+        running.delete(id);
+        await settleWindow(id);
+      }
+      refreshWaves();
+      for (const wave of state.waves) {
+        if (wave.status === 'completed' && !completedWaves.has(wave.wave)) {
+          completedWaves.add(wave.wave);
+          await persist();
+          emit({ type: 'wave', status: 'completed', wave: wave.wave });
+        }
+      }
       await persist();
-      emit({ type: 'wave', status: 'completed', wave: wave.wave });
-      if (stopAfterWave !== null && Number(stopAfterWave) === wave.wave) {
-        state.status = 'paused';
-        state.reason = 'stop_after_wave';
-        await persist();
-        return { ok: true, status: 'paused', reason: 'stop_after_wave', feature, run_id: state.run_id, path: runStateRelative(feature), resume_command: resumeCommand(feature), summary: summarizeState(state, feature), findings: state.findings, exitCode: 0 };
+    }
+    refreshWaves();
+
+    if (monitor.lost) {
+      for (const wave of state.waves) if (wave.status === 'running') wave.status = 'paused';
+      state.status = 'paused';
+      state.reason = 'lease_lost';
+      await persist();
+      return { ok: false, status: 'paused', reason: 'lease_lost', feature, run_id: state.run_id, path: runStateRelative(feature), resume_command: resumeCommand(feature), summary: summarizeState(state, feature), exitCode: 1 };
+    }
+    const decisions = pendingDecisions(state, feature);
+    if (decisions.length > 0) {
+      state.status = 'decision_required';
+      state.reason = 'decision_pending';
+      await persist();
+      for (const wave of state.waves) {
+        if (wave.status === 'decision_required') emit({ type: 'wave', status: 'decision_required', wave: wave.wave, decisions: decisions.filter((d) => d.wave === wave.wave).map((d) => d.unit) });
       }
+      return { ok: false, status: 'decision_required', reason: 'decision_pending', feature, run_id: state.run_id, path: runStateRelative(feature), decisions_pending: decisions, resume_command: resumeCommand(feature), summary: summarizeState(state, feature), findings: state.findings, exitCode: 1 };
+    }
+    if (waveLimit !== null && state.waves.some((wave) => wave.wave > waveLimit)) {
+      // `--wave=N` stops after wave N even when what follows is integration-only.
+      state.status = 'paused';
+      state.reason = 'stop_after_wave';
+      await persist();
+      return { ok: true, status: 'paused', reason: 'stop_after_wave', feature, run_id: state.run_id, path: runStateRelative(feature), resume_command: resumeCommand(feature), summary: summarizeState(state, feature), findings: state.findings, exitCode: 0 };
+    }
+    const remaining = laneIds.filter(runnable);
+    if (remaining.length > 0) {
+      // Acyclic edges over lane units always drain; this only fires on a plan the compile did not see.
+      state.status = 'paused';
+      state.reason = 'units_blocked';
+      await persist();
+      return { ok: false, status: 'paused', reason: 'units_blocked', feature, run_id: state.run_id, path: runStateRelative(feature), blocked_units: remaining, resume_command: resumeCommand(feature), summary: summarizeState(state, feature), findings: state.findings, exitCode: 1 };
     }
 
     state.status = 'completed';
@@ -1048,7 +1176,7 @@ module.exports = {
   decideExecution,
   diffBaselines,
   executeRole,
-  measureWaveScope,
+  measureWindowScope,
   newestMtime,
   parseChoice,
   preflightExecution,

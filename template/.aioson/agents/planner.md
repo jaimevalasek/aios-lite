@@ -133,7 +133,7 @@ When `aioson execution:offer . --feature={slug} --json` answers `available: true
 | frontend | opencode | provider/model-id | src/ui/Example.tsx, tests/ui/Example.test.tsx | dev |
 ```
 
-`aioson execution:compile . --feature={slug}` derives the manifest lanes and unit prompts from these tables (never hand-edit; refuses with named findings). A host is a registered CLI adapter; a model is that host's identifier. Keep shared integration files with DEV rather than assigning the same path to two lanes.
+`aioson execution:compile . --feature={slug}` derives the manifest lanes and unit prompts from these tables (never hand-edit; refuses with named findings). A host is a registered CLI adapter; a model is that host's identifier.
 
 When the feature will run orchestrated lanes or the compiled harness lane (`.aioson/plans/{slug}/harness-contract.json` exists or the user requests `@forge-run`), add one `## Execution Sequence` table to the same plan — `execution:compile` and `forge:compile` refuse without it; the normal Dev lane never needs it:
 
@@ -145,8 +145,9 @@ When the feature will run orchestrated lanes or the compiled harness lane (`.aio
 ```
 
 - One row per delivery phase, reusing the exact paths from that phase's Implementation Delta/Capability Delivery rows (comma-separated, no globs).
-- `Wave` is a positive integer execution group. Waves run in ascending order; phases sharing a wave run in parallel and must have disjoint `Files` — `spec:analyze` blocks compilation on `wave_file_overlap`.
-- Keep waves few; a wave with a single phase is valid. Shared integration files belong to a later solo wave, never to two phases of the same wave.
+- `Wave`: positive integer group. Waves run in ascending order; phases sharing a wave run in parallel on disjoint `Files` — `spec:analyze` blocks `wave_file_overlap`.
+- Optional `Depends on`: earlier phases this one needs — it starts when they pass review (`(dev)`: when implemented), not with its whole wave.
+- Keep waves few; a single-phase wave is valid. Shared integration files go to a later solo wave, never to two phases of one wave.
 
 When the feature has a detectable runtime surface (`.aioson/briefings/{slug}/prototype-manifest.md` exists, or the plan includes DB migrations), the harness contract is mandatory, not a deliberate opt-in: include one delivery step where DEV authors `.aioson/plans/{slug}/harness-contract.json` with the four `RG-*` runtime-gate criteria (`aioson harness:init . --slug={slug}` seeds TODO placeholders). `gate:check --gate=C`, `workflow:next --complete=dev|qa`, and `feature:close` enforce the same §2c gate — omitting the step surfaces the block at Gate C instead of at close.
 
