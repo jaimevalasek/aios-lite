@@ -10,6 +10,7 @@ const path = require('node:path');
 
 const { clampLines, expectKind, sanitizeUrl, maskedValue, clip, until, LOGIN_WALL_RE } = require('./script');
 const { asMatcher, locatorFor, parseBoundary, boundaryHit } = require('./targets');
+const { stripHiddenChars } = require('../llm-content-sanitizer');
 
 // ---------------------------------------------------------------------------
 // Step execution
@@ -142,8 +143,11 @@ async function ariaSnapshot(page, target) {
   return '';
 }
 
+// The preview is what an agent reads: the page's text minus the invisible
+// carriers (zero-width, bidi) a hostile page hides instructions behind. The
+// artifact file beside the report keeps the verbatim tree.
 function previewSnapshot(text, maxLines) {
-  const lines = String(text || '').split(/\r?\n/).filter((line) => line.trim() !== '');
+  const lines = stripHiddenChars(String(text || '')).split(/\r?\n/).filter((line) => line.trim() !== '');
   const preview = lines.slice(0, maxLines);
   return { lines: lines.length, preview: preview.join('\n'), truncated: lines.length > maxLines };
 }

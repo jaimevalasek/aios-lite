@@ -76,6 +76,11 @@ async function runWebExtract({ args, options = {}, logger, t }) {
     const output = { ok: true, mode: 'extract', dir: siteDir, file: outFile, capturedVia, ...data };
     if (options.json) return output;
     logger.log(t('web_extract.written', { file: path.relative(process.cwd(), outFile) || outFile }));
+    if (data.injection && data.injection.count > 0) {
+      const line = t('web_extract.injection_flagged', { count: data.injection.count, families: Object.keys(data.injection.families).join(', ') });
+      if (typeof logger.warn === 'function') logger.warn(line);
+      else logger.log(line);
+    }
     logger.log(t('web_extract.done'));
     return output;
   } catch (error) {

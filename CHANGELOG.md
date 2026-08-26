@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+- **Content perimeter — everything captured from outside the session is data, and the framework now says so.** `src/lib/llm-content-sanitizer.js` gains `scanInjectionPayloads()` (six families of instruction-shaped text — `override`, `role_hijack`, `prompt_exfil`, `exfiltration`, `chat_markup`, `ai_addressed` — in en / pt-BR / es, matched after folding diacritics and removing the invisible carriers, so `ig​nore` and `instruções` are both seen) and `stripHiddenChars()`. The sanitizer existed for dossier and research paths but never ran on the three surfaces that carry third-party text straight into an agent prompt; now it does: `web:extract` strips the carriers from every distilled field, stamps `extract.md` with `trust: untrusted` + `injection_findings: N`, adds an `## Injection scan` section with file, family and excerpt per hit, returns the same `injection` block in `--json` and warns on the plain run; the execution engine's mailbox strips carriers from every message, flags instruction-shaped text (`flagged: [...]` on the message, `[flagged: …]` marker in the recipient prompt, `mailbox_suspicious` run finding, `flagged` on the message event) and delivers it as data — a flagged message never fails a unit; `browser:run` / `browser:snapshot` strip carriers from aria previews, console samples and the page title, and the report carries `injection`, a warning line and an `## Injection scan` section when page text reads as an instruction — the walkthrough verdict is untouched. Advisory everywhere: the scan names what to distrust, it never blocks. Brain node `dev-008` (q5, dev/qa/tester/shakedown) binds the reading rule; `web-capture.md`, `qa/browser-walkthrough.md` and `dev/execution-lanes.md` document the stamps and findings.
+
 ## [1.61.0] - 2026-08-26
 
 ### Added
