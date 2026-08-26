@@ -19,7 +19,7 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const { resolveTargetDir } = require('../lib/project-root');
 const { validateFeatureSlug } = require('../verification/path-policy');
-const { offerExecution } = require('../lib/execution-roles');
+const { offerExecution, resolveSpawner } = require('../lib/execution-roles');
 const { parseDevelopmentLanes, parseExecutionWaves } = require('../harness/plan-waves');
 const {
   compileFeatureExecution,
@@ -139,7 +139,15 @@ async function runExecutionCommand({ args, options = {}, logger, env = process.e
 
   if (sub === 'offer') {
     const offer = await offerExecution(projectDir, { env, now });
-    const result = { ok: true, schema_version: 1, ...offer, exitCode: 0 };
+    const spawner = resolveSpawner({ roles: offer.roles, env });
+    const result = {
+      ok: true,
+      schema_version: 1,
+      ...offer,
+      // The client seam this engine supports, and whether one is in force here.
+      execution: { spawner_supported: true, spawner: spawner ? { configured: true, source: spawner.source, command: spawner.command, args: spawner.args } : { configured: false, source: null, command: null, args: [] }, unit_timeout_ms: offer.roles?.execution?.unit_timeout_ms || null },
+      exitCode: 0
+    };
     if (feature) {
       result.feature = feature;
       result.plan = await describePlanTables(projectDir, feature, { env, now });

@@ -117,7 +117,8 @@ The orchestrated path runs the planner's lanes as parallel external processes, e
     "qa":           { "host": "claude", "model": "claude-sonnet-5", "reasoning_effort": null }
   },
   "parallel": { "max_concurrent_lanes": 2 },
-  "on_unavailable": "ask"
+  "on_unavailable": "ask",
+  "execution": { "spawner": { "command": "cockpitctl", "args": ["unit", "spawn"] }, "unit_timeout_ms": 1800000 }
 }
 ```
 
@@ -180,6 +181,22 @@ Nothing decides silently. A unit whose dev role cannot start (`executable_not_fo
 Life is measured, not reported: every unit process streams its output into the telemetry, and a unit with no output **and** no file change under its lane write paths for `stallMs` (default 5 min) is marked `stalled` (an event, a live line, a flag in the state) — never silently. The live channel itself is the engine's one-line-per-event stream (`[execution] wave 1 · phase-2 · dev started kimi/kimi-k3`), independent of whether the host CLI streams anything.
 
 `execution:status` is the consolidated ledger: run summary, waves, per-unit dev/qa status with hosts, verdicts, report paths, corrections and findings (dev, qa and run-level), pending decisions with their hints, integration units, `resume_command`.
+
+### The client seam — `execution.spawner` (a unit as a terminal of the client)
+
+By default the engine spawns each unit's host CLI itself and the process is invisible to whoever supervises the session. A client that owns terminals — a desktop IDE, a mission cockpit — can take the **spawn** over without taking the engine over: declare a spawner (`execution.spawner` in the roles file, or `AIOSON_EXECUTION_SPAWNER` in the session's environment — the environment wins, it is the hint of the client that owns the session's PTY) and, for every unit, the engine hands that command one JSON envelope on stdin instead of spawning the host:
+
+```json
+{ "version": 1, "action": "spawn", "feature": "my-feature", "run_id": "…", "attempt_id": "…",
+  "unit": "phase-1", "lane": "backend", "wave": 1, "role": "dev",
+  "host": "codex", "model": "gpt-5.6", "reasoning_effort": "high",
+  "cwd": "/project", "prompt_path": ".aioson/context/reports/my-feature/<run_id>/phase-1.prompt.md",
+  "report_path": ".aioson/context/reports/my-feature/<run_id>/phase-1.json",
+  "write_paths": ["src/api/**"], "writable_roots": [], "timeout_ms": 1800000,
+  "command": "codex", "args": ["exec", "--sandbox", "workspace-write", "…"], "prompt_stdin": true, "sandbox_mode": "workspace-write" }
+```
+
+The client opens the process where it wants (a terminal in its grid, a tab), feeds it the prompt file (or runs the reference `command`/`args` non-interactively) and answers one JSON line — `{"ok": true, "session_id": "…", "pid": 123}` — then returns. The engine keeps everything else: it waits for the **bound report** at `report_path` (the only "done" it trusts), measures stall by file changes under the lane's write paths, records the `session_id` on the unit (state, `execution:status`) and, on abort or when the unit budget elapses, asks the client to close the session (`{"action": "close", "session_id": "…", "reason": "timeout"}`, best effort). A spawner that is not on PATH fails the preflight (`spawner_not_found`); one that refuses, crashes or answers without `ok: true` leaves the unit's `decision_required` (`spawner_failed`), exactly like a host that cannot run. `unit_timeout_ms` (1 min – 4 h) defaults to 30 minutes when a spawner is in force — humans watch terminals — and 10 minutes otherwise. `execution:offer` reports `execution.spawner_supported` and the spawner in force, so a client can feature-detect the seam. Nothing about the client leaks into the engine — one command, one envelope in, one line out — and the envelope carries no secrets.
 
 ## Explicit fallback only
 

@@ -13,6 +13,13 @@
  * Roles are snake_case keys: `{lane}_dev` (required per lane), `{lane}_qa`
  * (optional override of the shared `qa` reviewer), `qa` (lane-level reviewer,
  * required) and `integration_dev` (optional model for the integration pass).
+ *
+ * The optional `execution` block is the client seam: `spawner` names the
+ * command the engine hands each unit envelope to (the node becomes a process
+ * — a terminal — the supervising client owns; the engine keeps waiting for the
+ * bound report), `unit_timeout_ms` the per-unit budget when humans watch.
+ * The environment variable `AIOSON_EXECUTION_SPAWNER` wins over the file: it
+ * is the hint of the client that owns the session's PTY.
  */
 
 const fs = require('node:fs/promises');
@@ -25,7 +32,15 @@ const { readSignatures, findSignature, signatureState } = require('./host-signat
 const EXECUTION_ROLES_RELATIVE_PATH = '.aioson/config/execution-roles.json';
 const EXECUTION_ROLES_VERSION = 1;
 const ROLE_KEY = /^[a-z][a-z0-9_]*$/;
-const ROOT_KEYS = ['version', 'source', 'enabled', 'roles', 'parallel', 'on_unavailable'];
+const ROOT_KEYS = ['version', 'source', 'enabled', 'roles', 'parallel', 'on_unavailable', 'execution'];
+const EXECUTION_KEYS = ['spawner', 'unit_timeout_ms'];
+const SPAWNER_KEYS = ['command', 'args'];
+const MAX_SPAWNER_ARGS = 16;
+const MAX_SPAWNER_TOKEN_LENGTH = 200;
+const MIN_UNIT_TIMEOUT_MS = 60000;
+const MAX_UNIT_TIMEOUT_MS = 4 * 60 * 60 * 1000;
+const DEFAULT_SPAWNER_UNIT_TIMEOUT_MS = 30 * 60 * 1000;
+const SPAWNER_ENV = 'AIOSON_EXECUTION_SPAWNER';
 const ROLE_KEYS = ['host', 'model', 'reasoning_effort'];
 const ON_UNAVAILABLE = ['ask', 'fallback', 'pause'];
 const DEFAULT_ON_UNAVAILABLE = 'ask';
@@ -98,6 +113,35 @@ function validateExecutionRoles(value, { hosts = listExecutionHosts() } = {}) {
     }
   }
 
+  if (value.execution !== undefined) {
+    if (!isPlainObject(value.execution)) {
+      add('$.execution', 'must be an object');
+    } else {
+      for (const key of Object.keys(value.execution)) {
+        if (!EXECUTION_KEYS.includes(key)) add(`$.execution.${key}`, SECRET_KEY.test(key) ? 'secret fields are forbidden; use environment configuration' : 'unknown field');
+      }
+      const spawner = value.execution.spawner;
+      if (spawner !== undefined && spawner !== null) {
+        if (!isPlainObject(spawner)) {
+          add('$.execution.spawner', 'must be {command, args?}');
+        } else {
+          for (const key of Object.keys(spawner)) {
+            if (!SPAWNER_KEYS.includes(key)) add(`$.execution.spawner.${key}`, SECRET_KEY.test(key) ? 'secret fields are forbidden; use environment configuration' : 'unknown field');
+          }
+          if (typeof spawner.command !== 'string' || !spawner.command.trim() || spawner.command.length > MAX_SPAWNER_TOKEN_LENGTH) {
+            add('$.execution.spawner.command', `must be a non-empty command of at most ${MAX_SPAWNER_TOKEN_LENGTH} characters`);
+          }
+          if (spawner.args !== undefined && (!Array.isArray(spawner.args) || spawner.args.length > MAX_SPAWNER_ARGS || spawner.args.some((arg) => typeof arg !== 'string' || arg.length > MAX_SPAWNER_TOKEN_LENGTH))) {
+            add('$.execution.spawner.args', `must be an array of at most ${MAX_SPAWNER_ARGS} strings`);
+          }
+        }
+      }
+      const unitTimeout = value.execution.unit_timeout_ms;
+      if (unitTimeout !== undefined && unitTimeout !== null && (!Number.isInteger(unitTimeout) || unitTimeout < MIN_UNIT_TIMEOUT_MS || unitTimeout > MAX_UNIT_TIMEOUT_MS)) {
+        add('$.execution.unit_timeout_ms', `must be an integer between ${MIN_UNIT_TIMEOUT_MS} and ${MAX_UNIT_TIMEOUT_MS}`);
+      }
+    }
+  }
   if (value.parallel !== undefined) {
     if (!isPlainObject(value.parallel)) {
       add('$.parallel', 'must be an object');
@@ -134,8 +178,56 @@ function normalizeExecutionRoles(value) {
     parallel: {
       max_concurrent_lanes: value.parallel?.max_concurrent_lanes || DEFAULT_MAX_CONCURRENT_LANES
     },
-    on_unavailable: value.on_unavailable || DEFAULT_ON_UNAVAILABLE
+    on_unavailable: value.on_unavailable || DEFAULT_ON_UNAVAILABLE,
+    execution: normalizeExecutionBlock(value.execution)
   };
+}
+
+function normalizeExecutionBlock(value) {
+  if (!isPlainObject(value)) return { spawner: null, unit_timeout_ms: null };
+  const spawner = isPlainObject(value.spawner) && typeof value.spawner.command === 'string' && value.spawner.command.trim()
+    ? { command: value.spawner.command.trim(), args: Array.isArray(value.spawner.args) ? value.spawner.args.map(String) : [] }
+    : null;
+  return { spawner, unit_timeout_ms: Number.isInteger(value.unit_timeout_ms) ? value.unit_timeout_ms : null };
+}
+
+/** `"C:\\Program Files\\cockpit\\cockpitctl.exe" unit spawn` → {command, args}; double quotes group a token. */
+function parseSpawnerCommand(text) {
+  const tokens = [];
+  let current = '';
+  let quoted = false;
+  let started = false;
+  for (const char of String(text || '')) {
+    if (char === '"') {
+      quoted = !quoted;
+      started = true;
+      continue;
+    }
+    if (!quoted && /\s/.test(char)) {
+      if (started) tokens.push(current);
+      current = '';
+      started = false;
+      continue;
+    }
+    current += char;
+    started = true;
+  }
+  if (started) tokens.push(current);
+  if (tokens.length === 0 || !tokens[0]) return null;
+  return { command: tokens[0], args: tokens.slice(1) };
+}
+
+/**
+ * The spawner in force: the environment (the client that owns the session's
+ * PTY) wins over the roles file (the project default). `null` = the engine
+ * spawns the host processes itself.
+ */
+function resolveSpawner({ roles = null, env = process.env } = {}) {
+  const fromEnv = parseSpawnerCommand(env[SPAWNER_ENV]);
+  if (fromEnv) return { ...fromEnv, source: 'env' };
+  const fromRoles = roles?.execution?.spawner || null;
+  if (fromRoles) return { command: fromRoles.command, args: [...(fromRoles.args || [])], source: 'roles' };
+  return null;
 }
 
 /**
@@ -237,6 +329,10 @@ async function offerExecution(projectDir, { env = process.env, now = Date.now(),
 module.exports = {
   DEFAULT_MAX_CONCURRENT_LANES,
   DEFAULT_ON_UNAVAILABLE,
+  DEFAULT_SPAWNER_UNIT_TIMEOUT_MS,
+  SPAWNER_ENV,
+  parseSpawnerCommand,
+  resolveSpawner,
   EXECUTION_ROLES_RELATIVE_PATH,
   EXECUTION_ROLES_VERSION,
   ON_UNAVAILABLE,

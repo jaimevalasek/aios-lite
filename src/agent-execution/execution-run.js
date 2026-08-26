@@ -51,6 +51,8 @@ const { readSignatures, findSignature, signatureState } = require('../lib/host-s
 const { getExecutionCapabilities } = require('../lib/tool-capabilities');
 const { captureCorrectionBaseline } = require('../lib/specialist-correction');
 const { openRuntimeDb, appendExecutionEvent } = require('../runtime-store');
+const { readExecutionRoles, resolveSpawner, DEFAULT_SPAWNER_UNIT_TIMEOUT_MS } = require('../lib/execution-roles');
+const { wrapRegistryWithSpawner } = require('./adapters/spawner');
 
 const DEFAULT_ADAPTERS = {
   claude: require('./adapters/claude'),
@@ -65,6 +67,7 @@ const LEASE_MS = 30000;
 const DEV_CHOICES = ['retry', 'fallback:<host>/<model>[/<effort>]', 'skip', 'abort'];
 const QA_CHOICES = ['retry', 'fallback:<host>/<model>[/<effort>]', 'skip-qa', 'abort'];
 const MAX_EXCERPT_ITEMS = 20;
+const DEFAULT_UNIT_TIMEOUT_MS = 600000;
 
 function sha256(text) {
   return crypto.createHash('sha256').update(String(text)).digest('hex');
@@ -384,6 +387,8 @@ async function executeRole({
     abortReason: 'lease_lost',
     sandbox_mode: 'workspace-write',
     resolverOptions,
+    // Who/what/where for a spawner (a client that owns the process); ignored by the host adapters.
+    spawn_context: { feature, run_id: runId, attempt_id: attemptId, unit: unit.id, lane: unit.lane, wave: unit.wave, role, report_path: reportRel, write_paths: lane.write_paths },
     onSpawn: (pid, at) => telemetry.onSpawn(pid, at, { replace: spawnCount++ > 0 }),
     onStdout: (data) => { stall.touch(); telemetry.output('stdout', data); },
     onStderr: (data) => { stall.touch(); telemetry.output('stderr', data); }
@@ -400,6 +405,7 @@ async function executeRole({
     reasoning_effort: execution.reasoning_effort ?? expected.reasoning_effort ?? null,
     report: reportRel,
     history: execution.history || [],
+    session_id: execution.session_id || null,
     stalled: stall.stalled,
     started_at: startedAt,
     finished_at: nowIso()
@@ -551,6 +557,17 @@ async function preflightExecution(projectDir, featureInput, { env = process.env,
   }
   const laneUnits = (plan?.units || []).filter((unit) => unit.owner === 'lane');
   check('units', laneUnits.length > 0, laneUnits.length > 0 ? null : 'the plan has no lane units to run');
+  // The client seam: a spawner in force must be resolvable before anything is handed to it.
+  const rolesRead = await readExecutionRoles(projectDir);
+  const spawner = resolveSpawner({ roles: rolesRead.ok ? rolesRead.roles : null, env });
+  if (spawner) {
+    try {
+      await resolveExecutable(spawner.command, resolverOptions);
+      check('spawner', true, `${spawner.command} (${spawner.source})`);
+    } catch (error) {
+      check('spawner', false, `spawner_not_found: ${error.message} (${spawner.source})`);
+    }
+  }
   const ok = checks.every((item) => item.ok);
   return {
     ok,
@@ -560,7 +577,9 @@ async function preflightExecution(projectDir, featureInput, { env = process.env,
     plan,
     planDigest: read.exists ? sha256(JSON.stringify(plan)) : null,
     manifest: loaded.exists && loaded.ok ? loaded : null,
-    verification: verified
+    verification: verified,
+    spawner,
+    unitTimeoutMs: rolesRead.ok ? (rolesRead.roles.execution?.unit_timeout_ms || null) : null
   };
 }
 
@@ -577,21 +596,22 @@ async function runExecution({
   catalogLoader,
   env = process.env,
   now = () => Date.now(),
-  timeout = 600000,
+  timeout = null,
   progress = () => {},
   resolverOptions,
   leaseIntervalMs = Math.floor(LEASE_MS / 3),
   stallMs = 300000,
   stallCheckMs = 30000,
   qaKernelPath,
-  gitBaseline = captureCorrectionBaseline
+  gitBaseline = captureCorrectionBaseline,
+  spawnerOptions = {}
 }) {
   const feature = assertFeatureSlug(featureInput);
   const emit = (event) => {
     try { progress({ at: nowIso(), feature, ...event }); } catch { /* progress is best-effort */ }
   };
   const preflight = await preflightExecution(projectDir, feature, { env, now, resolverOptions, adapterRegistry });
-  const preflightReport = { ok: preflight.ok, checks: preflight.checks, issues: preflight.issues };
+  const preflightReport = { ok: preflight.ok, checks: preflight.checks, issues: preflight.issues, spawner: preflight.spawner ? { command: preflight.spawner.command, source: preflight.spawner.source } : null };
   if (!preflight.ok) {
     return { ok: false, status: 'refused', reason: 'preflight_failed', feature, preflight: preflightReport, exitCode: 1 };
   }
@@ -600,6 +620,12 @@ async function runExecution({
   }
   const { plan, manifest, planDigest } = preflight;
   const stateFile = runStatePath(projectDir, feature);
+  // A spawner in force turns every host adapter into a hand-off to the client;
+  // with humans watching terminals the unit budget defaults to 30 minutes.
+  const spawner = preflight.spawner || null;
+  const registry = spawner ? wrapRegistryWithSpawner(adapterRegistry, spawner, spawnerOptions) : adapterRegistry;
+  // An explicit engine timeout (the caller's) wins; then the roles file; then the default for the mode.
+  const unitTimeout = timeout !== null ? timeout : (preflight.unitTimeoutMs || (spawner ? DEFAULT_SPAWNER_UNIT_TIMEOUT_MS : DEFAULT_UNIT_TIMEOUT_MS));
 
   const lease = await acquireLease(projectDir, feature);
   if (!lease) {
@@ -648,8 +674,9 @@ async function runExecution({
     };
     state.status = 'running';
     state.reason = null;
+    state.spawner = spawner ? { command: spawner.command, args: spawner.args, source: spawner.source, unit_timeout_ms: unitTimeout } : null;
     await persist();
-    emit({ type: 'run', status: 'started', run_id: state.run_id, waves: state.waves.length, resumed: Boolean(resume) });
+    emit({ type: 'run', status: 'started', run_id: state.run_id, waves: state.waves.length, resumed: Boolean(resume), spawner: spawner ? spawner.command : null });
 
     const planUnits = Object.fromEntries((plan.units || []).map((unit) => [unit.id, unit]));
     const qaProfiles = new Map();
@@ -741,7 +768,7 @@ async function runExecution({
       const unit = planUnits[unitId];
       const lane = plan.lanes[unit.lane];
       const unitState = state.units[unitId];
-      const commonArgs = { projectDir, feature, runId: state.run_id, unit, lane, manifest, adapterRegistry, catalogLoader, timeout, signal: monitor.signal, resolverOptions, stallMs, stallCheckMs, now, emit };
+      const commonArgs = { projectDir, feature, runId: state.run_id, unit, lane, manifest, adapterRegistry: registry, catalogLoader, timeout: unitTimeout, signal: monitor.signal, resolverOptions, stallMs, stallCheckMs, now, emit };
 
       if (unitState.status === 'pending') {
         const config = roleConfig(unitState, unit.lane, 'dev');
@@ -1137,8 +1164,8 @@ async function statusExecution({ projectDir, feature: featureInput }) {
     wave: unit.wave,
     owner: unit.owner,
     status: unit.status,
-    dev: unit.dev ? { status: unit.dev.status, host: unit.dev.host || null, model: unit.dev.model || null, verdict: unit.dev.verdict || null, reason: unit.dev.reason || null, report: unit.dev.report || null, findings: (unit.dev.findings || []).length, stalled: Boolean(unit.dev.stalled) } : null,
-    qa: unit.qa ? { status: unit.qa.status, host: unit.qa.host || null, model: unit.qa.model || null, verdict: unit.qa.verdict || null, reason: unit.qa.reason || null, report: unit.qa.report || null, findings: (unit.qa.findings || []).length, corrections: (unit.qa.corrections_paths || []).length, corrections_cap_exceeded: Boolean(unit.qa.corrections_cap_exceeded) } : null,
+    dev: unit.dev ? { status: unit.dev.status, host: unit.dev.host || null, model: unit.dev.model || null, verdict: unit.dev.verdict || null, reason: unit.dev.reason || null, report: unit.dev.report || null, findings: (unit.dev.findings || []).length, stalled: Boolean(unit.dev.stalled), session_id: unit.dev.session_id || null } : null,
+    qa: unit.qa ? { status: unit.qa.status, host: unit.qa.host || null, model: unit.qa.model || null, verdict: unit.qa.verdict || null, reason: unit.qa.reason || null, report: unit.qa.report || null, findings: (unit.qa.findings || []).length, corrections: (unit.qa.corrections_paths || []).length, corrections_cap_exceeded: Boolean(unit.qa.corrections_cap_exceeded), session_id: unit.qa.session_id || null } : null,
     pending_decision: unit.pending_decision ? { stage: unit.pending_decision.stage, reason: unit.pending_decision.reason, choices: unit.pending_decision.choices } : null
   }));
   const findings = [
@@ -1154,6 +1181,7 @@ async function statusExecution({ projectDir, feature: featureInput }) {
     path: runStateRelative(feature),
     compiled: read.exists,
     run: summarizeState(state, feature),
+    spawner: state.spawner || null,
     waves: state.waves.map((wave) => ({ ...wave, units: wave.units.map((id) => unitRows.find((row) => row.id === id) || { id }) })),
     units: unitRows,
     decisions: state.decisions,

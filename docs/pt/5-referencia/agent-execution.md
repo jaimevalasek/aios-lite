@@ -117,7 +117,8 @@ O caminho orquestrado roda as faixas do planner como processos externos paralelo
     "qa":           { "host": "claude", "model": "claude-sonnet-5", "reasoning_effort": null }
   },
   "parallel": { "max_concurrent_lanes": 2 },
-  "on_unavailable": "ask"
+  "on_unavailable": "ask",
+  "execution": { "spawner": { "command": "cockpitctl", "args": ["unit", "spawn"] }, "unit_timeout_ms": 1800000 }
 }
 ```
 
@@ -179,6 +180,22 @@ Nada decide em silêncio. Uma unidade cujo papel dev não consegue iniciar (`exe
 Vida é medida, não declarada: cada processo de unidade envia sua saída para a telemetria, e uma unidade sem saída **e** sem mudança de arquivo sob os write paths da faixa por `stallMs` (padrão 5 min) é marcada `stalled` (evento, linha ao vivo, flag no estado) — nunca silêncio. O canal ao vivo é o fluxo do motor de uma linha por evento (`[execution] wave 1 · phase-2 · dev started kimi/kimi-k3`), independente de o CLI do host transmitir algo.
 
 `execution:status` é o ledger consolidado: resumo do run, ondas, status dev/qa por unidade com hosts, vereditos, caminhos de relatório, correções e achados (dev, qa e nível de run), decisões pendentes com suas dicas, unidades de integração, `resume_command`.
+
+### A costura do cliente — `execution.spawner` (a unidade como terminal do cliente)
+
+Por padrão o motor spawna ele mesmo a CLI do host de cada unidade, e o processo fica invisível para quem supervisiona a sessão. Um cliente que possui terminais — uma IDE desktop, um cockpit de missões — pode assumir o **spawn** sem assumir o motor: declara um spawner (`execution.spawner` no arquivo de papéis, ou `AIOSON_EXECUTION_SPAWNER` no ambiente da sessão — o ambiente vence, é a dica do cliente que possui o PTY da sessão) e, para cada unidade, o motor entrega a esse comando um envelope JSON no stdin em vez de spawnar o host:
+
+```json
+{ "version": 1, "action": "spawn", "feature": "my-feature", "run_id": "…", "attempt_id": "…",
+  "unit": "phase-1", "lane": "backend", "wave": 1, "role": "dev",
+  "host": "codex", "model": "gpt-5.6", "reasoning_effort": "high",
+  "cwd": "/project", "prompt_path": ".aioson/context/reports/my-feature/<run_id>/phase-1.prompt.md",
+  "report_path": ".aioson/context/reports/my-feature/<run_id>/phase-1.json",
+  "write_paths": ["src/api/**"], "writable_roots": [], "timeout_ms": 1800000,
+  "command": "codex", "args": ["exec", "--sandbox", "workspace-write", "…"], "prompt_stdin": true, "sandbox_mode": "workspace-write" }
+```
+
+O cliente abre o processo onde quiser (um terminal no grid, uma aba), alimenta-o com o arquivo de prompt (ou roda o `command`/`args` de referência de forma não interativa) e responde uma linha JSON — `{"ok": true, "session_id": "…", "pid": 123}` — e retorna. O motor mantém todo o resto: espera o **relatório vinculado** em `report_path` (o único "pronto" em que confia), mede stall por mudança de arquivos sob os write paths da faixa, registra o `session_id` na unidade (estado, `execution:status`) e, em abort ou quando o orçamento da unidade expira, pede ao cliente que feche a sessão (`{"action": "close", "session_id": "…", "reason": "timeout"}`, best effort). Spawner fora da PATH falha o preflight (`spawner_not_found`); spawner que recusa, quebra ou responde sem `ok: true` deixa o `decision_required` da unidade (`spawner_failed`), exatamente como um host que não consegue rodar. `unit_timeout_ms` (1 min – 4 h) vale 30 minutos por padrão quando há spawner — humanos assistem terminais — e 10 minutos caso contrário. `execution:offer` reporta `execution.spawner_supported` e o spawner em vigor, para o cliente detectar a costura. Nada do cliente vaza para o motor — um comando, um envelope entrando, uma linha saindo — e o envelope não carrega segredos.
 
 ## Fallback somente explícito
 
