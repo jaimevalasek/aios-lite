@@ -5,6 +5,26 @@ const path = require('node:path');
 const Database = require('better-sqlite3');
 const { resolveSkillCatalog, normalizeId } = require('../skills/registry');
 const { resolveTargetDir } = require('../lib/project-root');
+const { parseFrontmatter } = require('../preflight-engine');
+
+// The frontmatter block is the only routing contract a SKILL.md carries on its
+// own (name + description — what the harness and the catalog read). A skill
+// without it is reachable only through a registry entry or a hardcoded
+// category: measured here so a registry-shadowed file never reads as healthy.
+async function skillFrontmatter(projectDir, relPath) {
+  let content = '';
+  try {
+    content = await fs.readFile(path.join(projectDir, ...String(relPath || '').split('/')), 'utf8');
+  } catch {
+    return { present: false, name: '', description: '' };
+  }
+  const frontmatter = /^---\r?\n[\s\S]*?\r?\n---/.test(content) ? parseFrontmatter(content) : {};
+  return {
+    present: Object.keys(frontmatter).length > 0,
+    name: String(frontmatter.name || '').trim(),
+    description: String(frontmatter.description || '').trim()
+  };
+}
 
 const CHARS_PER_TOKEN = 4;
 const ROUTER_TARGET_CHARS = 4000;
@@ -266,8 +286,10 @@ async function analyzeReachability(projectDir, usage) {
     kind: classifyReachabilitySource(normalizeRel(projectDir, filePath))
   })));
   const sources = resolveRoutedSources(scannedSources);
+  const frontmatters = new Map(await Promise.all(resolved.catalog.map(async (skill) => [skill.id, await skillFrontmatter(projectDir, skill.path)])));
 
   const skills = resolved.catalog.map((skill) => {
+    const frontmatter = frontmatters.get(skill.id) || { present: false, name: '', description: '' };
     const matchedReferences = sources
       .filter((source) => hasSkillReference(source.content, skill));
     const references = matchedReferences.map((source) => source.path);
@@ -301,9 +323,14 @@ async function analyzeReachability(projectDir, usage) {
       contextual_references: contextualReferences,
       runtime_usage: observed,
       reachability,
-      tested: skill.tests.length > 0
+      tested: skill.tests.length > 0,
+      frontmatter,
+      frontmatter_missing: !frontmatter.present || !frontmatter.description
     };
   });
+  const missingFrontmatter = skills
+    .filter((skill) => skill.frontmatter_missing && skill.status !== 'deprecated')
+    .map((skill) => ({ id: skill.id, path: skill.path, reachability: skill.reachability }));
 
   const registeredPaths = new Set(
     resolved.registry.registry.skills.map((entry) => String(entry.path || '').replace(/\\/g, '/'))
@@ -329,9 +356,11 @@ async function analyzeReachability(projectDir, usage) {
       )).length,
       deprecated: skills.filter((skill) => skill.reachability === 'deprecated').length,
       orphans: skills.filter((skill) => skill.reachability === 'orphan').length,
-      unregistered: unregistered.length
+      unregistered: unregistered.length,
+      missing_frontmatter: missingFrontmatter.length
     },
     unregistered,
+    missing_frontmatter: missingFrontmatter,
     weak_process_skills: skills
       .filter((skill) => (
         skill.category === 'process'

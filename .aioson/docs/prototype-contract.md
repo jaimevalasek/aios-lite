@@ -1,5 +1,6 @@
 ---
 name: prototype-contract
+description: "How an approved prototype binds the PRD, the plan, implementation and validation — what it proves, what it never proves, and how each stage cites it."
 agents: [product, sheldon, planner, dev, qa, ux-ui, tester, validator]
 modes: [planning, executing]
 task_types: [prd, implementation-plan, implementation, validation]

@@ -571,19 +571,32 @@ function keywordMatches(haystack, needles) {
     const normalizedNeedle = normalizeToken(needle);
     if (!normalizedNeedle) return false;
     const needleTokens = normalizedNeedle.split(/\s+/).filter(Boolean);
-    // Short single-token needles (e.g. alias "ui", entity "api") must match on a
-    // word boundary. A bare substring check false-fires inside "build"/"require"/
-    // "rapid", which pollutes selection scoring and — via the entities/aliases
-    // salience gate — makes context:guard inject unrelated rules.
-    if (needleTokens.length === 1 && normalizedNeedle.length <= 3) {
+    // A single-token needle (alias "ui", entity "Card", trigger "form") matches
+    // on a word boundary, whatever its length. A bare substring check false-
+    // fires inside "build"/"require"/"rapid" — and, for longer needles, inside
+    // "format"/"discard"/"platform": the shipped kanban and form rules carry
+    // entities like Card, Form, Lane, Stage, and every consumer's CHANGELOG or
+    // orchestration code used to pull them in through context:guard.
+    if (needleTokens.length === 1) {
       return wordVariants(normalizedNeedle).some((variant) => haystackWords.has(variant));
     }
-    if (normalizedHaystack.includes(normalizedNeedle)) return true;
+    // A phrase ("drag and drop", "move card") matches as whole words too —
+    // "remove cards" is not "move card".
+    if (phraseRegExp(normalizedNeedle).test(normalizedHaystack)) return true;
     const words = needleTokens.filter((word) => word.length >= 4);
     if (words.length === 0) return false;
     const hits = words.filter((word) => wordVariants(word).some((variant) => haystackWords.has(variant))).length;
     return hits >= Math.min(2, words.length);
   });
+}
+
+const phraseCache = new Map();
+function phraseRegExp(phrase) {
+  if (!phraseCache.has(phrase)) {
+    const escaped = phrase.split(/\s+/).map((token) => token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('\\s+');
+    phraseCache.set(phrase, new RegExp(`(?:^|\\s)${escaped}(?:\\s|$)`));
+  }
+  return phraseCache.get(phrase);
 }
 
 function wordVariants(word) {

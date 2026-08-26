@@ -1,3 +1,8 @@
+---
+name: aioson-spec-driven
+description: Streamlined spec-driven feature delivery — the canonical product → sheldon → planner → dev → qa route with one role reference per stage. Use for substantive feature definition, planning, implementation, or QA; not for a bounded Simple Plan or a bare Deyvin recovery.
+---
+
 # Skill: aioson-spec-driven
 
 > Streamlined feature delivery methodology. Load this file first, then exactly one role reference.

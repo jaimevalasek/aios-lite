@@ -1,3 +1,8 @@
+---
+name: harness-validate
+description: Harness-driven validation — the implementer (@dev) closes every cycle with an impartial validator review (@validator) against harness-contract.json before delivery counts as complete. Use on MEDIUM projects or wherever a harness contract exists.
+---
+
 # Skill: Harness-Driven Validation
 
 > **Use:** Implementation and contract validation (Nautilus pattern).

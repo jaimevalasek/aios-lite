@@ -61,16 +61,43 @@ const UI_FILE_EXTENSIONS = new Set([
 ]);
 const DOC_FILE_EXTENSIONS = new Set(['.md', '.mdx']);
 const SCRIPT_FILE_EXTENSIONS = new Set(['.js', '.mjs', '.cjs', '.ts', '.mts', '.cts']);
-const DOM_MARKERS = /document\s*\.\s*(?:getElementById|querySelector|querySelectorAll|createElement|addEventListener|body)|classList\s*\.|innerHTML|<\/?[a-z][a-z0-9-]*(?:\s[^>]*)?>|className\s*=|useState\s*\(|createRoot\s*\(/i;
+// A tag is markup when it closes, carries an attribute, self-closes, or names
+// an HTML element. A bare `<id>` / `<slug>` / `<host>` is placeholder notation
+// in a comment or a contract string, not the DOM.
+const HTML_ELEMENT = 'div|span|form|input|button|label|select|option|textarea|table|thead|tbody|tr|td|th|ul|ol|li|p|h[1-6]|section|header|nav|main|footer|aside|article|a|img|svg|dialog|template|slot|canvas|video|audio|iframe|body|html|head';
+const DOM_MARKERS = new RegExp([
+  'document\\s*\\.\\s*(?:getElementById|querySelector|querySelectorAll|createElement|addEventListener|body)',
+  'classList\\s*\\.',
+  'innerHTML',
+  '<\\/[a-z][a-z0-9-]*>',
+  '<[a-z][a-z0-9-]*\\s+[a-z:@-][a-z0-9:@.-]*(?:=|\\s|>|\\/>)',
+  '<[a-z][a-z0-9-]*\\s*\\/>',
+  `<(?:${HTML_ELEMENT})\\b[^>]*>`,
+  'className\\s*=',
+  'useState\\s*\\(',
+  'createRoot\\s*\\('
+].join('|'), 'i');
+// Repository housekeeping files are never a product surface, whatever they mention.
+const NON_PRODUCT_DOC = /^(?:changelog|changes|history|readme|license|licence|contributing|code_of_conduct|security|authors|notice|todo|roadmap)(?:[._-].*)?$/i;
 
 function detectSurfaceKinds(filePath, content) {
   const kinds = new Set();
-  const ext = path.extname(String(filePath || '')).toLowerCase();
+  const name = path.basename(String(filePath || ''));
+  const ext = path.extname(name).toLowerCase();
+  const stem = name.slice(0, name.length - ext.length);
   if (UI_FILE_EXTENSIONS.has(ext)) kinds.add('ui');
   // Product/spec docs carry interaction contracts (briefings, manifests, PRDs).
-  else if (DOC_FILE_EXTENSIONS.has(ext)) kinds.add('ui');
+  else if (DOC_FILE_EXTENSIONS.has(ext) && !NON_PRODUCT_DOC.test(stem)) kinds.add('ui');
   else if (SCRIPT_FILE_EXTENSIONS.has(ext) && DOM_MARKERS.test(String(content || ''))) kinds.add('ui');
   return kinds;
+}
+
+/** An absolute path outside the project owns none of its rules. */
+function outsideProject(targetDir, filePath) {
+  const text = String(filePath || '');
+  if (!text || !path.isAbsolute(text)) return false;
+  const rel = path.relative(path.resolve(targetDir), path.resolve(text));
+  return rel === '' ? false : (rel.startsWith('..') || path.isAbsolute(rel));
 }
 
 // Tunable relevance gate.
@@ -225,6 +252,9 @@ async function buildGuardResponse(event, targetDir, options = {}) {
   const filePath = toolInput.file_path || toolInput.notebook_path || '';
   const content = extractEditedContent(toolInput);
   if (!filePath && !content) return emptyResponse();
+  // A session edits more than the project (operator memory, scratch files):
+  // the project's rules apply to the project's files only.
+  if (outsideProject(targetDir, filePath)) return emptyResponse();
 
   const query = deriveQuery(filePath, content, gate.maxContentChars);
   if (!query) return emptyResponse();
@@ -259,6 +289,7 @@ module.exports = {
   buildGuardResponse,
   deriveQuery,
   detectSurfaceKinds,
+  outsideProject,
   extractEditedContent,
   matchedRules,
   ruleAllowsGuard,

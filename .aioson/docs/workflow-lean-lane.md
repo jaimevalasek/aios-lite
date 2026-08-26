@@ -1,5 +1,6 @@
 ---
 name: workflow-streamlined-lane
+description: "The streamlined (lean) workflow lane — fewer agent hops with the same gates; when it applies, how workflow.config.json selects it, and what it never skips."
 agents: [setup, product, sheldon, planner, dev, qa, neo]
 modes: [planning]
 task_types: [workflow, routing, configuration]

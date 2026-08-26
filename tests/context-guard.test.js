@@ -5,7 +5,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
 const os = require('node:os');
 const path = require('node:path');
-const { buildGuardResponse, detectSurfaceKinds } = require('../src/context-guard');
+const { buildGuardResponse, detectSurfaceKinds, outsideProject } = require('../src/context-guard');
 const { runContextGuard, resolveGuardAgent } = require('../src/commands/context-guard');
 
 test('context:guard resolves the active agent from explicit options before event metadata', () => {
@@ -460,6 +460,112 @@ test('context:guard command logs a human summary when not in JSON mode', async (
 
     assert.equal(out.lines.length, 1);
     assert.match(out.lines[0], /injected .*db-naming\.md/);
+  } finally {
+    await fs.rm(dir, { recursive: true, force: true });
+  }
+});
+
+// ─── the shipped interaction rules must not fire on files that merely contain their words as substrings ───
+
+const KANBAN_RULE = [
+  '---',
+  'source_type: rule',
+  'description: "Recurrent status flows use drag-and-drop"',
+  'agents: all',
+  'modes: [executing]',
+  'task_types: [workflow, kanban, board]',
+  'triggers: [kanban, board, pipeline, stage, column, drag and drop, move card, status flow]',
+  'aliases: [quadro, funil]',
+  'entities: [Kanban, Board, Pipeline, Stage, Column, Card, Lane, Queue]',
+  'guard_surfaces: [ui]',
+  'load_tier: trigger',
+  'priority: 10',
+  '---',
+  '',
+  '# Drag-and-drop for status flows',
+  '',
+  '## Required behavior',
+  '- Keep buttons for one-shot transitions; drag-and-drop owns the recurring flow.',
+  ''
+].join('\n');
+
+test('a long entity or trigger never matches as a substring: "format" is not Form, "discard" is not Card, "remove cards" is not "move card" (P1)', async () => {
+  const dir = await makeTmpDir();
+  try {
+    await writeProject(dir);
+    await writeFile(dir, '.aioson/rules/form-ui.md', FORM_UI_RULE);
+    await writeFile(dir, '.aioson/rules/kanban.md', KANBAN_RULE);
+
+    // Orchestration-engine code: "lane"/"stage" are its own words, `<id>` is
+    // placeholder notation, "format"/"discard"/"platform" carry the entities
+    // only as substrings.
+    const engine = {
+      tool_name: 'Write',
+      tool_input: {
+        file_path: 'src/agent-execution/execution-run.js',
+        content: [
+          "const MESSAGE_TARGET = /^(?:lane:[a-z0-9]+|unit:[a-z0-9-]+|integration|orchestrator)$/; // to: lane:<id>|unit:<id>",
+          'function formatReport(report) { const platform = process.platform; return discardEmpty(report); }',
+          'const pipelineStage = { stage: 1, lane: "backend" };'
+        ].join('\n')
+      }
+    };
+    const silent = await buildGuardResponse(engine, dir, { tool: 'claude', agent: 'dev' });
+    const rules = silent._guard ? silent._guard.rules : [];
+    assert.equal(rules.includes('.aioson/rules/form-ui.md'), false, JSON.stringify(rules));
+    assert.equal(rules.includes('.aioson/rules/kanban.md'), false, JSON.stringify(rules));
+
+    // A changelog is repository housekeeping, never a product surface — even when
+    // it names cards, boards and forms as whole words.
+    const changelog = {
+      tool_name: 'Edit',
+      tool_input: {
+        file_path: 'CHANGELOG.md',
+        new_string: '### Changed\n- The card on the kanban board moves between stages with drag and drop; the cadastro form validates the CPF mask inline.'
+      }
+    };
+    assert.deepEqual(await buildGuardResponse(changelog, dir, { tool: 'claude', agent: 'dev' }), {});
+
+    // The same rule still fires on a real board component.
+    const board = {
+      tool_name: 'Write',
+      tool_input: {
+        file_path: 'src/ui/Board.tsx',
+        content: 'export function Board({ columns }) {\n  return <div className="kanban board">{columns.map((column) => <Column key={column.id} stage={column.stage} onDragEnd={moveCard} />)}</div>;\n}'
+      }
+    };
+    const injected = await buildGuardResponse(board, dir, { tool: 'claude', agent: 'dev' });
+    assert.ok(injected._guard && injected._guard.rules.includes('.aioson/rules/kanban.md'), JSON.stringify(injected._guard || {}));
+  } finally {
+    await fs.rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('detectSurfaceKinds: placeholder tags and housekeeping markdown are not UI; real markup still is', () => {
+  assert.equal(detectSurfaceKinds('src/engine/run.js', "const target = 'lane:<id>|unit:<id>'; // <slug> is replaced at dispatch").size, 0);
+  assert.equal(detectSurfaceKinds('CHANGELOG.md', '## [1.2.0]\n- forms and boards').size, 0);
+  assert.equal(detectSurfaceKinds('README.md', '').size, 0);
+  assert.equal(detectSurfaceKinds('docs/CONTRIBUTING.md', '').size, 0);
+  assert.ok(detectSurfaceKinds('docs/prd-orders.md', '').has('ui'));
+  assert.ok(detectSurfaceKinds('src/ui/form.js', 'render(<form id="cadastro"><input name="cpf" /></form>)').has('ui'));
+  assert.ok(detectSurfaceKinds('src/ui/list.js', 'return `<ul>${items}</ul>`;').has('ui'));
+  assert.ok(detectSurfaceKinds('src/ui/box.ts', 'el.innerHTML = "<br/>";').has('ui'));
+});
+
+test('a file outside the project owns none of its rules: operator memory and scratch files never get an injection', async () => {
+  const dir = await makeTmpDir();
+  try {
+    await writeProject(dir);
+    await writeFile(dir, '.aioson/rules/form-ui.md', FORM_UI_RULE);
+    const outside = path.join(os.tmpdir(), 'aioson-elsewhere', 'memory', 'note.md');
+    const event = {
+      tool_name: 'Write',
+      tool_input: { file_path: outside, content: '# cadastro form\n- every field gets a mask and inline validation (cpf)' }
+    };
+    assert.deepEqual(await buildGuardResponse(event, dir, { tool: 'claude', agent: 'dev' }), {});
+    assert.equal(outsideProject(dir, outside), true);
+    assert.equal(outsideProject(dir, path.join(dir, 'src', 'x.js')), false);
+    assert.equal(outsideProject(dir, 'src/x.js'), false, 'relative paths are the project\'s');
   } finally {
     await fs.rm(dir, { recursive: true, force: true });
   }
