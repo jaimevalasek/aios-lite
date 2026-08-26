@@ -92,6 +92,7 @@ function between(rng, lo, hi) {
 // keeps the two lists disjoint.
 
 const REGISTERS = ['technical', 'quiet', 'editorial', 'material', 'constructed', 'cinematic'];
+const POLES = ['light', 'dark', 'chromatic'];
 
 const TYPEFACE_BANK = [
   { display: 'Young Serif', ui: 'Figtree', host: 'google', registers: ['editorial', 'material'], vibe: 'warm chunky oldstyle' },
@@ -329,11 +330,16 @@ function fingerprintMatchReason(delta, samePole) {
  * already-shipped hue family on the same pole rotates away by the golden
  * angle — diversity by construction, not by luck.
  */
-function generateSeedCandidates({ project = null, slug, register = null, count = 3, seed = 0, avoid = [] } = {}) {
+function generateSeedCandidates({ project = null, slug, register = null, count = 3, seed = 0, avoid = [], pole = null } = {}) {
   const normalizedRegister = register && REGISTERS.includes(String(register).toLowerCase())
     ? String(register).toLowerCase()
     : null;
-  const basis = `${String(project || 'project')}|${String(slug || 'surface')}|${normalizedRegister || ''}|${Number(seed) || 0}`;
+  // A fixed pole is the owner's ground (an extracted identity's theme, or a
+  // stated preference): the draw diversifies hue and pairing around it and
+  // never flips it — the registry's job is to stop projects from looking the
+  // same, not to overrule what the owner showed.
+  const fixedPole = pole && POLES.includes(String(pole).toLowerCase()) ? String(pole).toLowerCase() : null;
+  const basis = `${String(project || 'project')}|${String(slug || 'surface')}|${normalizedRegister || ''}|${Number(seed) || 0}${fixedPole ? `|pole:${fixedPole}` : ''}`;
   const hash = fnv1a(basis);
   const rng = mulberry32(hash);
 
@@ -345,7 +351,7 @@ function generateSeedCandidates({ project = null, slug, register = null, count =
 
   for (let i = 0; i < Math.max(1, Math.min(6, count)); i += 1) {
     const candidateRegister = normalizedRegister || pickFrom(rng, REGISTERS);
-    const pole = pickWeighted(rng, POLE_WEIGHTS[candidateRegister] || POLE_WEIGHTS.default);
+    const pole = fixedPole || pickWeighted(rng, POLE_WEIGHTS[candidateRegister] || POLE_WEIGHTS.default);
     const scheme = pickWeighted(rng, SCHEME_WEIGHTS[candidateRegister] || SCHEME_WEIGHTS.default);
 
     let hue = (baseHue0 + i * GOLDEN_ANGLE) % 360;
@@ -404,7 +410,7 @@ function generateSeedCandidates({ project = null, slug, register = null, count =
     });
   }
 
-  return { basis, hash, register: normalizedRegister, candidates };
+  return { basis, hash, register: normalizedRegister, pole: fixedPole, candidates };
 }
 
 // The drawn material is the SIGNATURE, never the whole system. Every candidate
@@ -515,6 +521,7 @@ module.exports = {
   finishingFloor,
   FINISHING_FLOOR,
   REGISTERS,
+  POLES,
   SCHEMES,
   TYPEFACE_BANK,
   COMPOSITION_BANK,

@@ -1276,7 +1276,19 @@ const ADAPTERS = {
         const identityRef = identityLine ? identityLine[1].trim().replace(/^["']|["']$/g, '') : null;
         metrics.manifest_identity = identityRef;
         const intentFirst = !identityRef || /^(none|null|~)$/i.test(identityRef);
-        const craftMissed = warnings.some((w) => /never delivered|OS default stacks|craft floor/.test(w));
+        // The owner's answer about references is a manifest fact, not a memory:
+        // `references: extracted|declined|unavailable`. A brand surface built
+        // intent-first with no recorded answer never asked — the exact miss
+        // that let the seed decide the direction alone while the owner held a
+        // folder of screenshots.
+        const referencesLine = manifest.match(/^references:\s*(.+)$/mi);
+        const referencesAnswer = referencesLine ? referencesLine[1].trim().replace(/^["']|["']$/g, '').toLowerCase() : null;
+        metrics.manifest_references = referencesAnswer;
+        const brandSurface = ['brand', 'mixed'].includes(String(metrics.surface_mode && metrics.surface_mode.mode || '').toLowerCase());
+        if (intentFirst && brandSurface && !referencesAnswer) {
+          warnings.push('references_unasked: intent-first build (`identity: none`) on a brand surface with no record of the owner\'s answer about references — ask once (screenshots, capture folders, site URLs; and two to five anti-references) and record `references: extracted | declined | unavailable` in the manifest frontmatter; references given → reference-identity-extract, whose identity outranks origination and fixes the seed\'s ground pole');
+        }
+        const craftMissed = warnings.some((w) => /never delivered|OS default stacks|craft floor|craft weight|bare ground/.test(w));
         if (intentFirst && craftMissed) {
           warnings.push('intent-first build (`identity: none`) with the measured craft floor unmet — before another intent-first round or any preset menu, ask the owner for visual references (screenshots, capture folders, site URLs) and run reference-identity-extract into the briefing\'s identity.md; an extracted identity outranks origination');
         }
@@ -1308,7 +1320,7 @@ const ADAPTERS = {
         warnings.push(collected.reason);
         metrics.runtime = { available: false, reason: collected.reason };
       } else {
-        const runtime = summarizeRuntime(collected.runs);
+        const runtime = summarizeRuntime(collected.runs, { surfaceMode: metrics.surface_mode && metrics.surface_mode.mode });
         issues.push(...runtime.issues);
         warnings.push(...runtime.warnings);
         metrics.runtime = { available: true, entry: ctx.url || sources.entry, ...runtime.metrics };

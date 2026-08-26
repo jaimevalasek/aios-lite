@@ -127,7 +127,7 @@ function readFlatFrontmatterField(content, field) {
   return null;
 }
 
-async function prepareApprovedPrototypeManifest(projectDir, slug, briefingContent = '') {
+async function prepareApprovedPrototypeManifest(projectDir, slug, briefingContent = '', { acceptCraft = false } = {}) {
   const root = resolveBriefingPath(projectDir, slug);
   const manifestPath = path.join(root, 'prototype-manifest.md');
   const resolution = resolvePrototypeState(projectDir, slug, briefingContent);
@@ -225,9 +225,33 @@ async function prepareApprovedPrototypeManifest(projectDir, slug, briefingConten
       return { ok: false, error: 'prototype_runtime_matrix_unverified', manifestPath, details: missingRoutes };
     }
   }
+  // The premium bar, read at the one human gate: a brand surface whose
+  // measured craft weight sits under the bar, or whose first fold is mostly
+  // bare ground, is refused with the numbers — never silently approved
+  // because every hygiene gate stayed green. `--accept-craft` records the
+  // owner's decision in the manifest instead of hiding it.
+  const craftMetrics = report.metrics && report.metrics.craft;
+  const surfaceMode = String(report.metrics && report.metrics.surface_mode && report.metrics.surface_mode.mode || '').toLowerCase();
+  // Only a surface that argues by aesthetics is held to the bar; an operate
+  // surface earns familiarity, and an undetected one is not charged on a guess.
+  const brandSurface = ['brand', 'mixed'].includes(surfaceMode);
+  const weight = craftMetrics && craftMetrics.weight && craftMetrics.weight.scored ? craftMetrics.weight : null;
+  const density = runtime && runtime.available && runtime.assurance && runtime.assurance.density ? runtime.assurance.density : null;
+  const belowBar = [];
+  if (brandSurface && weight && Number.isFinite(weight.score) && weight.score < weight.bar) {
+    const thin = Object.entries(weight.grades || {}).filter(([, g]) => g < 2).map(([lever, g]) => `${lever} ${g}/2`).join(', ');
+    belowBar.push(`craft weight ${weight.score}/100 below the brand bar (${weight.bar}) — thin: ${thin}`);
+  }
+  if (brandSurface && density && Number.isFinite(density.first_fold_occupancy_pct) && density.first_fold_occupancy_pct < 35) {
+    belowBar.push(`first fold ${100 - density.first_fold_occupancy_pct}% empty at ${density.scope || 'desktop'} (a visual subject covers ${density.first_fold_occupancy_pct}%)`);
+  }
+  if (belowBar.length > 0 && !acceptCraft) {
+    return { ok: false, error: 'prototype_visual_craft_below_bar', manifestPath, details: belowBar };
+  }
   let updated = updateFlatFrontmatterField(manifest, 'status', 'approved');
   updated = updateFlatFrontmatterField(updated, 'approved_at', new Date().toISOString());
-  return { ok: true, applicable: true, manifestPath, updated };
+  if (belowBar.length > 0) updated = updateFlatFrontmatterField(updated, 'craft_accepted', belowBar.join('; ').replace(/\r?\n/g, ' '));
+  return { ok: true, applicable: true, manifestPath, updated, craft_accepted: belowBar.length > 0 ? belowBar : null };
 }
 
 // Every refusal of the prototype gate names what is missing, where it lives,
@@ -267,6 +291,10 @@ function logPrototypeGateError(logger, slug, failure, t) {
   } else if (failure.error === 'prototype_skipped_measured_run') {
     logger.error(t('briefing_gate.skipped_measured_run', { slug }));
     logger.error(t('briefing_gate.skipped_measured_run_fix'));
+  } else if (failure.error === 'prototype_visual_craft_below_bar') {
+    logger.error(t('briefing_gate.craft_below_bar', { slug }));
+    for (const detail of failure.details || []) logger.error(t('briefing_gate.craft_below_bar_detail', { detail }));
+    logger.error(t('briefing_gate.craft_below_bar_fix'));
   } else {
     logger.error(t('briefing_gate.generic', { slug, error: failure.error }));
     for (const detail of failure.details || []) logger.error(`  - ${detail}`);
@@ -331,7 +359,8 @@ async function runBriefingApprove({ args, options = {}, logger }) {
   const prototypeApproval = await prepareApprovedPrototypeManifest(
     projectDir,
     target.slug,
-    briefingContent
+    briefingContent,
+    { acceptCraft: Boolean(options['accept-craft'] || options.acceptCraft) }
   );
   if (!prototypeApproval.ok) {
     logPrototypeGateError(logger, target.slug, prototypeApproval, await resolveProjectGateTranslator(projectDir));

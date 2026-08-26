@@ -1,6 +1,7 @@
 'use strict';
 
 const { loadPlaywright } = require('./playwright-loader');
+const { decodePng, contentShare } = require('./png-stats');
 
 /**
  * Runtime visual telemetry — the measurements that only exist once a browser has
@@ -29,7 +30,17 @@ const DEFAULT_VIEWPORTS = [
 const MIN_TAP_TARGET = 44;
 const CONTRAST_NORMAL = 4.5;
 const CONTRAST_LARGE = 3;
-const RUNTIME_PROBE_VERSION = 2;
+const RUNTIME_PROBE_VERSION = 3;
+// Fold density floors for a brand surface at desktop width: the share of the
+// first fold a visual subject occupies, the floor no later fold may sink
+// under, and the average over the first three folds. A hero with a
+// photograph or display type over a painted atmosphere occupies 60–100%; a
+// heading floating in the page color with a faint ring below reads 50 / 2 / 15.
+const DENSITY_FIRST_FOLD_FLOOR = 35;
+const DENSITY_FOLD_FLOOR = 22;
+const DENSITY_FOLDS_FLOOR = 30;
+const DENSITY_DESKTOP_WIDTH = 1024;
+const DENSITY_FOLDS = 3;
 
 /** Parse `rgb()` / `rgba()` / `#rgb` / `#rrggbb` into {r,g,b,a} or null. */
 function parseColor(input) {
@@ -318,6 +329,98 @@ function pageProbe(probeVersion) {
     },
     states: { present: statesPresent, visible: statesVisible }
   };
+
+  // ── occupancy: how much of each of the first folds a visual subject covers ──
+  // Emptiness is invisible to a stylesheet and misread by raw pixels (a dark
+  // cinematic hero is mostly near-black by design). What the eye counts is a
+  // SUBJECT: loaded media, type at display scale or a text block, a panel or
+  // gradient that actually contrasts with the page ground, a photographic
+  // background. Each qualifying box is stamped on a grid per fold, so overlap
+  // never double-counts; a faint ring, a tinted section or a pseudo-element
+  // never qualifies. Scroll-revealed elements (opacity 0 until seen) count —
+  // they are content the reader will meet; display:none never does.
+  const foldHeight = window.innerHeight;
+  const pageHeight = Math.max(foldHeight, root.scrollHeight || 0);
+  out.scroll_height = pageHeight;
+  const foldCount = Math.min(3, Math.max(1, Math.ceil(pageHeight / foldHeight)));
+  const GRID_COLS = 64;
+  const GRID_ROWS = 40;
+  const grids = [];
+  for (let f = 0; f < foldCount; f += 1) grids.push(new Uint8Array(GRID_COLS * GRID_ROWS));
+  const parseRgb = (value) => {
+    const m = /rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*([\d.]+))?\s*\)/i.exec(String(value || ''));
+    return m ? { r: +m[1], g: +m[2], b: +m[3], a: m[4] === undefined ? 1 : +m[4] } : null;
+  };
+  const luminance = ({ r, g, b }) => {
+    const lin = (v) => { const c = v / 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; };
+    return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+  };
+  let groundRgb = null;
+  try { groundRgb = parseRgb(opaqueBackground(doc.body || root)); } catch { groundRgb = null; }
+  if (!groundRgb) groundRgb = { r: 255, g: 255, b: 255, a: 1 };
+  const groundL = luminance(groundRgb);
+  const contrastsGround = (color) => {
+    if (!color || color.a < 0.5) return false;
+    const l = luminance(color);
+    const ratio = (Math.max(l, groundL) + 0.05) / (Math.min(l, groundL) + 0.05);
+    return ratio >= 1.5;
+  };
+  const paintedSubject = (style) => {
+    const image = String(style.backgroundImage || '');
+    // A raster or file-backed image is a subject; an inline SVG data URI is a
+    // pattern — grain, noise, dither, a repeated tile — which is finish, not
+    // subject, however much of the page it covers.
+    if (/url\(/i.test(image) && !/url\(\s*["']?data:image\/svg\+xml/i.test(image)) return true;
+    if (/gradient\(/i.test(image)) {
+      const colors = image.match(/rgba?\([^)]*\)/gi) || [];
+      return colors.some((token) => contrastsGround(parseRgb(token)));
+    }
+    return contrastsGround(parseRgb(style.backgroundColor));
+  };
+  const stamp = (rect) => {
+    const scrollY = window.scrollY || window.pageYOffset || 0;
+    const top = rect.top + scrollY;
+    const bottom = rect.bottom + scrollY;
+    const left = Math.max(0, rect.left);
+    const right = Math.min(window.innerWidth, rect.right);
+    if (right <= left) return;
+    for (let f = 0; f < foldCount; f += 1) {
+      const foldTop = f * foldHeight;
+      const y0 = Math.max(top, foldTop);
+      const y1 = Math.min(bottom, foldTop + foldHeight);
+      if (y1 <= y0) continue;
+      const c0 = Math.floor((left / window.innerWidth) * GRID_COLS);
+      const c1 = Math.min(GRID_COLS, Math.ceil((right / window.innerWidth) * GRID_COLS));
+      const r0 = Math.floor(((y0 - foldTop) / foldHeight) * GRID_ROWS);
+      const r1 = Math.min(GRID_ROWS, Math.ceil(((y1 - foldTop) / foldHeight) * GRID_ROWS));
+      for (let r = r0; r < r1; r += 1) for (let c = c0; c < c1; c += 1) grids[f][r * GRID_COLS + c] = 1;
+    }
+  };
+  for (let i = 0; i < all.length && i < 3000; i++) {
+    const el = all[i];
+    const style = getComputedStyle(el);
+    if (style.display === 'none' || style.visibility === 'hidden') continue;
+    const rect = el.getBoundingClientRect();
+    if (rect.width < 24 || rect.height < 12) continue;
+    const tag = String(el.tagName || '').toLowerCase();
+    let subject = false;
+    if (tag === 'img') subject = Boolean(el.complete === undefined || (el.complete && el.naturalWidth > 0));
+    else if (tag === 'video' || tag === 'canvas' || tag === 'svg' || tag === 'picture') subject = true;
+    else if (paintedSubject(style)) subject = true;
+    else {
+      const own = [...el.childNodes].filter((n) => n.nodeType === 3 && n.textContent.trim()).map((n) => n.textContent.trim()).join(' ');
+      if (own) {
+        const size = parseFloat(style.fontSize) || 0;
+        subject = size >= 24 || own.length >= 80 || /^(a|button)$/.test(tag);
+      }
+    }
+    if (subject) stamp(rect);
+  }
+  out.occupancy = grids.map((grid, index) => {
+    let covered = 0;
+    for (let k = 0; k < grid.length; k += 1) covered += grid[k];
+    return { fold: index + 1, occupancy_pct: Math.round((covered / grid.length) * 100) };
+  });
   return out;
 }
 
@@ -327,9 +430,10 @@ function pageProbe(probeVersion) {
  * @param {Array<{viewport: object, raw: object}>} runs
  * @returns {{metrics: object, issues: string[], warnings: string[]}}
  */
-function summarizeRuntime(runs) {
+function summarizeRuntime(runs, { surfaceMode = null } = {}) {
   const issues = [];
   const warnings = [];
+  const familiarityMode = ['operate', 'read'].includes(String(surfaceMode || '').toLowerCase());
   const metrics = {
     viewports: [],
     assurance: {
@@ -357,6 +461,41 @@ function summarizeRuntime(runs) {
     if (run.screenshot) metrics.screenshots.push(run.screenshot);
     const overflow = Math.max(0, (raw.scroll_width || 0) - (raw.viewport_width || 0));
 
+    // Fold density: how much of each of the first folds a visual subject
+    // occupies (loaded media, display type or text blocks, panels and
+    // gradients that contrast with the ground, photographic backgrounds), with
+    // the raw pixel deviation beside it for the record. The entry route at
+    // desktop width is where a brand surface argues; a state route or a phone
+    // column is recorded, never charged.
+    if (Array.isArray(raw.occupancy) && raw.occupancy.length > 0) {
+      const folds = raw.occupancy.map((fold) => Number(fold.occupancy_pct) || 0);
+      const average = Math.round(folds.reduce((sum, pct) => sum + pct, 0) / folds.length);
+      const pixels = Array.isArray(raw.pixel_density) ? raw.pixel_density.map((fold) => Number(fold.content_pct) || 0) : null;
+      const density = {
+        folds: folds.length,
+        first_fold_occupancy_pct: folds[0],
+        folds_occupancy_pct: folds,
+        folds_avg_occupancy_pct: average,
+        ...(pixels ? { folds_pixels_pct: pixels, ground: (raw.pixel_density[0] && raw.pixel_density[0].ground) || null } : {})
+      };
+      run.__density = density;
+      const entryDesktop = viewport.width >= DENSITY_DESKTOP_WIDTH && !(run.route && run.route.state);
+      if (entryDesktop) {
+        const current = metrics.assurance.density;
+        if (!current || density.first_fold_occupancy_pct < current.first_fold_occupancy_pct) metrics.assurance.density = { ...density, scope };
+        if (!familiarityMode) {
+          const emptyFold = folds.findIndex((pct, index) => index > 0 && pct < DENSITY_FOLD_FLOOR);
+          if (density.first_fold_occupancy_pct < DENSITY_FIRST_FOLD_FLOOR) {
+            warnings.push(`${scope}: the first fold is ${100 - density.first_fold_occupancy_pct}% empty (a visual subject — loaded media, display type, a contrasting panel or a photographic ground — covers ${density.first_fold_occupancy_pct}% of it) — the opening of a premium surface is filled: type at display scale over a photograph or a painted atmosphere, not a heading floating in the page color`);
+          } else if (emptyFold !== -1) {
+            warnings.push(`${scope}: fold ${emptyFold + 1} is ${100 - folds[emptyFold]}% empty (per fold: ${folds.map((pct) => `${pct}%`).join(', ')}) — a whole viewport of page color between sections is not rhythm, it is a gap; tighten the sequence or fill the field (image-led rows, painted panels, oversized type)`);
+          } else if (average < DENSITY_FOLDS_FLOOR) {
+            warnings.push(`${scope}: ${100 - average}% of the first ${folds.length} folds is empty on average (per fold: ${folds.map((pct) => `${pct}%`).join(', ')}) — sections stretch emptiness instead of composing; tighten the rhythm or fill the field`);
+          }
+        }
+      }
+    }
+
     const failures = [];
     for (const sample of raw.text_samples || []) {
       const ratio = contrastRatio(sample.color, sample.background);
@@ -379,7 +518,8 @@ function summarizeRuntime(runs) {
       offscreen_elements: offscreen.length,
       small_tap_targets: smallTargets.length,
       text_samples: (raw.text_samples || []).length,
-      contrast_failures: failures.length
+      contrast_failures: failures.length,
+      ...(run.__density ? { density: run.__density } : {})
     });
 
     // The page is wider than its own viewport: unambiguous, and the single most
@@ -502,6 +642,23 @@ function runtimeUrl(fileUrl, route) {
   return `${base}${String(route).startsWith('#') ? '' : '#'}${route}`;
 }
 
+/** Scroll the page fold by fold and measure how much of each screenshot is not page color. */
+async function sampleFoldDensity(page, viewport, raw) {
+  const foldHeight = Number(raw && raw.viewport_height) || viewport.height;
+  const pageHeight = Math.max(foldHeight, Number(raw && raw.scroll_height) || 0);
+  const folds = [];
+  for (let fold = 0; fold < DENSITY_FOLDS && fold * foldHeight < pageHeight; fold += 1) {
+    const top = fold * foldHeight;
+    await page.evaluate((y) => { if (typeof window.scrollTo === 'function') window.scrollTo(0, y); }, top);
+    if (typeof page.waitForTimeout === 'function') await page.waitForTimeout(120);
+    const png = await page.screenshot({ fullPage: false, type: 'png' });
+    const share = contentShare(decodePng(Buffer.isBuffer(png) ? png : Buffer.from(png)), { step: 2 });
+    folds.push({ fold: fold + 1, top, content_pct: share.content_pct, ground: share.ground });
+  }
+  await page.evaluate(() => { if (typeof window.scrollTo === 'function') window.scrollTo(0, 0); });
+  return folds;
+}
+
 async function collectRuntimeMeasurements({ fileUrl, viewports = DEFAULT_VIEWPORTS, timeout = 20000, launcher = null, route = null, routes = null, screenshotDir = null, projectDir = null } = {}) {
   const playwright = launcher ? { chromium: { launch: launcher } } : loadPlaywright([projectDir]);
   if (!playwright) {
@@ -535,6 +692,17 @@ async function collectRuntimeMeasurements({ fileUrl, viewports = DEFAULT_VIEWPOR
             screenshot = require('node:path').join(screenshotDir, `${safe || 'runtime'}.png`);
             require('node:fs').mkdirSync(screenshotDir, { recursive: true });
             await page.screenshot({ path: screenshot, fullPage: true });
+          }
+          // Pixel record beside the occupancy verdict: photograph the first
+          // folds of the entry route at desktop width and count the pixels
+          // that leave the page color. Best effort — a page that cannot be
+          // photographed records the reason, never a number.
+          if (!routeSpec.state && viewport.width >= DENSITY_DESKTOP_WIDTH && typeof page.screenshot === 'function') {
+            try {
+              raw.pixel_density = await sampleFoldDensity(page, viewport, raw);
+            } catch (error) {
+              raw.pixel_density_error = String(error && error.message || error);
+            }
           }
           runs.push({ viewport, route: routeSpec, url: targetUrl, raw, screenshot });
         } finally {

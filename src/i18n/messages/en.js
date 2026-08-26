@@ -14,6 +14,9 @@ module.exports = {
     status_invalid_fix: '  Accepted statuses: draft or approved. Fix {path}.',
     skipped_measured_run: 'Briefing "{slug}" belongs to a measured benchmark run: approval is dispensed there (prototype_skipped_measured_run).',
     skipped_measured_run_fix: '  A measured traversal never becomes product authority. Remove .aioson/benchmark/measured-run.json only if this workspace is a real project.',
+    craft_below_bar: 'Briefing "{slug}" cannot be approved: the prototype measures below the premium bar (prototype_visual_craft_below_bar).',
+    craft_below_bar_detail: '  {detail}',
+    craft_below_bar_fix: '  Rebuild from the owner\'s references (reference-identity-extract) or at the register\'s premium bar, re-measure with verify:artifact --kind=visual --runtime, then approve again — or record the decision with --accept-craft.',
     generic: 'Could not approve the prototype for "{slug}": {error}.'
   },
   cli: {
@@ -59,7 +62,7 @@ module.exports = {
     help_briefing_sources:
       'aioson briefing:sources [path] [--slug=<slug>] [--json] [--locale=en]',
     help_briefing_approve:
-      'aioson briefing:approve [path] [--slug=<slug>] [--locale=en]',
+      'aioson briefing:approve [path] [--slug=<slug>] [--accept-craft] [--locale=en]',
     help_briefing_unapprove:
       'aioson briefing:unapprove [path] [--slug=<slug>] [--locale=en]',
     help_briefing_review:

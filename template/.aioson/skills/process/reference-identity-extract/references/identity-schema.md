@@ -34,7 +34,7 @@ base_unit: 4px
 ## Provenance
 ```
 
-Use `scope: exploration|briefing|brand`, brand slug `project`, source `references|intent`, confidence `high|medium|low`, and theme `light|dark|light-dark`.
+Use `scope: exploration|briefing|brand`, brand slug `project`, source `references|intent`, confidence `high|medium|low`, and theme `light|dark|light-dark`. `theme` is read by `aioson design:seed`: its first token fixes the ground pole of every candidate (the draw never flips the pole the references showed). An optional `register: technical|quiet|editorial|material|constructed|cinematic` fixes the register the same way — write it when the references clearly belong to one.
 
 Minimum content:
 

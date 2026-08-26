@@ -497,8 +497,8 @@ test('a probe answering below the version contract is reported, never silently i
   const stale = summarizeRuntime([{ viewport: VIEWPORT_MOBILE, raw: { ...base, assurance: { probe_version: 0 } } }]);
   assert.equal(stale.metrics.assurance.craft_verified, false);
   assert.equal(stale.metrics.assurance.probe_runs, 0);
-  assert.match(stale.warnings.join('\n'), /runtime probe returned assurance version 0, below the v2 contract/);
+  assert.match(stale.warnings.join('\n'), new RegExp(`runtime probe returned assurance version 0, below the v${RUNTIME_PROBE_VERSION} contract`));
 
   const unversioned = summarizeRuntime([{ viewport: VIEWPORT_MOBILE, raw: { ...base, assurance: {} } }]);
-  assert.match(unversioned.warnings.join('\n'), /assurance version none, below the v2 contract/);
+  assert.match(unversioned.warnings.join('\n'), new RegExp(`assurance version none, below the v${RUNTIME_PROBE_VERSION} contract`));
 });

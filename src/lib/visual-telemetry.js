@@ -312,6 +312,7 @@ function utilityClassDensity(markup) {
 // the craft axis only measures documents with a real amount of authored CSS.
 const CRAFT_MIN_DECLARATIONS = 150;
 const CRAFT_LEVER_FLOOR = 2; // warn at <= 2 of 5 active
+const CRAFT_WEIGHT_BAR = 60; // brand surfaces: graded ambition out of 100
 const DISPLAY_TYPE_FLOOR_PX = 56; // 3.5rem — where display typography starts
 
 const CSS_WIDE_KEYWORDS = new Set(['inherit', 'initial', 'unset', 'revert', 'revert-layer']);
@@ -1370,6 +1371,50 @@ function analyzeVisualSources({ html = '', css = '', components = '', surfaceMod
   const utility = utilityClassDensity(markup);
   const utilityStyled = !craftMeasured && utility.utility >= 40 && utility.share >= 0.5;
 
+  // ── craft weight (graded ambition) ───────────────────────────────────────
+  // The levers are booleans with low floors: one keyframe system, two
+  // gradients and a 56px heading light all five while the surface still reads
+  // thin, so a rich build and a minimal one both scored 5/5. The weight grades
+  // each lever 0–2 from how much of the technique is actually on the page.
+  // Static text cannot see emptiness — the runtime density probe owns that —
+  // but it can see a hover system, layered atmosphere, tracked caps, image-led
+  // media and composition that overlaps the grid.
+  const blocks = ruleBlocks(styleText);
+  const hoverTransforms = blocks.filter((block) => /:hover/.test(block.selector) && /(?:^|;)\s*(?:transform|scale|translate|rotate)\s*:/i.test(block.body)).length;
+  const atmosphericLayers = blocks.filter((block) => /::?(?:before|after)\b/.test(block.selector) && /(?:linear|radial|conic)-gradient\(|blur\(|feTurbulence|url\(/i.test(resolveCustomProps(block.body, props))).length;
+  let bigBlurs = 0;
+  for (const { prop, value } of decls) {
+    if (prop !== 'filter' && prop !== 'backdrop-filter' && prop !== '-webkit-backdrop-filter') continue;
+    const match = resolveCustomProps(value, props).match(/blur\(\s*(\d+(?:\.\d+)?)px/i);
+    if (match && Number(match[1]) >= 24) bigBlurs += 1;
+  }
+  const overlapSignals = decls.filter(({ prop, value }) =>
+    (prop === 'position' && /\b(?:absolute|sticky)\b/i.test(value))
+    || (/^margin(?:-(?:top|right|bottom|left|inline|block)(?:-(?:start|end))?)?$/.test(prop) && /(?:^|\s)-\d/.test(value))
+    || prop === 'clip-path' || prop === 'mix-blend-mode' || prop === 'shape-outside').length;
+  const mediaCover = decls.filter(({ prop, value }) => prop === 'object-fit' && /cover/i.test(value)).length;
+  const trackedCaps = blocks.filter((block) => /text-transform\s*:\s*uppercase/i.test(block.body) && /letter-spacing\s*:/i.test(block.body)).length;
+  const italicContrast = decls.some(({ prop, value }) => prop === 'font-style' && /italic|oblique/i.test(value));
+  const weightSteps = new Set(decls.filter(({ prop }) => prop === 'font-weight').map(({ value }) => resolveCustomProps(value, props).trim())).size;
+  const hasClipPath = decls.some(({ prop }) => prop === 'clip-path');
+  const grades = {
+    typography: !fontDelivered ? 0 : (maxFontPx >= 96 && (fluidType || trackedCaps > 0 || italicContrast || weightSteps >= 3) ? 2 : (maxFontPx >= DISPLAY_TYPE_FLOOR_PX ? 1 : 0)),
+    atmosphere: materialDepth.length >= 3 && (atmosphericLayers >= 2 || bigBlurs >= 1 || grainNoise) ? 2 : (materialDepth.length >= 2 || atmosphericLayers >= 1 ? 1 : 0),
+    motion: !motionDesigned ? 0 : ((motionAssessment.ambient_loops >= 1 || signatureMotion) && (hoverTransforms >= 2 || scrollReveal) && motionAssessment.applied_keyframes >= 2 ? 2 : 1),
+    composition: overlapSignals >= 5 && (mediaCover >= 1 || blendModes >= 1 || hasClipPath) ? 2 : (overlapSignals >= 2 ? 1 : 0),
+    media: mediaEvidence.verified >= 3 && mediaCover >= 2 ? 2 : (mediaEvidence.verified >= 1 ? 1 : 0)
+  };
+  const weightScore = Object.values(grades).reduce((sum, g) => sum + g, 0);
+  const craftWeight = familiarityMode
+    ? { scored: false, reason: `${surface.mode} surface: the premium axis is precision, not weight` }
+    : {
+      scored: craftMeasured,
+      score: Math.round((weightScore / (Object.keys(grades).length * 2)) * 100),
+      bar: CRAFT_WEIGHT_BAR,
+      grades,
+      signals: { hover_transforms: hoverTransforms, atmospheric_layers: atmosphericLayers, big_blurs: bigBlurs, overlap_signals: overlapSignals, media_cover: mediaCover, tracked_caps: trackedCaps, italic_contrast: italicContrast, weight_steps: weightSteps }
+    };
+
   const metrics = {
     declarations: decls.length,
     token_adherence_pct: adherence,
@@ -1436,6 +1481,7 @@ function analyzeVisualSources({ html = '', css = '', components = '', surfaceMod
       material_techniques: materialTechniques,
       material_depth: materialDepth.length,
       browser_surfaces: { count: browserSurfaces.length, present: browserSurfaces },
+      weight: craftWeight,
       unapplied_effects: unappliedFinish,
       gradient_count: gradientCount,
       layered_shadow_declarations: layeredShadows,
@@ -1561,6 +1607,12 @@ function analyzeVisualSources({ html = '', css = '', components = '', surfaceMod
   }
   if (craftMeasured && levers.material && materialDepth.length <= 2) {
     warnings.push(`shallow material system: the material lever rests on ${materialDepth.join(' + ') || 'modern color alone'} (finish depth ${materialDepth.length}/7) — a drawn palette with no system-level finish is the measured shape of generic AI output even when every hue is right. Token the finish so every route inherits it: register-sanctioned depth (rules/tonal steps/overlap where shadows are forbidden; a shadow strategy only where allowed), tinted washes, texture or blend at the declared dosage. The signature material is the top note, never the whole system`);
+  }
+  // Every lever lit, every lever thin: the shape of a page that carries one of
+  // each technique and still reads generic. Named after the floor, never with it.
+  if (craftMeasured && ['brand', 'mixed'].includes(surface.mode) && craftWeight.scored && craftWeight.score < CRAFT_WEIGHT_BAR && activeLevers > leverFloor) {
+    const thin = Object.entries(grades).filter(([, g]) => g < 2).map(([lever, g]) => `${lever} ${g}/2`);
+    warnings.push(`craft weight ${craftWeight.score}/100 below the brand bar (${CRAFT_WEIGHT_BAR}): the levers are lit but thin — ${thin.join(', ')}. Presence is not weight: a premium surface carries its atmosphere on more than one layer (radial wash + grain + a real blur), a hover system that moves (transform on two or more hover states), image-led media (object-fit: cover), type at 96px+ with tracked caps or italic contrast, and composition that overlaps the grid (absolute or sticky layers, negative margins, clip-path) — visual-effects.md owns the vocabulary`);
   }
   if (craftMeasured && unappliedFinish.length > 0) {
     const sample = unappliedFinish.slice(0, 5).join(', ');

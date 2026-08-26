@@ -4,11 +4,11 @@ description: Visual authority resolution and anti-slop implementation criteria f
 agents: [dev, deyvin, qa, ux-ui, site-forge]
 priority: 10
 version: 1.0.0
-modes: [executing]
+modes: [planning, executing]
 task_types: [implementation, ui, layout, prototype, visual-state, responsive, accessibility]
 load_tier: trigger
 triggers: [UI, interface, layout, screen, component, prototype, visual, responsive, mobile, styling, design skill, identity]
-paths: [app/**, src/**, resources/**, components/**, pages/**, styles/**]
+paths: [app/**, src/**, resources/**, components/**, pages/**, styles/**, .aioson/briefings/**, .aioson/explorations/**]
 ---
 
 # Visual Implementation

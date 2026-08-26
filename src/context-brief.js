@@ -510,6 +510,13 @@ function capMustLoads(items, limit = 14) {
   ];
 }
 
+// A rule reaches must_load on a hard signal — a declared path, task type,
+// trigger, entity, alias, intent or feature. Semantic recall alone ("build",
+// "prototype") is how the shipped kanban and widget rules landed in front of
+// every landing page; on recall alone a rule is still read on demand from
+// should_load, it just stops being law for a task it never named.
+const HARD_RULE_SIGNAL = /(?:^|;\s*)(?:paths|task_types|triggers|aliases|entities|retrieval_intents|feature|feature-mentioned|intent):/;
+
 function classifyLoads(selection, profile) {
   const selected = selection.selected || [];
   const must = [];
@@ -517,6 +524,10 @@ function classifyLoads(selection, profile) {
 
   for (const item of selected) {
     if (item.load_tier === 'always' || profile.mustSurfaces.has(item.surface)) {
+      if (item.surface === 'rules' && item.load_tier !== 'always' && typeof item.reason === 'string' && item.reason && !HARD_RULE_SIGNAL.test(item.reason)) {
+        should.push(compactPathItem(item));
+        continue;
+      }
       must.push(compactPathItem(item));
       continue;
     }

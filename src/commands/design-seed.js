@@ -12,40 +12,104 @@
  * extracted identity always outranks the draw.
  */
 
+const fs = require('node:fs');
 const path = require('node:path');
 const { resolveTargetDir } = require('../lib/project-root');
+const { parseFrontmatter } = require('../preflight-engine');
 const {
   generateSeedCandidates,
   projectFingerprintId,
   readRegistry,
   registryPath,
-  REGISTERS
+  REGISTERS,
+  POLES
 } = require('../lib/design-seed');
 
-const VERSION = '1.0.0';
+const VERSION = '1.1.0';
 const GENERATOR = `aioson design:seed@${VERSION}`;
+
+/**
+ * The owner's extracted identity outranks the draw — as a fact the CLI reads,
+ * not a sentence the model remembers. `--identity=<path>` names the record;
+ * `--slug` resolves the briefing record, then the project brand record. Its
+ * `theme` fixes the ground pole (`dark`, `light`, `light-dark` → first token)
+ * and an optional `register:` fixes the register.
+ */
+function resolveIdentity(targetDir, { slug = null, explicit = null } = {}) {
+  const candidates = [];
+  // A named record is the only candidate: a typo must not fall through to
+  // whatever the project happens to hold.
+  if (explicit) candidates.push(path.resolve(targetDir, String(explicit)));
+  else {
+    if (slug) candidates.push(path.join(targetDir, '.aioson', 'briefings', slug, 'identity.md'));
+    candidates.push(path.join(targetDir, '.aioson', 'context', 'identity.md'));
+  }
+  for (const file of candidates) {
+    let content;
+    try {
+      content = fs.readFileSync(file, 'utf8');
+    } catch {
+      continue;
+    }
+    const frontmatter = /^---\r?\n/.test(content) ? parseFrontmatter(content) : {};
+    if (String(frontmatter.kind || '').trim().toLowerCase() !== 'identity') continue;
+    const theme = String(frontmatter.theme || '').trim().toLowerCase();
+    const themePole = theme.split(/[-_/\s]+/)[0];
+    const pole = POLES.includes(themePole) ? themePole : null;
+    const register = String(frontmatter.register || '').trim().toLowerCase();
+    return {
+      path: path.relative(targetDir, file).split(path.sep).join('/'),
+      scope: String(frontmatter.scope || '').trim() || null,
+      theme: theme || null,
+      pole,
+      register: REGISTERS.includes(register) ? register : null
+    };
+  }
+  return null;
+}
 
 async function runDesignSeed({ args, options = {}, logger }) {
   const targetDir = resolveTargetDir(args);
   const project = path.basename(path.resolve(targetDir));
   const projectId = projectFingerprintId(targetDir);
   const slug = options.slug ? String(options.slug).trim() : null;
-  const register = options.register ? String(options.register).trim().toLowerCase() : null;
+  const registerOption = options.register ? String(options.register).trim().toLowerCase() : null;
+  const poleOption = options.pole ? String(options.pole).trim().toLowerCase() : null;
 
-  if (register && !REGISTERS.includes(register)) {
-    const msg = `design:seed: unknown register "${register}". Registers: ${REGISTERS.join(', ')}`;
+  if (registerOption && !REGISTERS.includes(registerOption)) {
+    const msg = `design:seed: unknown register "${registerOption}". Registers: ${REGISTERS.join(', ')}`;
     if (options.json) { process.exitCode = 1; return { ok: false, error: 'unknown_register', registers: REGISTERS }; }
     logger.error(msg);
     process.exitCode = 1;
     return { ok: false };
   }
+  if (poleOption && !POLES.includes(poleOption)) {
+    const msg = `design:seed: unknown pole "${poleOption}". Poles: ${POLES.join(', ')}`;
+    if (options.json) { process.exitCode = 1; return { ok: false, error: 'unknown_pole', poles: POLES }; }
+    logger.error(msg);
+    process.exitCode = 1;
+    return { ok: false };
+  }
+
+  const identity = options.identity === false ? null : resolveIdentity(targetDir, { slug, explicit: typeof options.identity === 'string' ? options.identity : null });
+  if (typeof options.identity === 'string' && !identity) {
+    const msg = `design:seed: --identity=${options.identity} is not an identity record (kind: identity)`;
+    if (options.json) { process.exitCode = 1; return { ok: false, error: 'identity_not_found', identity: options.identity }; }
+    logger.error(msg);
+    process.exitCode = 1;
+    return { ok: false };
+  }
+  // An explicit flag states a preference; the identity states a fact. The
+  // flag wins only when the operator typed it.
+  const register = registerOption || (identity && identity.register) || null;
+  const pole = poleOption || (identity && identity.pole) || null;
 
   const count = Math.max(1, Math.min(6, Number(options.count) || 3));
   const seed = Number.isFinite(Number(options.seed)) ? Number(options.seed) : 0;
 
   const registry = readRegistry();
   const avoid = registry.entries.filter((entry) => entry && (entry.project_id ? entry.project_id !== projectId : entry.project !== project));
-  const result = generateSeedCandidates({ project: projectId, slug: slug || project, register, count, seed, avoid });
+  const result = generateSeedCandidates({ project: projectId, slug: slug || project, register, count, seed, avoid, pole });
 
   const payload = {
     generator: GENERATOR,
@@ -54,6 +118,8 @@ async function runDesignSeed({ args, options = {}, logger }) {
     project_id: projectId,
     slug,
     register: result.register,
+    pole: result.pole,
+    identity: identity ? { ...identity, applied: { pole: Boolean(identity.pole && !poleOption), register: Boolean(identity.register && !registerOption) } } : null,
     seed,
     basis: result.basis,
     registry: { path: registryPath(), entries: registry.entries.length, avoided: avoid.length },
@@ -62,9 +128,12 @@ async function runDesignSeed({ args, options = {}, logger }) {
 
   if (options.json) return payload;
 
-  logger.log(`design:seed — ${result.candidates.length} contrast-solved candidate(s) for ${slug || project}${result.register ? ` (${result.register} register)` : ''}`);
+  logger.log(`design:seed — ${result.candidates.length} contrast-solved candidate(s) for ${slug || project}${result.register ? ` (${result.register} register)` : ''}${result.pole ? ` · ${result.pole} ground fixed` : ''}`);
+  if (identity) {
+    logger.log(`  identity ${identity.path}${identity.theme ? ` (theme ${identity.theme})` : ''} — ${identity.pole ? `${identity.pole} ground` : 'no theme'}${identity.register ? `, ${identity.register} register` : ''}: the owner's record outranks the draw`);
+  }
   logger.log(avoid.length > 0
-    ? `  diversified against ${avoid.length} recent project fingerprint(s) from ${registryPath()}`
+    ? `  diversified against ${avoid.length} recent project fingerprint(s) from ${registryPath()}${result.pole ? ' (hue and pairing only — the ground pole is the owner\'s)' : ''}`
     : '  fingerprint registry is empty — first project draws free');
   logger.log('');
   for (const c of result.candidates) {
@@ -86,4 +155,4 @@ async function runDesignSeed({ args, options = {}, logger }) {
   return payload;
 }
 
-module.exports = { runDesignSeed, GENERATOR };
+module.exports = { runDesignSeed, resolveIdentity, GENERATOR };

@@ -4,6 +4,7 @@
 // module scope avoids rebuilding the set for every parse and makes the parser
 // contract available to integrity tests.
 const BOOLEAN_FLAGS = new Set([
+  'accept-craft',
   'all', 'force', 'dry-run', 'no-interactive', 'fix', 'json',
   'help', 'version', 'no-launch', 'attach', 'tmux',
   'allow-warnings', 'install-hook', 'uninstall-hook', 'remove-hook',

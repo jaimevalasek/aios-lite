@@ -82,13 +82,13 @@ function element({ tag = 'div', id = '', className = '', rect = {}, style = {}, 
  * @param {Array<{family: string, status: string}>} [spec.fonts] FontFaceSet entries
  * @param {Array<{state: string, iterations: number}>} [spec.animations] `document.getAnimations()` entries
  */
-function createPage({ width = 1280, height = 800, scrollWidth = null, elements = [], fonts = [], animations = [] } = {}) {
+function createPage({ width = 1280, height = 800, scrollWidth = null, scrollHeight = null, elements = [], fonts = [], animations = [] } = {}) {
   const querySelectorAll = (selector) => {
     const tokens = String(selector).split(',').map((token) => token.trim());
     return elements.filter((el) => tokens.some((token) => el.__matches.has(token)));
   };
   const document = {
-    documentElement: { scrollWidth: scrollWidth === null ? width : scrollWidth },
+    documentElement: { scrollWidth: scrollWidth === null ? width : scrollWidth, scrollHeight: scrollHeight === null ? height : scrollHeight },
     querySelectorAll,
     fonts: { forEach: (fn) => fonts.forEach(fn) },
     getAnimations: () => animations.map((animation) => ({

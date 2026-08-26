@@ -3,12 +3,12 @@ name: visual-effects
 description: Effect, background, and asset vocabulary with the cost, accessibility, and evidence contracts that make premium surfaces cheap to build and safe to ship
 agents: [dev, deyvin, refiner, ux-ui, site-forge]
 priority: 10
-version: 1.0.0
-modes: [executing]
-task_types: [ui, effect, background, motion, hero, asset]
+version: 1.1.0
+modes: [planning, executing]
+task_types: [ui, effect, background, motion, hero, asset, prototype, landing-page, visual-direction]
 load_tier: trigger
-triggers: [effect, background, gradient, aurora, glow, blur, glass, noise, grain, texture, dither, parallax, motion, animation, hero, canvas, particles, asset, image]
-paths: [app/**, src/**, resources/**, components/**, styles/**]
+triggers: [effect, background, gradient, aurora, glow, blur, glass, noise, grain, texture, dither, parallax, motion, animation, hero, canvas, particles, asset, image, prototype, landing page, premium, cinematic, display type, atmosphere, craft weight, bare ground]
+paths: [app/**, src/**, resources/**, components/**, styles/**, .aioson/briefings/**, .aioson/explorations/**, "**/*.html", "**/*.css"]
 ---
 
 # Visual Effects and Assets

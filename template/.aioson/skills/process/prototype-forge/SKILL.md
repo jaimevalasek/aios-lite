@@ -50,12 +50,13 @@ The manifest begins:
 feature: {slug}
 status: draft
 identity: .aioson/briefings/{slug}/identity.md
+references: extracted
 ---
 ```
 
 Feature ownership must match the directory. A later lock may change `status`, never `feature`.
 
-`identity` records the exact record this prototype was built from, or `none` for an intent-first build. It is provenance the PRD must inherit, so never point it at another feature or at an exploration record.
+`identity` records the exact record this prototype was built from, or `none` for an intent-first build. It is provenance the PRD must inherit, so never point it at another feature or at an exploration record. `references` records the owner's answer about visual references — `extracted` (images given, identity built), `declined` (the owner has none), `unavailable` (asked, no answer yet); on a brand surface an intent-first build without this line is the measured shape of a question never asked (`references_unasked`).
 
 In `visual-exploration`, write only the assigned immutable run's `prototype.html` and `report.md`. The report must preserve `<!-- aioson:reusable-prompts -->`, the exact generation prompt, a reusable one-shot prompt, an incremental prompt sequence, validation evidence, and limitations. Never create a briefing manifest from an exploration run.
 
