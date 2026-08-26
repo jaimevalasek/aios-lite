@@ -33,11 +33,21 @@ function normalizeSha256(value) {
   return cleanCell(value).toLowerCase().replace(/^sha256:/, '');
 }
 
+// Where a pinned source may live: the raw-source area and the research area
+// (`web:save`/`web:extract` captures, orache research) — a captured page or a
+// distilled extract is a source like any other once its fingerprint is pinned.
+const SOURCE_ROOTS = ['plans/', 'researchs/'];
+const SOURCE_ROOTS_LABEL = SOURCE_ROOTS.join(' or ');
+
+function insideSourceRoot(sourcePath) {
+  return SOURCE_ROOTS.some((root) => sourcePath.startsWith(root));
+}
+
 function extractPhysicalSourcePlans(briefing) {
   return [...new Set(
     parseSurfacesOverride(briefing, 'source_plans')
       .map((item) => cleanCell(item).replace(/\\/g, '/'))
-      .filter((item) => item.startsWith('plans/'))
+      .filter((item) => insideSourceRoot(item))
   )];
 }
 
@@ -108,8 +118,8 @@ async function validateSourceLineage({
             findings.push(finding('product', 'source_id_duplicate', `duplicate source ID: ${source}`, briefingArtifact));
           }
           knownSources.add(sourceKey);
-          if (!sourcePath.startsWith('plans/')) {
-            findings.push(finding('product', 'source_path_invalid', `${source || `row ${rowNumber}`} must point inside root plans/`, briefingArtifact));
+          if (!insideSourceRoot(sourcePath)) {
+            findings.push(finding('product', 'source_path_invalid', `${source || `row ${rowNumber}`} must point inside root ${SOURCE_ROOTS_LABEL}`, briefingArtifact));
           }
           if (!/^[a-f0-9]{64}$/.test(fingerprint)) {
             findings.push(finding('product', 'source_fingerprint_invalid', `${source || `row ${rowNumber}`} must record a SHA-256 fingerprint`, briefingArtifact));
@@ -119,15 +129,15 @@ async function validateSourceLineage({
           }
 
           const lexical = resolveInsideRoot(targetDir, sourcePath);
-          const safe = lexical.ok && sourcePath.startsWith('plans/')
+          const safe = lexical.ok && insideSourceRoot(sourcePath)
             ? await resolveExistingInsideRoot(targetDir, sourcePath)
             : { ok: false, reason: 'path_outside_root' };
           if (
             !lexical.ok
-            || !sourcePath.startsWith('plans/')
+            || !insideSourceRoot(sourcePath)
             || (!safe.ok && safe.reason !== 'path_missing')
           ) {
-            findings.push(finding('product', 'source_path_unsafe', `${source || `row ${rowNumber}`} source path is outside the permitted plans/ input area`, briefingArtifact));
+            findings.push(finding('product', 'source_path_unsafe', `${source || `row ${rowNumber}`} source path is outside the permitted ${SOURCE_ROOTS_LABEL} input areas`, briefingArtifact));
           } else if (!safe.ok) {
             missingInventorySources.push({ source, sourcePath });
           } else {
@@ -198,7 +208,10 @@ async function validateSourceLineage({
           if (!SCOPE_DECISIONS.has(state)) {
             findings.push(finding('product', 'source_promise_state_invalid', `${promise || `row ${rowNumber}`} state must be required, deferred, or not_applicable`, briefingArtifact));
           }
-          promises.push({ promise, sources, intent, state });
+          // A promise that leans on web research without a pinned SRC-* row
+          // is traceable to nothing a fingerprint can re-check — measured,
+          // reported as a warning by kind=sources, never a refusal.
+          promises.push({ promise, sources, intent, state, research_unpinned: sources.length === 0 && /(web|research|pesquisa)/i.test(sourceText) });
         }
       }
     }

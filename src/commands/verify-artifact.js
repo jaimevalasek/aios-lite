@@ -940,10 +940,14 @@ const ADAPTERS = {
     const issues = lineage.findings.map((f) => `[${f.check}] ${f.message}`);
     const present = lineage.inventory.filter((item) => item.file_status === 'present').length;
     const ok = issues.length === 0;
+    const unpinned = lineage.promises.filter((p) => p.research_unpinned).map((p) => p.promise);
+    const warnings = unpinned.length > 0
+      ? [`research_source_unpinned: ${unpinned.join(', ')} cite web research without a SRC-* row — add the capture (researchs/{slug}/extract.md or summary.md) to the Source Inventory with its SHA-256 so the claim stays traceable and drift is measured`]
+      : [];
     return {
       ok,
       issues,
-      warnings: [],
+      warnings,
       checks: [{ id: 'sources', ok, detail: issues.join('; ') || null }],
       metrics: {
         applicable: true,
@@ -952,6 +956,7 @@ const ADAPTERS = {
         sources_missing: lineage.inventory.length - present,
         promises_total: lineage.promises.length,
         promises_required: lineage.promises.filter((p) => p.state === 'required').length,
+        promises_research_unpinned: unpinned.length,
         coverage_rows: lineage.coverage.length,
         lifecycle_stage: lineage.lifecycle ? lineage.lifecycle.stage : null,
         absorbed: lineage.lifecycle ? lineage.lifecycle.absorbed : null

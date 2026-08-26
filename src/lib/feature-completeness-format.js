@@ -355,6 +355,30 @@ function genericEvidence(value) {
     || /^tests?-\d+-(?:pass|passed)$/.test(normalized);
 }
 
+// The same floor for an acceptance criterion's "Observable behavior": a cell
+// that is only a verdict ("works", "funciona corretamente", "the feature is
+// implemented") describes nothing a tester can see or a test can assert. Whole-
+// cell match only — a sentence that names a trigger and a visible result is
+// never caught, however plain its wording.
+const GENERIC_BEHAVIOR_RE = new RegExp([
+  '^(?:the-|a-|an-|o-|os-|as-|el-|la-)?',
+  '(?:feature|it|this|system|screen|page|flow|app|application|code|everything|',
+  'funcionalidade|recurso|sistema|tela|pagina|fluxo|aplicacao|aplicativo|tudo|',
+  'funcion|caracteristica|pantalla|todo)?-?',
+  '(?:should-|must-|will-|deve-|precisa-|debe-)?',
+  '(?:works?|is-working|working|functions?|runs?|behaves?|is-implemented|implemented|is-done|done|is-complete|completed?|is-ready|ready|is-correct|correct|is-ok|ok|passes|',
+  'funciona|funcionando|esta-funcionando|esta-implementad[oa]|implementad[oa]|esta-pront[oa]|pront[oa]|esta-corret[oa]|corret[oa]|esta-ok|esta-complet[oa]|complet[oa]|',
+  'funcionar|estar-implementad[oa]|estar-pront[oa]|estar-corret[oa])',
+  '(?:-(?:correctly|properly|fine|well|as-expected|as-designed|as-specified|as-intended|without-errors|without-bugs|',
+  'corretamente|bem|direito|como-esperado|como-especificado|como-planejado|sem-erros|sem-bugs|',
+  'correctamente|bien|como-se-espera|sin-errores))?$'
+].join(''));
+
+function genericBehavior(value) {
+  const normalized = normalizeLabel(value);
+  return Boolean(normalized) && (genericEvidence(normalized) || GENERIC_BEHAVIOR_RE.test(normalized));
+}
+
 module.exports = {
   REQ_ID_RE,
   AC_ID_RE,
@@ -385,5 +409,6 @@ module.exports = {
   mapColumns,
   finding,
   missingSection,
-  genericEvidence
+  genericEvidence,
+  genericBehavior
 };

@@ -38,7 +38,7 @@ Add a behavior or constraint only when the causal chain is explicit:
 
 ## PRD capability map
 
-When Briefing used a feature-owned source pack, its `### Source Inventory` records every `plans/{slug}/` file and current SHA-256; `### Source Promise Map` gives every material promise a stable `PROM-*`. The PRD contains `## Source Coverage`, preserving each promise exactly once as required/already-satisfied with CAP/AC trace, or deferred/rejected/not-applicable with rationale and explicit user approval for any downgrade of an approved required promise.
+When Briefing used a feature-owned source pack, its `### Source Inventory` records every `plans/{slug}/` file and current SHA-256 — and every research capture the feature leans on (`researchs/{slug}/extract.md` or `summary.md`), pinned the same way; a promise that cites "web research" without a `SRC-*` row is accepted but counted (`promises_research_unpinned`) and warned by `verify:artifact --kind=sources`. `### Source Promise Map` gives every material promise a stable `PROM-*`. The PRD contains `## Source Coverage`, preserving each promise exactly once as required/already-satisfied with CAP/AC trace, or deferred/rejected/not-applicable with rationale and explicit user approval for any downgrade of an approved required promise.
 
 ```markdown
 ## Feature Capability Map

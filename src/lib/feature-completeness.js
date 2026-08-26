@@ -47,7 +47,8 @@ const {
   mapColumns,
   finding,
   missingSection,
-  genericEvidence
+  genericEvidence,
+  genericBehavior
 } = require('./feature-completeness-format');
 const { readBrowserEvidence } = require('./browser-evidence');
 
@@ -795,6 +796,8 @@ function validatePrdAcceptanceCriteria(content, artifact, productMap) {
     }
     if (isPlaceholder(behavior)) {
       findings.push(finding('specification', 'acceptance_criterion_behavior_missing', `${ac || `row ${rowNumber}`} has no observable behavior`, artifact));
+    } else if (genericBehavior(behavior)) {
+      findings.push(finding('specification', 'acceptance_criterion_behavior_generic', `${ac || `row ${rowNumber}`} states a verdict ("${behavior}"), not an observable behavior — write the trigger and what the user sees or the system returns`, artifact));
     }
     if (isPlaceholder(evidence)) {
       findings.push(finding('specification', 'acceptance_criterion_evidence_missing', `${ac || `row ${rowNumber}`} has no verification method`, artifact));

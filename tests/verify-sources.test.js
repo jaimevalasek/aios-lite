@@ -160,3 +160,72 @@ test('kind=sources without --slug fails with the standard message', async () => 
   assert.equal(report.ok, false);
   assert.match((report.issues || []).join('\n'), /requires --slug/);
 });
+
+// ─── research captures are sources too: pinned under researchs/, unpinned ones measured ───
+
+const RESEARCH_TEXT = '---\nextracted_at: 2026-08-26\ntrust: untrusted\n---\n# Design extract: Neon\n- Title: Neon\n';
+const RESEARCH_SHA = crypto.createHash('sha256').update(RESEARCH_TEXT).digest('hex');
+
+function researchBriefing({ pinned = true, sha = RESEARCH_SHA } = {}) {
+  return `---
+slug: orders
+source_plans: ["plans/orders-source.md"${pinned ? ', "researchs/neon/extract.md"' : ''}]
+---
+
+# Briefing — Orders
+
+### Source Inventory
+
+| SRC | Path | SHA-256 | Purpose |
+|---|---|---|---|
+| SRC-001 | plans/orders-source.md | ${SOURCE_SHA} | Approved raw source for the order lifecycle |
+${pinned ? `| SRC-002 | researchs/neon/extract.md | ${sha} | Reference site extract for the orders screen motion |\n` : ''}
+### Source Promise Map
+
+| Promise | Source | Approved intent | State |
+|---|---|---|---|
+| PROM-001 | SRC-001 | Users record an order from the entry point | required |
+| PROM-002 | ${pinned ? 'SRC-002' : 'web research (reference site)'} | Users cancel an order with confirmation | required |
+`;
+}
+
+test('a web capture under researchs/ is a pinned source: fingerprinted like plans/, stale when it drifts, refused outside the roots', async () => {
+  const dir = await makeTmpDir();
+  await writeFile(dir, 'plans/orders-source.md', SOURCE_TEXT);
+  await writeFile(dir, 'researchs/neon/extract.md', RESEARCH_TEXT);
+  await writeFile(dir, '.aioson/briefings/orders/briefings.md', researchBriefing());
+  await writeFile(dir, '.aioson/context/prd-orders.md', PRD_TEXT);
+  let report = await runVerifyArtifact({ args: [dir], options: { kind: 'sources', slug: 'orders', json: true, suppressExitCode: true }, logger: makeLogger() });
+  assert.deepEqual(report.issues, [], report.issues.join(' | '));
+  assert.equal(report.ok, true);
+  assert.equal(report.metrics.sources_total, 2);
+  assert.equal(report.metrics.sources_present, 2);
+  assert.equal(report.metrics.promises_research_unpinned, 0);
+  assert.deepEqual(report.warnings, []);
+
+  await writeFile(dir, 'researchs/neon/extract.md', `${RESEARCH_TEXT}- Re-extracted after approval\n`);
+  report = await runVerifyArtifact({ args: [dir], options: { kind: 'sources', slug: 'orders', json: true, suppressExitCode: true }, logger: makeLogger() });
+  assert.equal(report.ok, false);
+  assert.match(report.issues.join('\n'), /source_fingerprint_stale.*SRC-002/);
+
+  await writeFile(dir, '.aioson/briefings/orders/briefings.md', researchBriefing().replaceAll('researchs/neon/extract.md','researchs/../../outside/secret.md'));
+  report = await runVerifyArtifact({ args: [dir], options: { kind: 'sources', slug: 'orders', json: true, suppressExitCode: true }, logger: makeLogger() });
+  assert.equal(report.ok, false);
+  assert.match(report.issues.join('\n'), /source_path_unsafe.*SRC-002/);
+  await writeFile(dir, '.aioson/briefings/orders/briefings.md', researchBriefing().replaceAll('researchs/neon/extract.md','notes/neon.md'));
+  report = await runVerifyArtifact({ args: [dir], options: { kind: 'sources', slug: 'orders', json: true, suppressExitCode: true }, logger: makeLogger() });
+  assert.match(report.issues.join('\n'), /source_path_invalid.*SRC-002 must point inside root plans\/ or researchs\//);
+});
+
+test('a promise that cites web research without a SRC-* row stays accepted — and is counted and warned, never refused', async () => {
+  const dir = await makeTmpDir();
+  await writeFile(dir, 'plans/orders-source.md', SOURCE_TEXT);
+  await writeFile(dir, '.aioson/briefings/orders/briefings.md', researchBriefing({ pinned: false }));
+  await writeFile(dir, '.aioson/context/prd-orders.md', PRD_TEXT);
+  const report = await runVerifyArtifact({ args: [dir], options: { kind: 'sources', slug: 'orders', json: true, suppressExitCode: true }, logger: makeLogger() });
+  assert.deepEqual(report.issues, [], report.issues.join(' | '));
+  assert.equal(report.ok, true, 'the free-text research citation is still accepted');
+  assert.equal(report.metrics.promises_research_unpinned, 1);
+  assert.equal(report.warnings.length, 1);
+  assert.match(report.warnings[0], /^research_source_unpinned: PROM-002 cite web research without a SRC-\* row/);
+});

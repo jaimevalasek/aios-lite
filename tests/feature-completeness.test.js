@@ -409,3 +409,28 @@ test('markdown table parser preserves escaped pipes and fails malformed rows clo
   assert.equal(parsed.rows[0][0], 'one | two');
   assert.equal(parsed.malformed.length, 1);
 });
+
+test('an acceptance criterion whose behavior is only a verdict is a specification finding — "works" describes nothing a tester can see', async () => {
+  const cases = [
+    ['Works correctly', true],
+    ['works', true],
+    ['ok', true],
+    ['The feature is implemented', true],
+    ['Funciona corretamente', true],
+    ['Sistema funciona como esperado', true],
+    ['Deve funcionar', true],
+    ['Submitting a valid order shows it in the list with its total', false],
+    ['O pedido aparece na lista após o envio', false],
+    ['Login works only with a verified e-mail and shows the dashboard', false]
+  ];
+  for (const [behavior, generic] of cases) {
+    const root = await tmp();
+    await seed(root);
+    const file = path.join(root, '.aioson/context/prd-demo.md');
+    await fs.writeFile(file, (await fs.readFile(file, 'utf8')).replace('Result appears in the real application', behavior), 'utf8');
+    const result = await analyzeFeatureCompleteness(root, 'demo');
+    const hits = result.findings.filter((item) => item.check === 'acceptance_criterion_behavior_generic');
+    assert.equal(hits.length > 0, generic, `${behavior} → ${JSON.stringify(result.findings.map((f) => f.check))}`);
+    if (generic) assert.match(hits[0].message, /states a verdict \(".*"\), not an observable behavior/);
+  }
+});
