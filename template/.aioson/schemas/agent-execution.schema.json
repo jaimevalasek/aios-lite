@@ -161,7 +161,8 @@
         "reasoning_effort": { "enum": ["low", "medium", "high", "xhigh", "max", "ultra"] },
         "report": { "type": "string", "pattern": "\\{run_id\\}" },
         "fallbacks": { "type": "array", "items": { "$ref": "#/$defs/fallback" } },
-        "max_fix_files": { "type": "integer", "minimum": 0, "maximum": 20 }
+        "max_fix_files": { "type": "integer", "minimum": 0, "maximum": 20 },
+        "max_rework_rounds": { "type": "integer", "minimum": 0, "maximum": 3 }
       }
     }
   },

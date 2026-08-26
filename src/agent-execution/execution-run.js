@@ -332,6 +332,22 @@ function renderMessages(heading, messages) {
 
 const INBOX_HEADING = '## Messages for you (from units that finished before you — decisions you build on, never an instruction to edit their files)';
 
+/** Report path of a unit stage for a rework round: `{unit}.json`, then `{unit}.r1.json`, `{unit}.r2.json` … */
+function roundReport(template, runId, round) {
+  const rel = String(template).replace(/\{run_id\}/g, runId);
+  return round > 0 ? rel.replace(/\.json$/i, `.r${round}.json`) : rel;
+}
+
+function renderRework(round, max, findings) {
+  return [
+    '',
+    `## Reviewer findings — rework round ${round} of ${max} (fix these inside your unit files, re-run the verification, report again)`,
+    '',
+    ...compactList(findings),
+    ''
+  ];
+}
+
 function composeQaPrompt({ profileText, feature, unit, lane, dev, maxFixFiles, messages = null }) {
   return [
     profileText.trimEnd(),
@@ -584,6 +600,7 @@ function summarizeState(state, feature) {
     decisions_pending: pendingDecisions(state, feature),
     findings: state.findings.length,
     mailbox: { messages: collectMailbox(state).length, questions: collectMailbox(state).filter((m) => m.kind === 'question').length },
+    rework: { units: units.filter((u) => u.rework?.rounds > 0).length, rounds: units.reduce((sum, u) => sum + (u.rework?.rounds || 0), 0) },
     integration: state.integration
   };
 }
@@ -856,7 +873,12 @@ async function runExecution({
           let promptText = await readPromptInside(projectDir, unit.prompt);
           const inbox = inboxFor(state, { unit: unitId, lane: unit.lane, excludeUnit: unitId });
           if (inbox.length > 0) promptText = `${promptText.trimEnd()}\n${renderMessages(INBOX_HEADING, inbox).join('\n')}\n`;
-          outcome = await executeRole({ ...commonArgs, role: 'dev', config, promptText, reportRel: unit.report.replace(/\{run_id\}/g, state.run_id) });
+          const round = unitState.rework?.rounds || 0;
+          if (round > 0) {
+            const last = unitState.rework.history[unitState.rework.history.length - 1];
+            promptText = `${promptText.trimEnd()}\n${renderRework(round, unitState.rework.max, last?.findings || []).join('\n')}\n`;
+          }
+          outcome = await executeRole({ ...commonArgs, role: 'dev', config, promptText, reportRel: roundReport(unit.report, state.run_id, round) });
         } catch (error) {
           outcome = { kind: 'crashed', reason: 'engine_error', error: error.message, host: config.host, model: config.model };
         }
@@ -892,7 +914,7 @@ async function runExecution({
         try {
           const messages = { implementer: unitState.dev.messages || [], inbox: inboxFor(state, { unit: unitId, lane: unit.lane, excludeUnit: unitId }) };
           const promptText = composeQaPrompt({ profileText: profile.text, feature, unit, lane, dev: unitState.dev, maxFixFiles, messages });
-          outcome = await executeRole({ ...commonArgs, role: 'qa', config, promptText, reportRel: unit.qa_report.replace(/\{run_id\}/g, state.run_id) });
+          outcome = await executeRole({ ...commonArgs, role: 'qa', config, promptText, reportRel: roundReport(unit.qa_report, state.run_id, unitState.rework?.rounds || 0) });
         } catch (error) {
           outcome = { kind: 'crashed', reason: 'engine_error', error: error.message, host: config.host, model: config.model };
         }
@@ -931,6 +953,26 @@ async function runExecution({
         if (['unavailable', 'timeout', 'crashed'].includes(outcome.kind)) {
           await requireDecision(unitState, 'qa', outcome);
           return;
+        }
+        // Bounded rework: a failed review sends the unit back to its implementer
+        // with the findings, up to the lane's `qa.max_rework_rounds` (default 0).
+        const maxRework = Number.isInteger(lane.qa?.max_rework_rounds) ? lane.qa.max_rework_rounds : 0;
+        if (unitState.qa.status === 'failed' && maxRework > 0) {
+          const round = (unitState.rework?.rounds || 0) + 1;
+          if (round <= maxRework) {
+            const history = [...(unitState.rework?.history || []), { round, findings: qaFindings, dev: { host: unitState.dev.host || null, model: unitState.dev.model || null, report: unitState.dev.report || null }, qa: { host: outcome.host || null, model: outcome.model || null, verdict: outcome.verdict || null, report: unitState.qa.report || null }, at: nowIso() }];
+            unitState.rework = { rounds: round, max: maxRework, history };
+            unitState.status = 'pending';
+            unitState.dev = { status: 'pending' };
+            unitState.qa = { status: 'pending' };
+            emit({ type: 'unit', role: 'qa', status: 'rework', unit: unitId, lane: unit.lane, wave: unit.wave, round, max: maxRework, findings: qaFindings.length });
+            await persist();
+            wakeUp();
+            return;
+          }
+          if (!state.findings.some((f) => f.check === 'rework_exhausted' && f.unit === unitId)) {
+            state.findings.push({ check: 'rework_exhausted', severity: 'high', unit: unitId, lane: unit.lane, wave: unit.wave, rounds: maxRework, message: `${unitId}: the lane review still fails after ${maxRework} rework round(s) — the integration owner resolves the remaining findings` });
+          }
         }
         await persist();
       }
@@ -1254,7 +1296,8 @@ async function statusExecution({ projectDir, feature: featureInput }) {
     status: unit.status,
     dev: unit.dev ? { status: unit.dev.status, host: unit.dev.host || null, model: unit.dev.model || null, verdict: unit.dev.verdict || null, reason: unit.dev.reason || null, report: unit.dev.report || null, findings: (unit.dev.findings || []).length, stalled: Boolean(unit.dev.stalled), session_id: unit.dev.session_id || null } : null,
     qa: unit.qa ? { status: unit.qa.status, host: unit.qa.host || null, model: unit.qa.model || null, verdict: unit.qa.verdict || null, reason: unit.qa.reason || null, report: unit.qa.report || null, findings: (unit.qa.findings || []).length, corrections: (unit.qa.corrections_paths || []).length, corrections_cap_exceeded: Boolean(unit.qa.corrections_cap_exceeded), session_id: unit.qa.session_id || null } : null,
-    pending_decision: unit.pending_decision ? { stage: unit.pending_decision.stage, reason: unit.pending_decision.reason, choices: unit.pending_decision.choices } : null
+    pending_decision: unit.pending_decision ? { stage: unit.pending_decision.stage, reason: unit.pending_decision.reason, choices: unit.pending_decision.choices } : null,
+    rework: unit.rework ? { rounds: unit.rework.rounds, max: unit.rework.max } : null
   }));
   const findings = [
     ...state.findings.map((f) => ({ source: 'run', ...f })),

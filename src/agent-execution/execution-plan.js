@@ -588,7 +588,7 @@ function compileExecutionPlan({ feature, planContent, prdContent, roles, signatu
         write_paths: lane.write_paths,
         integration_owner: 'dev',
         dev: lane.dev,
-        qa: { ...lane.qa, max_fix_files: manifest?.development_lanes?.lanes?.[laneId]?.qa?.max_fix_files ?? DEFAULT_QA_MAX_FIX_FILES },
+        qa: { ...lane.qa, max_fix_files: manifest?.development_lanes?.lanes?.[laneId]?.qa?.max_fix_files ?? DEFAULT_QA_MAX_FIX_FILES, max_rework_rounds: manifest?.development_lanes?.lanes?.[laneId]?.qa?.max_rework_rounds ?? 0 },
         prompt: lanePrompts[laneId].path,
         prompt_digest: lanePrompts[laneId].digest,
         plan_host: lane.plan_host,

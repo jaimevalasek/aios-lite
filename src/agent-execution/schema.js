@@ -32,8 +32,13 @@ const AGENT_KEYS = ['enabled', 'host', 'mode', 'model', 'reasoning_effort', 'wri
 // bounded fixes (`max_fix_files`). Absent → the lane has no lane-level QA and
 // the feature's single @qa verdict stays the only review, exactly as today.
 const LANE_KEYS = [...AGENT_KEYS, 'prompt', 'write_paths', 'qa'];
-const LANE_QA_KEYS = ['host', 'model', 'reasoning_effort', 'report', 'fallbacks', 'max_fix_files'];
+const LANE_QA_KEYS = ['host', 'model', 'reasoning_effort', 'report', 'fallbacks', 'max_fix_files', 'max_rework_rounds'];
 const MAX_QA_FIX_FILES = 20;
+// `max_rework_rounds` (optional, 0–3, default 0): a failed lane review sends the
+// unit back to its implementer with the findings, up to this many times, before
+// the failure becomes a finding for the integration owner. Opt-in: every round
+// is a full dev + qa process.
+const MAX_QA_REWORK_ROUNDS = 3;
 // `orchestration.execution` (optional, additive): `single` (default — DEV
 // implements everything in the session) or `orchestrated` (compiled lanes run
 // as parallel external processes via `execution:run`; DEV integrates).
@@ -120,6 +125,10 @@ function validateLaneQa(qa, basePath, add) {
   if (qa.max_fix_files !== undefined
     && (!Number.isInteger(qa.max_fix_files) || qa.max_fix_files < 0 || qa.max_fix_files > MAX_QA_FIX_FILES)) {
     add(`${basePath}.max_fix_files`, `must be an integer between 0 and ${MAX_QA_FIX_FILES}`);
+  }
+  if (qa.max_rework_rounds !== undefined
+    && (!Number.isInteger(qa.max_rework_rounds) || qa.max_rework_rounds < 0 || qa.max_rework_rounds > MAX_QA_REWORK_ROUNDS)) {
+    add(`${basePath}.max_rework_rounds`, `must be an integer between 0 and ${MAX_QA_REWORK_ROUNDS}`);
   }
 }
 
