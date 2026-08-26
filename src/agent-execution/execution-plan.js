@@ -54,6 +54,8 @@ const {
 
 const EXECUTION_PLAN_VERSION = 2;
 const GENERATOR = 'aioson execution:compile@2';
+/** The client's binding rules — the same enumeration rules:check uses (no README, no `_archived`). */
+const RULES_RELATIVE_PATH = '.aioson/rules';
 /** Passage rules of an edge: the dependent starts after the implementer passed, or after the lane review finished. */
 const DEPENDENCY_GATES = ['after_dev', 'after_qa'];
 const DEFAULT_QA_MAX_FIX_FILES = 3;
@@ -274,7 +276,48 @@ function renderLanePrompt({ feature, lane, laneId, units, maxWave, profileText }
  * Pure compilation over already-read inputs. Returns `{ errors, warnings, plan }`;
  * `plan` is complete only when `errors` is empty.
  */
-function compileExecutionPlan({ feature, planContent, prdContent, roles, signatures, profile, manifest, runState = null }) {
+/**
+ * One digest over every binding rule file, in path order: the contract the
+ * units were compiled under. `{ present: false, digest: null, files: 0 }`
+ * when the project has no rules directory.
+ */
+async function rulesDigest(projectDir) {
+  const root = path.join(projectDir, ...RULES_RELATIVE_PATH.split('/'));
+  const files = [];
+  const walk = async (absDir, relDir) => {
+    let entries;
+    try {
+      entries = await fs.readdir(absDir, { withFileTypes: true });
+    } catch {
+      return;
+    }
+    for (const entry of entries) {
+      if (entry.name.toLowerCase() === 'readme.md' || entry.name.startsWith('_')) continue;
+      const abs = path.join(absDir, entry.name);
+      const rel = `${relDir}/${entry.name}`;
+      if (entry.isDirectory()) await walk(abs, rel);
+      else if (entry.isFile() && entry.name.endsWith('.md')) files.push({ abs, rel });
+    }
+  };
+  await walk(root, RULES_RELATIVE_PATH);
+  let present = false;
+  try {
+    present = (await fs.stat(root)).isDirectory();
+  } catch {
+    present = false;
+  }
+  if (!present) return { present: false, digest: null, files: 0 };
+  files.sort((a, b) => (a.rel < b.rel ? -1 : a.rel > b.rel ? 1 : 0));
+  const hash = crypto.createHash('sha256');
+  for (const file of files) {
+    hash.update(`${file.rel}\n`);
+    hash.update(await fs.readFile(file.abs));
+    hash.update('\n');
+  }
+  return { present: true, digest: hash.digest('hex'), files: files.length };
+}
+
+function compileExecutionPlan({ feature, planContent, prdContent, roles, rules = null, signatures, profile, manifest, runState = null }) {
   const errors = [];
   const warnings = [];
   const error = (check, message, extra = {}) => errors.push({ check, message, ...extra });
@@ -359,7 +402,14 @@ function compileExecutionPlan({ feature, planContent, prdContent, roles, signatu
       };
     }
     if (resolved.dev && resolved.qa && resolved.dev.host === resolved.qa.host && resolved.dev.model === resolved.qa.model) {
-      warn('self_review_same_model', `lane "${laneId}": dev and qa run the same host/model (${resolved.dev.host}/${resolved.dev.model}) — the lane review is not independent`, { lane: laneId });
+      // The judge and the producer are the same model: a warning by default,
+      // a refusal when the roles file says the review must be independent.
+      const detail = `lane "${laneId}": dev and qa run the same host/model (${resolved.dev.host}/${resolved.dev.model}) — the lane review is not independent`;
+      if (roles?.execution?.require_independent_qa === true) {
+        error('self_review_same_model', `${detail}; execution.require_independent_qa is on — declare "${laneRoleKey(laneId, 'qa')}" (or "qa") on a different host or model in ${EXECUTION_ROLES_RELATIVE_PATH}`, { lane: laneId, host: resolved.dev.host, model: resolved.dev.model, role: resolved.qa.role, hint: `aioson host:signature . --host=<other host> --model=<other model>` });
+      } else {
+        warn('self_review_same_model', detail, { lane: laneId });
+      }
     }
     if (resolved.dev && ((lane.plan_host && lane.plan_host !== resolved.dev.host) || (lane.plan_model && lane.plan_model !== resolved.dev.model && lane.plan_model.toLowerCase() !== 'configured-default'))) {
       warn('lane_role_mismatch', `lane "${laneId}": the plan table says ${lane.plan_host || '?'}/${lane.plan_model || '?'} but the role "${resolved.dev.role}" is ${resolved.dev.host}/${resolved.dev.model} — the roles file wins; update the table when the plan is next edited`, { lane: laneId });
@@ -579,6 +629,11 @@ function compileExecutionPlan({ feature, planContent, prdContent, roles, signatu
       prd_digest: excerpts.prd_present ? sha256(prdContent) : null,
       roles: EXECUTION_ROLES_RELATIVE_PATH,
       roles_digest: roles?.digest || null,
+      // The client's binding rules are part of what the units were compiled
+      // under: a rule edited mid-run is measurable, not invisible.
+      rules: RULES_RELATIVE_PATH,
+      rules_digest: rules?.digest || null,
+      rules_files: rules?.files || 0,
       dev_profile: { source: profile.source, sections: profile.sections, digest: profile.digest },
       manifest_digest: null
     },
@@ -757,6 +812,7 @@ async function compileFeatureExecution(projectDir, featureInput, { env = process
     };
   }
   const roles = { ...rolesRead.roles, digest: rolesRead.digest };
+  const rules = await rulesDigest(projectDir);
   const store = await readSignatures({ env });
   const profile = await buildDevLaneProfile(projectDir, { kernelPath });
   const prdContent = await readFileSafe(path.join(projectDir, ...prdRelative(feature).split('/')));
@@ -770,6 +826,7 @@ async function compileFeatureExecution(projectDir, featureInput, { env = process
     planContent,
     prdContent,
     roles,
+    rules,
     signatures: { store, now },
     profile,
     manifest: loaded.exists ? loaded.manifest : null,
@@ -867,6 +924,13 @@ async function verifyExecutionPlan(projectDir, featureInput, { env = process.env
   if (plan.source?.prd) {
     const prdContent = await readFileSafe(path.join(projectDir, ...String(plan.source.prd).split('/')));
     if (prdContent === null || sha256(prdContent) !== plan.source.prd_digest) warnings.push(`prd_digest_stale: ${plan.source.prd} changed after compilation — unit prompts carry its previous acceptance criteria; recompile to refresh`);
+  }
+  // Plans compiled before the rules digest existed carry no key: nothing to compare.
+  if (plan.source && Object.prototype.hasOwnProperty.call(plan.source, 'rules_digest')) {
+    const rules = await rulesDigest(projectDir);
+    if (rules.digest !== plan.source.rules_digest) {
+      warnings.push(`rules_changed: ${RULES_RELATIVE_PATH} changed after compilation (${plan.source.rules_files || 0} → ${rules.files} binding rule file(s)) — units that already passed were reviewed under the previous rules; run rules:check at integration and recompile to refresh`);
+    }
   }
   const rolesRead = await readExecutionRoles(projectDir);
   const rolesFresh = rolesRead.present && rolesRead.digest === plan.source?.roles_digest;
@@ -994,6 +1058,8 @@ module.exports = {
   EXECUTION_PLAN_VERSION,
   applyPlanToManifest,
   compileExecutionPlan,
+  rulesDigest,
+  RULES_RELATIVE_PATH,
   compileFeatureExecution,
   executionPlanPath,
   executionPlanRelative,

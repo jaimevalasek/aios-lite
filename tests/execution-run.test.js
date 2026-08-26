@@ -746,3 +746,31 @@ test('a dependency that needs a decision holds only its dependents: independent 
   assert.equal(state.units['phase-3'].qa.status, 'passed');
   assert.equal(state.units['phase-4'].qa.status, 'passed');
 });
+
+// ───────────────────────── run_state_stale ─────────────────────────
+
+test('--resume refuses a run whose plan was recompiled underneath it (run_state_stale); the paused state is left intact and --fresh starts over', async (t) => {
+  const ctx = await setup(t);
+  let calls = 0;
+  const script = { 'dev:phase-2': () => (calls++ === 0 ? { fail: 'capacity' } : {}) };
+  const fakes = adapters(script);
+  const paused = await run(ctx, { registry: fakes.registry });
+  assert.equal(paused.status, 'decision_required');
+
+  // The plan changes and is recompiled while the run is paused: the compile
+  // warns, the run state now points at a plan digest that no longer exists.
+  await fs.appendFile(path.join(ctx.dir, '.aioson', 'context', `implementation-plan-${SLUG}.md`), '\nA clarification appended mid-run.\n');
+  const recompiled = await runCommand({ args: [ctx.dir], options: { sub: 'compile', feature: SLUG, json: true }, logger, env: ctx.env });
+  assert.equal(recompiled.ok, true, JSON.stringify(recompiled.errors));
+
+  const stale = await run(ctx, { registry: fakes.registry, extra: { resume: true } });
+  assert.equal(stale.ok, false);
+  assert.equal(stale.reason, 'run_state_stale');
+  assert.match(stale.message, /the plan or the manifest changed since this run started; start a new run with --fresh/);
+  const state = await readState(ctx);
+  assert.equal(state.run_id, paused.run_id, 'the stale state is left untouched for the ledger');
+
+  const fresh = await run(ctx, { registry: adapters().registry, extra: { fresh: true } });
+  assert.equal(fresh.ok, true, JSON.stringify(fresh));
+  assert.notEqual(fresh.run_id, paused.run_id);
+});

@@ -33,7 +33,7 @@ const EXECUTION_ROLES_RELATIVE_PATH = '.aioson/config/execution-roles.json';
 const EXECUTION_ROLES_VERSION = 1;
 const ROLE_KEY = /^[a-z][a-z0-9_]*$/;
 const ROOT_KEYS = ['version', 'source', 'enabled', 'roles', 'parallel', 'on_unavailable', 'execution'];
-const EXECUTION_KEYS = ['spawner', 'unit_timeout_ms'];
+const EXECUTION_KEYS = ['spawner', 'unit_timeout_ms', 'require_independent_qa'];
 const SPAWNER_KEYS = ['command', 'args'];
 const MAX_SPAWNER_ARGS = 16;
 const MAX_SPAWNER_TOKEN_LENGTH = 200;
@@ -140,6 +140,10 @@ function validateExecutionRoles(value, { hosts = listExecutionHosts() } = {}) {
       if (unitTimeout !== undefined && unitTimeout !== null && (!Number.isInteger(unitTimeout) || unitTimeout < MIN_UNIT_TIMEOUT_MS || unitTimeout > MAX_UNIT_TIMEOUT_MS)) {
         add('$.execution.unit_timeout_ms', `must be an integer between ${MIN_UNIT_TIMEOUT_MS} and ${MAX_UNIT_TIMEOUT_MS}`);
       }
+      const independent = value.execution.require_independent_qa;
+      if (independent !== undefined && independent !== null && typeof independent !== 'boolean') {
+        add('$.execution.require_independent_qa', 'must be a boolean');
+      }
     }
   }
   if (value.parallel !== undefined) {
@@ -183,12 +187,20 @@ function normalizeExecutionRoles(value) {
   };
 }
 
+// `require_independent_qa`: the lane reviewer must not be the implementer's
+// host/model — the judge differs from the producer. Off by default: the
+// compile warns (`self_review_same_model`); on, the same condition refuses the
+// plan. A client that proves two hosts on the machine turns it on.
 function normalizeExecutionBlock(value) {
-  if (!isPlainObject(value)) return { spawner: null, unit_timeout_ms: null };
+  if (!isPlainObject(value)) return { spawner: null, unit_timeout_ms: null, require_independent_qa: false };
   const spawner = isPlainObject(value.spawner) && typeof value.spawner.command === 'string' && value.spawner.command.trim()
     ? { command: value.spawner.command.trim(), args: Array.isArray(value.spawner.args) ? value.spawner.args.map(String) : [] }
     : null;
-  return { spawner, unit_timeout_ms: Number.isInteger(value.unit_timeout_ms) ? value.unit_timeout_ms : null };
+  return {
+    spawner,
+    unit_timeout_ms: Number.isInteger(value.unit_timeout_ms) ? value.unit_timeout_ms : null,
+    require_independent_qa: value.require_independent_qa === true
+  };
 }
 
 /** `"C:\\Program Files\\cockpit\\cockpitctl.exe" unit spawn` → {command, args}; double quotes group a token. */

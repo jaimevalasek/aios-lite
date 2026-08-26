@@ -8,7 +8,7 @@ const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 
 const { runExecution } = require('../src/commands/execution');
-const { verifyExecutionPlan, readExecutionPlan } = require('../src/agent-execution/execution-plan');
+const { verifyExecutionPlan, readExecutionPlan, rulesDigest } = require('../src/agent-execution/execution-plan');
 const { validateExecutionRoles, offerExecution, laneRoleKey } = require('../src/lib/execution-roles');
 const { signatureKey, writeSignatures } = require('../src/lib/host-signature');
 const { verifyAgentArtifact } = require('../src/artifact-kinds');
@@ -758,4 +758,105 @@ test('execution:compile refuses a broken graph with named findings — unknown p
   assert.ok(checks(result).includes('dependency_on_integration'), checks(result).join(','));
 
   for (const { dir } of [unknown, self, sameWave, cycle, onIntegration]) assert.equal((await readExecutionPlan(dir, SLUG)).exists, false, 'a refused compile writes nothing');
+});
+
+// ───────────────────────── judge ≠ producer ─────────────────────────
+
+test('execution.require_independent_qa turns the self-review warning into a refusal — the judge must differ from the producer', async (t) => {
+  // Validation: a boolean, nothing else.
+  const badType = validateExecutionRoles({ ...ROLES, execution: { require_independent_qa: 'yes' } });
+  assert.equal(badType.ok, false);
+  assert.match(badType.errors.find((e) => e.path === '$.execution.require_independent_qa').message, /must be a boolean/);
+  assert.equal(validateExecutionRoles({ ...ROLES, execution: { require_independent_qa: true } }).ok, true);
+
+  // Same host/model for the backend lane's dev and qa, flag on: refused, nothing written.
+  const sameModel = { ...ROLES, roles: { ...ROLES.roles, backend_qa: { host: 'codex', model: 'gpt-5.6', reasoning_effort: 'high' } }, execution: { require_independent_qa: true } };
+  const refused = await setup(t, { roles: sameModel });
+  const result = await compile(refused.dir, refused.env);
+  assert.equal(result.ok, false);
+  assert.deepEqual(checks(result), ['self_review_same_model']);
+  const refusal = result.errors[0];
+  assert.match(refusal.message, /lane "backend": dev and qa run the same host\/model \(codex\/gpt-5\.6\)/);
+  assert.match(refusal.message, /execution\.require_independent_qa is on — declare "backend_qa" \(or "qa"\) on a different host or model/);
+  assert.equal(refusal.role, 'backend_qa');
+  assert.equal((await readExecutionPlan(refused.dir, SLUG)).exists, false, 'a refused compile writes nothing');
+
+  // Same roles, flag off (default): the warning the compile always had, plan written.
+  const warned = await setup(t, { roles: { ...sameModel, execution: {} } });
+  const lenient = await compile(warned.dir, warned.env);
+  assert.equal(lenient.ok, true, JSON.stringify(lenient.errors));
+  assert.ok(lenient.warnings.some((w) => w.check === 'self_review_same_model' && /lane "backend"/.test(w.message)));
+  assert.equal((await readExecutionPlan(warned.dir, SLUG)).exists, true);
+
+  // Flag on with an independent reviewer (the shared qa role on another host): clean compile, no warning.
+  const independent = await setup(t, { roles: { ...ROLES, execution: { require_independent_qa: true } } });
+  const clean = await compile(independent.dir, independent.env);
+  assert.equal(clean.ok, true, JSON.stringify(clean.errors));
+  assert.equal(clean.warnings.some((w) => w.check === 'self_review_same_model'), false);
+  const { plan: compiled } = await readExecutionPlan(independent.dir, SLUG);
+  assert.equal(compiled.lanes.backend.dev.host, 'codex');
+  assert.equal(compiled.lanes.backend.qa.host, 'claude');
+});
+
+// ───────────────────────── rules + prd drift after compilation ─────────────────────────
+
+test('the compiled plan pins the binding rules: a rule added or edited after compilation is a named warning, never invisible — and PRD drift stays the warning it was', async (t) => {
+  const { dir, env } = await setup(t);
+  assert.equal((await compile(dir, env)).ok, true);
+  let { plan } = await readExecutionPlan(dir, SLUG);
+  assert.equal(plan.source.rules, '.aioson/rules');
+  assert.equal(plan.source.rules_digest, null, 'no rules directory → nothing pinned');
+  assert.equal(plan.source.rules_files, 0);
+  let verified = await verifyExecutionPlan(dir, SLUG, { env });
+  assert.equal(verified.ok, true, JSON.stringify(verified.issues));
+  assert.deepEqual(verified.warnings, []);
+
+  // A client writes its first rule mid-flight.
+  const rulesDir = path.join(dir, '.aioson', 'rules');
+  await fs.mkdir(path.join(rulesDir, '_archived'), { recursive: true });
+  await fs.writeFile(path.join(rulesDir, 'README.md'), '# not a rule\n', 'utf8');
+  await fs.writeFile(path.join(rulesDir, '_archived', 'old.md'), '---\nname: old\n---\n# archived\n', 'utf8');
+  await fs.writeFile(path.join(rulesDir, 'money.md'), '---\nname: money\n---\n# Money\n- Never store money as float.\n', 'utf8');
+  verified = await verifyExecutionPlan(dir, SLUG, { env });
+  assert.equal(verified.ok, true, 'rule drift is advisory — the finished units are not thrown away');
+  assert.equal(verified.warnings.length, 1);
+  assert.match(verified.warnings[0], /^rules_changed: \.aioson\/rules changed after compilation \(0 → 1 binding rule file\(s\)\)/);
+  assert.match(verified.warnings[0], /run rules:check at integration and recompile to refresh/);
+
+  // Recompiled: the digest covers the rule, README and _archived stay out of it.
+  assert.equal((await compile(dir, env)).ok, true);
+  ({ plan } = await readExecutionPlan(dir, SLUG));
+  assert.match(plan.source.rules_digest, /^[0-9a-f]{64}$/);
+  assert.equal(plan.source.rules_files, 1);
+  const pinned = plan.source.rules_digest;
+  await fs.writeFile(path.join(rulesDir, 'README.md'), '# still not a rule\n', 'utf8');
+  await fs.writeFile(path.join(rulesDir, '_archived', 'older.md'), '# archived too\n', 'utf8');
+  verified = await verifyExecutionPlan(dir, SLUG, { env });
+  assert.deepEqual(verified.warnings, [], 'README and _archived are not binding');
+  assert.equal((await rulesDigest(dir)).digest, pinned);
+
+  // An edit to the binding rule is the drift.
+  await fs.appendFile(path.join(rulesDir, 'money.md'), '- Round at the boundary only.\n');
+  verified = await verifyExecutionPlan(dir, SLUG, { env });
+  assert.equal(verified.ok, true);
+  assert.match(verified.warnings[0], /^rules_changed: .* \(1 → 1 binding rule file\(s\)\)/);
+  assert.notEqual((await rulesDigest(dir)).digest, pinned);
+
+  // PRD drift: warning, not a refusal — the gap that had no test.
+  assert.equal((await compile(dir, env)).ok, true);
+  await fs.appendFile(path.join(dir, '.aioson', 'context', `prd-${SLUG}.md`), '\n| AC-orders-03 | CAP-orders-ui | Orders can be filtered | ui test |\n');
+  verified = await verifyExecutionPlan(dir, SLUG, { env });
+  assert.equal(verified.ok, true);
+  assert.deepEqual(verified.warnings.map((w) => w.split(':')[0]), ['prd_digest_stale']);
+  assert.match(verified.warnings[0], /unit prompts carry its previous acceptance criteria; recompile to refresh/);
+
+  // A plan compiled before the rules digest existed carries no key and is never warned about it.
+  const planFile = path.join(dir, '.aioson', 'context', `execution-plan-${SLUG}.json`);
+  const legacy = JSON.parse(await fs.readFile(planFile, 'utf8'));
+  delete legacy.source.rules_digest;
+  delete legacy.source.rules_files;
+  await fs.writeFile(planFile, JSON.stringify(legacy, null, 2), 'utf8');
+  await fs.appendFile(path.join(rulesDir, 'money.md'), '- Another edit.\n');
+  verified = await verifyExecutionPlan(dir, SLUG, { env });
+  assert.equal(verified.warnings.some((w) => w.startsWith('rules_changed')), false);
 });
