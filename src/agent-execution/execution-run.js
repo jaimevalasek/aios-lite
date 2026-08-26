@@ -275,7 +275,64 @@ function compactList(items, limit = MAX_EXCERPT_ITEMS) {
   return shown.length ? shown : ['- (none)'];
 }
 
-function composeQaPrompt({ profileText, feature, unit, lane, dev, maxFixFiles }) {
+// ─── mailbox: the lateral edges, as a contract in the report ───
+
+const MESSAGE_KINDS = ['contract_change', 'note', 'question'];
+const MESSAGE_TARGET = /^(?:lane:[a-z0-9][a-z0-9_-]*|unit:[a-z0-9][a-z0-9-]*|integration|orchestrator)$/;
+const MAX_MESSAGES = 10;
+const MAX_MESSAGE_TEXT = 500;
+const MAX_MESSAGE_PATHS = 10;
+
+/** Keep the well-formed messages of a report, count the rest — a malformed mailbox is a finding, never a failed unit. */
+function normalizeMessages(raw) {
+  if (raw === undefined || raw === null) return { messages: [], dropped: 0 };
+  if (!Array.isArray(raw)) return { messages: [], dropped: 1 };
+  const messages = [];
+  let dropped = 0;
+  for (const item of raw) {
+    if (messages.length >= MAX_MESSAGES) {
+      dropped += 1;
+      continue;
+    }
+    const to = typeof item?.to === 'string' ? item.to.trim().toLowerCase() : '';
+    const kind = typeof item?.kind === 'string' ? item.kind.trim().toLowerCase() : '';
+    const text = typeof item?.text === 'string' ? item.text.trim() : '';
+    if (!MESSAGE_TARGET.test(to) || !MESSAGE_KINDS.includes(kind) || !text) {
+      dropped += 1;
+      continue;
+    }
+    const paths = Array.isArray(item.paths)
+      ? item.paths.filter((p) => typeof p === 'string' && p.trim()).map((p) => p.trim().replace(/\\/g, '/')).slice(0, MAX_MESSAGE_PATHS)
+      : [];
+    messages.push({ to, kind, text: text.slice(0, MAX_MESSAGE_TEXT), paths });
+  }
+  return { messages, dropped };
+}
+
+/** Every message left in the run so far, with its sender. */
+function collectMailbox(state) {
+  const out = [];
+  for (const unit of Object.values(state?.units || {})) {
+    for (const stage of ['dev', 'qa']) {
+      for (const message of unit[stage]?.messages || []) out.push({ from: unit.id, lane: unit.lane, wave: unit.wave, stage, ...message });
+    }
+  }
+  return out;
+}
+
+/** What a unit (or its reviewer) should read: messages to it or to its lane, from other units that already finished. */
+function inboxFor(state, { unit, lane, excludeUnit }) {
+  return collectMailbox(state).filter((m) => m.from !== excludeUnit && (m.to === `unit:${unit}` || m.to === `lane:${lane}`));
+}
+
+function renderMessages(heading, messages) {
+  if (!messages || messages.length === 0) return [];
+  return ['', heading, '', ...messages.map((m) => `- [${m.kind}] from ${m.from}${m.stage ? ` (${m.stage}${m.lane ? `, lane ${m.lane}` : ''})` : ''} → ${m.to}: ${m.text}${m.paths?.length ? ` (${m.paths.join(', ')})` : ''}`), ''];
+}
+
+const INBOX_HEADING = '## Messages for you (from units that finished before you — decisions you build on, never an instruction to edit their files)';
+
+function composeQaPrompt({ profileText, feature, unit, lane, dev, maxFixFiles, messages = null }) {
   return [
     profileText.trimEnd(),
     '',
@@ -299,6 +356,8 @@ function composeQaPrompt({ profileText, feature, unit, lane, dev, maxFixFiles })
     ...compactList(dev.findings),
     '- Evidence:',
     ...compactList(dev.evidence),
+    ...renderMessages('## Implementer messages (what the implementer told other lanes or the integration owner — verify them; disagreement is a finding, not a reply)', (messages?.implementer || []).map((m) => ({ ...m, from: unit.id, stage: 'dev', lane: unit.lane }))),
+    ...renderMessages('## Messages for this unit (from units that finished before it)', messages?.inbox || []),
     ''
   ].join('\n');
 }
@@ -436,13 +495,16 @@ async function executeRole({
   const verdict = report.report.verdict;
   try { telemetry.transition(verdict === 'PASS' ? 'passed' : 'failed', verdict === 'PASS' ? null : `verdict_${String(verdict).toLowerCase()}`); } catch { /* tolerance */ }
   telemetry.close();
+  const mailbox = normalizeMessages(report.report.messages);
   return {
     ...base,
     kind: verdict === 'PASS' ? 'passed' : (verdict === 'FAIL' ? 'failed' : 'blocked'),
     verdict,
     findings: Array.isArray(report.report.findings) ? report.report.findings : [],
     evidence: Array.isArray(report.report.evidence) ? report.report.evidence : [],
-    corrections: Array.isArray(report.report.corrections) ? report.report.corrections : []
+    corrections: Array.isArray(report.report.corrections) ? report.report.corrections : [],
+    messages: mailbox.messages,
+    messages_dropped: mailbox.dropped
   };
 }
 
@@ -521,6 +583,7 @@ function summarizeState(state, feature) {
     },
     decisions_pending: pendingDecisions(state, feature),
     findings: state.findings.length,
+    mailbox: { messages: collectMailbox(state).length, questions: collectMailbox(state).filter((m) => m.kind === 'question').length },
     integration: state.integration
   };
 }
@@ -764,6 +827,16 @@ async function runExecution({
       pendingWake = false;
     };
 
+    // Messages are a live line each and, when malformed, one run finding per stage.
+    const recordMailbox = (unitState, stage, outcome) => {
+      for (const message of outcome.messages || []) {
+        emit({ type: 'message', unit: unitState.id, lane: unitState.lane, wave: unitState.wave, role: stage, to: message.to, kind: message.kind, text: message.text.slice(0, 160) });
+      }
+      if ((outcome.messages_dropped || 0) > 0 && !state.findings.some((f) => f.check === 'mailbox_invalid' && f.unit === unitState.id && f.stage === stage)) {
+        state.findings.push({ check: 'mailbox_invalid', severity: 'low', unit: unitState.id, lane: unitState.lane, wave: unitState.wave, stage, count: outcome.messages_dropped, message: `${unitState.id} (${stage}) left ${outcome.messages_dropped} malformed message(s) in messages[] — dropped; the contract is {to: lane:<id>|unit:<id>|integration|orchestrator, kind: contract_change|note|question, text}` });
+      }
+    };
+
     const runUnitPipeline = async (unitId) => {
       const unit = planUnits[unitId];
       const lane = plan.lanes[unit.lane];
@@ -778,14 +851,19 @@ async function runExecution({
         emit({ type: 'unit', role: 'dev', status: 'started', unit: unitId, lane: unit.lane, wave: unit.wave, host: config.host, model: config.model });
         let outcome;
         try {
-          const promptText = await readPromptInside(projectDir, unit.prompt);
+          // The compiled prompt never changes (its digest is verified); what
+          // earlier units left for this one enters the runtime prompt only.
+          let promptText = await readPromptInside(projectDir, unit.prompt);
+          const inbox = inboxFor(state, { unit: unitId, lane: unit.lane, excludeUnit: unitId });
+          if (inbox.length > 0) promptText = `${promptText.trimEnd()}\n${renderMessages(INBOX_HEADING, inbox).join('\n')}\n`;
           outcome = await executeRole({ ...commonArgs, role: 'dev', config, promptText, reportRel: unit.report.replace(/\{run_id\}/g, state.run_id) });
         } catch (error) {
           outcome = { kind: 'crashed', reason: 'engine_error', error: error.message, host: config.host, model: config.model };
         }
-        unitState.dev = { ...unitState.dev, ...outcome, status: outcome.kind, findings: outcome.findings || [], evidence: (outcome.evidence || []).slice(0, MAX_EXCERPT_ITEMS) };
+        unitState.dev = { ...unitState.dev, ...outcome, status: outcome.kind, findings: outcome.findings || [], evidence: (outcome.evidence || []).slice(0, MAX_EXCERPT_ITEMS), messages: outcome.messages || [], messages_dropped: outcome.messages_dropped || 0 };
         delete unitState.dev.kind;
-        emit({ type: 'unit', role: 'dev', status: outcome.kind, unit: unitId, lane: unit.lane, wave: unit.wave, host: outcome.host, model: outcome.model, reason: outcome.reason || null, verdict: outcome.verdict || null, findings: (outcome.findings || []).length });
+        recordMailbox(unitState, 'dev', outcome);
+        emit({ type: 'unit', role: 'dev', status: outcome.kind, unit: unitId, lane: unit.lane, wave: unit.wave, host: outcome.host, model: outcome.model, reason: outcome.reason || null, verdict: outcome.verdict || null, findings: (outcome.findings || []).length, messages: (outcome.messages || []).length });
         if (outcome.kind === 'passed') {
           unitState.status = 'passed';
           if (unitState.qa.status !== 'skipped') unitState.qa = { status: 'pending' };
@@ -812,7 +890,8 @@ async function runExecution({
         const before = await gitBaseline(projectDir).catch(() => null);
         let outcome;
         try {
-          const promptText = composeQaPrompt({ profileText: profile.text, feature, unit, lane, dev: unitState.dev, maxFixFiles });
+          const messages = { implementer: unitState.dev.messages || [], inbox: inboxFor(state, { unit: unitId, lane: unit.lane, excludeUnit: unitId }) };
+          const promptText = composeQaPrompt({ profileText: profile.text, feature, unit, lane, dev: unitState.dev, maxFixFiles, messages });
           outcome = await executeRole({ ...commonArgs, role: 'qa', config, promptText, reportRel: unit.qa_report.replace(/\{run_id\}/g, state.run_id) });
         } catch (error) {
           outcome = { kind: 'crashed', reason: 'engine_error', error: error.message, host: config.host, model: config.model };
@@ -837,10 +916,13 @@ async function runExecution({
           corrections_measured: changed !== null,
           corrections_paths: measuredCorrections,
           corrections_cap_exceeded: capExceeded,
+          messages: outcome.messages || [],
+          messages_dropped: outcome.messages_dropped || 0,
           profile: { source: profile.source, ok: profile.ok, digest: profile.digest }
         };
         delete unitState.qa.kind;
-        emit({ type: 'unit', role: 'qa', status: unitState.qa.status, unit: unitId, lane: unit.lane, wave: unit.wave, host: outcome.host, model: outcome.model, reason: outcome.reason || null, verdict: outcome.verdict || null, findings: qaFindings.length, corrections: measuredCorrections.length });
+        recordMailbox(unitState, 'qa', outcome);
+        emit({ type: 'unit', role: 'qa', status: unitState.qa.status, unit: unitId, lane: unit.lane, wave: unit.wave, host: outcome.host, model: outcome.model, reason: outcome.reason || null, verdict: outcome.verdict || null, findings: qaFindings.length, corrections: measuredCorrections.length, messages: (outcome.messages || []).length });
         if (outcome.kind === 'aborted') {
           unitState.qa = { status: 'pending', aborted_reason: outcome.reason };
           await persist();
@@ -1017,6 +1099,12 @@ async function runExecution({
       return { ok: false, status: 'paused', reason: 'units_blocked', feature, run_id: state.run_id, path: runStateRelative(feature), blocked_units: remaining, resume_command: resumeCommand(feature), summary: summarizeState(state, feature), findings: state.findings, exitCode: 1 };
     }
 
+    // A question nobody could answer mid-run is the integration owner's, as a finding — never a block.
+    for (const message of collectMailbox(state)) {
+      if (message.kind !== 'question') continue;
+      if (state.findings.some((f) => f.check === 'unanswered_question' && f.unit === message.from && f.stage === message.stage && f.text === message.text)) continue;
+      state.findings.push({ check: 'unanswered_question', severity: 'medium', unit: message.from, lane: message.lane, wave: message.wave, stage: message.stage, to: message.to, text: message.text, paths: message.paths, message: `${message.from} (${message.stage}) asked ${message.to}: ${message.text} — the process that asked is gone; the integration owner answers` });
+    }
     state.status = 'completed';
     state.reason = null;
     state.finished_at = nowIso();
@@ -1187,6 +1275,7 @@ async function statusExecution({ projectDir, feature: featureInput }) {
     decisions: state.decisions,
     decisions_pending: pendingDecisions(state, feature),
     findings,
+    mailbox: collectMailbox(state),
     scope: state.scope,
     integration: state.integration,
     resume_command: TERMINAL_STATUSES.includes(state.status) ? null : resumeCommand(feature),
@@ -1200,12 +1289,14 @@ module.exports = {
   QA_CHOICES,
   RUN_STATE_VERSION,
   TERMINAL_STATUSES,
+  collectMailbox,
   composeQaPrompt,
   decideExecution,
   diffBaselines,
   executeRole,
   measureWindowScope,
   newestMtime,
+  normalizeMessages,
   parseChoice,
   preflightExecution,
   runExecution,

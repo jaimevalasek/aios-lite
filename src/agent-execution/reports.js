@@ -11,6 +11,7 @@ function validateReport(r, expected = null) {
   for (const key of req) if (r?.[key] === undefined) errors.push({ path: `$.${key}`, message: 'is required' });
   if (r && !VERDICTS.includes(r.verdict)) errors.push({ path: '$.verdict', message: 'must be PASS, FAIL, or BLOCKED' });
   if (r && !Array.isArray(r.findings)) errors.push({ path: '$.findings', message: 'must be an array' });
+  if (r && r.messages !== undefined && !Array.isArray(r.messages)) errors.push({ path: '$.messages', message: 'must be an array when present' });
   if (r && !Array.isArray(r.writable_roots)) errors.push({ path: '$.writable_roots', message: 'must be an array' });
   if (expected) {
     for (const key of IDENTITY_FIELDS) {

@@ -46,7 +46,8 @@ function renderQaProfile(sections, { maxFixFiles = 3 } = {}) {
     `3. You MAY fix simple, local defects (an off-by-one, a missing null check, a wrong import, a failing assertion the code — not the test — got wrong) in at most ${maxFixFiles} file(s), and ONLY among the unit's own files. Every fix goes into the report as one \`corrections[]\` entry: {path, summary}. Re-run the verification after fixing.`,
     '4. Everything you cannot fix inside that boundary — design gaps, cross-lane integration, missing capabilities, anything touching files outside the unit — goes into `findings[]` as {severity: critical|high|medium|low, cap, ac, path, summary}. Never touch files outside the unit; never widen the scope.',
     '5. Never run stage-ownership or publishing commands (workflow:next, agent:done, live:handoff, feature:close, git commit/push). The parent session owns the stage.',
-    '6. Report verdict PASS only when the verification passes after your corrections and no critical/high finding remains; otherwise FAIL with the findings. Write the JSON report exactly where the execution contract appended below says, then stop.',
+    '6. What a later unit or the integration owner must know goes into `messages[]` of your report as {to: "lane:<id>" | "unit:<id>" | "integration", kind: contract_change | note | question, text, paths?}; an implementer message you disagree with is a finding, not a reply.',
+    '7. Report verdict PASS only when the verification passes after your corrections and no critical/high finding remains; otherwise FAIL with the findings. Write the JSON report exactly where the execution contract appended below says, then stop.',
     ''
   );
   return lines.join('\n');

@@ -48,6 +48,8 @@ function formatProgress(event) {
       return `${where}: DECISION REQUIRED (${event.reason}) → ${event.hint}`;
     case 'scope':
       return `wave ${event.wave}${event.unit ? ` · ${event.unit}` : ''}: ${event.check} ${event.path}${event.lane ? ` (lane ${event.lane})` : ''}`;
+    case 'message':
+      return `${where}: message [${event.kind}] → ${event.to}: ${event.text}`;
     default:
       return JSON.stringify(event);
   }

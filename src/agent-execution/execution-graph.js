@@ -93,7 +93,8 @@ function buildExecutionGraph({ plan, state = null }) {
       status: nodeStatus(unit, state),
       dev: entry && unit.owner === 'lane' ? { status: entry.dev?.status || 'pending', host: entry.dev?.host || null, model: entry.dev?.model || null, verdict: entry.dev?.verdict || null } : null,
       qa: entry && unit.owner === 'lane' ? { status: entry.qa?.status || 'pending', host: entry.qa?.host || null, model: entry.qa?.model || null, verdict: entry.qa?.verdict || null, findings: Array.isArray(entry.qa?.findings) ? entry.qa.findings.length : 0 } : null,
-      decision: entry?.pending_decision ? { stage: entry.pending_decision.stage, reason: entry.pending_decision.reason } : null
+      decision: entry?.pending_decision ? { stage: entry.pending_decision.stage, reason: entry.pending_decision.reason } : null,
+      messages: entry ? (entry.dev?.messages?.length || 0) + (entry.qa?.messages?.length || 0) : 0
     };
   });
   const edges = [...explicit.map((edge) => ({ from: edge.from, to: edge.to, gate: edge.gate, explicit: true })), ...implicitEdges(units, explicit)];

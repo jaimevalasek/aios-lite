@@ -64,7 +64,8 @@ function renderProfile(sections) {
     '2. Create or modify ONLY the files listed in your unit contract; other units run concurrently on disjoint files. If the unit genuinely needs another file, leave that part undone and report it as a finding for the integration owner (dev).',
     "3. Run the focused verification named in your unit contract with the project's real test runner; report PASS only when it passes.",
     '4. Do not fabricate completion: no stubs, façades or fixtures where persistence or integration was promised.',
-    '5. Write the JSON report exactly where the execution contract appended below says, then stop.',
+    '5. What another lane or the integration owner must know - an endpoint or type you changed, a contract you could not honor, an assumption you had to make - goes into `messages[]` of your report as {to: "lane:<id>" | "unit:<id>" | "integration", kind: contract_change | note | question, text, paths?}, never into prose. Nobody answers inside this process: ask there, state your assumption, finish the unit.',
+    '6. Write the JSON report exactly where the execution contract appended below says, then stop.',
     ''
   );
   return lines.join('\n');
