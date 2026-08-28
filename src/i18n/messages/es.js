@@ -1615,6 +1615,10 @@ module.exports = {
     publish_sending: 'Enviando a aioson.com...',
     publish_done: 'Publicado: aioson.com/store/systems/{slug}\n  Instalar en aioson-play usando el slug: {slug}',
     publish_summary: '  Archivos: {files} ({kb} KB)',
+    publish_protected_ts: '  TypeScript de runtime protegido: {count} archivo(s) (tipos eliminados + mangling, mismas rutas)',
+    publish_dry_run_files: '  Contenido del paquete ({count} archivos):',
+    publish_quarantined: 'Nota: primera app publica de esta cuenta — se creo como DRAFT (en revision) y solo es visible para usted en aioson-play hasta ser aprobada.',
+    error_raw_source: '{count} archivo(s) TypeScript de runtime viajarian legibles: {files}. Protegerlos requiere Node >= 22.13 (module.stripTypeScriptTypes) y sintaxis que acepte (sin JSX). Use --allow-raw-source para publicar de todos modos.',
 
     list_remote_empty: 'Ningun sistema publicado aun.',
     list_remote_header: '{count} sistema(s) publicado(s):',

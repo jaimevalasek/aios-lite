@@ -45,6 +45,54 @@ async function obfuscateJs(code) {
   }
 }
 
+// TypeScript de runtime — `server/**/*.ts` que o app executa direto com `tsx`
+// em produção — não passa por build nenhum, então o `--build` embarcava esses
+// arquivos LEGÍVEIS (tipos, comentários, nomes), anulando a promessa "fonte
+// excluído". Node >= 22.13 traz `module.stripTypeScriptTypes` (amaro/swc):
+// remove tipos e converte enums/parameter properties em JS puro; o resultado
+// passa pelo mesmo terser do código compilado e volta SOB O MESMO caminho
+// `.ts` — JS puro é TS válido, então `tsx server/server.ts` segue funcionando.
+// Devolve null quando não dá pra proteger (Node antigo, sintaxe que o strip
+// não aceita, JSX): o chamador decide o que fazer com o fonte cru.
+function getTypeStripper() {
+  try {
+    const { stripTypeScriptTypes } = require('node:module');
+    return typeof stripTypeScriptTypes === 'function' ? stripTypeScriptTypes : null;
+  } catch {
+    return null;
+  }
+}
+
+async function protectRuntimeTypeScript(code) {
+  const strip = getTypeStripper();
+  if (!strip) return null;
+  // O strip emite um ExperimentalWarning na primeira chamada — ruído no log do
+  // publish que não muda nada pro usuário. Silenciado só durante a chamada.
+  const emitWarning = process.emitWarning;
+  process.emitWarning = (warning, ...rest) => {
+    const text = typeof warning === 'string' ? warning : String((warning && warning.message) || '');
+    if (/stripTypeScriptTypes/.test(text)) return undefined;
+    return emitWarning.call(process, warning, ...rest);
+  };
+  let stripped;
+  try {
+    stripped = strip(code, { mode: 'transform' });
+  } catch {
+    return null;
+  } finally {
+    process.emitWarning = emitWarning;
+  }
+  return obfuscateJs(stripped);
+}
+
+// Fonte de runtime que ficaria legível no pacote é um erro de publish, não um
+// aviso: a promessa do --build é "fonte excluído". `--allow-raw-source` é a
+// decisão explícita do dono de embarcar assim mesmo.
+function rawSourceError(rawSource, options, t) {
+  if (!rawSource.length || options['allow-raw-source']) return null;
+  return new Error(t('system.error_raw_source', { count: rawSource.length, files: rawSource.join(', ') }));
+}
+
 async function createZipBuffer(files) {
   const { ZipArchive } = await import('archiver');
   const { PassThrough } = require('stream');
@@ -99,12 +147,28 @@ const SYSTEM_BUILD_ALLOWED_EXTS = new Set([
 
 const RUNTIME_SERVER_SOURCE_EXTS = new Set(['.ts', '.tsx']);
 
+// Pastas que existem só pra desenvolver/medir o app — nunca são runtime. Sem
+// isto o pacote embarcava relatórios de QA (HTML com screenshots), config de
+// assistentes de IA e pastas de teste. Valem nos dois modos.
+const DEV_ONLY_DIRS = [
+  'reports', 'test-results', 'playwright-report', 'aios-qa-screenshots',
+  '.opencode', '.qwen', '.agents', '.gemini', '.cursor', '.windsurf',
+];
+// Só no --build: um pacote-fonte pode legitimamente carregar testes e config de
+// editor/CI (boilerplate); um pacote de runtime nunca.
+const BUILD_DEV_ONLY_DIRS = [
+  'tests', 'test', 'e2e', 'cypress', '.storybook', 'storybook-static',
+  '.github', '.vscode', '.idea', '.husky',
+];
+const DEV_ONLY_FILES = ['aios-qa-report.json', 'aios-qa-report.md', 'aios-qa.config.json'];
+
 // Dirs/files to skip when collecting sources
 const SKIP_DIRS = new Set([
   'node_modules', '.git', 'dist', 'build', '.turbo', '.next',
   '.cache', 'coverage', '.nyc_output', 'out',
   // AIOSON tooling — não faz parte do código-fonte do sistema
   '.aioson', '.claude', '.codex', 'researchs',
+  ...DEV_ONLY_DIRS,
 ]);
 
 const SKIP_DIRS_BUILD = new Set([
@@ -112,6 +176,7 @@ const SKIP_DIRS_BUILD = new Set([
   '.cache', 'coverage', '.nyc_output',
   'src', 'dashboard/src',
   '.aioson', '.claude', '.codex', 'researchs',
+  ...DEV_ONLY_DIRS, ...BUILD_DEV_ONLY_DIRS,
 ]);
 
 const SKIP_FILES = new Set([
@@ -121,6 +186,7 @@ const SKIP_FILES = new Set([
   // que tenha sido commitado por engano. Defense-in-depth: o filtro de
   // .gitignore abaixo também pega, mas isto cobre apps sem .gitignore.
   'aioson-models.json',
+  ...DEV_ONLY_FILES,
 ]);
 
 // `.aioson` é tooling/dev e fica de fora do pacote (SKIP_DIRS), MAS algumas
@@ -276,6 +342,8 @@ async function collectSystemFiles(dir, { buildMode = false } = {}) {
   } catch { /* sem .gitignore → não filtra por ignore */ }
 
   let limitHit = false;
+  const rawSource = [];  // TS de runtime que NÃO deu pra proteger (viajaria legível)
+  let protectedTs = 0;   // TS de runtime protegido (tipos removidos + mangling)
 
   // Processa UM arquivo (checa skip/ignore/extensão/tamanho, lê, ofusca se build,
   // grava). Usado pelo walk e pelos includes pontuais do `.aioson` (que podem ser
@@ -284,6 +352,8 @@ async function collectSystemFiles(dir, { buildMode = false } = {}) {
     if (limitHit) return;
     if (!forceInclude && SKIP_FILES.has(entryName)) return;
     if (!forceInclude && ig.ignores(relPath)) return;
+    // Declarações de tipo não rodam — e descrevem a API do backend. Fora no --build.
+    if (buildMode && /\.d\.[cm]?ts$/i.test(entryName)) return;
 
     const ext = entryName.includes('.')
       ? `.${entryName.split('.').pop().toLowerCase()}`
@@ -313,7 +383,16 @@ async function collectSystemFiles(dir, { buildMode = false } = {}) {
         return;
       }
       let content = await fs.readFile(fullPath, 'utf8');
-      if (
+      if (isRuntimeServerSource) {
+        // Mesmo caminho `.ts`, sem tipos/comentários e com locais renomeados.
+        const protectedCode = await protectRuntimeTypeScript(content);
+        if (protectedCode == null) {
+          rawSource.push(relPath);
+        } else {
+          content = protectedCode;
+          protectedTs += 1;
+        }
+      } else if (
         buildMode &&
         (ext === '.js' || ext === '.mjs' || ext === '.cjs') &&
         !RUNTIME_CONFIG_RE.test(entryName) // não ofuscar config lida pelo vite
@@ -380,7 +459,7 @@ async function collectSystemFiles(dir, { buildMode = false } = {}) {
   }
 
   await walk(dir, '');
-  return { files, totalBytes, errors };
+  return { files, totalBytes, errors, rawSource, protectedTs };
 }
 
 /**
@@ -563,7 +642,7 @@ async function runSystemPublish({ args, options, logger, t }) {
     logger.log(t('system.package_collecting_files'));
   }
 
-  const { files, totalBytes, errors } = await collectSystemFiles(dir, { buildMode });
+  const { files, totalBytes, errors, rawSource, protectedTs } = await collectSystemFiles(dir, { buildMode });
 
   if (errors.length > 0) {
     for (const e of errors) logger.log(`  [WARN] ${e}`);
@@ -571,6 +650,11 @@ async function runSystemPublish({ args, options, logger, t }) {
 
   const fileCount = Object.keys(files).length;
   logger.log(t('system.package_files_found', { count: fileCount, kb: (totalBytes / 1024).toFixed(1) }));
+  if (buildMode && protectedTs > 0) {
+    logger.log(t('system.publish_protected_ts', { count: protectedTs }));
+  }
+  // Fonte de runtime legível no pacote derruba o publish (o dry-run só lista).
+  const rawError = buildMode ? rawSourceError(rawSource, options, t) : null;
 
   // Basic integrity checks
   if (!files['system.json']) {
@@ -613,8 +697,13 @@ async function runSystemPublish({ args, options, logger, t }) {
 
   if (options['dry-run']) {
     logger.log(t('system.publish_dry_run', { slug: manifest.slug, version: manifest.version, visibility }));
-    return { ok: true, dryRun: true, manifest, fileCount, totalBytes, visibility, authorizedEmails };
+    // O dry-run é a única forma de auditar o pacote antes do upload — lista tudo.
+    logger.log(t('system.publish_dry_run_files', { count: fileCount }));
+    for (const f of Object.keys(files).sort()) logger.log(`  ${f}`);
+    if (rawError) logger.log(`  [WARN] ${rawError.message}`);
+    return { ok: true, dryRun: true, manifest, fileCount, totalBytes, visibility, authorizedEmails, rawSource, protectedTs };
   }
+  if (rawError) throw rawError;
 
   logger.log('Creating ZIP package...');
   const zipBuffer = await createZipBuffer(files);
@@ -647,7 +736,12 @@ async function runSystemPublish({ args, options, logger, t }) {
 
   logger.log(t('system.publish_done', { slug: manifest.slug, url: `${baseUrl}/store/systems/${manifest.slug}` }));
   logger.log(t('system.publish_summary', { files: fileCount, kb: zipKb }));
-  return { ok: true, manifest, fileCount, totalBytes, visibility, paid, response };
+  // Primeiro app público de uma conta nova nasce DRAFT (quarentena do servidor):
+  // sem este aviso o dev lia "Publicado" e o app não aparecia pra ninguém.
+  if (response && response.quarantined) {
+    logger.log(t('system.publish_quarantined'));
+  }
+  return { ok: true, manifest, fileCount, totalBytes, visibility, paid, response, protectedTs };
 }
 
 // ── system:list ─────────────────────────────────────────────────────────────
@@ -755,6 +849,8 @@ async function runSystemInstall({ args, options, logger, t }) {
 module.exports = {
   looksMinified,
   obfuscateJs,
+  protectRuntimeTypeScript,
+  rawSourceError,
   createZipBuffer,
   collectSystemFiles,
   runSystemPackage,

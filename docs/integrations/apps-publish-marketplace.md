@@ -21,7 +21,9 @@ aioson system:publish [dir] [opções]
 | `--private` | Visibilidade privada (default é `public` → FREE no aioson-com) |
 | `--paid` | Marca como pago (requer plano Jedi) |
 | `--invite="email1,email2,..."` | Emails autorizados a instalar quando privado |
-| `--dry-run` | Valida e mostra o que seria enviado, sem publicar |
+| `--build` | Roda o `build_command` e publica só a saída: `src/` fica de fora, `.js` passa por terser, `server/**/*.ts` (runtime via `tsx`) viaja sem tipos/comentários e com locais renomeados (Node >= 22.13). Falha se algum fonte de runtime ficaria legível |
+| `--allow-raw-source` | Com `--build`: publica mesmo com arquivos `.ts` de runtime que não puderam ser protegidos (decisão explícita do dono) |
+| `--dry-run` | Valida, roda o build (se `--build`) e lista todos os arquivos do pacote, sem publicar |
 
 ### Emails autorizados (privates)
 

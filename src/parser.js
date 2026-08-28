@@ -43,6 +43,9 @@ const BOOLEAN_FLAGS = new Set([
   // browser:run / verify:artifact — pure booleans; `--prototype .` /
   // `--continue .` / `--no-persist .` must not swallow the path positional.
   'prototype', 'continue', 'no-persist',
+  // system:publish — pure booleans; `--build ./meu-app` must not swallow the
+  // app directory as the flag's value (it silently published the CWD instead).
+  'build', 'allow-raw-source',
   // init/install/update hooks default and hooks:install guard opt-outs —
   // pure booleans; `--no-hooks .` / `--no-guard .` must not swallow the path.
   'no-hooks', 'no-guard',

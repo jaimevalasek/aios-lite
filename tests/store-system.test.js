@@ -8,25 +8,116 @@ const path = require('node:path');
 const {
   collectSystemFiles,
   createZipBuffer,
-  obfuscateJs
+  obfuscateJs,
+  protectRuntimeTypeScript,
+  rawSourceError
 } = require('../src/commands/store-system');
 
-test('build packages retain TypeScript server runtime without source or node_modules', async (t) => {
+const canStripTypes = typeof require('node:module').stripTypeScriptTypes === 'function';
+const t = (key, params = {}) => `${key} ${JSON.stringify(params)}`;
+
+async function makeApp(ctx, layout) {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'aioson-system-build-'));
-  t.after(() => fs.rm(dir, { recursive: true, force: true }));
+  ctx.after(() => fs.rm(dir, { recursive: true, force: true }));
+  for (const [rel, content] of Object.entries(layout)) {
+    const full = path.join(dir, rel);
+    await fs.mkdir(path.dirname(full), { recursive: true });
+    await fs.writeFile(full, content, 'utf8');
+  }
+  return dir;
+}
 
-  await fs.mkdir(path.join(dir, 'server'), { recursive: true });
-  await fs.mkdir(path.join(dir, 'src'), { recursive: true });
-  await fs.mkdir(path.join(dir, 'node_modules', 'tsx'), { recursive: true });
-  await fs.writeFile(path.join(dir, 'server', 'server.ts'), 'export {}', 'utf8');
-  await fs.writeFile(path.join(dir, 'src', 'main.ts'), 'export {}', 'utf8');
-  await fs.writeFile(path.join(dir, 'node_modules', 'tsx', 'index.js'), 'module.exports = {}', 'utf8');
+const TYPED_SERVER = [
+  'interface Options { port: number; }',
+  'enum Mode { Fast = 1, Safe = 2 }',
+  'export function boot(options: Options): string {',
+  '  const chosenMode: Mode = Mode.Safe; // comment that must not ship',
+  '  return `${options.port}:${chosenMode}`;',
+  '}',
+  ''
+].join('\n');
 
-  const { files } = await collectSystemFiles(dir, { buildMode: true });
+test('build packages keep the server runtime under its .ts path but strip types, comments and locals', { skip: !canStripTypes && 'Node without module.stripTypeScriptTypes' }, async (ctx) => {
+  const dir = await makeApp(ctx, {
+    'server/server.ts': TYPED_SERVER,
+    'server/types.d.ts': 'export interface Secret { key: string }',
+    'src/main.ts': 'export {}',
+    'node_modules/tsx/index.js': 'module.exports = {}'
+  });
 
-  assert.equal(files['server/server.ts'], 'export {}');
+  const { files, rawSource, protectedTs } = await collectSystemFiles(dir, { buildMode: true });
+
+  const shipped = files['server/server.ts'];
+  assert.equal(typeof shipped, 'string');
+  assert.match(shipped, /export function boot/);
+  assert.doesNotMatch(shipped, /interface Options|: Options|: string|enum Mode/);
+  assert.doesNotMatch(shipped, /comment that must not ship/);
+  assert.doesNotMatch(shipped, /chosenMode/);
+  assert.equal(files['server/types.d.ts'], undefined);
   assert.equal(files['src/main.ts'], undefined);
   assert.equal(files['node_modules/tsx/index.js'], undefined);
+  assert.deepEqual(rawSource, []);
+  assert.equal(protectedTs, 1);
+});
+
+test('runtime TypeScript that cannot be protected is reported and blocks publish unless explicitly allowed', async (ctx) => {
+  const dir = await makeApp(ctx, { 'server/broken.ts': 'export const = ;' });
+
+  const { files, rawSource, protectedTs } = await collectSystemFiles(dir, { buildMode: true });
+
+  assert.deepEqual(rawSource, ['server/broken.ts']);
+  assert.equal(files['server/broken.ts'], 'export const = ;');
+  assert.equal(protectedTs, 0);
+
+  const error = rawSourceError(rawSource, {}, t);
+  assert.match(error.message, /system\.error_raw_source/);
+  assert.match(error.message, /server\/broken\.ts/);
+  assert.equal(rawSourceError(rawSource, { 'allow-raw-source': true }, t), null);
+  assert.equal(rawSourceError([], {}, t), null);
+});
+
+test('protectRuntimeTypeScript strips types and returns null for syntax it cannot protect', { skip: !canStripTypes && 'Node without module.stripTypeScriptTypes' }, async () => {
+  const protectedCode = await protectRuntimeTypeScript('export const port: number = 3210;\n');
+  assert.equal(typeof protectedCode, 'string');
+  assert.doesNotMatch(protectedCode, /: number/);
+  assert.match(protectedCode, /3210/);
+
+  assert.equal(await protectRuntimeTypeScript('export const View = () => <div />;\n'), null);
+});
+
+test('dev-only folders and QA reports never ship; runtime scripts, prisma and build output do', async (ctx) => {
+  const dir = await makeApp(ctx, {
+    'reports/index.html': '<html></html>',
+    '.opencode/permissions.yaml': 'x: 1',
+    '.qwen/settings.json': '{}',
+    'aios-qa-report.json': '{}',
+    'aios-qa.config.json': '{}',
+    'tests/helper.js': 'module.exports = 1;',
+    '.github/workflows/ci.yml': 'on: push',
+    'scripts/migrate.mjs': 'export const run = () => 1;',
+    'prisma/schema.prisma': 'datasource db {}',
+    'dist/index.html': '<html></html>',
+    'package.json': '{"name":"x"}',
+    'system.json': '{"slug":"x","version":"1.0.0","name":"X"}'
+  });
+
+  const build = await collectSystemFiles(dir, { buildMode: true });
+  for (const gone of [
+    'reports/index.html', '.opencode/permissions.yaml', '.qwen/settings.json',
+    'aios-qa-report.json', 'aios-qa.config.json', 'tests/helper.js', '.github/workflows/ci.yml'
+  ]) {
+    assert.equal(build.files[gone], undefined, `${gone} must not ship in --build`);
+  }
+  for (const kept of ['scripts/migrate.mjs', 'prisma/schema.prisma', 'dist/index.html', 'package.json', 'system.json']) {
+    assert.equal(typeof build.files[kept], 'string', `${kept} must ship in --build`);
+  }
+
+  const source = await collectSystemFiles(dir, { buildMode: false });
+  assert.equal(source.files['reports/index.html'], undefined);
+  assert.equal(source.files['.opencode/permissions.yaml'], undefined);
+  assert.equal(source.files['aios-qa-report.json'], undefined);
+  // A source package is a boilerplate: its tests travel with it.
+  assert.equal(typeof source.files['tests/helper.js'], 'string');
 });
 
 test('store packaging uses the supported Archiver v8 API and produces a ZIP buffer', async () => {

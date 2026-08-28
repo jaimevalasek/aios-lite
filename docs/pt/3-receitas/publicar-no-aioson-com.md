@@ -198,11 +198,14 @@ npx @jaimevalasek/aioson system:publish --slug=legal-compliance --type=squad --b
 ```
 
 O `--build`:
-1. Compila TS/JSX antes de empacotar
-2. Aplica ofuscação JS via terser (minificação + mangling)
-3. Gera o pacote final em formato ZIP
+1. Roda o `build_command` do `system.json` (default `npm run build`) e embarca só a saída (`dist/`, `build/`, `out/`, `.next/`) — `src/` fica de fora
+2. TypeScript de runtime (`server/**/*.ts`, executado direto por `tsx`) viaja sob o mesmo caminho, mas com tipos e comentários removidos e locais renomeados. Exige Node >= 22.13; se algum arquivo não puder ser protegido, o publish falha listando-o (`--allow-raw-source` publica assim mesmo)
+3. Aplica terser (mangling) em todo `.js/.mjs/.cjs` legível; sourcemaps, `.d.ts`, testes, `reports/`, config de assistentes de IA e pastas de CI/editor ficam de fora
+4. Gera o pacote final em formato ZIP
 
-Útil para proteger lógica proprietária em squads e skills distribuídos via aioson.com.
+Confira o que viaja antes de publicar: `system:publish . --build --dry-run` roda o build e lista todos os arquivos do pacote sem enviar nada.
+
+Útil para proteger lógica proprietária em squads e skills distribuídos via aioson.com. Mangling dificulta a leitura; não é criptografia — lógica que precisa ficar secreta de verdade fica num servidor seu, não no pacote.
 
 ---
 

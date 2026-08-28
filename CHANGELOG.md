@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+- **`system:publish --build` no longer ships readable source.** The build lane excluded `src/` and mangled compiled `.js`, but the server runtime an app executes straight from TypeScript (`server/**/*.ts` under `tsx`) travelled verbatim — types, comments, names — and a test pinned that as expected; a split-stack app published its whole backend in the clear. Runtime TypeScript is now type-stripped (`module.stripTypeScriptTypes`, Node >= 22.13) and mangled by the same Terser boundary as compiled code, written back under the same `.ts` path so `tsx server/server.ts` keeps working. A file that cannot be protected (older Node, JSX, syntax the stripper rejects) fails the publish with its path (`system.error_raw_source`); `--allow-raw-source` records the owner's decision to ship it anyway. `.d.ts` declarations never ship in build mode. `--dry-run` now prints the full package listing — before, the only way to see what a build package contained was to upload it. Dev-only folders (`reports/`, `test-results/`, `playwright-report/`, `aios-qa-screenshots/`, `.opencode/`, `.qwen/`, `.agents/`, `.gemini/`, `.cursor/`, `.windsurf/`) and QA reports (`aios-qa-report.*`, `aios-qa.config.json`) leave every package; `tests/`, `test/`, `e2e/`, `cypress/`, `.storybook/`, `.github/`, `.vscode/`, `.idea/`, `.husky/` leave build packages. `--build` and `--allow-raw-source` are boolean flags — `system:publish --build ./meu-app` used to swallow the directory as the flag's value and publish the current folder. When the store quarantines a first public app as DRAFT, the CLI now says so instead of printing "Published".
+
 ## [1.63.0] - 2026-08-26
 
 ### Added

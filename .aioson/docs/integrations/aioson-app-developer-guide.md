@@ -634,6 +634,11 @@ aioson system:publish ./meu-app
 
 # Pago (Jedi)
 aioson system:publish ./meu-app --paid
+
+# Sem fonte: só a saída do build viaja; `.js` passa por terser e o TS de
+# runtime (`server/`) vai sem tipos e com mangling. Confira com --dry-run.
+aioson system:publish ./meu-app --build --dry-run
+aioson system:publish ./meu-app --build
 ```
 
 Ou declare emails autorizados no `system.json`:
