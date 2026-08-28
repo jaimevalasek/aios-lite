@@ -25,6 +25,7 @@ Never pad the result with decorative dashboards, inert buttons, fake integration
 - In an empty workspace, choose the lightest production-sensible JavaScript/web stack that can deliver the intended experience reliably in the available time.
 - Use mature libraries when they create material value: rendering, game loops, physics, animation, audio, visualization, state, accessibility, or testing.
 - Verify library APIs and compatibility instead of guessing. Respect the existing lockfile and avoid dependency multiplication for effects that native CSS, SVG, Canvas, or platform APIs handle better.
+- On the static route there is no build step and no server: ship a plain `index.html`, ES modules, and CSS the browser loads directly, with the assets beside them. That constrains the tooling, never the ambition — Canvas/WebGL, WebAudio, and the Web Animations API all work with no toolchain at all.
 - Prefer local or generated assets: use image/audio generation tools when available and useful, otherwise original CSS, SVG, Canvas, procedural, or properly licensed assets. Do not depend on fragile hotlinks.
 
 ## Premium-craft criteria

@@ -90,13 +90,22 @@ test('benchmark kernel conducts the measured traversal instead of building alone
   assert.match(kernel, /\.aioson\/docs\/benchmark\/traversal\.md/);
   assert.doesNotMatch(kernel, /Never activate another AIOSON agent/);
 
-  // Route detection: prototype vs full chain.
-  assert.match(kernel, /prototype route/);
+  // Route detection: static delivery vs the full chain.
+  assert.match(kernel, /static route/);
   assert.match(kernel, /full route/);
-  assert.match(kernel, /`@briefing → @refiner`/);
+  assert.match(kernel, /`@briefing → @refiner \(refinement only\) → you build`/);
   assert.match(kernel, /`@briefing → @refiner \(no prototype\) → @product → @sheldon → @planner → @dev → @qa`/);
-  assert.match(kernel, /one self-contained screen/i);
+  assert.match(kernel, /runs entirely in the browser/i);
   assert.match(kernel, /When in doubt, take the full route/i);
+
+  // The static route ships a built static app, never the refiner's briefing
+  // prototype: that artifact's own contract makes it a development reference
+  // with mock state, so shipping it measured AIOSON below what it can build.
+  assert.match(kernel, /\.aioson\/benchmark\/route\.json/);
+  assert.match(kernel, /Never ship the refiner's `prototype\.html` as the delivery/);
+  assert.match(kernel, /`index\.html` plus its own CSS\/JS modules/);
+  assert.match(kernel, /execution-playbook\.md/);
+  assert.match(kernel, /a game earns its core loop, feedback, progression, audio, and restart/);
 
   // Unattended posture (M1).
   assert.match(kernel, /questions are forbidden/i);
@@ -142,7 +151,7 @@ test('traversal contract module is present, synchronized, and complete', async (
   assert.match(template, /\.aioson\/benchmark\/measured-run\.json/);
   assert.match(template, /AIOSON_COCKPIT_BENCHMARK_V1/);
   assert.match(template, /benchmark:bootstrap/);
-  assert.match(template, /prototype route/);
+  assert.match(template, /static route/);
   assert.match(template, /full route/);
   assert.match(template, /recommended-or-fail|recommended option/i);
   assert.match(template, /skipped_measured_run/);
@@ -160,6 +169,20 @@ test('traversal contract module is present, synchronized, and complete', async (
   ]) {
     assert.ok(template.includes(evidence), `traversal contract missing stage evidence ${evidence}`);
   }
+
+  // The route record is a public contract with the external observer: without
+  // it a finished two-stage round reads as a stalled seven-stage one.
+  assert.match(template, /### Route record/);
+  assert.match(template, /"route": "static"/);
+  assert.match(template, /"stages": \["briefing", "refiner"\]/);
+  assert.match(template, /never write or edit that file yourself/i);
+
+  // The static build is held to the delivery bar, not the prototype bar.
+  assert.match(template, /## Static build/);
+  assert.match(template, /do not force the app into one HTML file/i);
+  assert.match(template, /pause\/audio/i);
+  assert.match(template, /web:save/);
+  assert.match(template, /Build no prototype on either route/);
 
   // Strict schema 1 stays the result contract — the external parser rejects
   // unknown fields and other versions, so the doc must never promise schema 2.
@@ -211,5 +234,6 @@ test('benchmark quick help is concise and synchronized', async () => {
   assert.match(section[1], /benchmark-result\.json/);
   assert.match(section[1], /external orchestrator/i);
   assert.match(section[1], /prototype/i);
+  assert.match(section[1], /static route/i);
   assert.ok(section[1].length < 1200, 'benchmark help section is too long');
 });
