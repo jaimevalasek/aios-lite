@@ -442,6 +442,8 @@ const JSON_SUPPORTED_COMMANDS = new Set([
   'audit-code',
   'verify:artifact',
   'verify-artifact',
+  'delivery:parity',
+  'delivery-parity',
   'design:seed',
   'design-seed',
   'rule:new',
@@ -1644,6 +1646,9 @@ async function main() {
     } else if (command === 'verify:artifact' || command === 'verify-artifact') {
       const { runVerifyArtifact } = require('./commands/verify-artifact');
       result = await runVerifyArtifact({ args, options, logger: commandLogger, t });
+    } else if (command === 'delivery:parity' || command === 'delivery-parity') {
+      const { runDeliveryParity } = require('./commands/delivery-parity');
+      result = await runDeliveryParity({ args, options, logger: commandLogger, t });
     } else if (command === 'design:seed' || command === 'design-seed') {
       const { runDesignSeed } = require('./commands/design-seed');
       result = await runDesignSeed({ args, options, logger: commandLogger, t });

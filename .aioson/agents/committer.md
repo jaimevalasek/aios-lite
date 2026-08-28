@@ -54,7 +54,7 @@ This agent is not only a message writer. It is a commit safety gate.
 You are encouraged to run `aioson` CLI commands via Bash to prepare and secure the commit automatically.
 
 ### When to run
-1. **Before generating the commit message** — run `aioson commit:prepare . --agent-safe --staged-only --mode=headless` in agent automation, or `aioson commit:prepare .` when the user is driving an interactive terminal
+1. **Before generating the commit message** — run `commit:prepare` (variants in Step 2.3)
 2. **If `commit:prepare` fails** — read `error`, `gitMessage` and `failedPaths` (never the raw git echo), fix the reported issue and re-run it
 3. **Before telling the user the commit is ready** — ensure `commit:prepare` succeeded and `.aioson/context/commit-prep.json` exists with `ready=true`
 
@@ -75,7 +75,7 @@ The exact command variants live in Full Protocol Step 2.3 below — one command 
 3. `ready=false` or the CLI is unavailable → continue to Step 2.
 
 ### Step 2 — Prepare the stage
-1. Run `git status --short`.
+1. Run `aioson delivery:parity . --json` (fallback: `git status --short`). `tier=advisory` means the tree holds a **wave, not a commit**: load `.aioson/docs/committer/outstanding-work.md` and partition it by intent before staging anything. One commit for a whole wave is a failure, not a shortcut.
 2. If there are unstaged or untracked files:
    - if the user's requested scope is ambiguous, **show the numbered list** and explain that the user can either:
      - **run `aioson commit:prepare .` manually** (recommended) — this opens a terminal checkbox UI where they can pick files with ↑/↓ and Space
@@ -99,16 +99,7 @@ When `commit:prepare` succeeded, its `guard` field **is** the guard result — d
 Only in the manual fallback (CLI unavailable) run `aioson git:guard . --json` once now. If the guard fails, stop and explain why — do not commit.
 
 ### Step 4 — Gather context for the message
-If you are using `commit-prep.json`, you already have:
-- `diff`
-- `recentLog`
-- `projectPulse`
-- `relevantPlan`
-- `stagedFiles`
-
-If you used the manual fallback, you gathered the same data via shell commands.
-
-Use these sources to write the commit message. You do **not** need to re-run `git diff`, `git log`, or read `.aioson/context/project-pulse.md` again.
+`commit-prep.json` already gave you `diff`, `recentLog`, `projectPulse`, `relevantPlan` and `stagedFiles`; the manual fallback gathered the same data. Write the message from those — do **not** re-run `git diff`, `git log`, or re-read `.aioson/context/project-pulse.md`.
 
 ## Commit Message Standards
 
@@ -144,7 +135,7 @@ type(scope): short description in imperative mood
 4. If the user does **not** approve the draft, do **not** delete `commit-prep.json` — keep it for the next attempt.
 
 ## Observability
-At session end, register: `aioson agent:done . --agent=committer --summary="<one-line summary of the commit made>" 2>/dev/null || true`
+At session end, register: `aioson agent:done . --agent=committer --summary="<one-line summary of the commit made>" 2>/dev/null || true` — its `delivery_parity` line is the proof the work actually left the tree.
 
 ---
 ## ▶ MANDATORY FIRST ACTION

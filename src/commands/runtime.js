@@ -1195,6 +1195,31 @@ function logVerifyArtifactLine(logger, va) {
   }
 }
 
+/**
+ * Delivery→git parity, printed only when it says something. `clean`,
+ * `runtime_only` and `skipped` stay silent in human mode — they are the
+ * normal case, and a line that prints every session is a line nobody reads.
+ * The JSON payload always carries the full measurement.
+ */
+function logDeliveryParityLine(logger, dp) {
+  if (!dp || dp.tier === 'clean' || dp.tier === 'skipped' || dp.tier === 'runtime_only') return;
+  const marker = dp.tier === 'advisory' ? 'advisory' : 'noted';
+  logger.log(`agent:done — delivery:parity: ${marker} — ${dp.reason}`);
+}
+
+/**
+ * Resolve the parity measurement for a session end. Best-effort by contract:
+ * a broken or missing git must never affect an agent's session close.
+ */
+async function resolveDeliveryParity(targetDir) {
+  try {
+    const { measureDeliveryParity } = require('../lib/delivery-parity');
+    return await measureDeliveryParity({ targetDir });
+  } catch {
+    return null;
+  }
+}
+
 async function runAgentDone({ args, options = {}, logger, t }) {
   const targetDir = resolveTargetDir(args);
   const agentName = String(options.agent || '').trim();
@@ -1217,6 +1242,13 @@ async function runAgentDone({ args, options = {}, logger, t }) {
   // its `## Done gate` line. Resolved once here; surfaced on every return path.
   const { verifyAgentArtifact } = require('../artifact-kinds');
   const verifyArtifact = await verifyAgentArtifact({ targetDir, agent: normalizedAgent, options });
+
+  // Delivery→git parity (advisory): the artifact gate above proves WHAT was
+  // produced; this proves it left the working tree. Resolved once here and
+  // surfaced on every return path, same as the artifact gate — an agent that
+  // closes its session with a wave of unclaimed work now says so out loud
+  // instead of leaving the operator as the only detector.
+  const deliveryParity = await resolveDeliveryParity(targetDir);
 
   const { db, dbPath, runtimeDir } = await openRuntimeDb(targetDir);
 
@@ -1284,8 +1316,11 @@ async function runAgentDone({ args, options = {}, logger, t }) {
         });
       } catch { /* ignore — never blocks agent_done */ }
 
-      if (!options.json) logVerifyArtifactLine(logger, verifyArtifact);
-      return { ok: true, targetDir, dbPath, agent: normalizedAgent, mode: 'live_event', runKey: session.runKey, auto_advance: autoAdvance, verify_artifact: verifyArtifact };
+      if (!options.json) {
+        logVerifyArtifactLine(logger, verifyArtifact);
+        logDeliveryParityLine(logger, deliveryParity);
+      }
+      return { ok: true, targetDir, dbPath, agent: normalizedAgent, mode: 'live_event', runKey: session.runKey, auto_advance: autoAdvance, verify_artifact: verifyArtifact, delivery_parity: deliveryParity };
     }
 
     // No active session — create a standalone task+run and immediately complete it.
@@ -1359,8 +1394,11 @@ async function runAgentDone({ args, options = {}, logger, t }) {
       });
     } catch { /* ignore — never blocks agent_done */ }
 
-    if (!options.json) logVerifyArtifactLine(logger, verifyArtifact);
-    return { ok: true, targetDir, dbPath, agent: normalizedAgent, mode: 'standalone', runKey, taskKey, auto_advance: autoAdvance, verify_artifact: verifyArtifact };
+    if (!options.json) {
+      logVerifyArtifactLine(logger, verifyArtifact);
+      logDeliveryParityLine(logger, deliveryParity);
+    }
+    return { ok: true, targetDir, dbPath, agent: normalizedAgent, mode: 'standalone', runKey, taskKey, auto_advance: autoAdvance, verify_artifact: verifyArtifact, delivery_parity: deliveryParity };
   } finally {
     db.close();
   }

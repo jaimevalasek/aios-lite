@@ -179,6 +179,21 @@ async function runAgentEpilogue({ args, options = {}, logger, t }) {
     }
   }
 
+  // Delivery→git parity resolved by agent:done. Advisory like the artifact
+  // gate: it reports whether the session's work reached git, and never flips
+  // `ok`. Silent tiers are still pushed so the epilogue JSON is a complete
+  // record of what was measured.
+  if (doneResult && doneResult.delivery_parity) {
+    const dp = doneResult.delivery_parity;
+    pushStep(steps, 'delivery:parity', {
+      ok: dp.tier !== 'advisory',
+      skipped: dp.tier === 'skipped',
+      tier: dp.tier,
+      authored: dp.authored,
+      reason: dp.reason
+    });
+  }
+
   // Advisory contract-integrity signal for untracked (prompt-only) dev/qa
   // completions. The tracked `workflow:next --complete` / `feature:close` paths
   // enforce this as a HARD gate; a direct Claude Code session never calls them,

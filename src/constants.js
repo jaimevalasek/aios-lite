@@ -75,6 +75,7 @@ const MANAGED_FILES = [
   '.aioson/docs/copywriter/strategy-and-delivery.md',
   '.aioson/docs/copywriter/campaign-package.md',
   '.aioson/docs/copywriter/legacy-agent-contract.md',
+  '.aioson/docs/committer/outstanding-work.md',
   '.aioson/docs/briefing/activation-and-intake.md',
   '.aioson/docs/briefing/source-pack-intake.md',
   '.aioson/docs/briefing/sql-as-documentation.md',
