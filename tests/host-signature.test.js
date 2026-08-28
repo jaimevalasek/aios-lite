@@ -77,7 +77,7 @@ test('the execution capability matrix is derived from the single host registry, 
     executable: 'codex',
     source: 'registered_adapter'
   });
-  assert.equal(capabilities('claude').reasoning_effort, false);
+  assert.equal(capabilities('claude').reasoning_effort, true);
   assert.equal(capabilities('kimi').additional_workspaces, true);
   assert.equal(capabilities('qwen').additional_workspaces, false);
   // Interactive-only registry entries never become dispatchable by accident.
@@ -100,9 +100,9 @@ test('an interactive-only host (grok) and an unsupported effort fail determinist
   assert.equal(grok.entry.install_command, 'npm install -g @xai-official/grok');
   assert.equal(grok.persisted, true);
 
-  const claudeEffort = await probeHostSignature({ host: 'claude', model: 'claude-opus-5', reasoning_effort: 'high', env: store.env });
-  assert.equal(claudeEffort.entry.reason, 'effort_unsupported_by_host');
-  assert.equal(claudeEffort.entry.effort_verification, 'registry');
+  const noEffortHost = await probeHostSignature({ host: 'opencode', model: 'grok-code-fast', reasoning_effort: 'high', env: store.env });
+  assert.equal(noEffortHost.entry.reason, 'effort_unsupported_by_host');
+  assert.equal(noEffortHost.entry.effort_verification, 'registry');
 
   const badEffort = await probeHostSignature({ host: 'codex', model: 'gpt-5.6', reasoning_effort: 'turbo', env: store.env });
   assert.equal(badEffort.entry.reason, 'invalid_reasoning_effort');
@@ -110,7 +110,7 @@ test('an interactive-only host (grok) and an unsupported effort fail determinist
 
   const persisted = await readSignatures({ env: store.env });
   assert.equal(signatureState(persisted.signatures[signatureKey('grok', 'grok-4', null)]), 'invalid');
-  assert.equal(signatureState(persisted.signatures[signatureKey('claude', 'claude-opus-5', 'high')]), 'invalid');
+  assert.equal(signatureState(persisted.signatures[signatureKey('opencode', 'grok-code-fast', 'high')]), 'invalid');
 });
 
 test('a missing executable is a first-class fact carrying the install command on every platform', async (t) => {

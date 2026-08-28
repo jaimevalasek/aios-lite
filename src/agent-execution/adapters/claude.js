@@ -4,11 +4,17 @@ const { TOOL_CAPS } = require('../../lib/tool-capabilities');
 // sandbox_mode: 'read-only' → plan mode (no edits); 'workspace-write' → the
 // registry's unattended flags (the same the desktop client uses for its yolo
 // sessions) — a lane worker must edit files and run tests non-interactively.
+//
+// reasoning_effort: `claude --effort <low|medium|high|xhigh|max>` sets the
+// effort for the session. The registry declares the capability; the levels the
+// CLI accepts are the same vocabulary the schema already carries, minus
+// `ultra`, which the schema keeps for hosts that go further.
 module.exports=createAdapter('claude',i=>[
   '--print',
   ...(i.sandbox_mode==='read-only'?['--permission-mode','plan']:[]),
   ...(i.sandbox_mode==='workspace-write'?TOOL_CAPS.claude.yolo_args:[]),
   ...(i.model==='configured-default'?[]:['--model',i.model]),
+  ...(i.reasoning_effort?['--effort',i.reasoning_effort]:[]),
   ...(i.writable_roots?.length?['--add-dir',...i.writable_roots]:[]),
   i.prompt_text
 ]);

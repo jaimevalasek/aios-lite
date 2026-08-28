@@ -50,7 +50,7 @@ test('execution capabilities live in the registry and interactive-only hosts are
     model_catalog: true,
     reasoning_effort: true,
   });
-  assert.equal(getExecutionCapabilities('claude').reasoning_effort, false);
+  assert.equal(getExecutionCapabilities('claude').reasoning_effort, true);
   assert.equal(getExecutionCapabilities('grok'), null);
   assert.equal(getExecutionCapabilities('gemini'), null);
 });

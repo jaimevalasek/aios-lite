@@ -36,7 +36,7 @@ const TOOL_CAPS = {
     execution: {
       additional_workspaces: true,
       model_catalog: false,
-      reasoning_effort: false,
+      reasoning_effort: true,
     },
   },
   codex: {
