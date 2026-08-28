@@ -52,6 +52,11 @@ aioson-models.json
 .aioson/backups/
 .aioson/cloud-imports/
 .aioson/runtime/
+# The template ships a tree, not a session: a stray runtime db or live-session
+# file under template/.aioson/runtime/ would enter history and ride along with
+# every template walk. The installer already refuses to copy it; this keeps it
+# out of the repository in the first place.
+template/.aioson/runtime/
 .aioson/mcp/presets/
 .aioson/install.json
 .aioson/mcp/servers.local.json
