@@ -26,7 +26,7 @@
 const fs = require('node:fs/promises');
 const path = require('node:path');
 
-const MVP_AGENTS = ['neo', 'setup', 'product', 'dev', 'deyvin'];
+const MVP_AGENTS = ['help', 'neo', 'setup', 'product', 'dev', 'deyvin'];
 const MAX_SAMPLES = 10;
 const MAX_EVENTS_SCANNED = 500;
 const JARGON_MAP_REL = '.aioson/skills/process/decision-presentation/references/jargon-map.en.yaml';

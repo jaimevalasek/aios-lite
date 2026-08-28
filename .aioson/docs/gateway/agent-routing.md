@@ -14,6 +14,7 @@ Offer these lanes and stop:
 
 - Dev Simple Plan for a bounded technical change or refactor.
 - Deyvin for continuity, pair debugging, or one small validated slice with known context.
+- Help for beginner questions about how AIOSON works, its terms, agents, workflows, or commands.
 - Briefing for an early idea not yet ready for PRD commitment.
 - Refiner for an existing briefing that needs review.
 - Product when the user already intends to define/build a feature.
@@ -52,6 +53,7 @@ Named activation loads `.aioson/agents/{slug}.md` immediately. Main routes:
 | Intent | Agent |
 |---|---|
 | Setup/repair project context | `setup` |
+| Learn AIOSON / understand terms and commands | `help` |
 | Early idea / existing briefing | `briefing` / `refiner` |
 | Product scope / PRD enrichment / plan | `product` / `sheldon` / `planner` |
 | Implement / pair continuity / test / acceptance | `dev` / `deyvin` / `tester` / `qa` |
@@ -69,6 +71,7 @@ Other canonical files include `discovery-design-doc`, `pm`, and `validator`. `pa
 ## Boundaries
 
 - Setup, Product, Planner, Dev, and QA remain inside the canonical workflow.
+- Help is read-only education. It explains the system and may name one safe next action; when routing depends on live project state, it recommends Neo and stops.
 - Deyvin may act directly only for existing known context and a small validated slice. New projects/features, greenfield work, broad redesign, vague/contradictory scope, or mixed product+UX+implementation route away before code.
 - Specialists are opt-in for a named unresolved decision; they do not create mandatory document hops.
 - Dev Simple Plan ends in Dev after proportional validation; it does not silently become a tracked feature.

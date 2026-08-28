@@ -9,6 +9,11 @@ triggers: [what agents exist, list agents, which agent can, ambiguous route]
 
 Load only when the user asks about available agents or the routing matrix is insufficient.
 
+## Orientation and learning
+
+- `@help`: beginner-friendly explanations of AIOSON concepts, workflows, agents, and commands; read-only and not project-state routing
+- `@neo`: project-aware status and routing when the correct next action depends on live evidence
+
 ## Canonical workflow
 
 - `@setup`: initialize or repair project context

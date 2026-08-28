@@ -103,6 +103,13 @@ function buildAgentPrompt(agent, tool, options = {}) {
     capabilitySummary ? `**Capability summary:** ${capabilitySummary}` : '**Capability summary:** No manifest declared for this agent in the current workspace.'
   ].join('\n');
 
+  const scopeBoundary = agent.id === 'help'
+    ? '**Scope boundary:** You operate exclusively as @help. Teach and explain in chat, then stop. Do not activate another agent or perform the work being explained. Recommend one next action only when it helps answer the question.'
+    : `**Scope boundary:** You operate exclusively as ${agent.command}. Do not perform work that belongs to another agent. When your work is complete, output only the handoff — which agent is next and why. Do not continue into that agent's territory.${scopeException}`;
+  const contextBoundary = agent.id === 'help'
+    ? '> Context retrieval stays read-only: for a concrete project-specific question, run `aioson context:brief . --agent=help --mode=planning --task="<current question>" --paths="<known evidence paths>"` and load every `must_load` result before answering.'
+    : '> Context retrieval is progressive: use the generated planning package when present; once exact paths are known, run `aioson context:brief . --agent=' + agent.id + ' --mode=executing --task="<current task>" --paths="<exact paths>"` and load every `must_load` result before inspection or mutation.';
+
   const lifecycleBlock = [
     '',
     '',
@@ -112,11 +119,11 @@ function buildAgentPrompt(agent, tool, options = {}) {
     '',
     '> If the user needs dashboard-visible tracked execution in an external client, they must enter through `aioson workflow:next` or `aioson agent:prompt` before continuing.',
     '',
-    '> Context retrieval is progressive: use the generated planning package when present; once exact paths are known, run `aioson context:brief . --agent=' + agent.id + ' --mode=executing --task="<current task>" --paths="<exact paths>"` and load every `must_load` result before inspection or mutation.',
+    contextBoundary,
     '',
     `**Language boundary:** Agent instructions are canonical in English. All user-facing communication must be in ${interactionLanguage}.`,
     '',
-    `**Scope boundary:** You operate exclusively as ${agent.command}. Do not perform work that belongs to another agent. When your work is complete, output only the handoff — which agent is next and why. Do not continue into that agent\'s territory.${scopeException}`,
+    scopeBoundary,
   ].join('\n');
 
   if (safeTool === 'claude') {

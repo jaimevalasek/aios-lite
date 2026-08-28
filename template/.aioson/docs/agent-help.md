@@ -71,6 +71,15 @@ Consumed by the `## Help (--help)` section of each agent kernel: a standalone `-
 - **Produces:** orientation + a concrete routing recommendation.
 - **Next:** the agent it names.
 
+## @help
+
+- **What:** a beginner-friendly, read-only guide that explains AIOSON concepts, agents, workflows, and commands in plain language.
+- **When:** you are learning the system, do not understand a term, want a command explained, or need to know how to start.
+- **Options:** none — ask one question in your own words.
+- **Typical:** `@help how does AIOSON work?`, `@help what is a PRD?`, or `/aioson:agent:help which command starts a project?` in Claude-style clients.
+- **Produces:** an explanation in chat, one practical example, and at most one safe next action; it never changes project state.
+- **Next:** stays in Help for learning questions; recommends `@neo` only when the answer depends on the live state of your project.
+
 ## @orache
 
 - **What:** deep domain investigation before a squad/product push — real frameworks, anti-patterns, benchmarks, reference voices, vocabulary of the field.
@@ -138,7 +147,7 @@ Consumed by the `## Help (--help)` section of each agent kernel: a standalone `-
 
 - **What:** conducts one measured AIOSON traversal for one frozen prompt without clarification questions — route detection, then the real agent chain unattended.
 - **When:** the AIOSON side of a measured comparison (Cockpit mission) or one standalone measured run.
-- **Routes:** a single-screen game/toy crosses `@briefing → @refiner` and delivers the working prototype HTML; any real app (site, CRM, dashboard) crosses the full chain `briefing → refiner → product → sheldon → planner → dev → qa` in Autopilot.
+- **Routes:** a browser-only game/toy takes the static route — `@briefing → @refiner` refine, then @benchmark builds a real static app (`index.html` + its own CSS/JS + assets), never a briefing prototype; any real app (site, CRM, dashboard) crosses the full chain `briefing → refiner → product → sheldon → planner → dev → qa` in Autopilot.
 - **Typical:** `/benchmark create a cozy underwater strategy game`.
 - **Produces:** the runnable delivery, `benchmark-result.json` (strict schema 1), and `report.md` with stages and auto-decisions; it never creates Arena, model rankings, tokens, or cost data.
 - **Next:** an external orchestrator may collect the isolated result for comparison, or the user can run the standalone entrypoint directly.

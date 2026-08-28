@@ -28,6 +28,7 @@ const MANAGED_FILES = [
   '.aioson/agents/orache.md',
   '.aioson/agents/genome.md',
   '.aioson/agents/neo.md',
+  '.aioson/agents/help.md',
   '.aioson/agents/design-hybrid-forge.md',
   '.aioson/agents/site-forge.md',
   '.aioson/agents/benchmark.md',
@@ -106,6 +107,7 @@ const MANAGED_FILES = [
   '.aioson/docs/gateway/process-and-research.md',
   '.aioson/docs/gateway/legacy-agents-entrypoint.md',
   '.aioson/docs/gateway/legacy-claude-entrypoint.md',
+  '.aioson/docs/agent-help.md',
   '.aioson/docs/feature-expansion-taxonomy.md',
   '.aioson/docs/feature-completeness-contract.md',
   '.aioson/docs/prototype-contract.md',
@@ -620,6 +622,15 @@ const AGENT_DEFINITIONS = [
     path: '.aioson/agents/neo.md',
     dependsOn: ['.aioson/context/project.context.md'],
     output: 'routing decision + agent handoff'
+  },
+  {
+    id: 'help',
+    displayName: 'Help',
+    description: 'Beginner-friendly guide to AIOSON concepts, workflows, commands, and next steps',
+    command: '@help',
+    path: '.aioson/agents/help.md',
+    dependsOn: [],
+    output: 'beginner-friendly explanation in chat + one safe next action'
   },
   {
     id: 'sheldon',

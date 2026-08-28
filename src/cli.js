@@ -1315,7 +1315,8 @@ function printAgentHelp(agentName, jsonMode, logger, t) {
   logger.log(`${agent.command} — ${agent.description || agent.displayName}${aliasLine}${legacyLine}\n`);
   logger.log(`${t('agents.help_usage')}`);
   logger.log(`  aioson agent:prompt ${agent.id} [path] [options]`);
-  logger.log(`  /${agent.id} [task description]                  ${t('agents.help_claude_code')}\n`);
+  const claudeActivation = agent.id === 'help' ? '/aioson:agent:help' : `/${agent.id}`;
+  logger.log(`  ${claudeActivation} [task description]                  ${t('agents.help_claude_code')}\n`);
   logger.log(t('agents.help_common_options'));
   logger.log(`  --tool=<tool>       ${t('agents.help_opt_tool')}`);
   logger.log(`  --language=<lang>   ${t('agents.help_opt_language')}`);
