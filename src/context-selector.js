@@ -13,6 +13,7 @@ const {
 } = require('./preflight-engine');
 const { openRuntimeDb } = require('./runtime-store');
 const { searchProjectLearnings } = require('./learning-loop-fts5');
+const { classifyDesignDocSeed } = require('./lib/design-doc-seed');
 
 const VALID_MODES = new Set(['planning', 'executing']);
 const SEMANTIC_MAX_TERMS = 24;
@@ -325,6 +326,16 @@ async function collectCandidates(targetDir) {
       const absPath = path.join(targetDir, relPath);
       const content = await readFileSafe(absPath);
       if (!content) continue;
+      // The retired design-doc seed (the framework's own code layout, copied
+      // verbatim by older installers) carries no project information and
+      // duplicates `.aioson/design-docs/`; it is never a candidate. An edited
+      // copy may hold real project rules and stays selectable — `doctor`
+      // names it for review.
+      if (
+        surface.key === 'context' &&
+        path.basename(relPath) === 'design-doc.md' &&
+        classifyDesignDocSeed(content) === 'verbatim'
+      ) continue;
       const stat = await fs.stat(absPath).catch(() => null);
       const fm = parseFrontmatter(content);
       const inferred = inferContextMetadata(relPath, fm);

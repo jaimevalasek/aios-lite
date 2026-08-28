@@ -7,6 +7,7 @@
 
 const fs = require('node:fs/promises');
 const path = require('node:path');
+const { isRetiredDesignDocSeed } = require('./lib/design-doc-seed');
 
 // ─── Frontmatter parser ───────────────────────────────────────────────────────
 
@@ -265,6 +266,20 @@ async function scanArtifacts(targetDir, slug) {
     return { exists: false };
   }
 
+  // The slug-less `design-doc.md` is a legacy fallback for the FEATURE
+  // design document. Older installers copied a project-level seed under that
+  // exact name (the framework's own code layout — see lib/design-doc-seed.js),
+  // so its mere presence used to satisfy the artifact; the seed is refused.
+  async function checkDesignDoc(filePaths) {
+    for (const filePath of filePaths) {
+      const result = await check('design-doc', filePath);
+      if (!result.exists) continue;
+      if (path.basename(filePath) === 'design-doc.md' && isRetiredDesignDocSeed(result.content)) continue;
+      return result;
+    }
+    return { exists: false };
+  }
+
   const withDoneFallback = (fileName) => archivedDir
     ? [path.join(dir, fileName), path.join(archivedDir, fileName)]
     : [path.join(dir, fileName)];
@@ -284,7 +299,7 @@ async function scanArtifacts(targetDir, slug) {
     requirements: slug ? await checkFirst('requirements', withDoneFallback(`requirements-${slug}.md`)) : { exists: false },
     spec: slug ? await checkFirst('spec', withDoneFallback(`spec-${slug}.md`)) : await check('spec', path.join(dir, 'spec.md')),
     architecture: await check('architecture', path.join(dir, 'architecture.md')),
-    design_doc: await checkFirst('design-doc', designDocCandidates),
+    design_doc: await checkDesignDoc(designDocCandidates),
     readiness: await checkFirst('readiness', readinessCandidates),
     implementation_plan: slug ? await checkFirst('impl-plan', withDoneFallback(`implementation-plan-${slug}.md`)) : { exists: false },
     qa_report: slug ? await checkFirst('qa-report', withDoneFallback(`qa-report-${slug}.md`)) : { exists: false },

@@ -3,6 +3,7 @@
 const path = require('node:path');
 const fs = require('node:fs/promises');
 const { exists, readTextIfExists, ensureDir } = require('./utils');
+const { classifyDesignDocSeedFile } = require('./lib/design-doc-seed');
 
 const CONTEXT_DIR = '.aioson/context';
 const PROJECT_CONTEXT_FILE = `${CONTEXT_DIR}/project.context.md`;
@@ -99,7 +100,7 @@ const CONTEXT_DOC_SPECS = [
     relPath: DESIGN_DOC_FILE,
     title: 'Design Doc',
     group: 'scope',
-    readWhen: 'you need the living scope framing for the current initiative',
+    readWhen: 'a project-level technical decision record exists for the current initiative (opt-in; structural code governance lives in .aioson/design-docs/)',
     tags: ['scope', 'design-doc', 'planning']
   },
   {
@@ -421,9 +422,16 @@ async function collectContextCatalog(targetDir) {
   const docs = [];
 
   for (const spec of CONTEXT_DOC_SPECS) {
+    const absPath = path.join(targetDir, spec.relPath);
+    let present = await exists(absPath);
+    // The retired installer seed under design-doc.md (the framework's own
+    // code layout) carries no project memory — the index never advertises it.
+    if (present && spec.relPath === DESIGN_DOC_FILE && (await classifyDesignDocSeedFile(absPath)) === 'verbatim') {
+      present = false;
+    }
     docs.push({
       ...spec,
-      exists: await exists(path.join(targetDir, spec.relPath))
+      exists: present
     });
   }
 

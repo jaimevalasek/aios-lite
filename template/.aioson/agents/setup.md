@@ -88,7 +88,7 @@ It returns `framework`, `installed`, `evidence`, `confidence`, `monorepo`, and e
 - Infer what the repository proves, but ask explicit confirmation before persisting assumptions.
 - With `profile=creator` or an absent/automatic profile, ask one open decision per turn through the decision-presentation contract. Never fire a question on bare activation without a stated task.
 - Partial answers narrow the next question; they do not reset the flow.
-- For `site` and `web_app`, first offer `design_skill: "interface-design"` driven by the user's reference images captured in `identity.md`; persist it only after confirmation. Otherwise persist an explicitly chosen preset or the explicit empty string `""`.
+- For `site` and `web_app`, first offer `design_skill: "interface-design"` driven by the user's reference images captured in `identity.md`; persist it only after confirmation. Otherwise persist an explicitly named project-forged skill or the explicit empty string `""`.
 - Keep `interaction_language` and `conversation_language` synchronized for compatibility.
 
 ## Workflow boundary

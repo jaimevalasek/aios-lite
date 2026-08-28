@@ -68,7 +68,7 @@ When an agent notices it is close to the threshold:
 - `aioson_version`
 
 Optional UI context fields:
-- `design_skill` (for example `cognitive-ui`; keep empty when the visual system is still pending)
+- `design_skill` (`interface-design`, the engine, or a skill this project forged; keep empty when the visual system is still pending)
 
 Optional testing fields:
 - `test_runner` (for example `pest`, `jest`, `vitest`, `pytest`, `rspec`, `foundry`)
@@ -241,7 +241,7 @@ Default governance files:
 
 ### Optional design docs (`.aioson/context/design-doc.md`)
 
-Design docs are opt-in decision records for a genuinely unresolved technical boundary. They are produced only when the user or `@planner` explicitly routes an architecture/design specialist; they are not a SMALL or MEDIUM prerequisite.
+Design docs are opt-in decision records for a genuinely unresolved technical boundary, written by the project team when a named decision deserves a standing record. Nothing installs one and no agent produces one by default: the installer used to seed this path with the framework's own code layout (retired — `aioson doctor` names a leftover copy and `--fix` deletes a verbatim one), and `@architect` / `@discovery-design-doc` return conclusions to the Planner instead of writing documents. Per-feature decisions live in the PRD's decision sections, the plan's ADR section and `aioson decision:add`; this file is never a SMALL or MEDIUM prerequisite.
 
 ```markdown
 ---
@@ -255,7 +255,7 @@ agents: [dev, architect]   # empty [] = all agents load it
 
 | | PRD (`prd.md`) | Code governance (`.aioson/design-docs/`) | Design doc (`design-doc.md`) |
 |---|---|---|---|
-| **Produced by** | `@product`, enriched in place by `@sheldon` | Installer + project team | Opt-in `@architect` or `@discovery-design-doc` |
+| **Produced by** | `@product`, enriched in place by `@sheldon` | Installer + project team | Project team, opt-in (no agent writes it by default) |
 | **Focus** | What and why — vision, users, problem, features | Structural code quality rules | How — technical flows, decisions, risks, slices |
 | **Audience** | All agents | Agents doing structural planning or implementation | Technical agents (dev, architect, qa) |
 | **Lifecycle** | One feature authority, refined in place | Stable, edited when conventions change | Living only while its named decision remains relevant |
@@ -284,7 +284,7 @@ AIOSON ships three types of skills in `.aioson/skills/`:
 
 | Type | Directory | How agents load them |
 |---|---|---|
-| **Design skills** | `.aioson/skills/design/` | Explicit — via `design_skill` in project.context.md. Only ONE can be active. |
+| **Design skills** | `.aioson/skills/design/` | Explicit — via `design_skill` in project.context.md. Only ONE can be active; the template ships only the `interface-design` engine, forged skills are project-local. |
 | **Static skills** | `.aioson/skills/static/` | Automatic — agents match by `framework` in project.context.md |
 | **Dynamic skills** | `.aioson/skills/dynamic/` | Automatic — agents load when task references external services |
 | **Process skills** | `.aioson/skills/process/` | Loaded on demand when an agent needs a workflow method such as SDD, decision presentation, prompt sharpening, feature expansion, or design-skill creation |

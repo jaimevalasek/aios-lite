@@ -38,6 +38,7 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const { contextDir, readFileSafe, parseFrontmatter, scanArtifacts } = require('../preflight-engine');
 const { resolveTargetDir } = require('../lib/project-root');
+const { isUsableDesignDocFile } = require('../lib/design-doc-seed');
 
 const MAX_CONTEXT = 4;
 
@@ -121,7 +122,12 @@ async function runStateSave({ args, options = {}, logger }) {
         if (!contextPackage.includes(relPath)) contextPackage.push(relPath);
       } else if (def.fallback) {
         const fb = def.fallback();
-        if (await fileExistsRel(targetDir, fb)) {
+        // A slug-less design-doc.md may be the retired installer seed (the
+        // framework's own code layout) — never the feature design document.
+        const fbUsable = token === 'design-doc'
+          ? await isUsableDesignDocFile(path.join(contextDir(targetDir), fb))
+          : await fileExistsRel(targetDir, fb);
+        if (fbUsable) {
           if (!contextPackage.includes(fb)) contextPackage.push(fb);
         } else {
           warnings.push(`"${token}" file missing (${relPath}); skipped`);

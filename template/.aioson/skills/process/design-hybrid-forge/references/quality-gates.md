@@ -102,7 +102,7 @@ Fail: The design looks like "dark + blur" with no further identity.
 **Question:** Is the hybrid visually distinct from BOTH parents?
 
 Test procedure:
-1. Open the dashboard preview alongside `cognitive-core-ui.html` and `glassmorphism-ui.html` (or the two actual parents).
+1. Open the dashboard preview alongside both parents' previews (`previews/{parent}.html`, or the source site when the parent was forged from a URL).
 2. Does the hybrid look like parent A? If yes — the aesthetic from parent B was not applied strongly enough.
 3. Does the hybrid look like parent B? If yes — the structure from parent A was not applied strongly enough.
 

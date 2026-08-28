@@ -1,5 +1,7 @@
 'use strict';
 
+const { normalizeDesignProfile } = require('./lib/design-presets');
+
 const AIOSON_LETTERS = [
   // A
   ['  █████╗ ', ' ██╔══██╗', ' ███████║', ' ██╔══██║', ' ██║  ██║', ' ╚═╝  ╚═╝'],
@@ -108,19 +110,7 @@ function renderInstallSummary({ result, installProfile, stdout = process.stdout 
     opencode: 'OpenCode'
   };
 
-  const DESIGN_NAMES = {
-    'none':                      'None',
-    'all':                        'All design skills',
-    'clean-saas-ui':             'Clean SaaS UI',
-    'aurora-command-ui':         'Aurora Command UI',
-    'cognitive-core-ui':         'Cognitive Core UI',
-    'bold-editorial-ui':         'Bold Editorial UI',
-    'warm-craft-ui':             'Warm Craft UI',
-    'glassmorphism-ui':          'Glassmorphism UI',
-    'neo-brutalist-ui':          'Neo-Brutalist UI',
-    'premium-command-center-ui': 'Premium Command Center UI',
-    'interface-design':          'Interface Design'
-  };
+  const ENGINE_LABEL = 'Interface Design (engine)';
 
   const LOCALE_NAMES = {
     'en':    'English',
@@ -139,16 +129,13 @@ function renderInstallSummary({ result, installProfile, stdout = process.stdout 
       ? 'Development + Squads'
       : 'Development';
 
-  const designValue = installProfile ? (installProfile.design || 'none') : null;
+  // The engine ships with every profile. A preset an older profile selected
+  // was retired (lib/design-presets.js) and is named as such, not as installed.
   let designLabel = null;
-  if (designValue) {
-    if (designValue === 'all') {
-      designLabel = DESIGN_NAMES['all'];
-    } else if (Array.isArray(designValue)) {
-      designLabel = designValue.map(id => DESIGN_NAMES[id] || id).join(', ');
-    } else {
-      designLabel = DESIGN_NAMES[designValue] || designValue;
-    }
+  if (installProfile) {
+    const { retired } = normalizeDesignProfile(installProfile.design);
+    designLabel = ENGINE_LABEL;
+    if (retired.length > 0) designLabel += ` · retired preset${retired.length > 1 ? 's' : ''}: ${retired.join(', ')}`;
   }
 
   const localeLabel = installProfile
@@ -167,10 +154,8 @@ function renderInstallSummary({ result, installProfile, stdout = process.stdout 
     stdout.write('\n');
     const toolsStr   = installProfile ? installProfile.tools.join(',') : 'all';
     const modeStr    = installProfile ? installProfile.uses.join(',') : 'all';
-    const designVal  = installProfile ? (installProfile.design || 'none') : 'all';
-    const designStr  = Array.isArray(designVal) ? designVal.join(',') : designVal;
     const localeStr  = installProfile ? (installProfile.locale || 'en') : 'all';
-    stdout.write(`aioson: tools=${toolsStr} mode=${modeStr} design=${designStr} locale=${localeStr}\n`);
+    stdout.write(`aioson: tools=${toolsStr} mode=${modeStr} design=interface-design locale=${localeStr}\n`);
     stdout.write('aioson: run /setup to continue\n');
     return;
   }

@@ -170,8 +170,8 @@ Recommended shape:
     "model": "gpt-5.x"
   },
   "parents": {
-    "primary": ["cognitive-core-ui", "glassmorphism-ui"],
-    "modifiers": ["bold-editorial-ui"]
+    "primary": ["ops-forged-ui", "glass-forged-ui"],
+    "modifiers": ["editorial-forged-ui"]
   },
   "variation_profile": {
     "modifier_policy": "up_to_2_modifiers",

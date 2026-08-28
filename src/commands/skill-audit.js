@@ -312,7 +312,7 @@ async function analyzeReachability(projectDir, usage) {
     else if (directReferences.length > 0) reachability = 'direct_reference';
     else if (skill.owner_agents.length > 0) reachability = 'declared_owner_only';
     else if (contextualReferences.length > 0) reachability = 'contextual_reference';
-    else if (['static', 'dynamic', 'design', 'design-system', 'premium-visual-design', 'squad', 'installed'].includes(skill.category)) {
+    else if (['static', 'dynamic', 'design', 'squad', 'installed'].includes(skill.category)) {
       reachability = 'catalog_match_only';
     } else reachability = 'orphan';
     return {

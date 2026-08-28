@@ -98,10 +98,10 @@ Only for `web_app` and `api`, ask once whether the project needs queues, file st
 
 Only for `site` and `web_app`, inspect folder names in `.aioson/skills/design/`; do not read every skill.
 
-Recommend `interface-design` plus the user's reference images, extracted once into per-briefing `.aioson/briefings/{slug}/identity.md` or project-wide `.aioson/context/identity.md`. Fixed presets remain explicit alternatives.
+Recommend `interface-design` plus the user's reference images, extracted once into per-briefing `.aioson/briefings/{slug}/identity.md` or project-wide `.aioson/context/identity.md`. The framework ships no fixed presets; a project-forged skill (site-forge or hybrid output) is the only alternative, and only when the user names it.
 
-- Never auto-select the recommendation or the only installed skill.
-- If multiple skills exist, list folder names and ask for one choice.
+- Never auto-select the recommendation or a forged skill.
+- If forged skills exist, list their folder names and ask for one choice.
 - If none exist or the user defers, persist `design_skill: ""` and state that Product or UX/UI must resolve it before UI design.
 - For `api`, `script`, and non-UI-first work, keep the field empty unless explicitly requested.
 

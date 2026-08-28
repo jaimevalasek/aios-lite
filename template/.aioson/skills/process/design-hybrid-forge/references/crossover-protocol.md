@@ -15,7 +15,7 @@ Before writing a single file, answer all six questions. If you cannot answer the
 Write one sentence naming what the two skills pull against each other.
 
 Example:
-> "cognitive-core-ui pulls toward dense operational precision and solid surfaces; glassmorphism-ui pulls toward fluid depth through transparency. The hybrid resolves this by making the command structure live inside a glass aurora — precision without opacity."
+> "The dense-operations parent pulls toward operational precision and solid surfaces; the glass parent pulls toward fluid depth through transparency. The hybrid resolves this by making the command structure live inside a glass aurora — precision without opacity."
 
 If the sentence feels like a compromise ("both are dark and professional"), the pair is too similar. Pick a different pair or articulate a sharper tension.
 
@@ -154,10 +154,10 @@ These are the hybrid's creative contribution:
 - A new surface type, a new interaction pattern, a new composition rule
 - Something that only makes sense because BOTH parents are in the mix
 
-Example from aurora-command-ui:
-1. **Dark-tinted glass** — glassmorphism's glass is white-transparent; cognitive-core's surfaces are solid dark. The hybrid invents dark-tinted glass (`rgba(10,14,26,0.65)`) that is neither.
-2. **Gradient stat numbers** — cognitive-core has plain white stat numbers; glassmorphism puts gradients on hero text. The hybrid puts the teal→violet gradient on operational stat numbers specifically.
-3. **Aurora glow shadows** — cognitive-core uses black shadows; glassmorphism uses violet-tinted shadows. The hybrid uses teal-electric shadows, which only makes sense because the teal accent is "operational signal" (from cognitive-core) applied to a glass system (from glassmorphism).
+Example from a hybrid of a dense-operations parent × a glass parent:
+1. **Dark-tinted glass** — the glass parent's glass is white-transparent; the operations parent's surfaces are solid dark. The hybrid invents dark-tinted glass (`rgba(10,14,26,0.65)`) that is neither.
+2. **Gradient stat numbers** — the operations parent has plain white stat numbers; the glass parent puts gradients on hero text. The hybrid puts the teal→violet gradient on operational stat numbers specifically.
+3. **Aurora glow shadows** — the operations parent uses black shadows; the glass parent uses violet-tinted shadows. The hybrid uses teal-electric shadows, which only makes sense because the teal accent is "operational signal" (from the operations parent) applied to a glass system (from the glass parent).
 
 ### 3.3 Conflict resolution
 

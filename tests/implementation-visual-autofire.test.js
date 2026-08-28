@@ -253,8 +253,8 @@ test('site-forge carries the visual rider over its deliverable, and the engine i
   assert.equal(DESIGN_ENGINE_ID, 'interface-design');
   assert.equal(shouldIncludeForProfile('.aioson/skills/design/interface-design/SKILL.md', DEFAULT_PROFILE), true, 'the engine is not a preset');
   assert.equal(shouldIncludeForProfile('.aioson/skills/design/interface-design/references/aesthetic-registers.md', { ...DEFAULT_PROFILE, design: 'none' }), true);
-  assert.equal(shouldIncludeForProfile('.aioson/skills/design/warm-craft-ui/SKILL.md', DEFAULT_PROFILE), false, 'presets stay profile-gated');
-  assert.equal(shouldIncludeForProfile('.aioson/skills/design/warm-craft-ui/SKILL.md', { ...DEFAULT_PROFILE, design: 'all' }), true);
+  assert.equal(shouldIncludeForProfile('.aioson/skills/design/some-forged-ui/SKILL.md', DEFAULT_PROFILE), false, 'non-engine skills stay profile-gated');
+  assert.equal(shouldIncludeForProfile('.aioson/skills/design/some-forged-ui/SKILL.md', { ...DEFAULT_PROFILE, design: 'all' }), true);
 });
 
 test('the active feature resolves for a featureSlugged done-gate when no --feature was threaded', async () => {

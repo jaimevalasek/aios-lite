@@ -60,7 +60,7 @@ function visualQualityBlock() {
     '## Visual quality intelligence',
     'This agent ships what people see. The bar is measured, never self-graded:',
     '',
-    '1. **One engine.** Resolve `design_skill` from `.aioson/context/project.context.md`; blank → `.aioson/skills/design/interface-design/SKILL.md` in intent-first mode. Load only that engine — the preset catalog is raw material, never a menu.',
+    '1. **One engine.** Resolve `design_skill` from `.aioson/context/project.context.md`; blank → `.aioson/skills/design/interface-design/SKILL.md` in intent-first mode. Load only that engine — the framework ships no fixed presets; a project-forged skill (site-forge or hybrid output) replaces the engine only when `design_skill` names it, never through a menu.',
     '2. **Measured patterns first:** `aioson brain:query . --tags=visual-quality,layout --min-quality=4 --format=compact`',
     '3. **Draw the start, do not default it:** `aioson design:seed . --register=<register> --slug=<deliverable> --json` — build FROM one candidate (hue family, ground, typeface pairing, hero posture), diversified against the operator\'s recent projects.',
     '4. **Replaceability test + anti-references.** If the client name could be swapped and nothing else changes, it is not done. Ask the owner for 2-5 things this must NOT look like before originating; a named anti-reference outranks ten adjectives.',

@@ -49,6 +49,7 @@ const { reviewStatus } = require('../review-intelligence/engine');
 const { validateCurrentSheldonReview } = require('../lib/sheldon-review');
 const { inspectTemplateVersion } = require('../template-version-status');
 const { resolveTargetDir } = require('../lib/project-root');
+const { isUsableDesignDocFile } = require('../lib/design-doc-seed');
 
 const STATE_RELATIVE_PATH = '.aioson/context/workflow.state.json';
 const CONFIG_RELATIVE_PATH = '.aioson/context/workflow.config.json';
@@ -485,7 +486,15 @@ async function validateStageArtifacts(targetDir, state, stage) {
     const readinessCandidates = slug
       ? [path.join(base, `readiness-${slug}.md`), path.join(base, 'readiness.md')]
       : [path.join(base, 'readiness.md')];
-    return (await anyExists(designDocCandidates)) && (await anyExists(readinessCandidates));
+    // The slug-less design-doc.md may be the retired installer seed (the
+    // framework's own code layout) — never a feature design document.
+    const anyUsableDesignDoc = async (candidates) => {
+      for (const candidate of candidates) {
+        if (await isUsableDesignDocFile(candidate)) return true;
+      }
+      return false;
+    };
+    return (await anyUsableDesignDoc(designDocCandidates)) && (await anyExists(readinessCandidates));
   }
 
   if (stage === 'pm') {

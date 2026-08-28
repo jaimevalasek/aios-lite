@@ -5,11 +5,13 @@
 const hooksInstall = require('./hooks-install');
 const { detectFramework } = require('../detector');
 const { updateInstallation } = require('../updater');
-const { listManagedTrackedIgnoredPaths, formatTrackedIgnoredRemedyOperands } = require('../installer');
+const { listManagedTrackedIgnoredPaths, formatTrackedIgnoredRemedyOperands, readInstallProfile } = require('../installer');
 const { validateProjectContextFile, getInteractionLanguage } = require('../context');
 const { applyAgentLocale } = require('../locales');
 const { getCliVersionLabelSync } = require('../version');
 const { resolveTargetDir } = require('../lib/project-root');
+const { inspectDesignDocSeed } = require('../lib/design-doc-seed');
+const { inspectRetiredDesignPresets } = require('../lib/design-presets');
 
 async function runUpdate({ args, options, logger, t }) {
   const targetDir = resolveTargetDir(args);
@@ -78,6 +80,44 @@ async function runUpdate({ args, options, logger, t }) {
     trackedIgnored.slice(0, 10).forEach((relPath) => logger.log(`    - ${relPath}`));
     logger.log(t('update.tracked_ignored_remedy', { paths: formatTrackedIgnoredRemedyOperands(trackedIgnored).join(' ') }));
   }
+  // The retired design-doc seed is project-local — update never rewrites it,
+  // so the update is where the consumer hears it is a framework leftover.
+  const designDocSeed = await inspectDesignDocSeed(targetDir);
+  if (designDocSeed.kind) {
+    logger.log('');
+    logger.log(t('doctor.retired_design_doc_seed', { kind: designDocSeed.kind }));
+    logger.log(t(
+      designDocSeed.kind === 'verbatim'
+        ? 'doctor.retired_design_doc_seed_hint_verbatim'
+        : 'doctor.retired_design_doc_seed_hint_derived',
+      { path: designDocSeed.path }
+    ));
+  }
+  // Retired fixed design presets: the template ships only the engine now, and
+  // update rewrites neither design_skill nor the saved install profile — so
+  // this is where the consumer hears a preset is no longer backed.
+  const retiredPresets = await inspectRetiredDesignPresets(targetDir, {
+    installProfile: await readInstallProfile(targetDir)
+  });
+  if (retiredPresets.retired_design_skill) {
+    logger.log('');
+    logger.log(t('doctor.retired_design_preset', { id: retiredPresets.retired_design_skill }));
+    logger.log(t(
+      retiredPresets.local_path
+        ? 'doctor.retired_design_preset_hint_local'
+        : 'doctor.retired_design_preset_hint_missing',
+      { id: retiredPresets.retired_design_skill, path: retiredPresets.local_path || '' }
+    ));
+  }
+  if (retiredPresets.profile_retired.length > 0) {
+    logger.log('');
+    logger.log(t('doctor.retired_design_preset_profile', { ids: retiredPresets.profile_retired.join(', ') }));
+  }
+  if (retiredPresets.retired_trees.length > 0) {
+    logger.log('');
+    logger.log(t('doctor.retired_skill_trees', { count: retiredPresets.retired_trees.length }));
+    logger.log(t('doctor.retired_skill_trees_hint', { paths: retiredPresets.retired_trees.join(', ') }));
+  }
   if (localeSync) {
     if (dryRun) {
       logger.log(t('locale_apply.dry_run_applied', { locale: localeSync.locale }));
@@ -96,6 +136,8 @@ async function runUpdate({ args, options, logger, t }) {
     ...result,
     localeSync,
     trackedIgnored,
+    retiredDesignDocSeed: designDocSeed,
+    retiredDesignPresets: retiredPresets,
     hooksInstall: hooksResult
   };
 }

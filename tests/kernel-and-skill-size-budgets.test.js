@@ -109,7 +109,9 @@ test('a ratcheted kernel ceiling is never looser than one rounding step above th
 
 test('every skill router stays under skill:audit\'s hard limit, with the one recorded debt ratcheted', () => {
   const routers = walk(SKILLS_DIR).filter((file) => path.basename(file) === 'SKILL.md');
-  assert.ok(routers.length >= 25, `expected the skill set, found ${routers.length}`);
+  // 16 routers since the fixed design presets and the second design engine
+  // were retired (2026-08-28); the floor only proves the walk found the set.
+  assert.ok(routers.length >= 15, `expected the skill set, found ${routers.length}`);
   const over = [];
   for (const file of routers) {
     const rel = path.relative(SKILLS_DIR, file).split(path.sep).join('/');

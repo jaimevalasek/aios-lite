@@ -9,7 +9,7 @@ Use to create or validate a hybrid design skill, not to apply an existing design
 
 ## Inputs
 
-- Exactly two primary parents: local AIOSON design skills or normalized external DESIGN.md sources
+- Exactly two primary parents: project-forged design skills (site-forge or hybrid output) or normalized external DESIGN.md sources — never the `interface-design` engine
 - Zero to two modifiers by default; three only in explicitly enabled advanced mode
 - Optional variation overlay, target domain, name suggestion, author, and generator model
 

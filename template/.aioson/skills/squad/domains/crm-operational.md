@@ -68,6 +68,6 @@ persistence is enough; integration is out of pilot scope). Entrypoint:
 
 ## Reuse before inventing
 
-Dashboard references under `.aioson/skills/design/` (e.g. `clean-saas-ui`,
-`aurora-command-ui`) carry CRM presets; the squad parameterizes an existing
-design system rather than inventing one.
+The `interface-design` engine (`.aioson/skills/design/interface-design/`) with
+the project's `identity.md` — or a project-forged skill `design_skill` names —
+carries the visual system; the squad parameterizes it rather than inventing one.

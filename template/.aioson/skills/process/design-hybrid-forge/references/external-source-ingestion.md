@@ -60,7 +60,7 @@ Record every external source in `.skill-meta.json` under `sources[]`:
 
 ```json
 "sources": [
-  { "type": "local",    "name": "cognitive-core-ui" },
+  { "type": "local",    "name": "ops-forged-ui" },
   { "type": "external", "name": "linear", "url": "https://styles.refero.design/...",
     "retrieved_at": "{ISO-date}", "license": "unspecified — reference only",
     "note": "refero.design md-example; used as reference, not copied" }

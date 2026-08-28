@@ -154,7 +154,7 @@ Create a rule when:
 - The team has decided on a project standard that differs from agent defaults
 
 Do NOT create a rule for:
-- One-time decisions (use `design-doc.md` decisions section instead)
+- One-time decisions (record them with `aioson decision:add` or in the plan's ADR section)
 - Feature-scoped behavior (use `spec-{slug}.md` or `requirements-{slug}.md`)
 - External API knowledge (use `docs/` instead)
 

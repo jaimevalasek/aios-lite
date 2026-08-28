@@ -40,7 +40,8 @@ test('every shipped rule and doc lints clean: a description and routing metadata
 
 test('every shipped SKILL.md entrypoint declares name and description in its frontmatter', async () => {
   const files = (await walk(path.join(TEMPLATE, '.aioson', 'skills'))).filter((file) => path.basename(file) === 'SKILL.md');
-  assert.ok(files.length >= 25, `${files.length} skill entrypoints`);
+  // 15 entrypoints since the fixed design presets and the second design engine were retired (2026-08-28).
+  assert.ok(files.length >= 15, `${files.length} skill entrypoints`);
   const missing = [];
   for (const file of files) {
     const content = await fs.readFile(file, 'utf8');

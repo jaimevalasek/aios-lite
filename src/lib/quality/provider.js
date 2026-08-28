@@ -4,6 +4,7 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const { execFile } = require('node:child_process');
 const { promisify } = require('node:util');
+const { classifyDesignDocSeedFile } = require('../design-doc-seed');
 
 const execFileAsync = promisify(execFile);
 
@@ -78,8 +79,10 @@ async function collectGovernanceSources(targetDir) {
     }
   }
 
+  // A project-owned design record counts as a governance source; the retired
+  // installer seed (the framework's own code layout) does not.
   const designDoc = path.join(targetDir, '.aioson', 'context', 'design-doc.md');
-  if (await fileExists(designDoc)) {
+  if (await fileExists(designDoc) && (await classifyDesignDocSeedFile(designDoc)) !== 'verbatim') {
     sources.push(path.relative(targetDir, designDoc).replace(/\\/g, '/'));
   }
 

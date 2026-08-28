@@ -58,7 +58,7 @@ function inferLoadTier(category, source) {
   if (category === 'process') return 'explicit';
   if (category === 'static') return 'framework_match';
   if (category === 'dynamic') return 'task_match';
-  if (category === 'design' || category === 'design-system' || category === 'premium-visual-design') {
+  if (category === 'design') {
     return 'design_match';
   }
   if (category === 'squad') return 'agent_owned';
@@ -66,7 +66,7 @@ function inferLoadTier(category, source) {
 }
 
 function inferExclusiveGroup(category) {
-  return ['design', 'design-system', 'premium-visual-design'].includes(category)
+  return category === 'design'
     ? 'design-language'
     : null;
 }

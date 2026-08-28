@@ -82,13 +82,9 @@ test('USES list has development locked and squads unlocked', () => {
   assert.equal(squads.locked, false);
 });
 
-test('DESIGNS list includes none and 9 design systems (10 total)', () => {
-  assert.equal(__test__.DESIGNS.length, 10);
-  assert.equal(__test__.DESIGNS[0].id, 'none');
-  const ids = __test__.DESIGNS.map(d => d.id);
-  assert.ok(ids.includes('clean-saas-ui'));
-  assert.ok(ids.includes('aurora-command-ui'));
-  assert.ok(ids.includes('interface-design'));
+test('the wizard offers no design catalog — the engine ships with every profile', () => {
+  assert.equal(__test__.DESIGNS, undefined);
+  assert.equal(__test__.promptDesignCheckbox, undefined);
 });
 
 test('LOCALES list has 4 entries', () => {
@@ -110,10 +106,10 @@ test('getBanner returns ASCII art on wide terminal', () => {
   assert.ok(banner.includes('AI Operating Framework'));
 });
 
-test('renderScreen1 shows all tools and wizard step (1/4)', () => {
+test('renderScreen1 shows all tools and wizard step (1/3)', () => {
   const stdout = createMockStdout();
   __test__.renderScreen1(0, new Set(['claude']), false, stdout);
-  assert.ok(stdout.output.includes('1/4'));
+  assert.ok(stdout.output.includes('1/3'));
   assert.ok(stdout.output.includes('Claude Code'));
   assert.ok(stdout.output.includes('Codex (OpenAI)'));
   assert.ok(stdout.output.includes('OpenCode'));
@@ -125,10 +121,10 @@ test('renderScreen1 shows warning when warn=true', () => {
   assert.ok(stdout.output.includes('Select at least one tool'));
 });
 
-test('renderScreen2 shows development as always on and step (2/4)', () => {
+test('renderScreen2 shows development as always on and step (2/3)', () => {
   const stdout = createMockStdout();
   __test__.renderScreen2(0, new Set(['development']), false, stdout);
-  assert.ok(stdout.output.includes('2/4'));
+  assert.ok(stdout.output.includes('2/3'));
   assert.ok(stdout.output.includes('always on'));
   assert.ok(stdout.output.includes('Squads'));
 });
@@ -139,40 +135,32 @@ test('renderScreen2 shows warning when warn is true', () => {
   assert.ok(stdout.output.includes('Select at least one use'));
 });
 
-test('renderScreen3 shows design options and step (3/4)', () => {
+test('renderScreen3 shows locale options and step (3/3) — no design screen in between', () => {
   const stdout = createMockStdout();
-  __test__.renderScreen3(0, new Set(['none']), false, stdout);
-  assert.ok(stdout.output.includes('3/4'));
-  assert.ok(stdout.output.includes('None'));
-  assert.ok(stdout.output.includes('Clean SaaS UI'));
-  assert.ok(stdout.output.includes('Aurora Command UI'));
-});
-
-test('renderScreen4 shows locale options and step (4/4)', () => {
-  const stdout = createMockStdout();
-  __test__.renderScreen4(0, stdout);
-  assert.ok(stdout.output.includes('4/4'));
+  __test__.renderScreen3(0, stdout);
+  assert.ok(stdout.output.includes('3/3'));
+  assert.equal(stdout.output.includes('design system'), false);
   assert.ok(stdout.output.includes('English'));
   assert.ok(stdout.output.includes('Português (Brasil)'));
   assert.ok(stdout.output.includes('Español'));
   assert.ok(stdout.output.includes('Français'));
 });
 
-test('renderConfirm shows all 4 profile fields', () => {
+test('renderConfirm shows tools, mode, the engine as the design line, and locale', () => {
   const stdout = createMockStdout();
   const mockT = (key) => key;
-  __test__.renderConfirm(['claude', 'codex'], ['development', 'squads'], 'clean-saas-ui', 'pt-BR', null, mockT, stdout);
+  __test__.renderConfirm(['claude', 'codex'], ['development', 'squads'], 'pt-BR', null, mockT, stdout);
   assert.ok(stdout.output.includes('Claude Code'));
   assert.ok(stdout.output.includes('Codex'));
   assert.ok(stdout.output.includes('Development + Squads'));
-  assert.ok(stdout.output.includes('Clean SaaS UI'));
+  assert.ok(stdout.output.includes('Interface Design (engine'));
   assert.ok(stdout.output.includes('Português (Brasil)'));
 });
 
-test('renderConfirm shows None and English for defaults', () => {
+test('renderConfirm shows English for defaults and never a preset name', () => {
   const stdout = createMockStdout();
   const mockT = (key) => key;
-  __test__.renderConfirm(['claude'], ['development'], 'none', 'en', null, mockT, stdout);
-  assert.ok(stdout.output.includes('None'));
+  __test__.renderConfirm(['claude'], ['development'], 'en', null, mockT, stdout);
   assert.ok(stdout.output.includes('English'));
+  assert.equal(/Clean SaaS|Aurora Command/.test(stdout.output), false);
 });

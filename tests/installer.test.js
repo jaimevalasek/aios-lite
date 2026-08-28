@@ -282,14 +282,16 @@ test('installTemplate appends keep rules for shared AIOS files even when project
   assert.equal(gitignore.includes('!OPENCODE.md'), true);
 });
 
-test('design-doc.md is copied to new projects on fresh install', async () => {
+test('design-doc.md is no longer shipped on fresh install (structural governance lives in design-docs/)', async () => {
   const dir = await makeTempDir();
   const result = await installTemplate(dir, { mode: 'install' });
 
+  // The retired seed was the framework's own code layout copied into every
+  // project (see src/lib/design-doc-seed.js). Governance ships modular.
   const designDoc = path.join(dir, '.aioson/context/design-doc.md');
-  assert.equal(await fileExists(designDoc), true, 'design-doc.md must be created on fresh install');
-  assert.equal(result.copied.includes('.aioson/context/design-doc.md'), true);
-  assert.equal(result.skipped.some(s => s.path === '.aioson/context/design-doc.md'), false);
+  assert.equal(await fileExists(designDoc), false, 'design-doc.md must not be created on fresh install');
+  assert.equal(result.copied.includes('.aioson/context/design-doc.md'), false);
+  assert.equal(await fileExists(path.join(dir, '.aioson/design-docs/folder-structure.md')), true);
 });
 
 test('git-guard.json is copied to new projects on fresh install', async () => {
@@ -302,7 +304,7 @@ test('git-guard.json is copied to new projects on fresh install', async () => {
   assert.equal(result.skipped.some(s => s.path === '.aioson/git-guard.json'), false);
 });
 
-test('design-doc.md is preserved on update (not overwritten)', async () => {
+test('a project-owned design-doc.md is preserved on update (context-protected, never re-seeded)', async () => {
   const dir = await makeTempDir();
   await installTemplate(dir, { mode: 'install' });
 
@@ -318,7 +320,7 @@ test('design-doc.md is preserved on update (not overwritten)', async () => {
 
   const readBack = await fs.readFile(designDoc, 'utf8');
   assert.equal(readBack, customContent, 'design-doc.md must not be overwritten on update');
-  assert.equal(result.skipped.some(s => s.path === '.aioson/context/design-doc.md' && s.reason === 'project-local'), true);
+  assert.equal(result.copied.includes('.aioson/context/design-doc.md'), false, 'update never re-seeds the retired file');
 });
 
 test('design governance docs are copied on install and preserved on update', async () => {
@@ -348,7 +350,6 @@ test('init mode creates every required project-local governance document', async
   const dir = await makeTempDir();
   const result = await installTemplate(dir, { mode: 'init', overwrite: true });
   const requiredProjectLocalFiles = [
-    '.aioson/context/design-doc.md',
     '.aioson/design-docs/code-reuse.md',
     '.aioson/design-docs/componentization.md',
     '.aioson/design-docs/file-size.md',

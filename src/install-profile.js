@@ -25,23 +25,19 @@ const SQUAD_PATHS = [
   /^\.aioson\/squads\//
 ];
 
-// Design skill IDs disponíveis
-const DESIGN_IDS = [
-  'aurora-command-ui',
-  'bold-editorial-ui',
-  'clean-saas-ui',
-  'cognitive-core-ui',
-  'glassmorphism-ui',
-  'interface-design',
-  'neo-brutalist-ui',
-  'premium-command-center-ui',
-  'warm-craft-ui'
-];
+const {
+  DESIGN_ENGINE_ID,
+  RETIRED_DESIGN_PRESETS,
+  normalizeDesignProfile
+} = require('./lib/design-presets');
+
+// Design skill IDs the template ships. The fixed presets were retired (see
+// lib/design-presets.js): the engine is the only entry, and every profile
+// installs it.
+const DESIGN_IDS = [DESIGN_ENGINE_ID];
 
 // Special value meaning "install all design skills"
 const DESIGN_ALL = 'all';
-// The framework's single aesthetic source (intent-first engine); always installed.
-const DESIGN_ENGINE_ID = 'interface-design';
 
 // Caminhos de locale por código
 const LOCALE_IDS = ['en', 'es', 'fr', 'pt-BR'];
@@ -108,11 +104,12 @@ function shouldIncludeForProfile(rel, profile) {
     const skillId = designMatch[1];
     // The one design ENGINE is not a preset. Every visual producer (the
     // refiner, dev, ux-ui, a squad's ui-specialist) resolves a blank
-    // `design_skill` to it, so a profile that declines the preset catalog
-    // still ships the engine — otherwise the framework points at a file the
-    // consumer never received.
+    // `design_skill` to it, so every profile ships the engine — otherwise the
+    // framework points at a file the consumer never received. Nothing else
+    // under skills/design/ ships; a retired id a saved profile still names
+    // is normalized away, never matched.
     if (skillId === DESIGN_ENGINE_ID) return true;
-    const chosen = profile.design || 'none';
+    const chosen = normalizeDesignProfile(profile.design).design;
     if (chosen === DESIGN_ALL) return true;
     if (Array.isArray(chosen)) return chosen.includes(skillId);
     return chosen !== 'none' && skillId === chosen;
@@ -130,5 +127,7 @@ module.exports = {
   LOCALE_IDS,
   ALWAYS_INSTALL,
   DEFAULT_PROFILE,
-  DESIGN_ENGINE_ID
+  DESIGN_ENGINE_ID,
+  RETIRED_DESIGN_PRESETS,
+  normalizeDesignProfile
 };

@@ -13,7 +13,7 @@ test('null profile always returns true', () => {
   assert.equal(shouldIncludeForProfile('CLAUDE.md', null), true);
   assert.equal(shouldIncludeForProfile('AGENTS.md', null), true);
   assert.equal(shouldIncludeForProfile('.aioson/agents/squad.md', null), true);
-  assert.equal(shouldIncludeForProfile('.aioson/skills/design/clean-saas-ui/SKILL.md', null), true);
+  assert.equal(shouldIncludeForProfile('.aioson/skills/design/interface-design/SKILL.md', null), true);
 });
 
 test('tool-specific files are filtered by selected tools', () => {
@@ -43,17 +43,28 @@ test('site-forge and design-hybrid-forge stay available outside squad mode', () 
   assert.equal(shouldIncludeForProfile('.aioson/agents/design-hybrid-forge.md', p), true);
 });
 
-test('design=none excludes packaged design skills', () => {
+test('design=none excludes any non-engine design skill but never the engine', () => {
   const p = { tools: ['claude'], uses: ['development'], design: 'none', locale: 'en' };
-  assert.equal(shouldIncludeForProfile('.aioson/skills/design/clean-saas-ui/SKILL.md', p), false);
-  assert.equal(shouldIncludeForProfile('.aioson/skills/design/aurora-command-ui/tokens.md', p), false);
+  assert.equal(shouldIncludeForProfile('.aioson/skills/design/some-forged-ui/SKILL.md', p), false);
+  assert.equal(shouldIncludeForProfile('.aioson/skills/design/some-forged-ui/tokens.md', p), false);
+  assert.equal(shouldIncludeForProfile('.aioson/skills/design/interface-design/SKILL.md', p), true);
 });
 
-test('specific design selection keeps only the chosen skill', () => {
+test('specific design selection keeps only the chosen skill (plus the engine)', () => {
+  const p = { tools: ['claude'], uses: ['development'], design: 'some-forged-ui', locale: 'es' };
+  assert.equal(shouldIncludeForProfile('.aioson/skills/design/some-forged-ui/SKILL.md', p), true);
+  assert.equal(shouldIncludeForProfile('.aioson/skills/design/some-forged-ui/tokens.md', p), true);
+  assert.equal(shouldIncludeForProfile('.aioson/skills/design/other-forged-ui/SKILL.md', p), false);
+  assert.equal(shouldIncludeForProfile('.aioson/skills/design/interface-design/SKILL.md', p), true);
+});
+
+test('a retired preset id in a saved profile is normalized away — never matched, the engine still ships', () => {
   const p = { tools: ['claude'], uses: ['development'], design: 'clean-saas-ui', locale: 'es' };
-  assert.equal(shouldIncludeForProfile('.aioson/skills/design/clean-saas-ui/SKILL.md', p), true);
-  assert.equal(shouldIncludeForProfile('.aioson/skills/design/clean-saas-ui/tokens.md', p), true);
-  assert.equal(shouldIncludeForProfile('.aioson/skills/design/aurora-command-ui/SKILL.md', p), false);
+  assert.equal(shouldIncludeForProfile('.aioson/skills/design/clean-saas-ui/SKILL.md', p), false);
+  assert.equal(shouldIncludeForProfile('.aioson/skills/design/interface-design/SKILL.md', p), true);
+  const mixed = { ...p, design: ['warm-craft-ui', 'some-forged-ui'] };
+  assert.equal(shouldIncludeForProfile('.aioson/skills/design/warm-craft-ui/SKILL.md', mixed), false);
+  assert.equal(shouldIncludeForProfile('.aioson/skills/design/some-forged-ui/SKILL.md', mixed), true);
 });
 
 test('non-design skills are unaffected by the design setting', () => {
@@ -83,10 +94,8 @@ test('core files and core workflow agents are always included', () => {
   assert.equal(shouldIncludeForProfile('.aioson/agents/architect.md', p), true);
 });
 
-test('DESIGN_IDS exports packaged design skills only', () => {
-  assert.equal(DESIGN_IDS.length, 9);
-  assert.ok(DESIGN_IDS.includes('clean-saas-ui'));
-  assert.ok(!DESIGN_IDS.includes('none'));
+test('DESIGN_IDS exports the one packaged design skill — the engine', () => {
+  assert.deepEqual(DESIGN_IDS, ['interface-design']);
 });
 
 test('LOCALE_IDS exports supported interaction language defaults', () => {

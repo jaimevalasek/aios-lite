@@ -556,8 +556,6 @@ async function runSkillList({ args, options = {}, logger, t }) {
   // Source skills (design, static, dynamic)
   const sourceBase = path.join(targetDir, '.aioson/skills');
   const designSkills = await scanSourceSkillDir(path.join(sourceBase, 'design'), 'design');
-  const designSystemSkills = await scanSourceSkillDir(sourceBase, 'design-system')
-    .then(r => r.filter(s => s.slug === 'design-system'));
   const staticSkills = await scanSourceSkillDir(path.join(sourceBase, 'static'), 'static');
   const dynamicSkills = await scanSourceSkillDir(path.join(sourceBase, 'dynamic'), 'dynamic');
 

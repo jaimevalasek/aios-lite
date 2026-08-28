@@ -6,9 +6,11 @@ Load when naming a new hybrid or checking for conflicts.
 
 ## Registered hybrids
 
+The fixed preset catalog — and the core hybrids it carried — was retired on 2026-08-28; the framework ships no design skill besides the `interface-design` engine, so core registrations start empty. Project-local hybrids live in each project's `.skill-meta.json`.
+
 | Hybrid name | Parents | Shipped | Domain |
 |---|---|---|---|
-| `aurora-command-ui` | cognitive-core-ui × glassmorphism-ui | 2026-03-29 | SOC, AI platforms, dev tools |
+| — | — | — | — |
 
 ---
 
@@ -17,7 +19,7 @@ Load when naming a new hybrid or checking for conflicts.
 ### Rules
 
 1. The name must be a compound of 2–3 words separated by hyphens.
-2. Must end in `-ui` (consistent with native skills).
+2. Must end in `-ui`.
 3. Must NOT contain either parent name (not "glass-core-ui", not "warm-glass-ui").
 4. Must evoke the resolved creative tension — the hybrid's *vibe*, not its recipe.
 5. Must be original — check this registry before finalizing.
@@ -26,7 +28,7 @@ Load when naming a new hybrid or checking for conflicts.
 
 | Pattern | Examples |
 |---|---|
-| `{atmosphere}-{function}-ui` | `aurora-command-ui`, `dusk-ops-ui`, `frost-bureau-ui` |
+| `{atmosphere}-{function}-ui` | `dusk-ops-ui`, `frost-bureau-ui`, `haze-command-ui` |
 | `{material}-{role}-ui` | `crystal-forge-ui`, `void-craft-ui`, `obsidian-core-ui` |
 | `{temperature}-{structure}-ui` | `warm-terminal-ui`, `cold-editorial-ui`, `ember-grid-ui` |
 | `{light}-{discipline}-ui` | `shadow-data-ui`, `neon-ledger-ui`, `pale-signal-ui` |

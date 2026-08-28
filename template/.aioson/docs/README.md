@@ -50,7 +50,7 @@ Create a doc when:
 - A third-party API has quirks that affect how agents implement against it
 
 Do NOT create a doc for:
-- Feature-specific decisions (use `design-doc-{slug}.md` instead)
+- Feature-specific decisions (use the PRD/plan decision sections or `aioson decision:add`)
 - Project conventions (use `rules/` instead)
 - Current implementation state (use `spec-{slug}.md` instead)
 

@@ -7,9 +7,9 @@ triggers: [identity.md, reference image, visual identity, reference-identity-ext
 
 # Reference-image-driven visual identity
 
-A fixed design preset (`clean-saas-ui`, `aurora-command-ui`, …) hardcodes a palette and a typeface, so
-every project that picks the same preset looks the same — the generic, "made-by-AI" look. The
-`interface-design` skill is the opposite: a craft **engine** whose mandate is *"if another AI would
+A fixed design preset hardcodes a palette and a typeface, so every project that picks the same
+preset looks the same — the generic, "made-by-AI" look; that is why the framework ships none since
+2026-08-28. The `interface-design` skill is the opposite: a craft **engine** whose mandate is *"if another AI would
 produce the same output, you failed."* This flow feeds that engine the user's **own references** so the
 result is specific and premium.
 
@@ -61,7 +61,7 @@ the `interface-design` token families plus its Phase-1 anti-sameness anchors. Au
 - **`@refiner`** (exploration mode) — before a Briefing exists, imported screenshots may produce `.aioson/explorations/{slug}/identity.md`; a targeted/full scan may separately prove current structure and behavior. Images establish observed visual evidence, code establishes current-system facts, and neither is silently treated as proposed scope.
 - **`@setup`** — for `site`/`web_app`, the recommended visual route is *interface-design + reference
   images* (sets `design_skill: interface-design`; the concrete look comes from `identity.md`). The
-  fixed presets remain an explicit alternative.
+  only alternative is a project-forged skill (site-forge or hybrid output) the owner names.
 - **`@ux-ui`** — Step 0 loads `identity.md` as the **identity input** the single interface-design engine
   applies. It is **not** a second design skill: exactly one design skill is loaded, and `identity.md`
   parameterizes it. This does not weaken the ONE-SKILL-ONLY rule.

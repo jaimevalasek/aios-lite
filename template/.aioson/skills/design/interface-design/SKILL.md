@@ -1,7 +1,7 @@
 ---
 name: interface-design
 description: >-
-  Craft-first design package for selecting an intentional visual direction, building a stable token system, and maintaining UI continuity across screens. Use only when `design_skill: interface-design` is selected, the user explicitly chooses this broad package instead of a niche visual system, or a routed AIOSON module declares it as the recorded default for a blank `design_skill`.
+  The framework's single design engine: craft-first selection of an intentional visual direction, a stable token system, and UI continuity across screens. A blank `design_skill` resolves to it; only a project-forged skill (site-forge or hybrid output) that `design_skill` names explicitly replaces it. Never combined with another design skill.
 ---
 
 # Interface Design

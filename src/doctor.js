@@ -3,7 +3,7 @@
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const { REQUIRED_FILES } = require('./constants');
-const { installTemplate, TEMPLATE_DIR } = require('./installer');
+const { installTemplate, TEMPLATE_DIR, readInstallProfile } = require('./installer');
 const { exists, copyFileWithDir } = require('./utils');
 const { validateProjectContextFile, getInteractionLanguage } = require('./context');
 const { applyAgentLocale } = require('./locales');
@@ -21,6 +21,8 @@ const {
 const { assessJargonLeak } = require('./jargon-leak-doctor');
 const { openRuntimeDb } = require('./runtime-store');
 const { isGitCheckout } = require('./lib/project-root');
+const { inspectDesignDocSeed } = require('./lib/design-doc-seed');
+const { inspectRetiredDesignPresets } = require('./lib/design-presets');
 
 const BOOTSTRAP_REQUIRED = ['what-is.md', 'how-it-works.md', 'what-it-does.md', 'current-state.md'];
 
@@ -209,6 +211,69 @@ async function runDoctor(targetDir) {
       params: { rel },
       ok: await exists(path.join(targetDir, rel)),
       hintKey: 'doctor.context_hint'
+    });
+  }
+
+  // Retired design-doc seed (advisory). Older installers copied a
+  // project-level `.aioson/context/design-doc.md` that was the framework's
+  // own code layout; it is project-local, so `aioson update` never touches
+  // it. A verbatim copy is safe to delete (`--fix`); an edited copy is named
+  // for review only.
+  const designDocSeed = await inspectDesignDocSeed(targetDir);
+  if (designDocSeed.kind) {
+    checks.push({
+      id: 'context:retired_design_doc_seed',
+      severity: 'warning',
+      key: 'doctor.retired_design_doc_seed',
+      params: { kind: designDocSeed.kind },
+      ok: false,
+      hintKey: designDocSeed.kind === 'verbatim'
+        ? 'doctor.retired_design_doc_seed_hint_verbatim'
+        : 'doctor.retired_design_doc_seed_hint_derived',
+      hintParams: { path: designDocSeed.path }
+    });
+  }
+
+  // Retired fixed design presets (advisory). The template ships one design
+  // skill — the engine — since 2026-08-28. A `design_skill` that still names a
+  // preset an older version installed is told what backs it (a project-local
+  // copy, or nothing), and a saved install profile that still selects presets
+  // is told the wizard no longer asks. Both are project-local: update never
+  // rewrites them, so nothing else would ever say so.
+  const retiredPresets = await inspectRetiredDesignPresets(targetDir, {
+    installProfile: await readInstallProfile(targetDir)
+  });
+  if (retiredPresets.retired_design_skill) {
+    checks.push({
+      id: 'design:retired_preset',
+      severity: 'warning',
+      key: 'doctor.retired_design_preset',
+      params: { id: retiredPresets.retired_design_skill },
+      ok: false,
+      hintKey: retiredPresets.local_path
+        ? 'doctor.retired_design_preset_hint_local'
+        : 'doctor.retired_design_preset_hint_missing',
+      hintParams: { id: retiredPresets.retired_design_skill, path: retiredPresets.local_path || '' }
+    });
+  }
+  if (retiredPresets.profile_retired.length > 0) {
+    checks.push({
+      id: 'install:retired_preset_profile',
+      severity: 'warning',
+      key: 'doctor.retired_design_preset_profile',
+      params: { ids: retiredPresets.profile_retired.join(', ') },
+      ok: false
+    });
+  }
+  if (retiredPresets.retired_trees.length > 0) {
+    checks.push({
+      id: 'skills:retired_trees',
+      severity: 'warning',
+      key: 'doctor.retired_skill_trees',
+      params: { count: retiredPresets.retired_trees.length },
+      ok: false,
+      hintKey: 'doctor.retired_skill_trees_hint',
+      hintParams: { paths: retiredPresets.retired_trees.join(', ') }
     });
   }
 
@@ -587,6 +652,8 @@ async function runDoctor(targetDir) {
       versionDrift: !versionOk ? { context: contextVersion, cli: cliVersion } : null,
       permissions: permsAssessment,
       nestedProjectRoots: nestedRoots,
+      retiredDesignDocSeed: designDocSeed,
+      retiredDesignPresets: retiredPresets,
       scoutPruning: scoutAssessment,
       curation: {
         classification,
@@ -709,6 +776,33 @@ async function applyDoctorFixes(targetDir, report, options = {}) {
   } else {
     actions.push({
       id: 'design_governance',
+      applied: false,
+      skipped: true,
+      count: 0,
+      missingCount: 0
+    });
+  }
+
+  // Retired design-doc seed: only a VERBATIM copy of a shipped version is
+  // deleted — zero project information is lost, the content is the framework
+  // template. An edited copy is never touched (the check names it for review).
+  const seedCheck = report.checks.find((check) => check.id === 'context:retired_design_doc_seed' && !check.ok);
+  if (seedCheck && seedCheck.params && seedCheck.params.kind === 'verbatim') {
+    const seedState = await inspectDesignDocSeed(targetDir);
+    const removable = seedState.exists && seedState.kind === 'verbatim';
+    if (removable && !dryRun) {
+      await fs.rm(path.join(targetDir, seedState.path), { force: true });
+    }
+    if (removable) changedCount += 1;
+    actions.push({
+      id: 'retired_design_doc_seed',
+      applied: removable && !dryRun,
+      count: removable ? 1 : 0,
+      missingCount: removable ? 1 : 0
+    });
+  } else {
+    actions.push({
+      id: 'retired_design_doc_seed',
       applied: false,
       skipped: true,
       count: 0,

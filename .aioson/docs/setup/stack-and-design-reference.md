@@ -48,17 +48,17 @@ For Rails, resolve relevant `rails new` flags only when creating a project. For 
 
 ## Visual-system decision
 
-The default recommendation is not a fixed aesthetic preset. Offer:
+The framework ships no fixed aesthetic preset. Offer:
 
 1. `interface-design` as the craft engine plus the user's reference images captured into `identity.md`;
-2. one explicitly chosen installed design preset;
+2. one project-forged design skill (site-forge or hybrid output) the user names explicitly;
 3. `design_skill: ""` with a visible pending visual decision.
 
-Inspect available folder names under `.aioson/skills/design/`, but load only the chosen skill. Never infer selection from installation.
+Inspect available folder names under `.aioson/skills/design/` and `.aioson/installed-skills/`, but load only the chosen skill. Never infer selection from installation.
 
 Use this compact decision language:
 
-> I recommend `interface-design` driven by your reference images so the result is project-specific. You can instead select one installed preset, or leave the visual system pending for Product/UX.
+> I recommend `interface-design` driven by your reference images so the result is project-specific. You can instead name a design skill this project forged, or leave the visual system pending for Product/UX.
 
 When the first option is selected, follow `.aioson/docs/reference-identity.md`; do not fabricate a reference identity without images.
 

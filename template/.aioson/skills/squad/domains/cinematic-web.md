@@ -56,6 +56,7 @@ reduced-motion fallback, and responsive recomposition. Entrypoint:
 
 ## Reuse before inventing
 
-Design skills under `.aioson/skills/design/` (e.g. `bold-editorial-ui`,
-`aurora-command-ui`) and `landing-page-forge` provide direction systems and
-production stacks; the squad parameterizes them, it does not fork them.
+The `interface-design` engine with the project's `identity.md` (or a
+project-forged skill `design_skill` names) and `landing-page-forge` provide
+direction systems and production stacks; the squad parameterizes them, it does
+not fork them.

@@ -16,7 +16,9 @@ const TEMPLATE_DIR = path.join(ROOT_DIR, 'template');
 const PROJECT_LOCAL_FILES = new Set([
   'aioson-models.json',
   '.aioson/constitution.md',
-  '.aioson/context/design-doc.md',
+  // `.aioson/context/design-doc.md` is no longer shipped: it was the
+  // framework's own code layout copied into every project (see
+  // lib/design-doc-seed.js). A consumer copy stays context-protected.
   '.aioson/design-docs/code-reuse.md',
   '.aioson/design-docs/componentization.md',
   '.aioson/design-docs/file-size.md',
@@ -291,7 +293,6 @@ function shouldSkipTemplatePath(rel, profile = null) {
   // over the project's own runtime on update and silently erase its history.
   if (rel === '.aioson/runtime' || rel.startsWith('.aioson/runtime/')) return 'runtime-state';
   if (rel === '.aioson/context/.gitkeep') return false;
-  if (rel === '.aioson/context/design-doc.md') return false; // framework default — copied on fresh install, project-local on update
   if (rel === '.aioson/context/_archived/.gitkeep') return false; // active-learning-loop Phase 3 archive convention
   if (rel.startsWith('.aioson/context/')) return 'context-protected';
   // Never overwrite user-installed skills (only the .gitkeep is created)

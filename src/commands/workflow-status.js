@@ -12,6 +12,7 @@ const { validateHandoffContract } = require('../handoff-contract');
 const { listGenomes } = require('../genome-files');
 const { loadOrCreateState } = require('./workflow-next');
 const { resolveTargetDir } = require('../lib/project-root');
+const { isUsableDesignDocFile } = require('../lib/design-doc-seed');
 
 const STATE_RELATIVE_PATH = '.aioson/context/workflow.state.json';
 
@@ -95,9 +96,18 @@ async function preferExistingArtifact(targetDir, candidates) {
 
 async function buildKeyArtifacts(targetDir, state) {
   const featureSlug = state && state.featureSlug ? String(state.featureSlug) : null;
-  const designDocFile = await preferExistingArtifact(targetDir, featureSlug
+  // The slug-less design-doc.md may be the retired installer seed (the
+  // framework's own code layout) — it never stands in for the feature design doc.
+  const designDocCandidates = featureSlug
     ? [`.aioson/context/design-doc-${featureSlug}.md`, '.aioson/context/design-doc.md']
-    : ['.aioson/context/design-doc.md']);
+    : ['.aioson/context/design-doc.md'];
+  let designDocFile = designDocCandidates[0];
+  for (const candidate of designDocCandidates) {
+    if (await isUsableDesignDocFile(path.join(targetDir, candidate))) {
+      designDocFile = candidate;
+      break;
+    }
+  }
   const readinessFile = await preferExistingArtifact(targetDir, featureSlug
     ? [`.aioson/context/readiness-${featureSlug}.md`, '.aioson/context/readiness.md']
     : ['.aioson/context/readiness.md']);
