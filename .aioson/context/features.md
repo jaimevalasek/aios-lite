@@ -37,3 +37,4 @@
 | premium-squad-intelligence | done | 2026-07-23 | 2026-07-26 |
 | briefing-review-decision-room | done | 2026-07-26 | 2026-07-27 |
 | briefing-lineage-migration | done | 2026-07-27 | 2026-07-27 |
+| execution-roles-onboarding | in_progress | 2026-08-26 | — |
