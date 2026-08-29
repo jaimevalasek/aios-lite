@@ -1,0 +1,245 @@
+'use strict';
+
+/**
+ * The workflow engine's two readings of the plan's scale:
+ *   - planner ACTIVATION: MEDIUM and larger features see the locked state and
+ *     the unlock step when the orchestrated path is not unlocked; MICRO/SMALL
+ *     stay byte-identical (the lean lane never carries it);
+ *   - planner COMPLETION: a split-candidate plan with no recorded execution
+ *     choice is an advisory with the numbers — never a block.
+ */
+
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs/promises');
+const os = require('node:os');
+const path = require('node:path');
+
+const { runWorkflowNext, buildExecutionActivationContext, inspectExecutionGate } = require('../src/commands/workflow-next');
+const { createTranslator } = require('../src/i18n');
+const { approveAndSealSheldonReview } = require('./helpers/feature-evidence');
+
+const ROOT = path.resolve(__dirname, '..');
+const logger = { log() {}, error() {}, warn() {} };
+const { t } = createTranslator('en');
+const SLUG = 'orders';
+
+const prd = (classification) => [
+  '---',
+  `classification: ${classification}`,
+  'product_scope: approved',
+  'prd_ready: approved',
+  'sheldon_review: pending',
+  '---',
+  '# Orders',
+  '',
+  '## Feature Capability Map',
+  '',
+  '| CAP | Promised outcome | Actor / trigger | Scope decision | Rationale |',
+  '|---|---|---|---|---|',
+  '| CAP-orders-api | Orders API stores orders | User submits | required | Core promise |',
+  '',
+  '## Acceptance Criteria',
+  '',
+  '| AC | CAP | Observable behavior | Evidence |',
+  '|---|---|---|---|',
+  '| AC-orders-01 | CAP-orders-api | POST /orders creates an order | api test |',
+  ''
+].join('\n');
+
+const SMALL_PLAN = [
+  '---',
+  'status: draft',
+  '---',
+  '# Plan',
+  '',
+  '## Capability Delivery Plan',
+  '',
+  '| CAP | Phase | Files | Verification |',
+  '|---|---|---|---|',
+  '| CAP-orders-api | 1 | src/api/orders.ts, tests/api/orders.test.ts | npm test -- orders.api |',
+  ''
+].join('\n');
+
+// The incident shape: 16 files, four chained phases, no lanes table, no recorded choice.
+const files = (prefix, n) => Array.from({ length: n }, (_, i) => `${prefix}/file${i}.ts`);
+const PHASES = [
+  files('src/server', 6),
+  files('src/client', 5),
+  files('src/domain', 3),
+  files('tests/integration', 2)
+];
+function bigPlan({ frontmatter = ['status: draft'], lanes = false } = {}) {
+  return [
+    '---', ...frontmatter, '---',
+    '# Plan',
+    '',
+    '## Implementation Delta',
+    '| CAP | Action | Existing evidence | Exact paths | Required change |',
+    '|---|---|---|---|---|',
+    ...PHASES.map((paths, i) => `| CAP-orders-p${i + 1} | create | none | ${paths.join(', ')} | phase ${i + 1} |`),
+    '',
+    '## Capability Delivery Plan',
+    '',
+    '| CAP | Phase | Files | Verification |',
+    '|---|---|---|---|',
+    ...PHASES.map((paths, i) => `| CAP-orders-p${i + 1} | ${i + 1} | ${paths.join(', ')} | npm test |`),
+    '',
+    ...(lanes ? [
+      '## Development execution lanes',
+      '| Lane | Exact write paths | Integration owner |',
+      '|---|---|---|',
+      '| server | src/server/**, src/domain/** | dev |',
+      '| client | src/client/** | dev |',
+      ''
+    ] : []),
+    '## Execution Sequence',
+    '| Phase | Wave | Files | Scope | Depends on | Done when |',
+    '|---|---|---|---|---|---|',
+    ...PHASES.map((paths, i) => `| ${i + 1} | ${i + 1} | ${paths.join(', ')} | CAP-orders-p${i + 1} | ${i === 0 ? '—' : i} | npm test passes |`),
+    ''
+  ].join('\n');
+}
+
+const ROLES = {
+  version: 1,
+  source: 'test-client',
+  enabled: true,
+  roles: { backend_dev: { host: 'codex', model: 'gpt-5.6' }, qa: { host: 'claude', model: 'claude-sonnet-5' } },
+  parallel: { max_concurrent_lanes: 2 },
+  on_unavailable: 'ask'
+};
+
+async function write(root, rel, body) {
+  const file = path.join(root, ...rel.split('/'));
+  await fs.mkdir(path.dirname(file), { recursive: true });
+  await fs.writeFile(file, body, 'utf8');
+}
+
+function stateAt(stage, classification, { current = false } = {}) {
+  const sequence = ['product', 'sheldon', 'planner', 'dev', 'qa'];
+  return JSON.stringify({
+    version: 1,
+    mode: 'feature',
+    classification,
+    sequence,
+    current: current ? stage : null,
+    next: current ? null : stage,
+    completed: sequence.slice(0, sequence.indexOf(stage)),
+    skipped: [],
+    featureSlug: SLUG,
+    detour: null,
+    updatedAt: new Date().toISOString()
+  });
+}
+
+async function project(tt, { classification = 'SMALL', plan = SMALL_PLAN, roles = null, current = false } = {}) {
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'aioson-execution-scale-'));
+  tt.after(() => fs.rm(dir, { recursive: true, force: true }));
+  await write(dir, '.aioson/context/project.context.md', [
+    '---', 'project_name: demo', 'project_type: web_app', 'profile: developer', 'framework: Node.js',
+    'framework_installed: true', `classification: ${classification}`, 'interaction_language: en', 'conversation_language: en',
+    'aioson_version: 1.60.0', '---', '# Context', ''
+  ].join('\n'));
+  await write(dir, '.aioson/context/features.md', `| slug | status | started | completed |\n|---|---|---|---|\n| ${SLUG} | in_progress | 2026-08-25 | |\n`);
+  await write(dir, `.aioson/context/prd-${SLUG}.md`, prd(classification));
+  await approveAndSealSheldonReview(dir, SLUG);
+  await write(dir, `.aioson/context/implementation-plan-${SLUG}.md`, plan);
+  await write(dir, '.aioson/context/workflow.state.json', stateAt('planner', classification, { current }));
+  await fs.copyFile(path.join(ROOT, 'template', '.aioson', 'agents', 'dev.md'), path.join(dir, '.aioson', 'agents', 'dev.md'));
+  await fs.copyFile(path.join(ROOT, 'template', '.aioson', 'agents', 'qa.md'), path.join(dir, '.aioson', 'agents', 'qa.md'));
+  if (roles) await write(dir, '.aioson/config/execution-roles.json', JSON.stringify(roles, null, 2));
+  const previous = process.env.AIOSON_HOST_SIGNATURES;
+  process.env.AIOSON_HOST_SIGNATURES = path.join(dir, 'signatures.json');
+  tt.after(() => {
+    if (previous === undefined) delete process.env.AIOSON_HOST_SIGNATURES;
+    else process.env.AIOSON_HOST_SIGNATURES = previous;
+  });
+  return dir;
+}
+
+const activate = (dir, options = {}, log = logger) => runWorkflowNext({ args: [dir], options: { tool: 'codex', ...options }, logger: log, t });
+const normalize = (prompt, dir) => String(prompt || '').split(dir).join('<dir>').split(dir.replace(/\\/g, '/')).join('<dir>');
+
+test('planner activation names the locked state and the unlock step for MEDIUM features; MICRO and SMALL stay byte-identical and silent', async (tt) => {
+  const state = (classification) => ({ mode: 'feature', featureSlug: SLUG, classification });
+
+  const medium = await project(tt, { classification: 'MEDIUM' });
+  const pin = await buildExecutionActivationContext(medium, state('MEDIUM'), 'planner');
+  assert.match(pin, /^Orchestrated execution: NOT UNLOCKED here \(roles_file_missing; execution hosts installed on this machine: /);
+  assert.match(pin, /aioson execution:offer \. --feature=orders --json/);
+  assert.match(pin, /`plan\.scale`/);
+  assert.match(pin, /onboarding\.next/);
+  assert.match(pin, /now: aioson execution:seed \. --feature=orders --lanes=<lane-a,lane-b>\)\.$/);
+  const activated = await activate(medium);
+  assert.equal(activated.agent, 'planner');
+  assert.match(activated.prompt, /Orchestrated execution: NOT UNLOCKED here \(roles_file_missing/);
+
+  const disabled = await project(tt, { classification: 'MEDIUM', roles: { ...ROLES, enabled: false } });
+  assert.match(await buildExecutionActivationContext(disabled, state('MEDIUM'), 'planner'), /NOT UNLOCKED here \(roles_disabled;.*now: set "enabled": true in \.aioson\/config\/execution-roles\.json/);
+
+  const large = await project(tt, { classification: 'LARGE' });
+  assert.match(await buildExecutionActivationContext(large, state('LARGE'), 'planner'), /NOT UNLOCKED here \(roles_file_missing/);
+
+  for (const classification of ['MICRO', 'SMALL']) {
+    const lean = await project(tt, { classification });
+    assert.equal(await buildExecutionActivationContext(lean, state(classification), 'planner'), '');
+    const result = await activate(lean);
+    assert.doesNotMatch(result.prompt, /Orchestrated execution/);
+  }
+  // An unknown classification is treated as MICRO — the lean default — and stays silent.
+  assert.equal(await buildExecutionActivationContext(medium, state(undefined), 'planner'), '');
+  // Other stages never see the planner pin.
+  assert.equal(await buildExecutionActivationContext(medium, state('MEDIUM'), 'dev'), '');
+});
+
+test('planner completion: a split-candidate plan with no recorded execution choice is a named advisory; a recorded choice, a lanes table or a small plan is silent; never blocking', async (tt) => {
+  const unrecorded = await project(tt, { classification: 'MEDIUM', plan: bigPlan() });
+  const gate = await inspectExecutionGate(unrecorded, SLUG, 'planner');
+  assert.equal(gate.blocking, false);
+  assert.equal(gate.advisory, true);
+  assert.equal(gate.mode, 'single');
+  assert.equal(gate.check, 'execution_scale');
+  assert.equal(gate.scale.files, 16);
+  assert.equal(gate.scale.phases, 4);
+  assert.equal(gate.scale.parallel_phases, 0);
+  assert.match(gate.message, /^\[Execution Scale\] the plan for "orders" touches 16 file\(s\) \(16 new\) in 4 phase\(s\), 4 wave\(s\), 0 in parallel — a split candidate \(floor 12 files for one context\) — and records no execution choice\./);
+  assert.match(gate.message, /`execution: single` in the plan frontmatter, or the `## Development execution lanes` table \+ aioson execution:seed \. --feature=orders --lanes=<lane-a,lane-b>\./);
+  // Only the planner reads the scale; DEV under single execution sees nothing.
+  assert.deepEqual(await inspectExecutionGate(unrecorded, SLUG, 'dev'), { blocking: false, advisory: false });
+
+  const recorded = await project(tt, { classification: 'MEDIUM', plan: bigPlan({ frontmatter: ['status: draft', 'execution: single'] }) });
+  assert.deepEqual(await inspectExecutionGate(recorded, SLUG, 'planner'), { blocking: false, advisory: false });
+
+  const lanes = await project(tt, { classification: 'MEDIUM', plan: bigPlan({ lanes: true }) });
+  assert.deepEqual(await inspectExecutionGate(lanes, SLUG, 'planner'), { blocking: false, advisory: false });
+
+  const small = await project(tt, { classification: 'MEDIUM' });
+  assert.deepEqual(await inspectExecutionGate(small, SLUG, 'planner'), { blocking: false, advisory: false });
+
+  // The floor is the environment's: raise it and the same plan is silent.
+  const previous = process.env.AIOSON_EXECUTION_SPLIT_MIN_FILES;
+  process.env.AIOSON_EXECUTION_SPLIT_MIN_FILES = '20';
+  try {
+    assert.deepEqual(await inspectExecutionGate(unrecorded, SLUG, 'planner'), { blocking: false, advisory: false });
+  } finally {
+    if (previous === undefined) delete process.env.AIOSON_EXECUTION_SPLIT_MIN_FILES;
+    else process.env.AIOSON_EXECUTION_SPLIT_MIN_FILES = previous;
+  }
+});
+
+test('the advisory is printed at `workflow:next --complete=planner`, not buried in the payload', async (tt) => {
+  const dir = await project(tt, { classification: 'MEDIUM', plan: bigPlan(), current: true });
+  const lines = [];
+  const capture = { log: (line) => lines.push(String(line)), error: (line) => lines.push(String(line)), warn: (line) => lines.push(String(line)) };
+  let payload = null;
+  try {
+    payload = await activate(dir, { complete: 'planner' }, capture);
+  } catch (error) {
+    // The minimal fixture may fail a different handoff gate first; the scale advisory must never be the reason.
+    assert.doesNotMatch(String(error.message), /Execution Scale/);
+    return;
+  }
+  assert.ok(lines.some((line) => line.startsWith('[Execution Scale] the plan for "orders" touches 16 file(s)')), lines.join('\n'));
+  assert.equal(payload.next, 'dev');
+});

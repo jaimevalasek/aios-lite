@@ -86,6 +86,21 @@ test('Planner creates vertical production-path stages from CAP and AC trace', as
   assert.doesNotMatch(planner, /Next agent: @(analyst|architect|pm|orchestrator)/);
 });
 
+test('Planner asks the orchestration question on the measured scale and records the answer; the lanes table no longer names host or model (AC-plan-table)', async () => {
+  for (const file of ['.aioson/agents/planner.md', 'template/.aioson/agents/planner.md']) {
+    const planner = await fs.readFile(path.join(ROOT, file), 'utf8');
+    assert.match(planner, /aioson execution:offer \. --feature=\{slug\} --json/, `${file}: the offer runs after the plan is written`);
+    assert.match(planner, /plan\.scale\.split_candidate/, `${file}: the question is asked on the measured number`);
+    assert.match(planner, /onboarding\.next/, `${file}: a locked path names its unlock step`);
+    assert.match(planner, /`execution: single` in the frontmatter/, `${file}: the single-DEV answer is recorded`);
+    assert.match(planner, /aioson execution:seed \. --feature=\{slug\}/, `${file}: lanes seed the roles file`);
+    assert.match(planner, /\| Lane \| Exact write paths \| Integration owner \|/, `${file}: the lanes table is lane, paths, owner`);
+    assert.doesNotMatch(planner, /\| Lane \| Host \| Model \|/, `${file}: host and model belong to the roles file, not the plan`);
+    assert.match(planner, /the measured plan scale earns the question; the answer is the user's or the approved PRD's/, `${file}: classification never decides`);
+    assert.doesNotMatch(planner, /answers `available: true`, ask once/, `${file}: the question no longer waits for the unlock file`);
+  }
+});
+
 test('Product, Sheldon, and Planner preserve repository fit without adding a confirmation gate', async () => {
   const [product, sheldon, planner, contract, autopilot] = await Promise.all([
     read('.aioson/agents/product.md'),

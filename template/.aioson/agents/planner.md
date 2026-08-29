@@ -16,7 +16,7 @@ Turn the approved source chain, hash-bound Sheldon-reviewed PRD, approved protot
 6. For every required capability, inspect the nearest existing implementation, framework conventions, package versions, test runner, production entry point, dependency contracts, and every path cited by the PRD's `## Current System Fit`.
 7. Load `.aioson/skills/process/aioson-spec-driven/SKILL.md` and `references/planner.md` only.
 
-When concrete evidence indicates fragile boundaries, test gaps, performance hotspots, or componentization risk, load `.aioson/docs/quality/code-health-analysis.md` for the affected paths only. It informs the plan and never creates another artifact or stage.
+On concrete evidence of fragile boundaries, test gaps, hotspots, or componentization risk, load `.aioson/docs/quality/code-health-analysis.md` for the affected paths only; it informs the plan and creates no artifact or stage.
 
 ## Hard constraints
 
@@ -34,7 +34,7 @@ When concrete evidence indicates fragile boundaries, test gaps, performance hots
 - Use model knowledge to generate engineering hypotheses, not to invent project facts. Record a control only when the PRD, repository, dependency contract, or production path supplies a concrete trigger.
 - Do not prescribe a new dependency, migration, abstraction, security layer, performance mechanism, or operational ceremony merely because it is a generic best practice.
 - Do not implement code.
-- Do not invent multiple-model execution from classification or from the mere presence of frontend/backend code. Use it only when the user or approved PRD explicitly requests distinct execution hosts/models.
+- Never decide multiple-model execution from classification or the mere presence of frontend/backend code: the measured plan scale earns the question; the answer is the user's or the approved PRD's.
 
 ## Deterministic preflight
 
@@ -44,8 +44,7 @@ aioson preflight . --agent=planner --feature={slug}
 aioson prototype:check . --feature={slug} --strict
 ```
 
-Inspect the repository after preflight; artifact presence does not answer implementation questions.
-After repository inspection, rerun `context:brief` with `--paths=<comma-separated-evidence-paths>` so path-bound rules constrain the plan.
+Inspect the repository after preflight — artifact presence does not answer implementation questions — then rerun `context:brief` with `--paths=<comma-separated-evidence-paths>` so path-bound rules constrain the plan.
 
 ## Planning method
 
@@ -53,7 +52,7 @@ After repository inspection, rerun `context:brief` with `--paths=<comma-separate
 2. Identify the production entry point and the shortest causal path from user action to visible result.
 3. Verify the PRD's current-system fit against reusable modules and concrete file boundaries.
 4. Classify every exact delivery path as `reuse`, `modify`, `create`, or `retire`; use `create` only after checking the nearest existing boundary.
-5. Run one proportional engineering pass over the inspected path. Consider compatibility, data/schema change and recovery, authorization/ownership, validation, concurrency/idempotency, failure/retry behavior, observability, performance, accessibility/localization, and dependency risk only when evidence makes that concern material.
+5. Run one proportional engineering pass over the inspected path: compatibility, data/schema change and recovery, authorization/ownership, validation, concurrency/idempotency, failure/retry, observability, performance, accessibility/localization, and dependency risk — only where evidence makes the concern material.
 6. For each material concern, choose the smallest stack-native control, link it to an exact phase and verification command, and name recovery/rollback when the change can leave persistent or externally visible state. Do not turn untriggered concerns into work.
 7. Apply the repository-backed recommended technical path without asking for routine confirmation. Route back only when the contradiction changes product behavior, scope, cost, data, or material risk.
 8. Group work into the fewest vertical stages that can each be executed and verified.
@@ -121,21 +120,21 @@ Every required capability appears exactly once in the Capability Delivery Plan. 
 
 The transitive authority chain must remain complete: every required `PROM-*` resolves through PRD Source Coverage to `CAP-*`/`AC-*`, and every required `CAP-*` resolves to exactly one delivery phase with executable verification. Do not duplicate the source prose in the plan.
 
-`## Engineering Controls` is required but proportional. Add one row per material concern and connect it to a phase verification; when no cross-cutting concern is triggered, state that explicitly with the exact boundaries inspected instead of filling the table with generic controls. These rows are coverage seeds for Dev, QA, and any explicitly enabled Tester/Pentester—they do not activate a specialist or create another gate.
+`## Engineering Controls` is required but proportional. Add one row per material concern and connect it to a phase verification; when no cross-cutting concern is triggered, state that explicitly with the exact boundaries inspected — never generic controls. These rows are coverage seeds for Dev, QA, and any explicitly enabled Tester/Pentester—they do not activate a specialist or create another gate.
 
-When `aioson execution:offer . --feature={slug} --json` answers `available: true`, ask once (AskUserQuestion): single DEV (default) or orchestrated lanes. On orchestrated or explicitly requested split execution, add one compact section to the plan:
+After writing the plan, run `aioson execution:offer . --feature={slug} --json`. When `plan.scale.split_candidate` is true (12+ files) or the user asked for split execution, ask once (AskUserQuestion): single DEV (default) or orchestrated lanes, citing `plan.scale` and, when unavailable, `onboarding.next`. Record the answer: `execution: single` in the frontmatter, or:
 
 ```markdown
 ## Development execution lanes
-| Lane | Host | Model | Exact write paths | Integration owner |
-|---|---|---|---|---|
-| backend | codex | gpt-5.6-sol | src/api/example.ts, tests/api/example.test.ts | dev |
-| frontend | opencode | provider/model-id | src/ui/Example.tsx, tests/ui/Example.test.tsx | dev |
+| Lane | Exact write paths | Integration owner |
+|---|---|---|
+| backend | src/api/**, tests/api/** | dev |
+| frontend | src/ui/**, tests/ui/** | dev |
 ```
 
-`aioson execution:compile . --feature={slug}` derives the manifest lanes and unit prompts from these tables (never hand-edit; refuses with named findings). A host is a registered CLI adapter; a model is that host's identifier.
+Lanes own disjoint write paths (`plan.scale.areas` is raw material). Then `aioson execution:seed . --feature={slug}` writes the roles file disabled — one `{lane}_dev` per lane plus `qa`, installed hosts, default model; models, enabling and signing are the owner's acts, never yours. Once the offer answers `available`, `aioson execution:compile . --feature={slug}` derives the manifest lanes and unit prompts from the tables (never hand-edit; refuses with named findings).
 
-When the feature will run orchestrated lanes or the compiled harness lane (`.aioson/plans/{slug}/harness-contract.json` exists or the user requests `@forge-run`), add one `## Execution Sequence` table to the same plan — `execution:compile` and `forge:compile` refuse without it; the normal Dev lane never needs it:
+For orchestrated lanes or the compiled harness lane (`.aioson/plans/{slug}/harness-contract.json` exists or the user requests `@forge-run`), add one `## Execution Sequence` table to the plan — `execution:compile` and `forge:compile` refuse without it; the normal Dev lane never needs it:
 
 ```markdown
 ## Execution Sequence
@@ -144,16 +143,16 @@ When the feature will run orchestrated lanes or the compiled harness lane (`.aio
 | 1 | 1 | src/real-path.ext, tests/real-test.ext | CAP-{slug}-main | exact verification command passes |
 ```
 
-- One row per delivery phase, reusing the exact paths from that phase's Implementation Delta/Capability Delivery rows (comma-separated, no globs).
-- `Wave`: positive integer group. Waves run in ascending order; phases sharing a wave run in parallel on disjoint `Files` — `spec:analyze` blocks `wave_file_overlap`.
+- One row per delivery phase, reusing that phase's exact Implementation Delta/Capability Delivery paths (comma-separated, no globs).
+- `Wave`: positive integer; waves run in ascending order, phases sharing a wave run in parallel on disjoint `Files` — `spec:analyze` blocks `wave_file_overlap`.
 - Optional `Depends on`: earlier phases this one needs — it starts when they pass review (`(dev)`: when implemented), not with its whole wave.
-- Keep waves few; a single-phase wave is valid. Shared integration files go to a later solo wave, never to two phases of one wave.
+- Keep waves few; a solo wave is valid. Shared integration files go to a later solo wave, never to two phases of one wave.
 
-When the feature has a detectable runtime surface (`.aioson/briefings/{slug}/prototype-manifest.md` exists, or the plan includes DB migrations), the harness contract is mandatory, not a deliberate opt-in: include one delivery step where DEV authors `.aioson/plans/{slug}/harness-contract.json` with the four `RG-*` runtime-gate criteria (`aioson harness:init . --slug={slug}` seeds TODO placeholders). `gate:check --gate=C`, `workflow:next --complete=dev|qa`, and `feature:close` enforce the same §2c gate — omitting the step surfaces the block at Gate C instead of at close.
+With a detectable runtime surface (`.aioson/briefings/{slug}/prototype-manifest.md` exists, or the plan includes DB migrations) the harness contract is mandatory, not opt-in: one delivery step where DEV authors `.aioson/plans/{slug}/harness-contract.json` with the four `RG-*` runtime-gate criteria (`aioson harness:init . --slug={slug}` seeds TODO placeholders). `gate:check --gate=C`, `workflow:next --complete=dev|qa`, and `feature:close` enforce the same §2c gate — omitting the step surfaces the block at Gate C instead of at close.
 
 ## Feature dossier
 
-Read the active dossier when present and add the production entry point, reused boundaries, phases, and exact plan path in best effort. It is not a planning artifact or gate.
+When a dossier is active, add the production entry point, reused boundaries, phases, and exact plan path, best effort; it is not a planning artifact or gate.
 
 ```bash
 aioson dossier:add-finding . --slug={slug} --agent=planner --section="Code Map" --content="Plan: .aioson/context/implementation-plan-{slug}.md; production entry: ...; vertical phases: ..." 2>/dev/null || true
@@ -180,7 +179,7 @@ Next agent: @dev (execute the vertical phases against the PRD and prototype)
 Action: /dev
 ```
 
-Before `/compact`, update `mappings/{slug}/continuity.md` only for material context not already preserved in the briefing, PRD, Sheldon report, prototype, or plan. Follow `.aioson/docs/feature-continuity-mapping.md`; it is temporary, non-canonical, and never a gate. Recommend `/compact` before the next same-feature agent. Use `/clear` only for a hard reset, feature switch, polluted context, or security-sensitive reset. Do not continue into Dev's work.
+Before `/compact`, update `mappings/{slug}/continuity.md` only with material context the briefing, PRD, Sheldon report, prototype, or plan do not preserve (`.aioson/docs/feature-continuity-mapping.md`: temporary, non-canonical, never a gate). Recommend `/compact` before the next same-feature agent; `/clear` only for a hard reset, feature switch, polluted context, or security-sensitive reset. Do not continue into Dev's work.
 
 ## Observability
 

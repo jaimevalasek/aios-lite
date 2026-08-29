@@ -26,14 +26,11 @@ A classificação não insere outros agentes na cadeia.
 
 ## Faixas de desenvolvimento
 
-Se o plano ou o usuário exigir hosts/modelos diferentes para backend, frontend ou outra frente, o plano delimita as fronteiras. O manifesto `agent-execution-{slug}.json` declara, por faixa:
+Depois de escrever o plano, o Planner roda `aioson execution:offer . --feature={slug} --json`. A resposta **mede** o plano (`plan.scale`: arquivos distintos, fases, ondas, fases em paralelo e as áreas de escrita em que os arquivos caem) e nomeia o passo de destravamento (`onboarding.next`). Quando `plan.scale.split_candidate` é verdadeiro (12+ arquivos para um único contexto — `AIOSON_EXECUTION_SPLIT_MIN_FILES` move o piso) ou o usuário pediu execução dividida, o Planner pergunta **uma vez**: DEV único (padrão) ou faixas orquestradas — esteja o caminho destravado ou não. A resposta fica registrada no plano: `execution: single` no frontmatter, ou a tabela `## Development execution lanes` (`Lane | Exact write paths | Integration owner` — host e modelo vêm do arquivo de papéis, nunca do plano). Um plano acima do piso sem resposta registrada gera o aviso `[Execution Scale]` ao concluir o estágio.
 
-- `host` e `model`;
-- `prompt`;
-- `write_paths`;
-- fallback explícito, quando permitido.
+Com faixas declaradas, `aioson execution:seed . --feature={slug}` grava `.aioson/config/execution-roles.json` **desligado**: um `{lane}_dev` por faixa mais `qa`, cada um numa CLI de execução instalada na máquina, no modelo padrão do harness; o revisor nasce em outra CLI quando há mais de uma. Escolher modelo, ligar o arquivo e assinar os hosts são atos do dono — o framework semeia, nunca destrava. Com a oferta respondendo `available`, `aioson execution:compile` deriva as faixas do manifesto e os prompts por unidade das tabelas.
 
-As faixas continuam internas ao DEV, rodam sequencialmente no worktree compartilhado e são integradas pelo DEV.
+A classificação nunca decide execução multi-modelo: a escala medida do plano ganha a pergunta; a resposta é do usuário ou do PRD aprovado.
 
 ## Gate C
 

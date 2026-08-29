@@ -1165,7 +1165,7 @@ async function finalizeCurrentStage(targetDir, config, state, stageName) {
     if (executionGate.blocking) {
       throw new Error(executionGate.message);
     }
-    if (executionGate.mode === 'orchestrated') executionSummary = executionGate;
+    if (executionGate.mode === 'orchestrated' || executionGate.advisory) executionSummary = executionGate;
     if (normalizedStage === 'dev') {
       const chainGate = await inspectChainHandoffGate(targetDir, {
         featureSlug: state.featureSlug,
@@ -1926,11 +1926,15 @@ function buildStageActivationContext(state, stageName, dependencies, scopeCheckM
 
 /**
  * Orchestrated execution — deterministic pins for the stages that touch it.
- * Empty (byte-identical prompts) whenever the project has not unlocked the
- * orchestrated path: no roles file, no signed roles, no orchestrated manifest.
  *
  *   planner:            the offer (roles unlocked + every role signed) → ask
  *                       once, tables, compile; a stale compiled plan → recompile.
+ *                       NOT unlocked → for MEDIUM and larger features, one line
+ *                       naming the locked state and the unlock step. Silence
+ *                       here was the incident: a 77-file plan written for one
+ *                       context because the option was invisible until a file
+ *                       nobody had created existed. MICRO/SMALL stay
+ *                       byte-identical — the lean lane never carries it.
  *   dev / orchestrator: the manifest says orchestrated → run the engine, answer
  *                       decisions, integrate from the ledger. The routed doc
  *                       carries the protocol; the pin carries the STATE.
@@ -1944,10 +1948,18 @@ async function buildExecutionActivationContext(targetDir, state, stageName) {
   const slug = state.featureSlug;
   try {
     if (stageName === 'planner') {
-      const { offerExecution } = require('../lib/execution-roles');
+      const { offerExecution, describeOnboarding, installedExecutionHosts } = require('../lib/execution-roles');
       const { readExecutionPlan, verifyExecutionPlan } = require('../agent-execution/execution-plan');
       const offer = await offerExecution(targetDir);
-      if (!offer.available) return '';
+      if (!offer.available) {
+        // MICRO, SMALL and an unknown classification stay silent (the lean
+        // default); MEDIUM and anything larger carry the state line.
+        if (['', 'MICRO', 'SMALL'].includes(String(state.classification || '').trim().toUpperCase())) return '';
+        const installed = await installedExecutionHosts();
+        const onboarding = describeOnboarding(offer, { feature: slug, installed });
+        return `Orchestrated execution: NOT UNLOCKED here (${offer.reason}; execution hosts installed on this machine: ${installed.join(', ') || 'none'}). `
+          + `After writing the plan, \`aioson execution:offer . --feature=${slug} --json\` measures \`plan.scale\` — a split candidate earns the one question (single DEV or orchestrated lanes); \`onboarding.next\` names the unlock step (now: ${onboarding.next}).`;
+      }
       const roles = Object.entries(offer.roles.roles)
         .map(([key, role]) => `${key}=${role.host}/${role.model}${role.reasoning_effort ? `/${role.reasoning_effort}` : ''}`)
         .join(', ');
@@ -1995,6 +2007,36 @@ async function buildExecutionActivationContext(targetDir, state, stageName) {
 }
 
 /**
+ * The planner's scale advisory under single-DEV execution: a plan at or above
+ * the split floor (`AIOSON_EXECUTION_SPLIT_MIN_FILES`, 12 files) that records
+ * no execution choice — no `## Development execution lanes` table and no
+ * `execution:` line in its frontmatter — is the measured shape of a question
+ * never asked. Advisory, never blocking: the answer may legitimately be single
+ * DEV; what the gate charges is that nobody recorded it.
+ */
+async function inspectExecutionScale(targetDir, slug) {
+  const none = { blocking: false, advisory: false };
+  const { measurePlanScale, resolveExecutionChoice, splitMinFiles, formatPlanScale } = require('../lib/plan-scale');
+  let content;
+  try {
+    content = await fs.readFile(path.join(targetDir, '.aioson', 'context', `implementation-plan-${slug}.md`), 'utf8');
+  } catch {
+    return none;
+  }
+  const scale = measurePlanScale(content, { minFiles: splitMinFiles(process.env) });
+  const choice = resolveExecutionChoice(content);
+  if (!scale.split_candidate || choice.choice) return none;
+  return {
+    blocking: false,
+    advisory: true,
+    mode: 'single',
+    check: 'execution_scale',
+    scale,
+    message: `[Execution Scale] the plan for "${slug}" touches ${formatPlanScale(scale)} — a split candidate (floor ${scale.threshold.min_files} files for one context) — and records no execution choice. Ask the owner once (single DEV or orchestrated lanes) and record the answer: \`execution: single\` in the plan frontmatter, or the \`## Development execution lanes\` table + aioson execution:seed . --feature=${slug} --lanes=<lane-a,lane-b>.`
+  };
+}
+
+/**
  * The orchestrated-execution stage gate. Only when the manifest selects
  * `orchestration.execution: orchestrated`:
  *   planner completion → BLOCKS on a missing/stale compiled plan (the plan
@@ -2009,7 +2051,9 @@ async function inspectExecutionGate(targetDir, slug, stage) {
   try {
     const { loadManifest, resolveExecutionMode } = require('../agent-execution/manifest');
     const loaded = await loadManifest(targetDir, slug);
-    if (!loaded.exists || !loaded.ok || resolveExecutionMode(loaded.manifest) !== 'orchestrated') return none;
+    if (!loaded.exists || !loaded.ok || resolveExecutionMode(loaded.manifest) !== 'orchestrated') {
+      return stage === 'planner' ? inspectExecutionScale(targetDir, slug) : none;
+    }
     const { verifyExecutionPlan } = require('../agent-execution/execution-plan');
     const verified = await verifyExecutionPlan(targetDir, slug);
     if (stage === 'planner') {
@@ -2690,6 +2734,13 @@ async function runWorkflowNext({ args, options, logger, t }) {
   if (scopeDrift && (scopeDrift.advisories.length > 0 || scopeDrift.upstream.length > 0)) {
     logger.log(`[Scope Drift] advisory for @${scopeDrift.stage} — ${scopeDrift.advisories.length} drift warning(s), ${scopeDrift.upstream.length} upstream error(s) (owner: product/sheldon/planner); full report: ${scopeDrift.report}`);
     for (const line of [...scopeDrift.advisories, ...scopeDrift.upstream].slice(0, 5)) logger.log(`  - ${line}`);
+  }
+  // The execution advisories have to be SEEN too: a split-candidate plan
+  // with no recorded choice, or a DEV completing beside an unfinished
+  // orchestrated run, is news for the owner, not a JSON field.
+  const executionEvidence = completionEvidence && completionEvidence.execution;
+  if (executionEvidence && executionEvidence.advisory && executionEvidence.message) {
+    logger.log(executionEvidence.message.startsWith('[') ? executionEvidence.message : `[Execution] ${executionEvidence.message}`);
   }
   if (reviewCycleTransition) {
     logger.log(`QA correction cycle ${reviewCycleTransition.cycle}/${reviewCycleTransition.max_cycles}: @qa → @dev`);
