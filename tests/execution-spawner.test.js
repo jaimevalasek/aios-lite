@@ -391,3 +391,20 @@ test('preflight refuses a spawner that is not resolvable, and the roles file is 
   assert.deepEqual(plain.preflight.checks.map((c) => c.id), ['plan', 'manifest', 'host:claude', 'host:codex', 'host:kimi', 'units'], 'no spawner, no check — the engine spawns the hosts itself');
   assert.equal(plain.preflight.spawner, null);
 });
+
+test('a client that cannot even be launched reports the real cause, not a dead-zone ReferenceError', async () => {
+  // A sandbox that refuses to create the process makes `spawn` throw
+  // synchronously — before any timeout exists. The failure has to arrive as
+  // `spawner_failed` carrying the launcher's own message.
+  const { runSpawner } = require('../src/agent-execution/adapters/spawner');
+  const spawnImpl = () => { throw new Error('EPERM: sandbox refused to create the process'); };
+  const result = await runSpawner(
+    { command: process.execPath, args: [] },
+    { version: 1, action: 'spawn' },
+    { cwd: process.cwd(), spawnImpl }
+  );
+  assert.equal(result.ok, false);
+  assert.equal(result.reason, 'spawner_failed');
+  assert.match(result.error, /sandbox refused to create the process/);
+  assert.doesNotMatch(result.error, /before initialization/);
+});

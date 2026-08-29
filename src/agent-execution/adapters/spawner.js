@@ -60,10 +60,17 @@ async function runSpawner(spawner, envelope, { cwd, resolverOptions, timeoutMs =
     let stderr = '';
     let settled = false;
     let timedOut = false;
+    // `timer` is declared before `finish` on purpose: a synchronous throw from
+    // `spawnImpl` — a sandbox that refuses to create the process, an invalid
+    // cwd — calls `finish` before any timer exists. Declaring it after put the
+    // clearTimeout in the temporal dead zone, so every failure to launch the
+    // client was reported as `Cannot access 'timer' before initialization`
+    // instead of the real cause.
+    let timer = null;
     const finish = (result) => {
       if (settled) return;
       settled = true;
-      clearTimeout(timer);
+      if (timer) clearTimeout(timer);
       resolve(result);
     };
     let child;
@@ -73,7 +80,7 @@ async function runSpawner(spawner, envelope, { cwd, resolverOptions, timeoutMs =
       finish({ ok: false, reason: 'spawner_failed', error: redact(error.message) });
       return;
     }
-    const timer = setTimeout(() => {
+    timer = setTimeout(() => {
       timedOut = true;
       try { child.kill(); } catch { /* already gone */ }
     }, timeoutMs);
