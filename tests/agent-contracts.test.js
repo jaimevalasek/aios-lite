@@ -98,6 +98,14 @@ test('Planner asks the orchestration question on the measured scale and records 
     assert.doesNotMatch(planner, /\| Lane \| Host \| Model \|/, `${file}: host and model belong to the roles file, not the plan`);
     assert.match(planner, /the measured plan scale earns the question; the answer is the user's or the approved PRD's/, `${file}: classification never decides`);
     assert.doesNotMatch(planner, /answers `available: true`, ask once/, `${file}: the question no longer waits for the unlock file`);
+    // The second incident: "one row per delivery phase" produced a single lane running one whole phase per process.
+    assert.match(planner, /One row per UNIT \(one process, one context\), never per phase/, `${file}: the Execution Sequence row is the unit, not the phase`);
+    assert.doesNotMatch(planner, /One row per delivery phase/, `${file}: the old prescription is gone`);
+    assert.match(planner, /Lanes are the model axis \(each `\{lane\}_dev` role has its own host\/model\): one per surface when `plan\.scale\.surfaces` shows backend and frontend/, `${file}: lanes are declared by surface because the model is assigned per lane`);
+    assert.match(planner, /plan\.scale\.units\[\]\.over_budget/, `${file}: the unit ceiling is the measured cut`);
+    assert.match(planner, /a bare phase number = every row of that phase/, `${file}: Depends on semantics for a phase cut per lane`);
+    assert.match(planner, /one lane with one row per wave is serial by construction \(`orchestration_serial`\)/, `${file}: the serial shape is named`);
+    assert.doesNotMatch(planner, /Keep waves few; a solo wave is valid/, `${file}: the sentence that blessed the serial shape is gone`);
   }
 });
 
