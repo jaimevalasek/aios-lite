@@ -326,7 +326,7 @@ function compileExecutionPlan({ feature, planContent, prdContent, roles, rules =
   // ── lanes table ──────────────────────────────────────────────────────────
   const lanesTable = parseDevelopmentLanes(planContent);
   if (lanesTable === null) {
-    error('lanes_table_missing', 'the plan has no `## Development execution lanes` table — the planner declares one lane per row (Lane | Host | Model | Exact write paths | Integration owner)');
+    error('lanes_table_missing', 'the plan has no `## Development execution lanes` table — the planner declares one lane per row (Lane | Exact write paths | Integration owner; host and model come from the roles file)');
   } else {
     if (lanesTable.missing_columns.length > 0) error('lanes_table_invalid', `lanes table lacks column(s): ${lanesTable.missing_columns.join(', ')}`);
     for (const bad of lanesTable.malformed) error('lanes_table_invalid', `lanes table row ${bad.row} has ${bad.cells} cell(s); escape literal pipes as \\|`);

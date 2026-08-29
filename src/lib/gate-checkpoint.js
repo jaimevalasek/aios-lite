@@ -228,6 +228,7 @@ async function resolveGateCBaseline(targetDir, slug, artifactPath) {
 
 module.exports = {
   CHECKPOINTS_DIR,
+  parseImplementationDelta,
   readFreshGateCheckpoint,
   resolveGateCBaseline
 };

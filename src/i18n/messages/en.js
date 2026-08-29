@@ -426,7 +426,9 @@ module.exports = {
     help_host_signature:
       'aioson host:signature [path] --host=claude|codex|opencode|kimi|qwen [--model=<id>|configured-default] [--effort=low|medium|high|xhigh|max|ultra] [--ttl=<hours>] [--timeout=<ms>] [--status] [--list] [--json] [--locale=en]',
     help_execution_offer:
-      'aioson execution:offer [path] [--feature=<slug>] [--json] [--locale=en]',
+      'aioson execution:offer [path] [--feature=<slug>] [--confirm-defaults] [--json] [--locale=en]',
+    help_execution_seed:
+      'aioson execution:seed [path] --lanes=<lane-a,lane-b> [--feature=<slug>] [--json] [--locale=en]',
     help_execution_compile:
       'aioson execution:compile [path] --feature=<slug> [--dry-run] [--json] [--locale=en]',
     help_execution_run:

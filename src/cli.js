@@ -708,6 +708,8 @@ const JSON_SUPPORTED_COMMANDS = new Set([
   'host-signature',
   'execution:offer',
   'execution-offer',
+  'execution:seed',
+  'execution-seed',
   'execution:compile',
   'execution-compile',
   'execution:run',
@@ -1215,6 +1217,7 @@ function printHelp(t, logger) {
   logHelpLine(t, logger, 'cli.help_runtime_emit');
   logHelpLine(t, logger, 'cli.help_host_signature');
   logHelpLine(t, logger, 'cli.help_execution_offer');
+  logHelpLine(t, logger, 'cli.help_execution_seed');
   logHelpLine(t, logger, 'cli.help_execution_compile');
   logHelpLine(t, logger, 'cli.help_execution_run');
   logHelpLine(t, logger, 'cli.help_execution_decide');

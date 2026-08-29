@@ -6,7 +6,13 @@
  *
  *   execution:offer   [--feature]  is the path available here? (unlock file +
  *                                  signatures; optionally the feature's plan
- *                                  tables and compiled state)
+ *                                  tables, measured scale and compiled state;
+ *                                  always the unlock step the answer implies;
+ *                                  --confirm-defaults records the owner's
+ *                                  answer on roles at the default model)
+ *   execution:seed    --lanes      write the roles file for these lanes —
+ *                                  disabled, installed hosts, default model;
+ *                                  never over an existing one
  *   execution:compile --feature    planner tables + roles → execution plan,
  *                                  unit prompts, manifest lanes
  *   execution:graph   --feature    the compiled plan drawn as a graph (ascii |
@@ -19,7 +25,16 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const { resolveTargetDir } = require('../lib/project-root');
 const { validateFeatureSlug } = require('../verification/path-policy');
-const { offerExecution, resolveSpawner } = require('../lib/execution-roles');
+const {
+  offerExecution,
+  resolveSpawner,
+  seedExecutionRoles,
+  confirmDefaultModels,
+  describeOnboarding,
+  installedExecutionHosts
+} = require('../lib/execution-roles');
+const { listExecutionHosts } = require('../lib/tool-capabilities');
+const { measurePlanScale, resolveExecutionChoice, formatPlanScale, splitMinFiles } = require('../lib/plan-scale');
 const { parseDevelopmentLanes, parseExecutionWaves } = require('../harness/plan-waves');
 const {
   compileFeatureExecution,
@@ -30,7 +45,7 @@ const {
 const { runExecution, decideExecution, statusExecution } = require('../agent-execution/execution-run');
 const { graphExecution, FORMATS: GRAPH_FORMATS } = require('../agent-execution/execution-graph');
 
-const SUBCOMMANDS = ['offer', 'compile', 'run', 'decide', 'status', 'graph'];
+const SUBCOMMANDS = ['offer', 'seed', 'compile', 'run', 'decide', 'status', 'graph'];
 
 /** One line per engine event — the live channel that does not depend on the host streaming. */
 function formatProgress(event) {
@@ -88,12 +103,18 @@ async function describePlanTables(projectDir, feature, { env, now }) {
     content = null;
   }
   const waves = content !== null ? parseExecutionWaves(content) : null;
+  const lanesTable = content !== null ? parseDevelopmentLanes(content) : null;
   const compiled = await readExecutionPlan(projectDir, feature);
   const description = {
     path: relative,
     exists: content !== null,
-    lanes_table: content !== null && parseDevelopmentLanes(content) !== null,
+    lanes_table: lanesTable !== null,
+    lanes: lanesTable ? lanesTable.rows.map((row) => row.lane) : [],
     execution_sequence: Array.isArray(waves) && waves.length > 0,
+    // The measured size of the plan and the choice it records: the two facts
+    // the single-DEV/orchestrated question is asked on.
+    scale: content !== null ? measurePlanScale(content, { minFiles: splitMinFiles(env) }) : null,
+    execution_choice: content !== null ? resolveExecutionChoice(content).choice : null,
     compiled: { path: executionPlanRelative(feature), exists: compiled.exists, fresh: false, issues: [] }
   };
   if (compiled.exists) {
@@ -140,21 +161,33 @@ async function runExecutionCommand({ args, options = {}, logger, env = process.e
   }
 
   if (sub === 'offer') {
+    const confirmation = options['confirm-defaults'] === true ? await confirmDefaultModels(projectDir, { now }) : null;
     const offer = await offerExecution(projectDir, { env, now });
     const spawner = resolveSpawner({ roles: offer.roles, env });
+    const installed = await installedExecutionHosts({ env });
     const result = {
       ok: true,
       schema_version: 1,
       ...offer,
       // The client seam this engine supports, and whether one is in force here.
       execution: { spawner_supported: true, spawner: spawner ? { configured: true, source: spawner.source, command: spawner.command, args: spawner.args } : { configured: false, source: null, command: null, args: [] }, unit_timeout_ms: offer.roles?.execution?.unit_timeout_ms || null },
+      hosts: { registered: listExecutionHosts(), installed },
       exitCode: 0
     };
+    if (confirmation) result.confirmation = confirmation;
     if (feature) {
       result.feature = feature;
       result.plan = await describePlanTables(projectDir, feature, { env, now });
     }
+    // An unavailable offer names its unlock step — silence here is how a
+    // 77-file plan went to one context without anyone being asked.
+    result.onboarding = describeOnboarding(offer, { feature, lanes: result.plan?.lanes || [], installed });
     if (!options.json) {
+      if (confirmation) {
+        logger.log(confirmation.ok
+          ? `Default models confirmed for ${confirmation.confirmed.length} role(s): ${confirmation.confirmed.map((item) => `${item.role} (${item.host})`).join(', ') || 'none at the default'}.`
+          : `Default models not confirmed (${confirmation.reason}).`);
+      }
       if (offer.available) {
         logger.log(`Orchestrated execution available: ${Object.keys(offer.roles.roles).length} role(s) signed on this machine (${offer.roles_path}).`);
       } else {
@@ -162,12 +195,51 @@ async function runExecutionCommand({ args, options = {}, logger, env = process.e
         logger.log(`Orchestrated execution unavailable: ${offer.reason}${missing ? ` — ${missing}` : ''}`);
         for (const error of offer.errors || []) logger.log(`  · ${error.path}: ${error.message}`);
       }
+      logger.log(`  next: ${result.onboarding.next}`);
       if (result.plan) {
         const c = result.plan.compiled;
         logger.log(`Plan ${result.plan.path}: ${result.plan.exists ? `lanes table ${result.plan.lanes_table ? 'present' : 'absent'}, execution sequence ${result.plan.execution_sequence ? 'present' : 'absent'}` : 'absent'}; compiled plan ${c.exists ? (c.fresh ? 'fresh' : `stale (${c.issues.length} issue(s))`) : 'absent'}.`);
+        if (result.plan.scale) {
+          const s = result.plan.scale;
+          logger.log(`  scale: ${formatPlanScale(s)} — ${s.split_candidate ? `SPLIT CANDIDATE (${s.files} ≥ ${s.threshold.min_files} files for one context)` : `below the split floor (${s.threshold.min_files} files)`}; execution choice ${result.plan.execution_choice || 'not recorded'}${s.areas.length ? `; areas: ${s.areas.map((area) => `${area.prefix} (${area.files})`).join(', ')}` : ''}.`);
+        }
       }
     }
     return result;
+  }
+
+  if (sub === 'seed') {
+    let lanes = options.lanes && options.lanes !== true ? String(options.lanes).split(',') : [];
+    let lanesSource = lanes.length > 0 ? 'option' : null;
+    if (lanes.length === 0 && feature) {
+      // No --lanes: the plan's own lanes table is the declaration.
+      let content = null;
+      try {
+        content = await fs.readFile(path.join(projectDir, '.aioson', 'context', `implementation-plan-${feature}.md`), 'utf8');
+      } catch {
+        content = null;
+      }
+      const table = content !== null ? parseDevelopmentLanes(content) : null;
+      if (table && table.rows.length > 0) {
+        lanes = table.rows.map((row) => row.lane);
+        lanesSource = 'plan';
+      }
+    }
+    const result = await seedExecutionRoles(projectDir, { lanes, feature, env });
+    if (!options.json) {
+      if (result.outcome === 'seeded') {
+        logger.log(`Roles seeded (disabled): ${result.path}`);
+        for (const [key, role] of Object.entries(result.roles)) logger.log(`  ${key}: ${role.host}/${role.model}`);
+        logger.log(`  hosts installed here: ${result.hosts.installed.join(', ')}${result.independent_review ? '' : ' — one host only: the reviewer is the implementer\'s host (review is not independent)'}`);
+        logger.log('  Choosing a model per role and enabling the file are the owner\'s acts. Then: aioson host:signature per role, aioson execution:offer . --feature=<slug>.');
+      } else if (result.outcome === 'already_present') {
+        logger.log(`${result.message}${Array.isArray(result.missing_roles) && result.missing_roles.length ? ` — role(s) the lanes need and it lacks: ${result.missing_roles.join(', ')}` : ''}`);
+      } else {
+        logger.error(`Roles not seeded (${result.outcome}): ${result.message}`);
+        for (const item of result.install || []) if (item.command) logger.error(`  · ${item.host}: ${item.command}`);
+      }
+    }
+    return { ...result, feature, lanes: result.lanes || lanes.map((lane) => String(lane).trim().toLowerCase()).filter(Boolean), lanes_source: lanesSource, ...(result.ok ? { exitCode: 0 } : {}) };
   }
 
   if (sub === 'compile') {
