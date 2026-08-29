@@ -1,8 +1,8 @@
 'use strict';
 
 /**
- * The measured scale of an implementation plan — the number that decides
- * whether one context should carry it alone.
+ * The measured scale of an implementation plan — the numbers that decide
+ * whether one context should carry it alone, and how it should be cut.
  *
  * Every gate around the orchestrated path asked one question: "is the roles
  * file unlocked?" — and nothing ever asked "how big is this plan?". A plan
@@ -15,9 +15,20 @@
  * for lanes, never lanes.
  *
  * `split_candidate` is charged on ONE number — distinct files at or above the
- * floor (12 by default, `AIOSON_EXECUTION_SPLIT_MIN_FILES` moves it). Phases,
- * waves and areas are reported so the question, when it is asked, carries the
- * evidence. The measurement never decides: the answer is the owner's.
+ * floor (12 by default, `AIOSON_EXECUTION_SPLIT_MIN_FILES` moves it).
+ *
+ * The second incident measured the UNIT, not the feature: an orchestrated
+ * plan whose only lane owned every write path ran one whole vertical phase
+ * per process — 15 of 28 files in a single context, four waves in strict
+ * series, one model for everything. So the plan is also measured per
+ * Execution Sequence row (`units[]`: files, ACs, the files it shares with
+ * other rows, whether it exceeds the unit ceiling), as a graph
+ * (`parallelism`: how many units can actually run at once, the serial chain,
+ * the critical path in processes), and by SURFACE (`surfaces`: backend /
+ * frontend / shared per file — the axis models are assigned on, since each
+ * lane's `{lane}_dev` role carries its own host and model). `proposeSplit`
+ * turns those numbers into candidate lanes and rows: raw material the planner
+ * turns into tables. The measurement never decides: the answer is the owner's.
  */
 
 const {
@@ -25,21 +36,50 @@ const {
   extractSection,
   mapColumns,
   normalizeLabel,
-  parseFirstMarkdownTable
+  parseFirstMarkdownTable,
+  extractIds,
+  CAP_ID_RE,
+  AC_ID_RE
 } = require('./feature-completeness-format');
 const { parseImplementationDelta } = require('./gate-checkpoint');
 const { parseExecutionWaves, groupByWave, parseDevelopmentLanes, splitPathCell } = require('../harness/plan-waves');
 
 const DEFAULT_SPLIT_MIN_FILES = 12;
 const SPLIT_MIN_FILES_ENV = 'AIOSON_EXECUTION_SPLIT_MIN_FILES';
+/** One unit = one ephemeral process = one context. Above this it is two. */
+const DEFAULT_UNIT_MAX_FILES = 10;
+const DEFAULT_UNIT_MAX_ACS = 6;
+const UNIT_MAX_FILES_ENV = 'AIOSON_EXECUTION_UNIT_MAX_FILES';
+const UNIT_MAX_ACS_ENV = 'AIOSON_EXECUTION_UNIT_MAX_ACS';
 const MAX_AREAS = 8;
 const EXECUTION_CHOICES = ['single', 'orchestrated'];
 const DELIVERY_HEADINGS = ['Capability Delivery Plan', 'Plano de Entrega de Capacidades', 'Matriz de Entrega de Capacidades'];
 const PHASE_HEADING = /^#{2,4}\s+(?:phase|fase|etapa)\s+(\d+)\b/i;
 
+// ─── surfaces: the axis models are assigned on ───────────────────────────────
+const SURFACES = ['backend', 'frontend', 'shared'];
+const FRONTEND_EXTENSIONS = /\.(?:html?|css|scss|sass|less|styl|tsx|jsx|vue|svelte|astro)$/i;
+const BACKEND_EXTENSIONS = /\.(?:go|rs|py|rb|php|java|kt|kts|cs|fs|scala|ex|exs|sql|prisma|proto)$/i;
+const FRONTEND_DIRS = new Set(['public', 'client', 'ui', 'web', 'www', 'frontend', 'front', 'components', 'pages', 'views', 'styles', 'assets', 'static', 'layouts', 'screens', 'widgets', 'e2e', 'cypress', 'playwright']);
+const BACKEND_DIRS = new Set(['server', 'api', 'backend', 'domain', 'storage', 'db', 'database', 'services', 'service', 'handlers', 'controllers', 'models', 'repositories', 'repository', 'migrations', 'cmd', 'internal', 'pkg', 'http', 'routes', 'router', 'routers', 'infra', 'infrastructure', 'workers', 'jobs', 'queue', 'queues', 'data', 'sql']);
+const TEST_DIRS = new Set(['test', 'tests', '__tests__', 'spec', 'specs', 'e2e', 'cypress', 'playwright']);
+const TEST_FILE = /(?:\.test\.|\.spec\.|_test\.|_spec\.|^test_)|Test\.(?:java|kt|cs)$/i;
+
+function positiveInt(raw, fallback) {
+  const value = parseInt(String(raw || ''), 10);
+  return Number.isInteger(value) && value > 0 ? value : fallback;
+}
+
 function splitMinFiles(env = process.env) {
-  const raw = parseInt(String(env[SPLIT_MIN_FILES_ENV] || ''), 10);
-  return Number.isInteger(raw) && raw > 0 ? raw : DEFAULT_SPLIT_MIN_FILES;
+  return positiveInt(env[SPLIT_MIN_FILES_ENV], DEFAULT_SPLIT_MIN_FILES);
+}
+
+/** `{ max_files, max_acs }` — the unit ceiling, moved by the environment. */
+function unitCeiling(env = process.env) {
+  return {
+    max_files: positiveInt(env[UNIT_MAX_FILES_ENV], DEFAULT_UNIT_MAX_FILES),
+    max_acs: positiveInt(env[UNIT_MAX_ACS_ENV], DEFAULT_UNIT_MAX_ACS)
+  };
 }
 
 /**
@@ -69,6 +109,46 @@ function areaOf(file) {
   return '.';
 }
 
+/**
+ * Which surface a file belongs to — by extension when it is unambiguous
+ * (`.html`, `.tsx`, `.go`, `.sql`…), else by the first directory or file stem
+ * that names one (`public/`, `client/`, `server/`, `domain/`, `server.js`…),
+ * else `shared`. A heuristic: reported per file so a wrong guess is visible,
+ * consumed by proposals and advisories, never by a refusal.
+ */
+function classifySurface(file) {
+  const parts = String(file || '').replace(/\\/g, '/').split('/').filter(Boolean);
+  const name = parts[parts.length - 1] || '';
+  const dirs = parts.slice(0, -1).map((dir) => dir.toLowerCase());
+  const stem = name.replace(/\.[^.]+$/, '').toLowerCase();
+  const test = dirs.some((dir) => TEST_DIRS.has(dir)) || TEST_FILE.test(name);
+  if (FRONTEND_EXTENSIONS.test(name)) return { surface: 'frontend', test, by: 'extension' };
+  if (BACKEND_EXTENSIONS.test(name)) return { surface: 'backend', test, by: 'extension' };
+  const hit = dirs.find((dir) => FRONTEND_DIRS.has(dir) || BACKEND_DIRS.has(dir));
+  if (hit) return { surface: FRONTEND_DIRS.has(hit) ? 'frontend' : 'backend', test, by: 'directory' };
+  if (FRONTEND_DIRS.has(stem) || BACKEND_DIRS.has(stem)) return { surface: FRONTEND_DIRS.has(stem) ? 'frontend' : 'backend', test, by: 'stem' };
+  return { surface: 'shared', test, by: 'default' };
+}
+
+/**
+ * `{ backend, frontend, shared, tests: {backend, frontend, shared}, files[],
+ *    two_sided, shared_test_root }` — source files counted per surface, test
+ * files apart. `shared_test_root`: the plan has both surfaces and tests
+ * nobody can tell apart by path — a root one lane cannot own alone.
+ */
+function measureSurfaces(files) {
+  const counts = { backend: 0, frontend: 0, shared: 0 };
+  const tests = { backend: 0, frontend: 0, shared: 0 };
+  const list = [];
+  for (const file of files) {
+    const item = classifySurface(file);
+    (item.test ? tests : counts)[item.surface] += 1;
+    list.push({ path: file, surface: item.surface, test: item.test });
+  }
+  const twoSided = counts.backend > 0 && counts.frontend > 0;
+  return { ...counts, tests, files: list, two_sided: twoSided, shared_test_root: twoSided && tests.shared > 0 };
+}
+
 function deliveryRows(content) {
   const section = extractSection(content, DELIVERY_HEADINGS);
   const table = section ? parseFirstMarkdownTable(section) : null;
@@ -84,12 +164,100 @@ function deliveryRows(content) {
   }));
 }
 
+function rowFiles(row) {
+  return [...new Set((row.files_raw || []).map(asFilePath).filter(Boolean))];
+}
+
+/**
+ * The dependency depth of every Execution Sequence row: a row with a
+ * `Depends on` cell waits for those rows (a bare phase number = every row of
+ * that phase); a row without one keeps the wave barrier and waits for the
+ * whole previous wave. The longest chain is the serial critical path.
+ */
+function rowDepths(rows) {
+  const depth = new Map();
+  const label = (row) => String(row.phase).trim().toLowerCase();
+  let previousWave = [];
+  for (const { phases } of groupByWave(rows)) {
+    for (const row of phases) {
+      let deps = [];
+      if (Array.isArray(row.depends) && row.depends.length > 0) {
+        for (const dep of row.depends) {
+          const key = String(dep.phase).trim().toLowerCase();
+          const exact = rows.filter((candidate) => label(candidate) === key);
+          const number = phaseNumber(dep.phase);
+          const targets = exact.length > 0 ? exact : rows.filter((candidate) => number !== null && phaseNumber(candidate.phase) === number);
+          deps.push(...targets.filter((candidate) => depth.has(candidate)));
+        }
+      } else {
+        deps = previousWave;
+      }
+      depth.set(row, 1 + Math.max(0, ...deps.map((candidate) => depth.get(candidate))));
+    }
+    previousWave = phases;
+  }
+  return depth;
+}
+
+/**
+ * Per Execution Sequence row — the unit an ephemeral process would carry:
+ * files, cited ACs/CAPs, the files it shares with other rows, its surfaces,
+ * and whether it exceeds the unit ceiling. Plus the plan as a graph
+ * (`parallelism`) and the files several rows write (`seams`).
+ */
+function measureUnits(rows, ceiling) {
+  const fanIn = new Map();
+  for (const row of rows) for (const file of rowFiles(row)) fanIn.set(file.toLowerCase(), (fanIn.get(file.toLowerCase()) || 0) + 1);
+  const depths = rowDepths(rows);
+  const units = rows.map((row) => {
+    const files = rowFiles(row);
+    const acs = [...new Set([...extractIds(row.scope, AC_ID_RE), ...extractIds(row.done, AC_ID_RE)])];
+    const caps = extractIds(row.scope, CAP_ID_RE);
+    const surfaces = measureSurfaces(files);
+    const reasons = [];
+    if (files.length > ceiling.max_files) reasons.push('files');
+    if (acs.length > ceiling.max_acs) reasons.push('acs');
+    return {
+      phase: String(row.phase),
+      wave: row.wave,
+      files: files.length,
+      acs: acs.length,
+      caps: caps.length,
+      shared_files: files.filter((file) => fanIn.get(file.toLowerCase()) > 1),
+      surfaces: { backend: surfaces.backend, frontend: surfaces.frontend, shared: surfaces.shared, tests: surfaces.tests.backend + surfaces.tests.frontend + surfaces.tests.shared },
+      two_sided: surfaces.two_sided,
+      depth: depths.get(row) || 1,
+      over_budget: reasons.length > 0,
+      reasons
+    };
+  });
+  const byWave = groupByWave(rows);
+  const maxConcurrent = Math.max(0, ...byWave.map((wave) => wave.phases.length));
+  const chain = Math.max(0, ...units.map((unit) => unit.depth));
+  const seams = [...fanIn.entries()]
+    .filter(([, count]) => count > 1)
+    .map(([file, count]) => ({ file, units: count }))
+    .sort((a, b) => b.units - a.units || a.file.localeCompare(b.file));
+  return {
+    units,
+    parallelism: {
+      waves: byWave.length,
+      max_concurrent_units: maxConcurrent,
+      serial_chain: chain,
+      critical_path_processes: chain * 2,
+      serial: units.length > 1 && maxConcurrent === 1
+    },
+    seams
+  };
+}
+
 /**
  * `{ files, create, modify, phases, waves, parallel_phases, bytes, areas,
- *    split_candidate, threshold: { min_files }, sources }`.
+ *    split_candidate, threshold: { min_files }, sources, surfaces, units,
+ *    parallelism, seams, ceiling }`.
  * Never throws; an empty or table-less plan measures zero everywhere.
  */
-function measurePlanScale(content, { minFiles = DEFAULT_SPLIT_MIN_FILES } = {}) {
+function measurePlanScale(content, { minFiles = DEFAULT_SPLIT_MIN_FILES, ceiling = { max_files: DEFAULT_UNIT_MAX_FILES, max_acs: DEFAULT_UNIT_MAX_ACS } } = {}) {
   const text = String(content || '');
   const files = new Map(); // lowercase → first spelling seen
   const actions = new Map(); // lowercase → Set(action)
@@ -139,6 +307,7 @@ function measurePlanScale(content, { minFiles = DEFAULT_SPLIT_MIN_FILES } = {}) 
     .sort((a, b) => b.files - a.files || a.prefix.localeCompare(b.prefix))
     .slice(0, MAX_AREAS);
   const countAction = (name) => [...actions.values()].filter((set) => set.has(name)).length;
+  const measured = measureUnits(sequence, ceiling);
 
   return {
     files: files.size,
@@ -151,7 +320,12 @@ function measurePlanScale(content, { minFiles = DEFAULT_SPLIT_MIN_FILES } = {}) 
     areas,
     split_candidate: files.size >= minFiles,
     threshold: { min_files: minFiles },
-    sources: { delta: delta.length, delivery: delivery.length, sequence: sequence.length }
+    sources: { delta: delta.length, delivery: delivery.length, sequence: sequence.length },
+    surfaces: measureSurfaces([...files.values()]),
+    units: measured.units,
+    parallelism: measured.parallelism,
+    seams: measured.seams,
+    ceiling: { max_files: ceiling.max_files, max_acs: ceiling.max_acs }
   };
 }
 
@@ -179,12 +353,125 @@ function formatPlanScale(scale) {
   return `${scale.files} file(s)${scale.create ? ` (${scale.create} new)` : ''} in ${scale.phases} phase(s), ${scale.waves} wave(s), ${scale.parallel_phases} in parallel`;
 }
 
+/** `phase 1 (15 files, 3 ACs)` */
+function formatUnit(unit) {
+  return `phase ${unit.phase} (${unit.files} file${unit.files === 1 ? '' : 's'}, ${unit.acs} AC${unit.acs === 1 ? '' : 's'})`;
+}
+
+function groupBy(items, keyOf) {
+  const groups = new Map();
+  for (const item of items) {
+    const key = keyOf(item);
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(item);
+  }
+  return groups;
+}
+
+/**
+ * Write paths per surface lane, as few as the files allow: a top-level
+ * directory whose files all sit on one surface is `dir/**`; a mixed one is
+ * split by its second level, and what still mixes is named file by file.
+ * Root files are exact paths.
+ */
+function proposeWritePaths(files) {
+  const lanes = { backend: new Set(), frontend: new Set() };
+  for (const [top, group] of groupBy(files, (file) => (file.path.includes('/') ? file.path.split('/')[0] : null))) {
+    if (top === null) {
+      for (const file of group) lanes[file.surface].add(file.path);
+      continue;
+    }
+    if (new Set(group.map((file) => file.surface)).size === 1) {
+      lanes[group[0].surface].add(`${top}/**`);
+      continue;
+    }
+    for (const [area, sub] of groupBy(group, (file) => (file.path.split('/').length >= 3 ? file.path.split('/').slice(0, 2).join('/') : null))) {
+      if (area !== null && new Set(sub.map((file) => file.surface)).size === 1) lanes[sub[0].surface].add(`${area}/**`);
+      else for (const file of sub) lanes[file.surface].add(file.path);
+    }
+  }
+  return { backend: [...lanes.backend].sort(), frontend: [...lanes.frontend].sort() };
+}
+
+/**
+ * Candidate lanes and rows for a two-surface plan: one lane per surface with
+ * derived write paths, every Execution Sequence row (or, without one, every
+ * delivery phase) cut into a `{phase}-backend` / `{phase}-frontend` pair in
+ * the same wave, and the files nobody can place (`unassigned`) named with the
+ * reason. `null` when the plan has one surface — nothing to cut on — or
+ * already declares two lanes — the cut was made. Raw material for the
+ * planner's tables, never a table.
+ */
+function proposeSplit(content) {
+  const text = String(content || '');
+  const lanesTable = parseDevelopmentLanes(text);
+  if (lanesTable && lanesTable.rows.length >= 2) return null;
+  const scale = measurePlanScale(text);
+  if (!scale.surfaces.two_sided) return null;
+  const placeable = scale.surfaces.files.filter((file) => file.surface !== 'shared');
+  const unassigned = scale.surfaces.files
+    .filter((file) => file.surface === 'shared')
+    .map((file) => ({ path: file.path, reason: file.test ? 'shared_test_root' : 'shared' }));
+  const writePaths = proposeWritePaths(placeable);
+  const sequence = parseExecutionWaves(text) || [];
+  const sourceRows = sequence.length > 0
+    ? sequence.map((row) => ({ phase: String(row.phase), wave: row.wave, files: rowFiles(row) }))
+    : [...groupBy(deliveryRows(text).filter((row) => Number.isInteger(row.phase)), (row) => row.phase).entries()]
+      .sort((a, b) => a[0] - b[0])
+      .map(([phase, rows], index) => ({ phase: String(phase), wave: index + 1, files: [...new Set(rows.flatMap((row) => row.files))] }));
+  const rows = sourceRows.map((row) => {
+    const classified = row.files.map((file) => ({ path: file, ...classifySurface(file) }));
+    const units = ['backend', 'frontend']
+      .map((lane) => ({ unit: `${row.phase}-${lane}`, lane, files: classified.filter((file) => file.surface === lane).map((file) => file.path) }))
+      .filter((unit) => unit.files.length > 0);
+    return { phase: row.phase, wave: row.wave, units, unassigned: classified.filter((file) => file.surface === 'shared').map((file) => file.path) };
+  });
+  return {
+    source: sequence.length > 0 ? 'execution_sequence' : 'delivery_plan',
+    lanes: [
+      { lane: 'backend', write_paths: writePaths.backend },
+      { lane: 'frontend', write_paths: writePaths.frontend }
+    ],
+    rows,
+    unassigned,
+    shared_test_root: scale.surfaces.shared_test_root,
+    seams: scale.seams
+  };
+}
+
+/** One line per proposed lane, one per row — the human rendering of `proposeSplit`. */
+function formatSplitProposal(proposal) {
+  if (!proposal) return [];
+  const lines = [`split proposal (${proposal.source === 'execution_sequence' ? 'from the Execution Sequence' : 'from the delivery phases'}): ${proposal.lanes.map((lane) => `${lane.lane} → ${lane.write_paths.join(', ') || '(no files)'}`).join(' | ')}`];
+  for (const row of proposal.rows) {
+    lines.push(`  wave ${row.wave}: ${row.units.map((unit) => `${unit.unit} (${unit.files.length})`).join(' ‖ ') || '(nothing placeable)'}${row.unassigned.length ? ` — unassigned: ${row.unassigned.join(', ')}` : ''}`);
+  }
+  if (proposal.unassigned.length) {
+    const tests = proposal.unassigned.filter((item) => item.reason === 'shared_test_root').length;
+    lines.push(`  unassigned ${proposal.unassigned.length} file(s): ${proposal.unassigned.map((item) => item.path).join(', ')}${tests ? ` — ${tests} test file(s) sit at a root no lane can own alone: give each lane its own test path (tests/api/**, tests/ui/**) or assign the root to one lane` : ''}`);
+  }
+  if (proposal.seams.length) lines.push(`  seams (files several rows write): ${proposal.seams.map((seam) => `${seam.file} ×${seam.units}`).join(', ')} — an Interface Contract row (IF-*) per boundary lets the halves run apart`);
+  return lines;
+}
+
 module.exports = {
   DEFAULT_SPLIT_MIN_FILES,
+  DEFAULT_UNIT_MAX_ACS,
+  DEFAULT_UNIT_MAX_FILES,
   EXECUTION_CHOICES,
   SPLIT_MIN_FILES_ENV,
+  SURFACES,
+  UNIT_MAX_ACS_ENV,
+  UNIT_MAX_FILES_ENV,
+  classifySurface,
   formatPlanScale,
+  formatSplitProposal,
+  formatUnit,
   measurePlanScale,
+  measureSurfaces,
+  measureUnits,
+  proposeSplit,
   resolveExecutionChoice,
-  splitMinFiles
+  splitMinFiles,
+  unitCeiling
 };

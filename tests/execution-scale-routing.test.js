@@ -69,7 +69,7 @@ const PHASES = [
   files('src/domain', 3),
   files('tests/integration', 2)
 ];
-function bigPlan({ frontmatter = ['status: draft'], lanes = false } = {}) {
+function bigPlan({ frontmatter = ['status: draft'], lanes = false, parallel = false, phases = PHASES } = {}) {
   return [
     '---', ...frontmatter, '---',
     '# Plan',
@@ -77,13 +77,13 @@ function bigPlan({ frontmatter = ['status: draft'], lanes = false } = {}) {
     '## Implementation Delta',
     '| CAP | Action | Existing evidence | Exact paths | Required change |',
     '|---|---|---|---|---|',
-    ...PHASES.map((paths, i) => `| CAP-orders-p${i + 1} | create | none | ${paths.join(', ')} | phase ${i + 1} |`),
+    ...phases.map((paths, i) => `| CAP-orders-p${i + 1} | create | none | ${paths.join(', ')} | phase ${i + 1} |`),
     '',
     '## Capability Delivery Plan',
     '',
     '| CAP | Phase | Files | Verification |',
     '|---|---|---|---|',
-    ...PHASES.map((paths, i) => `| CAP-orders-p${i + 1} | ${i + 1} | ${paths.join(', ')} | npm test |`),
+    ...phases.map((paths, i) => `| CAP-orders-p${i + 1} | ${i + 1} | ${paths.join(', ')} | npm test |`),
     '',
     ...(lanes ? [
       '## Development execution lanes',
@@ -96,7 +96,8 @@ function bigPlan({ frontmatter = ['status: draft'], lanes = false } = {}) {
     '## Execution Sequence',
     '| Phase | Wave | Files | Scope | Depends on | Done when |',
     '|---|---|---|---|---|---|',
-    ...PHASES.map((paths, i) => `| ${i + 1} | ${i + 1} | ${paths.join(', ')} | CAP-orders-p${i + 1} | ${i === 0 ? '—' : i} | npm test passes |`),
+    // Serial: one phase per wave, each depending on the previous. Parallel: two phases per wave, no edges.
+    ...phases.map((paths, i) => `| ${i + 1} | ${parallel ? Math.floor(i / 2) + 1 : i + 1} | ${paths.join(', ')} | CAP-orders-p${i + 1} | ${parallel || i === 0 ? '—' : i} | npm test passes |`),
     ''
   ].join('\n');
 }
@@ -193,7 +194,7 @@ test('planner activation names the locked state and the unlock step for MEDIUM f
   assert.equal(await buildExecutionActivationContext(medium, state('MEDIUM'), 'dev'), '');
 });
 
-test('planner completion: a split-candidate plan with no recorded execution choice is a named advisory; a recorded choice, a lanes table or a small plan is silent; never blocking', async (tt) => {
+test('planner completion: a split-candidate plan with no recorded execution choice is a named advisory; a recorded single choice, a parallel lanes plan or a small plan is silent; a serial or over-ceiling orchestrated plan is named; never blocking', async (tt) => {
   const unrecorded = await project(tt, { classification: 'MEDIUM', plan: bigPlan() });
   const gate = await inspectExecutionGate(unrecorded, SLUG, 'planner');
   assert.equal(gate.blocking, false);
@@ -211,8 +212,25 @@ test('planner completion: a split-candidate plan with no recorded execution choi
   const recorded = await project(tt, { classification: 'MEDIUM', plan: bigPlan({ frontmatter: ['status: draft', 'execution: single'] }) });
   assert.deepEqual(await inspectExecutionGate(recorded, SLUG, 'planner'), { blocking: false, advisory: false });
 
+  // The second incident: a lanes table AND one unit per wave — orchestrated in name only.
   const lanes = await project(tt, { classification: 'MEDIUM', plan: bigPlan({ lanes: true }) });
-  assert.deepEqual(await inspectExecutionGate(lanes, SLUG, 'planner'), { blocking: false, advisory: false });
+  const serial = await inspectExecutionGate(lanes, SLUG, 'planner');
+  assert.equal(serial.blocking, false);
+  assert.equal(serial.advisory, true);
+  assert.equal(serial.mode, 'orchestrated');
+  assert.equal(serial.check, 'execution_scale');
+  assert.match(serial.message, /^\[Execution Scale\] the plan for "orders" is orchestrated but serial by construction \(2 lane\(s\), 4 wave\(s\) of one unit each, critical path 8 processes\)\. Cut the rows per lane\/surface inside a wave/);
+  assert.match(serial.message, /lanes are the model axis, one `\{lane\}_dev` role each\.$/);
+  // Two units per wave on disjoint files, every unit under the ceiling: silent.
+  const parallel = await project(tt, { classification: 'MEDIUM', plan: bigPlan({ lanes: true, parallel: true }) });
+  assert.deepEqual(await inspectExecutionGate(parallel, SLUG, 'planner'), { blocking: false, advisory: false });
+  // Parallel but one unit above the ceiling: the unit is named with its numbers.
+  const fat = await project(tt, { classification: 'MEDIUM', plan: bigPlan({ lanes: true, parallel: true, phases: [files('src/server', 11), files('src/client', 5), files('src/domain', 3), files('tests/integration', 2)] }) });
+  const over = await inspectExecutionGate(fat, SLUG, 'planner');
+  assert.equal(over.advisory, true);
+  assert.match(over.message, /is orchestrated but over the unit ceiling \(10 files \/ 6 ACs per context\): phase 1 \(11 files, 0 ACs\)\./);
+  assert.equal(over.scale.units[0].over_budget, true);
+  assert.deepEqual(over.scale.units[0].reasons, ['files']);
 
   const small = await project(tt, { classification: 'MEDIUM' });
   assert.deepEqual(await inspectExecutionGate(small, SLUG, 'planner'), { blocking: false, advisory: false });

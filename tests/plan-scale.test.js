@@ -12,10 +12,17 @@ const assert = require('node:assert/strict');
 
 const {
   DEFAULT_SPLIT_MIN_FILES,
+  DEFAULT_UNIT_MAX_ACS,
+  DEFAULT_UNIT_MAX_FILES,
+  classifySurface,
   formatPlanScale,
+  formatSplitProposal,
+  formatUnit,
   measurePlanScale,
+  proposeSplit,
   resolveExecutionChoice,
-  splitMinFiles
+  splitMinFiles,
+  unitCeiling
 } = require('../src/lib/plan-scale');
 
 function plan({ frontmatter = ['feature: big', 'status: approved'], lanes = false, delta, delivery, sequence, phases = [] } = {}) {
@@ -151,7 +158,10 @@ test('plan-scale: Portuguese headings, Fase columns and phase headings measure t
   assert.deepEqual(scale.areas, [{ prefix: 'src/servidor', files: 2 }, { prefix: 'src', files: 1 }]);
   assert.deepEqual(measurePlanScale(''), {
     files: 0, create: 0, modify: 0, phases: 0, waves: 0, parallel_phases: 0, bytes: 0, areas: [],
-    split_candidate: false, threshold: { min_files: DEFAULT_SPLIT_MIN_FILES }, sources: { delta: 0, delivery: 0, sequence: 0 }
+    split_candidate: false, threshold: { min_files: DEFAULT_SPLIT_MIN_FILES }, sources: { delta: 0, delivery: 0, sequence: 0 },
+    surfaces: { backend: 0, frontend: 0, shared: 0, tests: { backend: 0, frontend: 0, shared: 0 }, files: [], two_sided: false, shared_test_root: false },
+    units: [], parallelism: { waves: 0, max_concurrent_units: 0, serial_chain: 0, critical_path_processes: 0, serial: false }, seams: [],
+    ceiling: { max_files: DEFAULT_UNIT_MAX_FILES, max_acs: DEFAULT_UNIT_MAX_ACS }
   });
   assert.equal(measurePlanScale(null).files, 0);
 });

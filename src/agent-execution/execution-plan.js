@@ -13,7 +13,10 @@
  * INTEGRATION unit (the parent session's @dev runs it after the lanes); a unit
  * mixing owners is refused — the planner splits it. Waves come from the plan;
  * inside a wave every lane unit runs concurrently, so same-wave files must be
- * disjoint. Roles (host/model/effort per lane, the lane reviewer) come from
+ * disjoint. A unit is also MEASURED: one process is one context, so a unit
+ * above the ceiling (files or ACs), a unit writing backend and frontend files
+ * in one context, and a plan whose single lane runs one unit per wave are
+ * named warnings — the planner cuts on the number; the compile never decides. Roles (host/model/effort per lane, the lane reviewer) come from
  * `.aioson/config/execution-roles.json`, validated by host signatures on this
  * machine; the plan's Host/Model columns are informational and a mismatch is a
  * warning. Prompts are compiled per unit from the dev-lane profile plus the
@@ -43,6 +46,7 @@ const { readExecutionRoles, resolveLaneRoles, checkRoleSignatures, laneRoleKey, 
 const { readSignatures, findSignature, signatureState } = require('../lib/host-signature');
 const { buildDevLaneProfile, DEV_KERNEL_RELATIVE_PATH } = require('./dev-lane-profile');
 const { MAX_DEVELOPMENT_LANES } = require('./schema');
+const { measureSurfaces, unitCeiling, UNIT_MAX_FILES_ENV, UNIT_MAX_ACS_ENV } = require('../lib/plan-scale');
 const {
   assertFeatureSlug,
   defaults: manifestDefaults,
@@ -170,6 +174,43 @@ function tableRowsFor(content, headings, definitions) {
   return { present: true, rows, missing: columns.missing };
 }
 
+/**
+ * `## Phase N — …` sections of the plan by phase number (any heading level
+ * 2–4; `Fase`/`Etapa` too), each ending at the next heading of the same or
+ * a higher level. The unit prompt embeds its own phase so the worker does
+ * not read the whole plan for the two paragraphs that concern it.
+ */
+function readPhaseSections(planContent) {
+  const sections = new Map();
+  let current = null;
+  let level = 0;
+  let buffer = [];
+  const flush = () => {
+    if (current !== null && !sections.has(current)) sections.set(current, buffer.join('\n').trim());
+    current = null;
+    buffer = [];
+  };
+  for (const line of String(planContent || '').split(/\r?\n/)) {
+    const heading = line.match(/^(#{2,4})\s+(.*)$/);
+    if (heading) {
+      const depth = heading[1].length;
+      if (current !== null && depth <= level) flush();
+      const phase = heading[2].match(/^(?:phase|fase|etapa)\s+(\d+)\b/i);
+      // A phase heading opens a section only when none is open: a deeper
+      // "### Phase 1 notes" inside "## Phase 1" is part of that section.
+      if (phase && current === null) {
+        current = parseInt(phase[1], 10);
+        level = depth;
+        buffer = [line];
+        continue;
+      }
+    }
+    if (current !== null) buffer.push(line);
+  }
+  flush();
+  return sections;
+}
+
 function readPlanExcerpts(planContent, prdContent) {
   const acceptance = tableRowsFor(prdContent || '', ['Acceptance Criteria', 'Criterios de Aceite', 'Critérios de Aceite'], {
     ac: ['AC', 'Acceptance criterion', 'Criterio de aceite', 'Critério de aceite'],
@@ -197,7 +238,8 @@ function readPlanExcerpts(planContent, prdContent) {
       caps: extractIds(row.cap, CAP_ID_RE),
       paths: String(row.paths || '').replace(/<br\s*\/?>/gi, ',').split(/[,;\n]/).map((item) => normalizeRel(item.replace(/^\s*(?:create|modify|reuse|retire|criar|modificar|reusar|remover)\s*:\s*/i, ''))).filter(Boolean)
     })),
-    prd_present: Boolean(prdContent)
+    prd_present: Boolean(prdContent),
+    phases: readPhaseSections(planContent)
   };
 }
 
@@ -238,7 +280,31 @@ function unitContractLines(feature, unit, lane, maxWave) {
   return lines;
 }
 
-function renderUnitPrompt({ feature, unit, lane, maxWave, profileText, excerpts }) {
+/**
+ * The unit's context contract: what it reads beyond the prompt, and what it
+ * must not. The prototype is named only for a unit that writes frontend
+ * files; the rules come through `context:brief --paths=<unit files>`, never
+ * the whole `.aioson/rules/` tree. Returns the lines and the reads they name.
+ */
+function contextContract({ feature, unit, excerpts, prototype }) {
+  const reads = [];
+  const lines = [
+    '## Context contract',
+    '',
+    `- Plan: ${implementationPlanRelative(feature)} — your phase section and table rows are embedded above; open the whole plan only for a cross-reference.`
+  ];
+  if (excerpts.prd_present) lines.push(`- PRD: ${prdRelative(feature)} — the acceptance criteria of your capabilities are embedded above; open it only for a business rule they cite.`);
+  const surfaces = measureSurfaces(unit.files);
+  if (prototype && prototype.path && (surfaces.frontend > 0 || surfaces.tests.frontend > 0)) {
+    reads.push({ path: prototype.path, bytes: prototype.bytes ?? null, why: 'frontend files in this unit' });
+    lines.push(`- Prototype: ${prototype.path}${Number.isInteger(prototype.bytes) ? ` (${Math.round(prototype.bytes / 1024)} KB)` : ''} — the visual contract for the UI files of this unit; a unit without UI files never opens it.`);
+  }
+  lines.push(`- Rules: run \`aioson context:brief . --agent=dev --mode=executing --paths=${unit.files.join(',')} --task="unit ${unit.id} of ${feature}"\` and load only what it selects (\`must_load\` is binding); never read \`.aioson/rules/\` wholesale.`);
+  lines.push('- Everything else (other phases, other lanes, the briefing) is out of your context on purpose: what you need from another unit arrives as messages appended below, and what another unit needs from you goes into `messages[]` of your report.');
+  return { lines, reads };
+}
+
+function renderUnitPrompt({ feature, unit, lane, maxWave, profileText, excerpts, prototype = null }) {
   const parts = [profileText.trimEnd(), '', ...unitContractLines(feature, unit, lane, maxWave), ''];
   const capSet = new Set(unit.caps.map((cap) => cap.toLowerCase()));
   const forUnit = (rows) => rows.filter((row) => row.caps.some((cap) => capSet.has(cap.toLowerCase())));
@@ -254,7 +320,13 @@ function renderUnitPrompt({ feature, unit, lane, maxWave, profileText, excerpts 
   if (deltaRows.length > 0) {
     parts.push('## Implementation delta (from the plan)', '', markdownTable(['CAP', 'Action', 'Exact paths', 'Required change'], deltaRows.map((row) => [row.cap, row.action, row.paths.join(', '), row.change])), '');
   }
-  return `${parts.join('\n').trimEnd()}\n`;
+  const phaseKey = Number.parseInt(String(unit.phase_number ?? ''), 10);
+  const section = excerpts.phases instanceof Map && Number.isInteger(phaseKey) ? excerpts.phases.get(phaseKey) : null;
+  if (section) parts.push('## Plan section for this phase (from the plan)', '', section, '');
+  const contract = contextContract({ feature, unit, excerpts, prototype });
+  parts.push(...contract.lines, '');
+  const text = `${parts.join('\n').trimEnd()}\n`;
+  return { text, context: { prompt_bytes: Buffer.byteLength(text, 'utf8'), reads: contract.reads } };
 }
 
 function renderLanePrompt({ feature, lane, laneId, units, maxWave, profileText }) {
@@ -317,7 +389,7 @@ async function rulesDigest(projectDir) {
   return { present: true, digest: hash.digest('hex'), files: files.length };
 }
 
-function compileExecutionPlan({ feature, planContent, prdContent, roles, rules = null, signatures, profile, manifest, runState = null }) {
+function compileExecutionPlan({ feature, planContent, prdContent, roles, rules = null, signatures, profile, manifest, runState = null, ceiling = unitCeiling({}), prototype = null }) {
   const errors = [];
   const warnings = [];
   const error = (check, message, extra = {}) => errors.push({ check, message, ...extra });
@@ -508,24 +580,29 @@ function compileExecutionPlan({ feature, planContent, prdContent, roles, rules =
     if (!unitByPhase.has(label)) unitByPhase.set(label, unit);
     if (unit.phase_number !== null && !unitByPhase.has(`#${unit.phase_number}`)) unitByPhase.set(`#${unit.phase_number}`, unit);
   }
-  const resolvePhaseRef = (ref) => {
+  // A label names one row (`1-backend`); a bare phase number names every row
+  // of that phase — a phase cut per lane is still one phase to depend on.
+  const resolvePhaseRefs = (ref) => {
     const key = String(ref).trim().toLowerCase();
-    if (unitByPhase.has(key)) return unitByPhase.get(key);
+    if (unitByPhase.has(key)) return [unitByPhase.get(key)];
+    const byId = units.find((unit) => unit.id === key);
+    if (byId) return [byId];
     const number = phaseNumber(ref);
-    if (number !== null && unitByPhase.has(`#${number}`)) return unitByPhase.get(`#${number}`);
-    return units.find((unit) => unit.id === key) || null;
+    if (number !== null) return units.filter((unit) => unit.phase_number === number);
+    return [];
   };
   const edges = [];
-  const interfaceContract = prdContent ? extractSection(prdContent, ['Interface Contract', 'Contrato de Interface']) !== null : false;
+  const interfaceContract = [prdContent, planContent].some((document) => document && extractSection(document, ['Interface Contract', 'Contrato de Interface']) !== null);
   const crossLaneWarned = new Set();
   for (const unit of units) {
     const seen = new Set();
     for (const dep of dependencyRows.get(unit.id) || []) {
-      const target = resolvePhaseRef(dep.phase);
-      if (!target) {
+      const targets = resolvePhaseRefs(dep.phase);
+      if (targets.length === 0) {
         error('dependency_unknown', `phase "${unit.phase}" depends on "${dep.phase}", which is not a phase of the Execution Sequence`, { phase: unit.phase, dependency: dep.phase });
         continue;
       }
+      for (const target of targets) {
       if (target.id === unit.id) {
         error('dependency_self', `phase "${unit.phase}" depends on itself`, { phase: unit.phase });
         continue;
@@ -551,6 +628,7 @@ function compileExecutionPlan({ feature, planContent, prdContent, roles, rules =
       }
       unit.depends_on.push({ unit: target.id, gate: dep.gate });
       edges.push({ from: target.id, to: unit.id, gate: dep.gate });
+      }
     }
   }
   const cyclic = topologicalRemainder(units.map((unit) => unit.id), edges);
@@ -572,6 +650,23 @@ function compileExecutionPlan({ feature, planContent, prdContent, roles, rules =
       .filter((row) => row.verification && row.caps.some((cap) => capSet.has(cap.toLowerCase())))
       .map((row) => ({ cap: row.caps[0] || null, command: row.verification }));
     if (unit.owner === 'lane' && unit.caps.length === 0) warn('unit_without_cap', `unit ${unit.id} (phase "${unit.phase}") cites no CAP-* in its scope and none could be inferred from the delivery plan or the implementation delta`, { unit: unit.id });
+  }
+  // ── unit load (advisory): one process is one context ─────────────────────
+  for (const unit of laneUnits) {
+    const reasons = [];
+    if (unit.files.length > ceiling.max_files) reasons.push(`${unit.files.length} files (ceiling ${ceiling.max_files})`);
+    if (unit.acs.length > ceiling.max_acs) reasons.push(`${unit.acs.length} acceptance criteria (ceiling ${ceiling.max_acs})`);
+    if (reasons.length > 0) {
+      warn('unit_over_budget', `unit ${unit.id} (phase "${unit.phase}") carries ${reasons.join(' and ')} for one context — cut it on disjoint files inside wave ${unit.wave} (a row per lane or surface, an Interface Contract row per boundary), or move ${UNIT_MAX_FILES_ENV}/${UNIT_MAX_ACS_ENV} deliberately`, { unit: unit.id, files: unit.files.length, acs: unit.acs.length, ceiling });
+    }
+    const surfaces = measureSurfaces(unit.files);
+    if (surfaces.two_sided) {
+      const named = (surface) => surfaces.files.filter((item) => item.surface === surface && !item.test).map((item) => item.path);
+      warn('unit_spans_surfaces', `unit ${unit.id} (phase "${unit.phase}") writes backend (${named('backend').join(', ')}) and frontend (${named('frontend').join(', ')}) files in one context — one row per lane/surface in the same wave, joined by Interface Contract rows (IF-*), lets each side run on its own model`, { unit: unit.id, backend: named('backend'), frontend: named('frontend') });
+    }
+  }
+  if (laneOrder.length === 1 && laneUnits.length > 1 && [...byWave.values()].every((members) => members.filter((unit) => unit.owner === 'lane').length <= 1)) {
+    warn('orchestration_serial', `one lane ("${laneOrder[0]}") owning every write path and one unit per wave: this run buys a fresh context and a lane review per unit, never parallelism — lanes are the model axis (one {lane}_dev role each); cut the rows per surface inside a wave, or record execution: single in the plan`, { lane: laneOrder[0], units: laneUnits.length, waves: byWave.size });
   }
   const coveredCaps = new Set(units.flatMap((unit) => unit.caps.map((cap) => cap.toLowerCase())));
   const plannedCaps = [...new Set([...excerpts.delivery, ...excerpts.delta].flatMap((row) => row.caps))];
@@ -596,7 +691,8 @@ function compileExecutionPlan({ feature, planContent, prdContent, roles, rules =
   const promptsDir = promptsRelative(feature);
   const prompts = [];
   for (const unit of laneUnits) {
-    const text = renderUnitPrompt({ feature, unit, lane: lanes[unit.lane], maxWave, profileText: profile.text, excerpts });
+    const { text, context } = renderUnitPrompt({ feature, unit, lane: lanes[unit.lane], maxWave, profileText: profile.text, excerpts, prototype });
+    unit.context = context;
     unit.prompt = `${promptsDir}/${unit.id}.md`;
     unit.prompt_digest = sha256(text);
     unit.report = `.aioson/context/reports/${feature}/{run_id}/${unit.id}.json`;
@@ -670,10 +766,41 @@ function compileExecutionPlan({ feature, planContent, prdContent, roles, rules =
       integration_units: integrationUnits.length,
       waves: waves.length,
       edges: edges.length,
-      processes: laneUnits.length * 2
+      processes: laneUnits.length * 2,
+      parallelism: measureParallelism(laneUnits),
+      ceiling: { max_files: ceiling.max_files, max_acs: ceiling.max_acs },
+      context_bytes_max: laneUnits.reduce((max, unit) => Math.max(max, (unit.context?.prompt_bytes || 0) + (unit.context?.reads || []).reduce((sum, read) => sum + (read.bytes || 0), 0)), 0)
     }
   };
   return { errors, warnings, plan, prompts };
+}
+
+/**
+ * The compiled graph as numbers: how many lane units one wave can run at
+ * once, the longest dependency chain (a unit with edges waits for them; one
+ * without keeps the wave barrier), and that chain in processes (dev + qa).
+ */
+function measureParallelism(laneUnits) {
+  const byWave = new Map();
+  for (const unit of laneUnits) {
+    if (!byWave.has(unit.wave)) byWave.set(unit.wave, []);
+    byWave.get(unit.wave).push(unit);
+  }
+  const waves = [...byWave.entries()].sort((a, b) => a[0] - b[0]).map(([, members]) => members);
+  const depth = new Map();
+  let previous = [];
+  for (const members of waves) {
+    for (const unit of members) {
+      const deps = unit.depends_on.length > 0
+        ? unit.depends_on.map((dep) => laneUnits.find((candidate) => candidate.id === dep.unit)).filter((candidate) => candidate && depth.has(candidate))
+        : previous;
+      depth.set(unit, 1 + Math.max(0, ...deps.map((candidate) => depth.get(candidate))));
+    }
+    previous = members;
+  }
+  const chain = Math.max(0, ...depth.values());
+  const maxConcurrent = Math.max(0, ...waves.map((members) => members.length));
+  return { max_concurrent_units: maxConcurrent, serial_chain: chain, critical_path_processes: chain * 2, serial: laneUnits.length > 1 && maxConcurrent === 1 };
 }
 
 /**
@@ -776,6 +903,24 @@ function planLaneView(lane) {
   };
 }
 
+/**
+ * The prototype the plan frontmatter binds (`prototype: <path>`), with its
+ * size on disk — the one read a frontend unit is told to make, measured.
+ */
+async function readPrototypeRead(projectDir, planContent) {
+  const frontmatter = String(planContent || '').match(/^---\r?\n([\s\S]*?)\r?\n---/);
+  const line = frontmatter ? frontmatter[1].match(/^prototype:\s*(.+)$/m) : null;
+  const value = line ? cleanCell(line[1]).trim() : '';
+  if (!value || /^(?:null|none|~)$/i.test(value) || !isSafeRelative(normalizeRel(value))) return null;
+  const relative = normalizeRel(value);
+  try {
+    const stat = await fs.stat(path.join(projectDir, ...relative.split('/')));
+    return { path: relative, bytes: stat.isFile() ? stat.size : null };
+  } catch {
+    return { path: relative, bytes: null };
+  }
+}
+
 async function readRunState(projectDir, feature) {
   const content = await readFileSafe(path.join(projectDir, '.aioson', 'context', `agent-execution-state-${feature}.json`));
   if (!content) return null;
@@ -830,7 +975,9 @@ async function compileFeatureExecution(projectDir, featureInput, { env = process
     signatures: { store, now },
     profile,
     manifest: loaded.exists ? loaded.manifest : null,
-    runState
+    runState,
+    ceiling: unitCeiling(env),
+    prototype: await readPrototypeRead(projectDir, planContent)
   });
   if (compiled.errors.length > 0) {
     return { ok: false, reason: 'compile_refused', feature, errors: compiled.errors, warnings: compiled.warnings };

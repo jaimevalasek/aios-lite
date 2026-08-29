@@ -34,7 +34,7 @@ const {
   installedExecutionHosts
 } = require('../lib/execution-roles');
 const { listExecutionHosts } = require('../lib/tool-capabilities');
-const { measurePlanScale, resolveExecutionChoice, formatPlanScale, splitMinFiles } = require('../lib/plan-scale');
+const { measurePlanScale, resolveExecutionChoice, formatPlanScale, formatUnit, formatSplitProposal, proposeSplit, splitMinFiles, unitCeiling } = require('../lib/plan-scale');
 const { parseDevelopmentLanes, parseExecutionWaves } = require('../harness/plan-waves');
 const {
   compileFeatureExecution,
@@ -112,9 +112,13 @@ async function describePlanTables(projectDir, feature, { env, now }) {
     lanes: lanesTable ? lanesTable.rows.map((row) => row.lane) : [],
     execution_sequence: Array.isArray(waves) && waves.length > 0,
     // The measured size of the plan and the choice it records: the two facts
-    // the single-DEV/orchestrated question is asked on.
-    scale: content !== null ? measurePlanScale(content, { minFiles: splitMinFiles(env) }) : null,
+    // the single-DEV/orchestrated question is asked on. Per unit and as a
+    // graph too: one process is one context, and a plan whose only lane runs
+    // one whole phase per wave is orchestrated in name only.
+    scale: content !== null ? measurePlanScale(content, { minFiles: splitMinFiles(env), ceiling: unitCeiling(env) }) : null,
     execution_choice: content !== null ? resolveExecutionChoice(content).choice : null,
+    // Candidate lanes and rows cut by surface — raw material, never a table.
+    split_proposal: content !== null ? proposeSplit(content) : null,
     compiled: { path: executionPlanRelative(feature), exists: compiled.exists, fresh: false, issues: [] }
   };
   if (compiled.exists) {
@@ -181,7 +185,10 @@ async function runExecutionCommand({ args, options = {}, logger, env = process.e
     }
     // An unavailable offer names its unlock step — silence here is how a
     // 77-file plan went to one context without anyone being asked.
-    result.onboarding = describeOnboarding(offer, { feature, lanes: result.plan?.lanes || [], installed });
+    // The lanes the unlock step names: the plan's table, or — before the
+    // table exists — one lane per measured surface.
+    const onboardingLanes = result.plan?.lanes?.length ? result.plan.lanes : (result.plan?.split_proposal?.lanes || []).map((lane) => lane.lane);
+    result.onboarding = describeOnboarding(offer, { feature, lanes: onboardingLanes, installed });
     if (!options.json) {
       if (confirmation) {
         logger.log(confirmation.ok
@@ -202,6 +209,13 @@ async function runExecutionCommand({ args, options = {}, logger, env = process.e
         if (result.plan.scale) {
           const s = result.plan.scale;
           logger.log(`  scale: ${formatPlanScale(s)} — ${s.split_candidate ? `SPLIT CANDIDATE (${s.files} ≥ ${s.threshold.min_files} files for one context)` : `below the split floor (${s.threshold.min_files} files)`}; execution choice ${result.plan.execution_choice || 'not recorded'}${s.areas.length ? `; areas: ${s.areas.map((area) => `${area.prefix} (${area.files})`).join(', ')}` : ''}.`);
+          const tests = s.surfaces.tests.backend + s.surfaces.tests.frontend + s.surfaces.tests.shared;
+          logger.log(`  surfaces: backend ${s.surfaces.backend} · frontend ${s.surfaces.frontend} · shared ${s.surfaces.shared} · tests ${tests}${s.surfaces.two_sided ? ' — two surfaces: one lane per surface is the model axis' : ''}${s.surfaces.shared_test_root ? ' (tests sit at a root no lane can own alone)' : ''}`);
+          if (s.units.length > 0) {
+            logger.log(`  units: ${s.units.map((unit) => `${formatUnit(unit)}${unit.over_budget ? ` OVER ${unit.reasons.join('+')}` : ''}${unit.two_sided ? ' backend+frontend' : ''}`).join(' · ')} — ceiling ${s.ceiling.max_files} files / ${s.ceiling.max_acs} ACs per context`);
+            logger.log(`  parallelism: ${s.parallelism.waves} wave(s), at most ${s.parallelism.max_concurrent_units} unit(s) at once, critical path ${s.parallelism.serial_chain} unit(s) = ${s.parallelism.critical_path_processes} process(es)${s.parallelism.serial ? ' — SERIAL by construction' : ''}`);
+          }
+          for (const line of formatSplitProposal(result.plan.split_proposal)) logger.log(`  ${line}`);
         }
       }
     }
@@ -223,12 +237,20 @@ async function runExecutionCommand({ args, options = {}, logger, env = process.e
       if (table && table.rows.length > 0) {
         lanes = table.rows.map((row) => row.lane);
         lanesSource = 'plan';
+      } else if (content !== null) {
+        // No table yet: a two-surface plan seeds one lane per surface — the
+        // axis models are assigned on — and the planner writes the table after.
+        const proposal = proposeSplit(content);
+        if (proposal) {
+          lanes = proposal.lanes.map((lane) => lane.lane);
+          lanesSource = 'surfaces';
+        }
       }
     }
     const result = await seedExecutionRoles(projectDir, { lanes, feature, env });
     if (!options.json) {
       if (result.outcome === 'seeded') {
-        logger.log(`Roles seeded (disabled): ${result.path}`);
+        logger.log(`Roles seeded (disabled): ${result.path}${lanesSource === 'surfaces' ? ' — lanes measured from the plan\'s surfaces (backend/frontend); declare them in the plan\'s lanes table' : ''}`);
         for (const [key, role] of Object.entries(result.roles)) logger.log(`  ${key}: ${role.host}/${role.model}`);
         logger.log(`  hosts installed here: ${result.hosts.installed.join(', ')}${result.independent_review ? '' : ' — one host only: the reviewer is the implementer\'s host (review is not independent)'}`);
         logger.log('  Choosing a model per role and enabling the file are the owner\'s acts. Then: aioson host:signature per role, aioson execution:offer . --feature=<slug>.');

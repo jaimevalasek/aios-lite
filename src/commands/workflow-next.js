@@ -2016,23 +2016,44 @@ async function buildExecutionActivationContext(targetDir, state, stageName) {
  */
 async function inspectExecutionScale(targetDir, slug) {
   const none = { blocking: false, advisory: false };
-  const { measurePlanScale, resolveExecutionChoice, splitMinFiles, formatPlanScale } = require('../lib/plan-scale');
+  const { measurePlanScale, resolveExecutionChoice, splitMinFiles, formatPlanScale, formatUnit, unitCeiling } = require('../lib/plan-scale');
+  const { parseDevelopmentLanes } = require('../harness/plan-waves');
   let content;
   try {
     content = await fs.readFile(path.join(targetDir, '.aioson', 'context', `implementation-plan-${slug}.md`), 'utf8');
   } catch {
     return none;
   }
-  const scale = measurePlanScale(content, { minFiles: splitMinFiles(process.env) });
+  const scale = measurePlanScale(content, { minFiles: splitMinFiles(process.env), ceiling: unitCeiling(process.env) });
   const choice = resolveExecutionChoice(content);
-  if (!scale.split_candidate || choice.choice) return none;
+  if (!scale.split_candidate) return none;
+  if (!choice.choice) {
+    return {
+      blocking: false,
+      advisory: true,
+      mode: 'single',
+      check: 'execution_scale',
+      scale,
+      message: `[Execution Scale] the plan for "${slug}" touches ${formatPlanScale(scale)} — a split candidate (floor ${scale.threshold.min_files} files for one context) — and records no execution choice. Ask the owner once (single DEV or orchestrated lanes) and record the answer: \`execution: single\` in the plan frontmatter, or the \`## Development execution lanes\` table + aioson execution:seed . --feature=${slug} --lanes=<lane-a,lane-b>.`
+    };
+  }
+  if (choice.choice !== 'orchestrated') return none;
+  // Orchestrated in name only: one unit per wave, or a unit one context cannot carry.
+  const over = scale.units.filter((unit) => unit.over_budget);
+  const serial = scale.parallelism.serial;
+  if (over.length === 0 && !serial) return none;
+  const lanesTable = parseDevelopmentLanes(content);
+  const laneCount = lanesTable ? lanesTable.rows.length : 0;
+  const findings = [];
+  if (serial) findings.push(`serial by construction (${laneCount} lane(s), ${scale.parallelism.waves} wave(s) of one unit each, critical path ${scale.parallelism.critical_path_processes} processes)`);
+  if (over.length > 0) findings.push(`over the unit ceiling (${scale.ceiling.max_files} files / ${scale.ceiling.max_acs} ACs per context): ${over.map(formatUnit).join(', ')}`);
   return {
     blocking: false,
     advisory: true,
-    mode: 'single',
+    mode: 'orchestrated',
     check: 'execution_scale',
     scale,
-    message: `[Execution Scale] the plan for "${slug}" touches ${formatPlanScale(scale)} — a split candidate (floor ${scale.threshold.min_files} files for one context) — and records no execution choice. Ask the owner once (single DEV or orchestrated lanes) and record the answer: \`execution: single\` in the plan frontmatter, or the \`## Development execution lanes\` table + aioson execution:seed . --feature=${slug} --lanes=<lane-a,lane-b>.`
+    message: `[Execution Scale] the plan for "${slug}" is orchestrated but ${findings.join('; ')}. Cut the rows per lane/surface inside a wave (\`plan.scale.units\` and \`plan.split_proposal\` in aioson execution:offer . --feature=${slug} --json) and join the halves with Interface Contract rows — lanes are the model axis, one \`{lane}_dev\` role each.`
   };
 }
 
@@ -2057,7 +2078,13 @@ async function inspectExecutionGate(targetDir, slug, stage) {
     const { verifyExecutionPlan } = require('../agent-execution/execution-plan');
     const verified = await verifyExecutionPlan(targetDir, slug);
     if (stage === 'planner') {
-      if (verified.ok) return { blocking: false, advisory: false, mode: 'orchestrated', plan: 'fresh' };
+      if (verified.ok) {
+        // Compiled and fresh — the shape is still measured: one unit per wave
+        // or a unit above the ceiling is an advisory even when the roles file
+        // and the compile are both green.
+        const scale = await inspectExecutionScale(targetDir, slug);
+        return scale.advisory ? { ...scale, plan: 'fresh' } : { blocking: false, advisory: false, mode: 'orchestrated', plan: 'fresh' };
+      }
       return {
         blocking: true,
         advisory: false,

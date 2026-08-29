@@ -292,7 +292,9 @@ test('execution:compile — units per phase × lane, waves, per-unit prompts wit
   assert.equal(result.ok, true, JSON.stringify(result.errors));
   assert.equal(result.path, `.aioson/context/execution-plan-${SLUG}.json`);
   assert.deepEqual(result.warnings, []);
-  assert.deepEqual(result.summary, { lanes: 2, units: 3, lane_units: 2, integration_units: 1, waves: 2, edges: 0, processes: 4 });
+  const { context_bytes_max: contextBytesMax, ...summary } = result.summary;
+  assert.deepEqual(summary, { lanes: 2, units: 3, lane_units: 2, integration_units: 1, waves: 2, edges: 0, processes: 4, parallelism: { max_concurrent_units: 2, serial_chain: 1, critical_path_processes: 2, serial: false }, ceiling: { max_files: 10, max_acs: 6 } });
+  assert.ok(contextBytesMax > 0, 'the largest unit context is measured in bytes');
 
   const { plan } = await readExecutionPlan(dir, SLUG);
   assert.equal(plan.version, 2);
@@ -553,7 +555,9 @@ test('verify:artifact --kind=execution-plan runs through the command and auto-fi
   assert.equal(report.kind, 'execution-plan');
   assert.equal(report.verdict, 'pass');
   assert.equal(report.exitCode, 0);
-  assert.deepEqual(report.metrics, { lanes: 2, units: 3, lane_units: 2, integration_units: 1, waves: 2, edges: 0, processes: 4 });
+  const { context_bytes_max: metricsContextBytes, ...metrics } = report.metrics;
+  assert.deepEqual(metrics, { lanes: 2, units: 3, lane_units: 2, integration_units: 1, waves: 2, edges: 0, processes: 4, parallelism: { max_concurrent_units: 2, serial_chain: 1, critical_path_processes: 2, serial: false }, ceiling: { max_files: 10, max_acs: 6 } });
+  assert.ok(metricsContextBytes > 0);
 
   const fired = await verifyAgentArtifact({ targetDir: dir, agent: 'planner', options: { feature: SLUG } });
   assert.equal(fired.skipped, false);
@@ -687,7 +691,9 @@ test('execution:compile — Depends on becomes typed edges: depends_on per unit,
   const { dir, env } = await setup(t, { plan: PLAN_DEPS });
   const result = await compile(dir, env);
   assert.equal(result.ok, true, JSON.stringify(result.errors));
-  assert.deepEqual(result.summary, { lanes: 2, units: 5, lane_units: 4, integration_units: 1, waves: 3, edges: 3, processes: 8 });
+  const { context_bytes_max: depsContextBytes, ...depsSummary } = result.summary;
+  assert.deepEqual(depsSummary, { lanes: 2, units: 5, lane_units: 4, integration_units: 1, waves: 3, edges: 3, processes: 8, parallelism: { max_concurrent_units: 2, serial_chain: 2, critical_path_processes: 4, serial: false }, ceiling: { max_files: 10, max_acs: 6 } });
+  assert.ok(depsContextBytes > 0);
   assert.deepEqual(result.warnings.map((w) => w.check), ['dependency_cross_lane_without_contract']);
   assert.match(result.warnings[0].message, /"4" \(backend\) depends on "2" \(frontend\)/);
 
