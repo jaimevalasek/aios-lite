@@ -704,6 +704,12 @@ async function runSystemPublish({ args, options, logger, t }) {
     return { ok: true, dryRun: true, manifest, fileCount, totalBytes, visibility, authorizedEmails, rawSource, protectedTs };
   }
   if (rawError) throw rawError;
+  // `--allow-raw-source` é uma decisão, não um silêncio: os arquivos que
+  // viajam legíveis são nomeados no log e registrados no resultado do publish
+  // real — antes só o dry-run/abort registrava.
+  if (buildMode && rawSource.length > 0) {
+    logger.log(`  [WARN] ${t('system.warn_raw_source_published', { count: rawSource.length, files: rawSource.join(', ') })}`);
+  }
 
   logger.log('Creating ZIP package...');
   const zipBuffer = await createZipBuffer(files);
@@ -741,7 +747,7 @@ async function runSystemPublish({ args, options, logger, t }) {
   if (response && response.quarantined) {
     logger.log(t('system.publish_quarantined'));
   }
-  return { ok: true, manifest, fileCount, totalBytes, visibility, paid, response, protectedTs };
+  return { ok: true, manifest, fileCount, totalBytes, visibility, paid, response, protectedTs, rawSource };
 }
 
 // ── system:list ─────────────────────────────────────────────────────────────

@@ -402,6 +402,50 @@ test('a guard_surfaces:[ui] rule stays out of non-UI files that mention its keyw
   }
 });
 
+test('a test file is about the surface, not the surface: fixture markup never draws product-UI rules', async () => {
+  const dir = await makeTmpDir();
+  try {
+    await writeProject(dir);
+    await writeFile(dir, '.aioson/rules/form-ui.md', FORM_UI_RULE);
+    const markup = '<form id="cadastro"><label for="cpf">CPF</label><input id="cpf" name="cpf" placeholder="CPF"></form>';
+    for (const testPath of ['tests/form-render.test.js', '__tests__/cadastro.spec.ts', 'tests/fixtures/cadastro.html']) {
+      const event = { tool_name: 'Write', tool_input: { file_path: testPath, content: `const html = '${markup}';` } };
+      const response = await buildGuardResponse(event, dir, { tool: 'claude', agent: 'dev' });
+      const rules = response._guard ? response._guard.rules : [];
+      assert.equal(rules.includes('.aioson/rules/form-ui.md'), false, `${testPath} is a fixture, not a form`);
+    }
+    // The identical markup as a product file still draws the rule.
+    const product = { tool_name: 'Write', tool_input: { file_path: 'app/cadastro/form.html', content: markup } };
+    const injected = await buildGuardResponse(product, dir, { tool: 'claude', agent: 'dev' });
+    assert.ok(injected._guard && injected._guard.rules.includes('.aioson/rules/form-ui.md'));
+  } finally {
+    await fs.rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('an accented alias is a first-class needle — the NFD fold, not its unaccented siblings, carries the match', async () => {
+  const dir = await makeTmpDir();
+  try {
+    await writeProject(dir);
+    await writeFile(dir, '.aioson/rules/form-ui.md', FORM_UI_RULE);
+    // No unaccented trigger appears anywhere ("formulário" never contains a
+    // whole-word "form"): the ONLY path to the rule is the accented alias,
+    // upper- and lower-case. A regression in the accent fold breaks this.
+    const accented = {
+      tool_name: 'Write',
+      tool_input: {
+        file_path: 'app/paginas/inscricao.html',
+        content: '<section class="inscricao"><h2>Preencha o FORMULÁRIO abaixo</h2><p>Os dados seguem ao concluir o formulário.</p><textarea name="nome"></textarea></section>'
+      }
+    };
+    const injected = await buildGuardResponse(accented, dir, { tool: 'claude', agent: 'dev' });
+    assert.equal(Boolean(injected._guard && injected._guard.injected), true, JSON.stringify((injected && injected._guard) || null));
+    assert.ok(injected._guard.rules.includes('.aioson/rules/form-ui.md'));
+  } finally {
+    await fs.rm(dir, { recursive: true, force: true });
+  }
+});
+
 test('declared paths bind injection even for a domain-signal rule (P1)', async () => {
   const dir = await makeTmpDir();
   try {

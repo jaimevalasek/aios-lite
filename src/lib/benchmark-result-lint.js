@@ -121,6 +121,25 @@ function analyzeBenchmarkResult({ file, runRoot = null }) {
     pathsToCheck.push(['artifacts.screenshots', shot]);
   }
 
+  // The static route promises a real app built after refinement. Shipping the
+  // refiner's prototype as the delivery is the exact escape the route exists
+  // to close — and it was enforced only by kernel prose until this check. The
+  // route marker is the agent's own recorded decision (.aioson/benchmark/route.json).
+  let routeMarker = null;
+  try {
+    routeMarker = JSON.parse(fs.readFileSync(path.resolve(root, '.aioson', 'benchmark', 'route.json'), 'utf8'));
+  } catch { /* no marker: legacy rounds and unmeasured runs stay unjudged on this axis */ }
+  const routeName = String((routeMarker && (routeMarker.route || routeMarker.mode)) || '').toLowerCase();
+  if (routeName === 'static') {
+    const prototypeShaped = entrypoints.filter((rel) => {
+      const normalized = String(rel).replace(/\\/g, '/');
+      return /(?:^|\/)prototype[^/]*\.html?$/i.test(normalized) || /(?:^|\/)\.aioson\/briefings\//i.test(normalized);
+    });
+    if (prototypeShaped.length > 0) {
+      issues.push(`static_route_prototype_entrypoint: ${prototypeShaped.join(', ')} — the static route ships a real app under the delivery root; the refiner's prototype is a briefing reference with mock state, never the delivery`);
+    }
+  }
+
   const visualDelivery = isVisualDelivery(entrypoints, root);
   const screenshots = artifacts && Array.isArray(artifacts.screenshots) ? artifacts.screenshots : [];
   if (status === 'completed' && visualDelivery) {

@@ -242,7 +242,10 @@ async function prepareApprovedPrototypeManifest(projectDir, slug, briefingConten
     const thin = Object.entries(weight.grades || {}).filter(([, g]) => g < 2).map(([lever, g]) => `${lever} ${g}/2`).join(', ');
     belowBar.push(`craft weight ${weight.score}/100 below the brand bar (${weight.bar}) — thin: ${thin}`);
   }
-  if (brandSurface && density && Number.isFinite(density.first_fold_occupancy_pct) && density.first_fold_occupancy_pct < 35) {
+  // The floor travels with the measurement; 35 only covers evidence recorded
+  // by a probe that predates the embedded floor.
+  const densityFloor = density && Number.isFinite(density.floor) ? density.floor : 35;
+  if (brandSurface && density && Number.isFinite(density.first_fold_occupancy_pct) && density.first_fold_occupancy_pct < densityFloor) {
     belowBar.push(`first fold ${100 - density.first_fold_occupancy_pct}% empty at ${density.scope || 'desktop'} (a visual subject covers ${density.first_fold_occupancy_pct}%)`);
   }
   if (belowBar.length > 0 && !acceptCraft) {

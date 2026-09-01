@@ -87,15 +87,26 @@ function stripJsComments(text) {
   return out.join('');
 }
 
-function jsSpecifiers(text) {
+// `import type` / `export type ... from` statements are erased by the
+// TypeScript compiler — they never exist at runtime. Inline forms
+// (`import { type A, B }`) stay conservative: counted as value imports.
+const TYPE_ONLY_STATEMENT = /^(?:import|export)\s+type\s+(?!from\b)/;
+
+function jsSpecifierEntries(text) {
   const clean = stripJsComments(text);
   const found = [];
   for (const pattern of JS_IMPORT_PATTERNS) {
     const re = new RegExp(pattern.source, pattern.flags);
     let match;
-    while ((match = re.exec(clean)) !== null) found.push(match[1].trim());
+    while ((match = re.exec(clean)) !== null) {
+      found.push({ spec: match[1].trim(), typeOnly: TYPE_ONLY_STATEMENT.test(match[0]) });
+    }
   }
   return found;
+}
+
+function jsSpecifiers(text) {
+  return jsSpecifierEntries(text).map((entry) => entry.spec);
 }
 
 const PY_FROM = /^\s*from\s+([.\w]+)\s+import\s+([^#\n]+)/;
@@ -230,15 +241,24 @@ function buildModuleGraph(files) {
     byRel.set(rel, file.lines);
   }
   const edges = new Map();
+  // Cycles are a runtime claim, so they are detected over value edges only:
+  // an edge that exists solely as `import type` is erased by the compiler
+  // and cannot close a circular dependency.
+  const valueEdges = new Map();
   const nodes = new Map();
   for (const [rel, lines] of byRel) {
     const targets = new Set();
+    const typeOnlyTargets = new Set();
     let external = 0;
     const ext = path.posix.extname(rel).toLowerCase();
     if (JS_EXT_SET.has(ext)) {
-      for (const spec of jsSpecifiers(lines.join('\n'))) {
+      for (const { spec, typeOnly } of jsSpecifierEntries(lines.join('\n'))) {
         const target = resolveJs(rel, spec, index);
-        if (target) { if (target !== rel) targets.add(target); } else if (!/^[./~@#]/.test(spec) && !spec.startsWith('src/') && !spec.startsWith('app/')) external += 1;
+        if (target) {
+          if (target === rel) continue;
+          if (typeOnly) { if (!targets.has(target)) typeOnlyTargets.add(target); } else { typeOnlyTargets.delete(target); }
+          targets.add(target);
+        } else if (!/^[./~@#]/.test(spec) && !spec.startsWith('src/') && !spec.startsWith('app/')) external += 1;
       }
     } else {
       for (const spec of pySpecifiers(lines)) {
@@ -248,10 +268,11 @@ function buildModuleGraph(files) {
       }
     }
     edges.set(rel, targets);
+    valueEdges.set(rel, typeOnlyTargets.size === 0 ? targets : new Set([...targets].filter((target) => !typeOnlyTargets.has(target))));
     nodes.set(rel, { fan_out: targets.size, fan_in: 0, imports: [...targets].sort(), external, exempt: COUPLING_EXEMPT_PATH.test(rel), composition_root: COMPOSITION_ROOT_PATH.test(rel) });
   }
   for (const targets of edges.values()) for (const target of targets) nodes.get(target).fan_in += 1;
-  return { nodes, edges, cycles: stronglyConnected(edges).filter((members) => members.length > 1).map((members) => members.sort()) };
+  return { nodes, edges, cycles: stronglyConnected(valueEdges).filter((members) => members.length > 1).map((members) => members.sort()) };
 }
 
 /** Tarjan's strongly connected components over the edge map (iterative). */

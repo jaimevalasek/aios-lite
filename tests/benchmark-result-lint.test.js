@@ -49,6 +49,29 @@ test('a well-formed benchmark result measures clean', async () => {
   assert.equal(result.metrics.features, 1);
 });
 
+test('the static route cannot ship the briefing prototype as the delivery — the route marker makes it mechanical', async () => {
+  const dir = await makeRun({ entrypoints: ['workspace/prototype.html'] });
+  await fs.mkdir(path.join(dir, '.aioson', 'benchmark'), { recursive: true });
+  await fs.writeFile(path.join(dir, 'workspace', 'prototype.html'), '<!doctype html>', 'utf8');
+  await fs.writeFile(path.join(dir, '.aioson', 'benchmark', 'route.json'), JSON.stringify({ route: 'static', reason: 'browser toy' }), 'utf8');
+  const flagged = analyzeBenchmarkResult({ file: path.join(dir, 'benchmark-result.json') });
+  assert.ok(flagged.issues.some((issue) => /static_route_prototype_entrypoint/.test(issue)), flagged.issues.join('\n'));
+
+  // The full route builds through the chain — the same entrypoint name is not judged there.
+  await fs.writeFile(path.join(dir, '.aioson', 'benchmark', 'route.json'), JSON.stringify({ route: 'full', reason: 'real app' }), 'utf8');
+  const full = analyzeBenchmarkResult({ file: path.join(dir, 'benchmark-result.json') });
+  assert.ok(!full.issues.some((issue) => /static_route_prototype_entrypoint/.test(issue)), full.issues.join('\n'));
+
+  // A prototype under .aioson/briefings/ is caught whatever it is named.
+  const nested = await makeRun({ entrypoints: ['.aioson/briefings/toy/index.html'] });
+  await fs.mkdir(path.join(nested, '.aioson', 'benchmark'), { recursive: true });
+  await fs.mkdir(path.join(nested, '.aioson', 'briefings', 'toy'), { recursive: true });
+  await fs.writeFile(path.join(nested, '.aioson', 'briefings', 'toy', 'index.html'), '<!doctype html>', 'utf8');
+  await fs.writeFile(path.join(nested, '.aioson', 'benchmark', 'route.json'), JSON.stringify({ route: 'static' }), 'utf8');
+  const caught = analyzeBenchmarkResult({ file: path.join(nested, 'benchmark-result.json') });
+  assert.ok(caught.issues.some((issue) => /static_route_prototype_entrypoint/.test(issue)), caught.issues.join('\n'));
+});
+
 test('completed without validation coverage, bad enums, forbidden fields and missing paths are issues', async () => {
   const dir = await makeRun({
     status: 'done',

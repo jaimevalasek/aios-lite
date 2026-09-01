@@ -38,6 +38,10 @@ function normalizeSha256(value) {
 // distilled extract is a source like any other once its fingerprint is pinned.
 const SOURCE_ROOTS = ['plans/', 'researchs/'];
 const SOURCE_ROOTS_LABEL = SOURCE_ROOTS.join(' or ');
+// Whole words only — "webhook", "website" and "researcher" cite no web
+// research. `\b` breaks on accented letters, so boundaries are spelled
+// with \p{L}\p{N}.
+const RESEARCH_WORD = /(?<![\p{L}\p{N}_])(?:web|research|pesquisas?)(?![\p{L}\p{N}_])/iu;
 
 function insideSourceRoot(sourcePath) {
   return SOURCE_ROOTS.some((root) => sourcePath.startsWith(root));
@@ -211,7 +215,7 @@ async function validateSourceLineage({
           // A promise that leans on web research without a pinned SRC-* row
           // is traceable to nothing a fingerprint can re-check — measured,
           // reported as a warning by kind=sources, never a refusal.
-          promises.push({ promise, sources, intent, state, research_unpinned: sources.length === 0 && /(web|research|pesquisa)/i.test(sourceText) });
+          promises.push({ promise, sources, intent, state, research_unpinned: sources.length === 0 && RESEARCH_WORD.test(sourceText) });
         }
       }
     }

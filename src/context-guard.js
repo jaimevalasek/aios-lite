@@ -79,9 +79,20 @@ const DOM_MARKERS = new RegExp([
 ].join('|'), 'i');
 // Repository housekeeping files are never a product surface, whatever they mention.
 const NON_PRODUCT_DOC = /^(?:changelog|changes|history|readme|license|licence|contributing|code_of_conduct|security|authors|notice|todo|roadmap)(?:[._-].*)?$/i;
+// A test file is ABOUT a surface, never the surface: fixture markup inside a
+// test turns a Node test file DOM-flavored, but product interaction rules are
+// noise there — the same "files about forms are not forms" doctrine.
+const TEST_PATH_SEGMENT = /(?:^|[\\/])(?:tests?|__tests__|spec)[\\/]/i;
+const TEST_BASENAME = /\.(?:test|spec)\.[a-z]+$/i;
+
+function isTestArtifact(filePath) {
+  const text = String(filePath || '');
+  return TEST_PATH_SEGMENT.test(text) || TEST_BASENAME.test(path.basename(text));
+}
 
 function detectSurfaceKinds(filePath, content) {
   const kinds = new Set();
+  if (isTestArtifact(filePath)) return kinds;
   const name = path.basename(String(filePath || ''));
   const ext = path.extname(name).toLowerCase();
   const stem = name.slice(0, name.length - ext.length);

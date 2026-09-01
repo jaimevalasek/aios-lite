@@ -229,3 +229,20 @@ test('a promise that cites web research without a SRC-* row stays accepted — a
   assert.equal(report.warnings.length, 1);
   assert.match(report.warnings[0], /^research_source_unpinned: PROM-002 cite web research without a SRC-\* row/);
 });
+
+test('research_unpinned matches whole words only — webhooks, websites and researchers cite no web research', async () => {
+  const dir = await makeTmpDir();
+  await writeFile(dir, 'plans/orders-source.md', SOURCE_TEXT);
+  await writeFile(dir, '.aioson/context/prd-orders.md', PRD_TEXT);
+  const run = async (sourceCell) => {
+    await writeFile(dir, '.aioson/briefings/orders/briefings.md', researchBriefing({ pinned: false }).replace('web research (reference site)', sourceCell));
+    const report = await runVerifyArtifact({ args: [dir], options: { kind: 'sources', slug: 'orders', json: true, suppressExitCode: true }, logger: makeLogger() });
+    return report.metrics.promises_research_unpinned;
+  };
+  for (const clean of ['our webhook integration docs', 'confirmed against the website copy deck', 'per the researcher on the UX team', 'Site.com/webinar-2026 recording']) {
+    assert.equal(await run(clean), 0, clean);
+  }
+  for (const cited of ['levantado em pesquisas de mercado', 'confirmado por pesquisa.', 'notes from web, uncaptured']) {
+    assert.equal(await run(cited), 1, cited);
+  }
+});

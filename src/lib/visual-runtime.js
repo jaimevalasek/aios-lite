@@ -482,7 +482,7 @@ function summarizeRuntime(runs, { surfaceMode = null } = {}) {
       const entryDesktop = viewport.width >= DENSITY_DESKTOP_WIDTH && !(run.route && run.route.state);
       if (entryDesktop) {
         const current = metrics.assurance.density;
-        if (!current || density.first_fold_occupancy_pct < current.first_fold_occupancy_pct) metrics.assurance.density = { ...density, scope };
+        if (!current || density.first_fold_occupancy_pct < current.first_fold_occupancy_pct) metrics.assurance.density = { ...density, scope, floor: DENSITY_FIRST_FOLD_FLOOR };
         if (!familiarityMode) {
           const emptyFold = folds.findIndex((pct, index) => index > 0 && pct < DENSITY_FOLD_FLOOR);
           if (density.first_fold_occupancy_pct < DENSITY_FIRST_FOLD_FLOOR) {

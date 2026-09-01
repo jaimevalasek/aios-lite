@@ -16,6 +16,8 @@ const fs = require('node:fs/promises');
 const os = require('node:os');
 const path = require('node:path');
 
+process.env.AIOSON_DESIGN_REGISTRY = path.join(__filename, 'no-registry', 'design-fingerprints.json');
+
 const { analyzeVisualSources } = require('../src/lib/visual-telemetry');
 const { summarizeRuntime, collectRuntimeMeasurements, RUNTIME_PROBE_VERSION } = require('../src/lib/visual-runtime');
 const { decodePng, contentShare, encodePngRgb } = require('../src/lib/png-stats');
@@ -181,7 +183,7 @@ test('fold density: an empty entry fold, a gap fold or a stretched sequence on d
 
   const empty = summarizeRuntime([{ viewport: desktop, raw: { ...base, occupancy: occupancy(18, 4, 6), pixel_density: pixels } }]);
   assert.match(empty.warnings.join('\n'), /desktop: the first fold is 82% empty \(a visual subject — loaded media, display type, a contrasting panel or a photographic ground — covers 18% of it\)/);
-  assert.deepEqual(empty.metrics.assurance.density, { folds: 3, first_fold_occupancy_pct: 18, folds_occupancy_pct: [18, 4, 6], folds_avg_occupancy_pct: 9, folds_pixels_pct: [21, 36, 53], ground: '#f8e8f8', scope: 'desktop' });
+  assert.deepEqual(empty.metrics.assurance.density, { folds: 3, first_fold_occupancy_pct: 18, folds_occupancy_pct: [18, 4, 6], folds_avg_occupancy_pct: 9, folds_pixels_pct: [21, 36, 53], ground: '#f8e8f8', scope: 'desktop', floor: 35 });
   assert.deepEqual(empty.metrics.viewports[0].density.folds_occupancy_pct, [18, 4, 6]);
 
   // The measured incident shape: a filled opening, then a viewport of page
@@ -410,4 +412,73 @@ ${extra}---
   const frozen = await fs.readFile(path.join(dir, '.aioson', 'briefings', slug, 'prototype-manifest.md'), 'utf8');
   assert.match(frozen, /^status: approved$/m);
   assert.match(frozen, /^craft_accepted: craft weight \d+\/100 below the brand bar \(60\)/m);
+});
+
+test('the density refusal reads the floor embedded in the measurement, never a second copy of it', async () => {
+  const dir = await tmp();
+  const slug = 'atelier';
+  await write(dir, '.aioson/context/project.context.md', '---\nclassification: MICRO\ninteraction_language: en\n---\n');
+  await write(dir, `.aioson/briefings/${slug}/briefings.md`, '# Atelier\n\nA landing page for a design studio.\n');
+  await write(dir, `.aioson/briefings/${slug}/prototype.html`, thinBrandSurface('', '<main id="main"><button>Conversar</button></main>'));
+  await writeBriefingRegistry(dir, {
+    updated_at: '2026-08-26',
+    briefings: [{ slug, status: 'draft', source_plans: [], created_at: '2026-08-26', approved_at: null, prd_generated: null }]
+  });
+  const manifest = (craft) => `---
+feature: ${slug}
+status: draft
+approved_at: null
+identity: none
+references: declined
+surface_mode: brand
+---
+
+# Prototype
+
+## Visual direction
+- register: editorial
+- thesis: the page behaves like a gallery dossier where every plate proves the studio's craft.
+- anti-goals: generic card dashboard, decorative gradient hero.
+- composition signature: a didone headline crossing the grid seam while the hero plate bleeds off the margin.
+
+## Runtime matrix
+- entry: #main
+
+## Quality evidence
+- verdict: pass
+- evidence: .aioson/context/features/${slug}/visual-evidence.json
+- craft: ${craft}
+- runtime: measured — walkthrough density injected by this fixture
+- routes: 1
+`;
+  await write(dir, `.aioson/briefings/${slug}/prototype-manifest.md`, manifest('CRAFT'));
+  const measured = await runVerifyArtifact({ args: [dir], options: { kind: 'visual', slug, advisory: true, json: true, suppressExitCode: true }, logger: makeLogger() });
+  await write(dir, `.aioson/briefings/${slug}/prototype-manifest.md`, manifest(`${measured.metrics.craft.active_levers}/${measured.metrics.craft.lever_count}`));
+  await runVerifyArtifact({ args: [dir], options: { kind: 'visual', slug, advisory: true, json: true, suppressExitCode: true }, logger: makeLogger() });
+
+  const evidencePath = path.join(dir, '.aioson', 'context', 'features', slug, 'visual-evidence.json');
+  const approveWithDensity = async (density) => {
+    const report = JSON.parse(await fs.readFile(evidencePath, 'utf8'));
+    report.metrics.runtime = { available: true, assurance: { routes_verified: ['entry'], states_verified: [], density } };
+    await fs.writeFile(evidencePath, JSON.stringify(report, null, 2));
+    const logger = makeLogger();
+    const result = await runBriefingApprove({ args: [dir], options: { slug }, logger });
+    return { result, output: logger.lines.join('\n') };
+  };
+
+  // 32% sits under the legacy literal (35) but over the measured floor (30):
+  // no density line — the measurement rules, the literal is dead.
+  const overFloor = await approveWithDensity({ first_fold_occupancy_pct: 32, scope: 'desktop', floor: 30 });
+  assert.equal(overFloor.result.ok, false);
+  assert.equal(overFloor.result.error, 'prototype_visual_craft_below_bar');
+  assert.doesNotMatch(overFloor.output, /first fold/);
+
+  const underFloor = await approveWithDensity({ first_fold_occupancy_pct: 20, scope: 'desktop', floor: 30 });
+  assert.equal(underFloor.result.error, 'prototype_visual_craft_below_bar');
+  assert.match(underFloor.output, /first fold 80% empty at desktop \(a visual subject covers 20%\)/);
+
+  // Evidence recorded by a probe that predates the embedded floor: 35 covers it.
+  const legacy = await approveWithDensity({ first_fold_occupancy_pct: 34, scope: 'desktop' });
+  assert.equal(legacy.result.error, 'prototype_visual_craft_below_bar');
+  assert.match(legacy.output, /first fold 66% empty/);
 });

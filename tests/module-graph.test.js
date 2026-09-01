@@ -128,6 +128,27 @@ test('cycles are found with their shortest path; a tree without cycles reports n
   assert.deepEqual(sccs.map((s) => s.sort()).sort(), [['x', 'y'], ['z']]);
 });
 
+test('a cycle the TypeScript compiler erases is not an import cycle — value edges still are', () => {
+  const typeOnly = graphOf({
+    'src/x.ts': "import type { Y } from './y';\nexport const x = 1;",
+    'src/y.ts': "import type { X } from './x';\nexport const y = 2;"
+  });
+  assert.deepEqual(typeOnly.cycles, []);
+  assert.equal(typeOnly.nodes.get('src/x.ts').fan_out, 1, 'type imports still count as coupling breadth');
+
+  const halfType = graphOf({
+    'src/x.ts': "import { y } from './y';\nexport const x = 1;",
+    'src/y.ts': "import type { X } from './x';\nexport const y = 2;"
+  });
+  assert.deepEqual(halfType.cycles, [], 'a cycle closed only through a type edge never runs');
+
+  const valueBesideType = graphOf({
+    'src/x.ts': "import type { Y } from './y';\nimport { y } from './y';",
+    'src/y.ts': "import { x } from './x';"
+  });
+  assert.deepEqual(valueBesideType.cycles, [['src/x.ts', 'src/y.ts']], 'a value edge beside a type edge still closes the cycle');
+});
+
 test('rules:check bound by the routed doc: fan-out and cycles are MED advisory findings over the checked files only, with a directed message', async () => {
   const many = Array.from({ length: 16 }, (_, i) => `import m${i} from './m/m${i}';`).join('\n');
   const files = {
