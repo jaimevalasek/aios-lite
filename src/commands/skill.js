@@ -6,6 +6,8 @@ const { execFile } = require('node:child_process');
 const { exists, ensureDir } = require('../utils');
 const { resolveSkillCatalog } = require('../skills/registry');
 const { resolveTargetDir } = require('../lib/project-root');
+const { parseFrontmatter } = require('../preflight-engine');
+const { DESIGN_ENGINE_ID } = require('../lib/design-presets');
 
 const INSTALLED_SKILLS_DIR = '.aioson/installed-skills';
 const TOOL_TARGETS = [
@@ -58,21 +60,11 @@ async function writeSkillMeta(destDir, patch) {
 /**
  * Parse YAML frontmatter from a SKILL.md file.
  */
+// One frontmatter reader for every SKILL.md surface (the selector, the
+// registry audit and this catalog read the same file the same way — a folded
+// `description: >-` block is a description here too, not a literal `>-`).
 function parseSkillFrontmatter(content) {
-  const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
-  if (!match) return {};
-  const result = {};
-  for (const line of match[1].split('\n')) {
-    const idx = line.indexOf(':');
-    if (idx === -1) continue;
-    const key = line.slice(0, idx).trim();
-    let val = line.slice(idx + 1).trim();
-    if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
-      val = val.slice(1, -1);
-    }
-    result[key] = val;
-  }
-  return result;
+  return parseFrontmatter(String(content || ''));
 }
 
 /**
@@ -564,9 +556,12 @@ async function runSkillList({ args, options = {}, logger, t }) {
   try {
     const contextPath = path.join(targetDir, '.aioson/context/project.context.md');
     const contextRaw = await fs.readFile(contextPath, 'utf8');
-    const match = contextRaw.match(/design_skill:\s*(.+)/);
-    if (match) activeDesignSkill = match[1].trim();
+    const match = contextRaw.match(/design_skill:\s*(.*)/);
+    if (match) activeDesignSkill = match[1].trim().replace(/^["']|["']$/g, '').trim();
   } catch { /* no context */ }
+  // A blank field is the engine: the design skill is never a question, and
+  // the quotes the context writer emits are not part of the id.
+  if (!activeDesignSkill) activeDesignSkill = DESIGN_ENGINE_ID;
 
   // Output
   if (installed.length > 0) {

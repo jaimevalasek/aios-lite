@@ -15,11 +15,33 @@ function parseFrontmatter(content) {
   const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
   if (!match) return {};
   const result = {};
-  for (const line of match[1].split(/\r?\n/)) {
+  const lines = match[1].split(/\r?\n/);
+  for (let i = 0; i < lines.length; i += 1) {
+    const line = lines[i];
     const colonIdx = line.indexOf(':');
     if (colonIdx === -1) continue;
     const key = line.slice(0, colonIdx).trim();
-    const value = line.slice(colonIdx + 1).trim().replace(/^["']|["']$/g, '');
+    let value = line.slice(colonIdx + 1).trim();
+    // YAML block scalars (`description: >-` / `|`): the value is the indented
+    // block that follows — folded (`>`) joins the lines with a space, literal
+    // (`|`) keeps the line breaks. Without this the indicator itself (`>-`)
+    // was the value and every continuation line holding a colon became a
+    // bogus key — the shipped design engine's description was unreadable to
+    // the selector and printed as `>-` by skill:list.
+    const block = /^([>|])[+-]?$/.exec(value);
+    if (block) {
+      const parts = [];
+      while (i + 1 < lines.length && (/^\s/.test(lines[i + 1]) || lines[i + 1].trim() === '')) {
+        i += 1;
+        parts.push(lines[i].trim());
+      }
+      while (parts.length > 0 && parts[parts.length - 1] === '') parts.pop();
+      value = block[1] === '>'
+        ? parts.join(' ').replace(/\s+/g, ' ').trim()
+        : parts.join('\n').trim();
+    } else {
+      value = value.replace(/^["']|["']$/g, '');
+    }
     if (key) result[key] = value;
   }
   return result;

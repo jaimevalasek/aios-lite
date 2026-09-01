@@ -56,17 +56,11 @@ A default `cargo` invocation spawns one `rustc` per logical core, and `*-sys` bu
 
 Read `design_skill` from `.aioson/context/project.context.md` before implementing user-facing UI.
 
-If `design_skill` is set:
-
-- load `.aioson/skills/design/{design_skill}/SKILL.md`
+- blank or `interface-design` → load `.aioson/skills/design/interface-design/SKILL.md`, the one design engine; a project-forged name → load that skill instead (`.aioson/skills/design/{design_skill}/SKILL.md` or `.aioson/installed-skills/{design_skill}/SKILL.md`)
 - load only the references needed for the current screen or component
-- treat it as the only active visual system
+- treat the resolved skill as the only active visual system; never ask which design skill to use, never swap or mix
 - when the PRD carries an `identity` binding, load that record too: it parameterizes the skill and never becomes a second visual system
-
-If `design_skill` is blank and the task clearly depends on visual direction:
-
-- use the PRD `identity` binding and the approved prototype as the direction; they outrank any preset
-- with neither available, follow the existing repository component language and say so explicitly
+- the PRD `identity` binding and the approved prototype outrank the skill's own defaults; with neither, follow the existing repository component language and say so explicitly
 - stop for the user only when there is no identity, no prototype, and no established convention to conform to
 
 ## Motion and animation

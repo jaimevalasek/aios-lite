@@ -5,6 +5,7 @@ const readline = require('node:readline/promises');
 const { detectFramework, isMonorepoDetection } = require('../detector');
 const { normalizeLanguageTag } = require('../context');
 const { resolveTargetDir } = require('../lib/project-root');
+const { DESIGN_ENGINE_ID } = require('../lib/design-presets');
 
 /**
  * Infer conversation language from the OS locale environment variables.
@@ -491,7 +492,11 @@ async function runSetupContext({ args, options, logger, t }) {
     frameworkInstalled: detectedInstalled,
     conversationLanguage: detectSystemLanguage(),
     interactionLanguage: detectSystemLanguage(),
-    designSkill: '',
+    // The design skill is never a question: the framework ships one design
+    // engine and every visual producer resolves to it. Written explicitly so
+    // the contract is visible in the file; a blank value means the same, and
+    // only a project-forged skill the owner names (`--design-skill`) differs.
+    designSkill: DESIGN_ENGINE_ID,
     testRunner: '',
     web3Enabled: inferredWeb3Enabled,
     web3Networks: inferredWeb3Enabled ? inferWeb3Network(detectedFramework) : '',

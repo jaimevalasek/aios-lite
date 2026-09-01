@@ -72,10 +72,9 @@ Before asking additional visual questions, read `design_skill` from `.aioson/con
 
 Rules:
 
-- if `design_skill` is already set, preserve it
-- if `project_type=site` or `project_type=web_app` and `design_skill` is blank, ask whether to register one of the installed design skills under `.aioson/skills/design/`
-- never auto-select a design skill
-- if the user wants to postpone the decision, record `pending-selection`
+- `design_skill` is never a product question: blank or `interface-design` means the one design engine, and a project-forged skill applies only when the field already names it
+- preserve whatever is set; never offer a menu of installed skills, never ask to register one, never record a pending choice
+- visual questions are about intent — references, feeling, anti-references — never about which skill
 
 ## Natural conversation phases
 

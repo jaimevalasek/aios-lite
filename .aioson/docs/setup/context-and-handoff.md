@@ -22,7 +22,7 @@ Do not finalize until these values are explicit and confirmed:
 - `classification`: `MICRO`, `SMALL`, or `MEDIUM`;
 - `interaction_language`;
 - `conversation_language`, synchronized as a legacy compatibility alias;
-- `design_skill`, with explicit `""` when pending;
+- `design_skill` (`interface-design`, written by the CLI; a blank value resolves to the same engine; a project-forged name only when the user gave it);
 - `aioson_version` and `generated_at`.
 
 For `dapp`, also require `web3_enabled`, `web3_networks`, `contract_framework`, `wallet_provider`, `indexer`, and `rpc_provider`.
@@ -48,7 +48,7 @@ framework_installed: true
 classification: "MICRO|SMALL|MEDIUM"
 interaction_language: "en"
 conversation_language: "en"
-design_skill: ""
+design_skill: "interface-design"
 test_runner: ""
 web3_enabled: false
 web3_networks: ""
@@ -161,7 +161,6 @@ Do not load or update a pre-existing spec unless the user accepts this optional 
 Always state:
 
 - whether context was created or repaired and verified;
-- whether `design_skill` was selected or remains blank for a UI project;
 - whether optional `spec.md` was created;
 - the exact next agent.
 

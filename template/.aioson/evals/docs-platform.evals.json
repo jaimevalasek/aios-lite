@@ -107,10 +107,10 @@
       "expect": [{ "path": ".aioson/docs/setup/onboarding-flow.md", "in": "selected" }]
     },
     {
-      "name": "choosing a framework and design skill reaches setup stack reference, not onboarding or handoff",
+      "name": "choosing a framework and authentication reaches setup stack reference, not onboarding or handoff",
       "agent": "setup",
       "mode": "planning",
-      "task": "still need to choose framework and choose design skill for this new web project before moving on",
+      "task": "still need to choose framework and choose authentication for this new web project before moving on",
       "expect": [{ "path": ".aioson/docs/setup/stack-and-design-reference.md", "in": "selected" }]
     },
     {

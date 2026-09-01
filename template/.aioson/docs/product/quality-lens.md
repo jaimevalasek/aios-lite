@@ -30,7 +30,7 @@ High-quality product output usually does all of this:
 | Feature list without decision tension | A scoped first release with clear deferrals |
 | User story with no operator or owner | Named roles, ownership, and state transitions |
 | Competitive claim with no evidence | Research-backed differentiation or explicit uncertainty |
-| Beautiful-product language with no design bar | A concrete `## Visual identity` direction or `pending-selection` |
+| Beautiful-product language with no design bar | A concrete `## Visual identity` direction — the design engine parameterized by `identity.md`, or a named project-forged skill |
 
 ## Elevation moves
 

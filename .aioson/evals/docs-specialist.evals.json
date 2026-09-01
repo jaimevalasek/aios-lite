@@ -239,7 +239,7 @@
       "name": "uxui-design-gate-visual-direction",
       "agent": "ux-ui",
       "mode": "planning",
-      "task": "We still have style ambiguity here and need to pick the right design skill before the visual direction.",
+      "task": "We still have style ambiguity here that must be settled before the visual direction of this web_app is chosen.",
       "expect": [
         { "path": ".aioson/docs/ux-ui/design-gate.md", "in": "selected" }
       ]

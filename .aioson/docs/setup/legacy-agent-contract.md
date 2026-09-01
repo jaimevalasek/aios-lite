@@ -210,6 +210,8 @@ If user says "none", "not now", or skips, leave all fields blank.
 
 ### Step 5 — Visual system selection (`site` and `web_app` only)
 
+> Superseded (2026-09-01): the visual system is no longer a setup question — `design_skill` is `interface-design` by default and no agent offers a menu. The step below is kept verbatim for regression comparison only.
+
 Before writing `project.context.md` for `site` or `web_app`, inspect `.aioson/skills/design/`.
 
 **Recommended route — interface-design + reference images.** Offer this first: register `design_skill: "interface-design"` (the craft engine) and tell the user the concrete look comes from their own **reference images**, extracted once into an `identity.md` (per-briefing `.aioson/briefings/{slug}/identity.md`, or project-wide `.aioson/context/identity.md` — see `.aioson/docs/reference-identity.md`). This avoids every project inheriting a fixed preset's identical look — the framework ships none. A project-forged skill (site-forge or hybrid output) is the only alternative, and you still require explicit confirmation — never auto-select.

@@ -161,9 +161,9 @@ O `identity.md` é extraído **uma única vez** das suas imagens de referência 
 
 ### Quando `design_skill` está em branco
 
-O `@refiner` não pergunta e não escolhe no escuro: ele adota `interface-design` em modo origem. Mas o padrão é **declarado, nunca silencioso** — ele grava `design_skill: interface-design (default)` no `prototype-manifest.md` e registra um achado estruturado não-bloqueante recomendando que o projeto defina um `design_skill` definitivo.
+Em branco significa o motor: nenhum agente pergunta qual design skill usar — `@setup`, `@product` e `@ux-ui` não oferecem menu, e o `setup:context` já grava `design_skill: "interface-design"`. O `@refiner` adota `interface-design` em modo origem e declara isso gravando `design_skill: interface-design (default)` no `prototype-manifest.md`.
 
-Se o `design_skill` nomeia um preset instalado, só aquele preset é usado. Imagens de referência continuam opcionais; quando você fornece, a rota de identidade acima vale.
+Se o `design_skill` nomeia uma skill forjada pelo projeto (saída do `@site-forge` ou do `@design-hybrid-forge`), só aquela skill é usada. Imagens de referência continuam opcionais; quando você fornece, a rota de identidade acima vale.
 
 ### Registro estético e direção — a partida a frio
 

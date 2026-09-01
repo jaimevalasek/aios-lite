@@ -1,14 +1,13 @@
 ---
-description: Setup technology orientation, framework caveats, Web3 fields, and visual-system selection
+description: Setup technology orientation, framework caveats, Web3 fields, and the visual-system default
 agents: [setup]
-task_types: [stack-selection, design-selection, project-setup]
-triggers: [choose framework, choose authentication, choose design skill, configure dapp]
-paths: [.aioson/skills/design/, .aioson/context/identity.md]
+task_types: [stack-selection, project-setup]
+triggers: [choose framework, choose authentication, configure dapp]
 ---
 
 # Setup Stack and Design Reference
 
-Load only when the user needs to choose a technology, a framework-specific option changes setup safety, or a `site`/`web_app` needs its visual-system decision.
+Load only when the user needs to choose a technology or a framework-specific option changes setup safety.
 
 ## Backend and runtime
 
@@ -46,21 +45,11 @@ Jetstream is safest at project creation. If an existing project requests a late 
 
 For Rails, resolve relevant `rails new` flags only when creating a project. For Next.js, resolve TypeScript, linting, and router options only when material. For Laravel, record the intended major version when known.
 
-## Visual-system decision
+## Visual system
 
-The framework ships no fixed aesthetic preset. Offer:
+There is no decision to make: `design_skill` is `interface-design`, the one design engine the framework ships, written by the CLI for every project type (a blank value resolves to the same engine). Never list `.aioson/skills/design/` or `.aioson/installed-skills/` as a menu, never ask for confirmation, never leave the field "pending". The only other value is a skill this project forged (site-forge or hybrid output) that the user names explicitly.
 
-1. `interface-design` as the craft engine plus the user's reference images captured into `identity.md`;
-2. one project-forged design skill (site-forge or hybrid output) the user names explicitly;
-3. `design_skill: ""` with a visible pending visual decision.
-
-Inspect available folder names under `.aioson/skills/design/` and `.aioson/installed-skills/`, but load only the chosen skill. Never infer selection from installation.
-
-Use this compact decision language:
-
-> I recommend `interface-design` driven by your reference images so the result is project-specific. You can instead name a design skill this project forged, or leave the visual system pending for Product/UX.
-
-When the first option is selected, follow `.aioson/docs/reference-identity.md`; do not fabricate a reference identity without images.
+Reference images are optional and are captured by the briefing route (`.aioson/docs/reference-identity.md`); do not fabricate a reference identity without images.
 
 ## Web3 orientation
 

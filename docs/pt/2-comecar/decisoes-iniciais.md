@@ -144,7 +144,7 @@ npx @jaimevalasek/aioson squad:scaffold compliance
 
 ## Escolhendo o Design System
 
-> **A rota: `interface-design` + suas imagens de referência.** O template embarca exatamente uma design skill — o motor `interface-design`. Em vez de herdar o visual idêntico de um preset fixo, você fornece imagens de referência (identidade/marca e, opcionalmente, estrutura de componentes); a skill `reference-identity-extract` as converte **uma única vez** num `identity.md` de texto que o motor aplica em tudo que vier depois (protótipo e build). O `@setup` oferece essa rota — sempre com confirmação explícita, nunca auto-seleção. Imagens são opcionais: sem nenhuma, o motor roda mesmo assim, decidindo sozinho (modo origem).
+> **A rota: `interface-design` + suas imagens de referência.** O template embarca exatamente uma design skill — o motor `interface-design`. Em vez de herdar o visual idêntico de um preset fixo, você fornece imagens de referência (identidade/marca e, opcionalmente, estrutura de componentes); a skill `reference-identity-extract` as converte **uma única vez** num `identity.md` de texto que o motor aplica em tudo que vier depois (protótipo e build). Não há pergunta: `design_skill: "interface-design"` já nasce no `project.context.md` e nenhum agente pede para escolher ou confirmar uma design skill — só uma skill forjada pelo próprio projeto (`@site-forge` ou `@design-hybrid-forge`) substitui o motor, quando você a nomeia. Imagens são opcionais: sem nenhuma, o motor roda mesmo assim, decidindo sozinho (modo origem).
 
 **Pular** as imagens é uma opção legítima. Você pode:
 - Fornecer depois com `@setup`/`@ux-ui` — mesma rota, sempre com confirmação explícita
@@ -186,7 +186,7 @@ npx @jaimevalasek/aioson install --no-interactive
 |---|---|
 | Adicionar Codex ao mesmo projeto | `aioson install --reconfigure` |
 | Ativar Squads | `aioson install --reconfigure` (e marque) |
-| Trocar design skill ou identidade visual | `@setup` no cliente AI ou `aioson install --reconfigure` |
+| Trocar design skill ou identidade visual | Edite `design_skill:` em `project.context.md` (uma skill forjada pelo projeto) ou refaça o `identity.md`; não existe pergunta de design no `@setup` nem no `install --reconfigure` |
 | Mudar idioma de interação | Edite `interaction_language:` em `project.context.md` ou rode `@setup` de novo |
 | Mudar a classificação | Edite `classification:` em `project.context.md`. Próximas sessões respeitam. |
 

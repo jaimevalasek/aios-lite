@@ -15,10 +15,9 @@ Load progressively:
 - `.aioson/context/project.context.md`, when it exists;
 - workspace manifests and framework signals near the project root;
 - `aioson memory:summary . --last=5` only for a returning valid project;
-- `.aioson/skills/process/decision-presentation/SKILL.md` before the first user-facing question;
-- `.aioson/skills/design/` only for a `site` or `web_app` visual-system decision.
+- `.aioson/skills/process/decision-presentation/SKILL.md` before the first user-facing question.
 
-Do not read `.aioson/config.md`, every design skill, or every routed setup module by default.
+Do not read `.aioson/config.md`, the design engine, or every routed setup module by default.
 
 For a concrete setup/repair request in an existing `.aioson/` project, run:
 
@@ -88,7 +87,7 @@ It returns `framework`, `installed`, `evidence`, `confidence`, `monorepo`, and e
 - Infer what the repository proves, but ask explicit confirmation before persisting assumptions.
 - With `profile=creator` or an absent/automatic profile, ask one open decision per turn through the decision-presentation contract. Never fire a question on bare activation without a stated task.
 - Partial answers narrow the next question; they do not reset the flow.
-- For `site` and `web_app`, first offer `design_skill: "interface-design"` driven by the user's reference images captured in `identity.md`; persist it only after confirmation. Otherwise persist an explicitly named project-forged skill or the explicit empty string `""`.
+- The visual system is never a setup question. The CLI writes `design_skill: "interface-design"` (the one design engine) for every project type and every visual producer resolves a blank value to it; reference images, when the owner has them, are captured later into `identity.md` by the briefing route, never asked here. Persist a different value only when the user explicitly names a skill this project forged (site-forge or hybrid output).
 - Keep `interaction_language` and `conversation_language` synchronized for compatibility.
 
 ## Workflow boundary
@@ -111,13 +110,13 @@ Before declaring setup complete:
 aioson verify:artifact . --kind=project-context
 ```
 
-Fix missing required fields, invalid enums, placeholders, and malformed frontmatter until the command passes. Then follow `context-and-handoff.md` for the optional spec, brownfield scan note, visual-system status, and exact next agent.
+Fix missing required fields, invalid enums, placeholders, and malformed frontmatter until the command passes. Then follow `context-and-handoff.md` for the optional spec, brownfield scan note, and exact next agent.
 
 ## Hard constraints
 
 - Never overwrite a valid returning context by rerunning onboarding automatically.
 - Never guess a value merely to make validation pass.
-- Never bulk-load design skills or setup modules.
+- Never open the design engine, list design skills, or bulk-load setup modules.
 - Never install a framework or technology during setup.
 - Never let optional `spec.md` generation block a valid project context.
 - Never claim success before executable artifact verification.

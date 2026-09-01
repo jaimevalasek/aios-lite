@@ -78,7 +78,9 @@ test('Setup preserves stack, design, context, and workflow contracts', async () 
   const active = `${kernel}\n${onboarding}\n${reference}\n${context}`;
 
   assert.match(active, /interface-design/);
-  assert.match(active, /design_skill: ""/);
+  // The design skill is never a question: the CLI writes the engine (2026-09-01).
+  assert.match(active, /design_skill: "interface-design"/);
+  assert.doesNotMatch(active, /design_skill: ""/);
   assert.match(active, /reference images/i);
   assert.match(active, /framework_installed.*true.*detected/is);
   assert.match(active, /interaction_language/);

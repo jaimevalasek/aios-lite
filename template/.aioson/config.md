@@ -4,7 +4,7 @@
 - Less is more: complexity must match problem size.
 - Single source of truth: rules live in `.aioson/agents/`.
 - Never assume stack: detect first, then ask.
-- For `project_type=site` and `project_type=web_app`, visual system choice is explicit workflow data. Record it in `design_skill` or leave it blank on purpose; never auto-pick a design skill silently.
+- The visual system is never a question: `design_skill` is `interface-design` (the one design engine) by default; a project-forged skill replaces it only when the field names it explicitly.
 
 ## Project sizes
 - MICRO: `@setup -> @product -> @sheldon -> @planner -> @dev -> @qa` (terse artifacts and narrow review)
@@ -68,7 +68,7 @@ When an agent notices it is close to the threshold:
 - `aioson_version`
 
 Optional UI context fields:
-- `design_skill` (`interface-design`, the engine, or a skill this project forged; keep empty when the visual system is still pending)
+- `design_skill` (`interface-design` by default — the CLI writes it and a blank value resolves to the same engine; a skill this project forged replaces it only when named explicitly)
 
 Optional testing fields:
 - `test_runner` (for example `pest`, `jest`, `vitest`, `pytest`, `rspec`, `foundry`)
@@ -93,11 +93,10 @@ Optional Web3 context fields (recommended for `project_type=dapp`):
 - `rpc_provider` (for example `Alchemy`, `Infura`, `QuickNode`)
 
 ## Visual system gate
-- For `site` and `web_app`, `design_skill` must be chosen explicitly during the workflow or kept explicitly blank.
-- `@setup` can register the initial choice.
-- `@product` and `@ux-ui` can confirm or update that choice when it is still blank.
-- `@dev` must consume the chosen `design_skill`; it must never auto-select one.
-- `@refiner` prototype work defaults to `interface-design` origination when `design_skill` is blank, recording the fallback in the prototype manifest; registering the definitive choice stays with `@product`/`@ux-ui`.
+- `design_skill` defaults to `interface-design`; blank means the same engine. No agent asks which design skill to use — there is no menu.
+- `@site-forge` and `@design-hybrid-forge` register a project-forged skill by name when the user forges one; `@setup`, `@product`, and `@ux-ui` never offer or confirm a choice.
+- `@dev`, `@deyvin`, `@ux-ui`, and `@refiner` consume the value as the single visual system (`identity.md` is its input, never a second system); they never swap, mix, or invent one.
+- `@refiner` records `design_skill: interface-design (default)` in the prototype manifest when the field is blank.
 
 ## Runtime lifecycle
 

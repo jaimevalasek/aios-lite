@@ -145,7 +145,7 @@ npx @jaimevalasek/aioson squad:scaffold . --slug=compliance --name="Compliance" 
 
 ## Choosing a Design System
 
-> **The route: `interface-design` + your own reference images.** The template ships exactly one design skill — the `interface-design` engine. Instead of inheriting a fixed preset's identical look, you provide reference images (identity/brand and, optionally, component structure); the `reference-identity-extract` skill converts them **once** into a text `identity.md` that the engine applies to everything downstream (prototype and build). `@setup` offers this route — always with explicit confirmation, never auto-selected. Reference images are optional: with none, the engine still runs, deciding on its own (origin mode).
+> **The route: `interface-design` + your own reference images.** The template ships exactly one design skill — the `interface-design` engine. Instead of inheriting a fixed preset's identical look, you provide reference images (identity/brand and, optionally, component structure); the `reference-identity-extract` skill converts them **once** into a text `identity.md` that the engine applies to everything downstream (prototype and build). There is no question to answer: `design_skill: "interface-design"` is written into `project.context.md` from the start and no agent asks you to choose or confirm a design skill — only a skill this project forged (`@site-forge` or `@design-hybrid-forge`) replaces the engine, when you name it. Reference images are optional: with none, the engine still runs, deciding on its own (origin mode).
 
 **Skipping** the images is a valid option. You can:
 - Provide them later with `@setup`/`@ux-ui` — same route, always with explicit confirmation
@@ -187,7 +187,7 @@ npx @jaimevalasek/aioson install --no-interactive
 |---|---|
 | Add Codex to the same project | `aioson install --reconfigure` |
 | Activate Squads | `aioson install --reconfigure` (and select it) |
-| Switch design skill | `@ux-ui` in the AI client or `aioson install --reconfigure` |
+| Switch design skill | Edit `design_skill:` in `project.context.md` (a skill this project forged); neither `@setup` nor `install --reconfigure` asks a design question |
 | Change interaction language | Edit `interaction_language:` in `project.context.md` or run `@setup` again |
 | Change the classification | Edit `classification:` in `project.context.md`. Next sessions respect it. |
 

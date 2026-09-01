@@ -59,9 +59,9 @@ the `interface-design` token families plus its Phase-1 anti-sameness anchors. Au
   agent loads `reference-identity-extract`, writes `identity.md`, and `prototype-forge` builds from it.
   No images → it skips and `interface-design` runs intent-first. Always optional, never blocking.
 - **`@refiner`** (exploration mode) — before a Briefing exists, imported screenshots may produce `.aioson/explorations/{slug}/identity.md`; a targeted/full scan may separately prove current structure and behavior. Images establish observed visual evidence, code establishes current-system facts, and neither is silently treated as proposed scope.
-- **`@setup`** — for `site`/`web_app`, the recommended visual route is *interface-design + reference
-  images* (sets `design_skill: interface-design`; the concrete look comes from `identity.md`). The
-  only alternative is a project-forged skill (site-forge or hybrid output) the owner names.
+- **`@setup`** — never asks about the visual system: `design_skill: interface-design` is written by the
+  CLI (a blank value resolves to the same engine) and only a project-forged skill (site-forge or hybrid
+  output) the owner names replaces it. Reference images enter through the briefing/refiner route above.
 - **`@ux-ui`** — Step 0 loads `identity.md` as the **identity input** the single interface-design engine
   applies. It is **not** a second design skill: exactly one design skill is loaded, and `identity.md`
   parameterizes it. This does not weaken the ONE-SKILL-ONLY rule.

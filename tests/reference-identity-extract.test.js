@@ -82,7 +82,7 @@ test('ux-ui Step 0 frames identity.md as an INPUT without weakening ONE SKILL ON
   assert.equal(agent.includes('not a design system of its own'), true);
 });
 
-test('setup Step 5 offers the interface-design + reference-images route (byte-parity)', async () => {
+test('setup names the interface-design default and the reference-images route without asking (byte-parity)', async () => {
   const agent = await parityTracked('.aioson/agents/setup.md');
   assert.equal(agent.includes('identity.md'), true);
   assert.equal(agent.includes('reference images'), true);

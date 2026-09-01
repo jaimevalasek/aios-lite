@@ -15,7 +15,7 @@ Load this module only when project context is missing, invalid, stale, or explic
 For inconsistent context, repair before showing a menu:
 
 1. Inspect manifests, framework files, existing code, and current context.
-2. Infer objective corrections for `project_type`, `framework`, `framework_installed`, `classification`, language aliases, and `design_skill`.
+2. Infer objective corrections for `project_type`, `framework`, `framework_installed`, `classification`, language aliases, and a `design_skill` that names a skill the project no longer has (it becomes `interface-design`).
 3. For deeper brownfield ambiguity, inspect code or run:
 
 ```bash
@@ -94,18 +94,11 @@ Classification describes the minimum confirmed project scope. Do not inflate it 
 
 Only for `web_app` and `api`, ask once whether the project needs queues, file storage, WebSockets, transactional email, payments, cache, or search. Default is none only after the user confirms none/not now or the confirmed description objectively excludes them.
 
-### 5. Resolve the visual system
+### 5. Visual system: no question
 
-Only for `site` and `web_app`, inspect folder names in `.aioson/skills/design/`; do not read every skill.
+`design_skill` is `interface-design` — the one design engine — for every project type: the CLI writes it and a blank value resolves to the same engine. Do not inspect `.aioson/skills/design/`, do not list skills, and do not ask which one to use: there is no menu. Persist a different value only when the user explicitly names a skill this project forged (site-forge or hybrid output). Reference images are optional and belong to the briefing route (`.aioson/docs/reference-identity.md`), not to setup.
 
-Recommend `interface-design` plus the user's reference images, extracted once into per-briefing `.aioson/briefings/{slug}/identity.md` or project-wide `.aioson/context/identity.md`. The framework ships no fixed presets; a project-forged skill (site-forge or hybrid output) is the only alternative, and only when the user names it.
-
-- Never auto-select the recommendation or a forged skill.
-- If forged skills exist, list their folder names and ask for one choice.
-- If none exist or the user defers, persist `design_skill: ""` and state that Product or UX/UI must resolve it before UI design.
-- For `api`, `script`, and non-UI-first work, keep the field empty unless explicitly requested.
-
-Load `stack-and-design-reference.md` for the choice details and `.aioson/docs/reference-identity.md` only if reference-image identity extraction is selected.
+Load `stack-and-design-reference.md` only for a technology choice.
 
 ## Profile adjustments
 
