@@ -106,7 +106,7 @@ async function describePlanTables(projectDir, feature, { env, now }) {
   const lanesTable = content !== null ? parseDevelopmentLanes(content) : null;
   const compiled = await readExecutionPlan(projectDir, feature);
   const scale = content !== null ? measurePlanScale(content, { minFiles: splitMinFiles(env), ceiling: unitCeiling(env) }) : null;
-  const proposal = content !== null ? proposeSplit(content) : null;
+  const proposal = content !== null ? proposeSplit(content, { minFiles: splitMinFiles(env), ceiling: unitCeiling(env) }) : null;
   const description = {
     path: relative,
     exists: content !== null,
@@ -251,7 +251,7 @@ async function runExecutionCommand({ args, options = {}, logger, env = process.e
       } else if (content !== null) {
         // No table yet: a two-surface plan seeds one lane per surface — the
         // axis models are assigned on — and the planner writes the table after.
-        const proposal = proposeSplit(content);
+        const proposal = proposeSplit(content, { minFiles: splitMinFiles(env), ceiling: unitCeiling(env) });
         if (proposal) {
           lanes = proposal.lanes.map((lane) => lane.lane);
           lanesSource = 'surfaces';

@@ -108,6 +108,11 @@ test('an interactive-only host (grok) and an unsupported effort fail determinist
   assert.equal(badEffort.entry.reason, 'invalid_reasoning_effort');
   assert.ok(badEffort.entry.supported.includes('high'));
 
+  // Effort vocabulary is per host: `ultra` is codex vocabulary, the claude CLI rejects it.
+  const ultraClaude = await probeHostSignature({ host: 'claude', model: 'claude-sonnet-5', reasoning_effort: 'ultra', env: store.env });
+  assert.equal(ultraClaude.entry.reason, 'invalid_reasoning_effort');
+  assert.equal(ultraClaude.entry.supported.includes('ultra'), false);
+
   const persisted = await readSignatures({ env: store.env });
   assert.equal(signatureState(persisted.signatures[signatureKey('grok', 'grok-4', null)]), 'invalid');
   assert.equal(signatureState(persisted.signatures[signatureKey('opencode', 'grok-code-fast', 'high')]), 'invalid');

@@ -388,7 +388,7 @@ test('execution:compile — units per phase × lane, waves, per-unit prompts wit
   const verified = await verifyExecutionPlan(dir, SLUG, { env });
   assert.equal(verified.ok, true, JSON.stringify(verified.issues));
   assert.deepEqual(verified.issues, []);
-  assert.deepEqual(verified.checks.map((c) => c.id), ['execution-plan:present', 'execution-plan:plan-digest', 'execution-plan:roles', 'execution-plan:dev-profile', 'execution-plan:manifest', 'execution-plan:signatures', 'execution-plan:prompts', 'execution-plan:waves', 'execution-plan:edges']);
+  assert.deepEqual(verified.checks.map((c) => c.id), ['execution-plan:present', 'execution-plan:plan-digest', 'execution-plan:roles', 'execution-plan:dev-profile', 'execution-plan:manifest', 'execution-plan:signatures', 'execution-plan:fallback-signatures', 'execution-plan:prompts', 'execution-plan:waves', 'execution-plan:edges']);
   assert.ok(verified.checks.every((c) => c.ok));
   assert.deepEqual(verified.metrics, result.summary);
 

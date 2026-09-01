@@ -152,7 +152,7 @@ function slugifyId(value) {
   return slug.replace(/^phase-?/, '');
 }
 
-function phaseNumber(value) {
+function phaseNumberString(value) {
   const match = String(value || '').match(/\d+/);
   return match ? match[0] : null;
 }
@@ -232,7 +232,7 @@ function readPlanExcerpts(planContent, prdContent) {
   });
   return {
     acceptance: acceptance.rows.map((row) => ({ ...row, caps: extractIds(row.cap, CAP_ID_RE) })),
-    delivery: delivery.rows.map((row) => ({ ...row, caps: extractIds(row.cap, CAP_ID_RE), phase_number: phaseNumber(row.phase) })),
+    delivery: delivery.rows.map((row) => ({ ...row, caps: extractIds(row.cap, CAP_ID_RE), phase_number: phaseNumberString(row.phase) })),
     delta: delta.rows.map((row) => ({
       ...row,
       caps: extractIds(row.cap, CAP_ID_RE),
@@ -525,7 +525,7 @@ function compileExecutionPlan({ feature, planContent, prdContent, roles, rules =
     units.push({
       id,
       phase: row.phase,
-      phase_number: phaseNumber(row.phase),
+      phase_number: phaseNumberString(row.phase),
       wave: row.wave,
       owner,
       lane,
@@ -587,7 +587,7 @@ function compileExecutionPlan({ feature, planContent, prdContent, roles, rules =
     if (unitByPhase.has(key)) return [unitByPhase.get(key)];
     const byId = units.find((unit) => unit.id === key);
     if (byId) return [byId];
-    const number = phaseNumber(ref);
+    const number = phaseNumberString(ref);
     if (number !== null) return units.filter((unit) => unit.phase_number === number);
     return [];
   };
@@ -1124,19 +1124,42 @@ async function verifyExecutionPlan(projectDir, featureInput, { env = process.env
   }
   check('execution-plan:manifest', manifestOk, manifestOk ? null : 'manifest_lanes_diverged');
 
-  // signatures on this machine
+  // signatures on this machine — primaries are binding; declared fallbacks
+  // are named: an automatic capacity fallback dispatches without a human in
+  // the loop, so an unproven (host, model) hiding in fallbacks[] is worth a
+  // warning every verify — but a backup that may never fire cannot block the
+  // planner the way an unproven primary does.
   const store = await readSignatures({ env });
+  const signatureFor = (role) => signatureState(findSignature(store, { host: role.host, model: role.model, reasoning_effort: role.reasoning_effort || null }), now);
+  const roleLabel = (label, role) => `${label} ${role.host}/${role.model}${role.reasoning_effort ? `/${role.reasoning_effort}` : ''}`;
   const unsigned = [];
   for (const [laneId, lane] of Object.entries(plan.lanes || {})) {
     for (const kind of ['dev', 'qa']) {
       const role = lane[kind];
       if (!role) continue;
-      const state = signatureState(findSignature(store, { host: role.host, model: role.model, reasoning_effort: role.reasoning_effort || null }), now);
-      if (state !== 'valid') unsigned.push(`${laneId}.${kind} ${role.host}/${role.model}${role.reasoning_effort ? `/${role.reasoning_effort}` : ''} (${state})`);
+      const state = signatureFor(role);
+      if (state !== 'valid') unsigned.push(`${roleLabel(`${laneId}.${kind}`, role)} (${state})`);
+    }
+  }
+  // The runtime reads fallbacks from the manifest lane entries, so that is
+  // where they are proven.
+  const fallbackUnsigned = [];
+  if (loaded.exists && loaded.ok) {
+    for (const [laneId, entry] of Object.entries(loaded.manifest.development_lanes?.lanes || {})) {
+      if (entry.enabled !== true) continue;
+      const fallbackCheck = (label) => (fallback, index) => {
+        if (!fallback || !fallback.host || !fallback.model) return;
+        const state = signatureFor(fallback);
+        if (state !== 'valid') fallbackUnsigned.push(`${roleLabel(`${laneId}.${label}.fallbacks[${index}]`, fallback)} (${state})`);
+      };
+      (entry.fallbacks || []).forEach(fallbackCheck('dev'));
+      (entry.qa?.fallbacks || []).forEach(fallbackCheck('qa'));
     }
   }
   check('execution-plan:signatures', unsigned.length === 0, unsigned.join('; ') || null);
   if (unsigned.length > 0) issues.push(`signature_missing: ${unsigned.join('; ')} — sign with aioson host:signature or reconfigure the roles`);
+  check('execution-plan:fallback-signatures', fallbackUnsigned.length === 0, fallbackUnsigned.join('; ') || null);
+  if (fallbackUnsigned.length > 0) warnings.push(`fallback_signature_missing: ${fallbackUnsigned.join('; ')} — an automatic capacity fallback would dispatch an unproven pair; sign it with aioson host:signature or drop it from the manifest`);
 
   // prompts
   const stalePrompts = [];

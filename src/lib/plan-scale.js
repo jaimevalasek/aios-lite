@@ -438,11 +438,14 @@ function proposeWritePaths(files) {
  * already declares two lanes — the cut was made. Raw material for the
  * planner's tables, never a table.
  */
-function proposeSplit(content) {
+function proposeSplit(content, options = {}) {
   const text = String(content || '');
   const lanesTable = parseDevelopmentLanes(text);
   if (lanesTable && lanesTable.rows.length >= 2) return null;
-  const scale = measurePlanScale(text);
+  // Same thresholds as the caller's own measurement: today no field the
+  // proposal reads depends on them, but a future one must not silently
+  // ignore the environment on this one path.
+  const scale = measurePlanScale(text, options);
   if (!scale.surfaces.two_sided) return null;
   const placeable = scale.surfaces.files.filter((file) => file.surface !== 'shared');
   const unassigned = scale.surfaces.files

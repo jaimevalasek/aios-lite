@@ -30,7 +30,7 @@
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const crypto = require('node:crypto');
-const { REASONING_EFFORTS, MAX_MODEL_NAME_LENGTH, MAX_DEVELOPMENT_LANES } = require('../agent-execution/schema');
+const { REASONING_EFFORTS, MAX_MODEL_NAME_LENGTH, MAX_DEVELOPMENT_LANES, effortsForHost } = require('../agent-execution/schema');
 const { listExecutionHosts, getExecutionCapabilities } = require('./tool-capabilities');
 const { readSignatures, findSignature, signatureState, locateOnPath, DEFAULT_MODEL } = require('./host-signature');
 
@@ -118,6 +118,8 @@ function validateExecutionRoles(value, { hosts = listExecutionHosts() } = {}) {
           add(`${base}.reasoning_effort`, `must be one of ${REASONING_EFFORTS.join(', ')} or null`);
         } else if (caps && !caps.reasoning_effort) {
           add(`${base}.reasoning_effort`, `effort_unsupported_by_host: ${role.host} does not accept a reasoning effort`);
+        } else if (!effortsForHost(role.host).includes(role.reasoning_effort)) {
+          add(`${base}.reasoning_effort`, `effort_unsupported_by_host: ${role.host} accepts ${effortsForHost(role.host).join(', ')}`);
         }
       }
     }

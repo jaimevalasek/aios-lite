@@ -26,7 +26,7 @@ const { spawn } = require('node:child_process');
 const { TOOL_CAPS } = require('./tool-capabilities');
 const { resolveExecutable } = require('../agent-execution/executable-resolver');
 const { redact } = require('../agent-execution/adapters/base');
-const { REASONING_EFFORTS } = require('../agent-execution/schema');
+const { effortsForHost } = require('../agent-execution/schema');
 
 const SIGNATURES_VERSION = 1;
 const DEFAULT_TTL_HOURS = 24;
@@ -136,9 +136,15 @@ async function isExecutableFile(file) {
 async function locateOnPath(command, env = process.env) {
   if (path.isAbsolute(command)) return (await isExecutableFile(command)) ? command : null;
   const dirs = String(env.PATH || env.Path || '').split(path.delimiter).filter(Boolean);
+  // Windows CLIs land as `.exe` (installers) or `.cmd` (npm shims): a
+  // bare-name probe misses essentially every properly installed host. Same
+  // extension rule as the shared executable resolver.
+  const extensions = process.platform === 'win32' ? ['.exe', '.cmd', ''] : [''];
   for (const dir of dirs) {
-    const candidate = path.join(dir, command);
-    if (await isExecutableFile(candidate)) return candidate;
+    for (const extension of extensions) {
+      const candidate = path.join(dir, `${command}${extension}`);
+      if (await isExecutableFile(candidate)) return candidate;
+    }
   }
   return null;
 }
@@ -218,8 +224,8 @@ async function probeHostSignature({
   if (!registered.execution) {
     return persistEntry(fail('unsupported_host_execution', { install_command: registered.install_command }), persistOptions);
   }
-  if (effort && !REASONING_EFFORTS.includes(effort)) {
-    return persistEntry(fail('invalid_reasoning_effort', { supported: [...REASONING_EFFORTS] }), persistOptions);
+  if (effort && !effortsForHost(hostId).includes(effort)) {
+    return persistEntry(fail('invalid_reasoning_effort', { supported: [...effortsForHost(hostId)] }), persistOptions);
   }
   if (effort && registered.execution.reasoning_effort !== true) {
     return persistEntry(fail('effort_unsupported_by_host', { effort_verification: 'registry' }), persistOptions);

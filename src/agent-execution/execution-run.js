@@ -47,7 +47,7 @@ const { safeReportPath } = require('./reports');
 const { createTelemetryBridge } = require('./telemetry-bridge');
 const { buildQaLaneProfile } = require('./qa-lane-profile');
 const { resolveExecutable } = require('./executable-resolver');
-const { REASONING_EFFORTS } = require('./schema');
+const { REASONING_EFFORTS, effortsForHost } = require('./schema');
 const { readSignatures, findSignature, signatureState } = require('../lib/host-signature');
 const { getExecutionCapabilities } = require('../lib/tool-capabilities');
 const { captureCorrectionBaseline } = require('../lib/specialist-correction');
@@ -298,18 +298,24 @@ function normalizeMessages(raw) {
     const to = typeof item?.to === 'string' ? item.to.trim().toLowerCase() : '';
     const kind = typeof item?.kind === 'string' ? item.kind.trim().toLowerCase() : '';
     // A message crosses from one process into another's prompt: the invisible
-    // carriers are dropped here, and instruction-shaped text is flagged so the
+    // carriers are dropped here, newlines and control characters are collapsed
+    // so a message can never forge a markdown heading that impersonates the
+    // engine's own protocol, and instruction-shaped text is flagged so the
     // reader (and the ledger) sees data, not an order.
-    const text = typeof item?.text === 'string' ? stripInjectionChars(item.text).trim() : '';
+    const text = typeof item?.text === 'string' ? stripInjectionChars(item.text).replace(/[\u0000-\u001f\u007f]+/g, ' ').trim() : '';
     if (!MESSAGE_TARGET.test(to) || !MESSAGE_KINDS.includes(kind) || !text) {
       dropped += 1;
       continue;
     }
     const paths = Array.isArray(item.paths)
-      ? item.paths.filter((p) => typeof p === 'string' && p.trim()).map((p) => p.trim().replace(/\\/g, '/')).slice(0, MAX_MESSAGE_PATHS)
+      ? item.paths
+        .filter((p) => typeof p === 'string' && p.trim())
+        .map((p) => stripInjectionChars(p).replace(/[\u0000-\u001f\u007f]+/g, ' ').trim().replace(/\\/g, '/').slice(0, 240))
+        .filter(Boolean)
+        .slice(0, MAX_MESSAGE_PATHS)
       : [];
     const message = { to, kind, text: text.slice(0, MAX_MESSAGE_TEXT), paths };
-    const scan = scanInjectionPayloads(message.text, { maxSamples: 1 });
+    const scan = scanInjectionPayloads([message.text, ...paths].join(' '), { maxSamples: 1 });
     if (scan.count > 0) message.flagged = Object.keys(scan.families);
     messages.push(message);
   }
@@ -666,7 +672,8 @@ async function preflightExecution(projectDir, featureInput, { env = process.env,
     manifest: loaded.exists && loaded.ok ? loaded : null,
     verification: verified,
     spawner,
-    unitTimeoutMs: rolesRead.ok ? (rolesRead.roles.execution?.unit_timeout_ms || null) : null
+    unitTimeoutMs: rolesRead.ok ? (rolesRead.roles.execution?.unit_timeout_ms || null) : null,
+    requireIndependentQa: rolesRead.ok ? rolesRead.roles.execution?.require_independent_qa === true : false
   };
 }
 
@@ -706,6 +713,7 @@ async function runExecution({
     return { ok: true, status: 'ready', reason: null, feature, preflight: preflightReport, plan: preflight.plan.summary, exitCode: 0 };
   }
   const { plan, manifest, planDigest } = preflight;
+  const requireIndependentQa = preflight.requireIndependentQa === true;
   const stateFile = runStatePath(projectDir, feature);
   // A spawner in force turns every host adapter into a hand-off to the client;
   // with humans watching terminals the unit budget defaults to 30 minutes.
@@ -728,6 +736,27 @@ async function runExecution({
         }
         if (state.plan_digest !== planDigest || state.manifest_digest !== manifest.digest) {
           return { ok: false, status: state.status, reason: 'run_state_stale', feature, path: runStateRelative(feature), message: 'the plan or the manifest changed since this run started; start a new run with --fresh', exitCode: 1 };
+        }
+        // A unit frozen at `running` was interrupted mid-process (Ctrl+C, a
+        // crash, a killed terminal): no report will ever land for it. Left as
+        // is it would be invisible to the scheduler and the run could end
+        // `completed` around it — so it is reclaimed to pending and named.
+        for (const u of Object.values(state.units || {})) {
+          const interruptedStages = [];
+          if (u.status === 'running') {
+            u.status = 'pending';
+            u.dev = { status: 'pending', interrupted_reason: 'process_interrupted' };
+            if (u.qa?.status === 'running') u.qa = { status: 'pending', interrupted_reason: 'process_interrupted' };
+            interruptedStages.push('dev');
+          } else if (u.status === 'passed' && u.qa?.status === 'running') {
+            u.qa = { status: 'pending', interrupted_reason: 'process_interrupted' };
+            interruptedStages.push('qa');
+          }
+          for (const stage of interruptedStages) {
+            if (!state.findings.some((f) => f.check === 'interrupted_unit' && f.unit === u.id && f.stage === stage)) {
+              state.findings.push({ check: 'interrupted_unit', severity: 'medium', unit: u.id, lane: u.lane, wave: u.wave, stage, message: `${u.id} (${stage}) was interrupted mid-process in a previous run — reclaimed to pending; it re-runs from its own prompt` });
+            }
+          }
         }
       } else if (!TERMINAL_STATUSES.includes(state.status)) {
         return { ok: false, status: state.status, reason: 'run_exists', feature, path: runStateRelative(feature), decisions_pending: pendingDecisions(state, feature), resume_command: resumeCommand(feature), message: 'a run is in progress or paused — resume it, or discard it with --fresh', exitCode: 1 };
@@ -875,7 +904,14 @@ async function runExecution({
       const commonArgs = { projectDir, feature, runId: state.run_id, unit, lane, manifest, adapterRegistry: registry, catalogLoader, timeout: unitTimeout, signal: monitor.signal, resolverOptions, stallMs, stallCheckMs, now, emit };
 
       if (unitState.status === 'pending') {
-        const config = roleConfig(unitState, unit.lane, 'dev');
+        let config;
+        try {
+          config = roleConfig(unitState, unit.lane, 'dev');
+        } catch (error) {
+          // A broken lane entry must pause the unit, not relaunch it forever.
+          await requireDecision(unitState, 'dev', { kind: 'crashed', reason: 'lane_config_invalid', error: error.message });
+          return;
+        }
         unitState.status = 'running';
         unitState.dev = { status: 'running', host: config.host, model: config.model, reasoning_effort: config.reasoning_effort || null, started_at: nowIso() };
         await persist();
@@ -918,7 +954,20 @@ async function runExecution({
 
       if (unitState.status === 'passed' && unitState.qa.status === 'pending') {
         const maxFixFiles = Number.isInteger(lane.qa?.max_fix_files) ? lane.qa.max_fix_files : 3;
-        const config = roleConfig(unitState, unit.lane, 'qa');
+        let config;
+        try {
+          config = roleConfig(unitState, unit.lane, 'qa');
+        } catch (error) {
+          await requireDecision(unitState, 'qa', { kind: 'crashed', reason: 'lane_config_invalid', error: error.message });
+          return;
+        }
+        // Judge ≠ producer holds at dispatch, not only at compile: a decision
+        // (or a fallback) that lands the review on the implementer's own
+        // host+model is a self-review, refused here whatever route led to it.
+        if (requireIndependentQa && config.host === unitState.dev.host && config.model === unitState.dev.model) {
+          await requireDecision(unitState, 'qa', { kind: 'unavailable', reason: 'self_review_blocked', host: config.host, model: config.model });
+          return;
+        }
         unitState.qa = { status: 'running', host: config.host, model: config.model, reasoning_effort: config.reasoning_effort || null, started_at: nowIso(), max_fix_files: maxFixFiles };
         await persist();
         emit({ type: 'unit', role: 'qa', status: 'started', unit: unitId, lane: unit.lane, wave: unit.wave, host: config.host, model: config.model });
@@ -979,6 +1028,19 @@ async function runExecution({
             unitState.status = 'pending';
             unitState.dev = { status: 'pending' };
             unitState.qa = { status: 'pending' };
+            // An `after_dev` edge may already have released dependents onto
+            // the implementation this round is about to rewrite. A successful
+            // rework leaves no other trace, so the connection is a finding.
+            const releasedDependents = Object.values(planUnits)
+              .filter((p) => (p.depends_on || []).some((d) => d.unit === unitId && d.gate === 'after_dev'))
+              .map((p) => p.id)
+              .filter((id) => {
+                const dependent = state.units[id];
+                return dependent && (dependent.status !== 'pending' || dependent.dev?.started_at);
+              });
+            if (releasedDependents.length > 0 && !state.findings.some((f) => f.check === 'rework_dependent_started' && f.unit === unitId && f.round === round)) {
+              state.findings.push({ check: 'rework_dependent_started', severity: 'medium', unit: unitId, lane: unit.lane, wave: unit.wave, round, dependents: releasedDependents, message: `${unitId} entered rework round ${round} after releasing ${releasedDependents.join(', ')} via after_dev — those units built on the pre-rework implementation; the integration owner reconciles them against the reworked result` });
+            }
             emit({ type: 'unit', role: 'qa', status: 'rework', unit: unitId, lane: unit.lane, wave: unit.wave, round, max: maxRework, findings: qaFindings.length });
             await persist();
             wakeUp();
@@ -1221,12 +1283,36 @@ async function decideExecution({ projectDir, feature: featureInput, unit: unitId
       if (!caps) return { ok: false, reason: 'unknown_host', feature, unit: unitState.id, host: parsed.host };
       if (parsed.reasoning_effort && !caps.reasoning_effort) return { ok: false, reason: 'effort_unsupported_by_host', feature, unit: unitState.id, host: parsed.host };
       if (parsed.reasoning_effort && !REASONING_EFFORTS.includes(parsed.reasoning_effort)) return { ok: false, reason: 'invalid_reasoning_effort', feature, unit: unitState.id };
+      if (parsed.reasoning_effort && !effortsForHost(parsed.host).includes(parsed.reasoning_effort)) return { ok: false, reason: 'effort_unsupported_by_host', feature, unit: unitState.id, host: parsed.host, supported: effortsForHost(parsed.host) };
       const store = await readSignatures({ env });
       const sig = signatureState(findSignature(store, { host: parsed.host, model: parsed.model, reasoning_effort: parsed.reasoning_effort }), now());
       if (sig !== 'valid') {
         return { ok: false, reason: `fallback_signature_${sig}`, feature, unit: unitState.id, host: parsed.host, model: parsed.model, hint: `aioson host:signature . --host=${parsed.host} --model=${parsed.model}${parsed.reasoning_effort ? ` --effort=${parsed.reasoning_effort}` : ''}` };
       }
+      // Judge ≠ producer survives recovery: with require_independent_qa on, a
+      // fallback that lands this stage on the unit's other stage's host+model
+      // is a self-review — refused, not silently accepted.
+      const rolesRead = await readExecutionRoles(projectDir).catch(() => null);
+      if (rolesRead?.ok && rolesRead.roles?.execution?.require_independent_qa === true) {
+        const counterpart = stage === 'qa' ? unitState.dev : unitState.qa;
+        if (counterpart?.host && counterpart.host === parsed.host && counterpart.model === parsed.model) {
+          return { ok: false, reason: 'fallback_self_review', feature, unit: unitState.id, host: parsed.host, model: parsed.model, message: 'execution.require_independent_qa is on — the reviewer and the implementer of a unit must differ in host or model; choose a different fallback' };
+        }
+      }
       unitState.override = { ...(unitState.override || {}), [stage]: { host: parsed.host, model: parsed.model, reasoning_effort: parsed.reasoning_effort } };
+    }
+    // A retried (or re-homed) stage re-dispatches into the same round: a
+    // report left by the failed attempt would satisfy a path-watching spawner
+    // instantly and burn the retry — the stale file goes first.
+    if (parsed.choice === 'retry' || parsed.choice === 'fallback') {
+      try {
+        const read = await readExecutionPlan(projectDir, feature);
+        const planUnit = read.exists ? (read.plan.units || []).find((u) => u.id === unitState.id) : null;
+        const template = planUnit ? (stage === 'dev' ? planUnit.report : planUnit.qa_report) : null;
+        if (template) {
+          await fs.rm(path.join(projectDir, roundReport(template, state.run_id, unitState.rework?.rounds || 0)), { force: true });
+        }
+      } catch { /* a stale report is still rejected later by attempt binding; cleanup is best-effort */ }
     }
     const previous = unitState.pending_decision;
     const decision = { unit: unitState.id, stage, choice: String(choice).trim(), reason_before: previous.reason, at: nowIso() };

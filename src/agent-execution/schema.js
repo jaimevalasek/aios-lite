@@ -6,6 +6,15 @@ const HOSTS = ['claude', 'codex', 'opencode', 'kimi', 'qwen'];
 const MODES = ['fresh-session', 'subagent', 'external', 'current-session'];
 const AGENTS = ['dev', 'qa', 'tester', 'pentester', 'validator'];
 const REASONING_EFFORTS = ['low', 'medium', 'high', 'xhigh', 'max', 'ultra'];
+// Effort vocabulary is per host, not one shared list: `ultra` is codex
+// vocabulary and the claude CLI rejects it — a shared list let an
+// `--effort=ultra` claude lane pass every static check and fail at dispatch.
+const HOST_REASONING_EFFORTS = {
+  claude: REASONING_EFFORTS.filter((effort) => effort !== 'ultra')
+};
+function effortsForHost(host) {
+  return HOST_REASONING_EFFORTS[String(host || '').toLowerCase()] || REASONING_EFFORTS;
+}
 const FALLBACK_REASONS = ['capacity', 'unavailable'];
 const MAX_MODEL_NAME_LENGTH = 200;
 const MAX_DEVELOPMENT_LANES = 8;
@@ -368,6 +377,7 @@ module.exports = {
   EXECUTION_MODES,
   FALLBACK_REASONS,
   HOSTS,
+  effortsForHost,
   LANE_QA_KEYS,
   MAX_QA_FIX_FILES,
   MAX_DEVELOPMENT_LANES,
