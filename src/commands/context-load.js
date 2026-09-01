@@ -8,8 +8,10 @@
  * or 'brain_loaded'. Tier-1 silent: no stdout unless --verbose.
  *
  * Usage:
- *   aioson context:load [path] --target=<rule|brain>:<slug> --agent=<name> [--feature=<slug>] [--verbose]
+ *   aioson context:load [path] --target=<rule|brain|doc|skill>:<slug> --agent=<name> [--feature=<slug>] [--verbose]
  *   aioson context:load . --target=rule --agent=dev --batch="security-baseline,disk-first-artifacts"
+ *   aioson context:load . --target=skill:process/secure-tdd --agent=dev
+ *   aioson context:load . --target=doc:dev/phase-loop --agent=dev
  */
 
 const fs = require('node:fs');
@@ -34,6 +36,8 @@ function parseTarget(rawTarget) {
 function normalizeKind(kind) {
   if (kind === 'rule' || kind === 'rules') return 'rule';
   if (kind === 'brain' || kind === 'brains') return 'brain';
+  if (kind === 'doc' || kind === 'docs') return 'doc';
+  if (kind === 'skill' || kind === 'skills') return 'skill';
   return null;
 }
 
@@ -65,8 +69,33 @@ function resolveBrainTarget(targetDir, slug) {
   return { absPath: fallbackAbs, relPath: fallbackRel, exists: false };
 }
 
+// A doc slug is its path under .aioson/docs without the extension
+// (e.g. `dev/phase-loop`).
+function resolveDocTarget(targetDir, slug) {
+  const parts = String(slug).split('/').filter(Boolean);
+  const relPosix = path.posix.join('.aioson', 'docs', ...parts) + '.md';
+  const absPath = path.join(targetDir, '.aioson', 'docs', ...parts) + '.md';
+  return { absPath, relPath: relPosix, exists: fs.existsSync(absPath) };
+}
+
+// A skill slug is its router directory under .aioson/skills
+// (e.g. `process/secure-tdd`), with .aioson/installed-skills as fallback.
+function resolveSkillTarget(targetDir, slug) {
+  const parts = String(slug).split('/').filter(Boolean);
+  for (const base of [['.aioson', 'skills'], ['.aioson', 'installed-skills']]) {
+    const abs = path.join(targetDir, ...base, ...parts, 'SKILL.md');
+    if (fs.existsSync(abs)) {
+      return { absPath: abs, relPath: path.posix.join(...base, ...parts, 'SKILL.md'), exists: true };
+    }
+  }
+  const fallbackRel = path.posix.join('.aioson', 'skills', ...parts, 'SKILL.md');
+  return { absPath: path.join(targetDir, fallbackRel), relPath: fallbackRel, exists: false };
+}
+
 function resolveTarget(targetDir, kind, slug) {
   if (kind === 'rule') return resolveRuleTarget(targetDir, slug);
+  if (kind === 'doc') return resolveDocTarget(targetDir, slug);
+  if (kind === 'skill') return resolveSkillTarget(targetDir, slug);
   return resolveBrainTarget(targetDir, slug);
 }
 
@@ -100,7 +129,10 @@ function buildPayload({ kind, slug, relPath, agentName, featureSlug, classificat
 }
 
 function eventTypeForKind(kind) {
-  return kind === 'rule' ? 'rule_loaded' : 'brain_loaded';
+  if (kind === 'rule') return 'rule_loaded';
+  if (kind === 'doc') return 'doc_loaded';
+  if (kind === 'skill') return 'skill_loaded';
+  return 'brain_loaded';
 }
 
 async function runContextLoad({ args, options = {}, logger, t }) {

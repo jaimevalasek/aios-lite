@@ -894,10 +894,12 @@ function insertExecutionEvent(db, record) {
   `).run(record);
 }
 
+const CONTEXT_LOAD_EVENT_TYPES = new Set(['rule_loaded', 'brain_loaded', 'doc_loaded', 'skill_loaded']);
+
 function appendContextLoadEvent(db, options) {
   const eventType = String(options.eventType || '').trim();
-  if (eventType !== 'rule_loaded' && eventType !== 'brain_loaded') {
-    throw new Error(`appendContextLoadEvent: invalid eventType "${eventType}" (must be rule_loaded|brain_loaded)`);
+  if (!CONTEXT_LOAD_EVENT_TYPES.has(eventType)) {
+    throw new Error(`appendContextLoadEvent: invalid eventType "${eventType}" (must be rule_loaded|brain_loaded|doc_loaded|skill_loaded)`);
   }
 
   const now = options.createdAt || nowIso();
@@ -926,6 +928,39 @@ function appendContextLoadEvent(db, options) {
     sequence_no: sequenceNo,
     parent_event_id: null,
     created_at: now,
+    plan_step_id: null,
+    worker_status: null,
+    verdict: null,
+    token_count: null,
+    progress_pct: null
+  });
+}
+
+// One row per context:brief call — the selection decision itself, recorded at
+// the moment it happens. This is what makes "are the routed docs and skills
+// actually offered at runtime?" a query instead of a guess; the per-artifact
+// load confirmations stay with `context:load`.
+function appendContextBriefEvent(db, options) {
+  insertExecutionEvent(db, {
+    task_key: null,
+    run_key: null,
+    agent_name: options.agentName ? String(options.agentName).trim() : null,
+    agent_kind: null,
+    squad_slug: null,
+    session_key: null,
+    source: 'context_brief',
+    workflow_id: null,
+    workflow_stage: null,
+    parent_run_key: null,
+    event_type: 'brief_built',
+    phase: 'context_brief',
+    status: null,
+    tool_name: null,
+    message: String(options.message || 'brief_built'),
+    payload_json: options.payload ? JSON.stringify(options.payload) : null,
+    sequence_no: 1,
+    parent_event_id: null,
+    created_at: options.createdAt || nowIso(),
     plan_step_id: null,
     worker_status: null,
     verdict: null,
@@ -2824,6 +2859,7 @@ module.exports = {
   createTaskKey,
   appendRunEvent,
   appendContextLoadEvent,
+  appendContextBriefEvent,
   logAgentEvent,
   readAgentSession,
   writeAgentSession,
