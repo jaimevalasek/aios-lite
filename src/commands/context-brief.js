@@ -7,22 +7,25 @@ const { resolveTargetDir } = require('../lib/project-root');
 // Best-effort, silent: one execution_events row per brief when the runtime DB
 // already exists — the selection decision becomes queryable runtime usage.
 // Never blocks or fails the brief.
-async function recordBriefEvent(targetDir, result) {
+async function recordBriefEvent(targetDir, result, featureSlug) {
   let handle = null;
   try {
     const { openRuntimeDb, appendContextBriefEvent } = require('../runtime-store');
     handle = await openRuntimeDb(targetDir, { mustExist: true });
     if (!handle || !handle.db) return;
+    const payload = {
+      mode: result.mode,
+      task_chars: String(result.task || '').length,
+      must_load: (result.must_load || []).map((item) => item.path).slice(0, 20),
+      should_load: (result.should_load || []).map((item) => item.path).slice(0, 20),
+      skills: (result.skills || []).map((item) => item.path),
+      confidence: result.confidence
+    };
+    if (featureSlug) payload.feature_slug = String(featureSlug).trim();
     appendContextBriefEvent(handle.db, {
       agentName: result.agent,
       message: `brief_built:${result.mode}`,
-      payload: {
-        mode: result.mode,
-        task_chars: String(result.task || '').length,
-        must_load: (result.must_load || []).map((item) => item.path).slice(0, 20),
-        skills: (result.skills || []).map((item) => item.path),
-        confidence: result.confidence
-      }
+      payload
     });
   } catch { /* telemetry is advisory */ } finally {
     if (handle && handle.db) { try { handle.db.close(); } catch { /* closed */ } }
@@ -41,7 +44,7 @@ async function runContextBrief({ args, options = {}, logger }) {
     noSemantic: options.noSemantic || options['no-semantic'],
     recall: !(options['no-recall'] || options.recall === false)
   });
-  await recordBriefEvent(targetDir, result);
+  await recordBriefEvent(targetDir, result, options.feature || options.slug || '');
 
   if (options.json) return result;
 

@@ -91,6 +91,8 @@ module.exports = {
       'aioson context:guard [path] [--tool=claude] [--agent=<agente>] [--event=<json>] [--event-file=<caminho>] [--json] [--locale=pt-BR]',
     help_context_evals:
       'aioson context:evals [path] [--strict] [--filter=<texto>] [--no-coverage] [--json] [--locale=pt-BR]',
+    help_context_usage:
+      'aioson context:usage [path] [--since=<dias>] [--feature=<slug>] [--json] [--locale=pt-BR]',
     help_context_load:
       'aioson context:load [path] --target=<rule|brain|doc|skill>:<slug> --agent=<nome> [--batch="slug1,slug2"] [--feature=<slug>] [--classification=<MICRO|SMALL|MEDIUM>] [--verbose] [--json] [--locale=pt-BR]',
     help_chain_audit:

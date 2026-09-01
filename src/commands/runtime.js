@@ -1208,6 +1208,46 @@ function logDeliveryParityLine(logger, dp, t) {
 }
 
 /**
+ * Knowledge-routing trajectory (advisory). An agent whose kernel tells it to
+ * run `context:brief` promised to consult the routed rules/docs/skills; the
+ * brief leaves one `brief_built` row when it runs. A session end with none
+ * since the session opened means the knowledge was reachable (proven by
+ * context:evals) but never asked for — the step was skipped, not failed.
+ * Never blocks: closing a session with no code work is legitimate. The
+ * requirement is read from the agent's own kernel file, so a consumer agent
+ * that adopts the line is measured the same way — no hardcoded roster.
+ */
+async function resolveBriefConsultation({ db, targetDir, agent, session }) {
+  const bare = String(agent || '').trim().replace(/^@/, '');
+  if (!bare) return { required: false, state: 'not_required', briefs: 0, since: null };
+  let required = false;
+  try {
+    const { kernelRequiresBrief } = require('../lib/context-usage');
+    required = await kernelRequiresBrief(targetDir, bare);
+  } catch {
+    required = false;
+  }
+  if (!required) return { required: false, state: 'not_required', briefs: 0, since: null };
+  const since = session && session.startedAt
+    ? String(session.startedAt)
+    : new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  try {
+    const row = db.prepare(
+      "SELECT COUNT(*) AS n FROM execution_events WHERE event_type = 'brief_built' AND agent_name IN (?, ?) AND created_at >= ?"
+    ).get(bare, `@${bare}`, since);
+    const briefs = Number(row && row.n) || 0;
+    return { required: true, state: briefs > 0 ? 'consulted' : 'not_consulted', briefs, since };
+  } catch {
+    return { required: true, state: 'unknown', briefs: 0, since };
+  }
+}
+
+function logBriefConsultationLine(logger, bc) {
+  if (!bc || bc.state !== 'not_consulted') return;
+  logger.log(`agent:done — context:brief not consulted (advisory): no brief_built event for this agent since ${bc.since}. Routed rules/docs/skills were reachable but never asked for — run \`aioson context:brief . --agent=<agent> --mode=<mode> --task="<task>" --paths=<files>\` before the work; \`aioson context:usage .\` shows the pattern over time.`);
+}
+
+/**
  * Resolve the parity measurement for a session end. Best-effort by contract:
  * a broken or missing git must never affect an agent's session close.
  */
@@ -1255,6 +1295,12 @@ async function runAgentDone({ args, options = {}, logger, t }) {
   try {
     const session = await readAgentSession(runtimeDir, normalizedAgent);
     const hasActiveSession = session && !session.finished && session.runKey;
+    const briefConsultation = await resolveBriefConsultation({
+      db,
+      targetDir,
+      agent: normalizedAgent,
+      session: hasActiveSession ? session : null
+    });
 
     if (hasActiveSession) {
       // Live or tracked session is already open — only append a completion note.
@@ -1319,8 +1365,9 @@ async function runAgentDone({ args, options = {}, logger, t }) {
       if (!options.json) {
         logVerifyArtifactLine(logger, verifyArtifact);
         logDeliveryParityLine(logger, deliveryParity, t);
+        logBriefConsultationLine(logger, briefConsultation);
       }
-      return { ok: true, targetDir, dbPath, agent: normalizedAgent, mode: 'live_event', runKey: session.runKey, auto_advance: autoAdvance, verify_artifact: verifyArtifact, delivery_parity: deliveryParity };
+      return { ok: true, targetDir, dbPath, agent: normalizedAgent, mode: 'live_event', runKey: session.runKey, auto_advance: autoAdvance, verify_artifact: verifyArtifact, delivery_parity: deliveryParity, context_brief: briefConsultation };
     }
 
     // No active session — create a standalone task+run and immediately complete it.
@@ -1397,8 +1444,9 @@ async function runAgentDone({ args, options = {}, logger, t }) {
     if (!options.json) {
       logVerifyArtifactLine(logger, verifyArtifact);
       logDeliveryParityLine(logger, deliveryParity, t);
+      logBriefConsultationLine(logger, briefConsultation);
     }
-    return { ok: true, targetDir, dbPath, agent: normalizedAgent, mode: 'standalone', runKey, taskKey, auto_advance: autoAdvance, verify_artifact: verifyArtifact, delivery_parity: deliveryParity };
+    return { ok: true, targetDir, dbPath, agent: normalizedAgent, mode: 'standalone', runKey, taskKey, auto_advance: autoAdvance, verify_artifact: verifyArtifact, delivery_parity: deliveryParity, context_brief: briefConsultation };
   } finally {
     db.close();
   }

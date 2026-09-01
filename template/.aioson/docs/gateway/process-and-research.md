@@ -50,7 +50,7 @@ aioson runtime:emit . --agent=<agent> --type=skill_loaded --used-skills=<skill-i
 
 Inspect declared reachability and observed evidence with `aioson skill:audit . --reachability --usage`. Absence of observed telemetry is not by itself proof that a skill is abandoned.
 
-Skill routers also carry routing frontmatter (`triggers`, `task_types`, `agents`, `paths`), so `context:brief` lists matching skills in its advisory `skills` section — check it before assuming no skill applies. Trigger reachability is proven, not assumed: `aioson context:evals .` replays the scenarios under `.aioson/evals/` through the real engine and its coverage report names every routed rule/doc/skill no scenario proves. When you add or reword routing frontmatter, run it; a failed scenario prints the exclusion cause and a concrete frontmatter fix.
+Skill routers also carry routing frontmatter (`triggers`, `task_types`, `agents`, `paths`), so `context:brief` lists matching skills in its advisory `skills` section — check it before assuming no skill applies. Trigger reachability is proven, not assumed: `aioson context:evals .` replays the scenarios under `.aioson/evals/` through the real engine and its coverage report names every routed rule/doc/skill no scenario proves. When you add or reword routing frontmatter, run it; a failed scenario prints the exclusion cause and a concrete frontmatter fix. Reachable is not consulted: `aioson context:usage .` reads the runtime rows (`brief_built`, `*_loaded`, `agent_done`) — session ends without a brief, artifacts loaded that no brief offered, active skills nothing selected — and `agent:done` says so (advisory) when a kernel that mandates `context:brief` closes without one.
 
 ## Shared research cache
 

@@ -17,6 +17,7 @@ const { runContextSelect } = require('./commands/context-select');
 const { runContextBrief } = require('./commands/context-brief');
 const { runRulesLint } = require('./commands/rules-lint');
 const { runContextEvalsCommand } = require('./commands/context-evals');
+const { runContextUsageCommand } = require('./commands/context-usage');
 const { runContextLoad } = require('./commands/context-load');
 const { runChainAudit } = require('./commands/chain-audit');
 const {
@@ -325,6 +326,8 @@ const JSON_SUPPORTED_COMMANDS = new Set([
   'rules-check',
   'context:evals',
   'context-evals',
+  'context:usage',
+  'context-usage',
   'context:load',
   'context-load',
   'chain:audit',
@@ -1094,6 +1097,7 @@ function printHelp(t, logger) {
   logHelpLine(t, logger, 'cli.help_context_brief');
   logHelpLine(t, logger, 'cli.help_context_guard');
   logHelpLine(t, logger, 'cli.help_context_evals');
+  logHelpLine(t, logger, 'cli.help_context_usage');
   logHelpLine(t, logger, 'cli.help_context_load');
   logHelpLine(t, logger, 'cli.help_chain_audit');
   logHelpLine(t, logger, 'cli.help_chain_list');
@@ -1513,6 +1517,8 @@ async function main() {
       result = await runRulesLint({ args, options, logger: commandLogger, t });
     } else if (command === 'context:evals' || command === 'context-evals') {
       result = await runContextEvalsCommand({ args, options, logger: commandLogger, t });
+    } else if (command === 'context:usage' || command === 'context-usage') {
+      result = await runContextUsageCommand({ args, options, logger: commandLogger, t });
     } else if (command === 'rules:check' || command === 'rules-check') {
       const { runRulesCheck } = require('./commands/rules-check');
       result = await runRulesCheck({ args, options, logger: commandLogger, t });
