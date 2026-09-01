@@ -470,6 +470,7 @@ async function extractSite({ dir }) {
       acc.scanned.css += 1;
       extractFromCss(text, relative, acc);
       detectLibraries(text, relative, acc);
+      scanForInjection(text, relative, acc);
     } else if (extension === '.js' || extension === '.mjs' || extension === '.cjs') {
       acc.scanned.js += 1;
       extractFromJs(text, relative, acc);
@@ -513,6 +514,7 @@ async function searchSavedSite({ dir, query, contextLines = 2, maxMatches = 20 }
   const matches = [];
   const bounded = Math.max(0, Math.min(Number(contextLines) || 0, 8));
   const cap = Math.max(1, Math.min(Number(maxMatches) || 20, 100));
+  const injection = { count: 0, families: {} };
 
   for (const file of files) {
     if (matches.length >= cap) break;
@@ -526,16 +528,27 @@ async function searchSavedSite({ dir, query, contextLines = 2, maxMatches = 20 }
       if (!lines[index].toLowerCase().includes(needle)) continue;
       // Raw source lines by request: the comment is the source, only the
       // invisible carriers (zero-width, bidi) are dropped.
-      matches.push({
+      const match = {
         file: relative,
         line: index + 1,
         text: stripHiddenChars(lines[index]).trim().slice(0, 300),
         before: lines.slice(Math.max(0, index - bounded), index).map((entry) => stripHiddenChars(entry).trim().slice(0, 300)),
         after: lines.slice(index + 1, index + 1 + bounded).map((entry) => stripHiddenChars(entry).trim().slice(0, 300))
-      });
+      };
+      // The targeted-snippet escape hatch is part of the perimeter: a match
+      // window that carries instruction-shaped text is returned flagged.
+      const found = scanInjectionPayloads([match.text, ...match.before, ...match.after].join('\n'), { maxSamples: 1 });
+      if (found.count > 0) {
+        match.flagged = true;
+        injection.count += found.count;
+        for (const [family, count] of Object.entries(found.families)) {
+          injection.families[family] = (injection.families[family] || 0) + count;
+        }
+      }
+      matches.push(match);
     }
   }
-  return { matches, capped: matches.length >= cap };
+  return { matches, capped: matches.length >= cap, injection };
 }
 
 module.exports = {

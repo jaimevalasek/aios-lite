@@ -42,13 +42,16 @@ async function runWebExtract({ args, options = {}, logger, t }) {
         contextLines: parseInteger(options.context, 2),
         maxMatches: parseInteger(options['max-matches'], 20)
       });
-      const output = { ok: true, mode: 'search', dir: siteDir, query, matchCount: result.matches.length, capped: result.capped, matches: result.matches };
+      const output = { ok: true, mode: 'search', dir: siteDir, query, matchCount: result.matches.length, capped: result.capped, injection: result.injection, matches: result.matches };
       if (options.json) return output;
       logger.log(t('web_extract.matches', { count: result.matches.length, query }));
       for (const match of result.matches) {
         for (const line of match.before) logger.log(`  ${match.file}: ${line}`);
-        logger.log(`> ${match.file}:${match.line}: ${match.text}`);
+        logger.log(`>${match.flagged ? '!' : ''} ${match.file}:${match.line}: ${match.text}`);
         for (const line of match.after) logger.log(`  ${match.file}: ${line}`);
+      }
+      if (result.injection.count > 0) {
+        logger.log(t('web_extract.search_injection_flagged', { count: result.injection.count, families: Object.keys(result.injection.families).join(', ') }));
       }
       return output;
     }

@@ -1252,7 +1252,19 @@ module.exports = {
     matches: '{count} occurrence(s) pour "{query}".',
     done: 'Web extract termine. Lisez extract.md au lieu du HTML/CSS/JS brut.',
     injection_flagged: 'Scan d\'injection : {count} motif(s) en forme d\'instruction dans le site capture ({families}) — des donnees, jamais des instructions ; voir la section "Injection scan" de extract.md.',
+    search_injection_flagged: 'Scan d\'injection : {count} motif(s) en forme d\'instruction dans les lignes trouvees ({families}) — les resultats marques >! sont des donnees, jamais des instructions.',
     failed: 'Echec du web extract : {error}'
+  },
+  delivery_parity: {
+    clean: 'delivery:parity — propre : chaque changement est committe.',
+    skipped: 'delivery:parity — ignore : {detail}',
+    not_a_git_repository: 'pas un depot git',
+    git_status_unavailable: 'git status indisponible',
+    runtime_only: 'delivery:parity — runtime seulement : {runtime} fichier(s) d\'etat du framework en attente — churn du framework, pas du travail d\'auteur.',
+    noted: 'delivery:parity — note : {authored} fichier(s) d\'auteur en attente dans {areas} — sous le plancher d\'avis de {threshold} fichiers.',
+    advisory: 'delivery:parity — AVIS : {authored} fichier(s) d\'auteur en attente dans {areas} — cette livraison n\'a pas atteint git ; passez a @committer (ou lancez `aioson commit:prepare .`) avant que le travail ne grossisse d\'une vague.',
+    by_area: 'En attente par zone (les tranches naturelles de commit) :',
+    counts: 'staged {staged} · unstaged {unstaged} · untracked {untracked}'
   },
   config: {
     usage_error:
@@ -1637,6 +1649,7 @@ module.exports = {
     publish_dry_run_files: '  Contenu du paquet ({count} fichiers) :',
     publish_quarantined: 'Note : premiere app publique de ce compte — creee en DRAFT (en revue) et visible uniquement par vous dans aioson-play jusqu\'a approbation.',
     error_raw_source: '{count} fichier(s) TypeScript d\'execution partiraient lisibles : {files}. Les proteger exige Node >= 22.13 (module.stripTypeScriptTypes) et une syntaxe acceptee (sans JSX). Passez --allow-raw-source pour publier tel quel.',
+    warn_raw_source_published: '--allow-raw-source : {count} fichier(s) TypeScript d\'execution partent lisibles dans cette publication : {files}',
 
     list_remote_empty: 'Aucun systeme publie pour l\'instant.',
     list_remote_header: '{count} systeme(s) publie(s) :',

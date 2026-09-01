@@ -55,7 +55,9 @@ async function runExpect(page, step, timeout, clock) {
             ? await target.allTextContents().catch(() => [])
             : [await target.textContent().catch(() => null)];
           const hit = texts.find((text) => matches(text, expected, Boolean(step.exact)));
-          const shown = texts.length === 0 ? '(no match)' : clip(texts.map((t) => String(t || '').trim()).filter(Boolean).join(' | '), 120);
+          // Page-controlled text lands in the step record an agent reads:
+          // invisible carriers are dropped at capture, like console lines.
+          const shown = texts.length === 0 ? '(no match)' : clip(stripHiddenChars(texts.map((t) => String(t || '').trim()).filter(Boolean).join(' | ')), 120);
           return { ok: hit !== undefined, detail: `text of ${step.target} (${texts.length}): "${shown}"` };
         }, timeout, clock);
         return { ...result, expected: `${step.target} contains "${needle(expected)}"` };
@@ -72,7 +74,7 @@ async function runExpect(page, step, timeout, clock) {
       const expected = asMatcher(step.value);
       const result = await until(async () => {
         const value = await target.inputValue().catch(() => null);
-        return { ok: matches(value, expected, true), detail: `value of ${step.target}: "${clip(value, 120)}"` };
+        return { ok: matches(value, expected, true), detail: `value of ${step.target}: "${clip(stripHiddenChars(String(value ?? '')), 120)}"` };
       }, timeout, clock);
       return { ...result, expected: `${step.target} value = "${needle(expected)}"` };
     }
@@ -277,7 +279,8 @@ async function executeStep({ page, step, script, baseUrl, artifactDir, artifactP
       }
       case 'eval': {
         const value = await page.evaluate(String(step.expression));
-        const text = typeof value === 'string' ? value : JSON.stringify(value);
+        // eval output is page-controlled text headed for the report.
+        const text = stripHiddenChars(typeof value === 'string' ? value : String(JSON.stringify(value)));
         record.value = clip(text, 400);
         if (step.equals !== undefined && String(value) !== String(step.equals) && text !== JSON.stringify(step.equals)) {
           throw new Error(`eval returned ${clip(text, 120)}, expected ${JSON.stringify(step.equals)}`);

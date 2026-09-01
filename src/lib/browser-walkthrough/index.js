@@ -52,10 +52,12 @@ function consoleSample(type, text) {
 }
 
 // What the page said, scanned for text that reads as an instruction to the
-// reader: aria previews (every snapshot step, the failure snapshot) and the
-// console samples. Advisory — evidence of what the page contains, never a
-// verdict on the feature; the walkthrough's own verdict is untouched.
-function scanCaptured({ aria = [], console: consoleSamples = [] }) {
+// reader: aria previews (every snapshot step, the failure snapshot), the
+// console samples, and step records that quote live page text (`expect
+// text/contains`, `expect value`, `eval`). Advisory — evidence of what the
+// page contains, never a verdict on the feature; the walkthrough's own
+// verdict is untouched.
+function scanCaptured({ aria = [], console: consoleSamples = [], steps: stepTexts = [] }) {
   const merged = { count: 0, hidden_chars: 0, families: {}, samples: [] };
   const fold = (source, text) => {
     const found = scanInjectionPayloads(text, { maxSamples: 3 });
@@ -66,6 +68,7 @@ function scanCaptured({ aria = [], console: consoleSamples = [] }) {
   };
   for (const text of aria) fold('aria', text);
   for (const text of consoleSamples) fold('console', text);
+  for (const text of stepTexts) fold('step', text);
   return merged;
 }
 
@@ -214,7 +217,11 @@ async function runWalkthrough(options) {
 
   const ids = rollupUnreached(script, executed, rollupIds(executed, stoppedAt));
   const ok = executed.length === script.steps.length && executed.every((s) => s.ok);
-  const injection = scanCaptured({ aria: ariaSeen, console: consoleLog.samples.map((s) => s.text) });
+  const injection = scanCaptured({
+    aria: ariaSeen,
+    console: consoleLog.samples.map((s) => s.text),
+    steps: executed.flatMap((s) => [s.detail, s.value].filter((text) => typeof text === 'string' && text !== ''))
+  });
   if (injection.count > 0) warnings.push(injectionWarning(injection));
   const replayParts = ['aioson browser:run .', `--script=${scriptPath ? toRel(targetDir, path.resolve(targetDir, scriptPath)) : '<script>'}`];
   if (url) replayParts.push(`--url=${url}`);
