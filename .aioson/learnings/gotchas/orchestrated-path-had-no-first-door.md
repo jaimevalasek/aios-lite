@@ -38,6 +38,26 @@ de 77 arquivos e um de 5 passavam pelo mesmo caminho verde.
   `[Execution Scale]` quando um candidato não tem resposta registrada
   (advisory: DEV único pode ser certo; cobra-se o registro).
 
+## Terceiro incidente: a pergunta certa com a recomendação errada
+
+A pergunta passou a disparar na escala medida — e o modelo que pergunta
+recomendou "DEV único" para um plano de 52 arquivos (38 frontend, 12 backend,
+2 shared) em 5 fases, porque o kernel pinava "single DEV (default)" fixo e o
+caminho travado (`roles_file_missing`) foi lido como "não aconselhável". A
+medição existia inteira (`plan.scale`, `surfaces`, `split_proposal`) mas
+**nenhuma camada derivava a recomendação dos números**: o único juiz era o
+próprio modelo, com o prior apontando para o default sem setup.
+
+O que fecha: `recommendExecution` em `src/lib/plan-scale.js` deriva
+`plan.recommendation` (`{choice, reasons[]}`) só dos números — `orchestrated`
+para candidato a divisão com corte real (duas superfícies, ou linhas que já
+dividem onda), `single` abaixo do piso ou sem corte; o estado de trava
+**não é entrada**. O offer imprime a recomendação e, travado, anexa "that
+never flips the recommendation; unlock: …"; o `[Execution Scale]` e a linha
+de ativação do planner citam a mesma medida; o kernel agora diz "recommending
+`plan.recommendation` … a lock never flips it" e o pin anti-regressão proíbe
+"single DEV (default)" voltar.
+
 ## Armadilhas registradas
 
 - O leitor do cliente desktop recusa **qualquer** chave de raiz desconhecida

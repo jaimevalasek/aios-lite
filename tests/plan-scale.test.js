@@ -16,10 +16,12 @@ const {
   DEFAULT_UNIT_MAX_FILES,
   classifySurface,
   formatPlanScale,
+  formatRecommendation,
   formatSplitProposal,
   formatUnit,
   measurePlanScale,
   proposeSplit,
+  recommendExecution,
   resolveExecutionChoice,
   splitMinFiles,
   unitCeiling
@@ -175,4 +177,65 @@ test('plan-scale: the recorded execution choice — the lanes table means orches
   assert.deepEqual(resolveExecutionChoice('# no frontmatter\nexecution: single\n'), { choice: null, source: null }, 'the key only counts inside the frontmatter');
   // The table wins over a contradicting frontmatter line: the lanes are the executable declaration.
   assert.deepEqual(resolveExecutionChoice(plan({ frontmatter: ['feature: big', 'execution: single'], lanes: true, delta: [], delivery: [] })), { choice: 'orchestrated', source: 'lanes_table' });
+});
+
+// A one-surface plan in strictly serial waves, above the floor: nothing measurable to cut on.
+const SERIAL_ONE_SURFACE = plan({
+  delta: [
+    `| CAP-flat-a | create | none | ${Array.from({ length: 13 }, (_, i) => `src/server/mod${i}.ts`).join(', ')} | modules |`
+  ],
+  delivery: [
+    `| CAP-flat-a | 1 | ${Array.from({ length: 7 }, (_, i) => `src/server/mod${i}.ts`).join(', ')} | npm test |`,
+    `| CAP-flat-a | 2 | ${Array.from({ length: 6 }, (_, i) => `src/server/mod${i + 7}.ts`).join(', ')} | npm test |`
+  ],
+  sequence: [
+    `| 1 | 1 | ${Array.from({ length: 7 }, (_, i) => `src/server/mod${i}.ts`).join(', ')} | CAP-flat-a | — | ok |`,
+    `| 2 | 2 | ${Array.from({ length: 6 }, (_, i) => `src/server/mod${i + 7}.ts`).join(', ')} | CAP-flat-a | — | ok |`
+  ]
+});
+
+test('plan-scale: the recommendation is measured — the incident was the asking model reading "locked" as "not advisable" and recommending one context for a two-surface split candidate', () => {
+  // Below the floor: single, on the number.
+  const small = recommendExecution(measurePlanScale(plan({
+    delta: ['| CAP-s-a | create | none | src/api/orders.ts, tests/api/orders.test.ts | endpoints |'],
+    delivery: ['| CAP-s-a | 1 | src/api/orders.ts, tests/api/orders.test.ts | npm test |']
+  })));
+  assert.equal(small.choice, 'single');
+  assert.match(small.reasons[0], /below the 12-file split floor/);
+
+  // The incident shape: split candidate, two surfaces — orchestrated, and every reason is a number.
+  const big = recommendExecution(measurePlanScale(BIG), { proposal: proposeSplit(BIG) });
+  assert.equal(big.choice, 'orchestrated');
+  assert.match(big.reasons[0], /15 files ≥ the 12-file floor for one context/);
+  assert.ok(big.reasons.some((reason) => /two surfaces \(backend \d+ · frontend \d+\)/.test(reason)), 'the surface cut is a named reason');
+  assert.ok(big.reasons.some((reason) => /split proposal cuts \d+ row\(s\) into surface lanes/.test(reason)), 'the proposal is a named reason when given');
+  assert.equal(formatRecommendation(big), `orchestrated — ${big.reasons.join('; ')}`);
+
+  // Split candidate with one surface and strictly serial waves: single — nothing to cut on yet.
+  const flat = recommendExecution(measurePlanScale(SERIAL_ONE_SURFACE), { proposal: proposeSplit(SERIAL_ONE_SURFACE) });
+  assert.equal(flat.choice, 'single');
+  assert.match(flat.reasons[0], /13 files ≥ 12/);
+  assert.match(flat.reasons[0], /nothing to cut on yet/);
+
+  // One surface, but two rows already share a wave: a real cut exists — orchestrated.
+  const parallelPlan = plan({
+    delta: [
+      `| CAP-flat-a | create | none | ${Array.from({ length: 13 }, (_, i) => `src/server/mod${i}.ts`).join(', ')} | modules |`
+    ],
+    delivery: [
+      `| CAP-flat-a | 1 | ${Array.from({ length: 13 }, (_, i) => `src/server/mod${i}.ts`).join(', ')} | npm test |`
+    ],
+    sequence: [
+      `| 1a | 1 | ${Array.from({ length: 7 }, (_, i) => `src/server/mod${i}.ts`).join(', ')} | CAP-flat-a | — | ok |`,
+      `| 1b | 1 | ${Array.from({ length: 6 }, (_, i) => `src/server/mod${i + 7}.ts`).join(', ')} | CAP-flat-a | — | ok |`
+    ]
+  });
+  const parallel = recommendExecution(measurePlanScale(parallelPlan));
+  assert.equal(parallel.choice, 'orchestrated');
+  assert.ok(parallel.reasons.some((reason) => /2 units already share a wave/.test(reason)));
+
+  // No plan measured: single, and the formatter never throws on nothing.
+  assert.deepEqual(recommendExecution(measurePlanScale('')), { choice: 'single', reasons: ['no plan measured'] });
+  assert.deepEqual(recommendExecution(null), { choice: 'single', reasons: ['no plan measured'] });
+  assert.equal(formatRecommendation(null), 'none');
 });

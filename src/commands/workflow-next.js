@@ -1958,14 +1958,14 @@ async function buildExecutionActivationContext(targetDir, state, stageName) {
         const installed = await installedExecutionHosts();
         const onboarding = describeOnboarding(offer, { feature: slug, installed });
         return `Orchestrated execution: NOT UNLOCKED here (${offer.reason}; execution hosts installed on this machine: ${installed.join(', ') || 'none'}). `
-          + `After writing the plan, \`aioson execution:offer . --feature=${slug} --json\` measures \`plan.scale\` — a split candidate earns the one question (single DEV or orchestrated lanes); \`onboarding.next\` names the unlock step (now: ${onboarding.next}).`;
+          + `After writing the plan, \`aioson execution:offer . --feature=${slug} --json\` measures \`plan.scale\` and \`plan.recommendation\` — a split candidate earns the one question (single DEV or orchestrated lanes), and the measured recommendation is the one to present: the lock never flips it; \`onboarding.next\` names the unlock step (now: ${onboarding.next}).`;
       }
       const roles = Object.entries(offer.roles.roles)
         .map(([key, role]) => `${key}=${role.host}/${role.model}${role.reasoning_effort ? `/${role.reasoning_effort}` : ''}`)
         .join(', ');
       const lines = [
         `Orchestrated execution: AVAILABLE (roles signed on this machine: ${roles}).`,
-        'Ask the user once (AskUserQuestion): single DEV (default, as today) or orchestrated lanes with these roles. '
+        `Ask the user once (AskUserQuestion): single DEV or orchestrated lanes with these roles — recommend what \`plan.recommendation\` measures (aioson execution:offer . --feature=${slug} --json), never a fixed default. `
         + 'On orchestrated: add the `## Development execution lanes` and `## Execution Sequence` tables to the plan, then run '
         + `\`aioson execution:compile . --feature=${slug}\` before completing — with orchestrated execution selected, the planner stage cannot complete on a missing or stale compiled plan.`
       ];
@@ -2016,7 +2016,7 @@ async function buildExecutionActivationContext(targetDir, state, stageName) {
  */
 async function inspectExecutionScale(targetDir, slug) {
   const none = { blocking: false, advisory: false };
-  const { measurePlanScale, resolveExecutionChoice, splitMinFiles, formatPlanScale, formatUnit, unitCeiling } = require('../lib/plan-scale');
+  const { measurePlanScale, resolveExecutionChoice, splitMinFiles, formatPlanScale, formatRecommendation, formatUnit, proposeSplit, recommendExecution, unitCeiling } = require('../lib/plan-scale');
   const { parseDevelopmentLanes } = require('../harness/plan-waves');
   let content;
   try {
@@ -2028,13 +2028,15 @@ async function inspectExecutionScale(targetDir, slug) {
   const choice = resolveExecutionChoice(content);
   if (!scale.split_candidate) return none;
   if (!choice.choice) {
+    const recommendation = recommendExecution(scale, { proposal: proposeSplit(content) });
     return {
       blocking: false,
       advisory: true,
       mode: 'single',
       check: 'execution_scale',
       scale,
-      message: `[Execution Scale] the plan for "${slug}" touches ${formatPlanScale(scale)} — a split candidate (floor ${scale.threshold.min_files} files for one context) — and records no execution choice. Ask the owner once (single DEV or orchestrated lanes) and record the answer: \`execution: single\` in the plan frontmatter, or the \`## Development execution lanes\` table + aioson execution:seed . --feature=${slug} --lanes=<lane-a,lane-b>.`
+      recommendation,
+      message: `[Execution Scale] the plan for "${slug}" touches ${formatPlanScale(scale)} — a split candidate (floor ${scale.threshold.min_files} files for one context) — and records no execution choice. Ask the owner once (single DEV or orchestrated lanes), recommending the measured choice: ${formatRecommendation(recommendation)}. A locked roles file never flips the recommendation — it only names the unlock step. Record the answer: \`execution: single\` in the plan frontmatter, or the \`## Development execution lanes\` table + aioson execution:seed . --feature=${slug} --lanes=<lane-a,lane-b>.`
     };
   }
   if (choice.choice !== 'orchestrated') return none;

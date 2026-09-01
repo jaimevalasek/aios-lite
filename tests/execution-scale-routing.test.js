@@ -206,6 +206,10 @@ test('planner completion: a split-candidate plan with no recorded execution choi
   assert.equal(gate.scale.parallel_phases, 0);
   assert.match(gate.message, /^\[Execution Scale\] the plan for "orders" touches 16 file\(s\) \(16 new\) in 4 phase\(s\), 4 wave\(s\), 0 in parallel — a split candidate \(floor 12 files for one context\) — and records no execution choice\./);
   assert.match(gate.message, /`execution: single` in the plan frontmatter, or the `## Development execution lanes` table \+ aioson execution:seed \. --feature=orders --lanes=<lane-a,lane-b>\./);
+  // The advisory carries the measured recommendation — the lock is not an input and cannot flip it.
+  assert.equal(gate.recommendation.choice, 'orchestrated');
+  assert.match(gate.message, /recommending the measured choice: orchestrated — 16 files ≥ the 12-file floor for one context/);
+  assert.match(gate.message, /A locked roles file never flips the recommendation/);
   // Only the planner reads the scale; DEV under single execution sees nothing.
   assert.deepEqual(await inspectExecutionGate(unrecorded, SLUG, 'dev'), { blocking: false, advisory: false });
 

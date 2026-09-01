@@ -92,6 +92,10 @@ test('Planner asks the orchestration question on the measured scale and records 
     assert.match(planner, /aioson execution:offer \. --feature=\{slug\} --json/, `${file}: the offer runs after the plan is written`);
     assert.match(planner, /plan\.scale\.split_candidate/, `${file}: the question is asked on the measured number`);
     assert.match(planner, /onboarding\.next/, `${file}: a locked path names its unlock step`);
+    // The third incident: 52 files, two surfaces, roles file missing — and the model marked "single DEV (Recommended)" because the kernel pinned a fixed default and read the lock as advice.
+    assert.match(planner, /recommending `plan\.recommendation`/, `${file}: the recommendation is the measured one, never a fixed default`);
+    assert.match(planner, /a lock never flips it/, `${file}: availability names the unlock step, it never argues for single DEV`);
+    assert.doesNotMatch(planner, /single DEV \(default\)/, `${file}: the fixed default that overrode the measurement is gone`);
     assert.match(planner, /`execution: single` in the frontmatter/, `${file}: the single-DEV answer is recorded`);
     assert.match(planner, /aioson execution:seed \. --feature=\{slug\}/, `${file}: lanes seed the roles file`);
     assert.match(planner, /\| Lane \| Exact write paths \| Integration owner \|/, `${file}: the lanes table is lane, paths, owner`);

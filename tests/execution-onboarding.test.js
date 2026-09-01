@@ -187,6 +187,55 @@ test('execution:offer names the unlock step and the measured scale — silence w
   assert.equal(low.plan.scale.threshold.min_files, 5);
 });
 
+test('execution:offer recommends on the measured scale, never on the lock — the incident: a locked 52-file two-surface plan was presented with "single DEV (Recommended)"', async (t) => {
+  // The incident's shape: 38 frontend + 12 backend + 2 shared files in 5
+  // phases, no lanes table, no sequence — the state the question is asked in.
+  const panel = Array.from({ length: 38 }, (_, i) => `apps/panel/src/S${i}.tsx`);
+  const core = Array.from({ length: 12 }, (_, i) => `apps/core/server/m${i}.ts`);
+  const shared = ['packages/shared/types.ts', 'packages/shared/contract.ts'];
+  const phaseFiles = [core.slice(0, 12), shared, panel.slice(0, 14), panel.slice(14, 28), panel.slice(28)];
+  const bigPlan = [
+    '---', 'feature: orders', 'status: approved', '---',
+    '# Implementation Plan — orders', '',
+    '## Implementation Delta',
+    '| CAP | Action | Existing evidence | Exact paths | Required change |',
+    '|---|---|---|---|---|',
+    ...phaseFiles.map((files, i) => `| CAP-orders-p${i + 1} | ${i % 2 ? 'modify' : 'create'} | none | ${files.join(', ')} | refound |`),
+    '',
+    '## Capability Delivery Plan',
+    '| CAP | Phase | Files | Verification |',
+    '|---|---|---|---|',
+    ...phaseFiles.map((files, i) => `| CAP-orders-p${i + 1} | ${i + 1} | ${files.join(', ')} | npm test |`),
+    ''
+  ].join('\n');
+  const { dir, env } = await setup(t, { plan: bigPlan, roles: null });
+  const result = await offer(dir, env, { feature: SLUG });
+  assert.equal(result.available, false);
+  assert.equal(result.reason, 'roles_file_missing');
+  assert.equal(result.plan.scale.files, 52);
+  assert.equal(result.plan.scale.phases, 5);
+  assert.equal(result.plan.scale.split_candidate, true);
+  assert.equal(result.plan.scale.surfaces.two_sided, true);
+  // The measured recommendation is orchestrated even though the path is locked.
+  assert.equal(result.plan.recommendation.choice, 'orchestrated');
+  assert.match(result.plan.recommendation.reasons[0], /52 files ≥ the 12-file floor for one context/);
+  assert.ok(result.plan.recommendation.reasons.some((reason) => /two surfaces \(backend 12 · frontend 38\)/.test(reason)));
+  assert.equal(result.onboarding.next, `aioson execution:seed . --feature=${SLUG} --lanes=backend,frontend`);
+
+  // The human output prints the recommendation and says the lock never flips it.
+  const lines = [];
+  await runExecution({ args: [dir], options: { sub: 'offer', feature: SLUG }, logger: { log: (line) => lines.push(line), error() {}, warn() {} }, env });
+  const recommendationLine = lines.find((line) => line.includes('recommendation:'));
+  assert.ok(recommendationLine, 'the offer prints the recommendation line');
+  assert.match(recommendationLine, /recommendation: orchestrated — 52 files/);
+  assert.match(recommendationLine, /locked today — that never flips the recommendation; unlock: aioson execution:seed \. --feature=orders --lanes=backend,frontend/);
+
+  // A recorded single choice below any real cut still recommends single — the recommendation is advice, the choice stays the owner's.
+  const smallResult = await offer(dir, { ...env, AIOSON_EXECUTION_SPLIT_MIN_FILES: '100' }, { feature: SLUG });
+  assert.equal(smallResult.plan.recommendation.choice, 'single');
+  assert.match(smallResult.plan.recommendation.reasons[0], /below the 100-file split floor/);
+});
+
 test('execution:seed — the roles file is born disabled, valid, on installed hosts, at the default model, naming the planner; the reviewer differs when a second host exists (AC-seed-*, AC-reviewer-differs)', async (t) => {
   const { dir, env } = await setup(t, { roles: null });
   const result = await seedExecutionRoles(dir, { lanes: ['backend', 'frontend'], feature: SLUG, hosts: HOSTS, env, locate: installedOnly('codex', 'claude') });

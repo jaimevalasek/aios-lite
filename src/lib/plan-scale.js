@@ -28,7 +28,9 @@
  * frontend / shared per file — the axis models are assigned on, since each
  * lane's `{lane}_dev` role carries its own host and model). `proposeSplit`
  * turns those numbers into candidate lanes and rows: raw material the planner
- * turns into tables. The measurement never decides: the answer is the owner's.
+ * turns into tables; `recommendExecution` turns them into the measured
+ * recommendation the question cites — the roles file's lock state is never an
+ * input. The measurement never decides: the answer is the owner's.
  */
 
 const {
@@ -330,6 +332,40 @@ function measurePlanScale(content, { minFiles = DEFAULT_SPLIT_MIN_FILES, ceiling
 }
 
 /**
+ * The measured recommendation for the one execution question — advice, never
+ * the answer. `single` below the split floor, or when nothing measurable can
+ * run in parallel; `orchestrated` when the plan is a split candidate AND a
+ * real cut exists (two surfaces, or rows already sharing a wave). The roles
+ * file's lock state is deliberately NOT an input: an incident showed the
+ * asking model reading "locked" as "not advisable" and recommending a single
+ * context for a 52-file two-surface plan. Availability names the unlock step;
+ * it never flips what the numbers say. The owner still decides.
+ */
+function recommendExecution(scale, { proposal = null } = {}) {
+  if (!scale || !scale.files) return { choice: 'single', reasons: ['no plan measured'] };
+  const floor = scale.threshold?.min_files ?? DEFAULT_SPLIT_MIN_FILES;
+  if (!scale.split_candidate) {
+    return { choice: 'single', reasons: [`${scale.files} file(s) below the ${floor}-file split floor for one context`] };
+  }
+  const surfaces = scale.surfaces || {};
+  const concurrent = scale.parallelism?.max_concurrent_units || 0;
+  if (surfaces.two_sided !== true && concurrent < 2) {
+    return { choice: 'single', reasons: [`split candidate (${scale.files} files ≥ ${floor}) with one measured surface and no rows sharing a wave — nothing to cut on yet`] };
+  }
+  const reasons = [`${scale.files} files ≥ the ${floor}-file floor for one context`];
+  if (surfaces.two_sided === true) reasons.push(`two surfaces (backend ${surfaces.backend} · frontend ${surfaces.frontend})`);
+  if (concurrent >= 2) reasons.push(`${concurrent} units already share a wave`);
+  if (proposal && Array.isArray(proposal.rows) && proposal.rows.length > 0) reasons.push(`the split proposal cuts ${proposal.rows.length} row(s) into surface lanes`);
+  return { choice: 'orchestrated', reasons };
+}
+
+/** `orchestrated — 52 files ≥ the 12-file floor for one context; two surfaces (backend 14 · frontend 38)` */
+function formatRecommendation(recommendation) {
+  if (!recommendation) return 'none';
+  return `${recommendation.choice} — ${recommendation.reasons.join('; ')}`;
+}
+
+/**
  * The execution choice the plan records: the `## Development execution lanes`
  * table means orchestrated; `execution: single | orchestrated` in the
  * frontmatter records the owner's answer without a table. `null` = never
@@ -465,12 +501,14 @@ module.exports = {
   UNIT_MAX_FILES_ENV,
   classifySurface,
   formatPlanScale,
+  formatRecommendation,
   formatSplitProposal,
   formatUnit,
   measurePlanScale,
   measureSurfaces,
   measureUnits,
   proposeSplit,
+  recommendExecution,
   resolveExecutionChoice,
   splitMinFiles,
   unitCeiling

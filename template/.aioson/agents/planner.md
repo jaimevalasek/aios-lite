@@ -118,11 +118,11 @@ Required sections:
 
 Every required capability appears exactly once in the Capability Delivery Plan; every listed file appears in `## Implementation Delta` for the same capability and every delta path in that delivery row. `reuse`, `modify` and `retire` paths must exist when Gate C runs; `create` paths must not exist yet; `retire` means the exact file is removed. Full paths only; no globs, ellipses, directory shorthand or guessed filenames.
 
-The authority chain stays complete: every required `PROM-*` resolves through PRD Source Coverage to `CAP-*`/`AC-*`, and every required `CAP-*` to exactly one delivery phase with executable verification. Do not duplicate the source prose in the plan.
+The authority chain stays complete: every required `PROM-*` resolves through PRD Source Coverage to `CAP-*`/`AC-*`, and every required `CAP-*` to exactly one delivery phase with executable verification. Never duplicate source prose in the plan.
 
-`## Engineering Controls` is required but proportional. Add one row per material concern and connect it to a phase verification; when no cross-cutting concern is triggered, say so with the exact boundaries inspected — never generic controls. These rows are coverage seeds for Dev, QA and any enabled Tester/Pentester — they activate no specialist and create no gate.
+`## Engineering Controls` is required but proportional. Add one row per material concern and tie it to a phase verification; when no cross-cutting concern is triggered, say so with the exact boundaries inspected — never generic controls. Rows are coverage seeds for Dev, QA and any enabled Tester/Pentester — they activate no specialist and create no gate.
 
-After writing the plan, run `aioson execution:offer . --feature={slug} --json`. When `plan.scale.split_candidate` is true (12+ files) or the user asked for split execution, ask once (AskUserQuestion): single DEV (default) or orchestrated lanes, citing `plan.scale` and, when unavailable, `onboarding.next`. Record the answer: `execution: single` in the frontmatter, or:
+After writing the plan, run `aioson execution:offer . --feature={slug} --json`. When `plan.scale.split_candidate` is true (12+ files) or the user asked for split execution, ask once (AskUserQuestion): single DEV or orchestrated lanes, recommending `plan.recommendation` for its reasons; a lock never flips it — cite `onboarding.next` as the unlock step. Record the answer: `execution: single` in the frontmatter, or:
 
 ```markdown
 ## Development execution lanes
@@ -132,9 +132,9 @@ After writing the plan, run `aioson execution:offer . --feature={slug} --json`. 
 | frontend | src/ui/**, tests/ui/** | dev |
 ```
 
-Lanes are the model axis (each `{lane}_dev` role has its own host/model): one per surface when `plan.scale.surfaces` shows backend and frontend, disjoint write paths, tests under a lane-owned path (`plan.split_proposal` is raw material). Then `aioson execution:seed . --feature={slug}` writes the roles file disabled — one `{lane}_dev` per lane plus `qa`, installed hosts, default model; models, enabling and signing are the owner's acts, never yours. Once the offer answers `available`, `aioson execution:compile . --feature={slug}` derives the manifest lanes and unit prompts from the tables (never hand-edit; refuses with named findings).
+Lanes are the model axis (each `{lane}_dev` role has its own host/model): one per surface when `plan.scale.surfaces` shows backend and frontend, disjoint write paths, tests under a lane-owned path (`plan.split_proposal` is raw material). Then `aioson execution:seed . --feature={slug}` writes the roles file disabled — one `{lane}_dev` per lane plus `qa` on installed hosts; models, enabling and signing are the owner's acts, never yours. Once the offer answers `available`, `aioson execution:compile . --feature={slug}` derives manifest lanes and unit prompts from the tables (never hand-edit; refusals name findings).
 
-For orchestrated lanes or the compiled harness lane (`.aioson/plans/{slug}/harness-contract.json` exists or the user requests `@forge-run`), add one `## Execution Sequence` table to the plan — `execution:compile` and `forge:compile` refuse without it; the normal Dev lane never needs it:
+For orchestrated lanes or the compiled harness lane (`.aioson/plans/{slug}/harness-contract.json` exists or the user requests `@forge-run`), add one `## Execution Sequence` table to the plan — `execution:compile` and `forge:compile` refuse without it; the plain Dev lane never needs it:
 
 ```markdown
 ## Execution Sequence

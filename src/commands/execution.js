@@ -34,7 +34,7 @@ const {
   installedExecutionHosts
 } = require('../lib/execution-roles');
 const { listExecutionHosts } = require('../lib/tool-capabilities');
-const { measurePlanScale, resolveExecutionChoice, formatPlanScale, formatUnit, formatSplitProposal, proposeSplit, splitMinFiles, unitCeiling } = require('../lib/plan-scale');
+const { measurePlanScale, resolveExecutionChoice, formatPlanScale, formatRecommendation, formatUnit, formatSplitProposal, proposeSplit, recommendExecution, splitMinFiles, unitCeiling } = require('../lib/plan-scale');
 const { parseDevelopmentLanes, parseExecutionWaves } = require('../harness/plan-waves');
 const {
   compileFeatureExecution,
@@ -105,6 +105,8 @@ async function describePlanTables(projectDir, feature, { env, now }) {
   const waves = content !== null ? parseExecutionWaves(content) : null;
   const lanesTable = content !== null ? parseDevelopmentLanes(content) : null;
   const compiled = await readExecutionPlan(projectDir, feature);
+  const scale = content !== null ? measurePlanScale(content, { minFiles: splitMinFiles(env), ceiling: unitCeiling(env) }) : null;
+  const proposal = content !== null ? proposeSplit(content) : null;
   const description = {
     path: relative,
     exists: content !== null,
@@ -115,10 +117,13 @@ async function describePlanTables(projectDir, feature, { env, now }) {
     // the single-DEV/orchestrated question is asked on. Per unit and as a
     // graph too: one process is one context, and a plan whose only lane runs
     // one whole phase per wave is orchestrated in name only.
-    scale: content !== null ? measurePlanScale(content, { minFiles: splitMinFiles(env), ceiling: unitCeiling(env) }) : null,
+    scale,
     execution_choice: content !== null ? resolveExecutionChoice(content).choice : null,
     // Candidate lanes and rows cut by surface — raw material, never a table.
-    split_proposal: content !== null ? proposeSplit(content) : null,
+    split_proposal: proposal,
+    // What the numbers say the question should recommend. Lock state is not
+    // an input: availability names the unlock step, it never flips this.
+    recommendation: scale ? recommendExecution(scale, { proposal }) : null,
     compiled: { path: executionPlanRelative(feature), exists: compiled.exists, fresh: false, issues: [] }
   };
   if (compiled.exists) {
@@ -216,6 +221,12 @@ async function runExecutionCommand({ args, options = {}, logger, env = process.e
             logger.log(`  parallelism: ${s.parallelism.waves} wave(s), at most ${s.parallelism.max_concurrent_units} unit(s) at once, critical path ${s.parallelism.serial_chain} unit(s) = ${s.parallelism.critical_path_processes} process(es)${s.parallelism.serial ? ' — SERIAL by construction' : ''}`);
           }
           for (const line of formatSplitProposal(result.plan.split_proposal)) logger.log(`  ${line}`);
+          if (result.plan.recommendation) {
+            const locked = result.plan.recommendation.choice === 'orchestrated' && !offer.available
+              ? ` (locked today — that never flips the recommendation; unlock: ${result.onboarding.next})`
+              : '';
+            logger.log(`  recommendation: ${formatRecommendation(result.plan.recommendation)}${locked}`);
+          }
         }
       }
     }
