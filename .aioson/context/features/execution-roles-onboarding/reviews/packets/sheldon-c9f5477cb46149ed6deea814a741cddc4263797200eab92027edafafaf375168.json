@@ -1,0 +1,32 @@
+{
+  "packet_id": "sha256:c9f5477cb46149ed6deea814a741cddc4263797200eab92027edafafaf375168",
+  "schema_version": "review-packet/v1",
+  "feature_slug": "execution-roles-onboarding",
+  "agent": "sheldon",
+  "profile": "specification",
+  "review_mode": "independent_review",
+  "artifact": {
+    "path": ".aioson/context/prd-execution-roles-onboarding.md",
+    "sha256": "3bdfd16fbf646065cba5ff3e30899d92bbf5431c38a4b2f29ae3778f5b4da9d6",
+    "bytes": 19997
+  },
+  "authorities": [
+    {
+      "kind": "project-context",
+      "path": ".aioson/context/project.context.md",
+      "sha256": "8eefaf3402eda733a2862d15b8c039c35acd416c7b1ece54cd210de99eb02c65",
+      "bytes": 2898
+    }
+  ],
+  "reference_path": ".aioson/skills/process/review-intelligence/references/specification.md",
+  "challenge_lenses": [
+    "coverage",
+    "ambiguity",
+    "edge-cases",
+    "failure-modes",
+    "ownership",
+    "verifiability"
+  ],
+  "max_passes": 2,
+  "prepared_at": "2026-08-26T05:37:16.252Z"
+}

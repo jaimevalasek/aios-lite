@@ -1,0 +1,147 @@
+{
+  "schema_version": "review-report/v1",
+  "packet_id": "sha256:c9f5477cb46149ed6deea814a741cddc4263797200eab92027edafafaf375168",
+  "feature_slug": "execution-roles-onboarding",
+  "agent": "sheldon",
+  "profile": "specification",
+  "review_mode": "independent_review",
+  "artifact": {
+    "path": ".aioson/context/prd-execution-roles-onboarding.md",
+    "sha256": "3bdfd16fbf646065cba5ff3e30899d92bbf5431c38a4b2f29ae3778f5b4da9d6"
+  },
+  "passes_completed": 2,
+  "review_status": "pass",
+  "summary": "Two bounded passes. The load-bearing claim of the PRD (a seeded role at the harness default already validates under today's format) was verified by running the real validator, not by reading it. The coverage pass found the promised user flow unachievable in the order the offer decides today, plus two missing failure boundaries and one ownership gap; all four were repaired in place before the seal. Residual risk is the deliberate relaxation of an invariant the module used to state absolutely, mitigated by the file being written disabled.",
+  "findings": [
+    {
+      "id": "REVIEW-EXECUTION-ROLES-ONBOARDING-001",
+      "lens": "failure-modes",
+      "status": "resolved",
+      "severity": "warning",
+      "description": "Blocking when found, repaired in place before the seal. The promised flow — owner enables the orchestrated path, the orchestrator asks about the default models, owner confirms, run starts — could not happen in the order the offer decides today. `offerExecution` resolves enabled, then host signatures, then availability. A freshly seeded role has no signature by construction (the PRD itself excludes signing during seeding), so every first-time owner would hit `signature_missing` and never reach the model question the feature exists to ask.",
+      "evidence": [
+        {
+          "type": "code",
+          "path": "src/lib/execution-roles.js",
+          "detail": "offerExecution (line 310) returns roles_disabled, then signature_<state> from checkRoleSignatures, before any other verdict.",
+          "status": "recorded"
+        },
+        {
+          "type": "artifact",
+          "path": ".aioson/context/prd-execution-roles-onboarding.md",
+          "detail": "The happy-path flow claimed the model question follows enabling, with no ordering statement.",
+          "status": "recorded"
+        }
+      ],
+      "impact": "The headline capability would be unreachable for exactly the user the feature targets: the person who never configured this and has signed nothing.",
+      "recommendation": "Order the model-default confirmation before the signature verdict, and prove the order with acceptance evidence rather than prose.",
+      "alternatives": [
+        "Sign hosts during seeding so signatures exist by the time the offer runs — rejected: signing runs the real CLI and spends the owner's quota during planning, which the PRD already excludes.",
+        "Leave the order as is and document that owners must sign first — rejected: it sends the person to spend a CLI round on a model they were about to change."
+      ],
+      "confidence": "high",
+      "owner": "sheldon",
+      "residual_risk": "None for the specification. The offer now has three ordered steps instead of two; Planner owns where the confirmation is recorded, which the PRD keeps as an explicit non-blocking open question."
+    },
+    {
+      "id": "REVIEW-EXECUTION-ROLES-ONBOARDING-002",
+      "lens": "verifiability",
+      "status": "resolved",
+      "severity": "warning",
+      "description": "The PRD's Current System Fit asserts that a seeded role using the harness-default model is already accepted by today's format, and the whole scope depends on it: if false, the feature would also have to change the file contract. The assertion was reasoned from reading the validator, never executed.",
+      "evidence": [
+        {
+          "type": "code",
+          "path": "src/lib/execution-roles.js",
+          "detail": "validateExecutionRoles run against a seeded-shape document over the real installed host registry (claude, codex, kimi, opencode, qwen) returned ok with zero errors.",
+          "status": "passed"
+        },
+        {
+          "type": "code",
+          "path": "src/lib/execution-roles.js",
+          "detail": "Counter-checks: an empty model is rejected as `must be a non-empty model id`, and a reasoning effort on a host that does not accept one is rejected as `effort_unsupported_by_host`.",
+          "status": "passed"
+        }
+      ],
+      "impact": "Confirmed the scope can stay this small. It also confirms two exclusions the PRD makes for the right reason: seeding must not write an empty model, and must not write a reasoning effort.",
+      "recommendation": "Keep the fit note; no PRD change required beyond the executed confirmation recorded here.",
+      "alternatives": [],
+      "confidence": "high",
+      "owner": "sheldon",
+      "residual_risk": "The check ran against this machine's host registry. A machine where only a host without effort support is installed behaves the same for seeding; a registry change that made the default model invalid would break the assumption, which the acceptance criterion on seeded-file validity would catch."
+    },
+    {
+      "id": "REVIEW-EXECUTION-ROLES-ONBOARDING-003",
+      "lens": "failure-modes",
+      "status": "resolved",
+      "severity": "warning",
+      "description": "Seeding had no failure boundary for the write itself. A read-only checkout, a denied permission, or a full disk would leave the owner believing the file exists, and the whole premise is that the owner should not have to know the file exists to check on it.",
+      "evidence": [
+        {
+          "type": "artifact",
+          "path": ".aioson/context/prd-execution-roles-onboarding.md",
+          "detail": "The only seeding failure covered was the absence of an execution CLI.",
+          "status": "recorded"
+        }
+      ],
+      "impact": "A silent write failure surfaces only at run time, as the same refusal the feature set out to remove.",
+      "recommendation": "Deliver the plan regardless and report the failure with its cause; prove it with acceptance evidence over a refused write target.",
+      "alternatives": [],
+      "confidence": "high",
+      "owner": "sheldon",
+      "residual_risk": "None."
+    },
+    {
+      "id": "REVIEW-EXECUTION-ROLES-ONBOARDING-004",
+      "lens": "ownership",
+      "status": "resolved",
+      "severity": "warning",
+      "description": "The seeded file arrives in a project the owner never wrote it into, and nothing in it said where it came from. For a feature whose entire purpose is that a newcomer can proceed without documentation, an unexplained configuration file is the same obstacle in a new shape.",
+      "evidence": [
+        {
+          "type": "code",
+          "path": "src/lib/execution-roles.js",
+          "detail": "The format already permits a free-text `source` field, so recording the origin costs nothing and invents no schema.",
+          "status": "recorded"
+        }
+      ],
+      "impact": "Without it the owner cannot tell an artifact they may freely edit from machinery they should not touch.",
+      "recommendation": "The seeded document states that the planner wrote it and for which feature.",
+      "alternatives": [],
+      "confidence": "medium",
+      "owner": "sheldon",
+      "residual_risk": "The field is one line of provenance, not an explanation of what to change. The Play panel and the planner's own handoff message remain where the owner learns that swapping models is optional."
+    },
+    {
+      "id": "REVIEW-EXECUTION-ROLES-ONBOARDING-005",
+      "lens": "coverage",
+      "status": "resolved",
+      "severity": "warning",
+      "description": "Blocking when found, repaired in place before the seal. The feature deliberately relaxes an invariant the codebase states in absolute terms: the module header of the roles file declares that the framework never writes it, because the file is what authorizes spawning external processes. A planner that writes it breaks that sentence as written.",
+      "evidence": [
+        {
+          "type": "code",
+          "path": "src/lib/execution-roles.js",
+          "detail": "Module header: the file is written by the supervising desktop client after it validated each host/model pair; the framework never writes it and never ships it in template/.",
+          "status": "recorded"
+        },
+        {
+          "type": "code",
+          "path": "src/lib/execution-roles.js",
+          "detail": "readExecutionRoles returns roles_disabled and offerExecution refuses on it, so a document written with the flag off cannot unlock anything.",
+          "status": "passed"
+        }
+      ],
+      "impact": "Unreviewed, this would move the authorization boundary from the person to the framework — the one property that made the file safe to consume.",
+      "recommendation": "Keep the property that actually matters (the framework never unlocks execution) and let go only of the one that was a means to it (the framework never writes the file). The PRD carries this as an invariant and an acceptance criterion, not as prose.",
+      "alternatives": [
+        "Keep the file unwritable by the framework and teach the planner to print the JSON for the owner to paste — rejected: it reproduces the exact obstacle the feature removes, for a person who does not know the format.",
+        "Seed it already enabled — rejected: that is precisely the authorization boundary the invariant protects."
+      ],
+      "confidence": "high",
+      "owner": "sheldon",
+      "residual_risk": "The module header still states the old absolute. Dev must update that comment together with the writer, or the next reader will trust a sentence the code no longer honours."
+    }
+  ],
+  "completed_at": "2026-08-26T05:44:00.000Z"
+}
