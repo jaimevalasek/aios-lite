@@ -11,6 +11,7 @@ const {
 } = require('./genomes/bindings');
 const { runMigration: runLearningLoopMigration } = require('./learning-loop-migration');
 const { runMigration: runNeuralChainMigration } = require('./neural-chain-migration');
+const { redactTelemetryRecord } = require('./lib/telemetry-redaction');
 
 const RUNTIME_DIR = path.join('.aioson', 'runtime');
 const DB_FILE = 'aios.sqlite';
@@ -842,7 +843,7 @@ function insertEvent(db, record) {
   db.prepare(`
     INSERT INTO agent_events (run_key, event_type, message, payload_json, created_at)
     VALUES (@run_key, @event_type, @message, @payload_json, @created_at)
-  `).run(record);
+  `).run(redactTelemetryRecord(record));
 }
 
 function getRunContext(db, runKey) {
@@ -891,7 +892,7 @@ function insertExecutionEvent(db, record) {
       @sequence_no, @parent_event_id, @created_at,
       @plan_step_id, @worker_status, @verdict, @token_count, @progress_pct
     )
-  `).run(record);
+  `).run(redactTelemetryRecord(record));
 }
 
 const CONTEXT_LOAD_EVENT_TYPES = new Set(['rule_loaded', 'brain_loaded', 'doc_loaded', 'skill_loaded']);
