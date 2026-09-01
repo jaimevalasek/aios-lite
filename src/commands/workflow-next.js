@@ -2028,7 +2028,7 @@ async function inspectExecutionScale(targetDir, slug) {
   const choice = resolveExecutionChoice(content);
   if (!scale.split_candidate) return none;
   if (!choice.choice) {
-    const recommendation = recommendExecution(scale, { proposal: proposeSplit(content) });
+    const recommendation = recommendExecution(scale, { proposal: proposeSplit(content, { minFiles: splitMinFiles(process.env), ceiling: unitCeiling(process.env) }) });
     return {
       blocking: false,
       advisory: true,
@@ -2075,6 +2075,29 @@ async function inspectExecutionGate(targetDir, slug, stage) {
     const { loadManifest, resolveExecutionMode } = require('../agent-execution/manifest');
     const loaded = await loadManifest(targetDir, slug);
     if (!loaded.exists || !loaded.ok || resolveExecutionMode(loaded.manifest) !== 'orchestrated') {
+      // A manifest that DECLARES orchestrated but fails validation must never
+      // silently take the single-DEV route — one unknown field or a version
+      // skew would erase the whole gate. It blocks the planner and advises DEV.
+      if (loaded.exists && !loaded.ok) {
+        const details = (loaded.errors || []).map((e) => `${e.path}: ${e.message}`);
+        if (loaded.manifest?.orchestration?.execution === 'orchestrated') {
+          return {
+            blocking: stage === 'planner',
+            advisory: stage !== 'planner',
+            mode: 'orchestrated',
+            plan: 'invalid_manifest',
+            issues: details,
+            message: `[Execution Manifest BLOCKED] agent-execution-${slug}.json declares orchestrated execution but fails validation: ${details.slice(0, 3).join('; ')}. Fix the manifest (or recompile: aioson execution:compile . --feature=${slug}).`
+          };
+        }
+        return {
+          blocking: false,
+          advisory: true,
+          plan: 'invalid_manifest',
+          issues: details,
+          message: `[Execution] agent-execution-${slug}.json exists but cannot be validated (${details.slice(0, 2).join('; ')}) — the workflow proceeds on the single-DEV route; fix or remove the file if that is not intended`
+        };
+      }
       return stage === 'planner' ? inspectExecutionScale(targetDir, slug) : none;
     }
     const { verifyExecutionPlan } = require('../agent-execution/execution-plan');
@@ -2745,6 +2768,13 @@ async function runWorkflowNext({ args, options, logger, t }) {
     instructionPath: activation.instructionPath,
     prompt: activation.prompt,
     reviewCycle: reviewCycleTransition || reviewCycleResolution || null,
+    // Completion evidence travels in the payload too: a --json caller (the
+    // Autopilot engine included) is blind to logger advisories, and an
+    // advisory that exists only as a log line does not exist for automation.
+    ...(completionEvidence && completionEvidence.auditCode ? { auditCode: completionEvidence.auditCode } : {}),
+    ...(completionEvidence && completionEvidence.rulesCheck ? { rulesCheck: completionEvidence.rulesCheck } : {}),
+    ...(completionEvidence && completionEvidence.scopeDrift ? { scopeDrift: completionEvidence.scopeDrift } : {}),
+    ...(completionEvidence && completionEvidence.execution ? { execution: completionEvidence.execution } : {}),
     templateVersion
   };
 

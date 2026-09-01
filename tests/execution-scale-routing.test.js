@@ -134,7 +134,7 @@ function stateAt(stage, classification, { current = false } = {}) {
   });
 }
 
-async function project(tt, { classification = 'SMALL', plan = SMALL_PLAN, roles = null, current = false } = {}) {
+async function project(tt, { classification = 'SMALL', plan = SMALL_PLAN, roles = null, current = false, prdContent = null } = {}) {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'aioson-execution-scale-'));
   tt.after(() => fs.rm(dir, { recursive: true, force: true }));
   await write(dir, '.aioson/context/project.context.md', [
@@ -143,7 +143,7 @@ async function project(tt, { classification = 'SMALL', plan = SMALL_PLAN, roles 
     'aioson_version: 1.60.0', '---', '# Context', ''
   ].join('\n'));
   await write(dir, '.aioson/context/features.md', `| slug | status | started | completed |\n|---|---|---|---|\n| ${SLUG} | in_progress | 2026-08-25 | |\n`);
-  await write(dir, `.aioson/context/prd-${SLUG}.md`, prd(classification));
+  await write(dir, `.aioson/context/prd-${SLUG}.md`, prdContent || prd(classification));
   await approveAndSealSheldonReview(dir, SLUG);
   await write(dir, `.aioson/context/implementation-plan-${SLUG}.md`, plan);
   await write(dir, '.aioson/context/workflow.state.json', stateAt('planner', classification, { current }));
@@ -250,18 +250,90 @@ test('planner completion: a split-candidate plan with no recorded execution choi
   }
 });
 
-test('the advisory is printed at `workflow:next --complete=planner`, not buried in the payload', async (tt) => {
-  const dir = await project(tt, { classification: 'MEDIUM', plan: bigPlan(), current: true });
+// A PRD whose capability map covers the big plan's four phase CAPs, so the
+// planner completion walks the whole gate chain instead of dying on an
+// unrelated artifact check (the original fixture never reached the advisory).
+const COMPLETION_PRD = [
+  '---', 'classification: MEDIUM', 'product_scope: approved', 'prd_ready: approved', 'sheldon_review: pending', '---',
+  '# Orders', '',
+  '## Feature Capability Map', '',
+  '| CAP | Promised outcome | Actor / trigger | Scope decision | Rationale |',
+  '|---|---|---|---|---|',
+  ...[1, 2, 3, 4].map((i) => `| CAP-orders-p${i} | Phase ${i} outcome delivered | User acts | required | Core promise |`),
+  '',
+  '## Acceptance Criteria', '',
+  '| AC | CAP | Observable behavior | Evidence |',
+  '|---|---|---|---|',
+  ...[1, 2, 3, 4].map((i) => `| AC-orders-0${i} | CAP-orders-p${i} | Behavior ${i} is observable in the app | test |`),
+  ''
+].join('\n');
+
+test('the advisory is printed at `workflow:next --complete=planner` AND travels in the payload', async (tt) => {
+  const dir = await project(tt, {
+    classification: 'MEDIUM',
+    plan: bigPlan({ frontmatter: ['status: approved'] }),
+    current: true,
+    prdContent: COMPLETION_PRD
+  });
   const lines = [];
   const capture = { log: (line) => lines.push(String(line)), error: (line) => lines.push(String(line)), warn: (line) => lines.push(String(line)) };
-  let payload = null;
-  try {
-    payload = await activate(dir, { complete: 'planner' }, capture);
-  } catch (error) {
-    // The minimal fixture may fail a different handoff gate first; the scale advisory must never be the reason.
-    assert.doesNotMatch(String(error.message), /Execution Scale/);
-    return;
-  }
+  const payload = await activate(dir, { complete: 'planner' }, capture);
   assert.ok(lines.some((line) => line.startsWith('[Execution Scale] the plan for "orders" touches 16 file(s)')), lines.join('\n'));
   assert.equal(payload.next, 'dev');
+  // The same advisory is a payload field for --json callers (the Autopilot
+  // engine reads the result object, never the logger).
+  assert.equal(payload.execution.advisory, true);
+  assert.equal(payload.execution.check, 'execution_scale');
+  assert.match(payload.execution.message, /^\[Execution Scale\]/);
+});
+
+test('a manifest that declares orchestrated but fails validation blocks loudly — never a silent single-DEV fallthrough', async (tt) => {
+  const dir = await project(tt, { classification: 'MEDIUM', plan: bigPlan() });
+  await write(dir, `.aioson/context/agent-execution-${SLUG}.json`, JSON.stringify({
+    version: 2,
+    feature: SLUG,
+    orchestration: { execution: 'orchestrated' },
+    unknown_root_key: true
+  }, null, 2));
+  const gate = await inspectExecutionGate(dir, SLUG, 'planner');
+  assert.equal(gate.blocking, true, JSON.stringify(gate));
+  assert.equal(gate.plan, 'invalid_manifest');
+  assert.match(gate.message, /^\[Execution Manifest BLOCKED\]/);
+  const dev = await inspectExecutionGate(dir, SLUG, 'dev');
+  assert.equal(dev.blocking, false, JSON.stringify(dev));
+  assert.equal(dev.advisory, true);
+
+  // A manifest that cannot even be parsed is named, not blocking: nothing
+  // proves it ever declared orchestration.
+  await write(dir, `.aioson/context/agent-execution-${SLUG}.json`, '{ not json');
+  const corrupt = await inspectExecutionGate(dir, SLUG, 'planner');
+  assert.equal(corrupt.blocking, false, JSON.stringify(corrupt));
+  assert.equal(corrupt.advisory, true);
+  assert.equal(corrupt.plan, 'invalid_manifest');
+});
+
+test('a BLOCKED planner gate reaches stdout through agent:done — the kernel\'s stderr redirect cannot swallow it', async (tt) => {
+  const dir = await project(tt, {
+    classification: 'MEDIUM',
+    plan: bigPlan({ frontmatter: ['status: approved'] }),
+    current: true,
+    prdContent: COMPLETION_PRD
+  });
+  await write(dir, `.aioson/context/agent-execution-${SLUG}.json`, JSON.stringify({
+    version: 2,
+    feature: SLUG,
+    orchestration: { execution: 'orchestrated' },
+    unknown_root_key: true
+  }, null, 2));
+  const lines = [];
+  const errors = [];
+  const capture = { log: (l) => lines.push(String(l)), error: (l) => errors.push(String(l)), warn: () => {} };
+  const { runAgentDone } = require('../src/commands/runtime');
+  const result = await runAgentDone({ args: [dir], options: { agent: 'planner', summary: 'plan ready' }, logger: capture, t });
+  assert.equal(result.ok, true, 'the session close itself never fails');
+  assert.equal(result.auto_advance.skipped, 'workflow_next_failed');
+  assert.equal(result.auto_advance.blocked, true);
+  // The kernels' shutdown line appends `2>/dev/null || true`: stderr does not
+  // exist for the agent. The block must be on stdout.
+  assert.ok(lines.some((l) => l.includes('[Execution Manifest BLOCKED]')), `stdout:\n${lines.join('\n')}\nstderr:\n${errors.join('\n')}`);
 });

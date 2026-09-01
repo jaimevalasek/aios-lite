@@ -1201,10 +1201,10 @@ function logVerifyArtifactLine(logger, va) {
  * normal case, and a line that prints every session is a line nobody reads.
  * The JSON payload always carries the full measurement.
  */
-function logDeliveryParityLine(logger, dp) {
+function logDeliveryParityLine(logger, dp, t) {
   if (!dp || dp.tier === 'clean' || dp.tier === 'skipped' || dp.tier === 'runtime_only') return;
-  const marker = dp.tier === 'advisory' ? 'advisory' : 'noted';
-  logger.log(`agent:done — delivery:parity: ${marker} — ${dp.reason}`);
+  const { parityLine } = require('./delivery-parity');
+  logger.log(`agent:done — ${parityLine(dp, t)}`);
 }
 
 /**
@@ -1318,7 +1318,7 @@ async function runAgentDone({ args, options = {}, logger, t }) {
 
       if (!options.json) {
         logVerifyArtifactLine(logger, verifyArtifact);
-        logDeliveryParityLine(logger, deliveryParity);
+        logDeliveryParityLine(logger, deliveryParity, t);
       }
       return { ok: true, targetDir, dbPath, agent: normalizedAgent, mode: 'live_event', runKey: session.runKey, auto_advance: autoAdvance, verify_artifact: verifyArtifact, delivery_parity: deliveryParity };
     }
@@ -1396,7 +1396,7 @@ async function runAgentDone({ args, options = {}, logger, t }) {
 
     if (!options.json) {
       logVerifyArtifactLine(logger, verifyArtifact);
-      logDeliveryParityLine(logger, deliveryParity);
+      logDeliveryParityLine(logger, deliveryParity, t);
     }
     return { ok: true, targetDir, dbPath, agent: normalizedAgent, mode: 'standalone', runKey, taskKey, auto_advance: autoAdvance, verify_artifact: verifyArtifact, delivery_parity: deliveryParity };
   } finally {
@@ -1524,10 +1524,16 @@ async function maybeAutoAdvanceWorkflow({ targetDir, normalizedAgent, options = 
       t
     });
   } catch (err) {
-    if (!options.json && logger?.error) {
-      logger.error(`[agent:done] workflow:next failed (${err.message}); pointer unchanged`);
+    // A thrown `[… BLOCKED]` gate is the engine speaking — it goes to stdout.
+    // The kernels' prescribed shutdown line appends `2>/dev/null || true`, so
+    // stderr is the one channel guaranteed never to reach the agent.
+    const blocked = /\[[^\]]*BLOCKED\]/.test(String(err.message));
+    if (!options.json && logger) {
+      const line = `[agent:done] workflow:next ${blocked ? 'BLOCKED' : 'failed'} (${err.message}); pointer unchanged`;
+      if (blocked && logger.log) logger.log(line);
+      else if (logger.error) logger.error(line);
     }
-    return { advanced: false, skipped: 'workflow_next_failed', error: err.message };
+    return { advanced: false, skipped: 'workflow_next_failed', blocked, error: err.message };
   }
 
   // 7. Persist last_workflow_event_at for idempotency (best-effort).
@@ -1543,6 +1549,15 @@ async function maybeAutoAdvanceWorkflow({ targetDir, normalizedAgent, options = 
     const nextStage = result.next || result.nextStage || null;
     const tag = nextStage ? `→ ${nextStage}` : '(workflow complete)';
     logger.log(`[agent:done] auto-advanced ${tag}`);
+    // The internal workflow:next ran silenced — its completion advisories
+    // resurface here, on stdout, or they exist for nobody.
+    if (result.execution?.advisory && result.execution.message) {
+      logger.log(result.execution.message.startsWith('[') ? result.execution.message : `[Execution] ${result.execution.message}`);
+    }
+    const drift = result.scopeDrift;
+    if (drift && ((drift.advisories || []).length > 0 || (drift.upstream || []).length > 0)) {
+      logger.log(`[Scope Drift] advisory for @${drift.stage} — ${drift.advisories.length} drift warning(s), ${drift.upstream.length} upstream error(s); full report: ${drift.report}`);
+    }
   }
 
   return { advanced: true, result };
