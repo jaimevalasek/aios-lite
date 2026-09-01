@@ -44,16 +44,23 @@ async function emitGuardEvent(targetDir, { eventType, agent = 'self-loop', messa
   let db = null;
   try {
     const { openRuntimeDb } = require('../runtime-store');
+    const { redactTelemetryRecord } = require('../lib/telemetry-redaction');
     const opened = await openRuntimeDb(targetDir);
     db = opened.db;
+    // Same choke point as every other writer: a check detail or an error
+    // message can echo a token.
+    const redacted = redactTelemetryRecord({
+      message: message || eventType,
+      payload_json: payload ? JSON.stringify(payload) : null
+    });
     db.prepare(`
       INSERT INTO execution_events (event_type, agent_name, message, payload_json, token_count, created_at)
       VALUES (?, ?, ?, ?, ?, ?)
     `).run(
       eventType,
       agent,
-      message || eventType,
-      payload ? JSON.stringify(payload) : null,
+      redacted.message,
+      redacted.payload_json,
       tokenCount === null || tokenCount === undefined ? null : Math.round(tokenCount),
       new Date().toISOString()
     );

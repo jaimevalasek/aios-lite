@@ -11,7 +11,7 @@ const {
 } = require('./genomes/bindings');
 const { runMigration: runLearningLoopMigration } = require('./learning-loop-migration');
 const { runMigration: runNeuralChainMigration } = require('./neural-chain-migration');
-const { redactTelemetryRecord } = require('./lib/telemetry-redaction');
+const { redactTelemetryRecord, redactTelemetryText } = require('./lib/telemetry-redaction');
 
 const RUNTIME_DIR = path.join('.aioson', 'runtime');
 const DB_FILE = 'aios.sqlite';
@@ -1041,8 +1041,8 @@ function startTask(db, options) {
     session_key: options.sessionKey ? String(options.sessionKey).trim() : null,
     task_kind: options.taskKind ? String(options.taskKind).trim() : null,
     parent_task_key: options.parentTaskKey ? String(options.parentTaskKey).trim() : null,
-    title: String(options.title).trim(),
-    goal: options.goal ? String(options.goal).trim() : null,
+    title: redactTelemetryText(String(options.title).trim()),
+    goal: options.goal ? redactTelemetryText(String(options.goal).trim()) : null,
     meta_json: metaJson,
     status,
     created_by: options.createdBy ? String(options.createdBy).trim() : null,
@@ -1651,9 +1651,11 @@ function startRun(db, options) {
     workflow_id: options.workflowId ? String(options.workflowId).trim() : null,
     workflow_stage: options.workflowStage ? String(options.workflowStage).trim() : null,
     parent_run_key: options.parentRunKey ? String(options.parentRunKey).trim() : null,
-    title: options.title ? String(options.title).trim() : null,
+    // The same text the events redact lands here too (`agent:done --summary`,
+    // `runtime:log --title`); the run row is read by the same dashboards.
+    title: options.title ? redactTelemetryText(String(options.title).trim()) : null,
     status,
-    summary: options.summary ? String(options.summary).trim() : null,
+    summary: options.summary ? redactTelemetryText(String(options.summary).trim()) : null,
     used_skills_json: usedSkillsJson,
     output_path: options.outputPath ? String(options.outputPath).trim() : null,
     started_at: now,
@@ -1719,7 +1721,7 @@ function updateRun(db, options) {
   `).run({
     run_key: String(options.runKey),
     status: nextStatus,
-    summary: options.summary ? String(options.summary).trim() : null,
+    summary: options.summary ? redactTelemetryText(String(options.summary).trim()) : null,
     used_skills_json: nextUsedSkills.length > 0 ? JSON.stringify(nextUsedSkills) : null,
     output_path: options.outputPath ? String(options.outputPath).trim() : null,
     task_key: taskKey,

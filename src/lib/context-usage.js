@@ -31,9 +31,20 @@ const { openRuntimeDb, runtimeStoreExists } = require('../runtime-store');
 const DEFAULT_SINCE_DAYS = 30;
 const LOAD_EVENT_TYPES = new Set(['rule_loaded', 'brain_loaded', 'doc_loaded', 'skill_loaded']);
 // A live/tracked session end writes `agent_done`; a standalone `agent:done`
-// creates and finishes its own run (`finished`); the workflow engine writes
-// `stage_completed`. All three are "the agent closed".
-const DONE_EVENT_TYPES = new Set(['agent_done', 'stage_completed', 'finished']);
+// creates and finishes its own run (`finished`, or `failed`); the workflow
+// engine writes `stage_completed`. All of them are "the agent closed" — and a
+// run that wrote two of them (`agent:done --verdict` writes `finished` AND
+// `agent_done`) closed once, so session ends are counted per run key.
+const DONE_EVENT_TYPES = new Set(['agent_done', 'stage_completed', 'finished', 'failed']);
+
+// `--since` is a number of days; a bare `--since` parses as `true`, and
+// Number(true) is a silent 1-day window — booleans and junk mean the default.
+function resolveSinceDays(raw) {
+  const candidate = typeof raw === 'number'
+    ? raw
+    : (typeof raw === 'string' && /^\d+(?:\.\d+)?$/.test(raw.trim()) ? Number(raw.trim()) : NaN);
+  return Number.isFinite(candidate) && candidate > 0 ? candidate : DEFAULT_SINCE_DAYS;
+}
 
 function normalizeRel(value) {
   return String(value || '').replace(/\\/g, '/').replace(/^\.\//, '').trim();
@@ -88,9 +99,7 @@ function touch(map, key, seed) {
 }
 
 async function collectContextUsage(targetDir, options = {}) {
-  const sinceDays = Number.isFinite(Number(options.since)) && Number(options.since) > 0
-    ? Number(options.since)
-    : DEFAULT_SINCE_DAYS;
+  const sinceDays = resolveSinceDays(options.since);
   const since = isoDaysAgo(sinceDays);
   const feature = options.feature ? String(options.feature).trim() : null;
 
@@ -102,11 +111,11 @@ async function collectContextUsage(targetDir, options = {}) {
   let rows;
   try {
     rows = db.prepare(`
-      SELECT agent_name, event_type, source, payload_json, created_at
+      SELECT agent_name, event_type, source, run_key, payload_json, created_at
       FROM execution_events
       WHERE created_at >= ?
         AND (source IN ('context_brief', 'context_load')
-             OR event_type IN ('agent_done', 'stage_completed', 'finished'))
+             OR event_type IN ('agent_done', 'stage_completed', 'finished', 'failed'))
       ORDER BY created_at ASC, id ASC
     `).all(since);
   } finally {
@@ -121,12 +130,17 @@ async function collectContextUsage(targetDir, options = {}) {
   let briefs = 0;
   let loads = 0;
   let dones = 0;
+  const doneRuns = new Set();
 
   for (const row of rows) {
     const payload = parsePayload(row.payload_json) || {};
     const agent = normalizeAgent(row.agent_name) || normalizeAgent(payload.agent_name);
     const rowFeature = payload.feature_slug ? String(payload.feature_slug).trim() : null;
-    if (feature && rowFeature !== feature) continue;
+    // Session ends carry no feature slug: a feature scope keeps them (they
+    // are per agent), otherwise `--feature` zeroed every done and the
+    // done_without_brief flag could never fire inside a feature.
+    const isSessionEnd = DONE_EVENT_TYPES.has(row.event_type);
+    if (feature && !isSessionEnd && rowFeature !== feature) continue;
 
     if (row.event_type === 'brief_built') {
       briefs += 1;
@@ -138,7 +152,10 @@ async function collectContextUsage(targetDir, options = {}) {
       const selections = [
         ['must_load', payload.must_load],
         ['should_load', payload.should_load],
-        ['skills', payload.skills]
+        ['skills', payload.skills],
+        // `related` is the brief's recall section: offered, so a load of it
+        // is not a routing gap.
+        ['related', payload.related]
       ];
       for (const [section, list] of selections) {
         for (const relPath of Array.isArray(list) ? list : []) {
@@ -164,7 +181,11 @@ async function collectContextUsage(targetDir, options = {}) {
       continue;
     }
 
-    if (DONE_EVENT_TYPES.has(row.event_type) && agent) {
+    if (isSessionEnd && agent) {
+      if (row.run_key) {
+        if (doneRuns.has(row.run_key)) continue;
+        doneRuns.add(row.run_key);
+      }
       dones += 1;
       const entry = touch(agents, agent, seedAgent(agent));
       entry.dones += 1;
@@ -194,6 +215,9 @@ async function collectContextUsage(targetDir, options = {}) {
   }
 
   const caveats = [];
+  if (feature) {
+    caveats.push('Session ends are counted per agent, not per feature — a feature scope narrows briefs and loads only.');
+  }
   if (loads === 0) {
     caveats.push('No context:load events in the window — the loaded side is only recorded when agents confirm loads through `aioson context:load`; brief selections are measured regardless.');
   }

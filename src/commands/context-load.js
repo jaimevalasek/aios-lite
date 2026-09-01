@@ -178,6 +178,16 @@ async function runContextLoad({ args, options = {}, logger, t }) {
     }
     return { ok: false, reason: 'missing_slug' };
   }
+  // A slug names something under .aioson/: `..` segments and absolute paths
+  // would probe (and record) files outside the project.
+  const escaping = slugs.find((slug) => path.isAbsolute(String(slug)) || String(slug).split(/[\\/]+/).some((part) => part === '..'));
+  if (escaping) {
+    if (json) return { ok: false, reason: 'invalid_target', target: escaping };
+    if (logger && typeof logger.log === 'function') {
+      logger.log(t ? t('context_load.target_invalid', { target: rawTarget }) : `context:load invalid --target value: ${rawTarget}`);
+    }
+    return { ok: false, reason: 'invalid_target' };
+  }
 
   const featureSlug = options.feature ? String(options.feature).trim() : null;
   const classification = options.classification ? String(options.classification).trim() : null;

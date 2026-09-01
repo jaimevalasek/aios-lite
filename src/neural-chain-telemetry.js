@@ -71,10 +71,12 @@ function emitChainAuditEvent(db, { agent = null, message = 'chain:audit', ...pay
   if (!db || typeof db.prepare !== 'function') return false;
   const payload = buildChainAuditPayload(payloadOverrides);
   try {
+    const { redactTelemetryRecord } = require('./lib/telemetry-redaction');
+    const redacted = redactTelemetryRecord({ message, payload_json: JSON.stringify(payload) });
     db.prepare(`
       INSERT INTO execution_events (event_type, agent_name, message, payload_json, created_at)
       VALUES ('chain_audit', ?, ?, ?, ?)
-    `).run(agent, message, JSON.stringify(payload), new Date().toISOString());
+    `).run(agent, redacted.message, redacted.payload_json, new Date().toISOString());
     return true;
   } catch (_) {
     // BR-NC-10 best-effort: telemetry failure must never propagate to the caller.

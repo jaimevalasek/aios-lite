@@ -98,7 +98,7 @@ function isTestArtifact(filePath) {
 // under .aioson/briefings IS a product surface). A rule that explicitly
 // declares `paths` over these trees still injects — that is deliberate law
 // over governance files, gated in ruleAllowsGuard.
-const GOVERNANCE_PATH_SEGMENT = /(?:^|[\\/])\.aioson[\\/](?:rules|docs|design-docs|skills|installed-skills|agents|brains|evals|learnings|config)(?:[\\/]|$)/i;
+const GOVERNANCE_PATH_SEGMENT = /(?:^|[\\/])\.aioson[\\/](?:(?:rules|docs|design-docs|skills|installed-skills|agents|my-agents|squads|advisors|genomes|templates|tasks|brains|evals|learnings|config|schemas|mcp)(?:[\\/]|$)|(?:config|constitution)\.md$|git-guard\.json$)/i;
 
 function isGovernanceArtifact(filePath) {
   return GOVERNANCE_PATH_SEGMENT.test(String(filePath || ''));

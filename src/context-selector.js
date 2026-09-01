@@ -409,13 +409,15 @@ function projectSemanticTerms(candidates) {
   ].filter(Boolean);
 }
 
-function buildSemanticTerms({ task, paths, feature, activeFeature }, candidates) {
+// A feature slug is a pointer, not vocabulary — `customer-onboarding-board`
+// as semantic terms surfaced the visual-effects doc on a payments webhook
+// task for as long as that feature was active. Feature binding is exact
+// (candidate.featureSlug === activeFeature); the words never enter the FTS.
+function buildSemanticTerms({ task, paths }, candidates) {
   const terms = new Set();
   const rawValues = [
     task,
-    paths.join(' '),
-    feature,
-    activeFeature
+    paths.join(' ')
   ].filter(Boolean);
 
   for (const raw of rawValues) addSemanticTerm(terms, raw);
@@ -616,8 +618,13 @@ function keywordMatches(haystack, needles) {
     if (phraseRegExp(normalizedNeedle).test(normalizedHaystack)) return true;
     const words = needleTokens.filter((word) => word.length >= 4);
     if (words.length === 0) return false;
-    const hits = words.filter((word) => wordVariants(word).some((variant) => haystackWords.has(variant))).length;
-    return hits >= Math.min(2, words.length);
+    const present = (word) => wordVariants(word).some((variant) => haystackWords.has(variant));
+    // Two long words of a phrase may sit apart ("drag … drop"); a phrase whose
+    // tokens collapse to ONE long word (`prd-edit`, `qa-review`, `editing
+    // prd`) must appear whole — every token as a word — or "edit" alone stood
+    // for the phrase and prd-section-ownership fired on any edit.
+    if (words.length === 1) return needleTokens.every(present);
+    return words.filter(present).length >= 2;
   });
 }
 
@@ -826,16 +833,20 @@ async function selectContext(targetDir, options = {}) {
     feature || pulse.active_feature || devState.active_feature || ''
   );
 
-  const lookup = normalizeToken([
-    task,
-    paths.join(' '),
-    activeFeature
-  ].filter(Boolean).join(' '));
+  // Keyword matching (task_types, triggers, aliases, entities, description)
+  // reads the TASK only. The active feature slug and the touched paths are
+  // context, not vocabulary: a pulse naming `customer-onboarding-board` pulled
+  // the form and kanban rules into must_load on every task of that feature
+  // (precision 0.74 on the negatives corpus with a pulse present), and a path
+  // like `.github/workflows/pipeline.yml` matched `workflow`/`pipeline`
+  // triggers of the status-flow rule. Both still feed feature binding,
+  // `paths:` globs, direct path hits and the semantic terms.
+  const lookup = normalizeToken(task);
 
   const candidates = await collectCandidates(targetDir);
   const semanticEnabled = semanticSearchEnabled(options) && !activationOnly;
   const semanticTerms = semanticEnabled
-    ? buildSemanticTerms({ task, paths, feature, activeFeature }, candidates)
+    ? buildSemanticTerms({ task, paths }, candidates)
     : [];
   const semanticMatches = semanticEnabled
     ? buildSemanticMatches(candidates, semanticTerms)

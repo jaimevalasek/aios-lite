@@ -5,7 +5,7 @@ agents: [dev, deyvin, architect]
 modes: [planning, executing]
 task_types: [implementation, refactor, extraction, file-size]
 load_tier: trigger
-triggers: [large file, over 500 lines, split file, extract module, file size, growing file]
+triggers: [large file, over 500 lines, split file, extract module, file size, growing file, arquivo grande, passou de 500 linhas, mais de 500 linhas, dividir arquivo, dividir em modulos, extrair modulo, tamanho do arquivo]
 paths: [src/**, app/**, lib/**, template/**, tests/**]
 ---
 

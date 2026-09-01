@@ -63,7 +63,7 @@
     {
       "name": "qa review of a formatting helper stays quiet on product rules",
       "agent": "qa",
-      "mode": "review",
+      "mode": "executing",
       "task": "review the pull request that refactors the date formatting helper",
       "paths": ["src/utils/date.js"],
       "absent": [
@@ -155,7 +155,7 @@
     {
       "name": "sheldon review of a backend-only PRD stays quiet on visual contracts",
       "agent": "sheldon",
-      "mode": "review",
+      "mode": "planning",
       "task": "review the PRD for the log archival job and point out missing acceptance criteria",
       "absent": [
         { "path": ".aioson/rules/status-flow-drag-and-drop.md", "in": "must_load" },
@@ -201,7 +201,7 @@
     {
       "name": "qa coverage review of a config parser in pt-BR stays quiet on craft and marketing docs",
       "agent": "qa",
-      "mode": "review",
+      "mode": "executing",
       "task": "revisar a cobertura de testes do parser de arquivos de configuracao",
       "paths": ["src/config/parser.js"],
       "absent": [
@@ -328,7 +328,7 @@
     {
       "name": "release notes verification stays quiet on board rules and craft skills",
       "agent": "qa",
-      "mode": "review",
+      "mode": "executing",
       "task": "verify that the release notes match the merged commits since the last tag",
       "absent": [
         { "path": ".aioson/rules/status-flow-drag-and-drop.md", "in": "must_load" },

@@ -35,16 +35,32 @@ const { buildContextBrief } = require('../context-brief');
 const { selectContext, collectCandidates } = require('../context-selector');
 
 const EXPECT_SECTIONS = new Set(['must_load', 'should_load', 'skills', 'selected']);
+const EVAL_MODES = new Set(['planning', 'executing']);
 const COVERAGE_SURFACES = new Set(['rules', 'docs', 'design_governance', 'skills']);
 const ROUTING_LIST_FIELDS = ['taskTypes', 'triggers', 'aliases', 'entities', 'retrievalIntents', 'pathPatterns'];
 
+// A suggested trigger must be a domain word: function words, demonstratives
+// and the verbs every task uses would recreate the false-positive class the
+// corpus exists to catch (`esse`, `service`, `linhas` were proposed live).
 const SUGGESTION_STOP_WORDS = new Set([
   'the', 'and', 'with', 'for', 'from', 'into', 'that', 'this', 'then', 'when',
+  'there', 'their', 'these', 'those', 'about', 'other', 'some', 'over', 'only',
+  'just', 'also', 'been', 'have', 'does', 'doing', 'done', 'than', 'them', 'they',
+  'will', 'without', 'because', 'still', 'before', 'after', 'while', 'where',
+  'which', 'should', 'would', 'could', 'need', 'needs', 'want', 'wants', 'here',
   'para', 'com', 'uma', 'nos', 'nas', 'dos', 'das', 'que', 'como', 'sobre',
+  'esse', 'essa', 'este', 'esta', 'isso', 'isto', 'aqui', 'ainda', 'depois',
+  'antes', 'entre', 'todo', 'toda', 'todos', 'todas', 'mesmo', 'mesma', 'cada',
+  'muito', 'mais', 'menos', 'pode', 'deve', 'precisa', 'preciso', 'quando',
+  'onde', 'entao', 'tambem', 'porque', 'atraves', 'passou', 'passar', 'linha',
+  'linhas', 'dividir', 'parte', 'partes', 'coisa', 'coisas', 'thing', 'things',
   'implement', 'implementar', 'create', 'criar', 'add', 'adicionar', 'build',
   'fazer', 'make', 'update', 'atualizar', 'fix', 'corrigir', 'new', 'nova', 'novo',
-  'feature', 'funcionalidade', 'project', 'projeto', 'file', 'arquivo', 'code', 'codigo'
+  'feature', 'funcionalidade', 'project', 'projeto', 'file', 'arquivo', 'code', 'codigo',
+  'service', 'services', 'servico', 'servicos', 'module', 'modules', 'modulo', 'modulos',
+  'change', 'changes', 'mudanca', 'mudancas', 'work', 'working', 'trabalho'
 ]);
+const SUGGESTION_MIN_LENGTH = 5;
 
 function normalizeSlashes(value) {
   return String(value || '').replace(/\\/g, '/').replace(/^\.\//, '');
@@ -94,6 +110,12 @@ function normalizeScenario(raw, sourceFile, index) {
   if (expect.length === 0 && absent.length === 0) {
     errors.push(`${name}: scenario asserts nothing (no expect, no absent)`);
   }
+  // The engine folds any unknown mode into planning; a scenario that says
+  // `review` would print one mode and prove another.
+  const mode = String(raw.mode || 'planning').trim();
+  if (!EVAL_MODES.has(mode)) {
+    errors.push(`${name}: invalid mode "${mode}" (planning | executing)`);
+  }
   if (errors.length > 0) return { errors };
 
   return {
@@ -101,7 +123,7 @@ function normalizeScenario(raw, sourceFile, index) {
       name,
       source: sourceFile,
       agent: String(raw.agent || 'dev').trim(),
-      mode: String(raw.mode || 'planning').trim(),
+      mode,
       task,
       paths: Array.isArray(raw.paths) ? raw.paths.map(String) : (raw.paths ? [String(raw.paths)] : []),
       feature: String(raw.feature || '').trim(),
@@ -189,7 +211,7 @@ function suggestionTerms(scenario) {
   const terms = [];
   const seen = new Set();
   for (const word of haystack.split(/\s+/)) {
-    if (word.length < 4 || SUGGESTION_STOP_WORDS.has(word) || seen.has(word)) continue;
+    if (word.length < SUGGESTION_MIN_LENGTH || SUGGESTION_STOP_WORDS.has(word) || seen.has(word)) continue;
     seen.add(word);
     terms.push(word);
   }
@@ -328,7 +350,18 @@ async function runScenario(targetDir, scenario) {
   for (const check of scenario.absent) {
     const passed = !sections[check.in].has(check.path);
     const entry = { type: 'absent', path: check.path, in: check.in, passed };
-    if (!passed) entry.diagnosis = diagnoseAbsentFailure({ check, brief });
+    if (!passed) {
+      entry.diagnosis = diagnoseAbsentFailure({ check, brief });
+    } else {
+      // A target that is not on disk cannot fire: that is a vacuous negative,
+      // not a true one. Visible SKIP, excluded from precision — a renamed or
+      // retired rule would otherwise keep "passing" its absent checks forever.
+      const onDisk = await fs.stat(path.join(targetDir, check.path)).then(() => true).catch(() => false);
+      if (!onDisk) {
+        entry.skipped = true;
+        entry.reason = 'target_not_installed';
+      }
+    }
     checks.push(entry);
   }
 
@@ -404,8 +437,10 @@ async function runContextEvals(targetDir, options = {}) {
   }
 
   const allChecks = results.flatMap((result) => result.checks);
-  const positives = allChecks.filter((check) => check.type === 'expect');
-  const negatives = allChecks.filter((check) => check.type === 'absent');
+  // Skipped checks (target not installed) are visible but never counted as
+  // evidence on either side of the matrix.
+  const positives = allChecks.filter((check) => check.type === 'expect' && !check.skipped);
+  const negatives = allChecks.filter((check) => check.type === 'absent' && !check.skipped);
   const rate = (checks) => (checks.length === 0 ? 1 : Number((checks.filter((c) => c.passed).length / checks.length).toFixed(4)));
   // Confusion matrix over the corpus: an expect that surfaced is a true
   // positive, one that stayed hidden a false negative; an absent that stayed
@@ -442,6 +477,7 @@ async function runContextEvals(targetDir, options = {}) {
       negative_pass_rate: rate(negatives),
       positives: positives.length,
       negatives: negatives.length,
+      skipped: allChecks.filter((check) => check.skipped).length,
       recall,
       precision,
       f1

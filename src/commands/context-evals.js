@@ -16,22 +16,35 @@ async function runContextEvalsCommand({ args, options = {}, logger }) {
   });
 
   const uncoveredCount = report.coverage ? report.coverage.uncovered.length : 0;
+  // Zero scenarios under --strict is a failure, never a green: a typo'd
+  // --filter in CI would otherwise pass without proving anything.
+  const nothingRan = report.totals.scenarios === 0;
+  const filterText = typeof options.filter === 'string' ? options.filter : '';
+  if (nothingRan) {
+    report.reason = filterText
+      ? `no scenario matched --filter=${filterText}`
+      : (options.filter ? 'no scenario matched --filter (a value is required)' : 'no eval scenarios found under .aioson/evals');
+  }
   const strictFailure = options.strict
-    && (report.totals.failed > 0 || report.errors.length > 0 || uncoveredCount > 0);
+    && (report.totals.failed > 0 || report.errors.length > 0 || uncoveredCount > 0 || nothingRan);
   report.ok = !strictFailure;
   if (strictFailure) report.exitCode = 1;
   else report.exitCode = 0;
 
   if (options.json) return report;
 
-  if (report.totals.scenarios === 0 && report.errors.length === 0) {
-    logger.log('No eval scenarios found under .aioson/evals — nothing to run.');
+  if (nothingRan && report.errors.length === 0) {
+    if (options.filter) {
+      logger.log(`Context evals: ${report.reason} — nothing to run${options.strict ? ' (strict: failing)' : ''}.`);
+      return report;
+    }
+    logger.log(`No eval scenarios found under .aioson/evals — nothing to run${options.strict ? ' (strict: failing)' : ''}.`);
     logger.log('Author trigger scenarios there to prove your rules, docs, and skills fire on the tasks they claim (see .aioson/evals/README.md).');
     return report;
   }
 
   logger.log(`Context evals: ${report.totals.scenarios} scenario${report.totals.scenarios === 1 ? '' : 's'}, ${report.totals.checks} checks — ${report.totals.passed} passed, ${report.totals.failed} failed.`);
-  logger.log(`Trigger recall ${(report.totals.recall * 100).toFixed(1)}% · precision ${(report.totals.precision * 100).toFixed(1)}% · F1 ${(report.totals.f1 * 100).toFixed(1)}% (${report.totals.positives} expect / ${report.totals.negatives} absent checks).`);
+  logger.log(`Trigger recall ${(report.totals.recall * 100).toFixed(1)}% · precision ${(report.totals.precision * 100).toFixed(1)}% · F1 ${(report.totals.f1 * 100).toFixed(1)}% (${report.totals.positives} expect / ${report.totals.negatives} absent checks${report.totals.skipped > 0 ? `, ${report.totals.skipped} skipped: target not installed` : ''}).`);
   if (report.totals.negatives === 0 && report.totals.positives > 0) {
     logger.log('No absent checks in the corpus — precision is unmeasured. Add scenarios that assert unrelated artifacts stay quiet (see .aioson/evals/README.md).');
   }

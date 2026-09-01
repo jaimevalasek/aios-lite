@@ -38,6 +38,16 @@ async function shippedProject() {
     '---',
     '# Project'
   ].join('\n'), 'utf8');
+  // The state every consumer is in mid-feature: a pulse naming an active
+  // feature whose slug carries domain words. The corpus must hold under it —
+  // without this line precision 1 was proven only where the slug could not
+  // leak into the keyword lookup.
+  await fs.writeFile(path.join(dir, '.aioson', 'context', 'project-pulse.md'), [
+    '---',
+    'active_feature: customer-onboarding-board',
+    '---',
+    '# Pulse'
+  ].join('\n'), 'utf8');
   return dir;
 }
 

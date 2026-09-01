@@ -55,10 +55,12 @@ async function emitSubTaskEvent(rootPath, options = {}) {
 
   try {
     ensureSubTaskAnchorRun(handle.db);
+    const { redactTelemetryRecord } = require('./lib/telemetry-redaction');
+    const redacted = redactTelemetryRecord({ message, payload_json: JSON.stringify(payload) });
     handle.db.prepare(`
       INSERT INTO agent_events (run_key, event_type, message, payload_json, created_at)
       VALUES (?, 'sub_task', ?, ?, ?)
-    `).run(SUB_TASK_RUN_KEY, message, JSON.stringify(payload), createdAt);
+    `).run(SUB_TASK_RUN_KEY, redacted.message, redacted.payload_json, createdAt);
   } catch {
     // best-effort
   } finally {

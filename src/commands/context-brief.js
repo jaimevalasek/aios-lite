@@ -16,9 +16,11 @@ async function recordBriefEvent(targetDir, result, featureSlug) {
     const payload = {
       mode: result.mode,
       task_chars: String(result.task || '').length,
-      must_load: (result.must_load || []).map((item) => item.path).slice(0, 20),
-      should_load: (result.should_load || []).map((item) => item.path).slice(0, 20),
+      must_load: (result.must_load || []).map((item) => item.path).slice(0, 40),
+      should_load: (result.should_load || []).map((item) => item.path).slice(0, 40),
       skills: (result.skills || []).map((item) => item.path),
+      // Recall is offered too: a doc loaded from `related` is not a routing gap.
+      related: (result.related || []).map((item) => item.path).slice(0, 6),
       confidence: result.confidence
     };
     if (featureSlug) payload.feature_slug = String(featureSlug).trim();
