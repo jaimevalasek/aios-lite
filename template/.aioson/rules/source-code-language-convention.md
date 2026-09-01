@@ -10,7 +10,7 @@ load_tier: always
 enforcement: source-code-language
 triggers: [source code, code language, naming, variables, functions, classes, implement, refactor, Laravel, PHP, controller, service, repository, migration, criar, implementar, refatorar, nomear, componente, servico, rota, arquivo, pasta, classe, funcao, crear, implementar, nombrar]
 aliases: [nomenclatura, nomes de arquivo, idioma do codigo, vocabulario canonico, canonical vocabulary, naming convention]
-paths: ['**']
+paths: ['**/*.js', '**/*.jsx', '**/*.mjs', '**/*.cjs', '**/*.ts', '**/*.tsx', '**/*.mts', '**/*.cts', '**/*.vue', '**/*.svelte', '**/*.astro', '**/*.py', '**/*.php', '**/*.rb', '**/*.go', '**/*.rs', '**/*.java', '**/*.kt', '**/*.kts', '**/*.scala', '**/*.cs', '**/*.fs', '**/*.swift', '**/*.dart', '**/*.ex', '**/*.exs', '**/*.erl', '**/*.clj', '**/*.hs', '**/*.c', '**/*.h', '**/*.cc', '**/*.cpp', '**/*.hpp', '**/*.m', '**/*.mm', '**/*.sql', '**/*.prisma', '**/*.graphql', '**/*.proto', '**/*.tf', '**/*.sh', '**/*.ps1', '**/*.lua', '**/*.r', '**/*.jl']
 ---
 
 # Source Code Language Convention

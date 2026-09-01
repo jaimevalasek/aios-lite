@@ -1,0 +1,375 @@
+{
+  "version": 1,
+  "scenarios": [
+    {
+      "name": "readme typo fix stays quiet on product rules and craft skills",
+      "agent": "dev",
+      "mode": "executing",
+      "task": "fix the typo in the README installation section",
+      "paths": ["README.md"],
+      "absent": [
+        { "path": ".aioson/rules/status-flow-drag-and-drop.md", "in": "must_load" },
+        { "path": ".aioson/rules/form-fields-masks-and-validation.md", "in": "must_load" },
+        { "path": ".aioson/rules/management-home-widgets.md", "in": "must_load" },
+        { "path": ".aioson/rules/status-change-confirmation.md", "in": "must_load" },
+        { "path": ".aioson/skills/process/secure-tdd/SKILL.md", "in": "skills" },
+        { "path": ".aioson/skills/design/interface-design/SKILL.md", "in": "skills" }
+      ]
+    },
+    {
+      "name": "release bump in pt-BR stays quiet on kanban, forms and money rules",
+      "agent": "dev",
+      "mode": "executing",
+      "task": "atualizar a versao do pacote no package.json e registrar a release no CHANGELOG",
+      "paths": ["package.json", "CHANGELOG.md"],
+      "absent": [
+        { "path": ".aioson/rules/status-flow-drag-and-drop.md", "in": "must_load" },
+        { "path": ".aioson/rules/form-fields-masks-and-validation.md", "in": "must_load" },
+        { "path": ".aioson/rules/status-change-confirmation.md", "in": "must_load" },
+        { "path": ".aioson/rules/example-monetary-values.md", "in": "must_load" },
+        { "path": ".aioson/skills/process/secure-tdd/SKILL.md", "in": "skills" },
+        { "path": ".aioson/skills/design/interface-design/SKILL.md", "in": "skills" }
+      ]
+    },
+    {
+      "name": "unit test for a string helper does not pull the sensitive-slice skill",
+      "agent": "dev",
+      "mode": "executing",
+      "task": "add a unit test covering the slugify helper edge cases",
+      "paths": ["src/utils/slugify.js", "tests/slugify.test.js"],
+      "absent": [
+        { "path": ".aioson/skills/process/secure-tdd/SKILL.md", "in": "skills" },
+        { "path": ".aioson/rules/status-flow-drag-and-drop.md", "in": "must_load" },
+        { "path": ".aioson/rules/form-fields-masks-and-validation.md", "in": "must_load" },
+        { "path": ".aioson/rules/management-home-widgets.md", "in": "must_load" },
+        { "path": ".aioson/skills/process/prototype-forge/SKILL.md", "in": "skills" }
+      ]
+    },
+    {
+      "name": "module rename stays quiet on board, form and widget rules",
+      "agent": "dev",
+      "mode": "executing",
+      "task": "rename the internal logger module and update every import that references it",
+      "paths": ["src/lib/logger.js"],
+      "absent": [
+        { "path": ".aioson/rules/status-flow-drag-and-drop.md", "in": "must_load" },
+        { "path": ".aioson/rules/form-fields-masks-and-validation.md", "in": "must_load" },
+        { "path": ".aioson/rules/management-home-widgets.md", "in": "must_load" },
+        { "path": ".aioson/rules/status-change-confirmation.md", "in": "must_load" },
+        { "path": ".aioson/skills/design/interface-design/SKILL.md", "in": "skills" },
+        { "path": ".aioson/skills/process/prototype-forge/SKILL.md", "in": "skills" }
+      ]
+    },
+    {
+      "name": "qa review of a formatting helper stays quiet on product rules",
+      "agent": "qa",
+      "mode": "review",
+      "task": "review the pull request that refactors the date formatting helper",
+      "paths": ["src/utils/date.js"],
+      "absent": [
+        { "path": ".aioson/rules/status-flow-drag-and-drop.md", "in": "must_load" },
+        { "path": ".aioson/rules/form-fields-masks-and-validation.md", "in": "must_load" },
+        { "path": ".aioson/rules/management-home-widgets.md", "in": "must_load" },
+        { "path": ".aioson/rules/example-monetary-values.md", "in": "must_load" },
+        { "path": ".aioson/skills/process/secure-tdd/SKILL.md", "in": "skills" },
+        { "path": ".aioson/skills/design/interface-design/SKILL.md", "in": "skills" }
+      ]
+    },
+    {
+      "name": "build tooling migration plan stays quiet on visual craft",
+      "agent": "planner",
+      "mode": "planning",
+      "task": "plan the migration of the build script from webpack to vite",
+      "paths": ["webpack.config.js"],
+      "absent": [
+        { "path": ".aioson/rules/status-flow-drag-and-drop.md", "in": "must_load" },
+        { "path": ".aioson/rules/form-fields-masks-and-validation.md", "in": "must_load" },
+        { "path": ".aioson/rules/management-home-widgets.md", "in": "must_load" },
+        { "path": ".aioson/skills/design/interface-design/SKILL.md", "in": "skills" },
+        { "path": ".aioson/skills/process/prototype-forge/SKILL.md", "in": "skills" },
+        { "path": ".aioson/skills/process/reference-identity-extract/SKILL.md", "in": "skills" },
+        { "path": ".aioson/docs/dev/visual-implementation.md", "in": "selected" }
+      ]
+    },
+    {
+      "name": "PRD for a nightly archival job in pt-BR stays quiet on UI rules and design skills",
+      "agent": "product",
+      "mode": "planning",
+      "task": "escrever o PRD de um job noturno que arquiva logs antigos e libera espaco em disco",
+      "absent": [
+        { "path": ".aioson/rules/status-flow-drag-and-drop.md", "in": "must_load" },
+        { "path": ".aioson/rules/form-fields-masks-and-validation.md", "in": "must_load" },
+        { "path": ".aioson/rules/management-home-widgets.md", "in": "must_load" },
+        { "path": ".aioson/skills/design/interface-design/SKILL.md", "in": "skills" },
+        { "path": ".aioson/skills/process/prototype-forge/SKILL.md", "in": "skills" },
+        { "path": ".aioson/skills/process/design-hybrid-forge/SKILL.md", "in": "skills" },
+        { "path": ".aioson/skills/process/reference-identity-extract/SKILL.md", "in": "skills" }
+      ]
+    },
+    {
+      "name": "http client timeout tweak stays quiet on product rules and design skills",
+      "agent": "dev",
+      "mode": "executing",
+      "task": "increase the HTTP client timeout and add retry with exponential backoff",
+      "paths": ["src/lib/http-client.js"],
+      "absent": [
+        { "path": ".aioson/rules/status-flow-drag-and-drop.md", "in": "must_load" },
+        { "path": ".aioson/rules/form-fields-masks-and-validation.md", "in": "must_load" },
+        { "path": ".aioson/rules/management-home-widgets.md", "in": "must_load" },
+        { "path": ".aioson/rules/status-change-confirmation.md", "in": "must_load" },
+        { "path": ".aioson/rules/example-monetary-values.md", "in": "must_load" },
+        { "path": ".aioson/skills/design/interface-design/SKILL.md", "in": "skills" },
+        { "path": ".aioson/skills/process/prototype-forge/SKILL.md", "in": "skills" }
+      ]
+    },
+    {
+      "name": "integration tests for a CSV export stay quiet on board rules and design skills",
+      "agent": "tester",
+      "mode": "executing",
+      "task": "write integration tests for the CSV export of the reports module",
+      "paths": ["src/reports/export.js"],
+      "absent": [
+        { "path": ".aioson/rules/status-flow-drag-and-drop.md", "in": "must_load" },
+        { "path": ".aioson/rules/form-fields-masks-and-validation.md", "in": "must_load" },
+        { "path": ".aioson/rules/management-home-widgets.md", "in": "must_load" },
+        { "path": ".aioson/skills/design/interface-design/SKILL.md", "in": "skills" },
+        { "path": ".aioson/skills/process/prototype-forge/SKILL.md", "in": "skills" },
+        { "path": ".aioson/skills/process/design-hybrid-forge/SKILL.md", "in": "skills" }
+      ]
+    },
+    {
+      "name": "shipping rounding bug in pt-BR stays quiet on board rules and design skills",
+      "agent": "dev",
+      "mode": "executing",
+      "task": "corrigir o bug de arredondamento no calculo de frete por faixa de peso",
+      "paths": ["src/shipping/calculator.js"],
+      "absent": [
+        { "path": ".aioson/rules/status-flow-drag-and-drop.md", "in": "must_load" },
+        { "path": ".aioson/rules/form-fields-masks-and-validation.md", "in": "must_load" },
+        { "path": ".aioson/rules/management-home-widgets.md", "in": "must_load" },
+        { "path": ".aioson/rules/status-change-confirmation.md", "in": "must_load" },
+        { "path": ".aioson/skills/design/interface-design/SKILL.md", "in": "skills" },
+        { "path": ".aioson/skills/process/prototype-forge/SKILL.md", "in": "skills" }
+      ]
+    },
+    {
+      "name": "sheldon review of a backend-only PRD stays quiet on visual contracts",
+      "agent": "sheldon",
+      "mode": "review",
+      "task": "review the PRD for the log archival job and point out missing acceptance criteria",
+      "absent": [
+        { "path": ".aioson/rules/status-flow-drag-and-drop.md", "in": "must_load" },
+        { "path": ".aioson/rules/form-fields-masks-and-validation.md", "in": "must_load" },
+        { "path": ".aioson/rules/management-home-widgets.md", "in": "must_load" },
+        { "path": ".aioson/rules/visual-exploration-contract.md", "in": "must_load" },
+        { "path": ".aioson/skills/design/interface-design/SKILL.md", "in": "skills" },
+        { "path": ".aioson/skills/process/prototype-forge/SKILL.md", "in": "skills" },
+        { "path": ".aioson/skills/process/design-hybrid-forge/SKILL.md", "in": "skills" },
+        { "path": ".aioson/skills/process/reference-identity-extract/SKILL.md", "in": "skills" }
+      ]
+    },
+    {
+      "name": "database index migration stays quiet on board rules and visual docs",
+      "agent": "dev",
+      "mode": "executing",
+      "task": "add the missing index on the customer column of the orders table and write the migration",
+      "paths": ["db/migrations/20260901_orders_customer_index.sql"],
+      "absent": [
+        { "path": ".aioson/rules/status-flow-drag-and-drop.md", "in": "must_load" },
+        { "path": ".aioson/rules/form-fields-masks-and-validation.md", "in": "must_load" },
+        { "path": ".aioson/rules/management-home-widgets.md", "in": "must_load" },
+        { "path": ".aioson/skills/design/interface-design/SKILL.md", "in": "skills" },
+        { "path": ".aioson/skills/process/prototype-forge/SKILL.md", "in": "skills" }
+      ]
+    },
+    {
+      "name": "swapping a date library in pt-BR stays quiet on product rules and sensitive skill",
+      "agent": "dev",
+      "mode": "executing",
+      "task": "trocar a biblioteca de datas por date-fns nos utilitarios compartilhados",
+      "paths": ["src/utils/dates.js"],
+      "absent": [
+        { "path": ".aioson/rules/status-flow-drag-and-drop.md", "in": "must_load" },
+        { "path": ".aioson/rules/form-fields-masks-and-validation.md", "in": "must_load" },
+        { "path": ".aioson/rules/management-home-widgets.md", "in": "must_load" },
+        { "path": ".aioson/rules/example-monetary-values.md", "in": "must_load" },
+        { "path": ".aioson/skills/design/interface-design/SKILL.md", "in": "skills" },
+        { "path": ".aioson/skills/process/prototype-forge/SKILL.md", "in": "skills" },
+        { "path": ".aioson/skills/process/secure-tdd/SKILL.md", "in": "skills" }
+      ]
+    },
+    {
+      "name": "qa coverage review of a config parser in pt-BR stays quiet on craft and marketing docs",
+      "agent": "qa",
+      "mode": "review",
+      "task": "revisar a cobertura de testes do parser de arquivos de configuracao",
+      "paths": ["src/config/parser.js"],
+      "absent": [
+        { "path": ".aioson/rules/status-flow-drag-and-drop.md", "in": "must_load" },
+        { "path": ".aioson/rules/form-fields-masks-and-validation.md", "in": "must_load" },
+        { "path": ".aioson/rules/management-home-widgets.md", "in": "must_load" },
+        { "path": ".aioson/skills/design/interface-design/SKILL.md", "in": "skills" },
+        { "path": ".aioson/skills/process/prototype-forge/SKILL.md", "in": "skills" },
+        { "path": ".aioson/skills/process/reference-identity-extract/SKILL.md", "in": "skills" },
+        { "path": ".aioson/docs/copywriter/campaign-package.md", "in": "selected" }
+      ]
+    },
+    {
+      "name": "deployment guide edit stays quiet on board rules and design skills",
+      "agent": "dev",
+      "mode": "executing",
+      "task": "document the required environment variables in the deployment guide",
+      "paths": ["docs/deploy.md"],
+      "absent": [
+        { "path": ".aioson/rules/status-flow-drag-and-drop.md", "in": "must_load" },
+        { "path": ".aioson/rules/form-fields-masks-and-validation.md", "in": "must_load" },
+        { "path": ".aioson/rules/management-home-widgets.md", "in": "must_load" },
+        { "path": ".aioson/rules/status-change-confirmation.md", "in": "must_load" },
+        { "path": ".aioson/skills/design/interface-design/SKILL.md", "in": "skills" },
+        { "path": ".aioson/skills/process/prototype-forge/SKILL.md", "in": "skills" }
+      ]
+    },
+    {
+      "name": "worker extraction plan in pt-BR stays quiet on UI rules and craft skills",
+      "agent": "planner",
+      "mode": "planning",
+      "task": "planejar a extracao do modulo de notificacoes por email para um worker separado",
+      "absent": [
+        { "path": ".aioson/rules/status-flow-drag-and-drop.md", "in": "must_load" },
+        { "path": ".aioson/rules/form-fields-masks-and-validation.md", "in": "must_load" },
+        { "path": ".aioson/rules/management-home-widgets.md", "in": "must_load" },
+        { "path": ".aioson/rules/status-change-confirmation.md", "in": "must_load" },
+        { "path": ".aioson/skills/design/interface-design/SKILL.md", "in": "skills" },
+        { "path": ".aioson/skills/process/prototype-forge/SKILL.md", "in": "skills" },
+        { "path": ".aioson/skills/process/design-hybrid-forge/SKILL.md", "in": "skills" },
+        { "path": ".aioson/skills/process/secure-tdd/SKILL.md", "in": "skills" }
+      ]
+    },
+    {
+      "name": "lint upgrade stays quiet on product rules and every craft skill",
+      "agent": "dev",
+      "mode": "executing",
+      "task": "upgrade eslint and fix the new lint warnings across the repository",
+      "paths": [".eslintrc.json"],
+      "absent": [
+        { "path": ".aioson/rules/status-flow-drag-and-drop.md", "in": "must_load" },
+        { "path": ".aioson/rules/form-fields-masks-and-validation.md", "in": "must_load" },
+        { "path": ".aioson/rules/management-home-widgets.md", "in": "must_load" },
+        { "path": ".aioson/rules/example-monetary-values.md", "in": "must_load" },
+        { "path": ".aioson/skills/design/interface-design/SKILL.md", "in": "skills" },
+        { "path": ".aioson/skills/process/prototype-forge/SKILL.md", "in": "skills" },
+        { "path": ".aioson/skills/process/secure-tdd/SKILL.md", "in": "skills" },
+        { "path": ".aioson/skills/process/reference-identity-extract/SKILL.md", "in": "skills" }
+      ]
+    },
+    {
+      "name": "PRD for a version flag stays quiet on UI rules and design skills",
+      "agent": "product",
+      "mode": "planning",
+      "task": "write the PRD for a command line flag that prints the application version and build hash",
+      "absent": [
+        { "path": ".aioson/rules/status-flow-drag-and-drop.md", "in": "must_load" },
+        { "path": ".aioson/rules/form-fields-masks-and-validation.md", "in": "must_load" },
+        { "path": ".aioson/rules/management-home-widgets.md", "in": "must_load" },
+        { "path": ".aioson/rules/visual-exploration-contract.md", "in": "must_load" },
+        { "path": ".aioson/skills/design/interface-design/SKILL.md", "in": "skills" },
+        { "path": ".aioson/skills/process/prototype-forge/SKILL.md", "in": "skills" },
+        { "path": ".aioson/skills/process/design-hybrid-forge/SKILL.md", "in": "skills" },
+        { "path": ".aioson/skills/process/reference-identity-extract/SKILL.md", "in": "skills" }
+      ]
+    },
+    {
+      "name": "in-memory cache in pt-BR stays quiet on board rules and craft skills",
+      "agent": "dev",
+      "mode": "executing",
+      "task": "adicionar cache em memoria para a consulta de configuracoes do sistema",
+      "paths": ["src/config/cache.js"],
+      "absent": [
+        { "path": ".aioson/rules/status-flow-drag-and-drop.md", "in": "must_load" },
+        { "path": ".aioson/rules/form-fields-masks-and-validation.md", "in": "must_load" },
+        { "path": ".aioson/rules/management-home-widgets.md", "in": "must_load" },
+        { "path": ".aioson/skills/design/interface-design/SKILL.md", "in": "skills" },
+        { "path": ".aioson/skills/process/prototype-forge/SKILL.md", "in": "skills" },
+        { "path": ".aioson/skills/process/secure-tdd/SKILL.md", "in": "skills" }
+      ]
+    },
+    {
+      "name": "regression tests for a PDF report generator in pt-BR stay quiet on UI rules and craft skills",
+      "agent": "tester",
+      "mode": "executing",
+      "task": "criar testes de regressao para o gerador de relatorios em PDF",
+      "paths": ["src/reports/pdf.js"],
+      "absent": [
+        { "path": ".aioson/rules/status-flow-drag-and-drop.md", "in": "must_load" },
+        { "path": ".aioson/rules/form-fields-masks-and-validation.md", "in": "must_load" },
+        { "path": ".aioson/rules/management-home-widgets.md", "in": "must_load" },
+        { "path": ".aioson/skills/design/interface-design/SKILL.md", "in": "skills" },
+        { "path": ".aioson/skills/process/prototype-forge/SKILL.md", "in": "skills" },
+        { "path": ".aioson/skills/process/design-hybrid-forge/SKILL.md", "in": "skills" },
+        { "path": ".aioson/skills/process/secure-tdd/SKILL.md", "in": "skills" }
+      ]
+    },
+    {
+      "name": "flaky timezone test fix stays quiet on product rules and craft skills",
+      "agent": "dev",
+      "mode": "executing",
+      "task": "fix the flaky test that depends on the machine timezone",
+      "paths": ["tests/time.test.js"],
+      "absent": [
+        { "path": ".aioson/rules/status-flow-drag-and-drop.md", "in": "must_load" },
+        { "path": ".aioson/rules/form-fields-masks-and-validation.md", "in": "must_load" },
+        { "path": ".aioson/rules/management-home-widgets.md", "in": "must_load" },
+        { "path": ".aioson/rules/example-monetary-values.md", "in": "must_load" },
+        { "path": ".aioson/skills/design/interface-design/SKILL.md", "in": "skills" },
+        { "path": ".aioson/skills/process/prototype-forge/SKILL.md", "in": "skills" },
+        { "path": ".aioson/skills/process/secure-tdd/SKILL.md", "in": "skills" }
+      ]
+    },
+    {
+      "name": "release notes verification stays quiet on board rules and craft skills",
+      "agent": "qa",
+      "mode": "review",
+      "task": "verify that the release notes match the merged commits since the last tag",
+      "absent": [
+        { "path": ".aioson/rules/status-flow-drag-and-drop.md", "in": "must_load" },
+        { "path": ".aioson/rules/form-fields-masks-and-validation.md", "in": "must_load" },
+        { "path": ".aioson/rules/management-home-widgets.md", "in": "must_load" },
+        { "path": ".aioson/rules/status-change-confirmation.md", "in": "must_load" },
+        { "path": ".aioson/skills/design/interface-design/SKILL.md", "in": "skills" },
+        { "path": ".aioson/skills/process/prototype-forge/SKILL.md", "in": "skills" },
+        { "path": ".aioson/skills/process/secure-tdd/SKILL.md", "in": "skills" },
+        { "path": ".aioson/skills/process/design-hybrid-forge/SKILL.md", "in": "skills" }
+      ]
+    },
+    {
+      "name": "dead code removal in pt-BR stays quiet on board rules and design skills",
+      "agent": "dev",
+      "mode": "executing",
+      "task": "remover codigo morto do modulo de importacao de planilhas",
+      "paths": ["src/import/spreadsheet.js"],
+      "absent": [
+        { "path": ".aioson/rules/status-flow-drag-and-drop.md", "in": "must_load" },
+        { "path": ".aioson/rules/form-fields-masks-and-validation.md", "in": "must_load" },
+        { "path": ".aioson/rules/management-home-widgets.md", "in": "must_load" },
+        { "path": ".aioson/skills/design/interface-design/SKILL.md", "in": "skills" },
+        { "path": ".aioson/skills/process/prototype-forge/SKILL.md", "in": "skills" }
+      ]
+    },
+    {
+      "name": "structured logging rollout plan stays quiet on UI rules and craft skills",
+      "agent": "planner",
+      "mode": "planning",
+      "task": "plan the rollout of structured logging with correlation ids across the services",
+      "absent": [
+        { "path": ".aioson/rules/status-flow-drag-and-drop.md", "in": "must_load" },
+        { "path": ".aioson/rules/form-fields-masks-and-validation.md", "in": "must_load" },
+        { "path": ".aioson/rules/management-home-widgets.md", "in": "must_load" },
+        { "path": ".aioson/rules/status-change-confirmation.md", "in": "must_load" },
+        { "path": ".aioson/skills/design/interface-design/SKILL.md", "in": "skills" },
+        { "path": ".aioson/skills/process/prototype-forge/SKILL.md", "in": "skills" },
+        { "path": ".aioson/skills/process/design-hybrid-forge/SKILL.md", "in": "skills" },
+        { "path": ".aioson/skills/process/reference-identity-extract/SKILL.md", "in": "skills" }
+      ]
+    }
+  ]
+}

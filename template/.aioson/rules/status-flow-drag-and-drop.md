@@ -5,9 +5,9 @@ priority: 10
 version: 1.0.0
 load_tier: trigger
 task_types: [workflow, status-transition, kanban, board]
-triggers: [kanban, board, pipeline, stage, column, drag and drop, reorder, move card, status flow, funil, coluna, arrastar, quadro, etapa]
+triggers: [kanban, board, pipeline, pipeline stage, stage transition, kanban column, board column, drag and drop, reorder, move card, status flow, funil, coluna do kanban, coluna do quadro, arrastar, quadro, etapa do funil, mudar de etapa, mover card, mover cartão]
 aliases: [quadro, funil, arrastar e soltar]
-entities: [Kanban, Board, Pipeline, Stage, Column, Card, Lane, Queue]
+entities: [Kanban, Board, Pipeline, Card, Lane, Swimlane]
 retrieval_intents: [implementation, feature, planning]
 modes: [planning, executing]
 guard_surfaces: [ui]

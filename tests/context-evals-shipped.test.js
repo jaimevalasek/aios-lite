@@ -72,6 +72,15 @@ test('every shipped eval scenario passes against the shipped corpus, with zero s
     assert.deepEqual(uncoveredBySurface.rules, [], `uncovered rules:\n${uncoveredBySurface.rules.join('\n')}`);
     assert.deepEqual(uncoveredBySurface.skills, [], `uncovered skill routers:\n${uncoveredBySurface.skills.join('\n')}`);
     assert.ok(report.coverage.rate >= 0.95, `coverage ratchet: ${report.coverage.rate} < 0.95 — uncovered:\n${report.coverage.uncovered.map((i) => i.path).join('\n')}`);
+
+    // Precision is only as real as the negatives behind it. The corpus carries
+    // a floor of hard `absent` checks (neutral tasks against the broadest
+    // triggers), so a rule that starts firing on a README typo or a database
+    // column fails here — coverage alone would never see it.
+    assert.ok(report.totals.negatives >= 120, `negative floor: ${report.totals.negatives} absent checks < 120 — the precision axis is under-measured`);
+    assert.equal(report.totals.precision, 1, `trigger precision ${report.totals.precision}: an artifact fired on a task it was never meant for`);
+    assert.equal(report.totals.recall, 1);
+    assert.equal(report.totals.f1, 1);
   } finally {
     await fs.rm(dir, { recursive: true, force: true });
   }

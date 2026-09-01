@@ -108,6 +108,34 @@ test('a rule that declares paths over a governance tree still injects there', as
   }
 });
 
+test('the source-code language rule guards code files, not the prose that talks about code', async () => {
+  // `paths: ['**']` made every markdown edit that mentioned "function" or
+  // "implementar" carry the identifier rule — a learning note, a README, a
+  // PRD. The rule is law in every brief (`load_tier: always`); the guard leg
+  // now fires only where identifiers are actually written.
+  const dir = await shippedRulesProject();
+  // "naming convention" is one of the rule's aliases — the domain signal that
+  // lets a rule inject at all; the narrowed `paths` is what keeps it off prose.
+  const prose = 'Implementar a funcao de refactor seguindo a naming convention: mover as classes do servico para o modulo novo e nomear as rotas.';
+  try {
+    for (const filePath of ['.aioson/learnings/gotchas/note.md', 'README.md', 'docs/deploy.md']) {
+      const response = await buildGuardResponse({
+        tool_name: 'Write',
+        tool_input: { file_path: filePath, content: prose }
+      }, dir, { tool: 'claude', agent: 'dev' });
+      const rules = (response._guard && response._guard.rules) || [];
+      assert.ok(!rules.includes('.aioson/rules/source-code-language-convention.md'), `${filePath} pulled the identifier rule: ${JSON.stringify(rules)}`);
+    }
+    const code = await buildGuardResponse({
+      tool_name: 'Write',
+      tool_input: { file_path: 'src/servico/rotas.ts', content: `// ${prose}\nexport function criarRota() { return 1; }\n` }
+    }, dir, { tool: 'claude', agent: 'dev' });
+    assert.ok(code._guard && code._guard.rules.includes('.aioson/rules/source-code-language-convention.md'), 'a source file still gets the identifier rule');
+  } finally {
+    await fs.rm(dir, { recursive: true, force: true });
+  }
+});
+
 test('isGovernanceArtifact separates law trees from product artifacts', () => {
   assert.equal(isGovernanceArtifact('.aioson/skills/process/x/SKILL.md'), true);
   assert.equal(isGovernanceArtifact('template/.aioson/docs/design/visual-effects.md'), true);

@@ -407,6 +407,18 @@ async function runContextEvals(targetDir, options = {}) {
   const positives = allChecks.filter((check) => check.type === 'expect');
   const negatives = allChecks.filter((check) => check.type === 'absent');
   const rate = (checks) => (checks.length === 0 ? 1 : Number((checks.filter((c) => c.passed).length / checks.length).toFixed(4)));
+  // Confusion matrix over the corpus: an expect that surfaced is a true
+  // positive, one that stayed hidden a false negative; an absent that stayed
+  // quiet is a true negative, one that fired a false positive (the
+  // kanban-rule-on-every-CHANGELOG class). Precision and F1 only mean
+  // something when the corpus carries hard negatives — the shipped corpus
+  // pins a floor on them for that reason.
+  const truePositives = positives.filter((c) => c.passed).length;
+  const falsePositives = negatives.filter((c) => !c.passed).length;
+  const round4 = (value) => Number(value.toFixed(4));
+  const recall = rate(positives);
+  const precision = truePositives + falsePositives === 0 ? 1 : round4(truePositives / (truePositives + falsePositives));
+  const f1 = precision + recall === 0 ? 0 : round4((2 * precision * recall) / (precision + recall));
 
   const coverage = options.coverage === false
     ? null
@@ -426,8 +438,13 @@ async function runContextEvals(targetDir, options = {}) {
       pass_rate: rate(allChecks),
       // trigger recall: positives that surfaced where declared
       positive_pass_rate: rate(positives),
-      // trigger precision: negatives that stayed quiet where declared
-      negative_pass_rate: rate(negatives)
+      // specificity: negatives that stayed quiet where declared
+      negative_pass_rate: rate(negatives),
+      positives: positives.length,
+      negatives: negatives.length,
+      recall,
+      precision,
+      f1
     },
     results,
     coverage

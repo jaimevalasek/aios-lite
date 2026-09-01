@@ -92,7 +92,9 @@ It flags rules that are selector-invisible or missing required fields.
 
 Lint proves the frontmatter is well-formed; it cannot prove the rule fires on
 the tasks it was written for. That proof lives in `.aioson/evals/*.json`: add
-at least one positive scenario when you create a rule, then run
+at least one positive scenario when you create a rule, one `absent` check on a
+neighbouring task it must stay quiet on (precision is measured only where a
+negative exists), then run
 
 ```bash
 aioson context:evals .
@@ -165,6 +167,18 @@ Create a rule when:
 - A convention must be enforced in every implementation session without re-stating it
 - A @dev learning has appeared in 3+ sessions and should be promoted to permanent
 - The team has decided on a project standard that differs from agent defaults
+
+Three questions before any routed knowledge (rule, doc or skill) is written —
+all three must be yes:
+1. Repeated: you keep restating it, session after session.
+2. Non-obvious: there is a "how" the model does not get right on its own.
+3. Stable: it will still hold in weeks, not hours.
+A no on any of them is a decision, a plan line or a chat message, not an
+artifact. Models improve: a skill that taught "how" may later only need to
+give context and format — re-run the evals after a model change and retire
+what no longer earns its trigger (`status: deprecated` in the skill registry
+and no routing frontmatter; `aioson context:usage .` shows what nothing
+selects any more).
 
 Do NOT create a rule for:
 - One-time decisions (record them with `aioson decision:add` or in the plan's ADR section)

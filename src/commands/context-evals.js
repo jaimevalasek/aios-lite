@@ -31,7 +31,10 @@ async function runContextEvalsCommand({ args, options = {}, logger }) {
   }
 
   logger.log(`Context evals: ${report.totals.scenarios} scenario${report.totals.scenarios === 1 ? '' : 's'}, ${report.totals.checks} checks — ${report.totals.passed} passed, ${report.totals.failed} failed.`);
-  logger.log(`Trigger recall (expect): ${(report.totals.positive_pass_rate * 100).toFixed(1)}% · trigger precision (absent): ${(report.totals.negative_pass_rate * 100).toFixed(1)}%.`);
+  logger.log(`Trigger recall ${(report.totals.recall * 100).toFixed(1)}% · precision ${(report.totals.precision * 100).toFixed(1)}% · F1 ${(report.totals.f1 * 100).toFixed(1)}% (${report.totals.positives} expect / ${report.totals.negatives} absent checks).`);
+  if (report.totals.negatives === 0 && report.totals.positives > 0) {
+    logger.log('No absent checks in the corpus — precision is unmeasured. Add scenarios that assert unrelated artifacts stay quiet (see .aioson/evals/README.md).');
+  }
 
   for (const result of report.results) {
     if (result.passed) continue;

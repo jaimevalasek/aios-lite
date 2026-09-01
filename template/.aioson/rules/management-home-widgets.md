@@ -4,10 +4,10 @@ description: Management systems (CRM, ERP, cockpit, admin, back office) open on 
 priority: 10
 version: 1.0.0
 load_tier: trigger
-task_types: [dashboard, crud, reporting, admin]
-triggers: [dashboard, CRM, ERP, cockpit, admin panel, back office, painel, gestão, overview, home screen, KPI, widget, chart, indicador, relatório, métricas]
+task_types: [dashboard, crud, admin]
+triggers: [dashboard, CRM, ERP, cockpit, admin panel, back office, painel, gestão, overview, home screen, KPI, widget, chart, indicador, tela inicial, painel de indicadores]
 aliases: [painel, indicadores, visão geral]
-entities: [Dashboard, Widget, KPI, Chart, Indicator, Metric, Report, Home]
+entities: [Dashboard, Widget, KPI, Chart, Indicator, Home]
 retrieval_intents: [implementation, feature, planning]
 modes: [planning, executing]
 guard_surfaces: [ui]

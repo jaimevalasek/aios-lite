@@ -7,7 +7,7 @@ version: 1.0.0
 modes: [planning, executing]
 task_types: [visual-exploration, redesign, screenshot-reference, multi-model-design]
 load_tier: trigger
-triggers: [visual exploration, design arena, screenshots, prints, compare models, pre-briefing prototype]
+triggers: [visual exploration, design arena, screenshots, screenshot, prints de tela, print da tela, capturas de tela, compare models, pre-briefing prototype]
 aliases: [A/B design, visual redesign, design benchmark]
 entities: [Exploration, Prototype, Briefing]
 retrieval_intents: [planning, feature, design]
