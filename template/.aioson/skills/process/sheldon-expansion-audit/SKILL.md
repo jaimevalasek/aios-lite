@@ -1,6 +1,9 @@
 ---
 name: sheldon-expansion-audit
 description: "Sheldon process skill for auditing a PRD against prior feature expansion artifacts, expected product richness, and operational surface completeness. Use in @sheldon when expansion-scout.md or scope-expansion.md exists, or when a PRD for a rich-surface feature looks too thin, too inflated, lacks acceptance criteria for enriched capabilities, or implies workspaces, boards, cards, pipelines, operational CRUD, admin/management surfaces, or Trello/CRM/Kanban-like behavior."
+agents: [sheldon]
+task_types: [prd-audit, feature-expansion]
+triggers: [expansion audit, prd too thin, rich surface, scope expansion, auditar expansao, prd enxuto demais]
 ---
 
 # Sheldon Expansion Audit

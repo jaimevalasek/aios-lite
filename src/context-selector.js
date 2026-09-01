@@ -88,7 +88,13 @@ const SURFACES = [
   { key: 'design_governance', dir: path.join('.aioson', 'design-docs'), recursive: false, defaultTier: 'trigger' },
   { key: 'context', dir: path.join('.aioson', 'context'), recursive: false, defaultTier: 'trigger' },
   { key: 'bootstrap', dir: path.join('.aioson', 'context', 'bootstrap'), recursive: false, defaultTier: 'trigger' },
-  { key: 'feature_dossier', dir: path.join('.aioson', 'context', 'features'), recursive: true, defaultTier: 'trigger' }
+  { key: 'feature_dossier', dir: path.join('.aioson', 'context', 'features'), recursive: true, defaultTier: 'trigger' },
+  // Skill routers only — the reference trees under each skill stay recall-only.
+  // A skill surfaces on hard signals alone (no semantic scoring): it is an
+  // advisory pointer the brief lists for the agent's own skill contract, never
+  // auto-injected law, so a false fire costs a line, not a loaded document.
+  { key: 'skills', dir: path.join('.aioson', 'skills'), recursive: true, defaultTier: 'trigger' },
+  { key: 'skills', dir: path.join('.aioson', 'installed-skills'), recursive: true, defaultTier: 'trigger' }
 ];
 
 const FOUNDATION_CONTEXT_BASENAMES = new Set([
@@ -282,9 +288,17 @@ async function walkMarkdown(rootDir, relDir, recursive) {
   return out.sort();
 }
 
-function inferContextMetadata(relPath, fm) {
+function inferContextMetadata(relPath, fm, surfaceKey) {
   const base = path.basename(relPath);
-  const slugMatch = base.match(/^(prd|requirements|spec|design-doc|readiness|implementation-plan|ui-spec|scope-check)-(.+)\.md$/);
+  // Filename slug inference is a CONTEXT-surface convention
+  // (`.aioson/context/prd-checkout.md` belongs to the checkout feature). On
+  // any other surface it is a trap: the shipped rules `prd-section-ownership`
+  // and `spec-level-ownership` matched the prefix, inherited a synthetic
+  // feature binding, and were silently excluded from every task whose active
+  // feature did not happen to equal the tail of their own filename.
+  const slugMatch = surfaceKey === 'context'
+    ? base.match(/^(prd|requirements|spec|design-doc|readiness|implementation-plan|ui-spec|scope-check)-(.+)\.md$/)
+    : null;
   const tags = [];
   let featureSlug = fm.feature_slug || fm.feature || '';
   let loadTier = fm.load_tier || 'trigger';
@@ -323,6 +337,7 @@ async function collectCandidates(targetDir) {
     const relPaths = await walkMarkdown(targetDir, surface.dir, surface.recursive);
     for (const relPath of relPaths) {
       if (surface.key === 'feature_dossier' && !relPath.endsWith('/dossier.md')) continue;
+      if (surface.key === 'skills' && !relPath.endsWith('/SKILL.md')) continue;
       const absPath = path.join(targetDir, relPath);
       const content = await readFileSafe(absPath);
       if (!content) continue;
@@ -338,7 +353,7 @@ async function collectCandidates(targetDir) {
       ) continue;
       const stat = await fs.stat(absPath).catch(() => null);
       const fm = parseFrontmatter(content);
-      const inferred = inferContextMetadata(relPath, fm);
+      const inferred = inferContextMetadata(relPath, fm, surface.key);
       const description = fm.description || fm.name || path.basename(relPath, '.md');
       candidates.push({
         path: relPath,
@@ -576,10 +591,15 @@ async function collectMemoryMatches(targetDir, terms) {
 }
 
 function keywordMatches(haystack, needles) {
-  const normalizedHaystack = normalizeToken(haystack);
+  // Hyphens and slashes flatten to spaces on BOTH sides: a hyphenated
+  // task_type (`landing-page`, `visual-direction`) is a phrase, not an opaque
+  // token — before this, it matched nothing a task would ever say, and every
+  // doc survived only by duplicating the spaced form in `triggers`. Path
+  // segments (`src/auth/login.ts`) become words the same way.
+  const normalizedHaystack = normalizeToken(haystack).replace(/[/-]+/g, ' ');
   const haystackWords = new Set(normalizedHaystack.split(/\s+/).flatMap(wordVariants));
   return needles.filter((needle) => {
-    const normalizedNeedle = normalizeToken(needle);
+    const normalizedNeedle = normalizeToken(needle).replace(/[/-]+/g, ' ').trim();
     if (!normalizedNeedle) return false;
     const needleTokens = normalizedNeedle.split(/\s+/).filter(Boolean);
     // A single-token needle (alias "ui", entity "Card", trigger "form") matches
@@ -623,20 +643,28 @@ function wordVariants(word) {
   return [...variants];
 }
 
-function scoreCandidate(candidate, context) {
+// Evaluate one candidate against the retrieval context. Returns `{ item }`
+// when it crosses the threshold, or `{ excluded }` naming WHY it did not —
+// the excluded branch is what `context:evals` turns into a concrete
+// frontmatter suggestion, so causes must stay specific, never a bare null.
+function evaluateCandidate(candidate, context) {
   const reasons = [];
   let score = 0;
   let effectiveLoadTier = candidate.loadTier;
   const base = path.basename(candidate.path);
 
-  if (!appliesToAgent(candidate.frontmatter, context.agent)) return null;
+  if (!appliesToAgent(candidate.frontmatter, context.agent)) {
+    return { excluded: { cause: 'agent_filter', agents: candidate.agents } };
+  }
   if (context.activationOnly) {
     const allowedActivationPaths = ACTIVATION_ONLY_CONTEXT_PATHS_BY_AGENT.get(context.agent);
-    if (!allowedActivationPaths || !allowedActivationPaths.has(candidate.path)) return null;
+    if (!allowedActivationPaths || !allowedActivationPaths.has(candidate.path)) {
+      return { excluded: { cause: 'activation_only' } };
+    }
   }
 
   if (candidate.modes.length > 0 && !candidate.modes.map(normalizeToken).includes(context.mode)) {
-    return null;
+    return { excluded: { cause: 'mode_filter', modes: candidate.modes } };
   }
   if (candidate.modes.length > 0) {
     score += 5;
@@ -676,10 +704,10 @@ function scoreCandidate(candidate, context) {
   const featureMentioned = candidate.featureSlug
     && context.lookup.includes(normalizeToken(candidate.featureSlug).replace(/-/g, ' '));
   if (context.activationOnly && candidate.featureSlug && !context.feature) {
-    return null;
+    return { excluded: { cause: 'activation_only' } };
   }
   if (candidate.featureSlug && candidate.featureSlug !== activeFeature && !featureMentioned && !directPathMatch) {
-    return null;
+    return { excluded: { cause: 'feature_filter', feature_slug: candidate.featureSlug } };
   }
   if (candidate.featureSlug && activeFeature && candidate.featureSlug === activeFeature) {
     score += 45;
@@ -757,7 +785,9 @@ function scoreCandidate(candidate, context) {
   }
 
   const threshold = effectiveLoadTier === 'justified' ? 50 : 30;
-  if (score < threshold) return null;
+  if (score < threshold) {
+    return { excluded: { cause: 'below_threshold', score, threshold, reasons } };
+  }
 
   // Priority orders candidates that already proved relevance. It must never
   // make an otherwise ineligible rule cross the retrieval threshold.
@@ -765,15 +795,21 @@ function scoreCandidate(candidate, context) {
   score += candidate.priority || 0;
 
   return {
-    path: candidate.path,
-    surface: candidate.surface,
-    load_tier: effectiveLoadTier,
-    size: candidate.size,
-    score,
-    base_score: baseScore,
-    priority: candidate.priority || 0,
-    reason: reasons.join('; ')
+    item: {
+      path: candidate.path,
+      surface: candidate.surface,
+      load_tier: effectiveLoadTier,
+      size: candidate.size,
+      score,
+      base_score: baseScore,
+      priority: candidate.priority || 0,
+      reason: reasons.join('; ')
+    }
   };
+}
+
+function scoreCandidate(candidate, context) {
+  return evaluateCandidate(candidate, context).item || null;
 }
 
 async function selectContext(targetDir, options = {}) {
@@ -804,9 +840,11 @@ async function selectContext(targetDir, options = {}) {
   const semanticMatches = semanticEnabled
     ? buildSemanticMatches(candidates, semanticTerms)
     : new Map();
+  const explainPaths = new Set(splitOptionList(options.explain).map(normalizeSlashes));
+  const explain = [];
   const selected = [];
   for (const candidate of candidates) {
-    const scored = scoreCandidate(candidate, {
+    const outcome = evaluateCandidate(candidate, {
       agent,
       mode,
       task,
@@ -817,13 +855,24 @@ async function selectContext(targetDir, options = {}) {
       activationOnly,
       semanticMatches
     });
-    if (scored) selected.push(scored);
+    if (outcome.item) selected.push(outcome.item);
+    if (explainPaths.has(candidate.path)) {
+      explain.push(outcome.item
+        ? { path: candidate.path, status: 'selected', score: outcome.item.score, reason: outcome.item.reason }
+        : { path: candidate.path, status: 'excluded', ...outcome.excluded });
+      explainPaths.delete(candidate.path);
+    }
+  }
+  // A requested path no walk produced is its own diagnosis: the file is
+  // missing, named README, outside every surface, or not a skill router.
+  for (const missing of explainPaths) {
+    explain.push({ path: missing, status: 'excluded', cause: 'not_a_candidate' });
   }
 
   selected.sort((a, b) => b.score - a.score || a.path.localeCompare(b.path));
   const memory = semanticEnabled ? await collectMemoryMatches(targetDir, semanticTerms) : [];
 
-  return {
+  const result = {
     ok: true,
     agent,
     mode,
@@ -839,6 +888,8 @@ async function selectContext(targetDir, options = {}) {
     memory,
     selected
   };
+  if (explain.length > 0) result.explain = explain;
+  return result;
 }
 
 module.exports = {

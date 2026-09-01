@@ -1,6 +1,9 @@
 ---
 name: design-hybrid-forge
 description: Create one project-local design skill from exactly two primary design parents and bounded optional modifiers
+agents: [design-hybrid-forge]
+task_types: [design-skill-generation]
+triggers: [hybrid design skill, design parents, forge design skill, fundir design]
 ---
 
 # Design Hybrid Forge

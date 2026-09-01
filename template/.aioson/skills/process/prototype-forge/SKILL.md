@@ -1,6 +1,9 @@
 ---
 name: prototype-forge
 description: Self-contained prototype process for canonical Briefing surfaces or non-canonical visual explorations
+agents: [refiner, briefing]
+task_types: [prototype, visual-exploration]
+triggers: [prototype, prototipo, clickable, visual exploration, exploracao visual, surface map]
 ---
 
 # Prototype Forge

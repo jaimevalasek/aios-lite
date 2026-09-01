@@ -667,6 +667,13 @@ async function buildContextBrief(targetDir, options = {}) {
   });
 
   const profile = profileForAgent(selection.agent);
+  // Skill routers matched on their own declared signals. Advisory pointers:
+  // the agent's kernel skill contract decides whether to load one — the brief
+  // only guarantees a matching skill is never invisible to the agent.
+  const skills = (selection.selected || [])
+    .filter((item) => item.surface === 'skills')
+    .map(compactPathItem)
+    .slice(0, 6);
   const documents = await loadSelectedDocuments(targetDir, selection.selected || []);
   const stack = inferStack(selection, documents);
   const concerns = inferConcerns(selection, task, profile);
@@ -713,6 +720,7 @@ async function buildContextBrief(targetDir, options = {}) {
     },
     must_load: mustLoad,
     should_load: shouldLoad,
+    skills,
     constraints,
     forbidden_patterns: forbiddenPatterns,
     suggested_structure: structure,

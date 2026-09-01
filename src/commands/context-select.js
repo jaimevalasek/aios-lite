@@ -13,7 +13,11 @@ async function runContextSelect({ args, options = {}, logger }) {
     paths: options.paths || options.path || '',
     feature: options.feature || options.slug || '',
     semantic: options.semantic,
-    noSemantic: options.noSemantic || options['no-semantic']
+    noSemantic: options.noSemantic || options['no-semantic'],
+    // `--explain=<path[,path2]>` prints WHY a named candidate was excluded
+    // (agent/mode filter, score vs threshold) — the debugging channel
+    // context:evals uses for its failure diagnosis.
+    explain: typeof options.explain === 'string' ? options.explain : ''
   });
 
   if (options.json) return result;
@@ -35,6 +39,14 @@ async function runContextSelect({ args, options = {}, logger }) {
     logger.log('Memory matches:');
     for (const item of result.memory) {
       logger.log(`- [${item.target_type}] ${item.target_id} ${item.reason}`);
+    }
+  }
+
+  if (result.explain && result.explain.length > 0) {
+    logger.log('Explain:');
+    for (const entry of result.explain) {
+      if (entry.status === 'selected') logger.log(`- ${entry.path}: selected (${entry.reason})`);
+      else logger.log(`- ${entry.path}: excluded — ${entry.cause}${entry.cause === 'below_threshold' ? ` (${entry.score}/${entry.threshold})` : ''}`);
     }
   }
 

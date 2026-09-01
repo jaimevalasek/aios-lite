@@ -1,6 +1,9 @@
 ---
 name: aioson-spec-driven
 description: Streamlined spec-driven feature delivery — the canonical product → sheldon → planner → dev → qa route with one role reference per stage. Use for substantive feature definition, planning, implementation, or QA; not for a bounded Simple Plan or a bare Deyvin recovery.
+agents: [product, sheldon, planner, dev, qa, deyvin]
+task_types: [feature-definition, prd, implementation-plan, tracked-implementation, qa-review]
+triggers: [tracked feature, spec-driven, implementation plan, prd, gate d, feature delivery]
 ---
 
 # Skill: aioson-spec-driven

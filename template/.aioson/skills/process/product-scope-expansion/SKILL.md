@@ -1,6 +1,9 @@
 ---
 name: product-scope-expansion
 description: "Product process skill for controlled scope expansion and operational completeness before a PRD. Use in @product when a feature has a rich surface, when a briefing expansion scout exists, when the user asks for a more complete MVP, or when the product implies workspaces, boards, cards, pipelines, operational CRUD, admin/management surfaces, or Trello/CRM/Kanban-like behavior without turning the feature into an oversized V2."
+agents: [product]
+task_types: [feature-expansion, scope]
+triggers: [scope expansion, complete mvp, operational crud, expansion scout, expandir escopo, mvp completo]
 ---
 
 # Product Scope Expansion

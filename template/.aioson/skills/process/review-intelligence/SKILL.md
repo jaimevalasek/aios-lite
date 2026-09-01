@@ -1,6 +1,9 @@
 ---
 name: review-intelligence
 description: Review a concrete AIOSON feature artifact with an evidence-first, two-pass challenge before its existing gate or handoff. Use for briefing, PRD, requirements, architecture, scope-check, or QA artifacts with a slug.
+agents: [briefing, refiner, product, sheldon, analyst, architect, scope-check, qa]
+task_types: [artifact-review]
+triggers: [review artifact, independent review, two-pass review, revisao independente, revisar artefato, prd review]
 ---
 
 # Review Intelligence

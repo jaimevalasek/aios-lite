@@ -2,6 +2,9 @@
 name: decision-presentation
 description: Profile-aware contract for necessary user decisions, localized language, and bounded question cadence
 activation: Read profile from project.context.md; creator is the fallback for absent, empty, auto, or legacy beginner.
+agents: [product, planner, briefing, refiner, setup]
+task_types: [user-decision, approval]
+triggers: [user decision, trade-off, approval choice, present options, decisao do usuario, apresentar opcoes]
 ---
 
 # Skill: decision-presentation

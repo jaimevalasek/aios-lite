@@ -90,6 +90,20 @@ function isTestArtifact(filePath) {
   return TEST_PATH_SEGMENT.test(text) || TEST_BASENAME.test(path.basename(text));
 }
 
+// The project's own governance/knowledge tree is ABOUT the product, never the
+// product: a skill description that says "boards, cards, forms" is authoring
+// the law, not building a board — injecting the kanban rule there is the same
+// "files about forms are not forms" noise the test doctrine already names.
+// Briefings, explorations, and context artifacts stay injectable (a prototype
+// under .aioson/briefings IS a product surface). A rule that explicitly
+// declares `paths` over these trees still injects — that is deliberate law
+// over governance files, gated in ruleAllowsGuard.
+const GOVERNANCE_PATH_SEGMENT = /(?:^|[\\/])\.aioson[\\/](?:rules|docs|design-docs|skills|installed-skills|agents|brains|evals|learnings|config)(?:[\\/]|$)/i;
+
+function isGovernanceArtifact(filePath) {
+  return GOVERNANCE_PATH_SEGMENT.test(String(filePath || ''));
+}
+
 function detectSurfaceKinds(filePath, content) {
   const kinds = new Set();
   if (isTestArtifact(filePath)) return kinds;
@@ -161,12 +175,17 @@ function ruleDeclaresPaths(frontmatter) {
   return Boolean(frontmatter && (frontmatter.paths || frontmatter.globs));
 }
 
-function ruleAllowsGuard(rule, frontmatter, surfaceKinds = null, pathCandidates = null) {
+function ruleAllowsGuard(rule, frontmatter, surfaceKinds = null, pathCandidates = null, governanceArtifact = false) {
   const reason = rule.reason || '';
   // Path scope is a contract for EVERY guard injection, domain signal or not:
   // a rule that declares `paths` must never inject on fuzzy keyword spill from
   // a file outside them.
   if (ruleDeclaresPaths(frontmatter) && pathCandidates && !ruleInPathScope(frontmatter, pathCandidates)) {
+    return false;
+  }
+  // A governance file accepts only rules that named it in `paths` — entity
+  // and alias spill from the file's own subject matter never injects there.
+  if (governanceArtifact && !(ruleDeclaresPaths(frontmatter) && pathCandidates && ruleInPathScope(frontmatter, pathCandidates))) {
     return false;
   }
   // Surface scope: a rule that declares `guard_surfaces` only injects when the
@@ -206,13 +225,13 @@ function normalizeRuleLine(value) {
 // Read each salient rule file and extract ITS OWN constraints — so the
 // injection is attributed per rule and never carries the generic concern-based
 // constraints the brief aggregates from the whole selection.
-async function buildRuleBlocks(targetDir, salient, gate, surfaceKinds = null, pathCandidates = null, stack = '') {
+async function buildRuleBlocks(targetDir, salient, gate, surfaceKinds = null, pathCandidates = null, stack = '', governanceArtifact = false) {
   const blocks = [];
   for (const rule of salient) {
     const content = await readFileSafe(path.join(targetDir, rule.path));
     if (!content) continue;
     const frontmatter = parseFrontmatter(content);
-    if (!ruleAllowsGuard(rule, frontmatter, surfaceKinds, pathCandidates)) continue;
+    if (!ruleAllowsGuard(rule, frontmatter, surfaceKinds, pathCandidates, governanceArtifact)) continue;
     const extracted = extractDocConstraints(content);
     // An injection is even tighter than a brief — a handful of lines in front of
     // an edit — so a bullet written for another framework is not just noise
@@ -283,7 +302,7 @@ async function buildGuardResponse(event, targetDir, options = {}) {
 
   const surfaceKinds = detectSurfaceKinds(filePath, content);
   const pathCandidates = guardPathCandidates(targetDir, filePath);
-  const ruleBlocks = await buildRuleBlocks(targetDir, ruled, gate, surfaceKinds, pathCandidates, brief.intent && brief.intent.stack);
+  const ruleBlocks = await buildRuleBlocks(targetDir, ruled, gate, surfaceKinds, pathCandidates, brief.intent && brief.intent.stack, isGovernanceArtifact(filePath));
   if (ruleBlocks.length === 0) return emptyResponse();
 
   const additionalContext = formatInjectionText(filePath, ruleBlocks);
@@ -300,6 +319,7 @@ module.exports = {
   buildGuardResponse,
   deriveQuery,
   detectSurfaceKinds,
+  isGovernanceArtifact,
   outsideProject,
   extractEditedContent,
   matchedRules,

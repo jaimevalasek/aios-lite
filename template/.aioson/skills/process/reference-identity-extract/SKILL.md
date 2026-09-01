@@ -1,6 +1,9 @@
 ---
 name: reference-identity-extract
 description: Extract reference images once into a canonical text identity consumed by interface-design and prototypes
+agents: [setup, refiner]
+task_types: [identity-extraction]
+triggers: [reference image, identity extraction, brand reference, imagem de referencia, extrair identidade]
 ---
 
 # Reference Identity Extract

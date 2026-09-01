@@ -1,6 +1,8 @@
 ---
 name: prompt-sharpener
 description: Rewrite or review agent prompts, skills, PRDs, plans, handoffs, and other instruction-heavy markdown so they produce stronger reasoning with less dead context. Use when Codex is asked to improve AIOSON agents or skills, make prompts more intelligent, reduce prompt bloat without losing contracts, create sharper instructions, or turn vague guidance into evidence-driven decision behavior.
+task_types: [prompt-engineering]
+triggers: [prompt audit, sharpen prompt, improve agent prompt, prompt bloat, melhorar prompt, afiar prompt]
 ---
 
 # Prompt Sharpener

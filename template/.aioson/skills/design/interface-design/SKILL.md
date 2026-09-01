@@ -2,6 +2,7 @@
 name: interface-design
 description: >-
   The framework's single design engine: craft-first selection of an intentional visual direction, a stable token system, and UI continuity across screens. A blank `design_skill` resolves to it; only a project-forged skill (site-forge or hybrid output) that `design_skill` names explicitly replaces it. Never combined with another design skill.
+task_types: [ui, design, prototype, landing-page, visual-direction]
 ---
 
 # Interface Design

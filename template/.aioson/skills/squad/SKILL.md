@@ -2,6 +2,9 @@
 name: squad-skills
 description: Router and index for squad creation skills — domain knowledge, format templates, patterns, and references
 version: 1.0.0
+agents: [squad]
+task_types: [squad-creation]
+triggers: [squad, executor design, content squad, criar squad]
 ---
 
 # Squad Skills Router
