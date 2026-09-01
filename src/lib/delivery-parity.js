@@ -32,6 +32,7 @@
  * two columns kept apart to tell staged from unstaged, and needs no baseline.
  */
 
+const path = require('node:path');
 const { execFile } = require('node:child_process');
 
 /**
@@ -46,6 +47,21 @@ const RUNTIME_CHURN_PREFIXES = [
   '.aioson/runtime/',
   '.aioson/state/',
   '.aioson/plans/'
+];
+
+/**
+ * Spec artifacts that live inside `.aioson/context/` are authored work — the
+ * PRD, the implementation plan, the feature ledger, the project contract, a
+ * feature dossier. They are exactly the deliverables this gate exists to
+ * catch, so they are charged even though the directory around them is
+ * framework churn.
+ */
+const AUTHORED_CONTEXT_PATTERNS = [
+  /^\.aioson\/context\/prd-[^/]+\.md$/i,
+  /^\.aioson\/context\/implementation-plan-[^/]+\.md$/i,
+  /^\.aioson\/context\/features\.md$/i,
+  /^\.aioson\/context\/project\.context\.md$/i,
+  /^\.aioson\/context\/features\/[^/]+\/dossier\.md$/i
 ];
 
 /** Areas worth naming as their own slice rather than collapsing to the root. */
@@ -101,6 +117,7 @@ function parseParityPorcelain(output) {
 }
 
 function isRuntimeChurn(filePath) {
+  if (AUTHORED_CONTEXT_PATTERNS.some((pattern) => pattern.test(filePath))) return false;
   return RUNTIME_CHURN_PREFIXES.some((prefix) => filePath.startsWith(prefix));
 }
 
@@ -193,13 +210,29 @@ async function measureDeliveryParity({ targetDir, threshold } = {}) {
   // `--untracked-files=all` is load-bearing, not a flourish: plain porcelain
   // collapses a whole new directory into a single `?? src/` entry, so an
   // entire wave of new files would measure as one. Ignored paths stay out
-  // either way, so node_modules never enters the count.
-  const status = await runGit(dir, ['status', '--porcelain', '--untracked-files=all']);
+  // either way, so node_modules never enters the count. The `--  .` pathspec
+  // scopes the measurement to this project when it lives inside a larger
+  // working tree (a monorepo app dir is not charged for its siblings).
+  const status = await runGit(dir, ['status', '--porcelain', '--untracked-files=all', '--', '.']);
   if (!status.ok) {
     return { ok: true, git: true, tier: 'skipped', reason: 'git_status_unavailable', threshold: limit };
   }
 
-  const entries = parseParityPorcelain(status.stdout);
+  // Porcelain paths are repo-root-relative, not cwd-relative. When the
+  // project is a subdirectory of the repository, classifying them raw makes
+  // `.aioson/context/project-pulse.md` read as `apps/myapp/.aioson/...` —
+  // authored, wrongly. Strip the project's own prefix before classifying.
+  let projectPrefix = '';
+  const top = await runGit(dir, ['rev-parse', '--show-toplevel']);
+  if (top.ok && top.stdout.trim()) {
+    const rel = path.relative(top.stdout.trim(), path.resolve(dir)).split(path.sep).join('/');
+    if (rel && !rel.startsWith('..')) projectPrefix = `${rel}/`;
+  }
+  const entries = parseParityPorcelain(status.stdout).map((entry) => (
+    projectPrefix && entry.path.toLowerCase().startsWith(projectPrefix.toLowerCase())
+      ? { ...entry, path: entry.path.slice(projectPrefix.length) }
+      : entry
+  ));
   const runtimeEntries = entries.filter((e) => isRuntimeChurn(e.path));
   const authoredEntries = entries.filter((e) => !isRuntimeChurn(e.path));
 

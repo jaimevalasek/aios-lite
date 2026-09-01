@@ -129,6 +129,34 @@ test('framework runtime state alone never fires the advisory', async () => {
   assert.equal(report.runtime, 30);
 });
 
+test('spec artifacts inside .aioson/context/ are authored work — the exemption never swallows a PRD or a plan', async () => {
+  const { dir } = makeRepo();
+  writeFile(dir, '.aioson/context/prd-orders.md', '# PRD\n');
+  writeFile(dir, '.aioson/context/implementation-plan-orders.md', '# Plan\n');
+  writeFile(dir, '.aioson/context/features.md', '- orders\n');
+  writeFile(dir, '.aioson/context/project.context.md', '---\n---\n');
+  writeFile(dir, '.aioson/context/features/orders/dossier.md', '# Dossier\n');
+  writeFile(dir, '.aioson/context/project-pulse.md', 'pulse\n');
+  writeFile(dir, '.aioson/context/features/orders/visual-evidence.json', '{}\n');
+  const report = await measureDeliveryParity({ targetDir: dir });
+  assert.equal(report.authored, 5, JSON.stringify(report.areas));
+  assert.equal(report.runtime, 2);
+  assert.equal(report.tier, 'noted');
+});
+
+test('a project that is a subdirectory of the repository classifies its own paths and ignores its siblings', async () => {
+  const { dir } = makeRepo();
+  const project = path.join(dir, 'apps', 'myapp');
+  writeFile(dir, 'apps/myapp/.aioson/context/project-pulse.md', 'pulse\n');
+  writeFile(dir, 'apps/myapp/src/feature.js', '// x\n');
+  writeFile(dir, 'apps/sibling/src/other.js', '// y\n');
+  const report = await measureDeliveryParity({ targetDir: project });
+  assert.equal(report.git, true);
+  assert.equal(report.runtime, 1, 'the pulse file is runtime churn, not authored');
+  assert.equal(report.authored, 1, 'the sibling app is not this project\'s outstanding work');
+  assert.equal(report.areas[0].area, 'src');
+});
+
 test('the threshold is configurable and a non-git directory is a state, not a finding', async () => {
   const { dir } = makeRepo();
   writeFile(dir, 'src/one.js', 'x\n');
