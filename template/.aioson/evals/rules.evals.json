@@ -1,0 +1,257 @@
+{
+  "version": 1,
+  "scenarios": [
+    {
+      "name": "agent-language-policy-squad-locale",
+      "agent": "squad",
+      "mode": "planning",
+      "task": "Creating a new locale-scoped squad for Brazilian pharmacy support and need to decide the agent file language.",
+      "paths": [".aioson/squads/pharmacy-support/squad.manifest.json"],
+      "expect": [
+        { "path": ".aioson/rules/agent-language-policy.md", "in": "selected" }
+      ]
+    },
+    {
+      "name": "agent-structural-contract-handoff-review",
+      "agent": "dev",
+      "mode": "executing",
+      "task": "Reviewing the QA agent prompt file to make sure the handoff section and CLI command order are correct.",
+      "paths": [".aioson/agents/qa.md"],
+      "expect": [
+        { "path": ".aioson/rules/agent-structural-contract.md", "in": "must_load" }
+      ]
+    },
+    {
+      "name": "context-boundary-qa-report-markdown",
+      "agent": "qa",
+      "mode": "executing",
+      "task": "Writing the QA report for the checkout feature and making sure it stays plain Markdown under the context folder.",
+      "paths": [".aioson/context/qa-report-checkout.md"],
+      "expect": [
+        { "path": ".aioson/rules/aioson-context-boundary.md", "in": "must_load" }
+      ]
+    },
+    {
+      "name": "canonical-path-implementation-plan-destination",
+      "agent": "planner",
+      "mode": "planning",
+      "task": "Deciding where to save the phased implementation plan for the checkout redesign before writing it to disk.",
+      "paths": [".aioson/context/implementation-plan-checkout-redesign.md"],
+      "expect": [
+        { "path": ".aioson/rules/canonical-path-contract.md", "in": "must_load" }
+      ]
+    },
+    {
+      "name": "crud-integrity-customer-list-qa",
+      "agent": "qa",
+      "mode": "executing",
+      "task": "Verifying the customer list surface behaves correctly when creating and then updating an existing customer entry.",
+      "paths": ["src/pages/CustomerList.tsx"],
+      "expect": [
+        { "path": ".aioson/rules/crud-surface-integrity.md", "in": "must_load" }
+      ]
+    },
+    {
+      "name": "data-format-squad-output-yaml",
+      "agent": "dev",
+      "mode": "executing",
+      "task": "Saving the new persona profile data for the growth squad and deciding between YAML and JSON output format.",
+      "paths": ["output/growth-squad/persona-primary.yaml"],
+      "expect": [
+        { "path": ".aioson/rules/data-format-convention.md", "in": "must_load" }
+      ]
+    },
+    {
+      "name": "monetary-values-billing-cents",
+      "agent": "architect",
+      "mode": "planning",
+      "task": "Reviewing the subscription billing flow to confirm the amount fields avoid floating-point rounding errors.",
+      "expect": [
+        { "path": ".aioson/rules/example-monetary-values.md", "in": "must_load" }
+      ]
+    },
+    {
+      "name": "form-masks-signup-fields",
+      "agent": "dev",
+      "mode": "executing",
+      "task": "Adding phone and CPF fields to the signup screen, each needing the right format enforced while typing.",
+      "expect": [
+        { "path": ".aioson/rules/form-fields-masks-and-validation.md", "in": "must_load" }
+      ]
+    },
+    {
+      "name": "implementation-structure-controller-split",
+      "agent": "architect",
+      "mode": "planning",
+      "task": "Splitting the bloated OrderController into a service layer and repository so persistence stays out of the route handler.",
+      "paths": ["src/controllers/OrderController.js"],
+      "expect": [
+        { "path": ".aioson/rules/implementation-structure-and-data-access.md", "in": "must_load" }
+      ]
+    },
+    {
+      "name": "management-widgets-painel-administrativo",
+      "agent": "dev",
+      "mode": "executing",
+      "task": "Preciso definir os widgets da tela inicial do painel administrativo, mostrando o que precisa de atencao agora.",
+      "expect": [
+        { "path": ".aioson/rules/management-home-widgets.md", "in": "must_load" }
+      ]
+    },
+    {
+      "name": "prd-ownership-billing-acceptance-criteria",
+      "agent": "planner",
+      "mode": "planning",
+      "task": "Reviewing the PRD acceptance criteria for the billing feature before mapping the implementation plan phases.",
+      "paths": [".aioson/context/prd-billing.md"],
+      "expect": [
+        { "path": ".aioson/rules/prd-section-ownership.md", "in": "must_load" }
+      ]
+    },
+    {
+      "name": "security-baseline-password-login",
+      "agent": "pentester",
+      "mode": "executing",
+      "task": "Implementing the password reset endpoint and adding login rate limiting to block enumeration attempts.",
+      "expect": [
+        { "path": ".aioson/rules/security-baseline.md", "in": "must_load" }
+      ]
+    },
+    {
+      "name": "simple-plan-rename-button",
+      "agent": "deyvin",
+      "mode": "planning",
+      "task": "Writing a lightweight implementation plan for renaming the checkout button before making the bounded code change.",
+      "paths": [".aioson/context/simple-plans/rename-checkout-button.md"],
+      "expect": [
+        { "path": ".aioson/rules/simple-plan-lane.md", "in": "must_load" }
+      ]
+    },
+    {
+      "name": "spec-ownership-checkout-redesign-decisions",
+      "agent": "qa",
+      "mode": "executing",
+      "task": "Recording the technical decisions and dependencies for the checkout redesign feature in its own spec file.",
+      "paths": [".aioson/context/spec-checkout-redesign.md"],
+      "expect": [
+        { "path": ".aioson/rules/spec-level-ownership.md", "in": "must_load" }
+      ]
+    },
+    {
+      "name": "squad-driver-greeting-service",
+      "agent": "architect",
+      "mode": "planning",
+      "task": "Explaining the boundary between the greeting service driver and the squad agent definition it loads at runtime.",
+      "paths": ["src/services/greetingService.js"],
+      "expect": [
+        { "path": ".aioson/rules/squad-driver-pattern.md", "in": "must_load" }
+      ]
+    },
+    {
+      "name": "status-confirmation-cancel-order",
+      "agent": "dev",
+      "mode": "executing",
+      "task": "Wiring a confirmation step before the cancel action clears an in-progress order permanently.",
+      "expect": [
+        { "path": ".aioson/rules/status-change-confirmation.md", "in": "must_load" }
+      ]
+    },
+    {
+      "name": "status-flow-support-pipeline",
+      "agent": "dev",
+      "mode": "executing",
+      "task": "Implementing drag and drop so support tickets move between pipeline phases and persist their new position after reload.",
+      "expect": [
+        { "path": ".aioson/rules/status-flow-drag-and-drop.md", "in": "must_load" }
+      ]
+    },
+    {
+      "name": "visual-exploration-manifest-review",
+      "agent": "planner",
+      "mode": "planning",
+      "task": "Reviewing the visual exploration manifest before deciding which prototype variant to promote for product sign-off.",
+      "paths": [".aioson/explorations/checkout-redesign/exploration-manifest.json"],
+      "expect": [
+        { "path": ".aioson/rules/visual-exploration-contract.md", "in": "must_load" }
+      ]
+    },
+    {
+      "name": "negative-changelog-note",
+      "agent": "dev",
+      "mode": "executing",
+      "task": "Updating the CHANGELOG with the v1.65.0 release notes summarizing this week's bug fixes.",
+      "paths": ["CHANGELOG.md"],
+      "absent": [
+        { "path": ".aioson/rules/status-flow-drag-and-drop.md", "in": "must_load" },
+        { "path": ".aioson/rules/management-home-widgets.md", "in": "must_load" },
+        { "path": ".aioson/rules/form-fields-masks-and-validation.md", "in": "must_load" },
+        { "path": ".aioson/rules/status-change-confirmation.md", "in": "must_load" }
+      ]
+    },
+    {
+      "name": "negative-health-endpoint",
+      "agent": "dev",
+      "mode": "executing",
+      "task": "Adding a new GET endpoint that returns the current server uptime and memory usage as JSON.",
+      "paths": ["src/routes/health.js"],
+      "absent": [
+        { "path": ".aioson/rules/status-flow-drag-and-drop.md", "in": "must_load" },
+        { "path": ".aioson/rules/management-home-widgets.md", "in": "must_load" },
+        { "path": ".aioson/rules/form-fields-masks-and-validation.md", "in": "must_load" },
+        { "path": ".aioson/rules/status-change-confirmation.md", "in": "must_load" }
+      ]
+    },
+    {
+      "name": "negative-webpack-build-fix",
+      "agent": "dev",
+      "mode": "executing",
+      "task": "Fixing the webpack build script so the production bundle minifies correctly again.",
+      "paths": ["webpack.config.js"],
+      "absent": [
+        { "path": ".aioson/rules/status-flow-drag-and-drop.md", "in": "must_load" },
+        { "path": ".aioson/rules/management-home-widgets.md", "in": "must_load" },
+        { "path": ".aioson/rules/form-fields-masks-and-validation.md", "in": "must_load" },
+        { "path": ".aioson/rules/status-change-confirmation.md", "in": "must_load" }
+      ]
+    },
+    {
+      "name": "negative-job-processor-logging",
+      "agent": "dev",
+      "mode": "executing",
+      "task": "Adding structured logging to the background job processor for easier debugging of failed jobs.",
+      "paths": ["src/jobs/jobProcessor.js"],
+      "absent": [
+        { "path": ".aioson/rules/status-flow-drag-and-drop.md", "in": "must_load" },
+        { "path": ".aioson/rules/management-home-widgets.md", "in": "must_load" },
+        { "path": ".aioson/rules/form-fields-masks-and-validation.md", "in": "must_load" },
+        { "path": ".aioson/rules/status-change-confirmation.md", "in": "must_load" }
+      ]
+    },
+    {
+      "name": "negative-readme-setup-instructions",
+      "agent": "dev",
+      "mode": "planning",
+      "task": "Writing developer setup instructions for cloning the repository and installing dependencies locally.",
+      "paths": ["README.md"],
+      "absent": [
+        { "path": ".aioson/rules/status-flow-drag-and-drop.md", "in": "must_load" },
+        { "path": ".aioson/rules/management-home-widgets.md", "in": "must_load" },
+        { "path": ".aioson/rules/form-fields-masks-and-validation.md", "in": "must_load" },
+        { "path": ".aioson/rules/status-change-confirmation.md", "in": "must_load" }
+      ]
+    },
+    {
+      "name": "negative-date-format-utility-refactor",
+      "agent": "dev",
+      "mode": "executing",
+      "task": "Refactoring the date formatting utility to support additional locale formats.",
+      "paths": ["src/utils/dateFormat.js"],
+      "absent": [
+        { "path": ".aioson/rules/status-flow-drag-and-drop.md", "in": "must_load" },
+        { "path": ".aioson/rules/management-home-widgets.md", "in": "must_load" },
+        { "path": ".aioson/rules/form-fields-masks-and-validation.md", "in": "must_load" },
+        { "path": ".aioson/rules/status-change-confirmation.md", "in": "must_load" }
+      ]
+    }
+  ]
+}

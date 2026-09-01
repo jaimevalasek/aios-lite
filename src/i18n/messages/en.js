@@ -83,13 +83,15 @@ module.exports = {
     help_context_search:
       'aioson context:search [path] --query=<text> [--agent=<agent>] [--mode=planning|executing] [--task=<text>] [--paths=<path[,path2]>] [--intent=memory|feature|rules] [--limit=10] [--json] [--locale=en]',
     help_context_select:
-      'aioson context:select [path] [--agent=<agent>] [--mode=planning|executing] [--task=<text>] [--paths=<path[,path2]>] [--feature=<slug>] [--no-semantic] [--json] [--locale=en]',
+      'aioson context:select [path] [--explain=<path[,path2]>] [--agent=<agent>] [--mode=planning|executing] [--task=<text>] [--paths=<path[,path2]>] [--feature=<slug>] [--no-semantic] [--json] [--locale=en]',
     help_context_brief:
       'aioson context:brief [path] [--agent=<agent>] [--mode=planning|executing] [--task=<text>] [--paths=<path[,path2]>] [--feature=<slug>] [--no-semantic] [--no-recall] [--json] [--locale=en]',
     help_context_guard:
       'aioson context:guard [path] [--tool=claude] [--agent=<agent>] [--event=<json>] [--event-file=<path>] [--json] [--locale=en]',
+    help_context_evals:
+      'aioson context:evals [path] [--strict] [--filter=<text>] [--no-coverage] [--json] [--locale=en]',
     help_context_load:
-      'aioson context:load [path] --target=<rule|brain>:<slug> --agent=<name> [--batch="slug1,slug2"] [--feature=<slug>] [--classification=<MICRO|SMALL|MEDIUM>] [--verbose] [--json] [--locale=en]',
+      'aioson context:load [path] --target=<rule|brain|doc|skill>:<slug> --agent=<name> [--batch="slug1,slug2"] [--feature=<slug>] [--classification=<MICRO|SMALL|MEDIUM>] [--verbose] [--json] [--locale=en]',
     help_chain_audit:
       'aioson chain:audit <file> [path] [--limit=N] [--feature=<slug>] [--json] [--locale=en]',
     help_exploration:
@@ -112,7 +114,7 @@ module.exports = {
       results_header: 'chain:audit {file} → {count} impact(s) ({duration}ms):'
     },
     context_load: {
-      target_required: 'context:load requires --target=<rule|brain>:<slug>.',
+      target_required: 'context:load requires --target=<rule|brain|doc|skill>:<slug>.',
       agent_required: 'context:load requires --agent=<name>.',
       target_invalid: 'context:load invalid --target value: {target}. Expected rule:<slug> or brain:<slug>.',
       success: 'context:load emitted {count} event(s) for agent {agent}.'

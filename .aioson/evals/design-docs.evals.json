@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "scenarios": [
+    {
+      "name": "reuse and componentization governance reach dev extracting shared logic",
+      "agent": "dev",
+      "mode": "executing",
+      "task": "extract the duplicated formatting logic into a shared utility module instead of copying it again",
+      "paths": ["src/lib/format.ts"],
+      "expect": [
+        { "path": ".aioson/design-docs/code-reuse.md", "in": "must_load" },
+        { "path": ".aioson/design-docs/componentization.md", "in": "must_load" }
+      ]
+    },
+    {
+      "name": "file-size governance reaches dev splitting a large file",
+      "agent": "dev",
+      "mode": "executing",
+      "task": "esse arquivo passou de 500 linhas — dividir o service em modulos menores",
+      "paths": ["src/services/report-service.ts"],
+      "expect": [{ "path": ".aioson/design-docs/file-size.md", "in": "must_load" }]
+    },
+    {
+      "name": "folder structure governance reaches the architect designing the layout",
+      "agent": "architect",
+      "mode": "planning",
+      "task": "designing implementation structure: decidir a hierarquia de pastas dos novos modulos do backend",
+      "paths": ["src/modules/billing/index.ts"],
+      "expect": [{ "path": ".aioson/design-docs/folder-structure.md", "in": "must_load" }]
+    },
+    {
+      "name": "naming governance reaches deyvin creating files and functions",
+      "agent": "deyvin",
+      "mode": "executing",
+      "task": "creating files for the invoice flow and choosing names for the exported functions and classes",
+      "paths": ["src/invoices/create-invoice.ts"],
+      "expect": [{ "path": ".aioson/design-docs/naming.md", "in": "must_load" }]
+    },
+    {
+      "name": "implementation governance stays out of a product PRD conversation",
+      "agent": "product",
+      "mode": "planning",
+      "task": "definir com o usuario as capacidades e criterios de aceite da feature de relatorios",
+      "absent": [
+        { "path": ".aioson/design-docs/file-size.md", "in": "must_load" },
+        { "path": ".aioson/design-docs/code-reuse.md", "in": "must_load" }
+      ]
+    }
+  ]
+}

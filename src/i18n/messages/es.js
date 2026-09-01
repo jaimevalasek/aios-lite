@@ -84,13 +84,15 @@ module.exports = {
     help_context_search:
       'aioson context:search [path] --query=<texto> [--agent=<agente>] [--mode=planning|executing] [--task=<texto>] [--paths=<ruta[,ruta2]>] [--intent=memory|feature|rules] [--limit=10] [--json] [--locale=es]',
     help_context_select:
-      'aioson context:select [path] [--agent=<agente>] [--mode=planning|executing] [--task=<texto>] [--paths=<ruta[,ruta2]>] [--feature=<slug>] [--no-semantic] [--json] [--locale=es]',
+      'aioson context:select [path] [--explain=<path[,path2]>] [--agent=<agente>] [--mode=planning|executing] [--task=<texto>] [--paths=<ruta[,ruta2]>] [--feature=<slug>] [--no-semantic] [--json] [--locale=es]',
     help_context_brief:
       'aioson context:brief [path] [--agent=<agente>] [--mode=planning|executing] [--task=<texto>] [--paths=<ruta[,ruta2]>] [--feature=<slug>] [--no-semantic] [--no-recall] [--json] [--locale=es]',
     help_context_guard:
       'aioson context:guard [path] [--tool=claude] [--agent=<agente>] [--event=<json>] [--event-file=<ruta>] [--json] [--locale=es]',
+    help_context_evals:
+      'aioson context:evals [path] [--strict] [--filter=<texto>] [--no-coverage] [--json] [--locale=es]',
     help_context_load:
-      'aioson context:load [path] --target=<rule|brain>:<slug> --agent=<nombre> [--batch="slug1,slug2"] [--feature=<slug>] [--classification=<MICRO|SMALL|MEDIUM>] [--verbose] [--json] [--locale=es]',
+      'aioson context:load [path] --target=<rule|brain|doc|skill>:<slug> --agent=<nombre> [--batch="slug1,slug2"] [--feature=<slug>] [--classification=<MICRO|SMALL|MEDIUM>] [--verbose] [--json] [--locale=es]',
     help_chain_audit:
       'aioson chain:audit <archivo> [path] [--limit=N] [--feature=<slug>] [--json] [--locale=es]',
     help_exploration:
@@ -113,7 +115,7 @@ module.exports = {
       results_header: 'chain:audit {file} → {count} impacto(s) ({duration}ms):'
     },
     context_load: {
-      target_required: 'context:load requiere --target=<rule|brain>:<slug>.',
+      target_required: 'context:load requiere --target=<rule|brain|doc|skill>:<slug>.',
       agent_required: 'context:load requiere --agent=<nombre>.',
       target_invalid: 'context:load valor inválido para --target: {target}. Se esperaba rule:<slug> o brain:<slug>.',
       success: 'context:load emitió {count} evento(s) para el agente {agent}.'

@@ -90,6 +90,19 @@ aioson rules:lint .
 
 It flags rules that are selector-invisible or missing required fields.
 
+Lint proves the frontmatter is well-formed; it cannot prove the rule fires on
+the tasks it was written for. That proof lives in `.aioson/evals/*.json`: add
+at least one positive scenario when you create a rule, then run
+
+```bash
+aioson context:evals .
+```
+
+A failed scenario prints why the engine excluded the rule (agent/mode filter,
+score vs. threshold) and a concrete frontmatter suggestion; the coverage
+report names every routed rule, doc, and skill no scenario proves yet
+(`--strict` for CI).
+
 ---
 
 ## Precedence

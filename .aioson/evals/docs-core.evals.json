@@ -1,0 +1,503 @@
+{
+  "version": 1,
+  "scenarios": [
+    {
+      "name": "briefing activation conversational",
+      "agent": "briefing",
+      "mode": "planning",
+      "task": "The user dropped a loose idea in chat; I need to start a conversational briefing to find the real problem first.",
+      "expect": [
+        { "path": ".aioson/docs/briefing/activation-and-intake.md", "in": "selected" }
+      ]
+    },
+    {
+      "name": "briefing craft generic conversation",
+      "agent": "briefing",
+      "mode": "planning",
+      "task": "This briefing conversation feels generic and PM-ready before its time; I need JTBD framing to sharpen it.",
+      "expect": [
+        { "path": ".aioson/docs/briefing/briefing-craft.md", "in": "selected" }
+      ]
+    },
+    {
+      "name": "briefing rich operational surface",
+      "agent": "briefing",
+      "mode": "planning",
+      "task": "This request looks like a rich, operational surface with heavy CRUD usage, so I need to explore solution breadth before writing artifacts.",
+      "expect": [
+        { "path": ".aioson/docs/briefing/exploration-and-artifacts.md", "in": "selected" }
+      ]
+    },
+    {
+      "name": "briefing legacy contract archaeology",
+      "agent": "briefing",
+      "mode": "planning",
+      "task": "Need the legacy-contract-reference for @briefing to investigate an old migration regression before touching this flow.",
+      "expect": [
+        { "path": ".aioson/docs/briefing/legacy-agent-contract.md", "in": "selected" }
+      ]
+    },
+    {
+      "name": "refiner legacy contract archaeology",
+      "agent": "refiner",
+      "mode": "planning",
+      "task": "Need the legacy-contract-reference for @refiner to check a rename-era migration regression from before v1.61.",
+      "expect": [
+        { "path": ".aioson/docs/briefing/legacy-refiner-agent-contract.md", "in": "selected" }
+      ]
+    },
+    {
+      "name": "refiner prototype requested",
+      "agent": "refiner",
+      "mode": "planning",
+      "task": "The briefing was approved and a prototype was requested for this visible feature before Product writes the PRD.",
+      "expect": [
+        { "path": ".aioson/docs/briefing/prototype-and-delegation.md", "in": "selected" }
+      ]
+    },
+    {
+      "name": "refiner apply briefing feedback",
+      "agent": "refiner",
+      "mode": "planning",
+      "task": "Preciso apply briefing feedback antes que o Product gere o PRD, já existe uma rodada de refinamento pendente.",
+      "expect": [
+        { "path": ".aioson/docs/briefing/refinement-loop.md", "in": "selected" }
+      ]
+    },
+    {
+      "name": "product approved briefing review authority",
+      "agent": "product",
+      "mode": "executing",
+      "task": "There is an approved briefing review for this slug and I need to confirm review decision authority before writing the PRD.",
+      "expect": [
+        { "path": ".aioson/docs/briefing/review-authority.md", "in": "selected" }
+      ]
+    },
+    {
+      "name": "refiner review surface CLI unavailable",
+      "agent": "refiner",
+      "mode": "planning",
+      "task": "O comando de review da briefing está indisponível agora (CLI unavailable), preciso montar a superfície estática de review manualmente.",
+      "expect": [
+        { "path": ".aioson/docs/briefing/review-surface-fallback.md", "in": "selected" }
+      ]
+    },
+    {
+      "name": "briefing mixed source files pack",
+      "agent": "briefing",
+      "mode": "planning",
+      "task": "There is a messy mixed source files pack under plans/ for this briefing that needs logical organization before intake starts.",
+      "expect": [
+        { "path": ".aioson/docs/briefing/source-pack-intake.md", "in": "selected" }
+      ]
+    },
+    {
+      "name": "briefing schema sql source",
+      "agent": "briefing",
+      "mode": "planning",
+      "task": "O pacote de fontes da briefing tem schema SQL e migrations de um sistema legado; preciso reconstruir o comportamento a partir do banco.",
+      "expect": [
+        { "path": ".aioson/docs/briefing/sql-as-documentation.md", "in": "selected" }
+      ]
+    },
+    {
+      "name": "refiner design arena exploration",
+      "agent": "refiner",
+      "mode": "planning",
+      "task": "No refinable briefing exists yet; the user wants to run a design arena to explore two different directions before committing.",
+      "expect": [
+        { "path": ".aioson/docs/briefing/visual-exploration.md", "in": "selected" }
+      ]
+    },
+    {
+      "name": "product conversation structured intake",
+      "agent": "product",
+      "mode": "planning",
+      "task": "Starting a fresh product conversation for this feature; need the structured intake playbook before asking the opening questions.",
+      "expect": [
+        { "path": ".aioson/docs/product/conversation-playbook.md", "in": "selected" }
+      ]
+    },
+    {
+      "name": "product writing and finalizing PRD",
+      "agent": "product",
+      "mode": "executing",
+      "task": "Writing the PRD for the checkout redesign; need to confirm current system fit and run the quality scorecard before I finalize it.",
+      "expect": [
+        { "path": ".aioson/docs/product/prd-contract.md", "in": "selected" },
+        { "path": ".aioson/docs/product/quality-lens.md", "in": "selected" }
+      ]
+    },
+    {
+      "name": "product research market assumptions",
+      "agent": "product",
+      "mode": "planning",
+      "task": "Antes de fechar essa PRD preciso validar as market assumptions com uma busca externa sobre concorrentes e preço.",
+      "expect": [
+        { "path": ".aioson/docs/product/research-loop.md", "in": "selected" }
+      ]
+    },
+    {
+      "name": "sheldon concrete PRD contradiction",
+      "agent": "sheldon",
+      "mode": "planning",
+      "task": "There is a concrete PRD contradiction between the briefing and current behavior that Sheldon needs to repair before Planner starts.",
+      "expect": [
+        { "path": ".aioson/docs/sheldon/enrichment-paths.md", "in": "selected" }
+      ]
+    },
+    {
+      "name": "sheldon harness contract generation",
+      "agent": "sheldon",
+      "mode": "planning",
+      "task": "This feature opted into the compiled harness lane, so I need to generate the harness contract with binary criteria before Planner runs.",
+      "expect": [
+        { "path": ".aioson/docs/sheldon/harness-contract.md", "in": "selected" }
+      ]
+    },
+    {
+      "name": "sheldon quality lens scorecard",
+      "agent": "sheldon",
+      "mode": "planning",
+      "task": "Antes de apresentar as melhorias e o phasing, quero rodar a quality lens do Sheldon e conferir o scorecard compacto.",
+      "expect": [
+        { "path": ".aioson/docs/sheldon/quality-lens.md", "in": "selected" }
+      ]
+    },
+    {
+      "name": "sheldon research loop keywords",
+      "agent": "sheldon",
+      "mode": "planning",
+      "task": "Antes de dimensionar essa PRD, preciso rodar o research loop do Sheldon extraindo keywords e fazendo uma busca externa fresca.",
+      "expect": [
+        { "path": ".aioson/docs/sheldon/research-loop.md", "in": "selected" }
+      ]
+    },
+    {
+      "name": "sheldon web intelligence stale technology",
+      "agent": "sheldon",
+      "mode": "planning",
+      "task": "The PRD names a framework choice that might be stale technology, so I need to run web intelligence before Sheldon signs off.",
+      "expect": [
+        { "path": ".aioson/docs/sheldon/web-intelligence.md", "in": "selected" }
+      ]
+    },
+    {
+      "name": "dev hero glow landing page",
+      "agent": "dev",
+      "mode": "executing",
+      "task": "Adding a soft glow effect to the marketing hero before we ship this landing page.",
+      "paths": ["src/components/Hero.jsx"],
+      "expect": [
+        { "path": ".aioson/docs/design/visual-effects.md", "in": "selected" }
+      ]
+    },
+    {
+      "name": "dev split execution lanes",
+      "agent": "dev",
+      "mode": "executing",
+      "task": "This feature's agent-execution manifest enables split execution across lanes, so I need to dispatch the frontend lane before DEV integrates.",
+      "expect": [
+        { "path": ".aioson/docs/dev/execution-lanes.md", "in": "selected" }
+      ]
+    },
+    {
+      "name": "dev phase loop execution discipline",
+      "agent": "dev",
+      "mode": "executing",
+      "task": "Implementing slices across several phases, using the auto-continue phase loop and committing per the execution discipline conventions.",
+      "expect": [
+        { "path": ".aioson/docs/dev/execution-discipline.md", "in": "selected" },
+        { "path": ".aioson/docs/dev/phase-loop.md", "in": "selected" }
+      ]
+    },
+    {
+      "name": "dev simple plan bounded fix",
+      "agent": "dev",
+      "mode": "executing",
+      "task": "This is bounded technical work, a small fix, so let's use the simple plan lane instead of spinning up a full PRD chain.",
+      "expect": [
+        { "path": ".aioson/docs/dev/simple-plan-lane.md", "in": "selected" }
+      ]
+    },
+    {
+      "name": "dev laravel stack conventions",
+      "agent": "dev",
+      "mode": "executing",
+      "task": "Preciso seguir as stack conventions do Laravel deste projeto antes de criar esse novo Controller e Model.",
+      "expect": [
+        { "path": ".aioson/docs/dev/stack-conventions.md", "in": "selected" }
+      ]
+    },
+    {
+      "name": "dev checkout UI matches prototype",
+      "agent": "dev",
+      "mode": "executing",
+      "task": "Implementing the checkout UI component to match the approved prototype and making sure it stays responsive on mobile.",
+      "paths": ["src/components/CheckoutForm.jsx"],
+      "expect": [
+        { "path": ".aioson/docs/dev/visual-implementation.md", "in": "selected" }
+      ]
+    },
+    {
+      "name": "deyvin continuity recovery after gap",
+      "agent": "deyvin",
+      "mode": "planning",
+      "task": "Picking this session back up after a gap; need continuity recovery to reconstruct recent work before touching anything.",
+      "expect": [
+        { "path": ".aioson/docs/deyvin/continuity-recovery.md", "in": "selected" }
+      ]
+    },
+    {
+      "name": "deyvin failing test bug diagnosis",
+      "agent": "deyvin",
+      "mode": "executing",
+      "task": "This failing test won't budge after one fix attempt; time for proper bug diagnosis instead of guessing again.",
+      "expect": [
+        { "path": ".aioson/docs/deyvin/debugging-escalation.md", "in": "selected" }
+      ]
+    },
+    {
+      "name": "deyvin pair execution small slice",
+      "agent": "deyvin",
+      "mode": "executing",
+      "task": "Vamos numa pair execution tranquila, implementando uma small slice de cada vez e validando antes de seguir.",
+      "expect": [
+        { "path": ".aioson/docs/deyvin/pair-execution.md", "in": "selected" }
+      ]
+    },
+    {
+      "name": "deyvin live session runtime handoff",
+      "agent": "deyvin",
+      "mode": "planning",
+      "task": "I'm in a live session started via live:start; need the runtime handoff rules before emitting milestones for this tracked session.",
+      "expect": [
+        { "path": ".aioson/docs/deyvin/runtime-handoffs.md", "in": "selected" }
+      ]
+    },
+    {
+      "name": "deyvin scout fallback no cli",
+      "agent": "deyvin",
+      "mode": "executing",
+      "task": "O aioson CLI não está disponível aqui, preciso montar manualmente o scout fallback para essa sub-tarefa de investigação.",
+      "expect": [
+        { "path": ".aioson/docs/deyvin/scout-fallback.md", "in": "selected" }
+      ]
+    },
+    {
+      "name": "qa browser walkthrough checkout",
+      "agent": "qa",
+      "mode": "executing",
+      "task": "Need to drive the real checkout prototype in a browser with a replayable walkthrough script to prove the AC evidence.",
+      "paths": [".aioson/briefings/checkout-flow/prototype.html"],
+      "expect": [
+        { "path": ".aioson/docs/qa/browser-walkthrough.md", "in": "selected" }
+      ]
+    },
+    {
+      "name": "tester coverage quality mutation testing",
+      "agent": "tester",
+      "mode": "executing",
+      "task": "The auth module's coverage quality looks fine on paper at 85 percent, but I want mutation testing to prove the tests catch real bugs.",
+      "expect": [
+        { "path": ".aioson/docs/tester/coverage-quality.md", "in": "selected" }
+      ]
+    },
+    {
+      "name": "quality code health improvement lens",
+      "agent": "deyvin",
+      "mode": "planning",
+      "task": "Before shipping this refactor I want a code health pass, coverage gaps and regression risk, using the shared improvement lens.",
+      "expect": [
+        { "path": ".aioson/docs/quality/code-health-analysis.md", "in": "selected" }
+      ]
+    },
+    {
+      "name": "dev split large file fix circular import",
+      "agent": "dev",
+      "mode": "executing",
+      "task": "This service file climbed well over 500 lines and now has a dozen internal imports forming an import cycle back into itself; time to split it and fix the circular dependency.",
+      "paths": ["src/services/OrderProcessor.js"],
+      "expect": [
+        { "path": ".aioson/docs/quality/code-size-limits.md", "in": "selected" },
+        { "path": ".aioson/docs/quality/coupling-limits.md", "in": "selected" }
+      ]
+    },
+    {
+      "name": "framework layers project knowledge",
+      "agent": "deyvin",
+      "mode": "planning",
+      "task": "Quero entender os 'framework layers' do AIOSON, docs, rules e aprendizados, antes de mexer neste projeto.",
+      "expect": [
+        { "path": ".aioson/docs/LAYERS.md", "in": "selected" }
+      ]
+    },
+    {
+      "name": "agent help before activation",
+      "agent": "dev",
+      "mode": "planning",
+      "task": "Show me the --help summary for @product and @sheldon before I decide which agent to activate next.",
+      "expect": [
+        { "path": ".aioson/docs/agent-help.md", "in": "selected" }
+      ]
+    },
+    {
+      "name": "autonomy mode approval gates",
+      "agent": "dev",
+      "mode": "planning",
+      "task": "Trying to understand the autonomy mode tiers so I know which actions need approval gates in this repo.",
+      "expect": [
+        { "path": ".aioson/docs/autonomy-protocol.md", "in": "selected" }
+      ]
+    },
+    {
+      "name": "autopilot deterministic handoff route",
+      "agent": "dev",
+      "mode": "executing",
+      "task": "This feature's manifest selects autopilot mode, so I need the deterministic handoff route before continuing unattended.",
+      "expect": [
+        { "path": ".aioson/docs/autopilot-handoff.md", "in": "selected" }
+      ]
+    },
+    {
+      "name": "planner clickable prototype binding",
+      "agent": "planner",
+      "mode": "executing",
+      "task": "The plan needs to cite the approved clickable prototype under app-shell before I write the vertical phases.",
+      "expect": [
+        { "path": ".aioson/docs/prototype-contract.md", "in": "selected" }
+      ]
+    },
+    {
+      "name": "planner completeness trace before plan",
+      "agent": "planner",
+      "mode": "planning",
+      "task": "Before writing the implementation plan I need every capability traced from acceptance criteria back to the current system fit.",
+      "expect": [
+        { "path": ".aioson/docs/feature-completeness-contract.md", "in": "selected" }
+      ]
+    },
+    {
+      "name": "product rich surface expansion taxonomy",
+      "agent": "product",
+      "mode": "planning",
+      "task": "This request looks like a rich surface, basically a Kanban-style board, so I need the expansion taxonomy's capability map before scoping MVP.",
+      "expect": [
+        { "path": ".aioson/docs/feature-expansion-taxonomy.md", "in": "selected" }
+      ]
+    },
+    {
+      "name": "model delegation outro modelo",
+      "agent": "dev",
+      "mode": "executing",
+      "task": "O usuário pediu explicitamente para usar outro modelo nessa tarefa delimitada de crítica visual.",
+      "expect": [
+        { "path": ".aioson/docs/model-delegation.md", "in": "selected" }
+      ]
+    },
+    {
+      "name": "refiner reference images into identity",
+      "agent": "refiner",
+      "mode": "planning",
+      "task": "The user shared three reference images for this briefing's visual identity, and I need to extract them once into identity.md.",
+      "expect": [
+        { "path": ".aioson/docs/reference-identity.md", "in": "selected" }
+      ]
+    },
+    {
+      "name": "refiner reference site capture route",
+      "agent": "refiner",
+      "mode": "planning",
+      "task": "O usuário mandou uma 'reference site' de inspiração para clonar o efeito de parallax; preciso decidir entre web:save e as ferramentas do harness.",
+      "expect": [
+        { "path": ".aioson/docs/web-capture.md", "in": "selected" }
+      ]
+    },
+    {
+      "name": "document external api integration context",
+      "agent": "dev",
+      "mode": "planning",
+      "task": "Documenting the external API integration context for our Stripe webhook so future agents don't reverse-engineer it again.",
+      "expect": [
+        { "path": ".aioson/docs/example-external-api-context.md", "in": "selected" }
+      ]
+    },
+    {
+      "name": "setup confirm streamlined lean lane",
+      "agent": "product",
+      "mode": "planning",
+      "task": "Quero confirmar se esse projeto está configurado para o 'lean lane', o streamlined workflow com menos agentes no meio.",
+      "expect": [
+        { "path": ".aioson/docs/workflow-lean-lane.md", "in": "selected" }
+      ]
+    },
+    {
+      "name": "dev verification config and artifact gate",
+      "agent": "dev",
+      "mode": "planning",
+      "task": "Setting up verification.json so the right sub-agent dispatches per host, and wiring the verify:artifact placeholder gate before this agent calls done.",
+      "expect": [
+        { "path": ".aioson/docs/verification-config.md", "in": "selected" },
+        { "path": ".aioson/docs/verify-artifact-gates.md", "in": "selected" }
+      ]
+    },
+    {
+      "name": "deyvin compact continuity handoff",
+      "agent": "deyvin",
+      "mode": "planning",
+      "task": "Antes de rodar /compact nesta sessão longa da feature, preciso persistir o handoff e registrar a continuidade para não perder contexto.",
+      "expect": [
+        { "path": ".aioson/docs/feature-continuity-mapping.md", "in": "selected" },
+        { "path": ".aioson/docs/handoff-persistence.md", "in": "selected" }
+      ]
+    },
+    {
+      "name": "negative backend payments webhook",
+      "agent": "dev",
+      "mode": "executing",
+      "task": "Implementing a Stripe webhook handler in the payments service that verifies signatures and writes to the ledger table.",
+      "paths": ["server/payments/webhook-handler.js"],
+      "absent": [
+        { "path": ".aioson/docs/design/visual-effects.md", "in": "selected" },
+        { "path": ".aioson/docs/quality/code-health-analysis.md", "in": "selected" },
+        { "path": ".aioson/docs/sheldon/web-intelligence.md", "in": "selected" }
+      ]
+    },
+    {
+      "name": "negative backend query optimization",
+      "agent": "dev",
+      "mode": "executing",
+      "task": "Optimizing a slow SQL query in the reporting service by adding a composite index and rewriting the aggregate.",
+      "paths": ["src/services/reporting/query-optimizer.js"],
+      "absent": [
+        { "path": ".aioson/docs/prototype-contract.md", "in": "selected" },
+        { "path": ".aioson/docs/feature-completeness-contract.md", "in": "selected" },
+        { "path": ".aioson/docs/model-delegation.md", "in": "selected" }
+      ]
+    },
+    {
+      "name": "negative backend ci cache pipeline",
+      "agent": "dev",
+      "mode": "executing",
+      "task": "Setting up CI pipeline caching for the monorepo's Rust build to speed up nightly runs.",
+      "paths": ["ci/build.yml"],
+      "absent": [
+        { "path": ".aioson/docs/autonomy-protocol.md", "in": "selected" },
+        { "path": ".aioson/docs/web-capture.md", "in": "selected" },
+        { "path": ".aioson/docs/workflow-lean-lane.md", "in": "selected" }
+      ]
+    },
+    {
+      "name": "negative backend queue worker memory leak",
+      "agent": "dev",
+      "mode": "executing",
+      "task": "Corrigindo um vazamento de memória no worker de filas que processa jobs em background.",
+      "paths": ["src/workers/queue-worker.js"],
+      "absent": [
+        { "path": ".aioson/docs/reference-identity.md", "in": "selected" },
+        { "path": ".aioson/docs/feature-expansion-taxonomy.md", "in": "selected" },
+        { "path": ".aioson/docs/feature-continuity-mapping.md", "in": "selected" }
+      ]
+    }
+  ]
+}

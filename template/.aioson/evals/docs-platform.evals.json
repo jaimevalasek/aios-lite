@@ -1,0 +1,376 @@
+{
+  "version": 1,
+  "scenarios": [
+    {
+      "name": "no active agent reaches the gateway routing kernel",
+      "agent": "dev",
+      "mode": "planning",
+      "task": "There's no agent active right now — what next, and how should agent selection work for this kind of task?",
+      "expect": [{ "path": ".aioson/docs/gateway/agent-routing.md", "in": "selected" }]
+    },
+    {
+      "name": "gateway routing stays quiet on a copywriting task",
+      "agent": "dev",
+      "mode": "planning",
+      "task": "write the hero headline and subheadline copy for the new product landing page launch",
+      "absent": [{ "path": ".aioson/docs/gateway/agent-routing.md", "in": "selected" }]
+    },
+    {
+      "name": "diagnosing a legacy Codex AGENTS regression reaches the archived entrypoint",
+      "agent": "dev",
+      "mode": "planning",
+      "task": "I'm diagnosing a legacy migration regression and need to check the historical entrypoint file preserved for Codex AGENTS compatibility",
+      "paths": [".aioson/docs/gateway/legacy-agents-entrypoint.md"],
+      "expect": [{ "path": ".aioson/docs/gateway/legacy-agents-entrypoint.md", "in": "selected" }]
+    },
+    {
+      "name": "diagnosing a legacy Claude regression reaches the archived entrypoint",
+      "agent": "dev",
+      "mode": "planning",
+      "task": "diagnosing an old migration regression, I need the historical entrypoint preserved for Claude before comparing it to the current kernel",
+      "paths": [".aioson/docs/gateway/legacy-claude-entrypoint.md"],
+      "expect": [{ "path": ".aioson/docs/gateway/legacy-claude-entrypoint.md", "in": "selected" }]
+    },
+    {
+      "name": "PRD gate decision reaches gateway process and research",
+      "agent": "dev",
+      "mode": "planning",
+      "task": "preciso decidir qual process skill carregar antes de aprovar o PRD desta feature pequena",
+      "expect": [{ "path": ".aioson/docs/gateway/process-and-research.md", "in": "selected" }]
+    },
+    {
+      "name": "workflow next continuation reaches gateway workflow runtime",
+      "agent": "dev",
+      "mode": "planning",
+      "task": "quero confirmar como o workflow next deve tratar essa feature já vinculada antes do próximo handoff",
+      "expect": [{ "path": ".aioson/docs/gateway/workflow-runtime.md", "in": "selected" }]
+    },
+    {
+      "name": "listing available agents reaches the neo agent catalog, not the diagnostics or routing modules",
+      "agent": "neo",
+      "mode": "planning",
+      "task": "list agents available in AIOSON so I know which agent can review this campaign's sales copy",
+      "expect": [{ "path": ".aioson/docs/neo/agent-catalog.md", "in": "selected" }],
+      "absent": [
+        { "path": ".aioson/docs/neo/state-diagnostics.md", "in": "selected" },
+        { "path": ".aioson/docs/neo/routing-matrix.md", "in": "selected" }
+      ]
+    },
+    {
+      "name": "a legacy neo routing investigation reaches the archived snapshot",
+      "agent": "neo",
+      "mode": "planning",
+      "task": "I'm doing a compatibility investigation into legacy neo behavior after a routing regression was reported this week",
+      "expect": [{ "path": ".aioson/docs/neo/legacy-routing-reference.md", "in": "selected" }]
+    },
+    {
+      "name": "routing an implementation request reaches the neo routing matrix",
+      "agent": "neo",
+      "mode": "planning",
+      "task": "need to route this implementation request to the right next agent within the current workflow stage",
+      "expect": [{ "path": ".aioson/docs/neo/routing-matrix.md", "in": "selected" }]
+    },
+    {
+      "name": "a bloated local database reaches neo runtime storage",
+      "agent": "neo",
+      "mode": "executing",
+      "task": "the aios.sqlite got huge and I need the runtime database size before running a safe prune",
+      "expect": [{ "path": ".aioson/docs/neo/runtime-storage.md", "in": "selected" }]
+    },
+    {
+      "name": "reactivating neo after a break reaches state diagnostics",
+      "agent": "neo",
+      "mode": "planning",
+      "task": "acabei de reativar o neo depois de um tempo, preciso saber where did we stop e o project status atual",
+      "expect": [{ "path": ".aioson/docs/neo/state-diagnostics.md", "in": "selected" }]
+    },
+    {
+      "name": "writing project.context.md reaches setup context and handoff",
+      "agent": "setup",
+      "mode": "executing",
+      "task": "just finished onboarding this project and need to complete setup and route after setup to Product",
+      "expect": [{ "path": ".aioson/docs/setup/context-and-handoff.md", "in": "selected" }]
+    },
+    {
+      "name": "diagnosing an old setup regression reaches the archived setup contract",
+      "agent": "setup",
+      "mode": "planning",
+      "task": "I'm diagnosing an old setup regression and need the historical agent contract preserved before comparing it with the current kernel",
+      "paths": [".aioson/docs/setup/legacy-agent-contract.md"],
+      "expect": [{ "path": ".aioson/docs/setup/legacy-agent-contract.md", "in": "selected" }]
+    },
+    {
+      "name": "a stale project context reaches setup onboarding and repair",
+      "agent": "setup",
+      "mode": "executing",
+      "task": "o project.context.md ficou stale e preciso do update project setup completo antes de classify project de novo",
+      "expect": [{ "path": ".aioson/docs/setup/onboarding-flow.md", "in": "selected" }]
+    },
+    {
+      "name": "choosing a framework and design skill reaches setup stack reference, not onboarding or handoff",
+      "agent": "setup",
+      "mode": "planning",
+      "task": "still need to choose framework and choose design skill for this new web project before moving on",
+      "expect": [{ "path": ".aioson/docs/setup/stack-and-design-reference.md", "in": "selected" }]
+    },
+    {
+      "name": "a delivery-parity wave of uncommitted files reaches the committer partition doc",
+      "agent": "committer",
+      "mode": "executing",
+      "task": "preciso commit tudo que ficou pendente, mas são várias mudanças diferentes com many uncommitted files no repositório",
+      "expect": [{ "path": ".aioson/docs/committer/outstanding-work.md", "in": "selected" }]
+    },
+    {
+      "name": "recording an add finding reaches the dossier agent templates",
+      "agent": "dev",
+      "mode": "executing",
+      "task": "need to add finding to the feature dossier before closing this implementation stage",
+      "expect": [{ "path": ".aioson/docs/dossier/agent-templates.md", "in": "selected" }]
+    },
+    {
+      "name": "understanding the dossier layout reaches the dossier schema",
+      "agent": "product",
+      "mode": "planning",
+      "task": "quero entender a dossier structure e onde fica o dossier schema canônico desta feature",
+      "expect": [{ "path": ".aioson/docs/dossier/schema.md", "in": "selected" }]
+    },
+    {
+      "name": "validating genome quality before approval reaches genome evidence and quality",
+      "agent": "genome",
+      "mode": "planning",
+      "task": "need to validate the genome quality and fidelity against held-out evidence before approving this genome",
+      "expect": [{ "path": ".aioson/docs/genome/evidence-and-quality.md", "in": "selected" }]
+    },
+    {
+      "name": "generating and enriching a genome reaches generation flow",
+      "agent": "genome",
+      "mode": "executing",
+      "task": "preciso generate genome do zero e depois enrich genome com mais evidências de persona coletadas",
+      "expect": [{ "path": ".aioson/docs/genome/generation-flow.md", "in": "selected" }]
+    },
+    {
+      "name": "a legacy genome migration reaches the backward-compatible command contracts",
+      "agent": "genome",
+      "mode": "executing",
+      "task": "running a legacy genome migration and need to keep the backward-compatible genome command working",
+      "expect": [{ "path": ".aioson/docs/genome/legacy-command-contracts.md", "in": "selected" }]
+    },
+    {
+      "name": "applying a genome binding in a squad reaches genome runtime application",
+      "agent": "squad",
+      "mode": "executing",
+      "task": "want to apply genome in this squad and confirm the genome binding compiled before running it",
+      "expect": [{ "path": ".aioson/docs/genome/runtime-application.md", "in": "selected" }]
+    },
+    {
+      "name": "synthesizing dimension findings reaches orache dimensions and synthesis",
+      "agent": "orache",
+      "mode": "executing",
+      "task": "need to run the full D1 dimension and then synthesize investigation for the content squad",
+      "expect": [{ "path": ".aioson/docs/orache/dimensions-and-synthesis.md", "in": "selected" }]
+    },
+    {
+      "name": "picking an orache mode budget reaches investigation strategy",
+      "agent": "orache",
+      "mode": "planning",
+      "task": "depois da orache activation preciso definir o modo de investigation planning antes de começar",
+      "expect": [{ "path": ".aioson/docs/orache/investigation-strategy.md", "in": "selected" }]
+    },
+    {
+      "name": "diagnosing an old orache regression reaches the archived contract",
+      "agent": "orache",
+      "mode": "planning",
+      "task": "I'm diagnosing an old orache regression and need the historical agent contract preserved before comparing with the current kernel",
+      "paths": [".aioson/docs/orache/legacy-agent-contract.md"],
+      "expect": [{ "path": ".aioson/docs/orache/legacy-agent-contract.md", "in": "selected" }]
+    },
+    {
+      "name": "writing and verifying an investigation report reaches orache report and integration",
+      "agent": "orache",
+      "mode": "executing",
+      "task": "finished the investigation and need to write investigation and verify report before registering it with the squad",
+      "expect": [{ "path": ".aioson/docs/orache/report-and-integration.md", "in": "selected" }]
+    },
+    {
+      "name": "a multi-channel launch reaches the copywriter campaign package",
+      "agent": "copywriter",
+      "mode": "executing",
+      "task": "the client wants a full campaign package including multi-platform ads for the upcoming product launch",
+      "expect": [{ "path": ".aioson/docs/copywriter/campaign-package.md", "in": "selected" }]
+    },
+    {
+      "name": "audience research before writing reaches copywriter genomes and research",
+      "agent": "copywriter",
+      "mode": "planning",
+      "task": "preciso fazer o PMS research e alinhar a brand voice antes de escrever qualquer linha de copy",
+      "expect": [{ "path": ".aioson/docs/copywriter/genomes-and-research.md", "in": "selected" }]
+    },
+    {
+      "name": "a legacy copywriter behavior investigation reaches the archived contract",
+      "agent": "copywriter",
+      "mode": "planning",
+      "task": "running a compatibility investigation into legacy copywriter behavior after a removed copywriter rule caused confusion",
+      "expect": [{ "path": ".aioson/docs/copywriter/legacy-agent-contract.md", "in": "selected" }]
+    },
+    {
+      "name": "choosing full page versus section copy reaches modes and outputs",
+      "agent": "copywriter",
+      "mode": "planning",
+      "task": "right after copywriter activation I need to decide between a full landing copy or just one section copy",
+      "expect": [{ "path": ".aioson/docs/copywriter/modes-and-outputs.md", "in": "selected" }]
+    },
+    {
+      "name": "writing copy once the audience is resolved reaches strategy and delivery",
+      "agent": "copywriter",
+      "mode": "executing",
+      "task": "with the audience resolved, need to write copy for the product's main sales page",
+      "expect": [{ "path": ".aioson/docs/copywriter/strategy-and-delivery.md", "in": "selected" }]
+    },
+    {
+      "name": "generating an advisor and persona hybrid reaches profiler advisor, hybrid, and binding",
+      "agent": "profiler-forge",
+      "mode": "executing",
+      "task": "profile is ready, now I need to generate advisor and also build persona hybrid for this squad",
+      "expect": [{ "path": ".aioson/docs/profiler/advisor-hybrid-and-binding.md", "in": "selected" }]
+    },
+    {
+      "name": "writing the enriched profile reaches the enriched profile contract",
+      "agent": "profiler-enricher",
+      "mode": "executing",
+      "task": "finished the research pass and need to write enriched profile before the hand off to profiler forge",
+      "expect": [{ "path": ".aioson/docs/profiler/enriched-profile-contract.md", "in": "selected" }]
+    },
+    {
+      "name": "grading evidence and inferring behavior reaches evidence and inference, not the contract or method docs",
+      "agent": "profiler-enricher",
+      "mode": "executing",
+      "task": "preciso enrich profile e infer behavioral profile a partir das fontes coletadas até agora",
+      "expect": [{ "path": ".aioson/docs/profiler/evidence-and-inference.md", "in": "selected" }],
+      "absent": [
+        { "path": ".aioson/docs/profiler/enriched-profile-contract.md", "in": "selected" },
+        { "path": ".aioson/docs/profiler/trait-and-method-analysis.md", "in": "selected" }
+      ]
+    },
+    {
+      "name": "forging a modular persona genome reaches the forge package contract",
+      "agent": "profiler-forge",
+      "mode": "executing",
+      "task": "want to forge persona genome completely and then build modular genome with the right references",
+      "expect": [{ "path": ".aioson/docs/profiler/forge-package-contract.md", "in": "selected" }]
+    },
+    {
+      "name": "verifying a forged genome reaches forge verification",
+      "agent": "profiler-forge",
+      "mode": "executing",
+      "task": "need to verify forged genome and then run genome doctor before releasing it to the client",
+      "expect": [{ "path": ".aioson/docs/profiler/forge-verification.md", "in": "selected" }]
+    },
+    {
+      "name": "diagnosing an old enrichment regression reaches the archived enricher contract",
+      "agent": "profiler-enricher",
+      "mode": "planning",
+      "task": "I'm diagnosing an old enrichment regression and need the historical enricher contract preserved before comparing with the current kernel",
+      "paths": [".aioson/docs/profiler/legacy-enricher-agent-contract.md"],
+      "expect": [{ "path": ".aioson/docs/profiler/legacy-enricher-agent-contract.md", "in": "selected" }]
+    },
+    {
+      "name": "diagnosing an old forging regression reaches the archived forge contract",
+      "agent": "profiler-forge",
+      "mode": "planning",
+      "task": "I'm diagnosing an old forging regression and need the historical forge contract preserved before comparing with the current kernel",
+      "paths": [".aioson/docs/profiler/legacy-forge-agent-contract.md"],
+      "expect": [{ "path": ".aioson/docs/profiler/legacy-forge-agent-contract.md", "in": "selected" }]
+    },
+    {
+      "name": "extracting frameworks and communication style reaches trait and method analysis",
+      "agent": "profiler-enricher",
+      "mode": "executing",
+      "task": "preciso extract operating method e depois analyze communication style da pessoa pesquisada nesta rodada",
+      "expect": [{ "path": ".aioson/docs/profiler/trait-and-method-analysis.md", "in": "selected" }]
+    },
+    {
+      "name": "deciding when the Play docs apply during architecture work reaches the agent usage guide",
+      "agent": "architect",
+      "mode": "planning",
+      "task": "deciding when to apply the Play app docs during this architecture review, given the Play integrations involved",
+      "expect": [{ "path": ".aioson/docs/play/agent-usage-guide.md", "in": "selected" }]
+    },
+    {
+      "name": "writing an app manifest for a Play draft reaches the compatibility guide",
+      "agent": "dev",
+      "mode": "executing",
+      "task": "criando o app manifest para o Play draft antes de rodar o Play install final desta build",
+      "expect": [{ "path": ".aioson/docs/play/app-compatibility-guide.md", "in": "selected" }]
+    },
+    {
+      "name": "wiring aioson-auth and a smoke test reaches auth, services, and testing",
+      "agent": "qa",
+      "mode": "executing",
+      "task": "need to configure aioson-auth and run a smoke test before enabling the dev-link for this build",
+      "expect": [{ "path": ".aioson/docs/play/auth-services-and-testing.md", "in": "selected" }]
+    },
+    {
+      "name": "wiring LLM connections and data bindings reaches llm data and bindings",
+      "agent": "dev",
+      "mode": "executing",
+      "task": "want to configure the LLM connections and also the data_bindings before touching anything else",
+      "expect": [{ "path": ".aioson/docs/play/llm-data-and-bindings.md", "in": "selected" }]
+    },
+    {
+      "name": "reviewing manifest.json and the Play runtime port reaches manifest and runtime",
+      "agent": "dev",
+      "mode": "executing",
+      "task": "need to review manifest.json and the port used by the Play runtime for this app before shipping",
+      "expect": [{ "path": ".aioson/docs/play/manifest-and-runtime.md", "in": "selected" }]
+    },
+    {
+      "name": "finding the canonical Play source doc reaches the source map",
+      "agent": "architect",
+      "mode": "planning",
+      "task": "trying to find the canonical Play docs to confirm the integration docs before implementing this feature",
+      "expect": [{ "path": ".aioson/docs/play/source-map.md", "in": "selected" }]
+    },
+    {
+      "name": "Play docs stay quiet on an unrelated database optimization task",
+      "agent": "dev",
+      "mode": "executing",
+      "task": "otimizar a query SQL lenta do relatório financeiro mensal antes da próxima reunião",
+      "absent": [
+        { "path": ".aioson/docs/play/agent-usage-guide.md", "in": "selected" },
+        { "path": ".aioson/docs/play/manifest-and-runtime.md", "in": "selected" },
+        { "path": ".aioson/docs/play/llm-data-and-bindings.md", "in": "selected" }
+      ]
+    },
+    {
+      "name": "mapping the dashboard app form to system publish reaches the integrations doc",
+      "agent": "product",
+      "mode": "planning",
+      "task": "preciso alinhar o dashboard app form com os dados que o system publish já captura hoje",
+      "expect": [{ "path": ".aioson/docs/integrations/dashboard-app-form-publish-mapping.md", "in": "selected" }]
+    },
+    {
+      "name": "a benchmark run needs the completeness checklist for a game loop",
+      "agent": "benchmark",
+      "mode": "executing",
+      "task": "during the benchmark run I need the right completeness checklist to validate the implemented game loop",
+      "expect": [{ "path": ".aioson/docs/benchmark/execution-playbook.md", "in": "selected" }]
+    },
+    {
+      "name": "a measured run needs the traversal contract",
+      "agent": "benchmark",
+      "mode": "executing",
+      "task": "preciso rodar o measured run completo e confirmar a benchmark traversal ponta a ponta agora",
+      "expect": [{ "path": ".aioson/docs/benchmark/traversal.md", "in": "selected" }]
+    },
+    {
+      "name": "dossier docs stay quiet on an unrelated dark theme color adjustment",
+      "agent": "dev",
+      "mode": "executing",
+      "task": "adjust the dark theme colors on the dashboard to improve button contrast",
+      "absent": [
+        { "path": ".aioson/docs/dossier/agent-templates.md", "in": "selected" },
+        { "path": ".aioson/docs/dossier/schema.md", "in": "selected" }
+      ]
+    }
+  ]
+}

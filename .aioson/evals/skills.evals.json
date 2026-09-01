@@ -1,0 +1,150 @@
+{
+  "version": 1,
+  "scenarios": [
+    {
+      "name": "spec-driven route reaches dev on tracked feature work",
+      "agent": "dev",
+      "mode": "executing",
+      "task": "continue the tracked feature checkout and implement the next phase of the implementation plan",
+      "expect": [{ "path": ".aioson/skills/process/aioson-spec-driven/SKILL.md", "in": "skills" }]
+    },
+    {
+      "name": "expansion scout reaches briefing on a rich idea in pt-BR",
+      "agent": "briefing",
+      "mode": "planning",
+      "task": "quero expandir a ideia de um editor colaborativo e mapear as possibilidades antes do PRD",
+      "expect": [{ "path": ".aioson/skills/process/briefing-expansion-scout/SKILL.md", "in": "skills" }]
+    },
+    {
+      "name": "decision presentation reaches product before a user approval",
+      "agent": "product",
+      "mode": "planning",
+      "task": "apresentar opcoes de escopo ao usuario e registrar a aprovacao da faixa de MVP",
+      "expect": [{ "path": ".aioson/skills/process/decision-presentation/SKILL.md", "in": "skills" }]
+    },
+    {
+      "name": "hybrid forge reaches its own agent",
+      "agent": "design-hybrid-forge",
+      "mode": "planning",
+      "task": "fuse two parent design skills into one hybrid design skill for this project",
+      "expect": [{ "path": ".aioson/skills/process/design-hybrid-forge/SKILL.md", "in": "skills" }]
+    },
+    {
+      "name": "scope expansion reaches product when the user asks for a complete MVP",
+      "agent": "product",
+      "mode": "planning",
+      "task": "o usuario pediu um mvp completo; expandir escopo operacional do quadro de tarefas",
+      "expect": [{ "path": ".aioson/skills/process/product-scope-expansion/SKILL.md", "in": "skills" }]
+    },
+    {
+      "name": "prompt sharpener reaches an operator session improving an agent prompt",
+      "agent": "deyvin",
+      "mode": "planning",
+      "task": "fazer um prompt audit do agente dev e reduzir prompt bloat sem perder os contratos",
+      "expect": [{ "path": ".aioson/skills/process/prompt-sharpener/SKILL.md", "in": "skills" }]
+    },
+    {
+      "name": "prototype forge reaches the refiner building the briefing prototype",
+      "agent": "refiner",
+      "mode": "planning",
+      "task": "build the clickable prototype for the approved briefing surface map",
+      "paths": [".aioson/briefings/crm/prototype.html"],
+      "expect": [{ "path": ".aioson/skills/process/prototype-forge/SKILL.md", "in": "skills" }]
+    },
+    {
+      "name": "identity extract reaches setup on reference images",
+      "agent": "setup",
+      "mode": "planning",
+      "task": "extrair identidade visual das imagens que o cliente enviou para o identity.md do projeto",
+      "expect": [{ "path": ".aioson/skills/process/reference-identity-extract/SKILL.md", "in": "skills" }]
+    },
+    {
+      "name": "review intelligence reaches sheldon before the gate",
+      "agent": "sheldon",
+      "mode": "planning",
+      "task": "run an independent review of the PRD artifact before the gate handoff",
+      "expect": [{ "path": ".aioson/skills/process/review-intelligence/SKILL.md", "in": "skills" }]
+    },
+    {
+      "name": "secure-tdd reaches dev on an authentication surface",
+      "agent": "dev",
+      "mode": "executing",
+      "task": "implement login with password hashing and session tokens",
+      "paths": ["src/auth/login.ts"],
+      "expect": [{ "path": ".aioson/skills/process/secure-tdd/SKILL.md", "in": "skills" }]
+    },
+    {
+      "name": "secure-tdd reaches dev on a payment path in pt-BR",
+      "agent": "dev",
+      "mode": "executing",
+      "task": "implementar a confirmacao de pagamento com validacao no servidor",
+      "paths": ["src/payments/checkout.ts"],
+      "expect": [{ "path": ".aioson/skills/process/secure-tdd/SKILL.md", "in": "skills" }]
+    },
+    {
+      "name": "expansion audit reaches sheldon on a thin PRD",
+      "agent": "sheldon",
+      "mode": "planning",
+      "task": "auditar expansao do PRD: a superficie rica parece enxuta demais para as capacidades",
+      "expect": [{ "path": ".aioson/skills/process/sheldon-expansion-audit/SKILL.md", "in": "skills" }]
+    },
+    {
+      "name": "squad router reaches the squad agent",
+      "agent": "squad",
+      "mode": "planning",
+      "task": "criar squad de conteudo com executores especializados para o canal de video",
+      "expect": [{ "path": ".aioson/skills/squad/SKILL.md", "in": "skills" }]
+    },
+    {
+      "name": "harness validation reaches dev closing a contract cycle",
+      "agent": "dev",
+      "mode": "executing",
+      "task": "validate the harness contract cycle with the impartial validator before delivery",
+      "expect": [{ "path": ".aioson/skills/static/harness-validate/SKILL.md", "in": "skills" }]
+    },
+    {
+      "name": "interface-design engine reaches ux-ui on visual direction work",
+      "agent": "ux-ui",
+      "mode": "planning",
+      "task": "escolher a direcao visual e o sistema de tokens para a nova landing page do produto",
+      "expect": [{ "path": ".aioson/skills/design/interface-design/SKILL.md", "in": "skills" }]
+    },
+    {
+      "name": "a bounded simple plan pulls no process skills",
+      "agent": "dev",
+      "mode": "executing",
+      "task": "simple plan: ajustar o texto do botao de salvar no formulario",
+      "paths": ["src/ui/SaveButton.tsx"],
+      "absent": [
+        { "path": ".aioson/skills/process/aioson-spec-driven/SKILL.md", "in": "skills" },
+        { "path": ".aioson/skills/process/secure-tdd/SKILL.md", "in": "skills" }
+      ]
+    },
+    {
+      "name": "a changelog note pulls no expansion or prototype skills",
+      "agent": "dev",
+      "mode": "executing",
+      "task": "write the release note for this build in the changelog",
+      "paths": ["CHANGELOG.md"],
+      "absent": [
+        { "path": ".aioson/skills/process/product-scope-expansion/SKILL.md", "in": "skills" },
+        { "path": ".aioson/skills/process/briefing-expansion-scout/SKILL.md", "in": "skills" },
+        { "path": ".aioson/skills/process/prototype-forge/SKILL.md", "in": "skills" }
+      ]
+    },
+    {
+      "name": "the deprecated simplify skill never routes",
+      "agent": "dev",
+      "mode": "executing",
+      "task": "review the tested changes for reuse, quality and efficiency issues",
+      "absent": [{ "path": ".aioson/skills/process/simplify/SKILL.md", "in": "selected" }]
+    },
+    {
+      "name": "secure-tdd stays out of product spec work (agent gate)",
+      "agent": "product",
+      "mode": "planning",
+      "task": "definir o PRD do fluxo de login e pagamento do aplicativo",
+      "absent": [{ "path": ".aioson/skills/process/secure-tdd/SKILL.md", "in": "skills" }]
+    }
+  ]
+}
