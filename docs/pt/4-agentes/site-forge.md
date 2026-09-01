@@ -47,7 +47,7 @@ Além de clonar, ele aprende: cada projeto que usa o `@site-forge` pode registra
 ## Diálogo típico
 
 ```
-Você > @site-forge https://linear.app usando clean-saas-ui
+Você > @site-forge https://linear.app usando dark-console-ui
 
 @site-forge > Modo A — Transform detectado.
               Lendo brains... 3 nodes relevantes carregados (animações, layout SaaS, hover).
@@ -59,7 +59,7 @@ Você > @site-forge https://linear.app usando clean-saas-ui
               - Pricing em cards
               - CTA final
 
-@site-forge > Aplicando clean-saas-ui à estrutura...
+@site-forge > Aplicando dark-console-ui à estrutura...
               Construindo Next.js...
               Projeto criado. Design skill salvo como referência.
               Novo aprendizado registrado em .aioson/brains/site-forge/visual-patterns.brain.json

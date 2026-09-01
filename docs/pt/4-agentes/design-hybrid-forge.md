@@ -10,7 +10,7 @@
 
 ## Para que serve
 
-Nenhum design skill pronto cobre exatamente o que você precisa. O Clean SaaS UI é limpo demais para a sua marca assertiva. O Neo Brutalist é forte demais para os seus clientes corporativos. O `@design-hybrid-forge` funde dois skills primários — respeitando regras de compatibilidade entre pares — e gera um **terceiro skill instalável** com identidade própria, tokens definidos, e previews HTML para aprovação visual.
+Nenhuma design skill forjada sozinha cobre exatamente o que você precisa. Uma é limpa e minimalista demais para a sua marca assertiva; outra é ousada demais para os seus clientes corporativos. O `@design-hybrid-forge` funde dois skills primários — respeitando regras de compatibilidade entre pares — e gera um **terceiro skill instalável** com identidade própria, tokens definidos, e previews HTML para aprovação visual.
 
 O hybrid resultante é local ao seu projeto (em `.aioson/installed-skills/`) por padrão. Você pode promovê-lo ao aioson.com se quiser compartilhar.
 
@@ -37,25 +37,20 @@ O hybrid resultante é local ao seu projeto (em `.aioson/installed-skills/`) por
 ```
 Você > @design-hybrid-forge
 
-@design-hybrid-forge > Skills disponíveis:
-                       - clean-saas-ui
-                       - aurora-command-ui
-                       - cognitive-core-ui
-                       - bold-editorial-ui
-                       - warm-craft-ui
-                       - glassmorphism-ui
-                       - neo-brutalist-ui
-                       + installed-skills/...
+@design-hybrid-forge > Skills forjadas disponíveis no projeto (installed-skills/ + skills/design/,
+                       fora do motor interface-design — ele nunca é um dos pais):
+                       - linear-inspired-ui       (extraída via @site-forge)
+                       - editorial-imprensa-ui    (forjada from-scratch numa sessão anterior)
 
                        Escolha 2 primários para fundir:
-Você > bold-editorial-ui + clean-saas-ui
+Você > linear-inspired-ui + editorial-imprensa-ui
 
 @design-hybrid-forge > Verificando compatibilidade...
                        Par válido. Tensão criativa:
-                       Bold: tipografia grande, hierarquia forte, ausência de neutralidade
-                       Clean: espaço branco, clareza funcional, controle
-                       Substrate winner: Clean (estrutura de layout)
-                       Acento Bold: peso tipográfico e cor de destaque
+                       Editorial: tipografia grande, hierarquia forte, ausência de neutralidade
+                       Linear: espaço branco, clareza funcional, controle
+                       Substrate winner: Linear (estrutura de layout)
+                       Acento Editorial: peso tipográfico e cor de destaque
 
                        Nome sugerido: "editorial-saas-ui"
 Você > aceito

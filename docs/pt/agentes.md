@@ -155,7 +155,7 @@ O `@product` detecta esses arquivos automaticamente e pergunta se deve usá-los 
 - identidade visual inicial, quando houver sinal suficiente
 - `## Specify depth` (projetos SMALL e MEDIUM) — classificação aplicada, profundidade de spec escolhida e lista de ambiguidades que devem ser resolvidas antes que `@analyst` avance
 
-> Se o pedido mencionar explicitamente um command center premium, control tower, tri-rail shell ou estilo AIOS Dashboard, o `@product` deve registrar a skill `premium-command-center-ui` na seção de identidade visual do PRD.
+> Se o pedido mencionar explicitamente um command center premium, control tower ou painel operacional denso, o `@product` deve registrar essa intenção na seção de identidade visual do PRD — a `interface-design` resolve pela direção **Premium Dark Platform** (ou por `identity.md`, quando houver imagens de referência); nunca aponte uma skill fixa de catálogo.
 
 ---
 
@@ -341,7 +341,7 @@ tests/
 - Cria guia de acessibilidade
 - Decide dark/light e direção visual de forma autônoma quando o contexto já for suficiente
 - Só pergunta preferência estética quando a ambiguidade realmente mudar a solução
-- Carrega `premium-command-center-ui` apenas quando houver pedido explícito de interface operacional premium ou quando essa skill já estiver registrada no PRD
+- Aplica a direção Premium Dark Platform da `interface-design` apenas quando houver pedido explícito de interface operacional premium, ou o que já estiver registrado no PRD
 - em brownfield, usa `discovery.md` como memória comprimida do sistema; se esse arquivo ainda não existir e o trabalho depender do comportamento atual da aplicação, o próximo passo correto é `@analyst`
 
 **Como ativar o agente UI/UX:**
@@ -939,8 +939,8 @@ npx @jaimevalasek/aioson scan:project . --folder=src
 
 **Exemplos de uso:**
 ```
-Clone este site com a skill premium-command-center-ui
-Reconstrua https://exemplo.com usando a skill clean-saas-ui
+Clone este site com a skill dark-console-ui
+Reconstrua https://exemplo.com usando a skill minha-marca-ui
 Extraia o design de https://exemplo.com como uma skill
 ```
 

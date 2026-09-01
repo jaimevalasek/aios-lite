@@ -53,7 +53,7 @@ Terms in alphabetical order. Each entry has a **short definition** + **concrete 
 
 **Definition:** procedural memory of an agent — structured knowledge in "nodes" (Zettelkasten style) that the agent loads on demand.
 
-**Example:** `@site-forge` has brains with 14 nodes about how `pt.squarespace.com` structures its pages, used when you ask for a clone.
+**Example:** `@site-forge` has brains with 14 nodes about how `linear.app` structures its pages, used when you ask for a clone.
 
 **Where it lives:** `.aioson/brains/<agent>/`.
 
@@ -127,11 +127,11 @@ All three use Product → Sheldon → Planner → DEV → QA after setup.
 
 ## Design Skill
 
-**Definition:** a skill specialized in a visual system (colors, typography, spacing, components). Can be a native skill or a hybrid created by `@design-hybrid-forge`.
+**Definition:** a skill specialized in a visual system (colors, typography, spacing, components). The template ships exactly one, native — the `interface-design` engine — which resolves visual direction from project signals instead of fixing one look. A hybrid created by `@design-hybrid-forge` combines two skills already forged in the project (never the engine).
 
-**Ready-made examples:** Clean SaaS UI, Aurora Command UI, Cognitive Core UI, Bold Editorial UI, Warm Craft UI, Glassmorphism UI, Neo Brutalist UI.
+**How new ones appear:** `@site-forge` extracts one from a real site's visual; `@design-hybrid-forge` fuses two forged skills into a third hybrid.
 
-**Where to choose:** during `aioson init`, in the wizard, or later with `@setup`/`@ux-ui`. The recommended route is the `interface-design` engine driven by your own **reference images**, extracted once into an `identity.md` the engine applies; the presets remain an explicit alternative.
+**Where to choose:** `interface-design` is always installed; the wizard doesn't ask about design. The recommended route is guiding it with your own **reference images**, extracted once into an `identity.md` the engine applies to everything downstream — `@setup` offers this route with explicit confirmation, and with no images it decides on its own (origin mode).
 
 ---
 
@@ -243,7 +243,7 @@ All three use Product → Sheldon → Planner → DEV → QA after setup.
 
 **Definition:** a pluggable instruction package. Types:
 - **Process skills** — methodologies (e.g., `aioson-spec-driven`)
-- **Design skills** — visual systems (e.g., `clean-saas-ui`)
+- **Design skills** — visual systems (e.g., `interface-design`)
 - **Static skills** — fixed domain knowledge
 - **Dynamic skills** — generate instructions at runtime
 

@@ -38,12 +38,6 @@ O wizard interativo aparece:
    ◉ Development
    ◯ Development + Squads
 
-? Design system? ›
-   ◯ Clean SaaS UI
-   ◯ Aurora Command UI
-   ◯ (mais opções...)
-   ◉ Pular
-
 ? Idioma dos agentes? ›
    ◯ English
    ◉ Português

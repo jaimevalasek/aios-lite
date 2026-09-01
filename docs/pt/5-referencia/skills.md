@@ -37,9 +37,7 @@ Estrutura:
 │   ├── solana-docs.md
 │   └── cardano-docs.md
 ├── design/          ← design systems visuais
-│   ├── cognitive-core-ui/
-│   ├── interface-design/
-│   └── premium-command-center-ui/
+│   └── interface-design/
 └── process/         ← metodologia de fluxo e contratos entre agentes
     └── aioson-spec-driven/
 ```
@@ -153,19 +151,7 @@ Para projetos Web3, skills adicionais são carregadas conforme `web3_networks`:
 
 Skills de design são especiais — apenas **uma** pode estar ativa por projeto, definida pelo campo `design_skill` em `project.context.md`. O agente `@dev` aplica exclusivamente o design system selecionado, sem misturar padrões de outros sistemas.
 
-Skills de design disponíveis (as mesmas oferecidas pelo wizard do `init`/`install`):
-
-| Skill | Para |
-|---|---|
-| `clean-saas-ui` | Mínima e funcional — dashboards e ferramentas |
-| `aurora-command-ui` | Escura e luminosa — command centers e apps |
-| `cognitive-core-ui` | Densa em informação — dados e analytics |
-| `bold-editorial-ui` | Tipografia de alto contraste — sites de conteúdo |
-| `warm-craft-ui` | Tons quentes e orgânicos — consumo e lifestyle |
-| `glassmorphism-ui` | Camadas translúcidas — interfaces imersivas |
-| `neo-brutalist-ui` | Cru e de alto contraste — declarações fortes |
-| `premium-command-center-ui` | Nível enterprise — operação e monitoramento |
-| `interface-design` | Sistema fundacional, de propósito geral |
+O template embarca exatamente uma skill de design — `interface-design` — instalada sempre, independente do perfil escolhido no wizard (o wizard não tem tela de design). Ela não é uma estética fixa para escolher entre várias: é um motor.
 
 A skill `interface-design` é um **motor**: antes de desenhar, ela resolve a autoridade visual em ordem, parando no primeiro acerto — (1) um protótipo aprovado vinculado pelo PRD (`prototype_status: current`), em **modo conformidade**; (2) o registro `identity.md` que o PRD vincula via `identity`/`identity_status`; (3) `.aioson/explorations/{slug}/identity.md` (só em modo exploração, nunca para trabalho canônico); (4) `.aioson/briefings/{slug}/identity.md`; (5) `.aioson/context/identity.md`; (6) a linguagem de componentes já estabelecida no repositório; (7) nenhuma — **modo origem**. Sem nenhum sinal, roda intent-first.
 

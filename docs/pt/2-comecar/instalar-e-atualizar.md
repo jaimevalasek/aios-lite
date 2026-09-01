@@ -46,18 +46,19 @@ O `install` é aditivo. Ele cria `.aioson/` e os arquivos de instrução na raiz
 
 ### O wizard
 
-Os dois comandos abrem um wizard interativo com quatro perguntas:
+Os dois comandos abrem um wizard interativo com três perguntas:
 
 1. **Quais clientes AI ativar** — Claude Code, Codex (OpenAI), OpenCode. Só os arquivos do que você marcar são copiados.
 2. **Modo** — Development, ou Development + Squads.
-3. **Design system** (opcional) — Clean SaaS UI, Aurora Command UI, Cognitive Core UI, Bold Editorial UI, Warm Craft UI, Glassmorphism UI, Neo-Brutalist UI, Premium Command Center UI, Interface Design, ou nenhum.
-4. **Idioma dos agentes** — English, Português (Brasil), Español, Français.
+3. **Idioma dos agentes** — English, Português (Brasil), Español, Français.
+
+Não há pergunta de design: o template embarca uma única design skill — o motor `interface-design` — sempre instalada, guiada depois pelo `@setup` com suas imagens de referência.
 
 ### Flags úteis
 
 | Flag | Vale para | O que faz |
 |---|---|---|
-| `--all` | `init` | Pula o wizard e instala tudo: os três clientes, Development + Squads, todos os design systems |
+| `--all` | `init` | Pula o wizard e instala tudo: os três clientes, Development + Squads |
 | `--no-interactive` | `init`, `install` | Não pergunta nada. Em `install`, usa o perfil salvo; sem perfil salvo, instala tudo e avisa |
 | `--reconfigure` | `install` | Reabre o wizard para adicionar clientes ou ativar Squads depois. Precisa de terminal interativo |
 | `--lang=pt-BR` | `init`, `install`, `update` | Aplica o pack de idioma nos agentes (`en`, `pt-BR`, `es`, `fr`) |

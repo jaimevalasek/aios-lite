@@ -52,9 +52,8 @@ Você > Não
 @setup > Score: 1 + 1 + 0 = 2 → SMALL.
          Sistema visual? Recomendo interface-design guiado pelas suas
          imagens de referência (extraídas uma única vez em identity.md).
-         Ou um preset instalado:
-         [clean-saas-ui · aurora-command-ui · cognitive-core-ui · (outros) · Pular]
-Você > clean-saas-ui
+         Tem imagens de referência para o visual do projeto?
+Você > Ainda não — segue em modo origem por enquanto.
 
 @setup > Idioma de interação? [en · pt-BR · es · fr]
 Você > pt-BR

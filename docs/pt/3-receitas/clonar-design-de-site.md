@@ -32,14 +32,14 @@ Ou: você quer combinar dois estilos. O minimalismo clean de um site com a serie
 
 ## Modo A — Transformar um site clonado com sua estética
 
-Você quer reconstruir a estrutura de um site com um skill visual diferente. Exemplo: clonar a estrutura de documentação do Stripe mas com o estilo Aurora Command UI.
+Você quer reconstruir a estrutura de um site com um design skill que já existe no seu projeto — forjada numa sessão anterior do `@site-forge` ou do `@design-hybrid-forge` (o motor `interface-design` não entra aqui: ele não é uma estética fixa para "aplicar" a uma estrutura clonada). Exemplo: clonar a estrutura de documentação do Stripe mas com um visual escuro que você já extraiu de outro site.
 
 ```
-Você > @site-forge https://stripe.com/docs/api com aurora-command-ui
+Você > @site-forge https://stripe.com/docs/api com dark-console-ui
 
 @site-forge > Modo A — Transform detectado.
               URL: stripe.com/docs/api
-              Skill alvo: aurora-command-ui
+              Skill alvo: dark-console-ui (forjada num projeto anterior)
 
               Fase 1: Extraindo estrutura...
               Seções identificadas: NavSidebar, ContentArea, CodeBlock, APIEndpoint,
@@ -49,7 +49,7 @@ Você > @site-forge https://stripe.com/docs/api com aurora-command-ui
               [site-forge/visual-patterns.brain.json] — 14 nodes carregados
               Nó relevante: "dark-sidebar-patterns" (quality 5) — aplicando
 
-              Fase 3: Aplicando aurora-command-ui à estrutura clonada...
+              Fase 3: Aplicando dark-console-ui à estrutura clonada...
               Gerando: Next.js + Tailwind
               Tokens aplicados: bg-gray-950 (fundo), text-violet-400 (accent),
                                 font-mono (código), border-gray-800 (separadores)
@@ -58,7 +58,7 @@ Você > @site-forge https://stripe.com/docs/api com aurora-command-ui
               Brain atualizado: site-forge/visual-patterns.brain.json
 
 @site-forge > Projeto criado em meu-projeto/
-              Design skill: aurora-command-ui aplicada ✓
+              Design skill: dark-console-ui aplicada ✓
 ```
 
 ---
@@ -110,12 +110,12 @@ Você > Extrair apenas a design skill — não preciso do clone completo
 Você quer 70% do visual do site A e 30% do site B.
 
 ```
-Você > @site-forge https://vercel.com com aurora-command-ui --blend 70
+Você > @site-forge https://vercel.com com dark-console-ui --blend 70
 
 @site-forge > Modo E — Blend detectado.
-              Blendando vercel.com (70%) com aurora-command-ui (30%)...
+              Blendando vercel.com (70%) com dark-console-ui (30%)...
               [extração + combinação de tokens]
-              Skill híbrida criada: vercel-aurora-blend-ui
+              Skill híbrida criada: vercel-console-blend-ui
 ```
 
 ---
@@ -128,19 +128,19 @@ Se você já tem dois skills no projeto e quer uma combinação:
 Você > @design-hybrid-forge
 
 @design-hybrid-forge > Quais são os dois skills "pais"?
-Você > clean-saas-ui e neo-brutalist-ui
+Você > linear-inspired-ui e dark-console-ui
 
-@design-hybrid-forge > Eixo de tensão: minimalismo vs. impacto visual.
+@design-hybrid-forge > Eixo de tensão: minimalismo claro vs. densidade escura.
                         Analisando tokens dos dois...
 
                         Decisões de blend:
-                        - Tipografia: Inter (clean) mas peso 700+ (neo) → tensão no heading
-                        - Cor: paleta neutra (clean) com um accent bold preto/amarelo (neo)
-                        - Bordas: 4px radius (clean) nos cards, 0px (neo) nos botões primários
-                        - Sombra: presente nos cards (clean), ausente nos botões (neo)
+                        - Tipografia: Inter (linear) mas peso 700+ nos headings (console) → tensão no heading
+                        - Cor: base clara neutra (linear) com um accent violeta sobre fundo escuro (console)
+                        - Bordas: 6px radius (linear) nos cards, 0px (console) nos painéis de dados
+                        - Sombra: sutil no hover (linear), ausente (console)
 
-@design-hybrid-forge > Skill híbrida criada: clean-neo-contrast-ui
-                        Salva em .aioson/skills/design/clean-neo-contrast-ui/
+@design-hybrid-forge > Skill híbrida criada: linear-console-contrast-ui
+                        Salva em .aioson/skills/design/linear-console-contrast-ui/
                         Inclui: tokens, instruções de composição, exemplos de componentes.
 ```
 
@@ -166,7 +166,7 @@ Na próxima vez que você clonar um site com características similares (dark si
 │   ├── linear-inspired-ui/        ← novo skill extraído do linear.app
 │   │   ├── system.md              ← tokens, tipografia, componentes
 │   │   └── manifest.json          ← metadados do skill
-│   └── clean-neo-contrast-ui/     ← híbrido gerado
+│   └── linear-console-contrast-ui/  ← híbrido gerado
 └── brains/
     └── site-forge/
         └── visual-patterns.brain.json   ← memória acumulada

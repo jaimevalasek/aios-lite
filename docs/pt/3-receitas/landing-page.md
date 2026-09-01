@@ -46,13 +46,10 @@ No wizard:
 ```
 ? Quais ferramentas AI? › Claude Code
 ? Modo? › Development
-? Design system? › interface-design + imagens de referência
 ? Idioma dos agentes? › pt-BR
 ```
 
-> **Sobre a identidade visual:** a rota recomendada não é escolher um preset — é dar suas **imagens de referência**. A skill `reference-identity-extract` as converte **uma única vez** num `identity.md` de texto, e o motor `interface-design` aplica essa identidade em tudo que vier depois (protótipo e build). É isso que evita a página sair com cara de template.
->
-> Presets continuam disponíveis (Clean SaaS UI, Bold Editorial UI, Aurora Command UI...) como alternativa explícita. Ver [Decisões iniciais](../2-comecar/decisoes-iniciais.md#escolhendo-o-design-system).
+> **Sobre a identidade visual:** o wizard não pergunta por design — o template embarca só o motor `interface-design`, sempre instalado. A rota recomendada não é escolher um preset (não existe mais catálogo) — é dar suas **imagens de referência**. A skill `reference-identity-extract` as converte **uma única vez** num `identity.md` de texto, e o motor `interface-design` aplica essa identidade em tudo que vier depois (protótipo e build). É isso que evita a página sair com cara de template. `@setup` oferece essa rota logo no início, sempre com confirmação explícita. Ver [Decisões iniciais](../2-comecar/decisoes-iniciais.md#escolhendo-o-design-system).
 
 ```bash
 claude .

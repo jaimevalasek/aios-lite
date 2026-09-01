@@ -53,7 +53,7 @@ Termos em ordem alfabética. Cada um tem **definição curta** + **exemplo concr
 
 **Definição:** memória procedural de um agente — conhecimento estruturado em "nodes" (estilo Zettelkasten) que o agente carrega sob demanda.
 
-**Exemplo:** o `@site-forge` tem brains com 14 nodes sobre como o `pt.squarespace.com` estrutura suas páginas, usados quando você pede um clone.
+**Exemplo:** o `@site-forge` tem brains com 14 nodes sobre como o `linear.app` estrutura suas páginas, usados quando você pede um clone.
 
 **Onde fica:** `.aioson/brains/<agente>/`.
 
@@ -124,11 +124,11 @@ Termos em ordem alfabética. Cada um tem **definição curta** + **exemplo concr
 
 ## Design Skill
 
-**Definição:** um skill especializado em um sistema visual (cores, tipografia, espaçamento, componentes). Pode ser um skill nativo ou um híbrido criado pelo `@design-hybrid-forge`.
+**Definição:** um skill especializado em um sistema visual (cores, tipografia, espaçamento, componentes). O template embarca exatamente um, nativo — o motor `interface-design` — que resolve a direção visual a partir de sinais do projeto em vez de fixar uma estética. Um híbrido criado pelo `@design-hybrid-forge` combina duas skills já forjadas no projeto (nunca o motor).
 
-**Exemplos prontos:** Clean SaaS UI, Aurora Command UI, Cognitive Core UI, Bold Editorial UI, Warm Craft UI, Glassmorphism UI, Neo Brutalist UI.
+**Como surgem novas:** `@site-forge` extrai uma do visual de um site real; `@design-hybrid-forge` funde duas skills forjadas num terceiro híbrido.
 
-**Onde escolher:** durante o `aioson init`, no wizard, ou depois com `@setup`/`@ux-ui`. A rota recomendada é o motor `interface-design` guiado pelas suas **imagens de referência**, extraídas uma única vez num `identity.md` que o motor aplica; os presets ficam como alternativa explícita.
+**Onde escolher:** o `interface-design` é sempre instalado; não há pergunta de design no wizard. A rota recomendada é guiá-lo pelas suas **imagens de referência**, extraídas uma única vez num `identity.md` que o motor aplica em tudo que vier depois — `@setup` oferece essa rota com confirmação explícita, e sem imagens ele decide sozinho (modo origem).
 
 ---
 
@@ -273,7 +273,7 @@ Termos em ordem alfabética. Cada um tem **definição curta** + **exemplo concr
 
 **Definição:** um pacote plugável de instrução. Tipos:
 - **Process skills** — metodologias (ex: `aioson-spec-driven`)
-- **Design skills** — sistemas visuais (ex: `clean-saas-ui`)
+- **Design skills** — sistemas visuais (ex: `interface-design`)
 - **Static skills** — conhecimento de domínio fixo
 - **Dynamic skills** — geram instruções em tempo real
 

@@ -59,7 +59,7 @@ Pacotes locais disponíveis para publicação:
   squads/
     legal-compliance   ← 3 agentes: regulator, attorney, auditor
   skills/
-    aurora-command-ui  ← design skill
+    linear-inspired-ui ← design skill (forjada via @site-forge)
     aioson-spec-driven ← process skill
   genomes/
     persona-vc-advisor ← genome 4.0

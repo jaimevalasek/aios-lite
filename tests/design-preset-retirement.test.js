@@ -40,13 +40,18 @@ const { __test__: wizard } = require('../src/install-wizard');
 const ROOT = path.join(__dirname, '..');
 const TEMPLATE = path.join(ROOT, 'template');
 const SKILLS = path.join(TEMPLATE, '.aioson', 'skills');
+const DOCS = path.join(ROOT, 'docs');
 const RETIRED_ID_RE = new RegExp(
   `(?<![\\w-])(${RETIRED_DESIGN_PRESETS.map((id) => id.replace(/[.]/g, '\\.')).join('|')})(?![\\w-])`
 );
 const SCANNED_EXTENSIONS = new Set(['.md', '.json', '.js', '.txt', '.html']);
+// Banner-marked historical archives (docs/pt/_arquivo, template's own
+// .../_archived scaffolding) are exempt — their content is frozen by design.
+const ARCHIVE_DIR_NAMES = new Set(['_arquivo', '_archived']);
 
 function walk(dir, out = []) {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    if (entry.isDirectory() && ARCHIVE_DIR_NAMES.has(entry.name)) continue;
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) walk(full, out);
     else out.push(full);
@@ -94,9 +99,9 @@ test('MANAGED_FILES names the engine (router + every reference) and no retired p
   }
 });
 
-test('no shipped template file names a retired preset (the catalog cannot creep back through docs, skills or brains)', () => {
+test('no shipped template file or published doc names a retired preset (the catalog cannot creep back through skills, brains, or docs)', () => {
   const offenders = [];
-  for (const file of walk(TEMPLATE)) {
+  for (const file of [...walk(TEMPLATE), ...walk(DOCS)]) {
     if (!SCANNED_EXTENSIONS.has(path.extname(file))) continue;
     const content = fs.readFileSync(file, 'utf8');
     const match = RETIRED_ID_RE.exec(content);

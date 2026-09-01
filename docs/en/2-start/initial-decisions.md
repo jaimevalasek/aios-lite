@@ -86,7 +86,7 @@ Classification changes the detail of the PRD and plan, the implementation budget
 | Personal project, but with one heavy external integration | SMALL — request `@architect` only if a concrete boundary decision remains unresolved |
 | Score 1, but I know it will grow | Start MICRO. Can promote later with `@setup` |
 | Score 4, but the team is just me | MEDIUM anyway. Complex rules benefit from deeper PRD, plan, and QA evidence |
-| Score 2, but greenfield and I want careful design | SMALL + activate a design skill in the wizard |
+| Score 2, but greenfield and I want careful design | SMALL + provide reference images for `interface-design` up front |
 
 > **Frequently forgotten truth:** AIOSON fights unnecessary ceremony. If you're unsure between two levels, **choose the smaller one**. Promoting later is easy. Demoting later is painful.
 
@@ -145,24 +145,12 @@ npx @jaimevalasek/aioson squad:scaffold . --slug=compliance --name="Compliance" 
 
 ## Choosing a Design System
 
-> **Recommended route: `interface-design` + your own reference images.** Instead of inheriting a fixed preset's identical look, you provide reference images (identity/brand and, optionally, component structure); the `reference-identity-extract` skill converts them **once** into a text `identity.md` that the `interface-design` engine applies to everything downstream (prototype and build). `@setup` offers this route first — always with explicit confirmation, never auto-selected. The presets below remain available as an alternative.
+> **The route: `interface-design` + your own reference images.** The template ships exactly one design skill — the `interface-design` engine. Instead of inheriting a fixed preset's identical look, you provide reference images (identity/brand and, optionally, component structure); the `reference-identity-extract` skill converts them **once** into a text `identity.md` that the engine applies to everything downstream (prototype and build). `@setup` offers this route — always with explicit confirmation, never auto-selected. Reference images are optional: with none, the engine still runs, deciding on its own (origin mode).
 
-Presets available in the wizard:
-
-| Skill | Style | Use cases |
-|---|---|---|
-| **Clean SaaS UI** | Clean, clear typography, neutral | Panels, dashboards |
-| **Aurora Command UI** | Dark, subtle gradients, central command | Developer tools |
-| **Cognitive Core UI** | Weighted cards, depth via shadows | Information-dense apps |
-| **Bold Editorial UI** | Editorial typography, strong hierarchy | Blogs, content |
-| **Warm Craft UI** | Warm colors, soft texture | Artisan e-commerce |
-| **Glassmorphism UI** | Glass, blur, translucent | Modern premium apps |
-| **Neo Brutalist UI** | Black outlines, strong colors, no shadow | Bold brands |
-
-**Skipping** is a valid option. You can:
-- Choose later with `@ux-ui` — it offers the same two routes (reference images or preset)
+**Skipping** the images is a valid option. You can:
+- Provide them later with `@setup`/`@ux-ui` — same route, always with explicit confirmation
 - Clone a real site's design with `@site-forge`
-- Create a hybrid with `@design-hybrid-forge` (e.g., clean-saas + neo-brutalist)
+- Create a hybrid from two of your own forged skills with `@design-hybrid-forge`
 
 ---
 
@@ -222,7 +210,6 @@ What are you building? Risk level? How many integrations?
 
 Main AI client? Claude Code (recommended to start)
 Squads? Not yet
-Design? Skip or Clean SaaS UI
 Language? English
 
 Done. Run aioson init.

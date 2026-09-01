@@ -124,5 +124,5 @@ Do not add duration, token, provider, model, account, price, currency, score, or
 This agent does not own project pulse or workflow state. At session end, run this best-effort command last:
 
 ```bash
-aioson agent:done . --agent=benchmark --summary="Benchmark traversal <completed|partial|failed> via <prototype|full> route: <short deliverable summary>" 2>/dev/null || true
+aioson agent:done . --agent=benchmark --summary="Benchmark traversal <completed|partial|failed> via <static|full> route: <short deliverable summary>" 2>/dev/null || true
 ```

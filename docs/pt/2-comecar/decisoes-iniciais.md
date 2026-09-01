@@ -85,7 +85,7 @@ Para uma mudança bounded, a rota curta (**Simple Plan**, via `@deyvin`) existe 
 | Projeto pessoal, mas com uma integração externa pesada | SMALL — a integração pede mais detalhe no PRD, plano e QA |
 | Score 1, mas sei que vou crescer | Comece MICRO. Pode promover depois com `@setup` |
 | Score 4, mas time é só você | MEDIUM mesmo. As regras de negócio complexas se beneficiam dos artefatos |
-| Score 2, mas é greenfield e quero design caprichado | SMALL + ative o design skill no wizard |
+| Score 2, mas é greenfield e quero design caprichado | SMALL + forneça imagens de referência para o `interface-design` desde o início |
 
 > **Verdade frequentemente esquecida:** AIOSON luta contra cerimônia desnecessária. Se você está em dúvida entre dois níveis, **escolha o menor**. Promover depois é fácil. Demover depois é doloroso.
 
@@ -144,24 +144,12 @@ npx @jaimevalasek/aioson squad:scaffold compliance
 
 ## Escolhendo o Design System
 
-> **Rota recomendada: `interface-design` + suas imagens de referência.** Em vez de herdar o visual idêntico de um preset fixo, você fornece imagens de referência (identidade/marca e, opcionalmente, estrutura de componentes); a skill `reference-identity-extract` as converte **uma única vez** num `identity.md` de texto que o motor `interface-design` aplica em tudo que vier depois (protótipo e build). O `@setup` oferece essa rota primeiro — sempre com confirmação explícita, nunca auto-seleção. Os presets abaixo continuam disponíveis como alternativa.
+> **A rota: `interface-design` + suas imagens de referência.** O template embarca exatamente uma design skill — o motor `interface-design`. Em vez de herdar o visual idêntico de um preset fixo, você fornece imagens de referência (identidade/marca e, opcionalmente, estrutura de componentes); a skill `reference-identity-extract` as converte **uma única vez** num `identity.md` de texto que o motor aplica em tudo que vier depois (protótipo e build). O `@setup` oferece essa rota — sempre com confirmação explícita, nunca auto-seleção. Imagens são opcionais: sem nenhuma, o motor roda mesmo assim, decidindo sozinho (modo origem).
 
-Presets disponíveis no wizard:
-
-| Skill | Estilo | Casos |
-|---|---|---|
-| **Clean SaaS UI** | Limpo, tipografia clara, neutros | Painéis, dashboards |
-| **Aurora Command UI** | Dark, gradientes sutis, comando central | Tools de desenvolvedor |
-| **Cognitive Core UI** | Cards com peso, depth via sombras | Apps com muita info |
-| **Bold Editorial UI** | Tipografia editorial, hierarquia forte | Blogs, conteúdo |
-| **Warm Craft UI** | Cores quentes, textura suave | E-commerce artesanal |
-| **Glassmorphism UI** | Vidro, blur, translúcido | Apps modernos premium |
-| **Neo Brutalist UI** | Contornos pretos, cores fortes, sem sombra | Marcas marcantes |
-
-**Pular** é uma opção legítima. Você pode:
-- Escolher depois com `@setup` — ele oferece as mesmas duas rotas (imagens de referência ou preset), sempre com confirmação explícita
+**Pular** as imagens é uma opção legítima. Você pode:
+- Fornecer depois com `@setup`/`@ux-ui` — mesma rota, sempre com confirmação explícita
 - Clonar o design de um site real com `@site-forge`
-- Criar um híbrido com `@design-hybrid-forge` (ex: clean-saas + neo-brutalist)
+- Criar um híbrido a partir de duas skills que você já forjou com `@design-hybrid-forge`
 
 ---
 
@@ -221,7 +209,6 @@ Tipo de coisa que você está construindo? Risco? Quantas integrações?
 
 Cliente AI principal? Claude Code (recomendado para começar)
 Squads? Não, por enquanto
-Design? Pular ou Clean SaaS UI
 Idioma? pt-BR
 
 Pronto. Rode aioson init.

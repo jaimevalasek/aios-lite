@@ -38,12 +38,6 @@ The interactive wizard appears:
    ◉ Development
    ◯ Development + Squads
 
-? Design system? ›
-   ◯ Clean SaaS UI
-   ◯ Aurora Command UI
-   ◯ (more options...)
-   ◉ Skip
-
 ? Agent language? ›
    ◉ English
    ◯ Português
