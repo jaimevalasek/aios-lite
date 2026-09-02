@@ -437,11 +437,33 @@ function finishingFloor(register, pole) {
 // to the operator's machine, best-effort, never blocking.
 
 const REGISTRY_VERSION = 1;
-const REGISTRY_CAP = 24;
+// The registry is the operator's memory of DISTINCT projects. Keyed by
+// project+slug, one product with six features used to fill a quarter of the
+// slots and evict the sites the draw most needed to remember — so each
+// project keeps only its latest few surfaces, and the cap counts projects.
+const REGISTRY_CAP = 32;
+const REGISTRY_PER_PROJECT_CAP = 2;
 
 function registryPath() {
   return process.env.AIOSON_DESIGN_REGISTRY
     || path.join(os.homedir(), '.aioson', 'design-fingerprints.json');
+}
+
+/**
+ * A project living under the OS temp root is a fixture, a sandbox, or a
+ * test — never one of the operator's projects. Its fingerprint must not
+ * enter the default registry (it did: six `mkdtemp` fixtures once outranked
+ * every real site as the "closest recent project"). An explicit
+ * `AIOSON_DESIGN_REGISTRY` names a registry the caller owns, so temp
+ * projects may record there.
+ */
+function isEphemeralProjectDir(dir) {
+  const normalize = (value) => path.resolve(String(value)).replace(/\\/g, '/').replace(/\/+$/, '').toLowerCase();
+  const resolved = normalize(dir || '.');
+  const roots = [os.tmpdir(), process.env.TMPDIR, process.env.TEMP, process.env.TMP]
+    .filter((root) => typeof root === 'string' && root.trim().length > 0)
+    .map(normalize);
+  return roots.some((root) => resolved === root || resolved.startsWith(`${root}/`));
 }
 
 function readRegistry() {
@@ -452,20 +474,199 @@ function readRegistry() {
   return { version: REGISTRY_VERSION, entries: [] };
 }
 
-function recordFingerprint(entry) {
+function recordFingerprint(entry, { projectDir = null } = {}) {
   if (!entry || !entry.project || !Number.isFinite(entry.accent_hue)) return false;
+  if (projectDir && !process.env.AIOSON_DESIGN_REGISTRY && isEphemeralProjectDir(projectDir)) return false;
   try {
     const registry = readRegistry();
-    const key = (e) => `${e.project_id || e.project}::${e.slug || ''}`;
-    const entries = registry.entries.filter((e) => key(e) !== key(entry));
+    const projectKey = (e) => String(e.project_id || e.project);
+    const key = (e) => `${projectKey(e)}::${e.slug || ''}`;
+    const entries = registry.entries.filter((e) => e && key(e) !== key(entry));
     entries.unshift({ ...entry, at: new Date().toISOString() });
+    // Newest first, so the per-project cap keeps each project's latest surfaces.
+    const perProject = new Map();
+    const kept = entries.filter((e) => {
+      const seen = (perProject.get(projectKey(e)) || 0) + 1;
+      perProject.set(projectKey(e), seen);
+      return seen <= REGISTRY_PER_PROJECT_CAP;
+    });
     const file = registryPath();
     fs.mkdirSync(path.dirname(file), { recursive: true });
-    fs.writeFileSync(file, `${JSON.stringify({ version: REGISTRY_VERSION, entries: entries.slice(0, REGISTRY_CAP) }, null, 2)}\n`);
+    fs.writeFileSync(file, `${JSON.stringify({ version: REGISTRY_VERSION, entries: kept.slice(0, REGISTRY_CAP) }, null, 2)}\n`);
     return true;
   } catch {
     return false;
   }
+}
+
+/** Where each recent project's palette came from — the honest portfolio stat. */
+function originCounts(entries) {
+  const counts = { seed: 0, identity: 0, prior: 0, unrecorded: 0 };
+  const seenProjects = new Set();
+  for (const entry of entries || []) {
+    if (!entry) continue;
+    const key = String(entry.project_id || entry.project);
+    if (seenProjects.has(key)) continue;
+    seenProjects.add(key);
+    const origin = String(entry.origin || '').toLowerCase();
+    if (origin === 'seed' || origin === 'identity' || origin === 'prior') counts[origin] += 1;
+    else counts.unrecorded += 1;
+  }
+  return counts;
+}
+
+// ─── recorded draws and palette provenance ──────────────────────────────────
+// The draw used to be a sentence in a skill: the model ran it, or did not,
+// and nothing could tell. Now `design:seed` records what it drew next to the
+// feature, and `verify:artifact --kind=visual` reads the record back to say
+// where the BUILT palette came from: the draw, an identity, or the prior.
+
+const SEED_RECORD_VERSION = 1;
+const SEED_CONSUMED_DELTA_DEG = 30;
+const SEED_LABEL_RE = /\b(mono|analogous|complementary|split-complementary|triadic|duo-accent|color-block)-(\d{1,3})\b/gi;
+
+function seedRecordPath(targetDir, slug = null) {
+  const root = path.resolve(String(targetDir || '.'));
+  return slug
+    ? path.join(root, '.aioson', 'context', 'features', String(slug), 'design-seed.json')
+    : path.join(root, '.aioson', 'context', 'design-seed.json');
+}
+
+function readSeedRecord(targetDir, slug = null) {
+  const candidates = slug ? [seedRecordPath(targetDir, slug), seedRecordPath(targetDir)] : [seedRecordPath(targetDir)];
+  for (const file of candidates) {
+    try {
+      const parsed = JSON.parse(fs.readFileSync(file, 'utf8'));
+      if (parsed && Array.isArray(parsed.candidates)) return { ...parsed, path: file };
+    } catch { /* absent or unreadable */ }
+  }
+  return null;
+}
+
+/**
+ * Persist a draw next to the feature (or at project scope). A re-draw
+ * replaces the record and keeps the previous labels as history, so a rebuild
+ * that rolled `--seed=N+1` stays traceable.
+ */
+function writeSeedRecord(targetDir, slug, payload) {
+  const root = path.resolve(String(targetDir || '.'));
+  if (!fs.existsSync(path.join(root, '.aioson'))) return null;
+  const file = seedRecordPath(root, slug);
+  const previous = (() => {
+    try {
+      const parsed = JSON.parse(fs.readFileSync(file, 'utf8'));
+      return parsed && Array.isArray(parsed.candidates) ? parsed : null;
+    } catch { return null; }
+  })();
+  const history = [
+    ...(previous ? [{ basis: previous.basis, seed: previous.seed, drawn_at: previous.drawn_at, labels: previous.candidates.map((c) => c.label) }] : []),
+    ...((previous && Array.isArray(previous.history)) ? previous.history : [])
+  ].slice(0, 6);
+  const record = {
+    version: SEED_RECORD_VERSION,
+    generator: payload.generator,
+    project: payload.project,
+    project_id: payload.project_id,
+    slug: slug || null,
+    register: payload.register || null,
+    pole: payload.pole || null,
+    seed: payload.seed,
+    basis: payload.basis,
+    identity: payload.identity ? payload.identity.path : null,
+    drawn_at: new Date().toISOString(),
+    candidates: payload.candidates.map((c) => ({
+      label: c.label,
+      register: c.register,
+      pole: c.pole,
+      scheme: c.scheme,
+      base_hue: c.base_hue,
+      accent_hue: c.accent_hue,
+      display: c.pairing && c.pairing.display,
+      ui: c.pairing && c.pairing.ui,
+      hero: c.composition && c.composition.hero,
+      material: c.composition && c.composition.material
+    })),
+    history
+  };
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(file, `${JSON.stringify(record, null, 2)}\n`);
+  return file;
+}
+
+/** Seed labels a manifest names in prose (`analogous-336`) — the legacy record. */
+function seedLabelsFromText(text) {
+  const labels = [];
+  for (const match of String(text || '').matchAll(SEED_LABEL_RE)) {
+    const label = `${match[1].toLowerCase()}-${Number(match[2]) % 360}`;
+    if (!labels.includes(label)) labels.push(label);
+  }
+  return labels;
+}
+
+/**
+ * The accent hue windows a labelled draw can legitimately produce — the same
+ * arithmetic `accentHueFor` uses, widened by a refinement tolerance. A label
+ * names the BASE hue; the accent the eye sees depends on the scheme.
+ */
+function accentWindowsForLabel(label, tolerance = 12) {
+  const match = /^(mono|analogous|complementary|split-complementary|triadic|duo-accent|color-block)-(\d{1,3})$/i.exec(String(label || '').trim());
+  if (!match) return [];
+  const base = Number(match[2]) % 360;
+  const span = (lo, hi) => [lo - tolerance, hi + tolerance];
+  switch (match[1].toLowerCase()) {
+    case 'mono': return [span(base - 8, base + 8)];
+    case 'analogous': return [span(base + 26, base + 42), span(base - 42, base - 26)];
+    case 'complementary': return [span(base + 168, base + 192)];
+    case 'split-complementary': return [span(base + 142, base + 158), span(base + 202, base + 218)];
+    case 'triadic': return [span(base + 112, base + 128), span(base + 232, base + 248)];
+    case 'duo-accent': return [span(base + 150, base + 210)];
+    case 'color-block': return [span(base, base)];
+    default: return [];
+  }
+}
+
+function hueInWindow(hue, [lo, hi]) {
+  const norm = (value) => ((value % 360) + 360) % 360;
+  const h = norm(hue);
+  const start = norm(lo);
+  const width = hi - lo;
+  return width >= 360 || norm(h - start) <= width;
+}
+
+/**
+ * Where did the built palette come from? `identity` when an identity record
+ * governs the surface; `seed` when the measured accent sits inside a drawn
+ * candidate (a recorded draw's accent within 30°, or the hue window a
+ * manifest-named label allows); `prior` otherwise — with `reason`
+ * `no_draw` (nothing was ever drawn) or `draw_ignored` (drawn, then reverted).
+ */
+function classifyPaletteOrigin({ accentHue, groundPole = null, identity = false, seed = null } = {}) {
+  if (identity) return { origin: 'identity', candidate: null, delta_deg: null, reason: 'identity_record' };
+  const candidates = seed && Array.isArray(seed.candidates) ? seed.candidates.filter(Boolean) : [];
+  if (candidates.length === 0 || !Number.isFinite(accentHue)) {
+    return { origin: 'prior', candidate: null, delta_deg: null, reason: 'no_draw' };
+  }
+  let best = null;
+  for (const candidate of candidates) {
+    let delta = null;
+    let consumed = false;
+    if (Number.isFinite(candidate.accent_hue)) {
+      delta = Math.round(hueDeltaDeg(accentHue, candidate.accent_hue));
+      consumed = delta <= SEED_CONSUMED_DELTA_DEG;
+    } else if (candidate.label) {
+      const windows = accentWindowsForLabel(candidate.label);
+      consumed = windows.some((window) => hueInWindow(accentHue, window));
+      delta = consumed ? 0 : null;
+    }
+    const entry = {
+      candidate: candidate.label || null,
+      delta_deg: delta,
+      pole_match: groundPole && candidate.pole ? candidate.pole === groundPole : null
+    };
+    if (consumed) return { origin: 'seed', reason: 'draw_consumed', ...entry };
+    if (!best || (delta !== null && (best.delta_deg === null || delta < best.delta_deg))) best = entry;
+  }
+  return { origin: 'prior', reason: 'draw_ignored', ...(best || { candidate: null, delta_deg: null, pole_match: null }) };
 }
 
 /**
@@ -515,6 +716,17 @@ module.exports = {
   recordFingerprint,
   findRepetition,
   fingerprintMatchReason,
+  isEphemeralProjectDir,
+  originCounts,
+  seedRecordPath,
+  readSeedRecord,
+  writeSeedRecord,
+  seedLabelsFromText,
+  accentWindowsForLabel,
+  classifyPaletteOrigin,
+  REGISTRY_CAP,
+  REGISTRY_PER_PROJECT_CAP,
+  SEED_CONSUMED_DELTA_DEG,
   fnv1a,
   mulberry32,
   projectFingerprintId,

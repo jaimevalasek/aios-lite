@@ -21,11 +21,13 @@ const {
   projectFingerprintId,
   readRegistry,
   registryPath,
+  writeSeedRecord,
+  originCounts,
   REGISTERS,
   POLES
 } = require('../lib/design-seed');
 
-const VERSION = '1.1.0';
+const VERSION = '1.2.0';
 const GENERATOR = `aioson design:seed@${VERSION}`;
 
 /**
@@ -110,6 +112,7 @@ async function runDesignSeed({ args, options = {}, logger }) {
   const registry = readRegistry();
   const avoid = registry.entries.filter((entry) => entry && (entry.project_id ? entry.project_id !== projectId : entry.project !== project));
   const result = generateSeedCandidates({ project: projectId, slug: slug || project, register, count, seed, avoid, pole });
+  const origins = originCounts(avoid);
 
   const payload = {
     generator: GENERATOR,
@@ -122,9 +125,24 @@ async function runDesignSeed({ args, options = {}, logger }) {
     identity: identity ? { ...identity, applied: { pole: Boolean(identity.pole && !poleOption), register: Boolean(identity.register && !registerOption) } } : null,
     seed,
     basis: result.basis,
-    registry: { path: registryPath(), entries: registry.entries.length, avoided: avoid.length },
-    candidates: result.candidates
+    registry: { path: registryPath(), entries: registry.entries.length, avoided: avoid.length, origins },
+    candidates: result.candidates,
+    recorded: null
   };
+
+  // The draw is a fact the gate can read back, not a sentence the model
+  // remembers: recorded next to the feature so `verify:artifact --kind=visual`
+  // can say whether the built palette came from it. `--no-persist` keeps a
+  // diagnostic run from writing into the project.
+  const persist = !(options['no-persist'] || options.noPersist);
+  if (persist) {
+    try {
+      const file = writeSeedRecord(targetDir, slug, payload);
+      payload.recorded = file ? path.relative(targetDir, file).split(path.sep).join('/') : null;
+    } catch {
+      payload.recorded = null;
+    }
+  }
 
   if (options.json) return payload;
 
@@ -135,6 +153,12 @@ async function runDesignSeed({ args, options = {}, logger }) {
   logger.log(avoid.length > 0
     ? `  diversified against ${avoid.length} recent project fingerprint(s) from ${registryPath()}${result.pole ? ' (hue and pairing only — the ground pole is the owner\'s)' : ''}`
     : '  fingerprint registry is empty — first project draws free');
+  if (avoid.length > 0) {
+    logger.log(`  where those palettes came from: seed ${origins.seed} · identity ${origins.identity} · prior ${origins.prior} · unrecorded ${origins.unrecorded} (distinct projects)`);
+  }
+  logger.log(payload.recorded
+    ? `  recorded at ${payload.recorded} — kind=visual reads it back as palette.origin`
+    : (persist ? '  not recorded (no .aioson/ here) — kind=visual will read the manifest seed label instead' : '  not recorded (--no-persist)'));
   logger.log('');
   for (const c of result.candidates) {
     logger.log(`► ${c.label} · ${c.register} · ${c.pole} ground · ${c.scheme}`);

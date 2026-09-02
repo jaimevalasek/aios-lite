@@ -1284,6 +1284,11 @@ const ADAPTERS = {
         const referencesLine = manifest.match(/^references:\s*(.+)$/mi);
         const referencesAnswer = referencesLine ? referencesLine[1].trim().replace(/^["']|["']$/g, '').toLowerCase() : null;
         metrics.manifest_references = referencesAnswer;
+        // A seed label the manifest names in prose (`analogous-336`) is the
+        // legacy draw record — provenance checks read it when no
+        // design-seed.json was written next to the feature.
+        const { seedLabelsFromText } = require('../lib/design-seed');
+        metrics.manifest_seed_labels = seedLabelsFromText(body);
         const brandSurface = ['brand', 'mixed'].includes(String(metrics.surface_mode && metrics.surface_mode.mode || '').toLowerCase());
         if (intentFirst && brandSurface && !referencesAnswer) {
           warnings.push('references_unasked: intent-first build (`identity: none`) on a brand surface with no record of the owner\'s answer about references — ask once (screenshots, capture folders, site URLs; and two to five anti-references) and record `references: extracted | declined | unavailable` in the manifest frontmatter; references given → reference-identity-extract, whose identity outranks origination and fixes the seed\'s ground pole');
@@ -1359,7 +1364,51 @@ const ADAPTERS = {
     try {
       const pal = metrics.palette;
       if (pal && pal.accent_hue != null && pal.ground && metrics.craft && metrics.craft.measured) {
-        const { readRegistry, recordFingerprint, findRepetition, projectFingerprintId } = require('../lib/design-seed');
+        const {
+          readRegistry, recordFingerprint, findRepetition, projectFingerprintId,
+          readSeedRecord, classifyPaletteOrigin, isEphemeralProjectDir
+        } = require('../lib/design-seed');
+        // ── palette provenance ────────────────────────────────────────────
+        // Where did this palette come from? The draw was a sentence in a
+        // skill and nothing could tell whether it ran; four product UIs built
+        // on bare repositories landed in one 75° band of the wheel with every
+        // gate green. Now the recorded draw (or the manifest's seed label) and
+        // the identity record are read back, and the surface says `seed`,
+        // `identity`, or `prior` — the corner the model picks by itself.
+        const provenanceSlug = ctx.slug || ctx.conformance || null;
+        const identityFiles = [
+          provenanceSlug ? path.resolve(ctx.targetDir, '.aioson', 'briefings', provenanceSlug, 'identity.md') : null,
+          path.resolve(ctx.targetDir, '.aioson', 'context', 'identity.md')
+        ].filter(Boolean);
+        const manifestIdentity = metrics.manifest_identity && !/^(none|null|~)$/i.test(String(metrics.manifest_identity));
+        const identityPresent = Boolean(manifestIdentity) || identityFiles.some((file) => fs.existsSync(file));
+        const seedRecord = readSeedRecord(ctx.targetDir, provenanceSlug);
+        const manifestLabels = Array.isArray(metrics.manifest_seed_labels) ? metrics.manifest_seed_labels : [];
+        const seedEvidence = seedRecord
+          ? { source: 'record', path: path.relative(ctx.targetDir, seedRecord.path).split(path.sep).join('/'), candidates: seedRecord.candidates }
+          : (manifestLabels.length > 0 ? { source: 'manifest', path: null, candidates: manifestLabels.map((label) => ({ label })) } : null);
+        const origin = classifyPaletteOrigin({ accentHue: pal.accent_hue, groundPole: pal.ground.pole, identity: identityPresent, seed: seedEvidence });
+        pal.origin = origin.origin;
+        pal.provenance = {
+          reason: origin.reason,
+          draw: seedEvidence ? { source: seedEvidence.source, path: seedEvidence.path, labels: seedEvidence.candidates.map((c) => c.label).filter(Boolean) } : null,
+          closest_candidate: origin.candidate || null,
+          delta_deg: origin.delta_deg
+        };
+        const registryEntries = readRegistry().entries;
+        const projectId = projectFingerprintId(ctx.targetDir);
+        const firstMeasuredSurface = !registryEntries.some((entry) => entry && (entry.project_id ? entry.project_id === projectId : entry.project === path.basename(path.resolve(ctx.targetDir))));
+        // Conformance runs transfer an approved prototype's palette; its
+        // origin was judged when the prototype was measured. A dir/file run
+        // on a project the registry already knows is not a cold start either.
+        if (origin.origin === 'prior' && !ctx.conformance && (ctx.slug || firstMeasuredSurface)) {
+          if (origin.reason === 'no_draw') {
+            warnings.push(`origination without a draw: no identity record and no recorded \`design:seed\` draw for this surface (${provenanceSlug ? `.aioson/context/features/${provenanceSlug}/design-seed.json absent, no seed label in the manifest` : '.aioson/context/design-seed.json absent'}) — the palette (accent ~${pal.accent_hue}° on a ${pal.ground.pole} ground) came from the model's prior, the corner every project lands on; run \`aioson design:seed . --register=<register> --slug=<feature> --json\` and build FROM one candidate, or extract the owner's identity (reference-identity-extract), or persist the established system as .aioson/context/identity.md (scope brand, source intent)`);
+          } else {
+            const labels = pal.provenance.draw ? pal.provenance.draw.labels.join(', ') : '';
+            warnings.push(`draw ignored: the measured accent ~${pal.accent_hue}° on a ${pal.ground.pole} ground matches none of the drawn candidates (${labels}${origin.delta_deg !== null ? `; closest ${origin.candidate} at Δ${origin.delta_deg}°` : ''}) — the draw exists to move the starting point, and reverting to a favorite after drawing recreates the sameness it prevents; build FROM a candidate, re-draw with \`--seed=N+1\`, or record in the manifest why this hue family is the owner's`);
+          }
+        }
         const current = {
           project: path.basename(path.resolve(ctx.targetDir)),
           project_id: projectFingerprintId(ctx.targetDir),
@@ -1375,9 +1424,10 @@ const ADAPTERS = {
           motion_signature: metrics.motion && Array.isArray(metrics.motion.signature_kinds)
             ? metrics.motion.signature_kinds.slice().sort().join('+')
             : '',
+          origin: origin.origin,
           source: 'measured'
         };
-        const repetition = findRepetition(current, readRegistry().entries);
+        const repetition = findRepetition(current, registryEntries);
         if (repetition) {
           const face = repetition.same_face ? ', same display face' : '';
           warnings.push(`cross-project palette repetition / visual fingerprint: accent hue ~${pal.accent_hue}° on a ${pal.ground.pole} ground resembles recent project "${repetition.entry.project}" (Δ${repetition.delta}°, ${repetition.reason}${face}) — palette, type, material and motion fingerprints are compared so sameness cannot hide behind one changed color; draw a diversified start with \`aioson design:seed\` (or extract an identity from the owner's references), or record why these products genuinely share the family`);
@@ -1385,8 +1435,11 @@ const ADAPTERS = {
         }
         // A diagnostic run (`--no-persist`) compares but never records: a
         // measurement must not rewrite the operator's registry as a side
-        // effect of looking.
-        metrics.fingerprint_recorded = ctx.persist !== false && recordFingerprint(current);
+        // effect of looking. A project under the OS temp root never records
+        // into the default registry — fixtures are not the operator's work.
+        const ephemeral = !process.env.AIOSON_DESIGN_REGISTRY && isEphemeralProjectDir(ctx.targetDir);
+        metrics.fingerprint_recorded = ctx.persist !== false && !ephemeral && recordFingerprint(current, { projectDir: ctx.targetDir });
+        if (ephemeral) metrics.fingerprint_skipped = 'ephemeral_project_dir';
       }
     } catch { /* fingerprinting is advisory — a broken registry never blocks the gate */ }
 

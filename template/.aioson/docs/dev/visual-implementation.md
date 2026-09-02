@@ -36,6 +36,8 @@ Resolve from the PRD binding, in this order:
 
 Do not replace missing visual direction with a generic layout. A genuinely unresolved visual decision is a product question for `@product`, or a prototype gap for `@refiner`; never invent a second visual system to fill it.
 
+When none of the four resolves — a bare repository, no prototype, no identity record — the first screen is a **cold start**, and the palette a model picks unprompted is the same one in every project (measured: four product UIs landed in one 75° band of the wheel with every gate green). Run `aioson design:seed . --register=<register> --slug=<feature> --json` and build FROM one candidate, exactly as the design skill's origination mode does. The draw is recorded next to the feature, and `kind=visual` reads it back as `palette.origin` — `seed`, `identity`, or `prior`; `origination without a draw` and `draw ignored` name the two ways the prior wins. Once the system is inspected and approved, persist it as `.aioson/context/identity.md` (scope `brand`, source `intent`) so later features inherit a record instead of re-rolling.
+
 When an approved prototype exists, the design skill runs in **conformance mode**: transfer the approved direction, do not re-decide it. A deviation must already be recorded in the PRD as an approved deviation — never introduced silently as an improvement.
 
 ## 3. Run the replaceability test
