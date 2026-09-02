@@ -14,10 +14,11 @@ The token specs below are starting math, not a signature. In origination mode pa
 *For: dashboards, admin panels, developer tools, power-user interfaces.*
 
 ```
-Foundation : Cool slate (borders-only depth)
+Foundation : Cool-tinted neutral ground (borders-only depth)
 Spacing    : 4px base — scale: 4, 8, 12, 16, 24, 32
-Colors     : foreground=slate-900, secondary=slate-600, muted=slate-400,
-             faint=slate-200, border=rgba(0,0,0,0.08), accent=blue-600
+Colors     : foreground=ink, secondary=muted, faint=ink at 15% — the seed's
+             contrast-solved roles; border=ink at 8% alpha; accent=the drawn or
+             identity accent with one functional job (never a printed default)
 Radius     : 4px / 6px / 8px  (sharp, technical)
 Typography : system-ui, 11–18px, weights 400/500/600
              monospace: SF Mono, Consolas (for data/code)
@@ -38,15 +39,15 @@ Rationale  : borders-only maximizes density; compact sizing serves power users.
 *For: consumer apps, collaborative tools, onboarding flows, customer-facing products.*
 
 ```
-Foundation : Warm stone (subtle shadows)
+Foundation : Warm-tinted ground (subtle shadows)
 Spacing    : 4px base — scale: 8, 12, 16, 24, 32, 48 (generous)
-Colors     : foreground=stone-900, secondary=stone-600, accent=orange-500,
-             surface=white on stone-50
+Colors     : foreground=ink, secondary=muted on a warm-tinted ground; surface=one
+             tonal step above the ground; accent=the drawn or identity accent
 Radius     : 8px / 12px / 16px  (rounded, friendly)
 Typography : one delivered warm grotesque (e.g., Familjen Grotesk), 13–24px, weights 400/500/600
 Components :
   Button   → 40px height, 12px/20px padding, 8px radius
-  Card     → 20px padding, 12px radius, white on stone-50
+  Card     → 20px padding, 12px radius, surface one step above the warm ground
   Input    → 44px height, 12px/16px padding, 1.5px faint border
 Rationale  : subtle shadows add approachable depth; generous spacing enables
              focused tasks; warm tones feel human and inviting.
@@ -61,8 +62,9 @@ Rationale  : subtle shadows add approachable depth; generous spacing enables
 ```
 Foundation : Cool mineral (restrained layers)
 Spacing    : 4px base — scale: 4, 8, 12, 16, 24, 32
-Colors     : foreground=slate-950, secondary=slate-700, muted=slate-500,
-             surface=white, border=rgba(15,23,42,0.10), accent=blue-700
+Colors     : foreground=ink, secondary=muted (the seed's roles), surface=the
+             ground's lightest step, border=ink at 10% alpha; accent=the drawn
+             or identity accent at firm, low chroma
 Radius     : 8px / 10px / 12px  (firm, not playful)
 Typography : Public Sans or Hanken Grotesk, 12–20px, weights 400/500/600
 Components :
@@ -82,9 +84,10 @@ Rationale  : trust comes from control, not decoration; a restrained palette and
 ```
 Foundation : Graphite layers (borders-first)
 Spacing    : 4px base — scale: 4, 8, 12, 16, 24, 32
-Colors     : base=#0b1015, surface=#10161d, elevated=#151c24,
-             foreground=#f3f7fb, secondary=#b7c2cf, muted=#7f8b99,
-             border=rgba(255,255,255,0.08), accent=desaturated blue
+Colors     : base=the drawn dark ground, surface=+0.035 L, elevated=+0.07 L
+             (three tonal steps at the ground's own hue, never flat gray);
+             foreground/secondary/muted=the seed's light ink roles;
+             border=light ink at 8% alpha; accent=the drawn accent, chroma restrained
 Radius     : 12px / 14px / 16px  (premium, controlled)
 Typography : Manrope, Schibsted Grotesk, or Archivo, 12–22px, weights 400/500/600
 Components :
@@ -104,8 +107,8 @@ Rationale  : premium dark works when contrast is controlled, surfaces are few,
 ```
 Foundation : Near-black stage (light-based depth — scrims, not borders)
 Spacing    : 8px base — scene rhythm: 8, 16, 24, 40, 64, 96
-Colors     : base=#05070a, foreground=#f5f7fa, secondary=rgba(245,247,250,.72),
-             scrim=linear-gradient(transparent → rgba(5,7,10,.92)),
+Colors     : base=near-black at the drawn ground hue, foreground=the seed's light ink,
+             secondary=foreground at 72%, scrim=linear-gradient(transparent → base at 92%),
              accent sampled from the artwork, one only
 Radius     : 0 for frames, 8px/16px for controls (frames sharp, controls soft)
 Typography : display face at true display sizes (48–120px, tight leading) over media;

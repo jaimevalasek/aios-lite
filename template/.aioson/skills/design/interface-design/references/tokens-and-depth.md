@@ -17,11 +17,13 @@ Before building any screen or component family, write a short checkpoint that lo
 - **Typography anchor**
 - **Motion posture**
 
+The faces, hues, and surface values in a checkpoint come from the drawn candidate or the identity record — never from this file. The examples below are shapes, not values to copy.
+
 Example (Sophistication & Trust):
-> Depth: borders-only • Surfaces: base / surface / elevated • Borders: rgba(15,23,42,0.08) • Spacing: 8px • Radius: 10/12 • Controls: 38px • Type: IBM Plex Sans 14/16/24 • Motion: 120ms ease-out
+> Depth: borders-only • Surfaces: base / surface / elevated (tonal steps from the drawn ground) • Borders: ink at 8% alpha • Spacing: 8px • Radius: 10/12 • Controls: 38px • Type: the drawn UI face 14/16/24 • Motion: 120ms ease-out
 
 Example (Premium Dark Platform):
-> Depth: borders-first • Surfaces: #0b1015 / #10161d / #151c24 • Borders: rgba(255,255,255,0.08) • Spacing: 8px • Radius: 12/14 • Controls: 40px • Type: Geist 14/16/28 • Motion: 140ms ease-out
+> Depth: borders-first • Surfaces: drawn dark ground / +0.035 L / +0.07 L • Borders: light ink at 8% alpha • Spacing: 8px • Radius: 12/14 • Controls: 40px • Type: the drawn UI face 14/16/28 • Motion: 140ms ease-out
 
 ---
 
@@ -120,32 +122,34 @@ Settings pages, admin panels, config screens, and entity managers use a **compac
 
 ### Decision checkpoint for operational density
 
-> Depth: borders-first • Surfaces: 3-level (page / card / elevated) • Spacing base: 4px • Controls: 32px • Card padding: 16px outer / 12px nested • Type: xs-base range, text-base max for card headings • Radius: 22px outer / 18px nested / 14px deep
+> Depth: borders-first • Surfaces: 3-level (page / card / elevated) • Spacing base: 4px • Controls: 32px • Card padding: 16px outer / 12px nested • Type: 11px floor to 16px, card headings capped at 16px • Radius: the system's three-step ladder, each nested level one step tighter
+
+The radius ladder, the faces, and the hues are the product's own (drawn or extracted); a fixed set of values printed here would make every admin panel the same admin panel.
 
 ### Card padding — 3-level scale
 
 | Level | Context | Padding | Radius |
 |---|---|---|---|
-| L1 | top-level section card | `16px` | `22px` |
-| L2 | card nested inside L1 | `12px` | `18px` |
-| L3 | inset block, disclosure body | `10px` | `14px` |
+| L1 | top-level section card | `16px` | `--radius-lg` |
+| L2 | card nested inside L1 | `12px` | `--radius-md` |
+| L3 | inset block, disclosure body | `10px` | `--radius-sm` |
 
 Section gap: `12px` — not 16px or 24px.
 
 ### Card headings
 
-- Section eyebrow: `0.68rem` uppercase mono, `tracking: 0.28em`
-- Section title: `text-base` (15–16px), `font-weight: 600` — **never `text-xl` or `text-2xl` inside a card**
-- Sub-info (path, ID): `font-mono text-[0.62rem]` single truncated line below title — no card for it
+- Section title: 15–16px, `font-weight: 600` — **never a display size inside a card**
+- No kicker or eyebrow label above the title — the title carries its own weight; `kicker above heading` is a measured generation tell with no earning-back, delete the label
+- Sub-info (path, ID, count): one truncated mono line at the 11px floor **below** the title — no card for it; text under 11px is another measured tell
 - **No verbose description paragraphs** in admin cards — remove them or collapse to `<details>`
 
 ### Form controls
 
 ```
-Label  : 10–11px  margin-bottom: 2px
-Input  : px-3 py-2  (height ~32px)  text-xs  radius: 10–12px
+Label  : 11px text · margin-bottom 2px
+Input  : ~32px tall · 12px/8px padding · 13px text · radius --radius-sm
 Select : same
-Button : px-3 py-2  text-xs  radius: 10–12px
+Button : 12px/8px padding · 13px text · radius --radius-sm
 ```
 
 The default 40px `min-height` rule in `## Forms` applies to consumer/public-facing forms. Admin/operational forms use 32px controls. Reduce only in authenticated tool contexts — never on public-facing login or onboarding.
@@ -153,12 +157,12 @@ The default 40px `min-height` rule in `## Forms` applies to consumer/public-faci
 ### List rows
 
 ```
-Row     : py-2 (8px)  divide-y
-Gap     : gap-2.5
-Name    : text-xs font-medium  — not text-sm
-Model   : font-mono text-[0.65rem]  truncate
-Badges  : px-2 py-0.5 text-[0.6rem]  — not px-3 py-1
-Edit btn: px-2.5 py-1 text-[0.65rem]
+Row     : 8px vertical padding · divider between rows
+Gap     : 10px
+Name    : 13px text · weight 500 — not 14px
+Meta    : mono 11px text · truncated
+Badges  : 8px/2px padding · 11px text — not 12px/4px
+Edit btn: 10px/4px padding · 11px text
 ```
 
 ### Entity grids (same-type objects: projects, agents, providers)
@@ -167,18 +171,18 @@ Never stack same-type entities full-width. Use:
 ```css
 grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
 gap: 12px;
-/* Entity card: rounded-[18px] p-3 */
+/* Entity card: radius --radius-md, padding 12px */
 ```
 
 ### Add/Edit → Modal, not accordion
 
 Inline form expansion (accordion, RevealPanel) inside entity cards creates visual clutter and unpredictable layout shifts. Use a modal:
-- `max-width: 448px`, centered, backdrop `bg-black/50 backdrop-blur-sm`
+- `max-width: 448px`, centered, backdrop = ink at 50% with a light blur
 - Single "+ Add" button outside the grid → opens modal
 - "Edit" button on each card → same modal pre-filled
 
 ### Disclosure for secondary tools
 
 Sync assistants, cloud connect, advanced config, and other secondary actions go behind `<details>`:
-- Summary row: `flex items-center justify-between px-3 py-2.5` — label + status badge on left, action button on right
+- Summary row: a flex row, 12px/10px padding — label + status badge on left, action button on right
 - Never show secondary tools open by default in an already-dense panel
