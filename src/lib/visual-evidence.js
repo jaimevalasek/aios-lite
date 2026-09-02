@@ -220,6 +220,12 @@ function summarizeVisualEvidence(report) {
   if (m.palette && m.palette.accent_hue != null && m.palette.ground) {
     parts.push(`accent ~${m.palette.accent_hue}° on ${m.palette.ground.pole}`);
   }
+  // The graded bar the human gate reads: weight on a brand surface,
+  // precision on an operate/read surface — one of them is always the axis.
+  if (m.craft && m.craft.measured) {
+    if (m.craft.weight && m.craft.weight.scored && Number.isFinite(m.craft.weight.score)) parts.push(`weight ${m.craft.weight.score}/100`);
+    if (m.craft.precision && m.craft.precision.scored && Number.isFinite(m.craft.precision.score)) parts.push(`precision ${m.craft.precision.score}/100`);
+  }
   if (m.runtime && m.runtime.available) parts.push('runtime measured');
   parts.push(`${(report.issues || []).length} issue(s)`, `${(report.warnings || []).length} warning(s)`);
   return parts.join(' | ');

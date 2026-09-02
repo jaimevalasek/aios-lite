@@ -313,6 +313,7 @@ function utilityClassDensity(markup) {
 const CRAFT_MIN_DECLARATIONS = 150;
 const CRAFT_LEVER_FLOOR = 2; // warn at <= 2 of 5 active
 const CRAFT_WEIGHT_BAR = 60; // brand surfaces: graded ambition out of 100
+const CRAFT_PRECISION_BAR = 60; // operate/read surfaces: graded familiarity out of 100
 const DISPLAY_TYPE_FLOOR_PX = 56; // 3.5rem — where display typography starts
 
 const CSS_WIDE_KEYWORDS = new Set(['inherit', 'initial', 'unset', 'revert', 'revert-layer']);
@@ -1415,6 +1416,34 @@ function analyzeVisualSources({ html = '', css = '', components = '', surfaceMod
       signals: { hover_transforms: hoverTransforms, atmospheric_layers: atmosphericLayers, big_blurs: bigBlurs, overlap_signals: overlapSignals, media_cover: mediaCover, tracked_caps: trackedCaps, italic_contrast: italicContrast, weight_steps: weightSteps }
     };
 
+  // ── operate precision (the familiarity bar, measured) ────────────────────
+  // "An operate surface earns familiarity — its premium axis is precision"
+  // was a sentence: weight was not scored there, and nothing else was, so an
+  // operate prototype with 17 advisory warnings, an undelivered face, 95
+  // off-grid values and 13 kickers read `pass`. Precision is the same
+  // signals the hygiene warnings already carry, graded 0–2 per axis and
+  // held to the same bar the brand weight is — so the human gate can read it.
+  const precisionGrades = familiarityMode
+    ? {
+      typeface: fontDelivered ? 2 : 0,
+      tokens: adherence === null ? 0 : (adherence >= 75 ? 2 : (adherence >= 60 ? 1 : 0)),
+      rhythm: offGrid.length < 5 ? 2 : (offGrid.length < 20 ? 1 : 0),
+      states: statesUnmet.length === 0 ? 2 : (statesUnmet.length === 1 ? 1 : 0),
+      chrome: browserSurfaces.length >= 3 || (browserSurfaces.length >= 2 && browserSurfaces.includes('tabular numerals')) ? 2 : (browserSurfaces.length >= 1 ? 1 : 0),
+      tells: tells.active.length === 0 ? 2 : (tells.active.length === 1 ? 1 : 0),
+      dialect: modernCssAssessment.active_capabilities >= 3 ? 2 : (modernCssAssessment.active_capabilities >= 1 ? 1 : 0)
+    }
+    : null;
+  const precisionScore = precisionGrades ? Object.values(precisionGrades).reduce((sum, g) => sum + g, 0) : 0;
+  const craftPrecision = familiarityMode
+    ? {
+      scored: craftMeasured,
+      score: Math.round((precisionScore / (Object.keys(precisionGrades).length * 2)) * 100),
+      bar: CRAFT_PRECISION_BAR,
+      grades: precisionGrades
+    }
+    : { scored: false, reason: `${surface.mode} surface: the premium axis is weight, not precision` };
+
   const metrics = {
     declarations: decls.length,
     token_adherence_pct: adherence,
@@ -1482,6 +1511,7 @@ function analyzeVisualSources({ html = '', css = '', components = '', surfaceMod
       material_depth: materialDepth.length,
       browser_surfaces: { count: browserSurfaces.length, present: browserSurfaces },
       weight: craftWeight,
+      precision: craftPrecision,
       unapplied_effects: unappliedFinish,
       gradient_count: gradientCount,
       layered_shadow_declarations: layeredShadows,
@@ -1613,6 +1643,11 @@ function analyzeVisualSources({ html = '', css = '', components = '', surfaceMod
   if (craftMeasured && ['brand', 'mixed'].includes(surface.mode) && craftWeight.scored && craftWeight.score < CRAFT_WEIGHT_BAR && activeLevers > leverFloor) {
     const thin = Object.entries(grades).filter(([, g]) => g < 2).map(([lever, g]) => `${lever} ${g}/2`);
     warnings.push(`craft weight ${craftWeight.score}/100 below the brand bar (${CRAFT_WEIGHT_BAR}): the levers are lit but thin — ${thin.join(', ')}. Presence is not weight: a premium surface carries its atmosphere on more than one layer (radial wash + grain + a real blur), a hover system that moves (transform on two or more hover states), image-led media (object-fit: cover), type at 96px+ with tracked caps or italic contrast, and composition that overlaps the grid (absolute or sticky layers, negative margins, clip-path) — visual-effects.md owns the vocabulary`);
+  }
+  // The familiarity bar, held: restraint governs ornament, never finish.
+  if (craftMeasured && familiarityMode && craftPrecision.scored && craftPrecision.score < CRAFT_PRECISION_BAR) {
+    const thin = Object.entries(precisionGrades).filter(([, g]) => g < 2).map(([axis, g]) => `${axis} ${g}/2`);
+    warnings.push(`${surface.mode} precision ${craftPrecision.score}/100 below the bar (${CRAFT_PRECISION_BAR}): the familiarity axis is thin — ${thin.join(', ')}. A ${surface.mode} surface earns familiarity through precision, not restraint: a delivered workhorse face, tokens over literals, spacing on the grid, every reachable state marked, browser chrome themed from the palette (tabular numerals where digits align), zero generation tells, and the current CSS dialect (vq-026)`);
   }
   if (craftMeasured && unappliedFinish.length > 0) {
     const sample = unappliedFinish.slice(0, 5).join(', ');

@@ -242,6 +242,17 @@ async function prepareApprovedPrototypeManifest(projectDir, slug, briefingConten
     const thin = Object.entries(weight.grades || {}).filter(([, g]) => g < 2).map(([lever, g]) => `${lever} ${g}/2`).join(', ');
     belowBar.push(`craft weight ${weight.score}/100 below the brand bar (${weight.bar}) — thin: ${thin}`);
   }
+  // The familiarity bar: an operate or read surface is not charged for
+  // atmosphere, but "precision, not weight" was a sentence until it had a
+  // number — a prototype with seventeen advisory warnings approved as
+  // restrained. Precision is graded from the hygiene the surface already
+  // reports and held to the same bar.
+  const familiaritySurface = ['operate', 'read'].includes(surfaceMode);
+  const precision = craftMetrics && craftMetrics.precision && craftMetrics.precision.scored ? craftMetrics.precision : null;
+  if (familiaritySurface && precision && Number.isFinite(precision.score) && precision.score < precision.bar) {
+    const thin = Object.entries(precision.grades || {}).filter(([, g]) => g < 2).map(([axis, g]) => `${axis} ${g}/2`).join(', ');
+    belowBar.push(`${surfaceMode} precision ${precision.score}/100 below the bar (${precision.bar}) — thin: ${thin}`);
+  }
   // The floor travels with the measurement; 35 only covers evidence recorded
   // by a probe that predates the embedded floor.
   const densityFloor = density && Number.isFinite(density.floor) ? density.floor : 35;
