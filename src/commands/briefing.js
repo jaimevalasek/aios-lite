@@ -843,4 +843,127 @@ async function runBriefingApplyFeedback({ args, options = {}, logger }) {
   return { ...result, slug, mode: 'apply' };
 }
 
-module.exports = { runBriefingApprove, runBriefingUnapprove, runBriefingReview, runBriefingApplyFeedback };
+// ─── briefing:feedback — the lean read of a pending round ────────────────────
+// The refiner read the whole exported JSON to fold notes into `current_text`:
+// 100–148 KB per round on a mid-sized briefing, 85% of it the briefing text
+// copied twice (original_text + current_text for every section, commented or
+// not). This view prints what the fold needs — the round, every finding,
+// comment, decision and blocking item, and the text of only the sections a
+// note or a status change touches — and names the raw file for the edit.
+function feedbackTouchesSection(section, { findings, comments, decisions, blocking }) {
+  const id = String(section.id || '');
+  if (!id) return false;
+  const targets = (list, keep = () => true) => list.some((item) => item && String(item.section_id || '') === id && keep(item));
+  return targets(comments)
+    || targets(decisions)
+    || targets(blocking)
+    || targets(findings, (f) => f.status === 'accepted' || (Array.isArray(f.selected_option_ids) && f.selected_option_ids.length > 0) || Boolean(f.note));
+}
+
+async function runBriefingFeedback({ args, options = {}, logger }) {
+  const projectDir = resolveTargetDir(args);
+  const resolved = await resolveRefinableSlug(projectDir, options.slug);
+  if (!resolved.ok) {
+    logSlugResolutionError(resolved, logger);
+    return resolved;
+  }
+  const slug = resolved.slug;
+  const feedbackRel = options.feedback
+    ? String(options.feedback)
+    : `.aioson/briefings/${slug}/refinement-feedback.json`;
+  try {
+    assertFeedbackPath(projectDir, slug, feedbackRel);
+  } catch (error) {
+    logger.error(error.message);
+    return { ok: false, error: 'invalid_feedback_path', slug };
+  }
+  const feedbackPath = path.resolve(projectDir, feedbackRel);
+  const feedbackRead = await readOptionalJson(feedbackPath);
+  if (!feedbackRead.exists || feedbackRead.error) {
+    logger.error(`cannot read feedback (${feedbackRel}): ${feedbackRead.error || 'file not found'}`);
+    return { ok: false, error: 'feedback_not_found', slug };
+  }
+  const feedback = feedbackRead.value || {};
+  const sections = Array.isArray(feedback.sections) ? feedback.sections : [];
+  const findings = Array.isArray(feedback.findings) ? feedback.findings : [];
+  const comments = Array.isArray(feedback.comments) ? feedback.comments : [];
+  const decisions = Array.isArray(feedback.decisions) ? feedback.decisions : [];
+  const blocking = Array.isArray(feedback.blocking_items) ? feedback.blocking_items : [];
+
+  const view = sections.map((section) => {
+    const status = section.status || 'unchanged';
+    const textChanged = typeof section.original_text === 'string' && typeof section.current_text === 'string'
+      && section.original_text !== section.current_text;
+    const include = status !== 'unchanged' || textChanged || feedbackTouchesSection(section, { findings, comments, decisions, blocking });
+    return {
+      id: section.id,
+      title: section.title,
+      status,
+      comments_count: Number.isInteger(section.comments_count) ? section.comments_count : 0,
+      text_changed: textChanged,
+      ...(include ? { current_text: section.current_text } : {})
+    };
+  });
+  const payload = {
+    ok: true,
+    slug,
+    feedback: feedbackRel,
+    schema_version: feedback.schema_version || null,
+    round: feedback.round || 1,
+    source_hash: feedback.source_hash || null,
+    review_generated_at: feedback.review_generated_at || null,
+    findings: findings.map((f) => ({
+      id: f.id,
+      section_id: f.section_id,
+      category: f.category,
+      severity: f.severity,
+      blocking: Boolean(f.blocking),
+      status: f.status || 'pending',
+      text: f.text,
+      recommendation: f.recommendation || '',
+      note: f.note || '',
+      question: f.question || '',
+      options: Array.isArray(f.options) ? f.options.map((o) => ({ id: o.id, label: o.label, recommended: Boolean(o.recommended) })) : [],
+      selected_option_ids: Array.isArray(f.selected_option_ids) ? f.selected_option_ids : [],
+      rationale: f.rationale || ''
+    })),
+    comments,
+    decisions,
+    blocking_items: blocking,
+    sections: view,
+    bytes: { file: Buffer.byteLength(JSON.stringify(feedback)), view: 0 }
+  };
+  payload.bytes.view = Buffer.byteLength(JSON.stringify(payload));
+
+  if (options.json) return payload;
+
+  const included = view.filter((s) => typeof s.current_text === 'string');
+  logger.log(`briefing:feedback — "${slug}" round ${payload.round} (${feedbackRel}, ${Math.round(payload.bytes.file / 1024)} KB; this view ${Math.round(payload.bytes.view / 1024)} KB)`);
+  logger.log(`  sections: ${sections.length} · with text here: ${included.length} (${included.map((s) => s.id).join(', ') || 'none'}) · findings: ${findings.length} · comments: ${comments.length} · decisions: ${decisions.length} · blocking items: ${blocking.length}`);
+  for (const f of payload.findings) {
+    logger.log(`  [${f.id}] ${f.section_id || '-'} · ${f.category}/${f.severity}${f.blocking ? ' · BLOCKING' : ''} · ${f.status}${f.selected_option_ids.length ? ` · chose ${f.selected_option_ids.join('+')}` : ''}`);
+    logger.log(`      ${String(f.text || '').replace(/\s+/g, ' ').slice(0, 400)}`);
+    if (f.note) logger.log(`      note: ${String(f.note).replace(/\s+/g, ' ').slice(0, 400)}`);
+    if (f.rationale) logger.log(`      rationale: ${String(f.rationale).replace(/\s+/g, ' ').slice(0, 400)}`);
+  }
+  for (const c of comments) {
+    logger.log(`  comment on ${c && c.section_id ? c.section_id : '-'}: ${String((c && (c.text || c.body)) || '').replace(/\s+/g, ' ').slice(0, 400)}`);
+  }
+  for (const d of decisions) {
+    logger.log(`  decision on ${d && d.section_id ? d.section_id : '-'}: ${String((d && (d.text || d.decision || d.status)) || '').replace(/\s+/g, ' ').slice(0, 300)}`);
+  }
+  for (const b of blocking) {
+    logger.log(`  blocking: ${String((b && (b.text || b.reason)) || JSON.stringify(b)).replace(/\s+/g, ' ').slice(0, 300)}`);
+  }
+  for (const s of view) {
+    logger.log('');
+    logger.log(`## ${s.id} — ${s.title} [${s.status}${s.text_changed ? ', text changed' : ''}${s.comments_count ? `, ${s.comments_count} comment(s)` : ''}]`);
+    if (typeof s.current_text === 'string') logger.log(s.current_text);
+    else logger.log('  (untouched — text omitted; open the raw file only if this section must change)');
+  }
+  logger.log('');
+  logger.log(`Fold notes into \`current_text\` with a surgical edit of ${feedbackRel}, then dry-run: aioson briefing:apply-feedback . --slug=${slug} --json`);
+  return payload;
+}
+
+module.exports = { runBriefingApprove, runBriefingUnapprove, runBriefingReview, runBriefingApplyFeedback, runBriefingFeedback };

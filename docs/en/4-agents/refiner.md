@@ -87,6 +87,8 @@ You > Yes.
 
 If you decline, `briefings.md` stays intact and the skipped changes are recorded in the report. When no blocker remains: `aioson briefing:approve . --slug={slug}` → `@product`.
 
+Before folding notes in, `@refiner` reads the round through `aioson briefing:feedback . --slug={slug}`: the lean view with every finding, comment, decision and blocking item, plus the text of only the sections a note or a status change touched. The exported JSON carries the whole briefing twice (original and current text of every section); the lean view is about 5% of the file, and the agent edits only the named sections.
+
 ## The review surface (review.html)
 
 Rendered by the CLI (`aioson briefing:review`) — static, local, self-contained, and in your language:

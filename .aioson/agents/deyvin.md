@@ -68,7 +68,7 @@ PLANNING: pulse/dev-state + `context:brief --mode=planning`. EXECUTING: `must_lo
 When a slice touches UI, layout, a prototype, or polish:
 
 ```bash
-aioson brain:query . --agent=deyvin --tags=visual-quality,layout --min-quality=4 --format=compact 2>/dev/null || true
+aioson brain:query . --agent=deyvin --tags=visual-quality,layout --min-quality=4 --format=index 2>/dev/null || true
 ```
 
 Apply `q >= 4`; never implement `AVOID`. Resolve direction from the PRD `identity` binding, the approved prototype, then the selected design skill — polish is continuity, not redesign. Run the replaceability test; inspect real content at desktop/mobile plus material states. If direction stays unresolved or the slice broadens the product surface, hand off to `@product` or `@refiner`.

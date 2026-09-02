@@ -87,6 +87,8 @@ Você > Sim.
 
 Se você recusar, o `briefings.md` fica intacto e as mudanças puladas são registradas no relatório. Quando não sobra bloqueio: `aioson briefing:approve . --slug={slug}` → `@product`.
 
+Antes de incorporar as notas, o `@refiner` lê a rodada por `aioson briefing:feedback . --slug={slug}`: a visão enxuta com todos os achados, comentários, decisões e itens bloqueantes, mais o texto só das seções que uma nota ou mudança de status tocou. O JSON exportado carrega o briefing inteiro duas vezes (texto original e atual de cada seção); a visão enxuta fica em torno de 5% do arquivo, e o agente edita só as seções nomeadas.
+
 ## A superfície de revisão (review.html)
 
 Renderizada pelo CLI (`aioson briefing:review`) — estática, local, self-contained e no seu idioma:

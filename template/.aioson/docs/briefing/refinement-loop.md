@@ -82,7 +82,7 @@ The CLI owns `review.html`; do not hand-write it unless genuinely unavailable.
 Use when `.aioson/briefings/{slug}/refinement-feedback.json` exists.
 
 1. If the user pasted exported JSON, write it verbatim to the canonical feedback path.
-2. Incorporate accepted findings and decision-bearing notes into the target section's `current_text`. The CLI writes only `current_text`; notes alone never reach `briefings.md`. When text still equals `original_text`, fold in the decision/rationale, mark a resolved open question, and set the section to `change_requested`. Edit only feedback JSON. Ask instead of guessing an ambiguous note.
+2. Read the round through `aioson briefing:feedback . --slug={slug}` first — the lean view: every finding, comment, decision and blocking item, plus the text of only the sections a note or a status change touches. The raw JSON carries the whole briefing twice (`original_text` and `current_text` for every section); never read it end to end. Incorporate accepted findings and decision-bearing notes into the target section's `current_text` with a surgical edit of the named sections only. The CLI writes only `current_text`; notes alone never reach `briefings.md`. When text still equals `original_text`, fold in the decision/rationale, mark a resolved open question, and set the section to `change_requested`. Edit only feedback JSON. Ask instead of guessing an ambiguous note.
 3. Dry-run:
 
 ```bash

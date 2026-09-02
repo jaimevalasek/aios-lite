@@ -18,10 +18,10 @@ Load when the active phase touches a user-facing interface, prototype, or visual
 ## 1. Query the visual-quality brain
 
 ```bash
-aioson brain:query . --agent=dev --tags=visual-quality,layout --min-quality=4 --format=compact 2>/dev/null || true
+aioson brain:query . --agent=dev --tags=visual-quality,layout --min-quality=4 --format=index 2>/dev/null || true
 ```
 
-Apply matched nodes with `q >= 4`; never implement a node marked `AVOID`.
+Apply matched nodes with `q >= 4`; never implement a node marked `AVOID`. The index prints one line per node (title and first sentence, a quarter of the compact cost); open a node's full statement with `--id=<id> --format=compact` when its title names the decision in front of you.
 
 **Precedence** is node `vq-000`: a project rule under `.aioson/rules/` outranks every node here. Create one with `aioson rule:new`.
 

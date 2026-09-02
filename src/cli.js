@@ -268,7 +268,7 @@ const { runGenomePublish, runGenomeInstallStore, runGenomeInstall, runGenomeList
 const { runSkillPublish, runSkillInstallStore, runSkillListRemote } = require('./commands/store-skill');
 const { runSquadPublish, runSquadInstall, runSquadGrant, runSquadList } = require('./commands/store-squad');
 const { runSystemPackage, runSystemPublish, runSystemList, runSystemInstall } = require('./commands/store-system');
-const { runBriefingApprove, runBriefingUnapprove, runBriefingReview, runBriefingApplyFeedback } = require('./commands/briefing');
+const { runBriefingApprove, runBriefingUnapprove, runBriefingReview, runBriefingApplyFeedback, runBriefingFeedback } = require('./commands/briefing');
 const { runBriefingSources } = require('./commands/briefing-sources');
 const { runBriefingMigrateLineage } = require('./commands/briefing-migrate-lineage');
 const {
@@ -460,6 +460,8 @@ const JSON_SUPPORTED_COMMANDS = new Set([
   'briefing-review',
   'briefing:apply-feedback',
   'briefing-apply-feedback',
+  'briefing:feedback',
+  'briefing-feedback',
   'briefing:migrate-lineage',
   'briefing-migrate-lineage',
   'exploration:init',
@@ -2228,6 +2230,8 @@ async function main() {
       result = await runBriefingReview({ args, options, logger: commandLogger });
     } else if (command === 'briefing:apply-feedback' || command === 'briefing-apply-feedback') {
       result = await runBriefingApplyFeedback({ args, options, logger: commandLogger });
+    } else if (command === 'briefing:feedback' || command === 'briefing-feedback') {
+      result = await runBriefingFeedback({ args, options, logger: commandLogger });
     } else if (command === 'briefing:migrate-lineage' || command === 'briefing-migrate-lineage') {
       result = await runBriefingMigrateLineage({ args, options, logger: commandLogger, t });
     } else if (command === 'exploration:init' || command === 'exploration-init') {

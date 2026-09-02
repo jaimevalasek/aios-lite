@@ -437,6 +437,59 @@ function componentSources(text) {
 }
 
 /** Collect the text of every `<style>` block in an HTML document. */
+// ─── embedded asset zones ──────────────────────────────────────────────────
+// A data-URI font or image inflates the file the next polish pass has to
+// read: measured on consumer prototypes, one 1.8 MB document was 98% base64
+// and its 155 KB stylesheet was 139 KB of WOFF2 — every surgical pass reread
+// font bytes to find a rule. The build contract quarantines embedded bytes in
+// one trailing zone (`<style data-aioson-assets>` for fonts, a JSON
+// `<script data-aioson-assets>` for images/media); this profile measures how
+// much base64 still sits among authored CSS and markup.
+const DATA_URI_RE = /data:([a-z0-9.+/-]+);base64,[A-Za-z0-9+/=]+/gi;
+const EMBEDDED_ASSET_ZONE_MIN_BYTES = 32 * 1024;
+const EMBEDDED_ASSET_ZONE_SHARE = 0.25;
+
+function embeddedAssetProfile(html) {
+  const source = String(html || '');
+  const kinds = {};
+  const count = (text) => {
+    let bytes = 0;
+    for (const match of text.matchAll(DATA_URI_RE)) {
+      bytes += match[0].length;
+      const kind = match[1].split('/')[0];
+      kinds[kind] = (kinds[kind] || 0) + match[0].length;
+    }
+    return bytes;
+  };
+  let authoredStyle = 0;
+  let authoredStyleLength = 0;
+  let quarantined = 0;
+  const zones = [];
+  for (const match of source.matchAll(/<style\b([^>]*)>([\s\S]*?)<\/style>/gi)) {
+    const bytes = count(match[2]);
+    if (/data-aioson-assets/i.test(match[1])) quarantined += bytes;
+    else { authoredStyle += bytes; authoredStyleLength += match[2].length; }
+    zones.push(match[0]);
+  }
+  for (const match of source.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)) {
+    if (!/data-aioson-assets/i.test(match[1])) continue;
+    quarantined += count(match[2]);
+    zones.push(match[0]);
+  }
+  let markupRest = source;
+  for (const zone of zones) markupRest = markupRest.replace(zone, '');
+  const markupBytes = count(markupRest);
+  return {
+    bytes: authoredStyle + quarantined + markupBytes,
+    authored_style_bytes: authoredStyle,
+    authored_style_share_pct: authoredStyleLength ? Math.round((authoredStyle / authoredStyleLength) * 100) : 0,
+    markup_bytes: markupBytes,
+    markup_share_pct: markupRest.length ? Math.round((markupBytes / markupRest.length) * 100) : 0,
+    quarantined_bytes: quarantined,
+    kinds
+  };
+}
+
 function extractStyleBlocks(html) {
   const out = [];
   const re = /<style\b[^>]*>([\s\S]*?)<\/style>/gi;
@@ -1333,6 +1386,7 @@ function analyzeVisualSources({ html = '', css = '', components = '', surfaceMod
   };
 
   const craftMeasured = decls.length >= CRAFT_MIN_DECLARATIONS;
+  const embeddedAssets = embeddedAssetProfile(html);
   const browserSurfaces = BROWSER_SURFACE_PROBES.filter((probe) => probe.re.test(styleText)).map((probe) => probe.name);
   const surface = detectSurfaceMode({ markup, maxFontPx, declared: surfaceMode });
   const operateMode = surface.mode === 'operate';
@@ -1498,6 +1552,7 @@ function analyzeVisualSources({ html = '', css = '', components = '', surfaceMod
     },
     surface_mode: surface,
     utility_classes: utility,
+    embedded_assets: embeddedAssets,
     craft: {
       measured: craftMeasured,
       ...(craftMeasured ? {} : { reason: utilityStyled
@@ -1657,6 +1712,15 @@ function analyzeVisualSources({ html = '', css = '', components = '', surfaceMod
     warnings.push(`modern CSS breadth ${modernCssAssessment.active_capabilities}/${modernCssAssessment.capability_count} capabilities — one isolated feature cannot modernize a whole surface; look across architecture, responsive composition, color, typography, interaction, motion, and performance. A zero-width result is the pre-2020 dialect; adopt only the capabilities the product earns (visual-effects.md, Modern baseline)`);
   }
 
+  // ── embedded asset zones (the bytes every polish pass rereads) ──────────
+  const kb = (bytes) => Math.round(bytes / 1024);
+  if (embeddedAssets.authored_style_bytes >= EMBEDDED_ASSET_ZONE_MIN_BYTES && embeddedAssets.authored_style_share_pct >= EMBEDDED_ASSET_ZONE_SHARE * 100) {
+    warnings.push(`embedded assets inside the authored stylesheet: ${kb(embeddedAssets.authored_style_bytes)} KB of base64 font/image bytes sit among the CSS rules (${embeddedAssets.authored_style_share_pct}% of the stylesheet) — every surgical pass rereads them to find a rule; move the @font-face and url(data:) payloads into one trailing \`<style data-aioson-assets>\` zone so the authored CSS stays readable (build contract, asset zone)`);
+  }
+  if (embeddedAssets.markup_bytes >= EMBEDDED_ASSET_ZONE_MIN_BYTES && embeddedAssets.markup_share_pct >= EMBEDDED_ASSET_ZONE_SHARE * 100) {
+    warnings.push(`embedded assets inside the markup: ${kb(embeddedAssets.markup_bytes)} KB of base64 image/media bytes sit inline in the document (${embeddedAssets.markup_share_pct}% of the markup) — move them into one trailing \`<script type="application/json" data-aioson-assets>\` zone keyed by name and hydrate \`[data-asset]\` on load, so the markup the next pass reads is the interface, not the bytes (build contract, asset zone)`);
+  }
+
   // ── generation tells + browser chrome ────────────────────────────────────
   warnings.push(...tells.warnings);
   if (craftMeasured && browserSurfaces.length === 0) {
@@ -1686,6 +1750,8 @@ module.exports = {
   visibleProse,
   scanGenerationTells,
   shadowLayerGeometry,
+  embeddedAssetProfile,
+  EMBEDDED_ASSET_ZONE_MIN_BYTES,
   SATURATED_DISPLAY_FACES,
   stripComments,
   stripHtmlComments,

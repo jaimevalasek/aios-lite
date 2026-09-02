@@ -19,6 +19,8 @@ Produce one `prototype.html` under 2,000,000 bytes with inline CSS, JS, SVG, and
 
 Font delivery is progressive enhancement by contract: declare a deliberate fallback stack that preserves hierarchy and scale, so the file still reads offline and under a CSP that blocks the host. Naming a family without any delivery mechanism is worse than naming none — the chosen face silently never reaches the owner.
 
+**Asset zone: embedded bytes never sit among authored code.** A data-URI font or image inflates the file every later pass has to read — measured on a consumer prototype: 1.8 MB, 98% base64, a 155 KB stylesheet that was 139 KB of WOFF2 — so each surgical polish reread font bytes to find a rule. Put every embedded asset in one trailing zone at the end of `<body>`: the `@font-face` rules with their WOFF2 payloads in `<style data-aioson-assets>` (nothing else in that block), images and media in `<script type="application/json" data-aioson-assets>` keyed by name and hydrated on load into `[data-asset]` elements (or `--asset-*` custom properties for CSS backgrounds). Authored CSS and markup reference assets by name only. The telemetry reports `embedded_assets` and names an authored zone still carrying more than 32 KB of base64 (`embedded assets inside the authored stylesheet` / `inside the markup`).
+
 In `canonical-briefing`, the artifact belongs to `.aioson/briefings/{slug}/`. In `visual-exploration`, it belongs only to the parent-assigned `.aioson/explorations/{slug}/runs/{variant}/`; never read a sibling variant under isolated policy.
 
 ## State and navigation

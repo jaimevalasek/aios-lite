@@ -165,9 +165,30 @@ function formatBrainNodesCompact(nodes) {
     .join('\n\n');
 }
 
+// One line per node: the title plus the first sentence of its statement.
+// The compact format prints every node's full statement (~14 KB for the
+// visual-quality lens on each visual touch); the index keeps the criteria
+// nameable at a quarter of the cost, and a single node's full text is one
+// `--id=<id> --format=compact` away.
+function firstSentence(text, max = 140) {
+  const trimmed = String(text || '').replace(/\s+/g, ' ').trim();
+  const match = trimmed.match(/^[^.!?]*[.!?]/);
+  const sentence = (match ? match[0] : trimmed).trim();
+  return sentence.length > max ? `${sentence.slice(0, max - 1).trimEnd()}…` : sentence;
+}
+
+function formatBrainNodesIndex(nodes) {
+  if (!nodes || nodes.length === 0) return '(no matches)';
+  return nodes
+    .map((node) => `[${node.q || 0}* ${node.v || 'UNKNOWN'}] ${node.id} - ${node.title}${node.s ? ` — ${firstSentence(node.s)}` : ''}`)
+    .join('\n');
+}
+
 module.exports = {
   splitCsv,
   normalizeBrainPath,
   queryBrains,
-  formatBrainNodesCompact
+  formatBrainNodesCompact,
+  formatBrainNodesIndex,
+  firstSentence
 };
