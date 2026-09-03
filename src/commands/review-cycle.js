@@ -166,17 +166,27 @@ function buildNextTask({ source, planPath }) {
 
 async function readStatus(targetDir, source, target, options = {}) {
   const statePath = resolveStatePath(targetDir, source, target);
+  const feature = options.feature ? String(options.feature).trim() : null;
   const state = await readJsonIfExists(statePath);
   const maxCycles = await resolveMaxCycles(targetDir, source, options);
+  // The cycle file is one per route, not per feature: read for a feature it
+  // does not name, it answered the previous feature's exhausted budget
+  // (`limit_reached`, `remaining_cycles: 0`) as if it were this one's. A
+  // foreign cycle is reported as such, and this feature starts whole —
+  // `advance` already restarts the count on a new slug.
+  const foreign = Boolean(state && feature && state.slug && state.slug !== feature);
+  const effective = foreign ? null : state;
   return {
     ok: true,
     source,
     target,
+    feature,
     path: path.relative(targetDir, statePath).replace(/\\/g, '/'),
-    exists: Boolean(state),
+    exists: Boolean(effective),
     max_cycles: maxCycles,
-    remaining_cycles: Math.max(0, maxCycles - Number(state?.cycle || 0)),
-    state
+    remaining_cycles: Math.max(0, maxCycles - Number(effective?.cycle || 0)),
+    state: effective,
+    ...(foreign ? { stale_feature: state.slug, note: `the cycle file belongs to ${state.slug}; ${feature} starts with its full budget (review-cycle:advance restarts the count on a new feature)` } : {})
   };
 }
 
@@ -491,6 +501,7 @@ async function runReviewCycle({ args, options = {}, logger }) {
 
   logger.log(`review-cycle:${action} — ${result.action || 'status'}`);
   if (result.feature) logger.log(`  feature: ${result.feature}`);
+  if (result.stale_feature) logger.log(`  note: ${result.note}`);
   logger.log(`  route: @${source} -> @${target}`);
   if (result.cycle !== undefined) logger.log(`  cycle: ${result.cycle}/${result.max_cycles}`);
   if (result.next_agent) logger.log(`  next: @${result.next_agent}`);

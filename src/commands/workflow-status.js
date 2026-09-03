@@ -10,7 +10,7 @@ const { readAutonomyProtocol, resolveEffectiveMode } = require('../autonomy-poli
 const { readAgentManifest, buildAgentCapabilitySummary } = require('../agent-manifests');
 const { validateHandoffContract } = require('../handoff-contract');
 const { listGenomes } = require('../genome-files');
-const { loadOrCreateState } = require('./workflow-next');
+const { loadOrCreateState, describeBinding } = require('./workflow-next');
 const { resolveTargetDir } = require('../lib/project-root');
 const { isUsableDesignDocFile } = require('../lib/design-doc-seed');
 
@@ -328,6 +328,7 @@ async function runWorkflowStatus({ args, options, logger, t }) {
   const tool = options.tool || 'codex';
 
   let state = null;
+  let binding = null;
   let stateCreated = false;
   let stateNeedsRepair = false;
   let stateRepaired = false;
@@ -339,6 +340,7 @@ async function runWorkflowStatus({ args, options, logger, t }) {
       persist: Boolean(options.repair)
     });
     state = loaded.state;
+    binding = loaded.binding || null;
     stateCreated = loaded.created;
     stateInitializationAvailable = Boolean(loaded.created && !loaded.persisted);
     stateInitialized = Boolean(loaded.created && loaded.persisted);
@@ -420,6 +422,8 @@ async function runWorkflowStatus({ args, options, logger, t }) {
     logger.log('');
     logger.log(`Project: ${projectName} (${classification})`);
     logger.log(`Mode: ${mode}${featureSlug ? ` — feature: ${featureSlug}` : ''}`);
+    if (binding && binding.source) logger.log(`Binding: ${binding.source === 'pulse' ? 'project-pulse.md active_feature' : binding.source}${binding.registry && binding.registry !== featureSlug ? ` (registry names ${binding.registry}, not in progress in features.md)` : ''}`);
+    for (const line of describeBinding(binding)) logger.log(line.replace('[workflow:next] ', ''));
     logger.log(`Tool: ${String(tool).toLowerCase()}`);
     if (stateInitialized) logger.log('State: initialized from current artifacts');
     else if (stateRepaired) logger.log('State: repaired from current artifacts');
@@ -538,6 +542,7 @@ async function runWorkflowStatus({ args, options, logger, t }) {
     featureSlug,
     tool: String(tool).toLowerCase(),
     state,
+    binding,
     stateCreated,
     stateNeedsRepair,
     stateRepaired,

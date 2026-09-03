@@ -8,7 +8,7 @@ triggers: [feature workflow, workflow next, auto, step, external client, live se
 
 ## Authority
 
-After the current request has been bound to the active feature, `aioson workflow:next --expect-feature=<slug>` owns routing, state, and event emission. A persisted workflow does not establish that binding by itself. Outside that confirmed envelope:
+After the current request has been bound to the active feature, `aioson workflow:next --expect-feature=<slug>` owns routing, state, and event emission. A persisted workflow does not establish that binding by itself: the workflow binds to the feature the registry names (`project-pulse.md` `active_feature`, what `feature:current` answers) — when the registry moves, the binding moves with it, the previous feature's progress is archived under `features/{slug}/workflow.state.json` and restored on return; `workflow.state.json` is derived, never hand-edited. Outside that confirmed envelope:
 
 - Apply the Concrete implementation lane gate first.
 - Preserve an unrelated active workflow unchanged; Simple Plan runs directly in Dev and never calls `workflow:next`.

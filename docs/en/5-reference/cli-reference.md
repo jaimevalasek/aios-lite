@@ -468,6 +468,7 @@ aioson workflow:next ./my-project --skip=dev
 - `workflow:next` is the canonical command
 - `agent:next` is an alias for compatibility
 - `workflow.config.json` and `workflow.state.json` live under `.aioson/context/`, so normal framework updates preserve them
+- **the binding follows the feature registry.** `workflow.state.json` is bound to the feature `project-pulse.md` names as `active_feature` (the single source of truth `feature:current` answers from) when that feature is `in_progress` in `features.md`; the last handoff and the last feature in progress are the fallbacks. When the registry moves (`aioson pulse:update . --feature=<slug>`), the next `workflow:next` or `workflow:status` moves the binding with it: the previous feature's progress is archived at `.aioson/context/features/<slug>/workflow.state.json` (never discarded) and restored when the registry returns to it; a `binding_moved` event is appended to `workflow.events.jsonl`. The state file is derived — edit the registry, never the JSON. `--expect-feature=<slug>` still guards explicit continuation, and its mismatch message names the registry.
 
 ### workflow:execute --seed (full-feature autopilot)
 

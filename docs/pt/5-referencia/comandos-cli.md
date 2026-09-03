@@ -45,7 +45,7 @@
 | `agents` | Lista agentes registrados, paths, dependências e outputs | Quando quer entender o arsenal ativo |
 | `agent:prompt` | Gera o prompt pronto para ativar um agente em outro cliente de IA | Quando o cliente não suporta slash command |
 | `workflow:plan` | Sugere o fluxo de agentes adequado ao porte do projeto | Quando quer decidir a ordem de execução |
-| `workflow:next` | Avança o fluxo real, registra estado, aceita desvio e skip ate `@dev`. Agora com gates técnicos e `--auto-heal` | Quando quer handoff automatico entre agentes |
+| `workflow:next` | Avança o fluxo real, registra estado, aceita desvio e skip ate `@dev`. Agora com gates técnicos e `--auto-heal`. A ligação segue o registro de features: `active_feature` do `project-pulse.md` (o que `feature:current` responde) quando em andamento no `features.md`; quando o registro muda (`pulse:update --feature`), a ligação muda junto, o progresso da feature anterior é arquivado em `features/<slug>/workflow.state.json` e restaurado na volta (evento `binding_moved`); `workflow.state.json` é derivado, nunca editado à mão | Quando quer handoff automatico entre agentes; `--expect-feature=<slug>` para continuação explícita (o mismatch nomeia o registro) |
 | `workflow:heal` | Reativa um agente com contexto corretivo após falha de gate | Quando um estágio quebrou e você quer retry com o erro como contexto |
 | `workflow:harden` | Analisa erros recorrentes do workflow e aplica/preconiza fixes preventivos | Hardening autônomo da base de código |
 | `workflow:execute` | Monta e executa o plano de agentes baseado na classificação; aceita `--dry-run` e `--start-from` | Para orquestrar features sem o dashboard |
