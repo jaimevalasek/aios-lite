@@ -82,6 +82,10 @@ DEV creates the short runtime prompt from the approved PRD and implementation pl
 
 Hosts come from one registry (`src/lib/tool-capabilities.js`, exposed by `aioson tool:capabilities --json`): Claude Code, Codex, OpenCode, Kimi Code and Qwen Code are dispatchable; Grok is known to the interactive surface only until it has a non-interactive adapter. New hosts require a registered adapter so executable resolution, capabilities, arguments, redaction, and telemetry remain fail-closed.
 
+## Unattended by policy
+
+Every harness the framework launches for orchestration or implementation runs **unattended**: a permission prompt inside an orchestrated run is the run not happening. The policy lives in the host registry (`src/lib/tool-capabilities.js`, exposed by `aioson tool:capabilities`): every registered CLI declares its unattended flag (`yolo_args` — `--dangerously-skip-permissions`, `--dangerously-bypass-approvals-and-sandbox`, `kimi --auto`, `qwen --yolo`, `opencode run --auto`, `grok --always-approve`, `muse --yolo`, `agy --dangerously-skip-permissions`), and every launch surface reads it: `live:start` defaults to `--permission-mode=yolo` (`--permission-mode=default` is the explicit way to get prompts; a host that registers no flag still opens, with a warning), every lane worker and direct `agent:execution:dispatch` runs `workspace-write` as that flag, the headless runner appends it. A host with no flag can be used interactively but is never dispatched (`permission_mode_unsupported`). Adding a harness is one registry entry with its flag, plus one adapter (proven by `host:signature`) when it should run lanes. The provider's own sandbox is never a lane-worker argv (measured: it answered without writing).
+
 ## Host signatures
 
 A signature is the machine-level proof that a `(host, model, effort)` combination actually works here — CLI installed, login valid, model id accepted, effort supported — recorded before anything is dispatched instead of discovered as `executable_not_found` / `auth` / `invalid_model` mid-run.

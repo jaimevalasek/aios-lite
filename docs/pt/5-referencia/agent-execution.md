@@ -82,6 +82,10 @@ O DEV cria o prompt curto de runtime a partir do PRD e do plano aprovados, despa
 
 Os hosts vêm de um registro único (`src/lib/tool-capabilities.js`, exposto por `aioson tool:capabilities --json`): Claude Code, Codex, OpenCode, Kimi Code e Qwen Code são despacháveis; Grok é conhecido só pela superfície interativa até ter um adaptador não-interativo. Um host novo precisa de adaptador para manter resolução de executável, capabilities, argumentos, redação e telemetria em modo fail-closed.
 
+## Não assistido por política
+
+Todo harness que o framework lança para orquestração ou implementação roda **sem pedir permissão**: um prompt de aprovação dentro de um run orquestrado é o run não acontecendo. A política mora no registro de hosts (`src/lib/tool-capabilities.js`, exposto por `aioson tool:capabilities`): todo CLI registrado declara seu flag não assistido (`yolo_args` — `--dangerously-skip-permissions`, `--dangerously-bypass-approvals-and-sandbox`, `kimi --auto`, `qwen --yolo`, `opencode run --auto`, `grok --always-approve`, `muse --yolo`, `agy --dangerously-skip-permissions`), e toda superfície de lançamento o lê: `live:start` assume `--permission-mode=yolo` (`--permission-mode=default` é a forma explícita de ter prompts; host sem flag ainda abre, com aviso), todo lane worker e todo `agent:execution:dispatch` direto rodam `workspace-write` como esse flag, o runner headless o acrescenta. Host sem flag pode ser usado interativamente, mas nunca é despachado (`permission_mode_unsupported`). Adicionar um harness é uma entrada no registro com o flag, mais um adaptador (provado por `host:signature`) quando ele deve rodar faixas. O sandbox do próprio provedor nunca é argv de lane worker (medido: respondeu sem escrever).
+
 ## Assinaturas de host
 
 Uma assinatura é a prova, no nível da máquina, de que uma combinação `(host, modelo, effort)` realmente funciona aqui — CLI instalado, login válido, ID de modelo aceito, effort suportado — registrada antes de qualquer despacho, em vez de descoberta como `executable_not_found` / `auth` / `invalid_model` no meio de uma execução.

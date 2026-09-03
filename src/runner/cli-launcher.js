@@ -1,6 +1,13 @@
 'use strict';
 
 const { spawn } = require('node:child_process');
+const { getToolCapabilities } = require('../lib/tool-capabilities');
+
+/** The host's unattended flag from the registry, `[]` when it registers none. */
+function unattendedArgs(cli) {
+  const caps = getToolCapabilities(cli);
+  return caps && caps.supports_yolo && Array.isArray(caps.yolo_args) ? [...caps.yolo_args] : [];
+}
 
 /**
  * Detecta qual CLI de AI está disponível no sistema.
@@ -37,9 +44,11 @@ function buildArgs(cli, prompt, options = {}) {
         ...(allowedTools ? ['--allowedTools', allowedTools] : [])
       ];
     case 'codex':
-      return ['-p', prompt, '--quiet', '--no-interactive'];
+      return ['-p', prompt, '--quiet', '--no-interactive', ...unattendedArgs(cli)];
     default:
-      return ['-p', prompt];
+      // A headless run implements: it runs unattended on any harness that
+      // registers a flag (the same table live:start and the lanes use).
+      return ['-p', prompt, ...unattendedArgs(cli)];
   }
 }
 

@@ -207,7 +207,7 @@ O mesmo resolver é usado por `verification:plan`; nomes como `GPT 5.6 Terra`, `
 | `runtime:session:log` | Adiciona um passo concluido na sessao direta ativa | Quando quer registrar cada tarefa concluida durante a sessao |
 | `runtime:session:finish` | Encerra a sessao direta ativa | Quando terminou a sessao ou vai fazer handoff |
 | `runtime:session:status` | Mostra o estado da sessao direta e os ultimos eventos | Quando quer saber se a sessao ainda esta aberta ou acompanhar com `--watch` |
-| `live:start` | Abre uma sessao viva rastreada para Codex, Claude ou OpenCode | Quando quer iniciar o cliente externo a partir do AIOSON e manter status, agente ativo e logs no dashboard |
+| `live:start` | Abre uma sessao viva rastreada para qualquer harness do registro (Codex, Claude, OpenCode, Kimi, Qwen, Grok, Muse, Antigravity); por padrão a sessão roda sem pedir permissão (`--permission-mode=yolo`, o flag registrado do host — `--permission-mode=default` para ter prompts) | Quando quer iniciar o cliente externo a partir do AIOSON e manter status, agente ativo e logs no dashboard |
 | `runtime:emit` | Registra eventos compactos da sessão viva atual; aceita `--worker-status`, `--verdict`, `--token-count`, `--progress-pct` | Quando quer marcar tarefa concluída, milestone, block ou step de plano sem abrir uma sessão paralela |
 | `live:status` | Mostra o estado da sessao viva e do processo filho | Quando quer acompanhar `active_agent`, progresso do plano e se o cliente ainda esta vivo |
 | `live:handoff` | Transfere a mesma sessao viva para outro agente AIOSON | Quando o agente atual precisa passar a continuidade para `@product`, `@architect`, `@dev` ou outro agente |

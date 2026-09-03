@@ -59,7 +59,8 @@ function defaultAdapters() {
     codex: require('../agent-execution/adapters/codex'),
     opencode: require('../agent-execution/adapters/opencode'),
     kimi: require('../agent-execution/adapters/kimi'),
-    qwen: require('../agent-execution/adapters/qwen')
+    qwen: require('../agent-execution/adapters/qwen'),
+    grok: require('../agent-execution/adapters/grok')
   };
 }
 
@@ -324,6 +325,11 @@ async function probeHostSignature({
 
   const version = await probeVersion(resolved);
 
+  // The first probe asks for one word and never edits; the provider's
+  // read-only mode is a precaution where the host registers one, and a host
+  // without one (OpenCode) is probed without it — refusing it here would keep
+  // an unattended-capable host out of the lanes for lack of a precaution.
+  const readOnly = resolveSandboxArgs(hostId, 'read-only');
   const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'aioson-host-probe-'));
   let stdout = '';
   const startedAt = now();
@@ -333,7 +339,7 @@ async function probeHostSignature({
       mode: 'external',
       model: modelId,
       reasoning_effort: effort,
-      sandbox_mode: 'read-only',
+      ...(readOnly.ok ? { sandbox_mode: 'read-only' } : {}),
       cwd: tempDir,
       prompt_text: prompt,
       timeout: Number.isFinite(Number(timeout)) && Number(timeout) > 0 ? Number(timeout) : DEFAULT_PROBE_TIMEOUT_MS,
@@ -347,7 +353,7 @@ async function probeHostSignature({
   const excerpt = redact(stdout).replace(/\s+/g, ' ').trim().slice(0, OUTPUT_EXCERPT_MAX);
   const probe = {
     mode: 'external',
-    sandbox: 'read-only',
+    sandbox: readOnly.ok ? 'read-only' : 'none',
     exit_code: Number.isInteger(result.code) ? result.code : null,
     duration_ms: durationMs,
     output_matched: /\bOK\b/i.test(stdout),

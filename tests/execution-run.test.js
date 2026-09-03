@@ -419,7 +419,7 @@ test('a host that cannot run leaves a decision_required (state + telemetry), the
   const unsigned = await decide(ctx, 'phase-2', 'fallback:qwen/qwen-3.8-max');
   assert.equal(unsigned.reason, 'fallback_signature_missing');
   assert.equal(unsigned.hint, 'aioson host:signature . --host=qwen --model=qwen-3.8-max');
-  assert.equal((await decide(ctx, 'phase-2', 'fallback:grok/grok-5')).reason, 'unknown_host');
+  assert.equal((await decide(ctx, 'phase-2', 'fallback:muse/muse-1')).reason, 'unknown_host');
   assert.equal((await decide(ctx, 'phase-2', 'fallback:kimi/kimi-k3/high')).reason, 'effort_unsupported_by_host');
 
   await writeSignatures({ signatures: { ...ALL_SIGNED, [signatureKey('qwen', 'qwen-3.8-max', null)]: signed('qwen', 'qwen-3.8-max', null) } }, { env: ctx.env });
@@ -969,12 +969,16 @@ test('preflight legs beyond PATH: a signature without the unattended probe is a 
   assert.match(result.preflight.issues.join('\n'), /re-sign: aioson host:signature \. --host=codex --model=gpt-5\.6 --effort=high/);
   await writeSignatures({ signatures: ALL_SIGNED }, { env: ctx.env });
 
-  // A registered host with no unattended flag (OpenCode) is a valid role and
+  // A registered host that lost its unattended flag is a valid role and
   // compiles; the preflight is where "cannot run unattended" is refused.
-  const opencodeRoles = { ...ROLES, roles: { ...ROLES.roles, frontend_dev: { host: 'opencode', model: 'grok-code-fast', reasoning_effort: null } } };
-  const opencodeSigned = { ...ALL_SIGNED, [signatureKey('opencode', 'grok-code-fast', null)]: signed('opencode', 'grok-code-fast', null) };
-  const other = await setup(t, { roles: opencodeRoles, signatures: opencodeSigned, bins: ['codex', 'kimi', 'claude', 'qwen', 'opencode'] });
-  result = await run(other, { registry: { ...adapters().registry, opencode: adapters().registry.kimi }, extra: { preflight: true } });
-  assert.equal(result.reason, 'preflight_failed');
-  assert.match(result.preflight.issues.join('\n'), /host:opencode: permission_mode_unsupported: frontend\.dev opencode\/grok-code-fast — opencode has no unattended write flag registered; a lane worker runs unattended/);
+  const { TOOL_CAPS } = require('../src/lib/tool-capabilities');
+  const saved = { supports_yolo: TOOL_CAPS.kimi.supports_yolo, yolo_args: TOOL_CAPS.kimi.yolo_args };
+  Object.assign(TOOL_CAPS.kimi, { supports_yolo: false, yolo_args: null });
+  try {
+    result = await run(ctx, { registry: adapters().registry, extra: { preflight: true } });
+    assert.equal(result.reason, 'preflight_failed');
+    assert.match(result.preflight.issues.join('\n'), /host:kimi: permission_mode_unsupported: frontend\.dev kimi\/kimi-k3 — kimi has no unattended write flag registered; a lane worker runs unattended/);
+  } finally {
+    Object.assign(TOOL_CAPS.kimi, saved);
+  }
 });

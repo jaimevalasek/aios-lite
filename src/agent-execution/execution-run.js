@@ -61,7 +61,8 @@ const DEFAULT_ADAPTERS = {
   codex: require('./adapters/codex'),
   opencode: require('./adapters/opencode'),
   kimi: require('./adapters/kimi'),
-  qwen: require('./adapters/qwen')
+  qwen: require('./adapters/qwen'),
+  grok: require('./adapters/grok')
 };
 const RUN_STATE_VERSION = 1;
 const TERMINAL_STATUSES = ['completed', 'failed', 'cancelled'];

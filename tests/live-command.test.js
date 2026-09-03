@@ -53,11 +53,21 @@ test('live:start keeps resume before yolo args for codex resume subcommand', () 
   );
 });
 
-test('live:start rejects yolo mode for tools without a mapped permission bypass', () => {
+test('live:start maps yolo for every registered tool (opencode run --auto) and refuses an unknown tool', () => {
+  assert.deepEqual(buildLaunchArgs({ 'permission-mode': 'yolo' }, 'opencode'), ['--auto']);
   assert.throws(
-    () => buildLaunchArgs({ 'permission-mode': 'yolo' }, 'opencode'),
-    /permission_mode_unsupported:opencode:yolo/
+    () => buildLaunchArgs({ 'permission-mode': 'yolo' }, 'gemini'),
+    /tool_unknown:gemini/
   );
+});
+
+test('live:start runs unattended by default — a session that names no permission mode gets the host\'s flag; --permission-mode=default is the explicit way to get prompts', () => {
+  assert.deepEqual(buildLaunchArgs({}, 'claude'), ['--dangerously-skip-permissions']);
+  assert.deepEqual(buildLaunchArgs({}, 'codex'), ['--dangerously-bypass-approvals-and-sandbox']);
+  assert.deepEqual(buildLaunchArgs({ resume: true }, 'codex'), ['resume', '--last', '--dangerously-bypass-approvals-and-sandbox']);
+  assert.deepEqual(buildLaunchArgs({}, 'opencode'), ['--auto']);
+  assert.deepEqual(buildLaunchArgs({ 'permission-mode': 'default' }, 'claude'), []);
+  assert.deepEqual(buildLaunchArgs({ 'permission-mode': 'default', 'tool-args': '--verbose' }, 'claude'), ['--verbose']);
 });
 
 test('live session commands track start, plan progress, handoff and close for a no-launch session', async () => {

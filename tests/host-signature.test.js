@@ -66,7 +66,7 @@ function runCli(args, options = {}) {
 }
 
 test('the execution capability matrix is derived from the single host registry, unchanged for every dispatchable host', () => {
-  assert.deepEqual(Object.keys(MATRIX).sort(), ['claude', 'codex', 'kimi', 'opencode', 'qwen']);
+  assert.deepEqual(Object.keys(MATRIX).sort(), ['claude', 'codex', 'grok', 'kimi', 'opencode', 'qwen']);
   assert.deepEqual(capabilities('codex'), {
     native_subagent: false,
     fresh_session: false,
@@ -81,7 +81,9 @@ test('the execution capability matrix is derived from the single host registry, 
   assert.equal(capabilities('kimi').additional_workspaces, true);
   assert.equal(capabilities('qwen').additional_workspaces, false);
   // Interactive-only registry entries never become dispatchable by accident.
-  assert.deepEqual(capabilities('grok'), { source: 'registered_adapter' });
+  assert.deepEqual(capabilities('muse'), { source: 'registered_adapter' });
+  assert.deepEqual(capabilities('agy'), { source: 'registered_adapter' });
+  assert.equal(capabilities('grok').external_process, true, 'grok is dispatchable: its headless contract was proven by a real signature probe');
 });
 
 test('an unknown host is refused and nothing is persisted', async (t) => {
@@ -93,12 +95,12 @@ test('an unknown host is refused and nothing is persisted', async (t) => {
   await assert.rejects(fs.access(store.file));
 });
 
-test('an interactive-only host (grok) and an unsupported effort fail deterministically from the registry', async (t) => {
+test('an interactive-only host (muse) and an unsupported effort fail deterministically from the registry', async (t) => {
   const store = await tempStore(t);
-  const grok = await probeHostSignature({ host: 'grok', model: 'grok-4', env: store.env });
-  assert.equal(grok.entry.reason, 'unsupported_host_execution');
-  assert.equal(grok.entry.install_command, 'npm install -g @xai-official/grok');
-  assert.equal(grok.persisted, true);
+  const muse = await probeHostSignature({ host: 'muse', model: 'muse-1', env: store.env });
+  assert.equal(muse.entry.reason, 'unsupported_host_execution');
+  assert.equal(muse.entry.install_command, null);
+  assert.equal(muse.persisted, true);
 
   const noEffortHost = await probeHostSignature({ host: 'opencode', model: 'grok-code-fast', reasoning_effort: 'high', env: store.env });
   assert.equal(noEffortHost.entry.reason, 'effort_unsupported_by_host');
@@ -114,7 +116,7 @@ test('an interactive-only host (grok) and an unsupported effort fail determinist
   assert.equal(ultraClaude.entry.supported.includes('ultra'), false);
 
   const persisted = await readSignatures({ env: store.env });
-  assert.equal(signatureState(persisted.signatures[signatureKey('grok', 'grok-4', null)]), 'invalid');
+  assert.equal(signatureState(persisted.signatures[signatureKey('muse', 'muse-1', null)]), 'invalid');
   assert.equal(signatureState(persisted.signatures[signatureKey('opencode', 'grok-code-fast', 'high')]), 'invalid');
 });
 
@@ -260,7 +262,7 @@ test('host:signature command: --list and --status are read-only verdicts, the pr
   result = await runHostSignature({ args: [], options: { json: true }, logger, env: store.env });
   assert.equal(result.ok, false);
   assert.equal(result.reason, 'host_required');
-  assert.deepEqual(result.hosts, ['claude', 'codex', 'kimi', 'opencode', 'qwen']);
+  assert.deepEqual(result.hosts, ['claude', 'codex', 'grok', 'kimi', 'opencode', 'qwen']);
 
   result = await runHostSignature({ args: [], options: { host: 'kimi', model: 'kimi-k3', status: true, json: true }, logger, env: store.env });
   assert.equal(result.ok, true);

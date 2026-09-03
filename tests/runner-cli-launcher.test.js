@@ -26,12 +26,12 @@ describe('runner/cli-launcher.js — buildArgs', () => {
 
   it('builds args for codex', () => {
     const args = buildArgs('codex', 'do it');
-    assert.deepEqual(args, ['-p', 'do it', '--quiet', '--no-interactive']);
+    assert.deepEqual(args, ['-p', 'do it', '--quiet', '--no-interactive', '--dangerously-bypass-approvals-and-sandbox']);
   });
 
   it('builds args for unknown cli', () => {
     const args = buildArgs('opencode', 'test');
-    assert.deepEqual(args, ['-p', 'test']);
+    assert.deepEqual(args, ['-p', 'test', '--auto'], 'a headless run implements: the registry\'s unattended flag rides along on every harness');
   });
 });
 

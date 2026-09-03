@@ -59,6 +59,18 @@ test('every execution adapter runs workspace-write with exactly the registry\'s 
   }
 });
 
+test('every dispatchable host registers an unattended flag — a lane worker never lands on a host that would ask; adding a harness is one registry entry with its flag', () => {
+  for (const host of HOSTS) {
+    const caps = TOOL_CAPS[host];
+    assert.equal(caps.supports_yolo, true, `${host} is dispatchable and must run unattended`);
+    assert.ok(Array.isArray(caps.yolo_args) && caps.yolo_args.length > 0, `${host}.yolo_args`);
+    assert.equal(resolveSandboxArgs(host, 'workspace-write').ok, true, host);
+  }
+  for (const [tool, caps] of Object.entries(TOOL_CAPS)) {
+    assert.equal(caps.supports_yolo, true, `${tool}: every registered harness declares how it runs without prompts`);
+  }
+});
+
 test('read-only is the registry\'s too: hosts with a read-only flag get it, a host without one refuses instead of running with write access', () => {
   for (const host of HOSTS) {
     const caps = TOOL_CAPS[host];
@@ -91,7 +103,7 @@ test('a lane worker is unattended, always: the provider sandbox is never an argv
   assert.equal(resolveSandboxArgs('codex', 'workspace-write').permission_mode, 'yolo');
   assert.equal(resolveSandboxArgs('codex', 'full-access').reason, 'sandbox_mode_unknown');
   assert.deepEqual(resolveSandboxArgs('codex', null), { ok: true, args: [], sandbox_mode: null });
-  assert.equal(resolveSandboxArgs('opencode', 'workspace-write').reason, 'permission_mode_unsupported');
+  assert.equal(resolveSandboxArgs('gemini', 'workspace-write').reason, 'permission_mode_unsupported', 'an unregistered host has no flag to run unattended with');
   // The adapter receives the translation, never computes it: a custom adapter
   // for a registered host gets the same argv the engine would.
   const custom = createAdapter('kimi', (input) => ['--custom', ...(input.sandbox_args || [])]);
@@ -363,10 +375,22 @@ test('host:signature probes the unattended write: a host that writes the file is
   assert.equal(blocked.entry.unattended.yolo.reason, 'timeout');
   assert.equal(blocked.entry.probe.exit_code, 0, 'the read-only probe passed: login and model were fine, the write mode was not');
 
+  // A host without a read-only flag is probed without the precaution, never
+  // kept out of the lanes for it; its unattended write is probed all the same.
+  const opencode = await probeHostSignature({ host: 'opencode', model: 'grok-code-fast', env: store.env, adapterRegistry: { opencode: fakeHost('opencode', { writeScript: WRITES }) } });
+  assert.equal(opencode.entry.status, 'valid');
+  assert.equal(opencode.entry.probe.sandbox, 'none');
+  assert.equal(opencode.entry.unattended.yolo.state, 'verified');
   // A host whose registry has no unattended flag never reaches the write probe.
-  const opencode = await probeHostSignature({ host: 'opencode', model: 'grok-code-fast', env: store.env, adapterRegistry: { opencode: fakeHost('opencode') } });
-  assert.equal(opencode.entry.status, 'invalid');
-  assert.equal(opencode.entry.reason, 'sandbox_mode_unsupported');
+  const saved = { supports_yolo: TOOL_CAPS.qwen.supports_yolo, yolo_args: TOOL_CAPS.qwen.yolo_args };
+  Object.assign(TOOL_CAPS.qwen, { supports_yolo: false, yolo_args: null });
+  try {
+    const noFlag = await probeHostSignature({ host: 'qwen', model: 'qwen3-coder', env: store.env, adapterRegistry: { qwen: fakeHost('qwen') } });
+    assert.equal(noFlag.entry.status, 'invalid');
+    assert.equal(noFlag.entry.reason, 'permission_mode_unsupported');
+  } finally {
+    Object.assign(TOOL_CAPS.qwen, saved);
+  }
 
   // Persisted per mode; a later probe of another mode keeps the first.
   const persisted = await readSignatures({ env: store.env });

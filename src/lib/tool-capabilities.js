@@ -22,6 +22,16 @@
 // Keep entries minimal and source-of-truth here. Adding a new CLI = one entry
 // (+ one adapter when it should be dispatchable).
 //
+// POLICY — every harness the framework launches for implementation or
+// orchestration runs unattended: `live:start` defaults to `--permission-mode
+// yolo`, every lane worker and direct dispatch runs `workspace-write` as the
+// host's unattended flag, the runner appends it. A permission prompt inside
+// an orchestrated run is the run not happening (the owner's rule after one
+// lane spent a night asking). So every registered host declares its
+// unattended flag (`yolo_args`); a host with none can still be used
+// interactively but never dispatched. Adding a harness = one entry here with
+// that flag (+ one adapter when it should be dispatchable).
+//
 // Sandbox translation lives here too — `read_only_args` for a read-only
 // researcher, `yolo_args` for a lane worker — and the adapters consume it
 // through `resolveSandboxArgs` (adapters/base.js) instead of carrying their
@@ -84,10 +94,12 @@ const TOOL_CAPS = {
     resume_session_id: ['--session', '<id>'],
     supports_session_picker: false,
     session_picker: null,
-    supports_yolo: false,
-    yolo_args: null,
-    // No verified read-only or unattended flag: a sandbox_mode it cannot
-    // honor is refused at build (sandbox_mode_unsupported), never ignored.
+    // `opencode run --auto`: "auto-approve permissions that are not explicitly
+    // denied" — the unattended contract a lane worker needs (verified from
+    // the installed CLI's own help). No read-only flag: a read-only request is
+    // refused at build (sandbox_mode_unsupported), never ignored.
+    supports_yolo: true,
+    yolo_args: ['--auto'],
     read_only_args: null,
     execution: {
       additional_workspaces: false,
@@ -136,16 +148,56 @@ const TOOL_CAPS = {
   grok: {
     install_command: 'npm install -g @xai-official/grok',
     binary: 'grok',
+    supports_resume: true,
+    resume_last: ['--continue'],
+    supports_session_id: false,
+    resume_session_id: null,
+    supports_session_picker: false,
+    session_picker: null,
+    // `--always-approve`: "Auto-approve all tool executions" (the installed
+    // CLI's help; the older `--yolo` is not a flag of this build). Headless
+    // is `-p/--single <prompt>` with `-m` and `--reasoning-effort`
+    // (adapters/grok.js); proven dispatchable by a real signature probe.
+    supports_yolo: true,
+    yolo_args: ['--always-approve'],
+    read_only_args: ['--permission-mode', 'plan'],
+    execution: {
+      additional_workspaces: false,
+      model_catalog: false,
+      reasoning_effort: true,
+    },
+  },
+  // Declared by the desktop client for its sessions; flags as the client maps
+  // them, non-interactive contract unverified — interactive only.
+  muse: {
+    install_command: null,
+    binary: 'muse',
     supports_resume: false,
     resume_last: null,
     supports_session_id: false,
     resume_session_id: null,
     supports_session_picker: false,
     session_picker: null,
+    // `--yolo` = `--disable-approval --disable-sandbox --trust-workspace`.
     supports_yolo: true,
     yolo_args: ['--yolo'],
-    // No verified non-interactive contract yet: interactive only, not
-    // dispatchable, not signable.
+    read_only_args: null,
+    execution: null,
+  },
+  agy: {
+    install_command: null,
+    binary: 'agy',
+    supports_resume: true,
+    resume_last: ['--continue'],
+    supports_session_id: false,
+    resume_session_id: null,
+    supports_session_picker: false,
+    session_picker: null,
+    // Antigravity denies a tool that would need approval silently unless
+    // pre-approved or released by this flag.
+    supports_yolo: true,
+    yolo_args: ['--dangerously-skip-permissions'],
+    read_only_args: null,
     execution: null,
   },
 };
@@ -202,6 +254,24 @@ function resolveResumeArgs(tool, resumeOpt) {
   return Array.isArray(caps.resume_last) ? [...caps.resume_last] : [];
 }
 
+// The permission mode a launched session gets when the caller names none:
+// unattended. A caller that wants prompts says `--permission-mode=default`.
+const DEFAULT_SESSION_PERMISSION_MODE = 'yolo';
+
+/**
+ * `yolo` args for a session that named no mode: the host's unattended flag
+ * when it registers one; `[]` (the host's own default, which prompts) with
+ * `warning` when it does not — an interactive session with a human at the
+ * terminal can still run there, a lane worker cannot (see resolveSandboxArgs).
+ */
+function resolveDefaultSessionPermission(tool) {
+  const caps = getToolCapabilities(tool);
+  if (caps && caps.supports_yolo && Array.isArray(caps.yolo_args)) {
+    return { mode: DEFAULT_SESSION_PERMISSION_MODE, args: [...caps.yolo_args], warning: null };
+  }
+  return { mode: 'default', args: [], warning: `${String(tool || '').trim().toLowerCase() || 'this host'} registers no unattended flag — the session will ask for permissions; declare its flag in the host registry (yolo_args) to run it unattended` };
+}
+
 function resolvePermissionModeArgs(tool, permissionMode) {
   const mode = String(permissionMode || '').trim().toLowerCase();
   if (!mode || mode === 'default') return [];
@@ -256,6 +326,8 @@ module.exports = {
   TOOL_CAPS,
   SANDBOX_MODES,
   LANE_WORKER_MODE,
+  DEFAULT_SESSION_PERMISSION_MODE,
+  resolveDefaultSessionPermission,
   getToolCapabilities,
   getExecutionCapabilities,
   listSupportedTools,

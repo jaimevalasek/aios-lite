@@ -19,7 +19,7 @@ const {
 const { ensureDir, exists } = require('../utils');
 const { SUPPORTED_PROMPT_TOOLS } = require('../prompt-tool');
 const { isTmuxAvailable, launchTmuxSession, buildSessionName, hasSession, attachSession } = require('../lib/tmux-launcher');
-const { resolvePermissionModeArgs, resolveResumeArgs } = require('../lib/tool-capabilities');
+const { resolvePermissionModeArgs, resolveResumeArgs, resolveDefaultSessionPermission } = require('../lib/tool-capabilities');
 const { resolveTargetDir } = require('../lib/project-root');
 
 const LIVE_EVENTS_LIMIT = 10;
@@ -115,11 +115,21 @@ function parseJsonOption(value) {
 
 // Combine `--resume` (mapped per-tool via TOOL_CAPS) with user-provided `--tool-args`.
 // Resume args go FIRST so that codex `resume --last` (subcommand) lands at argv[1].
-function buildLaunchArgs(options, tool) {
+// A session that names no permission mode runs unattended (the host's
+// registered flag): a feature is developed end to end without a prompt, on
+// any harness. `--permission-mode=default` is the explicit way to get prompts.
+function buildLaunchArgs(options, tool, { onWarning = null } = {}) {
   const resumeOpt = options.resume !== undefined ? options.resume : options.Resume;
   const resumeArgs = resolveResumeArgs(tool, resumeOpt);
   const permissionMode = options['permission-mode'] || options.permissionMode;
-  const permissionArgs = resolvePermissionModeArgs(tool, permissionMode);
+  let permissionArgs;
+  if (permissionMode === undefined || permissionMode === null || permissionMode === '') {
+    const defaulted = resolveDefaultSessionPermission(tool);
+    permissionArgs = defaulted.args;
+    if (defaulted.warning && typeof onWarning === 'function') onWarning(defaulted.warning);
+  } else {
+    permissionArgs = resolvePermissionModeArgs(tool, permissionMode);
+  }
   const userArgs = parseToolArgs(options['tool-args'] || options.toolArgs);
   return [...resumeArgs, ...permissionArgs, ...userArgs];
 }

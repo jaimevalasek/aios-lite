@@ -143,7 +143,7 @@ test('execution-roles: the unlock file is validated strictly — hosts from the 
     version: 2,
     enabled: 'yes',
     roles: {
-      backend_dev: { host: 'grok', model: 'grok-5' },
+      backend_dev: { host: 'muse', model: 'muse-1' },
       frontend_dev: { host: 'kimi', model: 'kimi-k3', reasoning_effort: 'high' },
       'Bad-Key': { host: 'claude', model: '' },
       qa: { host: 'claude', model: 'claude-sonnet-5', api_key: 'x' }
@@ -156,7 +156,7 @@ test('execution-roles: the unlock file is validated strictly — hosts from the 
   const byPath = Object.fromEntries(bad.errors.map((error) => [error.path, error.message]));
   assert.match(byPath['$.version'], /must equal 1/);
   assert.match(byPath['$.enabled'], /boolean/);
-  assert.match(byPath['$.roles.backend_dev.host'], /must be one of claude, codex, kimi, opencode, qwen/);
+  assert.match(byPath['$.roles.backend_dev.host'], /must be one of claude, codex, grok, kimi, opencode, qwen/);
   assert.match(byPath['$.roles.frontend_dev.reasoning_effort'], /effort_unsupported_by_host/);
   assert.match(byPath['$.roles.Bad-Key'], /snake_case/);
   assert.match(byPath['$.roles.qa.api_key'], /secret fields are forbidden/);
@@ -180,7 +180,7 @@ test('execution:offer — unavailable without the unlock file, when disabled, wh
   assert.equal(result.available, false);
   assert.equal(result.reason, 'roles_disabled');
 
-  const invalid = await setup(t, { roles: { ...ROLES, roles: { ...ROLES.roles, qa: { host: 'grok', model: 'grok-5' } } } });
+  const invalid = await setup(t, { roles: { ...ROLES, roles: { ...ROLES.roles, qa: { host: 'muse', model: 'muse-1' } } } });
   result = await offer(invalid.dir, invalid.env);
   assert.equal(result.available, false);
   assert.equal(result.reason, 'roles_invalid');

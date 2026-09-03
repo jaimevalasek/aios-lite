@@ -442,7 +442,7 @@ module.exports = {
     help_execution_graph:
       'aioson execution:graph [path] --feature=<slug> [--format=ascii|mermaid|json] [--json] [--locale=pt-BR]',
     help_live_start:
-      'aioson live:start [path] --tool=codex|claude|opencode --agent=<nome> [--tool-bin=<binario>] [--permission-mode=default|yolo] [--tool-args=<args>] [--title=<texto>] [--goal=<texto>] [--plan=<arquivo>] [--session=<chave>] [--message=<texto>] [--attach] [--no-launch] [--tmux] [--json] [--locale=pt-BR]',
+      'aioson live:start [path] --tool=<claude|codex|opencode|kimi|qwen|grok|muse|agy> --agent=<nome> [--tool-bin=<binario>] [--permission-mode=yolo|default (padrão: yolo — o host roda sem pedir permissão)] [--tool-args=<args>] [--title=<texto>] [--goal=<texto>] [--plan=<arquivo>] [--session=<chave>] [--message=<texto>] [--attach] [--no-launch] [--tmux] [--json] [--locale=pt-BR]',
     help_live_status:
       'aioson live:status [path] [--agent=<nome>] [--limit=8] [--watch=2] [--format=compact|tmux-bar] [--json] [--locale=pt-BR]',
     help_live_handoff:
