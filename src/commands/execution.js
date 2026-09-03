@@ -42,17 +42,34 @@ const {
   readExecutionPlan,
   verifyExecutionPlan
 } = require('../agent-execution/execution-plan');
-const { runExecution, decideExecution, statusExecution, describeMs } = require('../agent-execution/execution-run');
+const { runExecution, decideExecution, statusExecution, describeMs, describeAge } = require('../agent-execution/execution-run');
 const { graphExecution, FORMATS: GRAPH_FORMATS } = require('../agent-execution/execution-graph');
 
 const SUBCOMMANDS = ['offer', 'seed', 'compile', 'run', 'decide', 'status', 'graph'];
+const STATUS_FORMATS = ['full', 'line'];
+const DEFAULT_WATCH_SECONDS = 5;
+
+/** What a running stage is doing, from its heartbeat: elapsed, last write, files. */
+function describeLive(live, { budget = true } = {}) {
+  if (!live) return 'no heartbeat yet';
+  const write = live.last_write_age_ms !== null && live.last_write_age_ms !== undefined
+    ? `last write ${describeAge(live.last_write_age_ms)} ago${live.last_write_path ? ` (${live.last_write_path})` : ''}`
+    : 'no file change yet';
+  const parts = [`${describeAge(live.elapsed_ms)} elapsed`, write, `${live.files_changed || 0} file(s)`];
+  if (budget && live.budget_ms) parts.push(`budget ${describeMs(live.budget_ms)}`);
+  if (live.stalled) parts.push('stalled');
+  if (live.unproductive) parts.push('unproductive');
+  return parts.join(' · ');
+}
 
 /** One line per engine event — the live channel that does not depend on the host streaming. */
 function formatProgress(event) {
   const where = [event.wave !== undefined && event.wave !== null ? `wave ${event.wave}` : null, event.unit || null, event.role || null].filter(Boolean).join(' · ');
   switch (event.type) {
     case 'run':
-      return `run ${event.status}${event.run_id ? ` (${event.run_id})` : ''}${event.resumed ? ' [resumed]' : ''}${Array.isArray(event.integration_units) && event.integration_units.length ? ` — integration units for dev: ${event.integration_units.join(', ')}` : ''}`;
+      return `run ${event.status}${event.run_id ? ` (${event.run_id})` : ''}${event.resumed ? ' [resumed]' : ''}${Array.isArray(event.integration_units) && event.integration_units.length ? ` — integration units for dev: ${event.integration_units.join(', ')}` : ''}${event.follow ? ` — follow from any terminal: ${event.follow}` : ''}`;
+    case 'heartbeat':
+      return `${where}: ${describeLive(event)}`;
     case 'wave':
       return `${where}: ${event.status}${Array.isArray(event.units) ? ` [${event.units.join(', ')}]` : ''}${Array.isArray(event.decisions) ? ` — decisions: ${event.decisions.join(', ')}` : ''}`;
     case 'unit':
@@ -83,6 +100,7 @@ function logRun(logger, result) {
   if (result.status === 'ready') {
     logger.log(`Preflight ok for ${result.feature}: ${result.preflight.checks.map((c) => c.id).join(', ')}`);
     for (const warning of result.preflight.warnings || []) logger.log(`  ⚠ ${warning}`);
+    if (result.follow_command) logger.log(`Follow the run from any terminal: ${result.follow_command}`);
     return;
   }
   if (result.status === 'refused') {
@@ -102,6 +120,66 @@ function logRun(logger, result) {
     logger.log(`  ? ${decision.unit} [${decision.stage}] ${decision.reason}${decision.detail ? ` — ${decision.detail}` : ''} → ${decision.hint}`);
   }
   if (result.resume_command) logger.log(`Resume: ${result.resume_command}`);
+}
+
+/** `--watch` → 5 s; `--watch=<seconds>` → that many; anything else is an error. */
+function parseWatch(value) {
+  if (value === undefined || value === false) return null;
+  if (value === true) return { seconds: DEFAULT_WATCH_SECONDS };
+  const seconds = Number(value);
+  if (!Number.isFinite(seconds) || seconds <= 0) return { error: 'invalid_watch' };
+  return { seconds };
+}
+
+function engineLine(result) {
+  const engine = result.engine;
+  if (!engine) return null;
+  if (engine.state === 'alive') return `engine: alive — heartbeat ${describeAge(engine.age_ms)} ago (pid ${engine.pid}, every ${describeAge(engine.heartbeat_ms || 60000)})`;
+  if (engine.state === 'missing' || engine.state === 'unknown') return `engine: MISSING — ${engine.message}`;
+  return null;
+}
+
+/** The human ledger: run line, engine line, one line per wave, one live line per running stage, decisions, follow/resume. */
+function renderStatus(result) {
+  const lines = [];
+  if (!result.run) {
+    lines.push(`${result.feature}: ${result.message}`);
+    return lines;
+  }
+  const r = result.run;
+  lines.push(`${result.feature}: run ${r.run_id} ${r.status}${r.reason ? ` (${r.reason})` : ''} — lane units passed ${r.units.passed}/${r.units.lane}, qa passed ${r.units.qa_passed}, findings ${result.findings.length}, decisions pending ${r.decisions_pending.length}`);
+  const engine = engineLine(result);
+  if (engine) lines.push(`  ${engine}`);
+  for (const wave of result.waves) {
+    lines.push(`  wave ${wave.wave} ${wave.status}: ${wave.units.map((u) => `${u.id}${u.owner === 'integration' ? ' (dev)' : ` ${u.status}${u.qa && u.qa.status !== 'not_applicable' ? `/qa ${u.qa.status}` : ''}`}`).join(', ')}`);
+  }
+  for (const item of result.running || []) {
+    lines.push(`  ▶ ${item.unit} ${item.stage} ${item.host}/${item.model} · ${describeLive(item.live ? { ...item.live, elapsed_ms: item.elapsed_ms ?? item.live.elapsed_ms } : (item.elapsed_ms !== null && item.elapsed_ms !== undefined ? { elapsed_ms: item.elapsed_ms, last_write_age_ms: null, files_changed: 0 } : null))}`);
+  }
+  for (const decision of result.decisions_pending) lines.push(`  ? ${decision.unit} [${decision.stage}] ${decision.reason} → ${decision.hint}`);
+  if (result.follow_command) lines.push(`Follow: ${result.follow_command}`);
+  if (result.resume_command) lines.push(`Resume: ${result.resume_command}`);
+  return lines;
+}
+
+/** One line for a status pane or a bar: feature, state, wave, counts, what runs now. */
+function renderStatusLine(result) {
+  if (!result.run) return `${result.feature} ${result.state_unreadable ? '●?' : '○'} ${result.message}`;
+  const r = result.run;
+  const glyph = r.status === 'running' ? (result.engine?.alive ? '●' : '●?') : (r.status === 'completed' ? '✓' : (r.status === 'decision_required' ? '?' : '○'));
+  const waves = r.waves.length;
+  const parts = [
+    `${result.feature} ${glyph} ${r.status}${r.status === 'running' && result.engine && !result.engine.alive ? ' (no heartbeat)' : ''}`,
+    `wave ${r.current_wave ?? '-'}/${waves}`,
+    `passed ${r.units.passed}/${r.units.lane}`,
+    `qa ${r.units.qa_passed}✓ ${r.units.qa_failed}✗`
+  ];
+  for (const item of result.running || []) {
+    const write = item.live && item.live.last_write_age_ms !== null && item.live.last_write_age_ms !== undefined ? `write ${describeAge(item.live.last_write_age_ms)} ago` : 'no write yet';
+    parts.push(`▶ ${item.unit} ${item.stage} ${describeAge(item.elapsed_ms ?? item.live?.elapsed_ms ?? 0)} (${write})`);
+  }
+  if (r.decisions_pending.length) parts.push(`decisions ${r.decisions_pending.length}`);
+  return parts.join(' · ');
 }
 
 async function describePlanTables(projectDir, feature, { env, now }) {
@@ -341,21 +419,53 @@ async function runExecutionCommand({ args, options = {}, logger, env = process.e
 
   if (sub === 'status') {
     if (!feature) return { ok: false, reason: 'feature_required', message: 'Use --feature=<slug>' };
-    const result = await statusExecution({ projectDir, feature });
-    if (!options.json) {
-      if (!result.run) {
-        logger.log(`${feature}: ${result.message}`);
-      } else {
-        const r = result.run;
-        logger.log(`${feature}: run ${r.run_id} ${r.status}${r.reason ? ` (${r.reason})` : ''} — lane units passed ${r.units.passed}/${r.units.lane}, qa passed ${r.units.qa_passed}, findings ${result.findings.length}, decisions pending ${r.decisions_pending.length}`);
-        for (const wave of result.waves) {
-          logger.log(`  wave ${wave.wave} ${wave.status}: ${wave.units.map((u) => `${u.id}${u.owner === 'integration' ? ' (dev)' : ` ${u.status}${u.qa && u.qa.status !== 'not_applicable' ? `/qa ${u.qa.status}` : ''}`}`).join(', ')}`);
-        }
-        for (const decision of result.decisions_pending) logger.log(`  ? ${decision.unit} [${decision.stage}] ${decision.reason} → ${decision.hint}`);
-        if (result.resume_command) logger.log(`Resume: ${result.resume_command}`);
-      }
+    const format = String(options.format || 'full').trim().toLowerCase();
+    if (!STATUS_FORMATS.includes(format)) return { ok: false, reason: 'invalid_format', valid: STATUS_FORMATS, message: `Use --format=${STATUS_FORMATS.join('|')}` };
+    const watch = parseWatch(options.watch);
+    if (watch && watch.error) return { ok: false, reason: 'invalid_watch', message: 'Use --watch[=<seconds>] — a positive number of seconds between refreshes (default 5)' };
+    const nowFn = typeof engineOptions.now === 'function' ? engineOptions.now : () => Date.now();
+    const render = (result) => {
+      if (format === 'line') logger.log(renderStatusLine(result));
+      else for (const line of renderStatus(result)) logger.log(line);
+    };
+    if (!watch) {
+      const result = await statusExecution({ projectDir, feature, now: nowFn() });
+      if (!options.json) render(result);
+      return result;
     }
-    return result;
+    // `--watch`: the ledger re-read every N seconds until the run is no longer
+    // running — the second-terminal view of a run whose stdout a wrapper, a
+    // background task file or a `| head` may have swallowed. With --json each
+    // tick is one JSON line on stdout and the final document closes the stream.
+    const sleep = typeof engineOptions.sleep === 'function' ? engineOptions.sleep : (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+    const write = typeof engineOptions.write === 'function' ? engineOptions.write : (text) => process.stdout.write(text);
+    const intervalMs = Math.round(watch.seconds * 1000);
+    const clear = !options.json && format === 'full' && Boolean(process.stdout.isTTY) && engineOptions.clearScreen !== false;
+    let ticks = 0;
+    let result;
+    for (;;) {
+      result = await statusExecution({ projectDir, feature, now: nowFn() });
+      // A state the engine happened to be replacing is not a run that ended:
+      // keep watching, or a single unlucky read would close the window on a
+      // live run. Only a genuinely absent state, or one no longer `running`,
+      // ends the watch.
+      const live = result.run ? result.run.status === 'running' : Boolean(result.state_unreadable);
+      if (!live) break;
+      ticks += 1;
+      if (options.json) {
+        write(`${JSON.stringify({ tick: ticks, ...result })}\n`);
+      } else {
+        if (clear) write('\x1b[2J\x1b[H');
+        else if (format === 'full') logger.log(`--- ${new Date(nowFn()).toISOString()} · tick ${ticks} · every ${watch.seconds}s (Ctrl+C to stop watching; the run keeps going) ---`);
+        render(result);
+      }
+      await sleep(intervalMs);
+    }
+    if (!options.json) {
+      if (clear && ticks > 0) write('\x1b[2J\x1b[H');
+      render(result);
+    }
+    return { ...result, watch: { ticks, interval_ms: intervalMs, ended: result.run ? result.run.status : (result.state_unreadable ? 'state_unreadable' : 'no_run') } };
   }
 
   if (sub === 'graph') {
@@ -373,4 +483,4 @@ async function runExecutionCommand({ args, options = {}, logger, env = process.e
   return { ok: false, reason: 'invalid_subcommand', valid: SUBCOMMANDS };
 }
 
-module.exports = { runExecution: runExecutionCommand, formatProgress, SUBCOMMANDS };
+module.exports = { runExecution: runExecutionCommand, formatProgress, renderStatus, renderStatusLine, describeLive, SUBCOMMANDS, STATUS_FORMATS };

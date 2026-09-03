@@ -115,6 +115,32 @@ async function readJsonSafe(file) {
   }
 }
 
+/**
+ * Read the run state, telling "absent" apart from "could not be read".
+ *
+ * The engine replaces this file by rename every few seconds now that it beats,
+ * and on Windows a reader that opens it in that instant gets EPERM/EBUSY (the
+ * mirror of the write-side retry above). Collapsing that into "no run" is the
+ * one thing a reader must never do: `execution:status --watch` would end in
+ * the middle of a live run, and `execution:run` would start a SECOND run over
+ * a paused one, discarding its decisions. So a missing file is `missing` at
+ * once, and an unreadable one is retried before it is reported as unreadable —
+ * never as absent.
+ */
+async function readRunState(file, { attempts = 5, delayMs = 60, sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms)) } = {}) {
+  let last = null;
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    try {
+      return { state: JSON.parse(await fs.readFile(file, 'utf8')), missing: false, unreadable: null };
+    } catch (error) {
+      if (error.code === 'ENOENT') return { state: null, missing: true, unreadable: null };
+      last = error;
+      if (attempt < attempts - 1) await sleep(delayMs * (attempt + 1));
+    }
+  }
+  return { state: null, missing: false, unreadable: last ? `${last.code || 'parse_error'}: ${last.message}` : 'unreadable' };
+}
+
 async function atomicWrite(file, value) {
   await fs.mkdir(path.dirname(file), { recursive: true });
   const tmp = `${file}.${process.pid}.${crypto.randomUUID()}.tmp`;
@@ -225,9 +251,24 @@ async function acquireLeaseWaiting(projectDir, feature, { maxWaitMs = DEFAULT_LE
 
 // ─── life measured, not reported: output OR files under the write paths ───
 
-async function newestMtime(projectDir, writePaths, { cap = 4000 } = {}) {
+/**
+ * One bounded walk of the lane write paths: the newest file change (and which
+ * file), plus how many files changed since `since`. The stall and unproductive
+ * detectors read the first; the heartbeat that makes a running unit visible
+ * from outside the process reads all three.
+ */
+async function scanWritePaths(projectDir, writePaths, { cap = 4000, since = 0 } = {}) {
   let newest = 0;
+  let newestPath = null;
+  let changed = 0;
   let scanned = 0;
+  const note = (full, mtimeMs) => {
+    if (mtimeMs > newest) {
+      newest = mtimeMs;
+      newestPath = full;
+    }
+    if (since > 0 && mtimeMs >= since) changed += 1;
+  };
   const roots = [...new Set((writePaths || []).map((wp) => String(wp).split(/[*?{[]/)[0].replace(/\/+$/, '') || '.'))];
   const walk = async (dir) => {
     if (scanned > cap) return;
@@ -246,7 +287,7 @@ async function newestMtime(projectDir, writePaths, { cap = 4000 } = {}) {
       } else {
         try {
           const stat = await fs.stat(full);
-          if (stat.mtimeMs > newest) newest = stat.mtimeMs;
+          note(full, stat.mtimeMs);
         } catch { /* vanished between readdir and stat */ }
       }
     }
@@ -256,10 +297,18 @@ async function newestMtime(projectDir, writePaths, { cap = 4000 } = {}) {
     try {
       const stat = await fs.stat(abs);
       if (stat.isDirectory()) await walk(abs);
-      else if (stat.mtimeMs > newest) newest = stat.mtimeMs;
+      else note(abs, stat.mtimeMs);
     } catch { /* not created yet — the unit may still be thinking */ }
   }
-  return newest;
+  return {
+    newest,
+    newest_path: newestPath ? path.relative(projectDir, newestPath).split(path.sep).join('/') : null,
+    files_changed: changed
+  };
+}
+
+async function newestMtime(projectDir, writePaths, options = {}) {
+  return (await scanWritePaths(projectDir, writePaths, options)).newest;
 }
 
 /**
@@ -307,7 +356,68 @@ function createStallWatch({ projectDir, writePaths, stallMs, unproductiveMs = nu
     }
   }, Math.max(1, Number(checkMs) || 1));
   timer.unref?.();
-  return { touch() { lastOutputAt = now(); }, get stalled() { return stalled; }, get unproductive() { return unproductive; }, stop() { stopped = true; clearInterval(timer); } };
+  return { touch() { lastOutputAt = now(); }, get stalled() { return stalled; }, get unproductive() { return unproductive; }, get lastOutputAt() { return lastOutputAt; }, stop() { stopped = true; clearInterval(timer); } };
+}
+
+/**
+ * The positive signal the two detectors above lack. A unit runs for ten to
+ * forty minutes inside a process that streams nothing until it ends (`--print`
+ * hosts), and the only live channel was the run's own stdout — captured by a
+ * wrapper, a background task file, a `| head`, and gone. The first real run
+ * showed the operator nothing for eighty minutes. So every `intervalMs` the
+ * engine measures the unit from the disk — elapsed, the last file written
+ * under the lane write paths and when, how many files changed since the unit
+ * started — persists it into the run state (`execution:status` reads it from
+ * any terminal) and prints one live line every `lineMs`. A run whose state
+ * stops beating is a run whose process died: `execution:status` says so.
+ */
+function createHeartbeat({ projectDir, writePaths, intervalMs, lineMs, now, startedAtMs, budgetMs = null, stall, onBeat, onLine }) {
+  if (!intervalMs) return { stop() {} };
+  let stopped = false;
+  let busy = false;
+  let lastLineAt = now();
+  const tick = async () => {
+    if (stopped || busy) return;
+    busy = true;
+    try {
+      const at = now();
+      const scan = await scanWritePaths(projectDir, writePaths, { since: startedAtMs });
+      if (stopped) return;
+      const wrote = scan.newest >= startedAtMs;
+      const live = {
+        heartbeat_at: nowIso(),
+        elapsed_ms: Math.max(0, at - startedAtMs),
+        budget_ms: budgetMs || null,
+        last_output_age_ms: Math.max(0, at - stall.lastOutputAt),
+        last_write_at: wrote ? new Date(scan.newest).toISOString() : null,
+        last_write_age_ms: wrote ? Math.max(0, at - scan.newest) : null,
+        last_write_path: wrote ? scan.newest_path : null,
+        files_changed: scan.files_changed,
+        stalled: stall.stalled,
+        unproductive: stall.unproductive
+      };
+      onBeat?.(live);
+      if (lineMs && at - lastLineAt >= lineMs) {
+        lastLineAt = at;
+        onLine?.(live);
+      }
+    } catch { /* the heartbeat is best-effort; the transitions still persist */ } finally {
+      busy = false;
+    }
+  };
+  const timer = setInterval(tick, Math.max(1, Number(intervalMs) || 1));
+  timer.unref?.();
+  return { stop() { stopped = true; clearInterval(timer); } };
+}
+
+function describeAge(ms) {
+  const value = Math.max(0, Number(ms) || 0);
+  if (value < 60000) return `${Math.round(value / 1000)} s`;
+  return describeMs(value);
+}
+
+function followCommand(feature) {
+  return `aioson execution:status . --feature=${feature} --watch`;
 }
 
 // ─── worktree measurement (git; absent git → measured:false, never a block) ───
@@ -501,7 +611,8 @@ function classifyFailure(reason) {
 
 async function executeRole({
   projectDir, feature, runId, role, unit, lane, config, promptText, reportRel, manifest,
-  adapterRegistry, catalogLoader, timeout, signal, resolverOptions, stallMs, unproductiveMs = null, stallCheckMs, now, emit
+  adapterRegistry, catalogLoader, timeout, signal, resolverOptions, stallMs, unproductiveMs = null, stallCheckMs, now, emit,
+  heartbeatMs = 0, liveLineMs = 0, onHeartbeat = null
 }) {
   const resolved = await resolveExecutionEntry(config, { catalogLoader });
   if (!resolved.ok) return { kind: 'unavailable', reason: resolved.reason, candidates: resolved.candidates || [], host: config.host, model: config.model, reasoning_effort: config.reasoning_effort || null };
@@ -590,8 +701,28 @@ async function executeRole({
   try { telemetry.event('progress', `${role} started for ${unit.id}`, { unit: unit.id, lane: unit.lane, wave: unit.wave, role }); } catch { /* best-effort */ }
   const startedAt = nowIso();
   const startedAtMs = now();
+  const heartbeat = createHeartbeat({
+    projectDir,
+    writePaths: lane.write_paths,
+    intervalMs: heartbeatMs,
+    lineMs: liveLineMs,
+    now,
+    startedAtMs,
+    budgetMs: timeout,
+    stall,
+    onBeat: (live) => { try { onHeartbeat?.(live); } catch { /* best-effort */ } },
+    onLine: (live) => emit({ type: 'heartbeat', unit: unit.id, lane: unit.lane, wave: unit.wave, role, host: resolved.host, model: expected.model_resolved, ...live })
+  });
   const execution = await executeWithCapacityPolicy({ manifest: manifest.manifest, resolved, input, adapterRegistry, catalogLoader });
   stall.stop();
+  heartbeat.stop();
+  // What the disk says the role did — the ledger's positive fact, measured once
+  // at the end whatever the outcome (a timeout reads the same numbers).
+  const scan = await scanWritePaths(projectDir, lane.write_paths, { since: startedAtMs }).catch(() => null);
+  const lastWrite = scan ? scan.newest : 0;
+  const activity = scan
+    ? { files_changed: scan.files_changed, last_write_at: lastWrite >= startedAtMs ? new Date(lastWrite).toISOString() : null, last_write_path: lastWrite >= startedAtMs ? scan.newest_path : null }
+    : null;
   const base = {
     attempt_id: attemptId,
     telemetry_run_id: telemetry.run.telemetry_run_id,
@@ -603,6 +734,7 @@ async function executeRole({
     session_id: execution.session_id || null,
     stalled: stall.stalled,
     unproductive: stall.unproductive,
+    activity,
     started_at: startedAt,
     finished_at: nowIso()
   };
@@ -614,7 +746,6 @@ async function executeRole({
     let detail = null;
     let timeoutFacts = null;
     if (reason === 'timeout') {
-      const lastWrite = await newestMtime(projectDir, lane.write_paths).catch(() => 0);
       const wrote = lastWrite >= startedAtMs;
       timeoutFacts = { budget_ms: timeout || null, wrote_during_budget: wrote, last_write_age_ms: lastWrite > 0 ? Math.max(0, now() - lastWrite) : null };
       detail = wrote
@@ -853,6 +984,12 @@ async function runExecution({
   stallMs = 300000,
   unproductiveMs = null,
   stallCheckMs = 30000,
+  // The run's pulse: every `heartbeatMs` each running unit is measured from the
+  // disk and the state file is rewritten (a reader in another terminal sees
+  // life; a state that stops beating names a dead process); every `liveLineMs`
+  // the same measurement is one live line. 0 disables either.
+  heartbeatMs = 15000,
+  liveLineMs = 60000,
   qaKernelPath,
   gitBaseline = captureCorrectionBaseline,
   spawnerOptions = {}
@@ -867,7 +1004,7 @@ async function runExecution({
     return { ok: false, status: 'refused', reason: 'preflight_failed', feature, preflight: preflightReport, exitCode: 1 };
   }
   if (preflightOnly) {
-    return { ok: true, status: 'ready', reason: null, feature, preflight: preflightReport, plan: preflight.plan.summary, exitCode: 0 };
+    return { ok: true, status: 'ready', reason: null, feature, preflight: preflightReport, plan: preflight.plan.summary, follow_command: followCommand(feature), exitCode: 0 };
   }
   const { plan, manifest, planDigest } = preflight;
   const requireIndependentQa = preflight.requireIndependentQa === true;
@@ -891,7 +1028,13 @@ async function runExecution({
   const lease = acquired.lease;
   const monitor = createLeaseMonitor(lease, { intervalMs: leaseIntervalMs });
   try {
-    let state = await readJsonSafe(stateFile);
+    const read = await readRunState(stateFile);
+    // A state that exists and cannot be read is never treated as no state:
+    // starting fresh over it would put two runs on the same files.
+    if (read.unreadable) {
+      return { ok: false, status: 'refused', reason: 'run_state_unreadable', feature, path: runStateRelative(feature), error: read.unreadable, message: `${runStateRelative(feature)} exists but could not be read (${read.unreadable}) — retry; do not delete it: a new run over a paused one would discard its decisions`, exitCode: 1 };
+    }
+    let state = read.state;
     if (state && !fresh) {
       if (resume) {
         if (TERMINAL_STATUSES.includes(state.status)) {
@@ -946,6 +1089,10 @@ async function runExecution({
     const persist = () => {
       const write = persistChain.then(async () => {
         state.updated_at = nowIso();
+        // Every write is proof of life: the engine's pid and the cadence a
+        // reader should expect, so `execution:status` can tell a run that is
+        // thinking from a run whose process is gone.
+        state.engine = { pid: process.pid, heartbeat_at: state.updated_at, heartbeat_ms: heartbeatMs || null };
         await atomicWrite(stateFile, state);
       });
       persistChain = write.catch(() => {});
@@ -955,7 +1102,7 @@ async function runExecution({
     state.reason = null;
     state.spawner = spawner ? { command: spawner.command, args: spawner.args, source: spawner.source, unit_timeout_ms: unitTimeout } : null;
     await persist();
-    emit({ type: 'run', status: 'started', run_id: state.run_id, waves: state.waves.length, resumed: Boolean(resume), spawner: spawner ? spawner.command : null });
+    emit({ type: 'run', status: 'started', run_id: state.run_id, waves: state.waves.length, resumed: Boolean(resume), spawner: spawner ? spawner.command : null, follow: followCommand(feature) });
     emit(budgetEvent);
 
     const planUnits = Object.fromEntries((plan.units || []).map((unit) => [unit.id, unit]));
@@ -1065,11 +1212,20 @@ async function runExecution({
       }
     };
 
+    // A heartbeat lands on the running stage only (a stage that ended between
+    // the scan and the callback keeps its final record) and rewrites the state.
+    const liveFor = (unitState, stage) => (live) => {
+      const current = unitState[stage];
+      if (!current || current.status !== 'running') return;
+      current.live = live;
+      persist();
+    };
+
     const runUnitPipeline = async (unitId) => {
       const unit = planUnits[unitId];
       const lane = plan.lanes[unit.lane];
       const unitState = state.units[unitId];
-      const commonArgs = { projectDir, feature, runId: state.run_id, unit, lane, manifest, adapterRegistry: registry, catalogLoader, timeout: unitTimeout, signal: monitor.signal, resolverOptions, stallMs, unproductiveMs: unproductiveMs ?? stallMs * 3, stallCheckMs, now, emit };
+      const commonArgs = { projectDir, feature, runId: state.run_id, unit, lane, manifest, adapterRegistry: registry, catalogLoader, timeout: unitTimeout, signal: monitor.signal, resolverOptions, stallMs, unproductiveMs: unproductiveMs ?? stallMs * 3, stallCheckMs, now, emit, heartbeatMs, liveLineMs };
 
       if (unitState.status === 'pending') {
         let config;
@@ -1096,12 +1252,13 @@ async function runExecution({
             const last = unitState.rework.history[unitState.rework.history.length - 1];
             promptText = `${promptText.trimEnd()}\n${renderRework(round, unitState.rework.max, last?.findings || []).join('\n')}\n`;
           }
-          outcome = await executeRole({ ...commonArgs, role: 'dev', config, promptText, reportRel: roundReport(unit.report, state.run_id, round) });
+          outcome = await executeRole({ ...commonArgs, role: 'dev', config, promptText, reportRel: roundReport(unit.report, state.run_id, round), onHeartbeat: liveFor(unitState, 'dev') });
         } catch (error) {
           outcome = { kind: 'crashed', reason: 'engine_error', error: error.message, host: config.host, model: config.model };
         }
         unitState.dev = { ...unitState.dev, ...outcome, status: outcome.kind, findings: outcome.findings || [], evidence: (outcome.evidence || []).slice(0, MAX_EXCERPT_ITEMS), messages: outcome.messages || [], messages_dropped: outcome.messages_dropped || 0 };
         delete unitState.dev.kind;
+        delete unitState.dev.live;
         recordMailbox(unitState, 'dev', outcome);
         emit({ type: 'unit', role: 'dev', status: outcome.kind, unit: unitId, lane: unit.lane, wave: unit.wave, host: outcome.host, model: outcome.model, reason: outcome.reason || null, detail: outcome.detail || null, verdict: outcome.verdict || null, findings: (outcome.findings || []).length, messages: (outcome.messages || []).length });
         if (outcome.kind === 'passed') {
@@ -1145,7 +1302,7 @@ async function runExecution({
         try {
           const messages = { implementer: unitState.dev.messages || [], inbox: inboxFor(state, { unit: unitId, lane: unit.lane, excludeUnit: unitId }) };
           const promptText = composeQaPrompt({ profileText: profile.text, feature, unit, lane, dev: unitState.dev, maxFixFiles, messages });
-          outcome = await executeRole({ ...commonArgs, role: 'qa', config, promptText, reportRel: roundReport(unit.qa_report, state.run_id, unitState.rework?.rounds || 0) });
+          outcome = await executeRole({ ...commonArgs, role: 'qa', config, promptText, reportRel: roundReport(unit.qa_report, state.run_id, unitState.rework?.rounds || 0), onHeartbeat: liveFor(unitState, 'qa') });
         } catch (error) {
           outcome = { kind: 'crashed', reason: 'engine_error', error: error.message, host: config.host, model: config.model };
         }
@@ -1174,6 +1331,7 @@ async function runExecution({
           profile: { source: profile.source, ok: profile.ok, digest: profile.digest }
         };
         delete unitState.qa.kind;
+        delete unitState.qa.live;
         recordMailbox(unitState, 'qa', outcome);
         emit({ type: 'unit', role: 'qa', status: unitState.qa.status, unit: unitId, lane: unit.lane, wave: unit.wave, host: outcome.host, model: outcome.model, reason: outcome.reason || null, detail: outcome.detail || null, verdict: outcome.verdict || null, findings: qaFindings.length, corrections: measuredCorrections.length, messages: (outcome.messages || []).length });
         if (outcome.kind === 'aborted') {
@@ -1429,7 +1587,9 @@ function parseChoice(choice) {
 async function decideExecution({ projectDir, feature: featureInput, unit: unitId, choice, env = process.env, now = () => Date.now(), leaseWaitMs = DEFAULT_LEASE_WAIT_MS }) {
   const feature = assertFeatureSlug(featureInput);
   const stateFile = runStatePath(projectDir, feature);
-  const state = await readJsonSafe(stateFile);
+  const read = await readRunState(stateFile);
+  if (read.unreadable) return { ok: false, reason: 'run_state_unreadable', feature, path: runStateRelative(feature), error: read.unreadable, message: `${runStateRelative(feature)} exists but could not be read (${read.unreadable}) — retry` };
+  const state = read.state;
   if (!state) return { ok: false, reason: 'run_state_missing', feature, message: `${runStateRelative(feature)} not found — nothing to decide` };
   if (TERMINAL_STATUSES.includes(state.status)) return { ok: false, reason: 'run_terminal', feature, status: state.status };
   const unitState = state.units?.[String(unitId || '').trim()];
@@ -1551,12 +1711,68 @@ async function decideExecution({ projectDir, feature: featureInput, unit: unitId
 
 // ─── status ───
 
-async function statusExecution({ projectDir, feature: featureInput }) {
+// A heartbeat older than three intervals (never less than ten seconds) with
+// the state still `running` is a process that is gone, not one that is slow:
+// a killed terminal, a shell timeout, a client closed with the run inside it.
+const HEARTBEAT_GRACE_MS = 10000;
+const LEGACY_HEARTBEAT_MS = 60000;
+
+/** Is the engine behind this state alive? Measured from the state's own pulse. */
+function describeEngine(state, feature, now = Date.now()) {
+  const engine = state.engine || null;
+  const running = state.status === 'running';
+  if (!engine || !engine.heartbeat_at) {
+    return {
+      pid: null,
+      heartbeat_at: null,
+      heartbeat_ms: null,
+      age_ms: null,
+      alive: false,
+      state: running ? 'unknown' : 'idle',
+      message: running ? `the state says running but carries no heartbeat (written by an engine that had none) — if nothing renews the lease, ${resumeCommand(feature)} reclaims the interrupted units` : null
+    };
+  }
+  const age = Math.max(0, now - Date.parse(engine.heartbeat_at));
+  if (!running) return { ...engine, age_ms: age, alive: false, state: 'idle', message: null };
+  const cadence = engine.heartbeat_ms || LEGACY_HEARTBEAT_MS;
+  const alive = age <= Math.max(HEARTBEAT_GRACE_MS, 3 * cadence);
+  return {
+    ...engine,
+    age_ms: age,
+    alive,
+    state: alive ? 'alive' : 'missing',
+    message: alive
+      ? null
+      : `no heartbeat for ${describeAge(age)} (pid ${engine.pid}; expected every ${describeAge(cadence)}) — the run process is probably dead (a killed terminal, a shell timeout, a closed client); once the lease expires, ${resumeCommand(feature)} reclaims the interrupted units`
+  };
+}
+
+function stageRow(stage, now) {
+  if (!stage) return null;
+  const started = stage.started_at ? Date.parse(stage.started_at) : NaN;
+  const finished = stage.finished_at ? Date.parse(stage.finished_at) : NaN;
+  const end = stage.status === 'running' || Number.isNaN(finished) ? now : finished;
+  return {
+    started_at: stage.started_at || null,
+    finished_at: stage.finished_at || null,
+    elapsed_ms: Number.isNaN(started) ? null : Math.max(0, end - started),
+    live: stage.status === 'running' ? (stage.live || null) : null,
+    activity: stage.activity || null
+  };
+}
+
+async function statusExecution({ projectDir, feature: featureInput, now = Date.now() }) {
   const feature = assertFeatureSlug(featureInput);
-  const state = await readJsonSafe(runStatePath(projectDir, feature));
+  const stateRead = await readRunState(runStatePath(projectDir, feature));
+  const state = stateRead.state;
   const read = await readExecutionPlan(projectDir, feature);
   if (!state) {
-    return { ok: true, feature, run: null, compiled: read.exists, path: runStateRelative(feature), message: read.exists ? 'compiled, not started' : 'no execution plan compiled', exitCode: 0 };
+    // Unreadable is not absent: a watch must keep watching, and the reader
+    // must not be told the run does not exist.
+    if (stateRead.unreadable) {
+      return { ok: true, feature, run: null, compiled: read.exists, path: runStateRelative(feature), state_unreadable: stateRead.unreadable, message: `the run state exists but could not be read right now (${stateRead.unreadable}) — the engine replaces it as it beats; retry`, follow_command: followCommand(feature), exitCode: 0 };
+    }
+    return { ok: true, feature, run: null, compiled: read.exists, path: runStateRelative(feature), message: read.exists ? 'compiled, not started' : 'no execution plan compiled', follow_command: followCommand(feature), exitCode: 0 };
   }
   const unitRows = Object.values(state.units).map((unit) => ({
     id: unit.id,
@@ -1564,8 +1780,8 @@ async function statusExecution({ projectDir, feature: featureInput }) {
     wave: unit.wave,
     owner: unit.owner,
     status: unit.status,
-    dev: unit.dev ? { status: unit.dev.status, host: unit.dev.host || null, model: unit.dev.model || null, verdict: unit.dev.verdict || null, reason: unit.dev.reason || null, report: unit.dev.report || null, findings: (unit.dev.findings || []).length, stalled: Boolean(unit.dev.stalled), session_id: unit.dev.session_id || null } : null,
-    qa: unit.qa ? { status: unit.qa.status, host: unit.qa.host || null, model: unit.qa.model || null, verdict: unit.qa.verdict || null, reason: unit.qa.reason || null, report: unit.qa.report || null, findings: (unit.qa.findings || []).length, corrections: (unit.qa.corrections_paths || []).length, corrections_cap_exceeded: Boolean(unit.qa.corrections_cap_exceeded), session_id: unit.qa.session_id || null } : null,
+    dev: unit.dev ? { status: unit.dev.status, host: unit.dev.host || null, model: unit.dev.model || null, verdict: unit.dev.verdict || null, reason: unit.dev.reason || null, report: unit.dev.report || null, findings: (unit.dev.findings || []).length, stalled: Boolean(unit.dev.stalled), session_id: unit.dev.session_id || null, ...stageRow(unit.dev, now) } : null,
+    qa: unit.qa ? { status: unit.qa.status, host: unit.qa.host || null, model: unit.qa.model || null, verdict: unit.qa.verdict || null, reason: unit.qa.reason || null, report: unit.qa.report || null, findings: (unit.qa.findings || []).length, corrections: (unit.qa.corrections_paths || []).length, corrections_cap_exceeded: Boolean(unit.qa.corrections_cap_exceeded), session_id: unit.qa.session_id || null, ...stageRow(unit.qa, now) } : null,
     pending_decision: unit.pending_decision ? { stage: unit.pending_decision.stage, reason: unit.pending_decision.reason, choices: unit.pending_decision.choices } : null,
     rework: unit.rework ? { rounds: unit.rework.rounds, max: unit.rework.max } : null
   }));
@@ -1576,12 +1792,19 @@ async function statusExecution({ projectDir, feature: featureInput }) {
       ...((unit.qa?.findings) || []).map((f) => ({ source: 'qa', unit: unit.id, lane: unit.lane, ...(typeof f === 'object' && f ? f : { summary: String(f) }) }))
     ])
   ];
+  const engine = describeEngine(state, feature, now);
   return {
     ok: true,
     feature,
     path: runStateRelative(feature),
     compiled: read.exists,
     run: summarizeState(state, feature),
+    engine,
+    // What is running right now, measured from the disk by the engine's heartbeat.
+    running: unitRows
+      .flatMap((row) => ['dev', 'qa'].filter((stage) => row[stage]?.status === 'running').map((stage) => ({ unit: row.id, lane: row.lane, wave: row.wave, stage, host: row[stage].host, model: row[stage].model, elapsed_ms: row[stage].elapsed_ms, live: row[stage].live })))
+      .sort((a, b) => (a.wave - b.wave) || a.unit.localeCompare(b.unit)),
+    follow_command: state.status === 'running' ? followCommand(feature) : null,
     spawner: state.spawner || null,
     waves: state.waves.map((wave) => ({ ...wave, units: wave.units.map((id) => unitRows.find((row) => row.id === id) || { id }) })),
     units: unitRows,
@@ -1611,7 +1834,13 @@ module.exports = {
   newestMtime,
   acquireLeaseWaiting,
   createStallWatch,
+  createHeartbeat,
+  describeEngine,
+  describeAge,
   describeMs,
+  followCommand,
+  readRunState,
+  scanWritePaths,
   DEFAULT_UNIT_TIMEOUT_MS,
   DEFAULT_LEASE_WAIT_MS,
   normalizeMessages,

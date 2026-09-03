@@ -115,6 +115,13 @@ function fakeAdapter(host, { script = {}, delayMs = 25, log = [] } = {}) {
       const entry = { key, host, model: input.model, effort: input.reasoning_effort ?? null, sandbox: input.sandbox_mode, timeout: input.timeout, start: Date.now(), active_at_start: active };
       log.push(entry);
       input.onStdout?.(`${key} working on ${host}\n`);
+      // `touch_early`: a write that lands while the role is still running —
+      // what a heartbeat measured from the disk must see mid-flight.
+      for (const rel of behaviour.touch_early || []) {
+        const file = path.join(input.cwd, ...rel.split('/'));
+        await fs.mkdir(path.dirname(file), { recursive: true });
+        await fs.appendFile(file, `// ${key} early ${crypto.randomUUID()}\n`, 'utf8');
+      }
       await new Promise((resolve) => setTimeout(resolve, behaviour.delay_ms ?? delayMs));
       if (behaviour.silence_ms) await new Promise((resolve) => setTimeout(resolve, behaviour.silence_ms));
       for (const rel of behaviour.touch || []) {
@@ -981,4 +988,196 @@ test('preflight legs beyond PATH: a signature without the unattended probe is a 
   } finally {
     Object.assign(TOOL_CAPS.kimi, saved);
   }
+});
+
+// The first real run was invisible from outside its own stdout: the
+// supervising session launched it detached, a wrapper captured the live lines
+// in `$(...)`, nothing was polled, and for eighty minutes nobody could tell a
+// thinking worker from a dead one — the state only changed at transitions ten
+// to twenty minutes apart. Now the state beats, every running stage carries
+// what the disk says it is doing, and a second terminal can watch.
+test('the run is visible from outside its process: the state beats (engine alive), each running stage carries a measured live line, the follow command is named at start, execution:status --watch renders until the run ends, and a state that stopped beating names a dead engine', async (t) => {
+  const ctx = await setup(t);
+  const events = [];
+  const fakes = adapters({
+    'dev:phase-1': { touch_early: ['src/api/orders.ts'], delay_ms: 900 },
+    'dev:phase-2': { delay_ms: 300 }
+  });
+  const ticks = [];
+  const running = run(ctx, { registry: fakes.registry, events, engine: { heartbeatMs: 60, liveLineMs: 60 } });
+  const until = async (predicate, ms = 5000) => {
+    const start = Date.now();
+    while (Date.now() - start < ms) {
+      if (await predicate()) return true;
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    }
+    return false;
+  };
+  assert.ok(await until(async () => {
+    try {
+      const s = await readState(ctx);
+      return s.status === 'running' && Object.values(s.units).some((u) => u.dev?.status === 'running');
+    } catch {
+      return false;
+    }
+  }), 'the run started a unit');
+  const watched = await runCommand({
+    args: [ctx.dir],
+    options: { sub: 'status', feature: SLUG, json: true, watch: '0.1' },
+    logger,
+    env: ctx.env,
+    engineOptions: { write: (text) => ticks.push(JSON.parse(text)) }
+  });
+  const result = await running;
+  assert.equal(result.status, 'completed', JSON.stringify(result));
+  assert.ok(ticks.length >= 1, 'the watch rendered at least one tick while the run was running');
+  const alive = ticks.filter((tick) => tick.engine && tick.engine.state === 'alive');
+  assert.ok(alive.length >= 1, JSON.stringify(ticks.map((tick) => tick.engine)));
+  const seen = ticks.flatMap((tick) => tick.running || []).find((item) => item.unit === 'phase-1' && item.stage === 'dev' && item.live && item.live.files_changed >= 1);
+  assert.ok(seen, `a tick saw the implementer's write under its lane paths: ${JSON.stringify(ticks.flatMap((tick) => tick.running || []))}`);
+  assert.equal(seen.live.last_write_path, 'src/api/orders.ts');
+  assert.ok(seen.live.elapsed_ms >= 0 && typeof seen.live.last_write_age_ms === 'number' && typeof seen.live.last_output_age_ms === 'number', JSON.stringify(seen.live));
+  assert.equal(seen.live.budget_ms, 3600000, 'the live block names the budget the stage runs under');
+  assert.equal(watched.watch.ended, 'completed');
+  assert.ok(watched.watch.ticks >= 1);
+  assert.equal(watched.watch.interval_ms, 100);
+  assert.equal(watched.run.status, 'completed');
+  assert.equal(watched.engine.state, 'idle');
+  assert.equal(watched.follow_command, null, 'nothing to follow once the run ended');
+  assert.deepEqual(watched.running, []);
+
+  // The start line names the follow command; the heartbeat lines carry the measurement.
+  const started = events.find((e) => e.type === 'run' && e.status === 'started');
+  assert.equal(started.follow, `aioson execution:status . --feature=${SLUG} --watch`);
+  assert.match(formatProgress(started), /follow from any terminal: aioson execution:status \. --feature=orders --watch/);
+  const beat = events.find((e) => e.type === 'heartbeat' && e.unit === 'phase-1' && e.role === 'dev' && e.files_changed >= 1);
+  assert.ok(beat, JSON.stringify(events.filter((e) => e.type === 'heartbeat')));
+  assert.match(formatProgress(beat), /^wave 1 · phase-1 · dev: \d+ s elapsed · last write \d+ s ago \(src\/api\/orders\.ts\) · 1 file\(s\) · budget 1 h/);
+  const idle = events.find((e) => e.type === 'heartbeat' && e.unit === 'phase-2' && e.role === 'dev');
+  assert.ok(idle, 'a stage that wrote nothing still beats');
+  assert.match(formatProgress(idle), /^wave 1 · phase-2 · dev: \d+ s elapsed · no file change yet · 0 file\(s\)/);
+
+  // The final state carries no live block (the stage ended) but the measured activity, and the engine's pulse.
+  const state = await readState(ctx);
+  assert.equal(state.units['phase-1'].dev.live, undefined);
+  assert.equal(state.units['phase-1'].dev.activity.files_changed, 1);
+  assert.equal(state.units['phase-1'].dev.activity.last_write_path, 'src/api/orders.ts');
+  assert.equal(state.units['phase-2'].dev.activity.files_changed, 0);
+  assert.ok(state.engine && state.engine.pid === process.pid && state.engine.heartbeat_ms === 60, JSON.stringify(state.engine));
+
+  // Human renderings: the ledger and the one-line form, on a live tick and on the ended run.
+  const { renderStatus, renderStatusLine } = require('../src/commands/execution');
+  const liveTick = alive.find((tick) => (tick.running || []).some((item) => item.unit === 'phase-1' && item.stage === 'dev' && item.live));
+  assert.ok(liveTick, 'a tick caught phase-1 dev running with a heartbeat');
+  const lines = renderStatus(liveTick);
+  assert.ok(lines.some((line) => /^ {2}engine: alive — heartbeat \d+ s ago \(pid \d+, every \d+ s\)$/.test(line)), lines.join('\n'));
+  assert.ok(lines.some((line) => /^ {2}▶ phase-1 dev codex\/gpt-5\.6 · \d+ s elapsed · (last write \d+ s ago \(src\/api\/orders\.ts\) · 1 file\(s\)|no file change yet · 0 file\(s\)) · budget 1 h/.test(line)), lines.join('\n'));
+  // Before the first heartbeat a running stage still renders — elapsed from its start, nothing measured yet.
+  const early = ticks.find((tick) => (tick.running || []).some((item) => item.stage === 'dev' && !item.live));
+  if (early) assert.ok(renderStatus(early).some((line) => /^ {2}▶ phase-\d dev [a-z]+\/[a-z0-9.-]+ · \d+ s elapsed · no file change yet · 0 file\(s\)$/.test(line)), renderStatus(early).join('\n'));
+  assert.ok(lines.includes(`Follow: aioson execution:status . --feature=${SLUG} --watch`), lines.join('\n'));
+  assert.match(renderStatusLine(liveTick), /^orders ● running · wave 1\/2 · passed \d\/2 · qa \d✓ \d✗ · ▶ phase-\d dev \d+ s \((write \d+ s ago|no write yet)\)/);
+  assert.match(renderStatusLine(watched), /^orders ✓ completed · wave \d\/2 · passed 2\/2 · qa 2✓ 0✗$/);
+
+  // A state left `running` by a killed process: the pulse is old, the ledger says so and names the way out.
+  state.status = 'running';
+  state.engine = { pid: 4242, heartbeat_at: new Date(Date.now() - 10 * 60000).toISOString(), heartbeat_ms: 15000 };
+  await fs.writeFile(runStatePath(ctx.dir, SLUG), JSON.stringify(state, null, 2));
+  const dead = await status(ctx);
+  assert.equal(dead.engine.state, 'missing');
+  assert.equal(dead.engine.alive, false);
+  assert.match(dead.engine.message, /^no heartbeat for 10 min \(pid 4242; expected every 15 s\) — the run process is probably dead \(a killed terminal, a shell timeout, a closed client\)/);
+  assert.match(dead.engine.message, /aioson execution:run \. --feature=orders --resume reclaims the interrupted units/);
+  assert.match(renderStatusLine(dead), /^orders ●\? running \(no heartbeat\)/);
+  assert.ok(renderStatus(dead).some((line) => /^ {2}engine: MISSING — no heartbeat for 10 min/.test(line)));
+  // A watch keeps rendering a running-but-dead state (the operator reads the message) until the state leaves `running`.
+  let slept = 0;
+  const watchedDead = await runCommand({
+    args: [ctx.dir],
+    options: { sub: 'status', feature: SLUG, json: true, watch: true },
+    logger,
+    env: ctx.env,
+    engineOptions: {
+      write: () => {},
+      sleep: async () => {
+        slept += 1;
+        if (slept >= 2) {
+          state.status = 'completed';
+          await fs.writeFile(runStatePath(ctx.dir, SLUG), JSON.stringify(state, null, 2));
+        }
+      }
+    }
+  });
+  assert.equal(watchedDead.watch.ticks, 2);
+  assert.equal(watchedDead.watch.interval_ms, 5000, '--watch alone is every 5 s');
+  assert.equal(watchedDead.watch.ended, 'completed');
+  assert.equal((await runCommand({ args: [ctx.dir], options: { sub: 'status', feature: SLUG, json: true, watch: 'soon' }, logger, env: ctx.env })).reason, 'invalid_watch');
+  assert.equal((await runCommand({ args: [ctx.dir], options: { sub: 'status', feature: SLUG, json: true, format: 'bar' }, logger, env: ctx.env })).reason, 'invalid_format');
+});
+
+// The heartbeat replaces the state file by rename every few seconds, and a
+// poller that opens it in that instant reads nothing (EPERM/EBUSY on Windows,
+// a torn document from any non-atomic writer). Collapsing that into "no run"
+// is what a reader must never do.
+test('a state that exists and cannot be read is never mistaken for no run: status says unreadable and keeps the follow command, a watch keeps watching through it, and run/decide refuse instead of starting a second run over a paused one', async (t) => {
+  const ctx = await setup(t);
+  const stateFile = runStatePath(ctx.dir, SLUG);
+  await run(ctx, { registry: adapters({ 'qa:phase-1': { verdict: 'FAIL' } }).registry });
+  const good = await fs.readFile(stateFile, 'utf8');
+  const paused = JSON.parse(good);
+  paused.status = 'decision_required';
+  paused.units['phase-2'].pending_decision = { stage: 'dev', kind: 'unavailable', reason: 'capacity', asked_at: new Date().toISOString(), choices: ['retry'] };
+  paused.units['phase-2'].status = 'decision_required';
+  const pausedText = JSON.stringify(paused, null, 2);
+  const tear = () => fs.writeFile(stateFile, pausedText.slice(0, 400), 'utf8');
+  const heal = () => fs.writeFile(stateFile, pausedText, 'utf8');
+
+  await tear();
+  const unreadable = await status(ctx);
+  assert.equal(unreadable.run, null);
+  assert.ok(unreadable.state_unreadable, JSON.stringify(unreadable));
+  assert.match(unreadable.message, /^the run state exists but could not be read right now \(.+\) — the engine replaces it as it beats; retry$/);
+  assert.equal(unreadable.follow_command, `aioson execution:status . --feature=${SLUG} --watch`);
+  const { renderStatusLine } = require('../src/commands/execution');
+  assert.match(renderStatusLine(unreadable), /^orders ●\? the run state exists but could not be read right now/);
+
+  // The run refuses instead of writing a brand-new state over the paused one.
+  const refused = await run(ctx, { registry: adapters().registry });
+  assert.equal(refused.reason, 'run_state_unreadable');
+  assert.match(refused.message, /exists but could not be read .* do not delete it: a new run over a paused one would discard its decisions/);
+  assert.equal(await fs.readFile(stateFile, 'utf8'), pausedText.slice(0, 400), 'the refused run wrote nothing');
+  const declined = await decide(ctx, 'phase-2', 'retry');
+  assert.equal(declined.reason, 'run_state_unreadable');
+
+  // A watch survives an unlucky read and ends only when the state is readable and no longer running.
+  paused.status = 'running';
+  const runningText = JSON.stringify(paused, null, 2);
+  await fs.writeFile(stateFile, runningText, 'utf8');
+  let step = 0;
+  const watched = await runCommand({
+    args: [ctx.dir],
+    options: { sub: 'status', feature: SLUG, json: true, watch: '0.01' },
+    logger,
+    env: ctx.env,
+    engineOptions: {
+      write: () => {},
+      sleep: async () => {
+        step += 1;
+        if (step === 1) await fs.writeFile(stateFile, runningText.slice(0, 400), 'utf8');
+        else if (step === 2) await fs.writeFile(stateFile, runningText, 'utf8');
+        else await heal();
+      }
+    }
+  });
+  assert.equal(watched.watch.ticks, 3, 'the torn read was a tick, not the end of the watch');
+  assert.equal(watched.watch.ended, 'decision_required');
+  assert.equal(watched.run.status, 'decision_required');
+
+  // Absent stays absent — the retry never turns "no run" into "unreadable".
+  await fs.rm(stateFile, { force: true });
+  const absent = await status(ctx);
+  assert.equal(absent.state_unreadable, undefined);
+  assert.equal(absent.message, 'compiled, not started');
+  const { readRunState } = require('../src/agent-execution/execution-run');
+  assert.deepEqual(await readRunState(stateFile), { state: null, missing: true, unreadable: null });
 });
