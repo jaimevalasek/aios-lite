@@ -288,7 +288,10 @@ test('with a spawner in force the engine hands every unit to the client as an en
   assert.equal(backendDev.report_path, `.aioson/context/reports/${SLUG}/${result.run_id}/phase-1.json`);
   assert.deepEqual(backendDev.write_paths, ['src/api/**']);
   assert.equal(backendDev.command, 'codex', 'the argv the engine would have used is the reference for a client that prefers a non-interactive run');
-  assert.ok(Array.isArray(backendDev.args) && backendDev.args.includes('workspace-write'));
+  // The reference argv is the unattended one the registry declares for the
+  // host — never the provider's sandboxed write that asks for approvals.
+  assert.ok(Array.isArray(backendDev.args) && backendDev.args.includes('--dangerously-bypass-approvals-and-sandbox'));
+  assert.equal(backendDev.args.includes('workspace-write'), false);
   assert.equal(typeof backendDev.prompt_stdin, 'boolean');
   assert.equal(backendDev.timeout_ms, 8000);
   assert.equal(backendDev.sandbox_mode, 'workspace-write');

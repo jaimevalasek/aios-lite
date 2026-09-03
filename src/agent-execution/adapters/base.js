@@ -3,6 +3,7 @@
 const { spawn } = require('node:child_process');
 const { capabilities, requiredCapability } = require('../capabilities');
 const { resolveExecutable } = require('../executable-resolver');
+const { resolveSandboxArgs } = require('../../lib/tool-capabilities');
 
 function redact(text) {
   return String(text || '').replace(
@@ -76,7 +77,19 @@ function createAdapter(host, buildArgs) {
           host
         };
       }
-      const command = buildArgs(input);
+      // The sandbox translation is the registry's, not the adapter's: a mode
+      // the host cannot honor is refused here, for every adapter alike.
+      const sandbox = resolveSandboxArgs(host, input.sandbox_mode);
+      if (!sandbox.ok) {
+        return {
+          ok: false,
+          reason: sandbox.reason,
+          sandbox_mode: sandbox.sandbox_mode || null,
+          host,
+          error: sandbox.message || null
+        };
+      }
+      const command = buildArgs({ ...input, sandbox_args: sandbox.args });
       const args = Array.isArray(command) ? command : command.args;
       return {
         ok: true,

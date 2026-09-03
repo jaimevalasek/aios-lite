@@ -23,7 +23,7 @@ const os = require('node:os');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const { spawn } = require('node:child_process');
-const { TOOL_CAPS } = require('./tool-capabilities');
+const { TOOL_CAPS, LANE_WORKER_MODE, resolveSandboxArgs } = require('./tool-capabilities');
 const { resolveExecutable } = require('../agent-execution/executable-resolver');
 const { redact } = require('../agent-execution/adapters/base');
 const { effortsForHost } = require('../agent-execution/schema');
@@ -33,6 +33,21 @@ const DEFAULT_TTL_HOURS = 24;
 const DEFAULT_PROBE_TIMEOUT_MS = 120000;
 const VERSION_TIMEOUT_MS = 15000;
 const PROBE_PROMPT = 'Reply with exactly the word OK and nothing else.';
+// The unattended write probe: the read-only probe proves login and model; it
+// says nothing about whether the host EDITS without a prompt — which is what
+// a lane worker is. The first real orchestrated run had every signature valid
+// and one lane sat all night asking for approval. This probe runs the exact
+// unattended workspace-write argv a lane worker gets, in an empty temporary
+// directory, and looks for the file: written → `verified`; exited without it →
+// `unverified` (a warning); timed out → `blocked` (the incident's shape: alive,
+// never wrote, never exited); refused → `failed`. Blocked/failed invalidate
+// the signature (`host_not_unattended`). Measured on the operator's machine:
+// Codex under its own `--sandbox workspace-write` answered DONE after 96 s
+// without writing the file (the Windows sandbox setup fails to load); under
+// the unattended flag it wrote in 14 s — the probe only ever runs the latter.
+const UNATTENDED_PROBE_FILE = 'aioson-unattended-probe.txt';
+const UNATTENDED_PROBE_PROMPT = `Create a file named ${UNATTENDED_PROBE_FILE} in the current working directory containing exactly the word OK, then reply with the word DONE. Do not ask for confirmation and do nothing else.`;
+const UNATTENDED_STATES = ['verified', 'unverified', 'blocked', 'failed'];
 const OUTPUT_EXCERPT_MAX = 200;
 const STDOUT_CAP = 4000;
 const SIGNATURE_STATES = ['valid', 'invalid', 'expired', 'missing'];
@@ -190,6 +205,51 @@ async function persistEntry(entry, { env, home, persist }) {
   return { entry, persisted: true, path: file };
 }
 
+/** The unattended write probe; never throws, always one of UNATTENDED_STATES. */
+async function probeUnattendedWrite({ adapter, modelId, effort, timeoutMs, resolverOptions, now }) {
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'aioson-host-probe-write-'));
+  const startedAt = now();
+  let stdout = '';
+  let result;
+  let wrote = false;
+  try {
+    result = await adapter.execute({
+      mode: 'external',
+      model: modelId,
+      reasoning_effort: effort,
+      sandbox_mode: 'workspace-write',
+      cwd: tempDir,
+      prompt_text: UNATTENDED_PROBE_PROMPT,
+      timeout: timeoutMs,
+      resolverOptions,
+      onStdout: (chunk) => { if (stdout.length < STDOUT_CAP) stdout += String(chunk); }
+    });
+    wrote = await fs.access(path.join(tempDir, UNATTENDED_PROBE_FILE)).then(() => true).catch(() => false);
+  } finally {
+    await fs.rm(tempDir, { recursive: true, force: true }).catch(() => {});
+  }
+  const common = {
+    mode: LANE_WORKER_MODE,
+    duration_ms: Math.max(0, now() - startedAt),
+    exit_code: Number.isInteger(result.code) ? result.code : null,
+    wrote,
+    output_excerpt: redact(stdout).replace(/\s+/g, ' ').trim().slice(0, OUTPUT_EXCERPT_MAX),
+    checked_at: new Date(now()).toISOString()
+  };
+  if (!result.ok) {
+    const reason = result.reason || 'crash';
+    return {
+      ...common,
+      // Alive past the budget without exiting is the blocked shape whether or
+      // not a file appeared: a lane worker that never exits never reports.
+      state: reason === 'timeout' ? 'blocked' : 'failed',
+      reason,
+      error: result.error ? redact(String(result.error)).slice(0, 300) : null
+    };
+  }
+  return { ...common, state: wrote ? 'verified' : 'unverified', reason: wrote ? null : 'no_file_written', error: null };
+}
+
 async function probeHostSignature({
   host,
   model,
@@ -203,11 +263,13 @@ async function probeHostSignature({
   env = process.env,
   home,
   now = () => Date.now(),
-  persist = true
+  persist = true,
+  unattendedProbe = true
 } = {}) {
   const hostId = normalizeHost(host);
   const modelId = normalizeModel(model);
   const effort = normalizeEffort(reasoning_effort);
+  const mode = LANE_WORKER_MODE;
   const ttl = Number.isFinite(Number(ttlHours)) && Number(ttlHours) > 0 ? Number(ttlHours) : DEFAULT_TTL_HOURS;
   const persistOptions = { env, home, persist };
   const base = { host: hostId, model: modelId, reasoning_effort: effort, ttl_hours: ttl };
@@ -285,13 +347,16 @@ async function probeHostSignature({
   const excerpt = redact(stdout).replace(/\s+/g, ' ').trim().slice(0, OUTPUT_EXCERPT_MAX);
   const probe = {
     mode: 'external',
-    sandbox: hostId === 'opencode' ? 'none' : 'read-only',
+    sandbox: 'read-only',
     exit_code: Number.isInteger(result.code) ? result.code : null,
     duration_ms: durationMs,
     output_matched: /\bOK\b/i.test(stdout),
     output_excerpt: excerpt,
     resolver_source: result.resolver_source || resolved.source
   };
+  // Earlier probes of other permission modes survive a re-sign of this one.
+  const previous = findSignature(await readSignatures({ env, home }), { host: hostId, model: modelId, reasoning_effort: effort });
+  const unattended = { ...(previous && previous.unattended && typeof previous.unattended === 'object' ? previous.unattended : {}) };
   const common = {
     ...base,
     binary: registered.binary,
@@ -300,6 +365,7 @@ async function probeHostSignature({
     install_command: registered.install_command,
     effort_verification: effort ? 'registry' : null,
     probe,
+    unattended,
     ...stamp(),
     fingerprint: fingerprint([hostId, modelId, effort || '', executable, version || ''])
   };
@@ -314,6 +380,30 @@ async function probeHostSignature({
       model_accepted: reason === 'invalid_model' ? false : null
     }, persistOptions);
   }
+  if (unattendedProbe) {
+    const translation = resolveSandboxArgs(hostId, 'workspace-write');
+    if (!translation.ok) {
+      return persistEntry({ ...common, status: 'invalid', reason: translation.reason, error: translation.message || null, auth: 'ok', model_accepted: true }, persistOptions);
+    }
+    unattended[mode] = await probeUnattendedWrite({
+      adapter,
+      modelId,
+      effort,
+      timeoutMs: Number.isFinite(Number(timeout)) && Number(timeout) > 0 ? Number(timeout) : DEFAULT_PROBE_TIMEOUT_MS,
+      resolverOptions,
+      now
+    });
+    if (unattended[mode].state === 'blocked' || unattended[mode].state === 'failed') {
+      return persistEntry({
+        ...common,
+        status: 'invalid',
+        reason: 'host_not_unattended',
+        error: `the unattended write probe ${unattended[mode].state} (${unattended[mode].reason})${unattended[mode].error ? `: ${unattended[mode].error}` : ''}`,
+        auth: 'ok',
+        model_accepted: true
+      }, persistOptions);
+    }
+  }
   return persistEntry({ ...common, status: 'valid', reason: null, error: null, auth: 'ok', model_accepted: true }, persistOptions);
 }
 
@@ -324,6 +414,10 @@ module.exports = {
   PROBE_PROMPT,
   SIGNATURES_VERSION,
   SIGNATURE_STATES,
+  UNATTENDED_PROBE_FILE,
+  UNATTENDED_PROBE_PROMPT,
+  UNATTENDED_STATES,
+  probeUnattendedWrite,
   findSignature,
   listSignatures,
   locateOnPath,

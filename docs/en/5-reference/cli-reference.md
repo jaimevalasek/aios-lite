@@ -375,6 +375,8 @@ aioson verify:artifact . --kind=visual --slug=orders --runtime --advisory
 
 Adds what only exists after layout, at 1280px and 360px: horizontal overflow, clipped text, elements pushed off-screen, tap targets under 44px, and real computed WCAG contrast (translucent foregrounds composited against the nearest opaque ancestor). Playwright is an optional dependency, exactly as for `qa:run`; when it is absent the run reports that it did not happen instead of degrading into a pass.
 
+`--screenshots` stores a first-fold capture per route and width under `.aioson/context/features/{slug}/visual-screenshots/` (`--screenshots=full` keeps whole pages; `--screenshot-dir=<dir>` names another folder, which is never cleared). The default folder is replaced on every run, the evidence records what it holds (`metrics.runtime.screenshot_capture`: dir, mode, count, bytes), and a fold finding names the capture that shows it. Captures are regenerable diagnostics, not evidence: the installer's gitignore policy keeps them out of the repository, `feature:archive` drops them when the feature closes, and `evidence:prune` removes them. A later static measurement of the same bytes (the `agent:done` auto-fire included) carries the `runtime` section forward instead of erasing it; a changed prototype gets `runtime evidence dropped` and needs `--runtime` again.
+
 `prototype:check` runs the same telemetry automatically whenever it resolves an owned prototype, always as an advisory block — it never changes the binding verdict.
 
 ---
@@ -503,6 +505,24 @@ aioson feature:close . --feature=checkout --verdict=PASS --no-archive
 
 ---
 
+## evidence:prune
+
+Remove the regenerable binaries the visual and browser gates leave beside their reports — runtime captures under `visual-screenshots/` and per-step snapshots and screenshots under `browser/{script}/` — never the reports themselves.
+
+```bash
+aioson evidence:prune . --dry-run
+aioson evidence:prune . --slug=checkout
+aioson evidence:prune . --all
+```
+
+- Default scope: orphans — files the latest report no longer references (a failure snapshot of a step that passes now, a capture of a route since renamed).
+- `--all` removes every capture and snapshot; each report carries the line that regenerates its folder (`Replay:` in a walkthrough report, `verify:artifact --kind=visual --runtime --screenshots` for captures).
+- `--slug=<feature>` narrows to one owner (feature, briefing, or archived feature); `--dry-run` counts without deleting; `--json` returns the per-folder table.
+
+`hygiene:scan` lists the same folders under `heavy_evidence_artifacts` when they are orphaned or above 1 MB, and `feature:archive` drops them (instead of moving them into `done/`) unless `--keep-diagnostics` is passed.
+
+---
+
 ## feature:archive
 
 Move feature artefacts to the archive directory and maintain a manifest for lightweight historical lookup.
@@ -518,6 +538,7 @@ aioson feature:archive . --feature=checkout --force
 **Options:**
 - `--feature=<slug>` — feature identifier (required).
 - `--dry-run` — preview what would be moved or restored without making changes.
+- `--keep-diagnostics` — archive the regenerable browser evidence (`visual-screenshots/`, `browser/{script}/`) instead of dropping it; by default the reports travel and the binaries are removed, with the count and bytes in the output.
 - `--restore` — move artefacts back from `.aioson/context/done/{slug}/` to the context root.
 - `--force` — archive even if the feature is not registered in `features.md` or is still `in_progress`.
 - `--json` — structured JSON output with `moved`, `skipped`, `archiveDir`, and `manifestEntry`.
@@ -1129,14 +1150,14 @@ The generic secret heuristic skips credential descriptors (`confirm_password_lab
 ## host:signature
 
 ```bash
-aioson host:signature [path] --host=<claude|codex|opencode|kimi|qwen> [--model=<id>|configured-default] [--effort=<level>] [--ttl=<hours>] [--timeout=<ms>] [--json]
+aioson host:signature [path] --host=<claude|codex|opencode|kimi|qwen> [--model=<id>|configured-default] [--effort=<level>] [--unattended-probe=false] [--ttl=<hours>] [--timeout=<ms>] [--json]
 aioson host:signature [path] --host=<host> [--model=<id>] [--effort=<level>] --status [--json]
 aioson host:signature [path] --list [--json]
 ```
 
-Probes whether a `(host, model, effort)` combination actually works on this machine — CLI installed, login valid, model id accepted, effort supported — and records the result in `~/.aioson/hosts/signatures.json` (override: `AIOSON_HOST_SIGNATURES`) with a TTL (default 24h). The probe uses the exact non-interactive argv of the execution adapter in provider read-only mode, inside an empty temporary directory, with a one-word prompt; it never touches a project. Hosts come from the single registry behind `tool:capabilities`; interactive-only hosts (Grok) are refused with `unsupported_host_execution`.
+Probes whether a `(host, model, effort)` combination actually works on this machine — CLI installed, login valid, model id accepted, effort supported — and records the result in `~/.aioson/hosts/signatures.json` (override: `AIOSON_HOST_SIGNATURES`) with a TTL (default 24h). The probe uses the exact non-interactive argv of the execution adapter in provider read-only mode, inside an empty temporary directory, with a one-word prompt; it never touches a project. Hosts come from the single registry behind `tool:capabilities`; interactive-only hosts (Grok) are refused with `unsupported_host_execution`, a host without a registered read-only flag (OpenCode) with `sandbox_mode_unsupported`. After the read-only probe passes, an **unattended write probe** runs the exact unattended `workspace-write` argv a lane worker gets (the registry's flag — never the provider's own sandbox, which measured DONE-without-a-file on Codex) in another empty temporary directory and asks for one file: written → `verified`, exited without it → `unverified` (valid; the run's preflight warns), alive past the budget → `blocked`, refused → `failed` — the last two invalidate the signature with `host_not_unattended`. The result is kept under `unattended.yolo`; `--unattended-probe=false` skips the write probe and keeps what an earlier one proved.
 
-The probe's exit code is the verdict (`ok` = signature valid; `reason` carries `executable_not_found` with the install command, `auth`, `invalid_model`, `capacity`, `timeout`, `crash`, `effort_unsupported_by_host`). `--status` and `--list` are read-only and always exit 0; read the `state` field (`valid | expired | invalid | missing`). `aioson agent:execution:validate --feature=<slug> --strict` requires a valid signature for every enabled agent and lane of the manifest and warns on unsigned declared fallbacks; without `--strict` the manifest keeps its `validated_at_dispatch` contract.
+The probe's exit code is the verdict (`ok` = signature valid; `reason` carries `executable_not_found` with the install command, `auth`, `invalid_model`, `capacity`, `timeout`, `crash`, `effort_unsupported_by_host`, `host_not_unattended`, `permission_mode_unsupported` for a host with no unattended flag). `--status` and `--list` are read-only and always exit 0; read the `state` field (`valid | expired | invalid | missing`). `aioson agent:execution:validate --feature=<slug> --strict` requires a valid signature for every enabled agent and lane of the manifest and warns on unsigned declared fallbacks; without `--strict` the manifest keeps its `validated_at_dispatch` contract.
 
 ## execution:offer
 
@@ -1165,10 +1186,10 @@ Compiles the planner's `## Development execution lanes` and `## Execution Sequen
 ## execution:run
 
 ```bash
-aioson execution:run [path] --feature=<slug> [--preflight] [--resume] [--fresh] [--wave=<n>] [--json]
+aioson execution:run [path] --feature=<slug> [--preflight] [--resume] [--fresh] [--wave=<n>] [--unit-timeout=<ms>] [--json]
 ```
 
-Runs the compiled plan: wave by wave, every lane unit as a `dev → qa` pipeline of ephemeral external processes (the lane's dev role implements the unit inside its files with the host's unattended write mode and a bound JSON report; the lane's qa role reviews and tests it with the qa-lane profile, may apply at most `qa.max_fix_files` measured corrections among the unit files, reports the rest as findings), up to `parallel.max_concurrent_lanes` pipelines at once. The deterministic preflight (`--preflight` stops there) is `verify:artifact kind=execution-plan` plus a valid manifest and every role host resolvable on PATH. The run holds the feature's dispatcher lease (a direct `agent:execution:dispatch` cannot interleave; `run_lease_held` otherwise) and writes `.aioson/context/execution-state-<slug>.json` after every transition. A unit that cannot run, times out, crashes, misses its bound report or reports `FAIL`/`BLOCKED` — or whose reviewer cannot run — leaves a `decision_required` (state + a `decision_required` event on the unit's execution telemetry); the wave finishes and the run pauses (exit 1, `decisions_pending[]` with hints). `--resume` continues idempotently after `execution:decide` (passed units are never re-run; `run_state_stale` when the plan or manifest changed since; `--fresh` discards the previous run). Wave-level scope drift (`lane_scope_drift`, `unowned_change`) and unit silence (`stalled`: no output and no file change under the lane write paths for 5 min) are measured and reported, never guessed. Live lines (`[execution] wave 1 · phase-2 · dev started kimi/kimi-k3`) go to stdout, or to stderr with `--json` so the JSON document stays the only stdout. Integration units (files outside every lane) are listed for the session DEV, never spawned.
+Runs the compiled plan: wave by wave, every lane unit as a `dev → qa` pipeline of ephemeral external processes (the lane's dev role implements the unit inside its files with the host's unattended flag from the registry — never the provider's own sandbox, measured to answer without writing — and a bound JSON report; the lane's qa role reviews and tests it with the qa-lane profile, may apply at most `qa.max_fix_files` measured corrections among the unit files, reports the rest as findings), up to `parallel.max_concurrent_lanes` pipelines at once. The deterministic preflight (`--preflight` stops there) is `verify:artifact kind=execution-plan` plus a valid manifest, every role host resolvable on PATH and registered with an unattended flag (`permission_mode_unsupported` otherwise — OpenCode), and the host signature's unattended write probe not `blocked`/`failed` (`host_not_unattended`); a signature signed without the probe is a `preflight.warnings` line naming the re-sign command, never a block. The run holds the feature's dispatcher lease (a direct `agent:execution:dispatch` cannot interleave); a lease a killed run left behind is waited out (up to 35 s, announced on the live line — a live run renews its lease every 10 s, a dead one never does), and `run_lease_held` is answered only for a lease something is still renewing, with the lock path and the remaining time — never delete the lock by hand. The per-unit budget is `--unit-timeout=<ms>` for this invocation, else `execution.unit_timeout_ms` in the roles file, else 60 minutes; `0` means no limit (the worker runs until it finishes). The budget is a property of the process, not of the compiled plan: editing it never makes the plan stale. The run writes `.aioson/context/execution-state-<slug>.json` after every transition. A unit that cannot run, times out, crashes, misses its bound report or reports `FAIL`/`BLOCKED` — or whose reviewer cannot run — leaves a `decision_required` (state + a `decision_required` event on the unit's execution telemetry); the wave finishes and the run pauses (exit 1, `decisions_pending[]` with hints). `--resume` continues idempotently after `execution:decide` (passed units are never re-run; `run_state_stale` when the plan or manifest changed since; `--fresh` discards the previous run). Wave-level scope drift (`lane_scope_drift`, `unowned_change`), unit silence (`stalled`: no output and no file change under the lane write paths for 5 min) and unit inactivity on the disk alone (`unproductive`: no file change under the lane write paths for 15 min however talkative the process — the shape of a worker blocked on an approval prompt) are measured and reported, never guessed; a `timeout` decision says what the disk saw — `still writing` (retry with a larger budget) or `never wrote` (fallback or abort) — in `pending_decision.detail`. Live lines (`[execution] wave 1 · phase-2 · dev started kimi/kimi-k3`) go to stdout, or to stderr with `--json` so the JSON document stays the only stdout. Integration units (files outside every lane) are listed for the session DEV, never spawned.
 
 ## execution:decide
 

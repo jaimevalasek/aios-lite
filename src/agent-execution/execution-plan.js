@@ -31,7 +31,7 @@
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const crypto = require('node:crypto');
-const { parseExecutionWaves, parseDevelopmentLanes } = require('../harness/plan-waves');
+const { parseExecutionWaves, parseDevelopmentLanes, LANES_HEADINGS } = require('../harness/plan-waves');
 const { matchGlob } = require('../harness/glob-match');
 const {
   extractSection,
@@ -39,6 +39,7 @@ const {
   mapColumns,
   cleanCell,
   extractIds,
+  normalizeLabel,
   CAP_ID_RE,
   AC_ID_RE
 } = require('../lib/feature-completeness-format');
@@ -180,6 +181,68 @@ function tableRowsFor(content, headings, definitions) {
  * a higher level. The unit prompt embeds its own phase so the worker does
  * not read the whole plan for the two paragraphs that concern it.
  */
+// The headings the compiler reads by "first occurrence wins" — the catalog
+// the duplicate check holds the plan (errors) and the PRD (warnings) to.
+const PLAN_CANONICAL_SECTIONS = [
+  { id: 'execution-sequence', aliases: ['Execution Sequence', 'Sequência de Execução', 'Sequencia de Execucao'] },
+  { id: 'development-execution-lanes', aliases: LANES_HEADINGS },
+  { id: 'interface-contract', aliases: ['Interface Contract', 'Contrato de Interface'] },
+  { id: 'capability-delivery-plan', aliases: ['Capability Delivery Plan', 'Plano de Entrega de Capacidades', 'Matriz de Entrega de Capacidades'] },
+  { id: 'implementation-delta', aliases: ['Implementation Delta', 'Delta de Implementacao', 'Delta de Implementação'] }
+];
+const PRD_CANONICAL_SECTIONS = [
+  { id: 'acceptance-criteria', aliases: ['Acceptance Criteria', 'Criterios de Aceite', 'Critérios de Aceite'] }
+];
+
+/** Every heading (any level) that extractSection would accept for these aliases, with its line. */
+function sectionHeadingLines(content, aliases) {
+  const normalized = aliases.map(normalizeLabel);
+  const found = [];
+  String(content || '').split(/\r?\n/).forEach((line, index) => {
+    const match = line.match(/^(#{1,6})\s+(.+?)\s*$/);
+    if (!match) return;
+    const heading = normalizeLabel(match[2]);
+    if (normalized.some((alias) => heading === alias || heading.startsWith(`${alias}-`))) found.push({ line: index + 1, level: match[1].length, text: match[2] });
+  });
+  return found;
+}
+
+/** Canonical headings that appear more than once: `{id, heading, lines[]}` per duplicate. */
+function duplicateSections(content, catalog) {
+  const duplicates = [];
+  for (const section of catalog) {
+    const found = sectionHeadingLines(content, section.aliases);
+    if (found.length > 1) duplicates.push({ id: section.id, heading: found[0].text, lines: found.map((item) => item.line) });
+  }
+  return duplicates;
+}
+
+/**
+ * Phase headings that open the same phase number twice — mirrors the opening
+ * rule of readPhaseSections (a phase heading opens a section only when none
+ * is open), so a nested "### Phase 1 notes" is never counted.
+ */
+function duplicatePhaseSections(planContent) {
+  const openings = new Map();
+  let current = null;
+  let level = 0;
+  String(planContent || '').split(/\r?\n/).forEach((line, index) => {
+    const heading = line.match(/^(#{2,4})\s+(.*)$/);
+    if (!heading) return;
+    const depth = heading[1].length;
+    if (current !== null && depth <= level) current = null;
+    const phase = heading[2].match(/^(?:phase|fase|etapa)\s+(\d+)\b/i);
+    if (phase && current === null) {
+      current = parseInt(phase[1], 10);
+      level = depth;
+      const lines = openings.get(current) || [];
+      lines.push(index + 1);
+      openings.set(current, lines);
+    }
+  });
+  return [...openings.entries()].filter(([, lines]) => lines.length > 1).map(([phase, lines]) => ({ id: `phase-${phase}`, heading: `Phase ${phase}`, lines }));
+}
+
 function readPhaseSections(planContent) {
   const sections = new Map();
   let current = null;
@@ -395,6 +458,19 @@ function compileExecutionPlan({ feature, planContent, prdContent, roles, rules =
   const error = (check, message, extra = {}) => errors.push({ check, message, ...extra });
   const warn = (check, message, extra = {}) => warnings.push({ check, message, ...extra });
 
+  // ── one truth per canonical heading ───────────────────────────────────────
+  // Every section below is read "first occurrence wins" (extractSection,
+  // parseExecutionWaves, readPhaseSections). A plan that carries one twice
+  // compiles from whichever copy came first and verifies OK; the incident
+  // plan carried its whole phase block twice and the copies disagreed on the
+  // wave of a file. Two truths for one question is a defect — refused here.
+  for (const dup of [...duplicateSections(planContent, PLAN_CANONICAL_SECTIONS), ...duplicatePhaseSections(planContent)]) {
+    error('duplicate_plan_section', `the plan carries "${dup.heading}" ${dup.lines.length} times (lines ${dup.lines.join(', ')}) — the compiler reads the first copy and ignores the rest; keep one section per canonical heading (merge the copies or delete the stale one)`, { section: dup.id, lines: dup.lines });
+  }
+  for (const dup of (prdContent ? duplicateSections(prdContent, PRD_CANONICAL_SECTIONS) : [])) {
+    warn('duplicate_prd_section', `the PRD carries "${dup.heading}" ${dup.lines.length} times (lines ${dup.lines.join(', ')}) — unit prompts embed the rows of the first copy only`, { section: dup.id, lines: dup.lines });
+  }
+
   // ── lanes table ──────────────────────────────────────────────────────────
   const lanesTable = parseDevelopmentLanes(planContent);
   if (lanesTable === null) {
@@ -462,7 +538,8 @@ function compileExecutionPlan({ feature, planContent, prdContent, roles, rules =
       if (!role) continue;
       const sig = signatureFor(role);
       if (sig.state !== 'valid') {
-        error(`role_signature_${sig.state}`, `role "${role.role}" (${role.host}/${role.model}${role.reasoning_effort ? `/${role.reasoning_effort}` : ''}) has ${sig.state === 'missing' ? 'no' : `an ${sig.state}`} host signature on this machine`, { lane: laneId, role: role.role, host: role.host, model: role.model, reasoning_effort: role.reasoning_effort, hint: roleHint(role) });
+        const why = sig.state === 'invalid' && sig.entry?.reason ? ` (${sig.entry.reason})` : '';
+        error(`role_signature_${sig.state}`, `role "${role.role}" (${role.host}/${role.model}${role.reasoning_effort ? `/${role.reasoning_effort}` : ''}) has ${sig.state === 'missing' ? 'no' : `an ${sig.state}`} host signature on this machine${why}`, { lane: laneId, role: role.role, host: role.host, model: role.model, reasoning_effort: role.reasoning_effort, signature_reason: sig.entry?.reason || null, hint: roleHint(role) });
       }
       lane[kind] = {
         role: role.role,
@@ -480,7 +557,9 @@ function compileExecutionPlan({ feature, planContent, prdContent, roles, rules =
       if (roles?.execution?.require_independent_qa === true) {
         error('self_review_same_model', `${detail}; execution.require_independent_qa is on — declare "${laneRoleKey(laneId, 'qa')}" (or "qa") on a different host or model in ${EXECUTION_ROLES_RELATIVE_PATH}`, { lane: laneId, host: resolved.dev.host, model: resolved.dev.model, role: resolved.qa.role, hint: `aioson host:signature . --host=<other host> --model=<other model>` });
       } else {
-        warn('self_review_same_model', detail, { lane: laneId });
+        // The warning names the knob: written as a bare warning it read like a
+        // block, and the key that makes it one appeared in no example file.
+        warn('self_review_same_model', `${detail} (a warning by default: the run proceeds and the implementer reviews itself; "execution": {"require_independent_qa": true} in ${EXECUTION_ROLES_RELATIVE_PATH} turns this into a refusal)`, { lane: laneId });
       }
     }
     if (resolved.dev && ((lane.plan_host && lane.plan_host !== resolved.dev.host) || (lane.plan_model && lane.plan_model !== resolved.dev.model && lane.plan_model.toLowerCase() !== 'configured-default'))) {
@@ -1080,7 +1159,10 @@ async function verifyExecutionPlan(projectDir, featureInput, { env = process.env
     }
   }
   const rolesRead = await readExecutionRoles(projectDir);
-  const rolesFresh = rolesRead.present && rolesRead.digest === plan.source?.roles_digest;
+  // Bound to the binding digest (what shapes the units); a plan compiled
+  // before the split carries the raw file digest and stays fresh until the
+  // file changes — nobody is sent to recompile by an upgrade alone.
+  const rolesFresh = rolesRead.present && (rolesRead.digest === plan.source?.roles_digest || (rolesRead.file_digest !== undefined && rolesRead.file_digest === plan.source?.roles_digest));
   check('execution-plan:roles', rolesFresh, rolesFresh ? null : (rolesRead.present ? 'roles_changed' : rolesRead.reason));
   if (!rolesRead.present) issues.push(`${EXECUTION_ROLES_RELATIVE_PATH} not found — the orchestrated path is not unlocked on this project`);
   else if (!rolesRead.ok) issues.push(`${EXECUTION_ROLES_RELATIVE_PATH} is invalid — ${rolesRead.errors.map((e) => `${e.path}: ${e.message}`).join('; ')}`);
@@ -1226,8 +1308,12 @@ module.exports = {
   DEFAULT_QA_MAX_FIX_FILES,
   DEPENDENCY_GATES,
   EXECUTION_PLAN_VERSION,
+  PLAN_CANONICAL_SECTIONS,
+  PRD_CANONICAL_SECTIONS,
   applyPlanToManifest,
   compileExecutionPlan,
+  duplicatePhaseSections,
+  duplicateSections,
   rulesDigest,
   RULES_RELATIVE_PATH,
   compileFeatureExecution,

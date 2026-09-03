@@ -42,7 +42,7 @@ const {
   readExecutionPlan,
   verifyExecutionPlan
 } = require('../agent-execution/execution-plan');
-const { runExecution, decideExecution, statusExecution } = require('../agent-execution/execution-run');
+const { runExecution, decideExecution, statusExecution, describeMs } = require('../agent-execution/execution-run');
 const { graphExecution, FORMATS: GRAPH_FORMATS } = require('../agent-execution/execution-graph');
 
 const SUBCOMMANDS = ['offer', 'seed', 'compile', 'run', 'decide', 'status', 'graph'];
@@ -56,11 +56,19 @@ function formatProgress(event) {
     case 'wave':
       return `${where}: ${event.status}${Array.isArray(event.units) ? ` [${event.units.join(', ')}]` : ''}${Array.isArray(event.decisions) ? ` — decisions: ${event.decisions.join(', ')}` : ''}`;
     case 'unit':
-      return `${where}: ${event.status}${event.host ? ` ${event.host}/${event.model}` : ''}${event.verdict ? ` verdict ${event.verdict}` : ''}${event.reason ? ` (${event.reason})` : ''}${event.findings ? ` findings ${event.findings}` : ''}${event.corrections ? ` corrections ${event.corrections}` : ''}`;
+      return `${where}: ${event.status}${event.host ? ` ${event.host}/${event.model}` : ''}${event.verdict ? ` verdict ${event.verdict}` : ''}${event.reason ? ` (${event.reason})` : ''}${event.findings ? ` findings ${event.findings}` : ''}${event.corrections ? ` corrections ${event.corrections}` : ''}${event.detail ? ` — ${event.detail}` : ''}`;
     case 'stalled':
       return `${where}: stalled for ${Math.round((event.silent_ms || 0) / 1000)}s (no output, no file change under the lane write paths)`;
+    case 'unproductive':
+      return `${where}: unproductive for ${Math.round((event.since_ms || 0) / 1000)}s — no file change under the lane write paths${event.talkative ? ' while still producing output (a worker blocked on a prompt, looping, or only reading looks exactly like this)' : ''}`;
+    case 'budget':
+      return `unit budget ${describeMs(event.unit_timeout_ms)} (${event.source}${event.unit_timeout_ms === 0 ? '; each worker runs until it finishes' : ''})`;
+    case 'lease':
+      return event.status === 'waiting'
+        ? `lease: a previous run's lease on this feature expires in ${Math.ceil((event.expires_in_ms || 0) / 1000)}s (${event.path}) — waiting up to ${Math.ceil((event.max_wait_ms || 0) / 1000)}s; a live run renews it, a dead one never does`
+        : `lease: acquired after ${Math.round((event.waited_ms || 0) / 1000)}s — the previous run was dead`;
     case 'decision_required':
-      return `${where}: DECISION REQUIRED (${event.reason}) → ${event.hint}`;
+      return `${where}: DECISION REQUIRED (${event.reason})${event.detail ? ` — ${event.detail}` : ''} → ${event.hint}`;
     case 'scope':
       return `wave ${event.wave}${event.unit ? ` · ${event.unit}` : ''}: ${event.check} ${event.path}${event.lane ? ` (lane ${event.lane})` : ''}`;
     case 'message':
@@ -74,11 +82,13 @@ function logRun(logger, result) {
   const s = result.summary;
   if (result.status === 'ready') {
     logger.log(`Preflight ok for ${result.feature}: ${result.preflight.checks.map((c) => c.id).join(', ')}`);
+    for (const warning of result.preflight.warnings || []) logger.log(`  ⚠ ${warning}`);
     return;
   }
   if (result.status === 'refused') {
     logger.error(`Execution refused (${result.reason})${result.message ? `: ${result.message}` : ''}`);
     for (const issue of result.preflight?.issues || []) logger.error(`  ✗ ${issue}`);
+    for (const warning of result.preflight?.warnings || []) logger.error(`  ⚠ ${warning}`);
     return;
   }
   if (result.status === 'completed') {
@@ -89,7 +99,7 @@ function logRun(logger, result) {
   }
   logger.log(`Run ${result.run_id || ''} ${result.status}${result.reason ? ` (${result.reason})` : ''}.`);
   for (const decision of result.decisions_pending || []) {
-    logger.log(`  ? ${decision.unit} [${decision.stage}] ${decision.reason} → ${decision.hint}`);
+    logger.log(`  ? ${decision.unit} [${decision.stage}] ${decision.reason}${decision.detail ? ` — ${decision.detail}` : ''} → ${decision.hint}`);
   }
   if (result.resume_command) logger.log(`Resume: ${result.resume_command}`);
 }
@@ -179,7 +189,7 @@ async function runExecutionCommand({ args, options = {}, logger, env = process.e
       schema_version: 1,
       ...offer,
       // The client seam this engine supports, and whether one is in force here.
-      execution: { spawner_supported: true, spawner: spawner ? { configured: true, source: spawner.source, command: spawner.command, args: spawner.args } : { configured: false, source: null, command: null, args: [] }, unit_timeout_ms: offer.roles?.execution?.unit_timeout_ms || null },
+      execution: { spawner_supported: true, spawner: spawner ? { configured: true, source: spawner.source, command: spawner.command, args: spawner.args } : { configured: false, source: null, command: null, args: [] }, unit_timeout_ms: offer.roles?.execution?.unit_timeout_ms ?? null },
       hosts: { registered: listExecutionHosts(), installed },
       exitCode: 0
     };
@@ -290,6 +300,17 @@ async function runExecutionCommand({ args, options = {}, logger, env = process.e
     const progress = options.json
       ? (event) => process.stderr.write(`[execution] ${formatProgress(event)}\n`)
       : (event) => logger.log(`[execution] ${formatProgress(event)}`);
+    // `--unit-timeout=<ms>`: the per-unit budget for THIS invocation, above the
+    // roles file and the default; `0` = no limit. A budget is a property of the
+    // process, not of the compiled plan, so it never invalidates a run.
+    let timeout = null;
+    if (options['unit-timeout'] !== undefined && options['unit-timeout'] !== true) {
+      const parsed = Number(options['unit-timeout']);
+      if (!Number.isInteger(parsed) || parsed < 0 || (parsed > 0 && parsed < 1000)) {
+        return { ok: false, reason: 'invalid_unit_timeout', message: 'Use --unit-timeout=<ms> (0 = no limit; otherwise at least 1000)' };
+      }
+      timeout = parsed;
+    }
     const result = await runExecution({
       projectDir,
       feature,
@@ -299,6 +320,7 @@ async function runExecutionCommand({ args, options = {}, logger, env = process.e
       stopAfterWave: options.wave !== undefined && options.wave !== true ? Number(options.wave) : null,
       env,
       progress,
+      ...(timeout !== null ? { timeout } : {}),
       ...engineOptions
     });
     if (!options.json) logRun(logger, result);
@@ -309,7 +331,7 @@ async function runExecutionCommand({ args, options = {}, logger, env = process.e
     if (!feature) return { ok: false, reason: 'feature_required', message: 'Use --feature=<slug>' };
     if (!options.unit || options.unit === true) return { ok: false, reason: 'unit_required', message: 'Use --unit=<unit-id>' };
     if (!options.choice || options.choice === true) return { ok: false, reason: 'choice_required', message: 'Use --choice=<retry|fallback:<host>/<model>[/<effort>]|skip|skip-qa|abort>' };
-    const result = await decideExecution({ projectDir, feature, unit: String(options.unit), choice: String(options.choice), env, ...(engineOptions.now ? { now: engineOptions.now } : {}) });
+    const result = await decideExecution({ projectDir, feature, unit: String(options.unit), choice: String(options.choice), env, ...(engineOptions.now ? { now: engineOptions.now } : {}), ...(engineOptions.leaseWaitMs !== undefined ? { leaseWaitMs: engineOptions.leaseWaitMs } : {}) });
     if (!options.json) {
       if (result.ok) logger.log(`Decision applied to ${result.unit} [${result.stage}]: ${result.choice} → run ${result.status}${result.resume_command ? `. Resume: ${result.resume_command}` : ''}`);
       else logger.error(`Decision refused (${result.reason})${result.message ? `: ${result.message}` : ''}${result.hint ? ` → ${result.hint}` : ''}`);

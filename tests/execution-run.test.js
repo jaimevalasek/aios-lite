@@ -8,7 +8,7 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 const { spawnSync } = require('node:child_process');
 
-const { runExecution: runCommand } = require('../src/commands/execution');
+const { runExecution: runCommand, formatProgress } = require('../src/commands/execution');
 const { runStatePath, parseChoice, composeQaPrompt } = require('../src/agent-execution/execution-run');
 const { signatureKey, writeSignatures } = require('../src/lib/host-signature');
 const { acquireLease, releaseLease } = require('../src/agent-execution/dispatcher');
@@ -112,7 +112,7 @@ function fakeAdapter(host, { script = {}, delayMs = 25, log = [] } = {}) {
       const key = `${role}:${unit}`;
       const behaviour = typeof script[key] === 'function' ? script[key](input) : (script[key] || {});
       active += 1;
-      const entry = { key, host, model: input.model, effort: input.reasoning_effort ?? null, sandbox: input.sandbox_mode, start: Date.now(), active_at_start: active };
+      const entry = { key, host, model: input.model, effort: input.reasoning_effort ?? null, sandbox: input.sandbox_mode, timeout: input.timeout, start: Date.now(), active_at_start: active };
       log.push(entry);
       input.onStdout?.(`${key} working on ${host}\n`);
       await new Promise((resolve) => setTimeout(resolve, behaviour.delay_ms ?? delayMs));
@@ -238,8 +238,8 @@ function run(ctx, { registry, events = [], extra = {}, engine = {} } = {}) {
   });
 }
 
-function decide(ctx, unit, choice) {
-  return runCommand({ args: [ctx.dir], options: { sub: 'decide', feature: SLUG, unit, choice, json: true }, logger, env: ctx.env });
+function decide(ctx, unit, choice, engine = { leaseWaitMs: 0 }) {
+  return runCommand({ args: [ctx.dir], options: { sub: 'decide', feature: SLUG, unit, choice, json: true }, logger, env: ctx.env, engineOptions: engine });
 }
 
 function status(ctx) {
@@ -564,8 +564,11 @@ test('a reviewer that cannot run asks for a qa-stage decision; skip-qa keeps the
 test('the run holds the feature dispatcher lease (no interleaved direct dispatch), --wave stops after a wave, and silence is measured as stalled', async (t) => {
   const ctx = await setup(t);
   const lease = await acquireLease(ctx.dir, SLUG);
-  let result = await run(ctx, { registry: adapters().registry });
+  // leaseWaitMs 0: refuse at once (the default waits a dead run's lease out — tests/execution-unattended.test.js).
+  let result = await run(ctx, { registry: adapters().registry, engine: { leaseWaitMs: 0 } });
   assert.equal(result.reason, 'run_lease_held');
+  assert.match(result.message, /never delete the lock by hand/);
+  assert.ok(result.lease.expires_in_ms > 0 && result.lease.expires_in_ms <= 30000, 'the refusal names the remaining lease time');
   await releaseLease(lease);
 
   const events = [];
@@ -851,4 +854,127 @@ test('a declared fallback is signature-checked and named — an unproven backup 
   assert.ok(verified.warnings.some((w) => /fallback_signature_missing:.*backend\.dev\.fallbacks\[0\] qwen\/qwen-3\.8-max/.test(w)), verified.warnings.join('\n'));
   const fallbackCheck = verified.checks.find((c) => c.id === 'execution-plan:fallback-signatures');
   assert.equal(fallbackCheck.ok, false);
+});
+
+// ───────────────────────── what the first real run taught the engine ─────────────────────────
+// Six units, four waves, two lanes: a lane asked for permission all night with
+// nothing in the log, the 10-minute budget killed the next wave mid-write and
+// called it `timeout`, and the lease refusal sent the operator to delete the
+// lock by hand. Each of those is a measured behavior now.
+
+test('a lease left by a killed run is waited out — the run proceeds and says how long it waited; a lease a live run keeps renewing is refused as alive with the lock intact', async (t) => {
+  const { renewLease, leasePath } = require('../src/agent-execution/dispatcher');
+  const ctx = await setup(t);
+  const lockFile = leasePath(ctx.dir, SLUG);
+  await fs.writeFile(lockFile, JSON.stringify({ owner: 'killed-run', expires_at: Date.now() + 500 }));
+  const events = [];
+  let result = await run(ctx, { registry: adapters().registry, events, engine: { leaseWaitMs: 5000 } });
+  assert.equal(result.status, 'completed', JSON.stringify(result));
+  const waiting = events.find((e) => e.type === 'lease' && e.status === 'waiting');
+  const acquired = events.find((e) => e.type === 'lease' && e.status === 'acquired');
+  assert.ok(waiting && waiting.expires_in_ms > 0 && waiting.expires_in_ms <= 500, JSON.stringify(waiting));
+  assert.ok(acquired && acquired.waited_ms >= 200, JSON.stringify(acquired));
+  assert.ok(events.findIndex((e) => e.type === 'lease') < events.findIndex((e) => e.type === 'run'), 'the wait is announced before the run starts');
+  assert.match(formatProgress(waiting), /a previous run's lease on this feature expires in 1s .* waiting up to 5s; a live run renews it, a dead one never does/);
+  assert.match(formatProgress(acquired), /lease: acquired after \ds — the previous run was dead/);
+
+  const live = await acquireLease(ctx.dir, SLUG);
+  const renewing = setInterval(() => { renewLease(live).catch(() => {}); }, 60);
+  try {
+    result = await run(ctx, { registry: adapters().registry, extra: { fresh: true }, engine: { leaseWaitMs: 4000 } });
+    assert.equal(result.reason, 'run_lease_held');
+    assert.equal(result.lease.alive, true);
+    assert.match(result.message, /live execution run/);
+    assert.match(result.message, /never delete the lock by hand/);
+    assert.equal(JSON.parse(await fs.readFile(lockFile, 'utf8')).owner, live.owner, 'the live lock was never touched');
+  } finally {
+    clearInterval(renewing);
+    await releaseLease(live);
+  }
+});
+
+test('a timeout says what the disk saw — still writing (retry with a bigger budget) vs never wrote (fallback/abort); the budget comes from --unit-timeout, the roles file (0 = no limit) or the 1h default, a budget edit never invalidates the run, and "no writes" is measured on its own', async (t) => {
+  const ctx = await setup(t);
+  const events = [];
+  const fakes = adapters({ 'dev:phase-1': { touch: ['src/api/orders.ts'], fail: 'timeout' }, 'dev:phase-2': { silence_ms: 220, fail: 'timeout' } });
+  let result = await run(ctx, { registry: fakes.registry, events, extra: { 'unit-timeout': '600000' }, engine: { stallMs: 1000, unproductiveMs: 80, stallCheckMs: 10 } });
+  assert.equal(result.status, 'decision_required', JSON.stringify(result));
+  const budget = events.find((e) => e.type === 'budget');
+  assert.equal(budget.unit_timeout_ms, 600000);
+  assert.equal(budget.source, 'option');
+  assert.match(formatProgress(budget), /unit budget 10 min \(option\)/);
+  assert.equal(fakes.log.find((e) => e.key === 'dev:phase-1').timeout, 600000, 'the option reaches the adapter');
+  const state = await readState(ctx);
+  const writing = state.units['phase-1'].pending_decision;
+  assert.equal(writing.reason, 'timeout');
+  assert.equal(writing.timeout.wrote_during_budget, true);
+  assert.match(writing.detail, /still writing/);
+  assert.match(writing.detail, /--unit-timeout=<ms>, 0 = no limit/);
+  const silent = state.units['phase-2'].pending_decision;
+  assert.equal(silent.timeout.wrote_during_budget, false);
+  assert.match(silent.detail, /never wrote/);
+  assert.match(silent.detail, /fallback to another host\/model, or abort/);
+  assert.ok(events.some((e) => e.type === 'unit' && e.unit === 'phase-1' && e.status === 'timeout' && /still writing/.test(e.detail)));
+  assert.ok(events.some((e) => e.type === 'decision_required' && e.unit === 'phase-2' && /never wrote/.test(e.detail)));
+  assert.ok(result.decisions_pending.every((d) => typeof d.detail === 'string' && d.detail.length > 0), 'the ledger carries the measured hint');
+  // The unproductive signal fired on the silent unit before its budget, on the disk alone; the stall detector (1 s) stayed quiet.
+  assert.equal(state.units['phase-2'].dev.unproductive, true);
+  assert.equal(state.units['phase-2'].dev.stalled, false);
+  assert.ok(events.some((e) => e.type === 'unproductive' && e.unit === 'phase-2' && e.role === 'dev'));
+  assert.match(formatProgress(events.find((e) => e.type === 'unproductive' && e.unit === 'phase-2')), /unproductive for \ds — no file change under the lane write paths/);
+
+  assert.equal((await run(ctx, { registry: fakes.registry, extra: { 'unit-timeout': 'soon' } })).reason, 'invalid_unit_timeout');
+
+  // The roles file: 0 = no limit — and editing the budget after compile is NOT roles_changed (the plan binds to what shapes the units).
+  const rolesFile = path.join(ctx.dir, '.aioson', 'config', 'execution-roles.json');
+  await fs.writeFile(rolesFile, JSON.stringify({ ...ROLES, execution: { unit_timeout_ms: 0 } }, null, 2));
+  const unlimited = [];
+  result = await run(ctx, { registry: adapters().registry, events: unlimited, extra: { fresh: true } });
+  assert.equal(result.status, 'completed', JSON.stringify(result.preflight || result));
+  const noLimit = unlimited.find((e) => e.type === 'budget');
+  assert.equal(noLimit.unit_timeout_ms, 0);
+  assert.equal(noLimit.source, 'roles');
+  assert.match(formatProgress(noLimit), /unit budget no limit \(roles; each worker runs until it finishes\)/);
+  const offer = await runCommand({ args: [ctx.dir], options: { sub: 'offer', feature: SLUG, json: true }, logger, env: ctx.env });
+  assert.equal(offer.execution.unit_timeout_ms, 0);
+
+  await fs.writeFile(rolesFile, JSON.stringify(ROLES, null, 2));
+  const defaults = [];
+  result = await run(ctx, { registry: adapters().registry, events: defaults, extra: { fresh: true } });
+  assert.equal(result.status, 'completed');
+  const fallback = defaults.find((e) => e.type === 'budget');
+  assert.equal(fallback.unit_timeout_ms, 3600000);
+  assert.equal(fallback.source, 'default');
+});
+
+test('preflight legs beyond PATH: a signature without the unattended probe is a warning (check ids unchanged), a probe that blocked fails the host with the re-sign hint, and a host with no unattended flag fails the host', async (t) => {
+  const ctx = await setup(t);
+  let result = await run(ctx, { registry: adapters().registry, extra: { preflight: true } });
+  assert.equal(result.status, 'ready', JSON.stringify(result.preflight));
+  assert.deepEqual(result.preflight.checks.map((c) => c.id), ['plan', 'manifest', 'host:claude', 'host:codex', 'host:kimi', 'units']);
+  assert.ok(result.preflight.warnings.length >= 3, JSON.stringify(result.preflight.warnings));
+  assert.ok(result.preflight.warnings.every((w) => /^unattended_unverified: /.test(w)));
+  assert.ok(result.preflight.warnings.some((w) => /backend\.dev codex\/gpt-5\.6\/high/.test(w) && /aioson host:signature \. --host=codex --model=gpt-5\.6 --effort=high/.test(w)), result.preflight.warnings.join('\n'));
+
+  const withProbe = (state) => ({ ...ALL_SIGNED, [signatureKey('codex', 'gpt-5.6', 'high')]: { ...signed('codex', 'gpt-5.6', 'high'), unattended: { yolo: { mode: 'yolo', state, reason: state === 'blocked' ? 'timeout' : null } } } });
+  await writeSignatures({ signatures: withProbe('verified') }, { env: ctx.env });
+  result = await run(ctx, { registry: adapters().registry, extra: { preflight: true } });
+  assert.equal(result.status, 'ready');
+  assert.equal(result.preflight.warnings.some((w) => /codex\/gpt-5\.6/.test(w)), false, 'a verified probe is silent');
+
+  await writeSignatures({ signatures: withProbe('blocked') }, { env: ctx.env });
+  result = await run(ctx, { registry: adapters().registry, extra: { preflight: true } });
+  assert.equal(result.reason, 'preflight_failed');
+  assert.match(result.preflight.issues.join('\n'), /host:codex: host_not_unattended: backend\.dev codex\/gpt-5\.6\/high — the unattended write probe blocked \(timeout\)/);
+  assert.match(result.preflight.issues.join('\n'), /re-sign: aioson host:signature \. --host=codex --model=gpt-5\.6 --effort=high/);
+  await writeSignatures({ signatures: ALL_SIGNED }, { env: ctx.env });
+
+  // A registered host with no unattended flag (OpenCode) is a valid role and
+  // compiles; the preflight is where "cannot run unattended" is refused.
+  const opencodeRoles = { ...ROLES, roles: { ...ROLES.roles, frontend_dev: { host: 'opencode', model: 'grok-code-fast', reasoning_effort: null } } };
+  const opencodeSigned = { ...ALL_SIGNED, [signatureKey('opencode', 'grok-code-fast', null)]: signed('opencode', 'grok-code-fast', null) };
+  const other = await setup(t, { roles: opencodeRoles, signatures: opencodeSigned, bins: ['codex', 'kimi', 'claude', 'qwen', 'opencode'] });
+  result = await run(other, { registry: { ...adapters().registry, opencode: adapters().registry.kimi }, extra: { preflight: true } });
+  assert.equal(result.reason, 'preflight_failed');
+  assert.match(result.preflight.issues.join('\n'), /host:opencode: permission_mode_unsupported: frontend\.dev opencode\/grok-code-fast — opencode has no unattended write flag registered; a lane worker runs unattended/);
 });

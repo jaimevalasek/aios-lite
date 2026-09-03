@@ -37,6 +37,7 @@ const {
   acquireLease,
   renewLease,
   releaseLease,
+  leasePath,
   executeWithCapacityPolicy,
   buildExecutionPrompt,
   readBoundReport,
@@ -49,7 +50,7 @@ const { buildQaLaneProfile } = require('./qa-lane-profile');
 const { resolveExecutable } = require('./executable-resolver');
 const { REASONING_EFFORTS, effortsForHost } = require('./schema');
 const { readSignatures, findSignature, signatureState } = require('../lib/host-signature');
-const { getExecutionCapabilities } = require('../lib/tool-capabilities');
+const { getExecutionCapabilities, resolveSandboxArgs, LANE_WORKER_MODE } = require('../lib/tool-capabilities');
 const { captureCorrectionBaseline } = require('../lib/specialist-correction');
 const { openRuntimeDb, appendExecutionEvent } = require('../runtime-store');
 const { readExecutionRoles, resolveSpawner, DEFAULT_SPAWNER_UNIT_TIMEOUT_MS } = require('../lib/execution-roles');
@@ -68,7 +69,26 @@ const LEASE_MS = 30000;
 const DEV_CHOICES = ['retry', 'fallback:<host>/<model>[/<effort>]', 'skip', 'abort'];
 const QA_CHOICES = ['retry', 'fallback:<host>/<model>[/<effort>]', 'skip-qa', 'abort'];
 const MAX_EXCERPT_ITEMS = 20;
-const DEFAULT_UNIT_TIMEOUT_MS = 600000;
+// The per-process budget of one lane unit when nothing sets it. Ten minutes
+// was a command's budget, not a worker's: the first real run killed every
+// unit of its first wave at 10:00 with the files half-written and reported
+// `timeout` as if the worker had failed. One hour reflects a phase at high
+// effort; `execution.unit_timeout_ms: 0` (roles) or `--unit-timeout=0` runs
+// until the worker finishes.
+const DEFAULT_UNIT_TIMEOUT_MS = 60 * 60 * 1000;
+// How long a run waits for a lease nobody renews before refusing. A killed
+// run leaves a lock with up to LEASE_MS of validity; a live run renews it
+// every LEASE_MS/3 — watching the file for one full LEASE_MS tells the two
+// apart without ever deleting a live lock.
+const DEFAULT_LEASE_WAIT_MS = LEASE_MS + 5000;
+
+function describeMs(ms) {
+  const value = Number(ms);
+  if (!Number.isFinite(value) || value <= 0) return 'no limit';
+  if (value >= 3600000) return `${Math.round((value / 3600000) * 10) / 10} h`;
+  if (value >= 60000) return `${Math.round(value / 60000)} min`;
+  return `${Math.round(value / 1000)} s`;
+}
 
 function sha256(text) {
   return crypto.createHash('sha256').update(String(text)).digest('hex');
@@ -150,6 +170,58 @@ function createLeaseMonitor(lease, { intervalMs = Math.floor(LEASE_MS / 3) } = {
   return { signal: controller.signal, get lost() { return lost; }, async stop() { clearInterval(timer); await inFlight; } };
 }
 
+// ─── the feature lease: wait out a dead run, never delete a live lock ───
+
+async function readLeaseFile(file) {
+  try {
+    return JSON.parse(await fs.readFile(file, 'utf8'));
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Acquire the feature lease, waiting for a lease nobody renews. After a run
+ * is killed the lock stays with up to LEASE_MS of validity; the old refusal
+ * ("another execution run holds this feature") sent the operator to delete
+ * the lock by hand — the one move that puts two executions on the same files
+ * when the run is NOT dead. The file itself tells the two apart: a live run
+ * renews `expires_at` every LEASE_MS/3, a dead one never does. Waits at most
+ * `maxWaitMs` (0 = refuse at once, with the remaining time named).
+ */
+async function acquireLeaseWaiting(projectDir, feature, { maxWaitMs = DEFAULT_LEASE_WAIT_MS, pollMs = 500, onWait = () => {}, sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms)) } = {}) {
+  const first = await acquireLease(projectDir, feature);
+  if (first) return { lease: first, waited_ms: 0 };
+  const file = leasePath(projectDir, feature);
+  const relative = path.relative(projectDir, file).split(path.sep).join('/');
+  const describe = (current) => ({ path: relative, owner: current?.owner || null, expires_in_ms: current ? Math.max(0, Number(current.expires_at) - Date.now()) : 0, lease_ms: LEASE_MS, renew_ms: Math.floor(LEASE_MS / 3) });
+  const held = (alive, current, waited) => {
+    const info = { ...describe(current), alive, waited_ms: waited };
+    const seconds = Math.ceil(info.expires_in_ms / 1000);
+    const message = alive === true
+      ? `a live execution run (or a direct agent:execution:dispatch) is renewing the lease on this feature (${relative}; renewed during the last ${Math.round(waited / 1000)}s) — stop it before resuming; never delete the lock by hand: two executions would write the same files`
+      : alive === false
+        ? `the lease on this feature (${relative}) expires in ${seconds}s and nobody renewed it during ${Math.round(waited / 1000)}s — if the previous run is dead, run the same command again once it expires; if it is alive, stop it first (never delete the lock by hand)`
+        : `the lease on this feature (${relative}) expires in ${seconds}s — a live run renews it every ${Math.floor(LEASE_MS / 3000)}s, a dead one never does: run the same command again once it expires (execution:run waits it out by default); never delete the lock by hand — two executions would write the same files`;
+    return { lease: null, waited_ms: waited, lease_info: info, message };
+  };
+  const initial = await readLeaseFile(file);
+  const initialExpiry = Number(initial?.expires_at) || 0;
+  const budget = Math.max(0, Number(maxWaitMs) || 0);
+  if (budget === 0) return held(null, initial, 0);
+  const startedAt = Date.now();
+  onWait({ ...describe(initial), max_wait_ms: budget });
+  while (Date.now() - startedAt < budget) {
+    await sleep(Math.min(pollMs, Math.max(1, budget - (Date.now() - startedAt))));
+    const lease = await acquireLease(projectDir, feature);
+    if (lease) return { lease, waited_ms: Date.now() - startedAt };
+    const current = await readLeaseFile(file);
+    const expiry = Number(current?.expires_at) || 0;
+    if (current && (current.owner !== initial?.owner || expiry > initialExpiry)) return held(true, current, Date.now() - startedAt);
+  }
+  return held(false, await readLeaseFile(file), Date.now() - startedAt);
+}
+
 // ─── life measured, not reported: output OR files under the write paths ───
 
 async function newestMtime(projectDir, writePaths, { cap = 4000 } = {}) {
@@ -189,27 +261,52 @@ async function newestMtime(projectDir, writePaths, { cap = 4000 } = {}) {
   return newest;
 }
 
-function createStallWatch({ projectDir, writePaths, stallMs, checkMs, now, onStalled }) {
-  let lastOutputAt = now();
+/**
+ * Two signals, measured separately — never chained:
+ *   - `stalled`: no output AND no file change under the lane write paths for
+ *     `stallMs` — the process is probably dead.
+ *   - `unproductive`: no file change under the lane write paths for
+ *     `unproductiveMs`, however talkative the process is — a worker blocked on
+ *     an approval prompt keeps printing that prompt, a reasoning loop keeps
+ *     streaming, a reader keeps listing files; none of them ever edits. The
+ *     chained version (silence first, then the disk) never reached the disk
+ *     for the first of those, which is exactly how the first real run lost a
+ *     night. Both are advisory (event, live line, telemetry, flag); a `--print`
+ *     host that streams nothing until it ends makes every long think look
+ *     silent, so neither decides anything on its own.
+ */
+function createStallWatch({ projectDir, writePaths, stallMs, unproductiveMs = null, checkMs, now, onStalled, onUnproductive }) {
+  const startedAt = now();
+  let lastOutputAt = startedAt;
   let stalled = false;
+  let unproductive = false;
   let stopped = false;
   let checking = false;
   const timer = setInterval(async () => {
-    if (stopped || stalled || checking) return;
+    if (stopped || checking) return;
+    const at = now();
+    const silent = at - lastOutputAt;
+    const wantStall = !stalled && silent >= stallMs;
+    const wantUnproductive = Boolean(unproductiveMs) && !unproductive && at - startedAt >= unproductiveMs;
+    if (!wantStall && !wantUnproductive) return;
     checking = true;
     try {
-      const silent = now() - lastOutputAt;
-      if (silent < stallMs) return;
       const mtime = await newestMtime(projectDir, writePaths);
-      if (now() - mtime < stallMs) return;
-      stalled = true;
-      onStalled({ silent_ms: silent });
+      const sinceWrite = at - mtime;
+      if (wantStall && sinceWrite >= stallMs) {
+        stalled = true;
+        onStalled?.({ silent_ms: silent });
+      }
+      if (wantUnproductive && sinceWrite >= unproductiveMs) {
+        unproductive = true;
+        onUnproductive?.({ since_ms: at - startedAt, silent_ms: silent });
+      }
     } finally {
       checking = false;
     }
   }, Math.max(1, Number(checkMs) || 1));
   timer.unref?.();
-  return { touch() { lastOutputAt = now(); }, get stalled() { return stalled; }, stop() { stopped = true; clearInterval(timer); } };
+  return { touch() { lastOutputAt = now(); }, get stalled() { return stalled; }, get unproductive() { return unproductive; }, stop() { stopped = true; clearInterval(timer); } };
 }
 
 // ─── worktree measurement (git; absent git → measured:false, never a block) ───
@@ -403,7 +500,7 @@ function classifyFailure(reason) {
 
 async function executeRole({
   projectDir, feature, runId, role, unit, lane, config, promptText, reportRel, manifest,
-  adapterRegistry, catalogLoader, timeout, signal, resolverOptions, stallMs, stallCheckMs, now, emit
+  adapterRegistry, catalogLoader, timeout, signal, resolverOptions, stallMs, unproductiveMs = null, stallCheckMs, now, emit
 }) {
   const resolved = await resolveExecutionEntry(config, { catalogLoader });
   if (!resolved.ok) return { kind: 'unavailable', reason: resolved.reason, candidates: resolved.candidates || [], host: config.host, model: config.model, reasoning_effort: config.reasoning_effort || null };
@@ -455,11 +552,16 @@ async function executeRole({
     projectDir,
     writePaths: lane.write_paths,
     stallMs,
+    unproductiveMs,
     checkMs: stallCheckMs,
     now,
     onStalled: ({ silent_ms }) => {
       try { telemetry.event('stalled', `${role}:${unit.id} silent for ${Math.round(silent_ms / 1000)}s — no output, no file change under the lane write paths`, { unit: unit.id, role, silent_ms }); } catch { /* telemetry is best-effort */ }
       emit({ type: 'stalled', unit: unit.id, lane: unit.lane, wave: unit.wave, role, silent_ms });
+    },
+    onUnproductive: ({ since_ms, silent_ms }) => {
+      try { telemetry.event('unproductive', `${role}:${unit.id} wrote nothing under the lane write paths for ${Math.round(since_ms / 1000)}s${silent_ms < stallMs ? ' while still producing output' : ''} — a worker blocked on a prompt, looping, or only reading looks exactly like this`, { unit: unit.id, role, since_ms, silent_ms }); } catch { /* telemetry is best-effort */ }
+      emit({ type: 'unproductive', unit: unit.id, lane: unit.lane, wave: unit.wave, role, since_ms, silent_ms, talkative: silent_ms < stallMs });
     }
   });
   let spawnCount = 0;
@@ -473,6 +575,9 @@ async function executeRole({
     timeout,
     signal,
     abortReason: 'lease_lost',
+    // A lane worker runs unattended, always — translated by the registry
+    // (its `yolo_args`), refused by the adapter when the host has no such
+    // flag, never silently downgraded to the provider's sandbox.
     sandbox_mode: 'workspace-write',
     resolverOptions,
     // Who/what/where for a spawner (a client that owns the process); ignored by the host adapters.
@@ -483,6 +588,7 @@ async function executeRole({
   };
   try { telemetry.event('progress', `${role} started for ${unit.id}`, { unit: unit.id, lane: unit.lane, wave: unit.wave, role }); } catch { /* best-effort */ }
   const startedAt = nowIso();
+  const startedAtMs = now();
   const execution = await executeWithCapacityPolicy({ manifest: manifest.manifest, resolved, input, adapterRegistry, catalogLoader });
   stall.stop();
   const base = {
@@ -495,14 +601,28 @@ async function executeRole({
     history: execution.history || [],
     session_id: execution.session_id || null,
     stalled: stall.stalled,
+    unproductive: stall.unproductive,
     started_at: startedAt,
     finished_at: nowIso()
   };
   if (!execution.ok) {
     const reason = execution.reason || 'crash';
+    // A budget that ran out is not one thing: a worker still writing when the
+    // clock killed it needs a bigger budget, not a different model; one that
+    // never wrote is the blocked/looping case. The disk already knows which.
+    let detail = null;
+    let timeoutFacts = null;
+    if (reason === 'timeout') {
+      const lastWrite = await newestMtime(projectDir, lane.write_paths).catch(() => 0);
+      const wrote = lastWrite >= startedAtMs;
+      timeoutFacts = { budget_ms: timeout || null, wrote_during_budget: wrote, last_write_age_ms: lastWrite > 0 ? Math.max(0, now() - lastWrite) : null };
+      detail = wrote
+        ? `the ${describeMs(timeout)} budget elapsed while the worker was still writing (last file change ${describeMs(timeoutFacts.last_write_age_ms)} before the kill) — not a worker failure: retry with a larger budget (execution:run --unit-timeout=<ms>, 0 = no limit, or execution.unit_timeout_ms in the roles file)`
+        : `the ${describeMs(timeout)} budget elapsed with no file change under the lane write paths — the worker never wrote (blocked on a prompt, looping, or only reading): fallback to another host/model, or abort`;
+    }
     try { telemetry.transition('paused', reason); } catch { /* state graph tolerance */ }
     telemetry.close();
-    return { ...base, kind: classifyFailure(reason), reason, error: execution.error || null, candidates: execution.candidates || [] };
+    return { ...base, kind: classifyFailure(reason), reason, error: execution.error || null, candidates: execution.candidates || [], ...(detail ? { detail, timeout: timeoutFacts } : {}) };
   }
   try { telemetry.transition('waiting_report'); } catch { /* tolerance */ }
   const bound = {
@@ -635,6 +755,37 @@ async function preflightExecution(projectDir, featureInput, { env = process.env,
     if (lane.dev?.host) hosts.add(lane.dev.host);
     if (lane.qa?.host) hosts.add(lane.qa.host);
   }
+  // A binary on PATH is not a host that runs unattended. Two more legs per
+  // lane role, both free of any spawn: the registry must translate
+  // `workspace-write` for the host (an unattended flag — deterministic), and
+  // the host signature's unattended write probe says whether that flag
+  // actually ran without a prompt on THIS machine (measured once per signing,
+  // never per run). A signature without the probe is a warning, never a block.
+  const warnings = [];
+  const hostIssues = new Map();
+  const store = await readSignatures({ env });
+  for (const [laneId, lane] of Object.entries(plan?.lanes || {})) {
+    for (const kind of ['dev', 'qa']) {
+      const role = lane[kind];
+      if (!role?.host) continue;
+      const label = `${laneId}.${kind} ${role.host}/${role.model}${role.reasoning_effort ? `/${role.reasoning_effort}` : ''}`;
+      const sandbox = resolveSandboxArgs(role.host, 'workspace-write');
+      if (!sandbox.ok) {
+        if (!hostIssues.has(role.host)) hostIssues.set(role.host, `${sandbox.reason}: ${label} — ${sandbox.message || 'the host cannot run workspace-write unattended'}; a lane worker runs unattended, choose a host that registers an unattended flag`);
+        continue;
+      }
+      const entry = findSignature(store, { host: role.host, model: role.model, reasoning_effort: role.reasoning_effort || null });
+      const probe = entry?.unattended?.[LANE_WORKER_MODE] || null;
+      const hint = `aioson host:signature . --host=${role.host} --model=${role.model}${role.reasoning_effort ? ` --effort=${role.reasoning_effort}` : ''}`;
+      if (!probe) {
+        warnings.push(`unattended_unverified: ${label} — the signature carries no unattended write probe (signed before the probe existed, or without it); a worker that asks for permission would sit silent until its budget elapses — re-sign: ${hint}`);
+      } else if (probe.state === 'unverified') {
+        warnings.push(`unattended_unverified: ${label} — the unattended write probe exited without writing its file (${probe.reason || 'no file written'}); re-sign to re-check: ${hint}`);
+      } else if (probe.state !== 'verified' && !hostIssues.has(role.host)) {
+        hostIssues.set(role.host, `host_not_unattended: ${label} — the unattended write probe ${probe.state} (${probe.reason || 'unknown'}) on this machine; fix the host configuration and re-sign: ${hint}`);
+      }
+    }
+  }
   for (const host of [...hosts].sort()) {
     const caps = getExecutionCapabilities(host);
     if (!caps || !adapterRegistry[host]) {
@@ -643,7 +794,7 @@ async function preflightExecution(projectDir, featureInput, { env = process.env,
     }
     try {
       await resolveExecutable(caps.binary, resolverOptions);
-      check(`host:${host}`, true, null);
+      check(`host:${host}`, !hostIssues.has(host), hostIssues.get(host) || null);
     } catch (error) {
       check(`host:${host}`, false, `executable_not_found: ${error.message}${caps.install_command ? ` — install: ${caps.install_command}` : ''}`);
     }
@@ -662,17 +813,20 @@ async function preflightExecution(projectDir, featureInput, { env = process.env,
     }
   }
   const ok = checks.every((item) => item.ok);
+  const configuredTimeout = rolesRead.ok ? rolesRead.roles.execution?.unit_timeout_ms : null;
   return {
     ok,
     feature,
     checks,
     issues: checks.filter((item) => !item.ok).map((item) => `${item.id}: ${item.detail}`),
+    warnings,
     plan,
     planDigest: read.exists ? sha256(JSON.stringify(plan)) : null,
     manifest: loaded.exists && loaded.ok ? loaded : null,
     verification: verified,
     spawner,
-    unitTimeoutMs: rolesRead.ok ? (rolesRead.roles.execution?.unit_timeout_ms || null) : null,
+    // `0` is "no limit" and must survive here; only null/absent is "unset".
+    unitTimeoutMs: Number.isInteger(configuredTimeout) ? configuredTimeout : null,
     requireIndependentQa: rolesRead.ok ? rolesRead.roles.execution?.require_independent_qa === true : false
   };
 }
@@ -694,7 +848,9 @@ async function runExecution({
   progress = () => {},
   resolverOptions,
   leaseIntervalMs = Math.floor(LEASE_MS / 3),
+  leaseWaitMs = DEFAULT_LEASE_WAIT_MS,
   stallMs = 300000,
+  unproductiveMs = null,
   stallCheckMs = 30000,
   qaKernelPath,
   gitBaseline = captureCorrectionBaseline,
@@ -705,7 +861,7 @@ async function runExecution({
     try { progress({ at: nowIso(), feature, ...event }); } catch { /* progress is best-effort */ }
   };
   const preflight = await preflightExecution(projectDir, feature, { env, now, resolverOptions, adapterRegistry });
-  const preflightReport = { ok: preflight.ok, checks: preflight.checks, issues: preflight.issues, spawner: preflight.spawner ? { command: preflight.spawner.command, source: preflight.spawner.source } : null };
+  const preflightReport = { ok: preflight.ok, checks: preflight.checks, issues: preflight.issues, warnings: preflight.warnings || [], spawner: preflight.spawner ? { command: preflight.spawner.command, source: preflight.spawner.source } : null };
   if (!preflight.ok) {
     return { ok: false, status: 'refused', reason: 'preflight_failed', feature, preflight: preflightReport, exitCode: 1 };
   }
@@ -720,12 +876,18 @@ async function runExecution({
   const spawner = preflight.spawner || null;
   const registry = spawner ? wrapRegistryWithSpawner(adapterRegistry, spawner, spawnerOptions) : adapterRegistry;
   // An explicit engine timeout (the caller's) wins; then the roles file; then the default for the mode.
-  const unitTimeout = timeout !== null ? timeout : (preflight.unitTimeoutMs || (spawner ? DEFAULT_SPAWNER_UNIT_TIMEOUT_MS : DEFAULT_UNIT_TIMEOUT_MS));
+  // `0` at any level is "no limit": the adapter arms no timer.
+  const unitTimeout = timeout !== null && timeout !== undefined
+    ? timeout
+    : (preflight.unitTimeoutMs !== null ? preflight.unitTimeoutMs : (spawner ? DEFAULT_SPAWNER_UNIT_TIMEOUT_MS : DEFAULT_UNIT_TIMEOUT_MS));
+  const budgetEvent = { type: 'budget', unit_timeout_ms: unitTimeout, source: timeout !== null && timeout !== undefined ? 'option' : (preflight.unitTimeoutMs !== null ? 'roles' : 'default') };
 
-  const lease = await acquireLease(projectDir, feature);
-  if (!lease) {
-    return { ok: false, status: 'refused', reason: 'run_lease_held', feature, message: 'another execution run or a direct agent:execution:dispatch holds this feature', exitCode: 1 };
+  const acquired = await acquireLeaseWaiting(projectDir, feature, { maxWaitMs: leaseWaitMs, onWait: (info) => emit({ type: 'lease', status: 'waiting', ...info }) });
+  if (!acquired.lease) {
+    return { ok: false, status: 'refused', reason: 'run_lease_held', feature, lease: acquired.lease_info, message: acquired.message, exitCode: 1 };
   }
+  if (acquired.waited_ms > 0) emit({ type: 'lease', status: 'acquired', waited_ms: acquired.waited_ms });
+  const lease = acquired.lease;
   const monitor = createLeaseMonitor(lease, { intervalMs: leaseIntervalMs });
   try {
     let state = await readJsonSafe(stateFile);
@@ -793,6 +955,7 @@ async function runExecution({
     state.spawner = spawner ? { command: spawner.command, args: spawner.args, source: spawner.source, unit_timeout_ms: unitTimeout } : null;
     await persist();
     emit({ type: 'run', status: 'started', run_id: state.run_id, waves: state.waves.length, resumed: Boolean(resume), spawner: spawner ? spawner.command : null });
+    emit(budgetEvent);
 
     const planUnits = Object.fromEntries((plan.units || []).map((unit) => [unit.id, unit]));
     const qaProfiles = new Map();
@@ -839,6 +1002,10 @@ async function runExecution({
         model: outcome.model || null,
         reasoning_effort: outcome.reasoning_effort || null,
         candidates: outcome.candidates || [],
+        // What the disk said at the failure (a timeout that was still writing
+        // vs one that never wrote) — the operator's hint, measured.
+        detail: outcome.detail || null,
+        timeout: outcome.timeout || null,
         asked_at: nowIso(),
         choices: stage === 'dev' ? DEV_CHOICES : QA_CHOICES,
         on_unavailable: state.on_unavailable
@@ -851,14 +1018,14 @@ async function runExecution({
             appendExecutionEvent(db, outcome.telemetry_run_id, {
               type: 'decision_required',
               safe_summary: `${stage}:${unitState.id} needs a decision (${unitState.pending_decision.reason})`,
-              payload: { feature, run_id: state.run_id, unit: unitState.id, lane: unitState.lane, wave: unitState.wave, stage, reason: unitState.pending_decision.reason, choices: unitState.pending_decision.choices, hint: decideHint(feature, unitState.id) }
+              payload: { feature, run_id: state.run_id, unit: unitState.id, lane: unitState.lane, wave: unitState.wave, stage, reason: unitState.pending_decision.reason, detail: unitState.pending_decision.detail, choices: unitState.pending_decision.choices, hint: decideHint(feature, unitState.id) }
             });
           } finally {
             db.close();
           }
         } catch { /* the state file carries the decision either way */ }
       }
-      emit({ type: 'decision_required', unit: unitState.id, lane: unitState.lane, wave: unitState.wave, stage, reason: unitState.pending_decision.reason, hint: decideHint(feature, unitState.id) });
+      emit({ type: 'decision_required', unit: unitState.id, lane: unitState.lane, wave: unitState.wave, stage, reason: unitState.pending_decision.reason, detail: unitState.pending_decision.detail, hint: decideHint(feature, unitState.id) });
       await persist();
     };
 
@@ -901,7 +1068,7 @@ async function runExecution({
       const unit = planUnits[unitId];
       const lane = plan.lanes[unit.lane];
       const unitState = state.units[unitId];
-      const commonArgs = { projectDir, feature, runId: state.run_id, unit, lane, manifest, adapterRegistry: registry, catalogLoader, timeout: unitTimeout, signal: monitor.signal, resolverOptions, stallMs, stallCheckMs, now, emit };
+      const commonArgs = { projectDir, feature, runId: state.run_id, unit, lane, manifest, adapterRegistry: registry, catalogLoader, timeout: unitTimeout, signal: monitor.signal, resolverOptions, stallMs, unproductiveMs: unproductiveMs ?? stallMs * 3, stallCheckMs, now, emit };
 
       if (unitState.status === 'pending') {
         let config;
@@ -935,7 +1102,7 @@ async function runExecution({
         unitState.dev = { ...unitState.dev, ...outcome, status: outcome.kind, findings: outcome.findings || [], evidence: (outcome.evidence || []).slice(0, MAX_EXCERPT_ITEMS), messages: outcome.messages || [], messages_dropped: outcome.messages_dropped || 0 };
         delete unitState.dev.kind;
         recordMailbox(unitState, 'dev', outcome);
-        emit({ type: 'unit', role: 'dev', status: outcome.kind, unit: unitId, lane: unit.lane, wave: unit.wave, host: outcome.host, model: outcome.model, reason: outcome.reason || null, verdict: outcome.verdict || null, findings: (outcome.findings || []).length, messages: (outcome.messages || []).length });
+        emit({ type: 'unit', role: 'dev', status: outcome.kind, unit: unitId, lane: unit.lane, wave: unit.wave, host: outcome.host, model: outcome.model, reason: outcome.reason || null, detail: outcome.detail || null, verdict: outcome.verdict || null, findings: (outcome.findings || []).length, messages: (outcome.messages || []).length });
         if (outcome.kind === 'passed') {
           unitState.status = 'passed';
           if (unitState.qa.status !== 'skipped') unitState.qa = { status: 'pending' };
@@ -1007,7 +1174,7 @@ async function runExecution({
         };
         delete unitState.qa.kind;
         recordMailbox(unitState, 'qa', outcome);
-        emit({ type: 'unit', role: 'qa', status: unitState.qa.status, unit: unitId, lane: unit.lane, wave: unit.wave, host: outcome.host, model: outcome.model, reason: outcome.reason || null, verdict: outcome.verdict || null, findings: qaFindings.length, corrections: measuredCorrections.length, messages: (outcome.messages || []).length });
+        emit({ type: 'unit', role: 'qa', status: unitState.qa.status, unit: unitId, lane: unit.lane, wave: unit.wave, host: outcome.host, model: outcome.model, reason: outcome.reason || null, detail: outcome.detail || null, verdict: outcome.verdict || null, findings: qaFindings.length, corrections: measuredCorrections.length, messages: (outcome.messages || []).length });
         if (outcome.kind === 'aborted') {
           unitState.qa = { status: 'pending', aborted_reason: outcome.reason };
           await persist();
@@ -1258,7 +1425,7 @@ function parseChoice(choice) {
   return { ok: false, reason: 'invalid_choice', valid: ['retry', 'fallback:<host>/<model>[/<effort>]', 'skip', 'skip-qa', 'abort'] };
 }
 
-async function decideExecution({ projectDir, feature: featureInput, unit: unitId, choice, env = process.env, now = () => Date.now() }) {
+async function decideExecution({ projectDir, feature: featureInput, unit: unitId, choice, env = process.env, now = () => Date.now(), leaseWaitMs = DEFAULT_LEASE_WAIT_MS }) {
   const feature = assertFeatureSlug(featureInput);
   const stateFile = runStatePath(projectDir, feature);
   const state = await readJsonSafe(stateFile);
@@ -1267,9 +1434,11 @@ async function decideExecution({ projectDir, feature: featureInput, unit: unitId
   const unitState = state.units?.[String(unitId || '').trim()];
   if (!unitState) return { ok: false, reason: 'unit_unknown', feature, unit: unitId, units: Object.keys(state.units || {}) };
 
-  // Decisions apply between runs only: the feature lease is the run's.
-  const lease = await acquireLease(projectDir, feature);
-  if (!lease) return { ok: false, reason: 'run_active', feature, unit: unitState.id, message: 'a run is active on this feature; decisions apply between runs' };
+  // Decisions apply between runs only: the feature lease is the run's. A
+  // lease left by a killed run is waited out, exactly as the run does.
+  const acquired = await acquireLeaseWaiting(projectDir, feature, { maxWaitMs: leaseWaitMs });
+  if (!acquired.lease) return { ok: false, reason: 'run_active', feature, unit: unitState.id, lease: acquired.lease_info, message: `a run is active on this feature; decisions apply between runs — ${acquired.message}` };
+  const lease = acquired.lease;
   try {
     if (!unitState.pending_decision) return { ok: false, reason: 'no_decision_pending', feature, unit: unitState.id, status: unitState.status };
     const parsed = parseChoice(choice);
@@ -1439,6 +1608,11 @@ module.exports = {
   executeRole,
   measureWindowScope,
   newestMtime,
+  acquireLeaseWaiting,
+  createStallWatch,
+  describeMs,
+  DEFAULT_UNIT_TIMEOUT_MS,
+  DEFAULT_LEASE_WAIT_MS,
   normalizeMessages,
   parseChoice,
   preflightExecution,

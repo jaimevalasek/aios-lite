@@ -47,8 +47,14 @@ const EXECUTION_KEYS = ['spawner', 'unit_timeout_ms', 'require_independent_qa'];
 const SPAWNER_KEYS = ['command', 'args'];
 const MAX_SPAWNER_ARGS = 16;
 const MAX_SPAWNER_TOKEN_LENGTH = 200;
+// `unit_timeout_ms`: the per-process budget of one lane unit. `0` is the
+// explicit "no limit — run until it finishes" (the adapter arms no timer);
+// null/absent is the engine default. A budget that killed a unit mid-write
+// looked like a worker failure in the log; the value the owner wanted did
+// not exist in the schema.
 const MIN_UNIT_TIMEOUT_MS = 60000;
 const MAX_UNIT_TIMEOUT_MS = 4 * 60 * 60 * 1000;
+const UNLIMITED_UNIT_TIMEOUT_MS = 0;
 const DEFAULT_SPAWNER_UNIT_TIMEOUT_MS = 30 * 60 * 1000;
 const SPAWNER_ENV = 'AIOSON_EXECUTION_SPAWNER';
 const ROLE_KEYS = ['host', 'model', 'reasoning_effort'];
@@ -149,8 +155,8 @@ function validateExecutionRoles(value, { hosts = listExecutionHosts() } = {}) {
         }
       }
       const unitTimeout = value.execution.unit_timeout_ms;
-      if (unitTimeout !== undefined && unitTimeout !== null && (!Number.isInteger(unitTimeout) || unitTimeout < MIN_UNIT_TIMEOUT_MS || unitTimeout > MAX_UNIT_TIMEOUT_MS)) {
-        add('$.execution.unit_timeout_ms', `must be an integer between ${MIN_UNIT_TIMEOUT_MS} and ${MAX_UNIT_TIMEOUT_MS}`);
+      if (unitTimeout !== undefined && unitTimeout !== null && unitTimeout !== UNLIMITED_UNIT_TIMEOUT_MS && (!Number.isInteger(unitTimeout) || unitTimeout < MIN_UNIT_TIMEOUT_MS || unitTimeout > MAX_UNIT_TIMEOUT_MS)) {
+        add('$.execution.unit_timeout_ms', `must be ${UNLIMITED_UNIT_TIMEOUT_MS} (no limit) or an integer between ${MIN_UNIT_TIMEOUT_MS} and ${MAX_UNIT_TIMEOUT_MS}`);
       }
       const independent = value.execution.require_independent_qa;
       if (independent !== undefined && independent !== null && typeof independent !== 'boolean') {
@@ -270,22 +276,40 @@ async function readExecutionRoles(projectDir, { hosts } = {}) {
     }
     return { present: true, ok: false, enabled: false, path: relative, reason: 'roles_unreadable', errors: [{ path: '$', message: error.message }], roles: null, digest: null };
   }
-  const digest = sha256(raw);
+  const fileDigest = sha256(raw);
   let value;
   try {
     value = JSON.parse(raw);
   } catch (error) {
-    return { present: true, ok: false, enabled: false, path: relative, reason: 'roles_invalid', errors: [{ path: '$', message: `invalid JSON: ${error.message}` }], roles: null, digest };
+    return { present: true, ok: false, enabled: false, path: relative, reason: 'roles_invalid', errors: [{ path: '$', message: `invalid JSON: ${error.message}` }], roles: null, digest: fileDigest, file_digest: fileDigest };
   }
   const validation = validateExecutionRoles(value, { hosts });
   if (!validation.ok) {
-    return { present: true, ok: false, enabled: false, path: relative, reason: 'roles_invalid', errors: validation.errors, roles: null, digest };
+    return { present: true, ok: false, enabled: false, path: relative, reason: 'roles_invalid', errors: validation.errors, roles: null, digest: fileDigest, file_digest: fileDigest };
   }
   const roles = normalizeExecutionRoles(value);
+  // `digest` is the BINDING digest — what the compiled plan is bound to — and
+  // covers only what shapes the units (roles, parallelism, the independent-
+  // review rule). The process budget and the spawner are read fresh by every
+  // run and stay out of it: raising `unit_timeout_ms` mid-run no longer
+  // invalidates the plan and restarts the run. `file_digest` is the raw file.
+  const digest = rolesBindingDigest(roles);
   if (!roles.enabled) {
-    return { present: true, ok: true, enabled: false, path: relative, reason: 'roles_disabled', errors: [], roles, digest };
+    return { present: true, ok: true, enabled: false, path: relative, reason: 'roles_disabled', errors: [], roles, digest, file_digest: fileDigest };
   }
-  return { present: true, ok: true, enabled: true, path: relative, reason: null, errors: [], roles, digest };
+  return { present: true, ok: true, enabled: true, path: relative, reason: null, errors: [], roles, digest, file_digest: fileDigest };
+}
+
+/** Digest of the roles content that shapes compiled units — never the process budget or the spawner. */
+function rolesBindingDigest(roles) {
+  const canonical = {
+    version: roles.version,
+    roles: Object.keys(roles.roles).sort().map((key) => [key, roles.roles[key].host, roles.roles[key].model, roles.roles[key].reasoning_effort || null]),
+    parallel: { max_concurrent_lanes: roles.parallel?.max_concurrent_lanes || null },
+    on_unavailable: roles.on_unavailable || null,
+    execution: { require_independent_qa: roles.execution?.require_independent_qa === true }
+  };
+  return sha256(JSON.stringify(canonical));
 }
 
 /** `{lane}_dev` is required per lane; `{lane}_qa` overrides the shared `qa`. */
@@ -574,6 +598,10 @@ module.exports = {
   DEFAULT_MAX_CONCURRENT_LANES,
   DEFAULT_ON_UNAVAILABLE,
   DEFAULT_SPAWNER_UNIT_TIMEOUT_MS,
+  MIN_UNIT_TIMEOUT_MS,
+  MAX_UNIT_TIMEOUT_MS,
+  UNLIMITED_UNIT_TIMEOUT_MS,
+  rolesBindingDigest,
   SPAWNER_ENV,
   parseSpawnerCommand,
   resolveSpawner,

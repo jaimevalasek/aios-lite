@@ -21,6 +21,20 @@
 //
 // Keep entries minimal and source-of-truth here. Adding a new CLI = one entry
 // (+ one adapter when it should be dispatchable).
+//
+// Sandbox translation lives here too — `read_only_args` for a read-only
+// researcher, `yolo_args` for a lane worker — and the adapters consume it
+// through `resolveSandboxArgs` (adapters/base.js) instead of carrying their
+// own conditionals: one adapter that translated `workspace-write` on its own
+// (`--sandbox workspace-write`, the provider's sandboxed write) left a lane
+// worker asking for permission all night while the registry already declared
+// the unattended flag. A lane worker runs unattended, always: the provider
+// sandbox was measured and never ran unattended here (Codex's Windows sandbox
+// setup fails to load; under `--sandbox workspace-write` the model answered
+// DONE after 96 s without writing the file — under the unattended flag it
+// wrote in 14 s). A host with `null` for a mode cannot honor it and is
+// refused at build, never silently run with more (or less) power than the
+// contract says.
 const TOOL_CAPS = {
   claude: {
     install_command: 'npm install -g @anthropic-ai/claude-code',
@@ -33,6 +47,7 @@ const TOOL_CAPS = {
     session_picker: ['--resume'],
     supports_yolo: true,
     yolo_args: ['--dangerously-skip-permissions'],
+    read_only_args: ['--permission-mode', 'plan'],
     execution: {
       additional_workspaces: true,
       model_catalog: false,
@@ -50,6 +65,10 @@ const TOOL_CAPS = {
     session_picker: ['resume'],
     supports_yolo: true,
     yolo_args: ['--dangerously-bypass-approvals-and-sandbox'],
+    // Never `--sandbox workspace-write` for a lane worker: measured on the
+    // operator's machine, the Windows sandbox setup fails to load and the
+    // model reports DONE without writing (see the header note).
+    read_only_args: ['--sandbox', 'read-only'],
     execution: {
       additional_workspaces: true,
       model_catalog: true,
@@ -67,6 +86,9 @@ const TOOL_CAPS = {
     session_picker: null,
     supports_yolo: false,
     yolo_args: null,
+    // No verified read-only or unattended flag: a sandbox_mode it cannot
+    // honor is refused at build (sandbox_mode_unsupported), never ignored.
+    read_only_args: null,
     execution: {
       additional_workspaces: false,
       model_catalog: false,
@@ -86,6 +108,7 @@ const TOOL_CAPS = {
     // unattended); unattended is what a permission-mode=yolo caller means.
     supports_yolo: true,
     yolo_args: ['--auto'],
+    read_only_args: ['--plan'],
     execution: {
       additional_workspaces: true,
       model_catalog: false,
@@ -103,6 +126,7 @@ const TOOL_CAPS = {
     session_picker: null,
     supports_yolo: true,
     yolo_args: ['--yolo'],
+    read_only_args: ['--approval-mode', 'plan', '--sandbox', '--safe-mode'],
     execution: {
       additional_workspaces: false,
       model_catalog: false,
@@ -195,12 +219,48 @@ function resolvePermissionModeArgs(tool, permissionMode) {
   return [...caps.yolo_args];
 }
 
+// The sandbox modes an execution caller may ask for. `read-only` is the
+// researcher's (`read_only_args`); `workspace-write` is the lane worker's and
+// always means unattended (`yolo_args`) — the provider sandboxes were
+// measured and never ran unattended (see the header note).
+const SANDBOX_MODES = ['read-only', 'workspace-write'];
+const LANE_WORKER_MODE = 'yolo';
+
+/**
+ * The argv a host needs for a sandbox mode — the ONE translation every adapter
+ * consumes (adapters/base.js), so no adapter can diverge from the registry.
+ * Never throws: `{ok: true, args}` or `{ok: false, reason, ...}` with
+ * `sandbox_mode_unknown | sandbox_mode_unsupported | permission_mode_unsupported`
+ * — the caller refuses the dispatch instead of running the host with a
+ * different power than the contract says.
+ */
+function resolveSandboxArgs(tool, sandboxMode) {
+  const host = String(tool || '').trim().toLowerCase();
+  const sandbox = sandboxMode === undefined || sandboxMode === null || sandboxMode === '' ? null : String(sandboxMode).trim().toLowerCase();
+  if (sandbox === null) return { ok: true, args: [], sandbox_mode: null };
+  if (!SANDBOX_MODES.includes(sandbox)) return { ok: false, reason: 'sandbox_mode_unknown', sandbox_mode: sandbox, host };
+  const caps = getToolCapabilities(host);
+  if (sandbox === 'read-only') {
+    if (!caps || !Array.isArray(caps.read_only_args)) {
+      return { ok: false, reason: 'sandbox_mode_unsupported', sandbox_mode: sandbox, host, message: `${host || 'this host'} has no read-only mode registered` };
+    }
+    return { ok: true, args: [...caps.read_only_args], sandbox_mode: sandbox };
+  }
+  if (!caps || !caps.supports_yolo || !Array.isArray(caps.yolo_args)) {
+    return { ok: false, reason: 'permission_mode_unsupported', sandbox_mode: sandbox, permission_mode: LANE_WORKER_MODE, host, message: `${host || 'this host'} has no unattended write flag registered` };
+  }
+  return { ok: true, args: [...caps.yolo_args], sandbox_mode: sandbox, permission_mode: LANE_WORKER_MODE };
+}
+
 module.exports = {
   TOOL_CAPS,
+  SANDBOX_MODES,
+  LANE_WORKER_MODE,
   getToolCapabilities,
   getExecutionCapabilities,
   listSupportedTools,
   listExecutionHosts,
   resolveResumeArgs,
   resolvePermissionModeArgs,
+  resolveSandboxArgs,
 };
