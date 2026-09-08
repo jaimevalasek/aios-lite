@@ -191,7 +191,7 @@ async function fakeBaseline(dir) {
 
 async function setup(t, { roles = ROLES, signatures = ALL_SIGNED, bins = ['codex', 'kimi', 'claude', 'qwen'] } = {}) {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'aioson-execution-run-'));
-  t.after(() => fs.rm(dir, { recursive: true, force: true }));
+  t.after(() => fs.rm(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }));
   for (const rel of ['.aioson/context', '.aioson/config', '.aioson/agents', 'src/api', 'src/ui', 'tests/api', 'tests/ui']) {
     await fs.mkdir(path.join(dir, ...rel.split('/')), { recursive: true });
   }
@@ -727,7 +727,11 @@ test('explicit edges schedule by readiness: a dependent starts as soon as its ow
   assert.equal(compiled.summary.edges, 3);
 
   // backend phase-1 is slow; frontend phase-2 is fast but its review is slow.
-  const script = { 'dev:phase-1': { delay_ms: 320 }, 'dev:phase-2': { delay_ms: 20 }, 'qa:phase-2': { delay_ms: 220 } };
+  // The slow legs are an order of magnitude above the fast one: these are
+  // wall-clock orderings, and a loaded machine (the full suite in parallel, an
+  // antivirus walking the temp tree) can put 300 ms of scheduling between two
+  // fake adapters. The margin buys determinism, not speed.
+  const script = { 'dev:phase-1': { delay_ms: 1500 }, 'dev:phase-2': { delay_ms: 20 }, 'qa:phase-2': { delay_ms: 1200 } };
   const fakes = adapters(script, { delayMs: 20 });
   const events = [];
   const result = await run(ctx, { registry: fakes.registry, events });

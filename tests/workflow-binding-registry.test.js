@@ -32,7 +32,7 @@ const NEW = 'deploy-channel';
 
 async function project(t, { pulse = NEW, handoff = null } = {}) {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'aioson-binding-'));
-  t.after(() => fs.rm(dir, { recursive: true, force: true }));
+  t.after(() => fs.rm(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }));
   await fs.mkdir(path.join(dir, '.aioson', 'context'), { recursive: true });
   await fs.writeFile(path.join(dir, '.aioson', 'context', 'project.context.md'), '---\nproject_name: "binding"\nproject_type: "web_app"\nclassification: "MEDIUM"\ninteraction_language: "en"\n---\n# Project Context\n', 'utf8');
   await fs.writeFile(path.join(dir, '.aioson', 'context', 'features.md'), [

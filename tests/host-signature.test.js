@@ -41,7 +41,7 @@ function fakeAdapter(host, script, { reasoningEffort = false, executable = proce
 
 async function tempStore(t) {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'aioson-host-signature-'));
-  t.after(() => fs.rm(dir, { recursive: true, force: true }));
+  t.after(() => fs.rm(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }));
   const file = path.join(dir, 'signatures.json');
   return { dir, file, env: { ...process.env, AIOSON_HOST_SIGNATURES: file } };
 }

@@ -21,7 +21,7 @@ function signed(host, model, effort, { expired = false } = {}) {
 
 async function setup(t) {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'aed-strict-'));
-  t.after(() => fs.rm(dir, { recursive: true, force: true }));
+  t.after(() => fs.rm(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }));
   await fs.mkdir(path.join(dir, '.aioson/context'), { recursive: true });
   const signatureEnv = { ...process.env, AIOSON_HOST_SIGNATURES: path.join(dir, 'signatures.json') };
   const init = await runAgentExecution({ args: [dir], options: { sub: 'init', feature: 'demo', host: 'claude', json: true }, logger });

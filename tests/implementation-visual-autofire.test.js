@@ -243,7 +243,7 @@ test('a utility-class build names the axes nothing could read, and invents no re
 
 test('implementation conformance carries the graded prototype floor and names an unavailable or incompatible axis', async (t) => {
   const dir = await featureRepo();
-  t.after(() => fs.rm(dir, { recursive: true, force: true }));
+  t.after(() => fs.rm(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }));
   await write(dir, 'src/ui/index.html', prototypeHtml());
   const evidencePath = `.aioson/context/features/${SLUG}/visual-evidence.json`;
   const measure = (options) => runVerifyArtifact({

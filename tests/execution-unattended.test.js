@@ -141,7 +141,7 @@ test('execution-roles: there is no per-role permission knob (a lane worker is un
 
 test('the roles digest the plan binds to changes with roles, parallelism and the independent-review rule — never with the process budget or the spawner', async (t) => {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'aioson-roles-digest-'));
-  t.after(() => fs.rm(dir, { recursive: true, force: true }));
+  t.after(() => fs.rm(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }));
   await fs.mkdir(path.join(dir, '.aioson', 'config'), { recursive: true });
   const write = (roles) => fs.writeFile(path.join(dir, '.aioson', 'config', 'execution-roles.json'), JSON.stringify(roles, null, 2));
   await write(ROLES);
@@ -171,7 +171,7 @@ test('the roles digest the plan binds to changes with roles, parallelism and the
 
 test('a lease nobody renews is waited out and acquired; a lease a live run keeps renewing is refused as alive — the lock is never deleted by hand', async (t) => {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'aioson-lease-wait-'));
-  t.after(() => fs.rm(dir, { recursive: true, force: true }));
+  t.after(() => fs.rm(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }));
   const file = leasePath(dir, SLUG);
   await fs.mkdir(path.dirname(file), { recursive: true });
 
@@ -217,7 +217,7 @@ test('a lease nobody renews is waited out and acquired; a lease a live run keeps
 
 test('unproductive is measured on the disk alone: a worker that keeps talking and never writes is named; one that writes is not', async (t) => {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'aioson-stall-'));
-  t.after(() => fs.rm(dir, { recursive: true, force: true }));
+  t.after(() => fs.rm(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }));
   await fs.mkdir(path.join(dir, 'src', 'api'), { recursive: true });
   const events = [];
   const watch = createStallWatch({ projectDir: dir, writePaths: ['src/api/**'], stallMs: 2000, unproductiveMs: 150, checkMs: 20, now: () => Date.now(), onStalled: (e) => events.push({ type: 'stalled', ...e }), onUnproductive: (e) => events.push({ type: 'unproductive', ...e }) });
@@ -284,7 +284,7 @@ test('duplicateSections mirrors the readers: any canonical heading twice, or the
 
 async function compileProject(t, { planContent, prdContent = '# Orders\n\n## Acceptance Criteria\n| AC | CAP | Observable behavior | Evidence |\n|---|---|---|---|\n| AC-orders-01 | CAP-orders-api | POST /orders creates an order | api test |\n', roles = ROLES }) {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'aioson-dup-compile-'));
-  t.after(() => fs.rm(dir, { recursive: true, force: true }));
+  t.after(() => fs.rm(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }));
   for (const rel of ['.aioson/context', '.aioson/config', '.aioson/agents']) await fs.mkdir(path.join(dir, ...rel.split('/')), { recursive: true });
   await fs.writeFile(path.join(dir, '.aioson', 'context', `implementation-plan-${SLUG}.md`), planContent, 'utf8');
   await fs.writeFile(path.join(dir, '.aioson', 'context', `prd-${SLUG}.md`), prdContent, 'utf8');
@@ -349,7 +349,7 @@ function fakeHost(host, { readOnlyScript = 'console.log("OK")', writeScript = 'c
 
 async function tempStore(t) {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'aioson-unattended-sig-'));
-  t.after(() => fs.rm(dir, { recursive: true, force: true }));
+  t.after(() => fs.rm(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }));
   return { dir, env: { ...process.env, AIOSON_HOST_SIGNATURES: path.join(dir, 'signatures.json') } };
 }
 

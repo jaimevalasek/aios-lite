@@ -136,7 +136,7 @@ function stateAt(stage, classification, { current = false } = {}) {
 
 async function project(tt, { classification = 'SMALL', plan = SMALL_PLAN, roles = null, current = false, prdContent = null } = {}) {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'aioson-execution-scale-'));
-  tt.after(() => fs.rm(dir, { recursive: true, force: true }));
+  tt.after(() => fs.rm(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }));
   await write(dir, '.aioson/context/project.context.md', [
     '---', 'project_name: demo', 'project_type: web_app', 'profile: developer', 'framework: Node.js',
     'framework_installed: true', `classification: ${classification}`, 'interaction_language: en', 'conversation_language: en',

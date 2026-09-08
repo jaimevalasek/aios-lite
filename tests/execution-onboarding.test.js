@@ -122,7 +122,7 @@ const installedOnly = (...binaries) => async (binary) => (binaries.includes(bina
 
 async function setup(t, { plan = PLAN, prd = PRD, roles = ROLES } = {}) {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'aioson-execution-onboarding-'));
-  t.after(() => fs.rm(dir, { recursive: true, force: true }));
+  t.after(() => fs.rm(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }));
   await fs.mkdir(path.join(dir, '.aioson', 'context'), { recursive: true });
   await fs.mkdir(path.join(dir, '.aioson', 'agents'), { recursive: true });
   if (plan !== null) await fs.writeFile(path.join(dir, '.aioson', 'context', `implementation-plan-${SLUG}.md`), plan, 'utf8');

@@ -26,7 +26,7 @@ test('memory target IDs reject traversal and platform path separators', () => {
 
 test('memory:archive rejects traversal before touching an outside file', async (t) => {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'aioson-memory-archive-security-'));
-  t.after(() => fs.rm(dir, { recursive: true, force: true }));
+  t.after(() => fs.rm(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }));
   const outsideFile = path.join(dir, 'victim.md');
   await fs.writeFile(outsideFile, 'must remain\n', 'utf8');
 
@@ -43,7 +43,7 @@ test('memory:archive rejects traversal before touching an outside file', async (
 
 test('memory:restore rejects traversal before initializing runtime storage', async (t) => {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'aioson-memory-restore-security-'));
-  t.after(() => fs.rm(dir, { recursive: true, force: true }));
+  t.after(() => fs.rm(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }));
 
   const result = await runMemoryRestore({
     args: [dir],

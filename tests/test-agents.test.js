@@ -49,7 +49,7 @@ async function writeAgentSet(root) {
 
 test('test:agents validates the complete canonical catalog without legacy locale assumptions', async (t) => {
   const dir = await makeTempDir();
-  t.after(() => fs.rm(dir, { recursive: true, force: true }));
+  t.after(() => fs.rm(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }));
   const templateRoot = path.join(dir, 'template', '.aioson', 'agents');
   const workspaceRoot = path.join(dir, '.aioson', 'agents');
   await writeAgentSet(templateRoot);
@@ -68,7 +68,7 @@ test('test:agents validates the complete canonical catalog without legacy locale
 
 test('test:agents honors an explicit installed-workspace path', async (t) => {
   const dir = await makeTempDir();
-  t.after(() => fs.rm(dir, { recursive: true, force: true }));
+  t.after(() => fs.rm(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }));
   await writeAgentSet(path.join(dir, '.aioson', 'agents'));
 
   const result = await runTestAgents({ args: [dir], options: { json: true }, logger });
@@ -80,7 +80,7 @@ test('test:agents honors an explicit installed-workspace path', async (t) => {
 
 test('test:agents reports a missing catalog agent with a stable check id', async (t) => {
   const dir = await makeTempDir();
-  t.after(() => fs.rm(dir, { recursive: true, force: true }));
+  t.after(() => fs.rm(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }));
   const root = path.join(dir, '.aioson', 'agents');
   await writeAgentSet(root);
   await fs.unlink(path.join(root, 'dev.md'));
@@ -93,7 +93,7 @@ test('test:agents reports a missing catalog agent with a stable check id', async
 
 test('test:agents detects template/workspace drift', async (t) => {
   const dir = await makeTempDir();
-  t.after(() => fs.rm(dir, { recursive: true, force: true }));
+  t.after(() => fs.rm(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }));
   const templateRoot = path.join(dir, 'template', '.aioson', 'agents');
   const workspaceRoot = path.join(dir, '.aioson', 'agents');
   await writeAgentSet(templateRoot);
@@ -110,7 +110,7 @@ test('test:agents detects template/workspace drift', async (t) => {
 
 test('test:agents rejects legacy locale prompt packs', async (t) => {
   const dir = await makeTempDir();
-  t.after(() => fs.rm(dir, { recursive: true, force: true }));
+  t.after(() => fs.rm(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }));
   await writeAgentSet(path.join(dir, '.aioson', 'agents'));
   const legacyPath = path.join(dir, '.aioson', 'locales', 'pt-BR', 'agents', 'dev.md');
   await fs.mkdir(path.dirname(legacyPath), { recursive: true });
@@ -124,7 +124,7 @@ test('test:agents rejects legacy locale prompt packs', async (t) => {
 
 test('test:agents does not silently fall back to the package for an invalid explicit path', async (t) => {
   const dir = await makeTempDir();
-  t.after(() => fs.rm(dir, { recursive: true, force: true }));
+  t.after(() => fs.rm(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }));
 
   const result = await runTestAgents({ args: [dir], options: { json: true }, logger });
 

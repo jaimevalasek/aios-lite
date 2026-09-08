@@ -127,7 +127,7 @@ function stateAt(stage, { current = false } = {}) {
 // `--complete=<stage>` runs its gates.
 async function project(t, { stage, roles = null, signatures = null, planStatus = 'approved', current = false } = {}) {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'aioson-execution-routing-'));
-  t.after(() => fs.rm(dir, { recursive: true, force: true }));
+  t.after(() => fs.rm(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }));
   await write(dir, '.aioson/context/project.context.md', [
     '---', 'project_name: demo', 'project_type: web_app', 'profile: developer', 'framework: Node.js',
     'framework_installed: true', 'classification: SMALL', 'interaction_language: en', 'conversation_language: en',

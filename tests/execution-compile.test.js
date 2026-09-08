@@ -109,7 +109,7 @@ const ALL_SIGNED = {
 
 async function setup(t, { plan = PLAN, prd = PRD, roles = ROLES, signatures = ALL_SIGNED, kernel = true } = {}) {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'aioson-execution-compile-'));
-  t.after(() => fs.rm(dir, { recursive: true, force: true }));
+  t.after(() => fs.rm(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }));
   await fs.mkdir(path.join(dir, '.aioson', 'context'), { recursive: true });
   await fs.mkdir(path.join(dir, '.aioson', 'config'), { recursive: true });
   await fs.mkdir(path.join(dir, '.aioson', 'agents'), { recursive: true });

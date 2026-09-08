@@ -79,7 +79,7 @@ function signed(host, model, effort) {
 
 async function setup(t, plan) {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'aioson-execution-graph-'));
-  t.after(() => fs.rm(dir, { recursive: true, force: true }));
+  t.after(() => fs.rm(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }));
   for (const rel of ['.aioson/context', '.aioson/config', '.aioson/agents']) await fs.mkdir(path.join(dir, ...rel.split('/')), { recursive: true });
   await fs.writeFile(path.join(dir, '.aioson', 'context', `implementation-plan-${SLUG}.md`), plan, 'utf8');
   await fs.writeFile(path.join(dir, '.aioson', 'config', 'execution-roles.json'), JSON.stringify(ROLES, null, 2), 'utf8');
