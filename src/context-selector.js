@@ -31,6 +31,16 @@ const SEMANTIC_STOP_WORDS = new Set([
   'a', 'an', 'and', 'as', 'by', 'com', 'como', 'da', 'das', 'de', 'do', 'dos',
   'e', 'em', 'for', 'from', 'in', 'into', 'no', 'nos', 'o', 'os', 'of', 'on',
   'ou', 'para', 'por', 'que', 'the', 'to', 'um', 'uma', 'with',
+  // Demonstratives, relatives and auxiliaries appear in every doc body; as
+  // semantic terms they count toward the docs minimum on any task ("that"
+  // matched 31 times in one effects doc on a payments-webhook task).
+  'that', 'this', 'these', 'those', 'which', 'when', 'where', 'while', 'then',
+  'than', 'them', 'they', 'their', 'there', 'also', 'only', 'just', 'over',
+  'about', 'other', 'some', 'been', 'have', 'does', 'will', 'should', 'would',
+  'could', 'esse', 'essa', 'este', 'esta', 'isso', 'isto', 'aquele', 'aquela',
+  'sobre', 'entre', 'cada', 'mesmo', 'mesma', 'todo', 'toda', 'todos', 'todas',
+  'muito', 'mais', 'menos', 'pode', 'deve', 'quando', 'onde', 'tambem', 'porque',
+  'ainda', 'depois', 'antes', 'aqui',
   'agent', 'agente', 'agents', 'aioson', 'dev', 'deyvin', 'architect',
   'feature', 'funcionalidade', 'task', 'tarefa', 'work', 'trabalho',
   'create', 'criar', 'fazer', 'implementar', 'implement', 'implementation',
@@ -462,6 +472,10 @@ function semanticCandidateAllowed(candidate) {
   return ['rules', 'design_governance', 'docs', 'feature_dossier'].includes(candidate.surface);
 }
 
+function escapeRegExp(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 function matchSemanticTerms(candidate, terms) {
   const haystack = normalizeForSemantic([
     candidate.path,
@@ -470,7 +484,11 @@ function matchSemanticTerms(candidate, terms) {
     candidate.tags.join(' '),
     candidate.searchText
   ].join(' '));
-  return terms.filter((term) => haystack.includes(term));
+  // A term matches at a word start, never inside one: `server` is not
+  // `observers`, `table` is not `stable`, `verifie` is not `unverified` —
+  // three infix hits that put an effects doc on a payments-webhook task.
+  // The prefix keeps the stem heuristic (`verifie` → verifies/verified).
+  return terms.filter((term) => new RegExp(`(?:^| )${escapeRegExp(term)}`).test(haystack));
 }
 
 function buildLexicalSemanticMatches(candidates, terms) {

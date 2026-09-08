@@ -284,3 +284,36 @@ test('context:load refuses a slug that escapes the project tree', async () => {
     await fs.rm(dir, { recursive: true, force: true });
   }
 });
+
+// Semantic terms match at a word start, never inside one. Live: the effects
+// doc surfaced on "Implementing a Stripe webhook handler … verifies
+// signatures and writes to the ledger table" because `server` was found in
+// `observers`, `table` in `stable`, `verifie` in `unverified` — and `that`
+// counted as a term. The docs minimum (4 terms) was met by infixes alone.
+test('semantic terms match word starts only: observers is not server, stable is not table, that is not vocabulary', async () => {
+  const dir = await shippedRulesProject();
+  const docFrontmatter = (name) => [
+    '---', `name: ${name}`, `description: ${name} reference`, 'agents: [dev]',
+    'modes: [executing]', 'load_tier: trigger', 'triggers: [zzz-never]', '---'
+  ].join('\n');
+  await writeFile(dir, '.aioson/docs/design/infix-only.md', `${docFrontmatter('infix-only')}\n# Infix\n` +
+    'Release observers on teardown. Keep a stable wrapper that is implementable. Report unverified states. That is all.\n');
+  await writeFile(dir, '.aioson/docs/backend/prefix-hits.md', `${docFrontmatter('prefix-hits')}\n# Prefix\n` +
+    'The server verifies signatures before it writes a ledger table row.\n');
+  try {
+    const result = await selectContext(dir, {
+      agent: 'dev',
+      mode: 'executing',
+      task: 'Implementing a Stripe webhook handler in the payments service that verifies signatures and writes to the ledger table.',
+      paths: ['server/payments/webhook-handler.js']
+    });
+    const selected = selectedPaths(result);
+    assert.equal(selected.has('.aioson/docs/design/infix-only.md'), false, 'infix substrings counted as semantic matches');
+    assert.equal(selected.has('.aioson/docs/backend/prefix-hits.md'), true, 'word-start matches (incl. the verifie stem) still select');
+    assert.equal(result.semantic.terms.includes('that'), false, '"that" entered the semantic terms');
+    const hit = result.selected.find((item) => item.path.replace(/\\/g, '/') === '.aioson/docs/backend/prefix-hits.md');
+    assert.match(hit.reason, /semantic:/);
+  } finally {
+    await fs.rm(dir, { recursive: true, force: true });
+  }
+});
