@@ -63,7 +63,7 @@ Material choices use two to four legitimate alternatives. Use `single` for mutua
 
 For existing-system fit, include observed behavior and exact repository paths in `text`. Routine evidence-backed corrections belong in `recommendation`, not in a new user question.
 
-If a rich operational surface lacks briefing- or project-level `identity.md`, add at most one non-blocking `pending-decision` suggesting the reference-image route. Never force it.
+If a visible surface lacks briefing- or project-level `identity.md` and no choice is already recorded, add at most one non-blocking `pending-decision` offering a reusable design system: create from references, consolidate from the prototype's accepted direction without references, or decide later. Explain that this saves colors, typography, spacing, and component rules for later screens; the client need not know the filename. Use stable option IDs `identity-references`, `identity-intent`, and `identity-later`. Follow the offer in `prototype-and-delegation.md`; an accepted, confirmed applied decision answers it, so do not ask again. A pending or merely recommended option is not authorization. Never force identity creation or block the review on it.
 
 4. If the rich-surface idea is thin or the user asks whether it is worth pursuing, load `.aioson/skills/process/briefing-expansion-scout/SKILL.md`, write/update `.aioson/briefings/{slug}/expansion-scout.md`, and cite it in a finding. Preserve enough accepted evidence for Product's future capability map without assigning `CAP-*`.
 5. Generate deterministically:

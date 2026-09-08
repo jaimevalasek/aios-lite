@@ -27,7 +27,7 @@ const {
   POLES
 } = require('../lib/design-seed');
 
-const VERSION = '1.2.0';
+const VERSION = '1.3.0';
 const GENERATOR = `aioson design:seed@${VERSION}`;
 
 /**
@@ -127,6 +127,7 @@ async function runDesignSeed({ args, options = {}, logger }) {
     basis: result.basis,
     registry: { path: registryPath(), entries: registry.entries.length, avoided: avoid.length, origins },
     candidates: result.candidates,
+    warnings: result.warnings,
     recorded: null
   };
 
@@ -175,6 +176,7 @@ async function runDesignSeed({ args, options = {}, logger }) {
   }
   logger.log('Build FROM one candidate: hue family, pole, and pairing are the starting material; refine roles, scales, and');
   logger.log('composition with judgment. An extracted identity.md outranks any draw. Re-roll with --seed=N; same inputs, same draw.');
+  for (const warning of payload.warnings) logger.log(`  diversity warning: ${warning}`);
 
   return payload;
 }

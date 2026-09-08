@@ -64,6 +64,9 @@ function buildMarkdown(report) {
   lines.push(`- Browser: ${report.browser.label}${report.browser.version ? ` ${report.browser.version}` : ''}`);
   lines.push(`- Script: ${report.script.path} (sha256 ${report.script.sha256.slice(0, 12)})`);
   lines.push(`- Replay: \`${report.replay}\``);
+  if (report.superseded_artifacts && report.superseded_artifacts.files > 0) {
+    lines.push(`- Artifacts: the folder holds this run only (${report.superseded_artifacts.files} file(s), ${Math.round(report.superseded_artifacts.bytes / 1024)} KB from the previous run cleared)`);
+  }
   lines.push('');
   const ids = Object.keys(report.ids);
   if (ids.length > 0) {

@@ -55,3 +55,14 @@ redação de segredos e o teto de 1 MB por execução. Isso reduz drasticamente 
 um agente produz muita saída. Ao iniciar novas execuções, ela também remove em lotes a saída terminal acima de 14
 dias e execuções terminais/pausadas acima de 30 dias. A manutenção física continua explícita porque `wal_checkpoint`
 sozinho não reduz o arquivo principal; quem recupera esse espaço é o `VACUUM`.
+
+## Evidência de browser em disco
+
+Fora do SQLite, os gates visual e de browser deixam binários regeneráveis ao lado dos relatórios: capturas em
+`.aioson/context/features/{slug}/visual-screenshots/` (de `verify:artifact --kind=visual --screenshots`) e snapshots por
+passo em `.aioson/briefings/{slug}/browser/{script}/` ou `.aioson/context/features/{slug}/browser/{script}/` (de `browser:run`).
+Eles não são a evidência — o JSON e o Markdown ao lado são — e cada relatório carrega a linha que regenera a sua pasta.
+Os produtores substituem a pasta a cada execução, a política de `.gitignore` do instalador os mantém fora do repositório,
+o `feature:archive` os descarta ao fechar a feature (`--keep-diagnostics` para arquivar junto), o `hygiene:scan` lista o
+que ficou órfão ou pesado em `heavy_evidence_artifacts`, e `aioson evidence:prune . --dry-run` mostra o que
+`aioson evidence:prune .` remove (órfãos por padrão; `--all` para toda captura; `--slug` para um dono).

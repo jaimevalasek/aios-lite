@@ -19,16 +19,7 @@ const { isCanonicalPlannerState } = require('./workflow-profile');
 const { validateCurrentSheldonReview } = require('./lib/sheldon-review');
 const { resolveGateCBaseline } = require('./lib/gate-checkpoint');
 
-const PENTESTER_TOP_10_2025 = Object.freeze([
-  'A01:2025', 'A02:2025', 'A03:2025', 'A04:2025', 'A05:2025',
-  'A06:2025', 'A07:2025', 'A08:2025', 'A09:2025', 'A10:2025'
-]);
-const PENTESTER_WSTG_FAMILIES = Object.freeze([
-  'WSTG-INFO', 'WSTG-CONF', 'WSTG-IDNT', 'WSTG-ATHN', 'WSTG-ATHZ', 'WSTG-SESS',
-  'WSTG-INPV', 'WSTG-ERRH', 'WSTG-CRYP', 'WSTG-BUSL', 'WSTG-CLNT', 'WSTG-APIT'
-]);
-const PENTESTER_API_TOP_10_2023 = Object.freeze(Array.from({ length: 10 }, (_, index) => `API${index + 1}:2023`));
-const PENTESTER_LLM_TOP_10_2025 = Object.freeze(Array.from({ length: 10 }, (_, index) => `LLM${String(index + 1).padStart(2, '0')}:2025`));
+const { analyzeCoverage, controlId: coverageControlId } = require('./pentester-coverage');
 const PENTESTER_RUN_ID_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z$/;
 const PENTESTER_REPORT_MODES = Object.freeze(['full', 'none']);
 
@@ -146,7 +137,8 @@ async function readSecurityFindings(findingsPath) {
       reviewContract: data.review_contract && typeof data.review_contract === 'object'
         ? data.review_contract
         : null,
-      coverage: Array.isArray(data.coverage) ? data.coverage : [],
+      coverage: data.coverage,
+      threatSurfaces: data.threat_surfaces,
       findings: Array.isArray(data.findings) ? data.findings : [],
       reportBundle: data.report_bundle && typeof data.report_bundle === 'object'
         ? data.report_bundle
@@ -192,47 +184,6 @@ function normalizeReportMode(value) {
 
 function normalizeArtifactPath(value) {
   return String(value || '').trim().replace(/\\/g, '/').replace(/^\.\//, '');
-}
-
-function coverageStatus(row) {
-  const status = String(row?.status || '').trim().toLowerCase();
-  if (status === 'tested_pass' || status === 'pass') return 'passed';
-  return status;
-}
-
-function coverageControlId(row) {
-  return String(row?.control_id || row?.id || '').trim().toUpperCase();
-}
-
-function coverageRowMatches(row, requirement) {
-  const id = coverageControlId(row);
-  if (
-    PENTESTER_TOP_10_2025.includes(requirement)
-    || PENTESTER_API_TOP_10_2023.includes(requirement)
-    || PENTESTER_LLM_TOP_10_2025.includes(requirement)
-  ) {
-    return id === requirement;
-  }
-  const text = [id, row?.standard, row?.standard_id, row?.title, ...(Array.isArray(row?.wstg_ids) ? row.wstg_ids : [])]
-    .join(' ')
-    .toUpperCase();
-  const family = requirement.slice('WSTG-'.length);
-  return text.includes(`WSTG-${family}`) || text.includes(`WSTG-V42-${family}`);
-}
-
-function requiredV2Coverage(contract) {
-  const profiles = new Set((Array.isArray(contract.target_profiles) ? contract.target_profiles : [])
-    .map((value) => String(value).toLowerCase()));
-  const required = [];
-  if (contract.target_mode === 'app_target') required.push(...PENTESTER_TOP_10_2025);
-  if (profiles.has('web') || contract.runtime_mode === 'browser_dast') required.push(...PENTESTER_WSTG_FAMILIES);
-  if (profiles.has('api') || profiles.has('graphql') || profiles.has('rpc')) required.push(...PENTESTER_API_TOP_10_2023);
-  if (profiles.has('llm') || profiles.has('rag') || profiles.has('agentic')) required.push(...PENTESTER_LLM_TOP_10_2025);
-  return [...new Set(required)];
-}
-
-function hasEvidence(row) {
-  return Array.isArray(row?.evidence) && row.evidence.some(isNonEmptyString);
 }
 
 function isSafeWorkspaceRelativePath(value) {
@@ -288,64 +239,34 @@ async function validateV2SecurityEvidence(targetDir, envelope) {
   }
 
   const coverage = envelope.coverage;
-  if (!Array.isArray(coverage)) {
-    errors.push('security: v2 coverage must be an array');
-  } else {
-    const allowedStatuses = new Set(['passed', 'finding', 'not_applicable', 'not_tested']);
-    const malformed = [];
-    const unsafeTargets = [];
-    for (const row of coverage) {
-      const id = coverageControlId(row) || 'UNMAPPED';
-      const status = coverageStatus(row);
-      if (!allowedStatuses.has(status)) {
-        malformed.push(`${id}: invalid status`);
-      } else if (status === 'passed' && !hasEvidence(row)) {
-        malformed.push(`${id}: passed without evidence`);
-      } else if (status === 'finding' && !(Array.isArray(row.finding_ids) && row.finding_ids.some(isNonEmptyString))) {
-        malformed.push(`${id}: finding without finding_ids`);
-      } else if (status === 'not_applicable' && !isNonEmptyString(row.not_applicable_reason)) {
-        malformed.push(`${id}: not_applicable without reason`);
-      } else if (status === 'not_tested' && !isNonEmptyString(row.not_tested_reason)) {
-        malformed.push(`${id}: not_tested without reason`);
-      }
-      for (const target of Array.isArray(row.tested_paths) ? row.tested_paths : []) {
-        const candidate = target && typeof target === 'object' ? target.path || target.value : target;
-        if (!isSafeWorkspaceRelativePath(candidate)) unsafeTargets.push(`${id}: unsafe path`);
-      }
-      for (const target of Array.isArray(row.tested_endpoints) ? row.tested_endpoints : []) {
-        const candidate = target && typeof target === 'object' ? target.url || target.route || target.path : target;
-        const issue = endpointValidationIssue(candidate);
-        if (issue) unsafeTargets.push(`${id}: ${issue}`);
-      }
+  const analysis = analyzeCoverage({
+    review_contract: contract,
+    coverage,
+    threat_surfaces: envelope.threatSurfaces,
+    findings: envelope.findings
+  });
+  if (analysis.missingTop10.length) {
+    errors.push(`security: v2 app_target is missing OWASP Top 10:2025 rows (${analysis.missingTop10.join(', ')})`);
+  }
+  for (const issue of analysis.issues) {
+    const detail = [issue.index === undefined ? '' : `index=${issue.index}`, issue.control_id, issue.surface, issue.finding_id, issue.field].filter(Boolean).join(' / ');
+    errors.push(`security: v2 coverage ${issue.code}${detail ? ` (${detail})` : ''}`);
+  }
+  const unsafeTargets = [];
+  for (const row of analysis.rows) {
+    const id = coverageControlId(row);
+    for (const target of Array.isArray(row.tested_paths) ? row.tested_paths : []) {
+      const candidate = target && typeof target === 'object' ? target.path || target.value : target;
+      if (!isSafeWorkspaceRelativePath(candidate)) unsafeTargets.push(`${id}: unsafe path`);
     }
-    if (malformed.length > 0) {
-      errors.push(`security: malformed v2 coverage rows (${malformed.join(', ')})`);
+    for (const target of Array.isArray(row.tested_endpoints) ? row.tested_endpoints : []) {
+      const candidate = target && typeof target === 'object' ? target.url || target.route || target.path : target;
+      const issue = endpointValidationIssue(candidate);
+      if (issue) unsafeTargets.push(`${id}: ${issue}`);
     }
-    if (unsafeTargets.length > 0) {
-      errors.push(`security: unsafe v2 coverage targets (${unsafeTargets.join(', ')})`);
-    }
-
-    if (contract.target_mode === 'app_target') {
-      const counts = new Map(PENTESTER_TOP_10_2025.map((id) => [id, 0]));
-      for (const row of coverage) {
-        const id = coverageControlId(row);
-        if (counts.has(id)) counts.set(id, counts.get(id) + 1);
-      }
-      const missing = [...counts].filter(([, count]) => count === 0).map(([id]) => id);
-      const duplicates = [...counts].filter(([, count]) => count > 1).map(([id]) => id);
-      if (missing.length > 0) {
-        errors.push(`security: v2 app_target is missing OWASP Top 10:2025 rows (${missing.join(', ')})`);
-      }
-      if (duplicates.length > 0) {
-        errors.push(`security: v2 app_target has duplicate OWASP Top 10:2025 roll-ups (${duplicates.join(', ')})`);
-      }
-    }
-    const missingRequired = requiredV2Coverage(contract)
-      .filter((requirement) => !coverage.some((row) => coverageRowMatches(row, requirement)))
-      .filter((requirement) => !PENTESTER_TOP_10_2025.includes(requirement));
-    if (missingRequired.length > 0) {
-      errors.push(`security: v2 target profiles are missing required coverage rows (${missingRequired.join(', ')})`);
-    }
+  }
+  if (unsafeTargets.length > 0) {
+    errors.push(`security: unsafe v2 coverage targets (${unsafeTargets.join(', ')})`);
   }
 
   const unsafeFindingTargets = [];
@@ -364,9 +285,7 @@ async function validateV2SecurityEvidence(targetDir, envelope) {
     errors.push(`security: unsafe v2 finding targets (${unsafeFindingTargets.join(', ')})`);
   }
 
-  const incompleteRows = Array.isArray(coverage)
-    ? coverage.filter((row) => coverageStatus(row) === 'not_tested')
-    : [];
+  const incompleteRows = analysis.notTested;
   const pushCoverageGap = (count) => {
     const message = `security: Pentester coverage remains incomplete (${count} not_tested row(s))`;
     if (contract.review_depth === 'comprehensive') errors.push(message);
@@ -426,6 +345,8 @@ async function validateV2SecurityEvidence(targetDir, envelope) {
 
   if (bundle.coverage_complete === true && incompleteRows.length > 0) {
     errors.push('security: report_bundle.coverage_complete cannot be true while coverage contains not_tested rows');
+  } else if (bundle.coverage_complete === true && !analysis.complete) {
+    errors.push('security: report_bundle.coverage_complete contradicts computed coverage');
   } else if (bundle.coverage_complete !== true) {
     pushCoverageGap(incompleteRows.length);
   }

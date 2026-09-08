@@ -140,7 +140,7 @@ async function waitWithSignal(wait,ms,signal){
   signal?.removeEventListener('abort',onAbort);
  }
 }
-async function executeWithCapacityPolicy({manifest,resolved,input,adapterRegistry=adapters,catalogLoader,wait=(ms)=>new Promise(resolve=>setTimeout(resolve,ms))}) {
+async function executeWithCapacityPolicy({manifest,resolved,input,adapterRegistry=adapters,catalogLoader,validateCandidate,wait=(ms)=>new Promise(resolve=>setTimeout(resolve,ms))}) {
   const history=[];
   const candidates=[
     {entry:resolved,fallback:null},
@@ -159,6 +159,13 @@ async function executeWithCapacityPolicy({manifest,resolved,input,adapterRegistr
         if(next&&fallbackActivates(next.fallback,candidate.reason)){index+=1;continue}
         return{ok:false,reason:candidate.reason,candidates:candidate.candidates||[],history};
       }
+    }
+    // Runtime constraints apply to the resolved identity of EVERY attempt,
+    // including a backup selected inside the capacity policy.
+    const rejection = validateCandidate ? await validateCandidate(candidate) : null;
+    if (rejection) {
+      history.push({attempt:count+1,host:candidate.host,model_requested:candidate.model_requested,model:candidate.model,reason:rejection});
+      return {ok:false,reason:rejection,host:candidate.host,model:candidate.model,history};
     }
     const adapter=adapterRegistry[candidate.host];
     if(!adapter){const reason='unsupported_host';history.push({attempt:count+1,host:candidate.host,model_requested:candidate.model_requested,model:candidate.model,reason});const next=candidates[index+1];if(next&&fallbackActivates(next.fallback,reason)){index+=1;continue}return{ok:false,reason,history}}

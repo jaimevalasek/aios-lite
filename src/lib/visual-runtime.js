@@ -1,5 +1,7 @@
 'use strict';
 
+const fs = require('node:fs');
+const path = require('node:path');
 const { loadPlaywright } = require('./playwright-loader');
 const { decodePng, contentShare } = require('./png-stats');
 
@@ -430,9 +432,10 @@ function pageProbe(probeVersion) {
  * @param {Array<{viewport: object, raw: object}>} runs
  * @returns {{metrics: object, issues: string[], warnings: string[]}}
  */
-function summarizeRuntime(runs, { surfaceMode = null } = {}) {
+function summarizeRuntime(runs, { surfaceMode = null, projectDir = null } = {}) {
   const issues = [];
   const warnings = [];
+  const relativeShot = (file) => (projectDir ? path.relative(projectDir, file).split(path.sep).join('/') : file);
   const familiarityMode = ['operate', 'read'].includes(String(surfaceMode || '').toLowerCase());
   const metrics = {
     viewports: [],
@@ -448,7 +451,11 @@ function summarizeRuntime(runs, { surfaceMode = null } = {}) {
       max_font_size_px: 0,
       craft_axes: { typeface: false, display_scale: false, material: false, motion: false, evidence: false }
     },
-    screenshots: []
+    // Project-relative paths of the captures this run wrote, and their
+    // weight: what a reader opens, what a pruner may remove, what nobody
+    // reads back otherwise.
+    screenshots: [],
+    screenshot_capture: { dir: null, mode: 'viewport', count: 0, bytes: 0 }
   };
 
   for (const run of Array.isArray(runs) ? runs : []) {
@@ -458,7 +465,17 @@ function summarizeRuntime(runs, { surfaceMode = null } = {}) {
       ? (run.route.name || run.route.route)
       : null;
     const scope = routeName ? `${routeName} / ${viewport.name}` : viewport.name;
-    if (run.screenshot) metrics.screenshots.push(run.screenshot);
+    // A finding about the fold names the capture that shows it, so a reader
+    // opens one image instead of browsing the folder.
+    const captureNote = run.screenshot ? ` (capture: ${path.basename(run.screenshot)})` : '';
+    if (run.screenshot) {
+      metrics.screenshots.push(relativeShot(run.screenshot));
+      const capture = metrics.screenshot_capture;
+      capture.dir = capture.dir || relativeShot(path.dirname(run.screenshot));
+      capture.mode = run.screenshot_mode || capture.mode;
+      capture.count += 1;
+      capture.bytes += Number(run.screenshot_bytes) || 0;
+    }
     const overflow = Math.max(0, (raw.scroll_width || 0) - (raw.viewport_width || 0));
 
     // Fold density: how much of each of the first folds a visual subject
@@ -486,11 +503,11 @@ function summarizeRuntime(runs, { surfaceMode = null } = {}) {
         if (!familiarityMode) {
           const emptyFold = folds.findIndex((pct, index) => index > 0 && pct < DENSITY_FOLD_FLOOR);
           if (density.first_fold_occupancy_pct < DENSITY_FIRST_FOLD_FLOOR) {
-            warnings.push(`${scope}: the first fold is ${100 - density.first_fold_occupancy_pct}% empty (a visual subject — loaded media, display type, a contrasting panel or a photographic ground — covers ${density.first_fold_occupancy_pct}% of it) — the opening of a premium surface is filled: type at display scale over a photograph or a painted atmosphere, not a heading floating in the page color`);
+            warnings.push(`${scope}: the first fold is ${100 - density.first_fold_occupancy_pct}% empty (a visual subject — loaded media, display type, a contrasting panel or a photographic ground — covers ${density.first_fold_occupancy_pct}% of it) — the opening of a premium surface is filled: type at display scale over a photograph or a painted atmosphere, not a heading floating in the page color${captureNote}`);
           } else if (emptyFold !== -1) {
-            warnings.push(`${scope}: fold ${emptyFold + 1} is ${100 - folds[emptyFold]}% empty (per fold: ${folds.map((pct) => `${pct}%`).join(', ')}) — a whole viewport of page color between sections is not rhythm, it is a gap; tighten the sequence or fill the field (image-led rows, painted panels, oversized type)`);
+            warnings.push(`${scope}: fold ${emptyFold + 1} is ${100 - folds[emptyFold]}% empty (per fold: ${folds.map((pct) => `${pct}%`).join(', ')}) — a whole viewport of page color between sections is not rhythm, it is a gap; tighten the sequence or fill the field (image-led rows, painted panels, oversized type)${captureNote}`);
           } else if (average < DENSITY_FOLDS_FLOOR) {
-            warnings.push(`${scope}: ${100 - average}% of the first ${folds.length} folds is empty on average (per fold: ${folds.map((pct) => `${pct}%`).join(', ')}) — sections stretch emptiness instead of composing; tighten the rhythm or fill the field`);
+            warnings.push(`${scope}: ${100 - average}% of the first ${folds.length} folds is empty on average (per fold: ${folds.map((pct) => `${pct}%`).join(', ')}) — sections stretch emptiness instead of composing; tighten the rhythm or fill the field${captureNote}`);
           }
         }
       }
@@ -554,7 +571,7 @@ function summarizeRuntime(runs, { surfaceMode = null } = {}) {
     for (const p of visiblePrimary) {
       if (p.top >= viewportHeight) {
         belowFold += 1;
-        issues.push(`${scope}: primary feature \`${p.el}\` starts ${p.top - viewportHeight}px below the fold — the product's #1 differentiator is invisible without scrolling`);
+        issues.push(`${scope}: primary feature \`${p.el}\` starts ${p.top - viewportHeight}px below the fold — the product's #1 differentiator is invisible without scrolling${captureNote}`);
       }
     }
     if (primaries.length > 0 && visiblePrimary.length === 0) {
@@ -659,7 +676,7 @@ async function sampleFoldDensity(page, viewport, raw) {
   return folds;
 }
 
-async function collectRuntimeMeasurements({ fileUrl, viewports = DEFAULT_VIEWPORTS, timeout = 20000, launcher = null, route = null, routes = null, screenshotDir = null, projectDir = null } = {}) {
+async function collectRuntimeMeasurements({ fileUrl, viewports = DEFAULT_VIEWPORTS, timeout = 20000, launcher = null, route = null, routes = null, screenshotDir = null, screenshotMode = 'viewport', projectDir = null } = {}) {
   const playwright = launcher ? { chromium: { launch: launcher } } : loadPlaywright([projectDir]);
   if (!playwright) {
     return {
@@ -686,12 +703,19 @@ async function collectRuntimeMeasurements({ fileUrl, viewports = DEFAULT_VIEWPOR
           // The probe is serialized into the page: it sees no module binding, so
           // the version it stamps on its assurance block travels as an argument.
           const raw = await page.evaluate(pageProbe, RUNTIME_PROBE_VERSION);
+          // Captures are viewport-sized by default: the first fold at each
+          // width is what a fold finding points at and what a model can read
+          // (a 1280×5000 full-page capture is 3 MB on disk and downscaled to
+          // illegibility in context). `screenshotMode: 'full'` keeps the whole
+          // page for a human scroll.
           let screenshot = null;
+          let screenshotBytes = 0;
           if (screenshotDir && typeof page.screenshot === 'function') {
             const safe = `${routeSpec.name}-${viewport.name}`.replace(/[^a-z0-9_-]+/gi, '-').replace(/^-|-$/g, '').toLowerCase();
-            screenshot = require('node:path').join(screenshotDir, `${safe || 'runtime'}.png`);
-            require('node:fs').mkdirSync(screenshotDir, { recursive: true });
-            await page.screenshot({ path: screenshot, fullPage: true });
+            screenshot = path.join(screenshotDir, `${safe || 'runtime'}.png`);
+            fs.mkdirSync(screenshotDir, { recursive: true });
+            await page.screenshot({ path: screenshot, fullPage: screenshotMode === 'full' });
+            try { screenshotBytes = fs.statSync(screenshot).size; } catch { /* a fake page may write nothing */ }
           }
           // Pixel record beside the occupancy verdict: photograph the first
           // folds of the entry route at desktop width and count the pixels
@@ -704,7 +728,7 @@ async function collectRuntimeMeasurements({ fileUrl, viewports = DEFAULT_VIEWPOR
               raw.pixel_density_error = String(error && error.message || error);
             }
           }
-          runs.push({ viewport, route: routeSpec, url: targetUrl, raw, screenshot });
+          runs.push({ viewport, route: routeSpec, url: targetUrl, raw, screenshot, screenshot_bytes: screenshotBytes, screenshot_mode: screenshotMode === 'full' ? 'full' : 'viewport' });
         } finally {
           await context.close();
         }

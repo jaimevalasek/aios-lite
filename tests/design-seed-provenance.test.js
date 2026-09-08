@@ -231,6 +231,37 @@ test('design:seed records the draw next to the feature, keeps history on a re-dr
   });
 });
 
+test('design:seed carries constrained-diversity diagnostics through JSON, text, and the recorded draw', async () => {
+  await withTempRegistry(async (file) => {
+    const project = await makeTmpDir('aioson-seed-diversity-');
+    try {
+      await fs.mkdir(path.join(project, '.aioson', 'context'), { recursive: true });
+      const entries = Array.from({ length: 24 }, (_, i) => ({
+        project: `recent-${i}`, accent_hue: i * 15, ground_pole: 'light'
+      }));
+      await fs.writeFile(file, JSON.stringify({ version: 1, entries }));
+      const options = { register: 'technical', pole: 'light', count: 6, slug: 'diversity' };
+      const result = await runDesignSeed({ args: [project], options: { ...options, json: true }, logger: makeLogger() });
+      assert.equal(result.ok, true);
+      assert.ok(result.warnings.some((warning) => /palette overlaps/.test(warning)));
+      assert.ok(result.warnings.some((warning) => /hero reused/.test(warning)));
+      const record = readSeedRecord(project, options.slug);
+      assert.deepEqual(record.warnings, result.warnings);
+      assert.deepEqual(record.candidates.map((c) => c.diversity), result.candidates.map((c) => c.diversity));
+
+      const logger = makeLogger();
+      const human = await runDesignSeed({ args: [project], options: { ...options, 'no-persist': true }, logger });
+      assert.deepEqual(human.candidates, result.candidates);
+      for (const warning of result.warnings) assert.ok(logger.lines.includes(`  diversity warning: ${warning}`));
+      assert.equal(human.recorded, null);
+      assert.deepEqual(readSeedRecord(project, options.slug), record, 'diagnostic rerun cannot replace the persisted draw');
+      assert.deepEqual(JSON.parse(await fs.readFile(file, 'utf8')).entries, entries, 'drawing is not measured design evidence');
+    } finally {
+      await fs.rm(project, { recursive: true, force: true });
+    }
+  });
+});
+
 test('design:seed outside a project (no .aioson/) draws without recording', async () => {
   await withTempRegistry(async () => {
     const dir = await makeTmpDir('aioson-seed-bare-');

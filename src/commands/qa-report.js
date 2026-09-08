@@ -4,6 +4,7 @@ const path = require('node:path');
 const fs = require('node:fs/promises');
 const { readTextIfExists, exists } = require('../utils');
 const { resolveTargetDir } = require('../lib/project-root');
+const { summarizeProbes } = require('../lib/qa-probe-results');
 
 async function runQaReport({ args, options = {}, logger, t }) {
   const targetDir = resolveTargetDir(args);
@@ -36,7 +37,10 @@ async function runQaReport({ args, options = {}, logger, t }) {
       const result = await writeHtmlReport(
         targetDir, data.project || 'Project', data.url || '',
         data.findings || [], data.ac_coverage || [], data.performance || null,
-        data.mode || 'run', screenshotsDir, { routes: data.routes_scanned }
+        data.mode || 'run', screenshotsDir, {
+          routes: Array.isArray(data.routes_scanned) ? data.routes_scanned : [],
+          execution: Array.isArray(data.probe_results) ? summarizeProbes(data.probe_results) : undefined
+        }
       );
       logger.log(t('qa_report.html_report_written', { path: result.htmlPath }));
       return { ok: true, htmlPath: result.htmlPath };

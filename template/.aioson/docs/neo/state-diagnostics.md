@@ -67,6 +67,7 @@ Summarize only non-zero actionable buckets from `hygiene:scan`:
 - stale runtime sessions/runs
 - on-demand review artifacts
 - orphan slug artifacts
+- heavy or orphan evidence artifacts (runtime captures, walkthrough snapshots — regenerable; `runtime-storage.md` names the prune)
 
 No hygiene bucket authorizes cleanup. Ask one focused question only when cleanup materially blocks the next route.
 

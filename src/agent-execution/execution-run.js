@@ -602,6 +602,7 @@ function composeQaPrompt({ profileText, feature, unit, lane, dev, maxFixFiles, m
 // ─── one role execution (dev or qa) of one unit ───
 
 function classifyFailure(reason) {
+  if (reason === 'self_review_blocked') return 'unavailable';
   if (reason === 'capacity' || reason === 'auth' || reason === 'fallback_exhausted' || reason === 'capacity_limit' || reason === 'no_authorized_fallback') return 'unavailable';
   if (fallbackReasonCategory(reason) === 'unavailable') return 'unavailable';
   if (reason === 'timeout') return 'timeout';
@@ -612,7 +613,7 @@ function classifyFailure(reason) {
 async function executeRole({
   projectDir, feature, runId, role, unit, lane, config, promptText, reportRel, manifest,
   adapterRegistry, catalogLoader, timeout, signal, resolverOptions, stallMs, unproductiveMs = null, stallCheckMs, now, emit,
-  heartbeatMs = 0, liveLineMs = 0, onHeartbeat = null
+  heartbeatMs = 0, liveLineMs = 0, onHeartbeat = null, independentFrom = null
 }) {
   const resolved = await resolveExecutionEntry(config, { catalogLoader });
   if (!resolved.ok) return { kind: 'unavailable', reason: resolved.reason, candidates: resolved.candidates || [], host: config.host, model: config.model, reasoning_effort: config.reasoning_effort || null };
@@ -713,7 +714,12 @@ async function executeRole({
     onBeat: (live) => { try { onHeartbeat?.(live); } catch { /* best-effort */ } },
     onLine: (live) => emit({ type: 'heartbeat', unit: unit.id, lane: unit.lane, wave: unit.wave, role, host: resolved.host, model: expected.model_resolved, ...live })
   });
-  const execution = await executeWithCapacityPolicy({ manifest: manifest.manifest, resolved, input, adapterRegistry, catalogLoader });
+  const execution = await executeWithCapacityPolicy({
+    manifest: manifest.manifest, resolved, input, adapterRegistry, catalogLoader,
+    validateCandidate: independentFrom
+      ? (candidate) => candidate.host === independentFrom.host && candidate.model === independentFrom.model ? 'self_review_blocked' : null
+      : null
+  });
   stall.stop();
   heartbeat.stop();
   // What the disk says the role did — the ledger's positive fact, measured once
@@ -1302,7 +1308,7 @@ async function runExecution({
         try {
           const messages = { implementer: unitState.dev.messages || [], inbox: inboxFor(state, { unit: unitId, lane: unit.lane, excludeUnit: unitId }) };
           const promptText = composeQaPrompt({ profileText: profile.text, feature, unit, lane, dev: unitState.dev, maxFixFiles, messages });
-          outcome = await executeRole({ ...commonArgs, role: 'qa', config, promptText, reportRel: roundReport(unit.qa_report, state.run_id, unitState.rework?.rounds || 0), onHeartbeat: liveFor(unitState, 'qa') });
+          outcome = await executeRole({ ...commonArgs, role: 'qa', config, promptText, reportRel: roundReport(unit.qa_report, state.run_id, unitState.rework?.rounds || 0), onHeartbeat: liveFor(unitState, 'qa'), independentFrom: requireIndependentQa ? unitState.dev : null });
         } catch (error) {
           outcome = { kind: 'crashed', reason: 'engine_error', error: error.message, host: config.host, model: config.model };
         }
@@ -1319,7 +1325,9 @@ async function runExecution({
         unitState.qa = {
           ...unitState.qa,
           ...outcome,
-          status: outcome.kind === 'passed' ? 'passed' : (outcome.kind === 'failed' || outcome.kind === 'blocked' ? 'failed' : outcome.kind),
+          // Preserve the report's verdict, but the measured correction budget
+          // controls the effective status consumed by rework and the ledger.
+          status: outcome.kind === 'passed' ? (capExceeded ? 'failed' : 'passed') : (outcome.kind === 'failed' || outcome.kind === 'blocked' ? 'failed' : outcome.kind),
           findings: qaFindings,
           evidence: (outcome.evidence || []).slice(0, MAX_EXCERPT_ITEMS),
           corrections: outcome.corrections || [],

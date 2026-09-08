@@ -73,6 +73,11 @@ const GITIGNORE_POLICY_LINES = [
   '.aioson/mcp/servers.local.json',
   '.aioson/profiler-reports/*',
   '!.aioson/profiler-reports/.gitkeep',
+  '# AIOSON — regenerable browser evidence (captures and walkthrough snapshots; the reports beside them stay tracked)',
+  '.aioson/context/**/visual-screenshots/',
+  '.aioson/context/**/browser/*/',
+  '.aioson/briefings/**/browser/*/',
+  'aios-qa-screenshots/',
   '.claude/settings.local.json',
   '*:Zone.Identifier',
   '# AIOSON — shared agent scratch caches (local-only)',
@@ -140,9 +145,22 @@ function isIgnoreRule(line) {
   return !line.startsWith('#') && !line.startsWith('!');
 }
 
+// The gitignore subset the policy uses mid-path: `**` (any depth), `*` (one
+// segment), and a trailing `/` (a directory and everything beneath it).
+function policyRuleToRegExp(rule) {
+  const parts = rule.replace(/\/$/, '').split('/');
+  let source = '^';
+  for (const part of parts) {
+    if (part === '**') { source += '(?:[^/]+/)*'; continue; }
+    source += `${part.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '[^/]*')}/`;
+  }
+  return new RegExp(rule.endsWith('/') ? `${source}.*` : `${source.slice(0, -1)}(?:/.*)?$`);
+}
+
 function listManagedTrackedIgnoredPaths(targetDir) {
   const managed = GITIGNORE_POLICY_LINES.filter(isIgnoreRule);
   const matches = (relPath) => managed.some((rule) => {
+    if (/\*.*\//.test(rule)) return policyRuleToRegExp(rule).test(relPath);
     if (rule.endsWith('/**')) return relPath.startsWith(rule.slice(0, -2));
     if (rule.endsWith('/*')) return relPath.startsWith(rule.slice(0, -1));
     if (rule.endsWith('/')) return relPath.startsWith(rule);
@@ -601,6 +619,7 @@ module.exports = {
   ensureGitignoreEntry,
   ensureGitignoreEntries,
   ensureProjectGitignorePolicy,
+  policyRuleToRegExp,
   shouldSkipTemplatePath,
   ensureGitGuardBaseline,
   GIT_GUARD_BASELINE_BLOCK_PATHS,

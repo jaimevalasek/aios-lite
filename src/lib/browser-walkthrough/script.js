@@ -76,7 +76,10 @@ function normalizeScript(raw) {
     });
   });
   const script = {
-    name: String(raw.name || 'walkthrough').replace(/[^\w.-]+/g, '-').replace(/^-+|-+$/g, '') || 'walkthrough',
+    // Leading dots are stripped with the dashes: the name becomes the artifact
+    // folder that the run clears, and `..` or `.` would name the report dir's
+    // parent (`.aioson/context/` without a slug) or the report dir itself.
+    name: String(raw.name || 'walkthrough').replace(/[^\w.-]+/g, '-').replace(/^[-.]+|[-.]+$/g, '') || 'walkthrough',
     feature: raw.feature ? String(raw.feature) : '',
     scope: raw.scope === 'prototype' ? 'prototype' : 'delivery',
     url: raw.url ? String(raw.url) : '',

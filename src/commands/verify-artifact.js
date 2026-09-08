@@ -521,9 +521,16 @@ function declaredRuntimeMatrix(ctx) {
 
 /** The axes the prototype floor is held on — the same numbers on both sides. */
 function conformanceAxes(m) {
+  const gradedScore = (axis) => {
+    const grade = m.craft && m.craft.measured && m.craft[axis];
+    return grade && grade.scored && Number.isFinite(grade.score) && grade.score >= 0 && grade.score <= 100
+      ? grade.score : null;
+  };
   return {
     craft: m.craft && m.craft.measured ? m.craft.active_levers : null,
     materials: m.craft && m.craft.measured ? (m.craft.material_depth ?? 0) : null,
+    weight: gradedScore('weight'),
+    precision: gradedScore('precision'),
     tells: m.tells ? m.tells.active : 0,
     font_delivered: Boolean(m.font_delivery && m.font_delivery.delivered),
     display_px: Number(m.max_font_size_px) || 0,
@@ -640,6 +647,21 @@ function compareToPrototype(proto, metrics, slug) {
     notCompared.push('craft', 'materials');
   }
 
+  // Presence can survive a loss of quality: the same active levers may carry
+  // less weight, and an operate surface may lose precision without losing a
+  // lever. Keep the prototype's graded axis through implementation as well.
+  // Legacy/unscored evidence creates no numeric floor. A measured floor that
+  // becomes unreadable (or belongs to another surface mode) is not a pass.
+  for (const axis of ['weight', 'precision']) {
+    if (before[axis] === null) continue;
+    if (utilityStyled || after[axis] === null) {
+      notCompared.push(axis);
+    } else {
+      compared.push(axis);
+      if (after[axis] < before[axis]) regressed.push(`${axis} ${before[axis]}/100 → ${after[axis]}/100`);
+    }
+  }
+
   // Readable from markup and authored CSS alike — a thin hand-written surface
   // still declares its typeface, its display size and its dialect. Only a
   // utility-class build keeps them somewhere static telemetry cannot look.
@@ -658,7 +680,7 @@ function compareToPrototype(proto, metrics, slug) {
   if (notCompared.length > 0) {
     reason = utilityStyled
       ? `${notCompared.join(', ')} not compared: utility-class styling keeps its decisions out of the ${metrics.declarations} authored declarations — compare the served app with --url=<http://…> --runtime`
-      : `${notCompared.join(', ')} not compared: implementation craft not measured statically (${metrics.declarations} declarations)`;
+      : `${notCompared.join(', ')} not compared: craft evidence unavailable or surface mode no longer scores the prototype axis (${metrics.declarations} authored declarations)`;
   }
   return { prototype: before, implementation: after, state, compared, not_compared: notCompared, regressed, reason };
 }
@@ -1313,11 +1335,21 @@ const ADAPTERS = {
       const { collectRuntimeMeasurements, summarizeRuntime } = require('../lib/visual-runtime');
       const { pathToFileURL } = require('node:url');
       const entryUrl = ctx.url || pathToFileURL(path.resolve(ctx.targetDir, sources.entry)).href;
+      // The default capture folder is owned by this run: whatever a previous
+      // run left there (a route since renamed, a build since replaced) is
+      // cleared so the folder mirrors the latest measurement. A folder the
+      // caller named with --screenshot-dir is never cleared, and a diagnostic
+      // run (`--no-persist`) writes nothing, so it removes nothing either.
+      if (ctx.screenshotDir && ctx.screenshotDirOwned && ctx.persist !== false) {
+        const { clearDir } = require('../lib/evidence-artifacts');
+        metrics.screenshots_cleared = clearDir(ctx.screenshotDir);
+      }
       const collected = await collectRuntimeMeasurements({
         fileUrl: entryUrl,
         route: ctx.route || null,
         routes: ctx.routes && ctx.routes.length > 0 ? ctx.routes : (ctx.route ? null : declaredRuntimeMatrix(ctx)),
         screenshotDir: ctx.screenshotDir || null,
+        screenshotMode: ctx.screenshotMode || 'viewport',
         launcher: ctx.browserLauncher || null,
         projectDir: ctx.targetDir
       });
@@ -1325,10 +1357,17 @@ const ADAPTERS = {
         warnings.push(collected.reason);
         metrics.runtime = { available: false, reason: collected.reason };
       } else {
-        const runtime = summarizeRuntime(collected.runs, { surfaceMode: metrics.surface_mode && metrics.surface_mode.mode });
+        const runtime = summarizeRuntime(collected.runs, { surfaceMode: metrics.surface_mode && metrics.surface_mode.mode, projectDir: ctx.targetDir });
         issues.push(...runtime.issues);
         warnings.push(...runtime.warnings);
-        metrics.runtime = { available: true, entry: ctx.url || sources.entry, ...runtime.metrics };
+        // The runtime findings travel inside the section too, so a later
+        // static re-measure of the same inputs can carry them forward.
+        metrics.runtime = {
+          available: true,
+          entry: ctx.url || sources.entry,
+          ...runtime.metrics,
+          findings: { issues: [...runtime.issues], warnings: [...runtime.warnings] }
+        };
       }
     }
 
@@ -1561,9 +1600,13 @@ async function runVerifyArtifact({ args, options = {}, logger }) {
     : (options.screenshots
       ? path.join(targetDir, '.aioson', 'context', ...(slug ? ['features', slug] : []), 'visual-screenshots')
       : null);
+  // `--screenshots` captures the first fold at each viewport; `--screenshots=full`
+  // keeps whole pages. Only the default folder is owned (and cleared) by the run.
+  const screenshotMode = String(options.screenshots || '').toLowerCase() === 'full' ? 'full' : 'viewport';
+  const screenshotDirOwned = Boolean(screenshotDir) && !screenshotOption;
   const result = await evaluateKind(kind, {
     slug, targetDir, file, dir, noBuild, buildTimeout, buildCommand,
-    runtime, route, routes, url, persist, conformance, surfaceMode, screenshotDir, browserLauncher: options.browserLauncher || null
+    runtime, route, routes, url, persist, conformance, surfaceMode, screenshotDir, screenshotMode, screenshotDirOwned, browserLauncher: options.browserLauncher || null
   }, logger);
 
   if (result === null) {
@@ -1572,6 +1615,64 @@ async function runVerifyArtifact({ args, options = {}, logger }) {
     logger.error(msg);
     setExitCode(1);
     return { ok: false, kind };
+  }
+
+  // ── runtime evidence survives a static re-measure ─────────────────────────
+  // The feature's evidence slot is "latest run wins". A static run over
+  // unchanged inputs — the session-end auto-fire, an `--advisory` re-check —
+  // used to overwrite the runtime section measured a minute earlier, and the
+  // approve gate then read a report with no runtime at all ("runtime was not
+  // measured" about a surface that had 17 routes measured). When the input
+  // fingerprint matches, the earlier runtime section and its findings are
+  // carried forward and dated; when it does not, the drop is named.
+  let inputFingerprint = null;
+  let runtimeCarried = null;
+  if (kind === 'visual' && slug && !file && !dir) {
+    const { computeVisualInputFingerprint, readVisualEvidence } = require('../lib/visual-evidence');
+    inputFingerprint = computeVisualInputFingerprint(targetDir, slug);
+    // A run that asked for runtime and could not open a browser holds exactly
+    // as much rendered evidence as a static run: none. Both inherit the last
+    // measurement of the same bytes — only changed inputs drop it. Without
+    // this, one CI box without Chromium overwrote a measured section with
+    // `available: false` and the approve gate read the surface as unmeasured.
+    const measuredRuntime = result.metrics && result.metrics.runtime;
+    if (result.metrics && !(measuredRuntime && measuredRuntime.available)) {
+      const previous = readVisualEvidence(targetDir, slug);
+      const prevRuntime = previous && previous.metrics && previous.metrics.runtime;
+      if (prevRuntime && prevRuntime.available) {
+        const prevDigest = previous.input_fingerprint && previous.input_fingerprint.digest;
+        if (prevDigest && inputFingerprint && prevDigest === inputFingerprint.digest) {
+          runtimeCarried = prevRuntime.carried_from || previous.measured_at || 'undated';
+          result.metrics.runtime = { ...prevRuntime, carried_from: runtimeCarried };
+          const findings = prevRuntime.findings || {};
+          for (const issue of Array.isArray(findings.issues) ? findings.issues : []) if (!result.issues.includes(issue)) result.issues.push(issue);
+          for (const warning of Array.isArray(findings.warnings) ? findings.warnings : []) if (!result.warnings.includes(warning)) result.warnings.push(warning);
+          // The verdict was derived before the carry, from a report with no
+          // runtime: re-derive it so `assurance`, `unverified_reasons` and
+          // `verdict` describe the carried evidence (a utility-class build
+          // that only runtime can verify stayed `unverified` while saying
+          // `runtime_craft_verified: true`).
+          if (result.metrics.assurance) {
+            const { deriveVisualVerdict } = require('../lib/visual-verdict');
+            const assurance = deriveVisualVerdict({
+              staticResult: { applicable: Boolean(result.metrics.assurance.static_craft_verified) },
+              metrics: result.metrics,
+              runtimeRequested: false
+            });
+            result.metrics.assurance = assurance;
+            result.verdict = result.issues.length > 0 ? 'fail' : assurance.verdict;
+            result.ok = result.verdict === 'pass';
+            if (assurance.verdict === 'unverified') result.unverified_reasons = assurance.reasons;
+            else delete result.unverified_reasons;
+          }
+        } else {
+          const how = measuredRuntime
+            ? `this run could not measure one (${measuredRuntime.reason})`
+            : 'this run measured statically — rerun with --runtime before approval';
+          result.warnings.push(`runtime evidence dropped: the prototype inputs changed since the last --runtime run (${previous.measured_at || 'undated'}) and ${how}`);
+        }
+      }
+    }
   }
 
   // strict promotes warnings to blocking issues.
@@ -1604,10 +1705,7 @@ async function runVerifyArtifact({ args, options = {}, logger }) {
   // cannot be acted on.
   if (result.metrics) report.metrics = result.metrics;
 
-  if (kind === 'visual' && slug && !file && !dir) {
-    const { computeVisualInputFingerprint } = require('../lib/visual-evidence');
-    report.input_fingerprint = computeVisualInputFingerprint(targetDir, slug);
-  }
+  if (inputFingerprint) report.input_fingerprint = inputFingerprint;
 
   // The CLI wrapper fails the process for any result carrying `ok: false`, which
   // would silently override --advisory at the shell — the command decided not to
@@ -1668,6 +1766,12 @@ async function runVerifyArtifact({ args, options = {}, logger }) {
       : '';
     logger.log(`  tokens ${pct} | spacing off-grid ${m.spacing_off_grid ?? 'n/a'} | depth ${(m.depth_strategies || []).join('+') || 'none'} | fonts ${(m.font_families || []).length} | reduced-motion ${m.reduced_motion_handled ? 'yes' : 'no'}${craft}${tells}${palette}`);
     if (Array.isArray(m.states_missing) && m.states_missing.length) logger.log(`  states missing: ${m.states_missing.join(', ')}`);
+    const capture = m.runtime && m.runtime.available && m.runtime.screenshot_capture;
+    if (capture && capture.count > 0) {
+      const { formatBytes } = require('../lib/evidence-artifacts');
+      logger.log(`  screenshots: ${capture.count} ${capture.mode} capture(s), ${formatBytes(capture.bytes)} → ${capture.dir} — open only the capture a finding names; the folder is replaced on every run`);
+    }
+    if (runtimeCarried) logger.log(`  runtime: carried from the --runtime run of ${runtimeCarried} (inputs unchanged) — a static re-measure never erases it`);
   }
   for (const issue of issues) logger.log(`  ✗ ${issue}`);
   for (const w of warnings) logger.log(`  ⚠ ${w}`);

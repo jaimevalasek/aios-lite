@@ -46,3 +46,14 @@ filenames. `.aioson/config/*.json` is additively merged and `.aioson/config.md` 
 New telemetry output is coalesced into bounded same-stream chunks (up to 16 KB), preserving order, secret redaction,
 and the 1 MB per-execution cap while sharply reducing SQLite row and index growth. New execution bridges also prune
 terminal raw output older than 14 days and stale terminal/paused executions older than 30 days in bounded batches.
+
+## Browser evidence on disk
+
+Outside SQLite, the visual and browser gates leave regenerable binaries beside their reports: captures under
+`.aioson/context/features/{slug}/visual-screenshots/` (from `verify:artifact --kind=visual --screenshots`) and per-step
+snapshots under `.aioson/briefings/{slug}/browser/{script}/` or `.aioson/context/features/{slug}/browser/{script}/` (from
+`browser:run`). They are not the evidence — the JSON and Markdown reports next to them are — and every report carries the
+line that regenerates its folder. Producers replace their folder on every run, the installer's `.gitignore` policy keeps
+them out of the repository, `feature:archive` drops them when a feature closes (`--keep-diagnostics` archives them),
+`hygiene:scan` lists what is orphaned or heavy under `heavy_evidence_artifacts`, and `aioson evidence:prune . --dry-run`
+previews what `aioson evidence:prune .` removes (orphans by default; `--all` for every capture; `--slug` for one owner).

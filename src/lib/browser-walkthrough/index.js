@@ -35,6 +35,7 @@ const scriptContract = require('./script');
 const targets = require('./targets');
 const steps = require('./steps');
 const reports = require('./report');
+const { clearDir } = require('../evidence-artifacts');
 
 const {
   SCHEMA, ACTIONS, DEFAULT_TIMEOUT_MS, DEFAULT_BOUNDARY_WAIT_MS, DEFAULT_SNAPSHOT_LINES,
@@ -144,6 +145,22 @@ async function runWalkthrough(options) {
     return { ok: false, error: session.error, detail: session.detail || '', hint: session.hint || '' };
   }
 
+  // The artifact folder belongs to this script name and mirrors the latest
+  // report only: a failure snapshot of a step that passes now, or a
+  // screenshot of a superseded build, is evidence of nothing the new report
+  // says. Cleared once the browser is open and before the first step — a
+  // consumer's prototype round accumulated 37 stale failure pairs (22 MB)
+  // under a report that read PASS 102/102. The reports (`{name}.json|.md`)
+  // are overwritten by this run either way. Only a folder the framework owns
+  // is cleared — strictly inside its own report dir, never under a caller's
+  // `--out` — so no script name or output path can turn the clear on
+  // anything but the previous run's artifacts.
+  const ownedArtifactDir = Boolean(artifactDir) && !out && (() => {
+    const rel = path.relative(dir, artifactDir);
+    return rel !== '' && !rel.startsWith('..') && !path.isAbsolute(rel);
+  })();
+  const superseded = ownedArtifactDir ? clearDir(artifactDir) : { files: 0, bytes: 0 };
+
   const consoleLog = { errors: 0, warnings: 0, page_errors: 0, samples: [] };
   const network = { rows: [], failed: 0 };
   const warnings = [];
@@ -242,6 +259,9 @@ async function runWalkthrough(options) {
     finished_at: new Date(clock.now()).toISOString(),
     ok,
     stopped_at: stoppedAt,
+    // What the previous run of this script left in the artifact folder and
+    // this run removed — the folder is always the latest run's, never a pile.
+    superseded_artifacts: superseded,
     steps: executed.map((s) => ({ ...s, artifacts: s.artifacts.map((a) => toRel(targetDir, a)) })),
     ids,
     smoke: deriveSmoke(executed),

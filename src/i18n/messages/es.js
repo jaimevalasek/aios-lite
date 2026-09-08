@@ -35,6 +35,7 @@ module.exports = {
     help_info: 'aioson info [path] [--json] [--locale=es]',
     help_doctor: 'aioson doctor [path] [--fix] [--dry-run] [--json] [--locale=es]',
     help_hygiene_scan: 'aioson hygiene:scan [path] [--json] [--locale=es]',
+    help_evidence_prune: 'aioson evidence:prune [path] [--slug=<feature>] [--all] [--dry-run] [--json] [--locale=es]',
     help_i18n_add: 'aioson i18n:add <locale> [--force] [--dry-run] [--locale=es]',
     help_agents: 'aioson agents [path] [--lang=<bcp47-tag>] [--locale=es]',
     help_agent_prompt:
@@ -219,7 +220,7 @@ module.exports = {
     help_qa_init:
       'aioson qa:init [path] [--url=<app-url>] [--dry-run] [--json] [--locale=es]',
     help_qa_run:
-      'aioson qa:run [path] [--url=<app-url>] [--persona=naive|hacker|power|mobile] [--headed] [--html] [--json] [--locale=es]',
+      'aioson qa:run [path] [--url=<app-url>] [--feature=<slug>] [--persona=naive|hacker|power|mobile] [--headed] [--html] [--json] [--locale=es]',
     help_qa_scan:
       'aioson qa:scan [path] [--url=<app-url>] [--depth=3] [--max-pages=50] [--headed] [--html] [--json] [--locale=es]',
     help_browser_run:
@@ -1135,6 +1136,7 @@ module.exports = {
     verdict_pass: 'Walkthrough PASS: {passed}/{total} pasos ok.',
     verdict_fail: 'Walkthrough FAIL: {passed}/{total} pasos ok ({planned} planificados).',
     report_written: 'Informe escrito: {path}',
+    superseded: 'Eliminados {files} artefacto(s) de la ejecución anterior ({kb} KB) — la carpeta de artefactos guarda solo esta ejecución.',
     replay: 'Replay: {command}'
   },
   browser_snapshot: {

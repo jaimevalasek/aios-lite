@@ -7,6 +7,7 @@ const { contextDir, readFileSafe } = require('../preflight-engine');
 const { runFeatureArchive, runFeatureSweep } = require('./feature-archive');
 const { scanRuntimeRecoveryCandidates } = require('../runtime-recovery-scan');
 const { resolveTargetDir } = require('../lib/project-root');
+const { heavyEvidenceArtifacts } = require('../lib/evidence-artifacts');
 
 const REVIEW_PREFIXES = new Set(['qa-report', 'security-findings']);
 const GLOBAL_REVIEW_SLUGS = new Set(['project', 'test-coverage']);
@@ -450,6 +451,9 @@ async function runHygieneScan({ args = [], options = {}, logger }) {
   const { reviewArtifacts, orphanSlugArtifacts } = await scanRootArtifacts(
     ctxDir, featureRegistry, archivedSlugs, pendingArchiveSlugs, retainedPaths
   );
+  // Regenerable browser evidence (captures, walkthrough snapshots) that is
+  // either orphaned by its latest report or heavy enough to weigh on the tree.
+  const evidenceArtifacts = heavyEvidenceArtifacts(targetDir);
 
   const buckets = {
     pending_chain_noises: chainNoises.pending,
@@ -459,7 +463,8 @@ async function runHygieneScan({ args = [], options = {}, logger }) {
     done_features_pending_archive: doneFeaturesPendingArchive,
     stale_state_files: staleStateFiles,
     on_demand_review_artifacts: reviewArtifacts,
-    orphan_slug_artifacts: orphanSlugArtifacts
+    orphan_slug_artifacts: orphanSlugArtifacts,
+    heavy_evidence_artifacts: evidenceArtifacts
   };
   const result = {
     ok: true,

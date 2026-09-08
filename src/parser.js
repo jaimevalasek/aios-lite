@@ -33,6 +33,8 @@ const BOOLEAN_FLAGS = new Set([
   'changed', 'strict', 'baseline',
   // context:evals — pure boolean; `--no-coverage .` must not swallow the path.
   'no-coverage',
+  // feature:archive — pure boolean; `--keep-diagnostics .` must not swallow the path.
+  'keep-diagnostics',
   // host:signature / learning:rollback / pentester:report — pure boolean;
   // `--list .` must not swallow the path positional.
   'list',

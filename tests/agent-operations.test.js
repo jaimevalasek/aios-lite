@@ -576,6 +576,44 @@ test('review-cycle lets a directly active specialist self-correct without enabli
   assert.equal(unchangedManifest.agents.tester.enabled, false);
 });
 
+test('review-cycle uses the selected Pentester packet without importing deferred finding paths', async () => {
+  const dir = await makeTempDir();
+  await initGit(dir);
+  const plan = '.aioson/context/security-findings-checkout.json';
+  const packet = {
+    allowed_fix_paths: ['src/auth.js', 'tests/auth.test.js'],
+    findings: [
+      { id: 'SEC-1', status: 'open', recommended_owner: 'pentester' },
+      { id: 'SEC-2', status: 'open', recommended_owner: 'dev',
+        allowed_fix_paths: ['src/a.js', 'src/b.js', 'src/c.js', 'src/d.js'] }
+    ]
+  };
+  await writeFile(dir, plan, JSON.stringify(packet));
+  const options = { sub: 'advance', json: true, feature: 'checkout', plan,
+    source: 'pentester', to: 'pentester', manual: true };
+  const started = await runReviewCycle({ args: [dir], options, logger: makeLogger() });
+  assert.equal(started.action, 'correct_locally');
+  assert.deepEqual(started.allowed_fix_paths, packet.allowed_fix_paths);
+  await writeFile(dir, 'src/auth.js', 'module.exports = { rejectUnsafe: true };\n');
+  packet.findings[0].status = 'needs_validation';
+  packet.findings[0].remediation = { status: 'applied_pending_qa' };
+  await writeFile(dir, plan, JSON.stringify(packet));
+  const resolved = await runReviewCycle({ args: [dir], options: { ...options, sub: 'resolve' }, logger: makeLogger() });
+  assert.equal(resolved.action, 'invoke_qa');
+  assert.equal(resolved.scope_verification.ok, true);
+});
+
+test('an empty explicit Pentester packet cannot inherit historical allowed paths', async () => {
+  const { inspectCorrectionPacket } = require('../src/lib/specialist-correction');
+  const dir = await makeTempDir();
+  const plan = '.aioson/context/security-findings-checkout.json';
+  await writeFile(dir, plan, JSON.stringify({ allowed_fix_paths: [], findings: [
+    { status: 'fixed', allowed_fix_paths: ['src/auth.js'] }
+  ] }));
+  const result = await inspectCorrectionPacket(dir, plan, 'pentester');
+  assert.equal(result.reason, 'allowed_fix_paths_missing');
+});
+
 test('review-cycle rejects specialist correction packets without deterministic allowed paths', async () => {
   const dir = await makeTempDir();
   await initGit(dir);

@@ -502,3 +502,207 @@ test('a probe answering below the version contract is reported, never silently i
   const unversioned = summarizeRuntime([{ viewport: VIEWPORT_MOBILE, raw: { ...base, assurance: {} } }]);
   assert.match(unversioned.warnings.join('\n'), new RegExp(`assurance version none, below the v${RUNTIME_PROBE_VERSION} contract`));
 });
+
+const CARRY_PAGE = (label) => `<!doctype html><html><head><style>
+  :root { --space-2: 8px; --fg: #101418; --border: rgba(0,0,0,.08); }
+  .shell { padding: var(--space-2); color: var(--fg); font-family: system-ui; }
+  .row { gap: var(--space-2); padding: var(--space-2); border-bottom: 1px solid var(--border); }
+  .btn { padding: var(--space-2); background: var(--fg); color: #fff; }
+  .btn:disabled { opacity: .5; } .btn:focus-visible { outline: 2px solid var(--fg); }
+  .is-loading { opacity: .6; } .empty-state { padding: var(--space-2); } .error-state { color: #b00020; }
+  </style></head><body><main class="shell"><div class="row"><button class="btn">${label}</button></div></main></body></html>`;
+
+test('runtime captures are viewport-sized by default, full-page on request, and recorded with their weight', async () => {
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'aioson-vrt-shots-'));
+  const shots = [];
+  const launcher = async () => ({
+    newContext: async ({ viewport }) => ({
+      newPage: async () => ({
+        goto: async () => {},
+        waitForTimeout: async () => {},
+        evaluate: async () => ({
+          scroll_width: viewport.width, viewport_width: viewport.width, viewport_height: viewport.height,
+          clipped: [], offscreen: [], small_targets: [], text_samples: [], primary: []
+        }),
+        screenshot: async ({ path: file, fullPage }) => {
+          if (!file) return undefined; // the fold-density probe asks for a buffer; best effort
+          shots.push({ file, fullPage });
+          await fs.writeFile(file, 'png-bytes');
+        }
+      }),
+      close: async () => {}
+    }),
+    close: async () => {}
+  });
+  const shotDir = path.join(dir, 'shots');
+  const routes = [{ name: 'home', route: '#/' }];
+
+  const collected = await collectRuntimeMeasurements({ fileUrl: 'file:///proto.html', routes, launcher, screenshotDir: shotDir, projectDir: dir });
+  assert.deepEqual(shots.map((s) => s.fullPage), [false, false], 'the first fold at each width is the default capture');
+  const summary = summarizeRuntime(collected.runs, { projectDir: dir });
+  assert.deepEqual(summary.metrics.screenshots, ['shots/home-desktop.png', 'shots/home-mobile.png'], 'paths are project-relative');
+  assert.deepEqual(summary.metrics.screenshot_capture, { dir: 'shots', mode: 'viewport', count: 2, bytes: 18 });
+
+  shots.length = 0;
+  const fullRuns = await collectRuntimeMeasurements({ fileUrl: 'file:///proto.html', routes, launcher, screenshotDir: shotDir, screenshotMode: 'full', projectDir: dir });
+  assert.deepEqual(shots.map((s) => s.fullPage), [true, true], 'full pages only on request');
+  assert.equal(summarizeRuntime(fullRuns.runs, { projectDir: dir }).metrics.screenshot_capture.mode, 'full');
+
+  const none = summarizeRuntime((await collectRuntimeMeasurements({ fileUrl: 'file:///proto.html', routes, launcher })).runs);
+  assert.deepEqual(none.metrics.screenshots, []);
+  assert.equal(none.metrics.screenshot_capture.count, 0);
+});
+
+test('kind=visual --screenshots owns and replaces its default folder, and the evidence records the captures', async () => {
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'aioson-vrt-owned-'));
+  const owned = path.join(dir, '.aioson', 'briefings', 'orders');
+  await fs.mkdir(owned, { recursive: true });
+  await fs.writeFile(path.join(owned, 'prototype.html'), CARRY_PAGE('Aprovar'), 'utf8');
+  const shotDir = path.join(dir, '.aioson', 'context', 'features', 'orders', 'visual-screenshots');
+  await fs.mkdir(shotDir, { recursive: true });
+  await fs.writeFile(path.join(shotDir, 'renamed-route-desktop.png'), 'stale capture of a route that no longer exists');
+
+  const raw = (width) => ({ scroll_width: width, viewport_width: width, viewport_height: 800, clipped: [], offscreen: [], small_targets: [], text_samples: [], primary: [] });
+  const launcher = async () => ({
+    newContext: async ({ viewport }) => ({
+      newPage: async () => ({
+        goto: async () => {},
+        waitForTimeout: async () => {},
+        evaluate: async () => raw(viewport.width),
+        screenshot: async ({ path: file }) => { if (file) await fs.writeFile(file, 'png'); }
+      }),
+      close: async () => {}
+    }),
+    close: async () => {}
+  });
+  const report = await runVerifyArtifact({
+    args: [dir],
+    options: { kind: 'visual', slug: 'orders', runtime: true, screenshots: true, browserLauncher: launcher, json: true, advisory: true, suppressExitCode: true },
+    logger: makeLogger()
+  });
+  assert.equal(report.metrics.runtime.available, true);
+  assert.deepEqual(report.metrics.screenshots_cleared, { files: 1, bytes: 46 }, 'the stale capture is counted and gone');
+  const files = (await fs.readdir(shotDir)).sort();
+  assert.ok(!files.includes('renamed-route-desktop.png'));
+  assert.ok(files.length >= 2, `captures written: ${files.join(', ')}`);
+  const capture = report.metrics.runtime.screenshot_capture;
+  assert.equal(capture.mode, 'viewport');
+  assert.equal(capture.count, files.length);
+  assert.equal(capture.dir, '.aioson/context/features/orders/visual-screenshots');
+  const evidence = JSON.parse(await fs.readFile(path.join(dir, '.aioson', 'context', 'features', 'orders', 'visual-evidence.json'), 'utf8'));
+  assert.equal(evidence.metrics.runtime.screenshot_capture.count, files.length, 'the persisted evidence names what the folder holds');
+  assert.ok(evidence.metrics.runtime.screenshots.every((shot) => shot.startsWith('.aioson/context/features/orders/visual-screenshots/')));
+
+  // A diagnostic run writes nothing, so it removes nothing: the captures of
+  // the last persisted run survive a `--no-persist --screenshots` re-check.
+  const diagnostic = await runVerifyArtifact({
+    args: [dir],
+    options: { kind: 'visual', slug: 'orders', runtime: true, screenshots: true, browserLauncher: launcher, json: true, advisory: true, suppressExitCode: true, 'no-persist': true },
+    logger: makeLogger()
+  });
+  assert.equal(diagnostic.metrics.screenshots_cleared, undefined, 'a --no-persist run clears nothing');
+  assert.deepEqual((await fs.readdir(shotDir)).sort(), files, 'the persisted captures are still there');
+
+  // A caller-named folder is never cleared.
+  const custom = path.join(dir, 'my-shots');
+  await fs.mkdir(custom, { recursive: true });
+  await fs.writeFile(path.join(custom, 'keep.png'), 'mine');
+  await runVerifyArtifact({
+    args: [dir],
+    options: { kind: 'visual', slug: 'orders', runtime: true, 'screenshot-dir': 'my-shots', browserLauncher: launcher, json: true, advisory: true, suppressExitCode: true, 'no-persist': true },
+    logger: makeLogger()
+  });
+  assert.ok((await fs.readdir(custom)).includes('keep.png'));
+});
+
+test('a static re-measure of unchanged inputs carries the runtime evidence forward; changed inputs drop it with a warning', async () => {
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'aioson-vrt-carry-'));
+  const owned = path.join(dir, '.aioson', 'briefings', 'orders');
+  await fs.mkdir(owned, { recursive: true });
+  await fs.writeFile(path.join(owned, 'prototype.html'), CARRY_PAGE('Aprovar'), 'utf8');
+  const stub = stubBrowser({
+    1280: { scroll_width: 1280, viewport_width: 1280, clipped: [], offscreen: [], small_targets: [], text_samples: [] },
+    360: { scroll_width: 500, viewport_width: 360, clipped: [], offscreen: [], small_targets: [], text_samples: [] }
+  });
+  const evidenceFile = path.join(dir, '.aioson', 'context', 'features', 'orders', 'visual-evidence.json');
+  const staticOptions = { kind: 'visual', slug: 'orders', json: true, advisory: true, suppressExitCode: true };
+
+  const runtimeRun = await runVerifyArtifact({
+    args: [dir],
+    options: { ...staticOptions, runtime: true, browserLauncher: stub.launcher },
+    logger: makeLogger()
+  });
+  assert.equal(runtimeRun.metrics.runtime.available, true);
+  assert.match(runtimeRun.issues.join('\n'), /wider than the viewport/);
+  const first = JSON.parse(await fs.readFile(evidenceFile, 'utf8'));
+  assert.equal(first.metrics.runtime.available, true);
+  assert.ok(first.metrics.runtime.findings.issues.some((issue) => /wider than the viewport/.test(issue)), 'the runtime findings travel inside the section');
+
+  // The session-end auto-fire shape: static, slug mode, persisted.
+  const staticRun = await runVerifyArtifact({ args: [dir], options: staticOptions, logger: makeLogger() });
+  assert.equal(staticRun.metrics.runtime.available, true, 'the runtime section is carried, not erased');
+  assert.equal(staticRun.metrics.runtime.carried_from, first.measured_at);
+  assert.match(staticRun.issues.join('\n'), /wider than the viewport/, 'the runtime findings ride along on the same bytes');
+  assert.equal(staticRun.metrics.assurance.runtime_craft_verified, Boolean(first.metrics.runtime.assurance.craft_verified));
+  // The verdict is re-derived from the carried evidence, not left over from
+  // the runtime-less static pass that ran a moment before the carry.
+  assert.equal(staticRun.metrics.assurance.verdict, first.metrics.assurance.verdict, 'the carried assurance reaches the same verdict the runtime run did');
+  assert.equal(staticRun.verdict, staticRun.issues.length > 0 ? 'fail' : staticRun.metrics.assurance.verdict);
+  if (staticRun.metrics.assurance.runtime_craft_verified) {
+    assert.deepEqual((staticRun.unverified_reasons || []).filter((r) => /runtime supplied no verified/.test(r)), [], 'a carried runtime cannot be reported as absent');
+  }
+  const second = JSON.parse(await fs.readFile(evidenceFile, 'utf8'));
+  assert.equal(second.metrics.runtime.available, true, 'the persisted slot keeps the runtime section');
+  assert.equal(second.metrics.runtime.carried_from, first.measured_at);
+
+  // A third static run keeps the original date, never the carried copy's.
+  const third = await runVerifyArtifact({ args: [dir], options: staticOptions, logger: makeLogger() });
+  assert.equal(third.metrics.runtime.carried_from, first.measured_at);
+
+  // The prototype changes: the old runtime measurement is not evidence of the new bytes.
+  await fs.writeFile(path.join(owned, 'prototype.html'), CARRY_PAGE('Confirmar'), 'utf8');
+  const changed = await runVerifyArtifact({ args: [dir], options: staticOptions, logger: makeLogger() });
+  assert.equal(changed.metrics.runtime, undefined, 'nothing is carried across changed inputs');
+  assert.match(changed.warnings.join('\n'), /runtime evidence dropped: the prototype inputs changed since the last --runtime run/);
+  assert.doesNotMatch(changed.issues.join('\n'), /wider than the viewport/);
+  const fourth = JSON.parse(await fs.readFile(evidenceFile, 'utf8'));
+  assert.equal(fourth.metrics.runtime, undefined);
+});
+
+test('a --runtime run whose browser never opens carries the last measurement forward instead of erasing it', async () => {
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'aioson-vrt-nobrowser-'));
+  const owned = path.join(dir, '.aioson', 'briefings', 'orders');
+  await fs.mkdir(owned, { recursive: true });
+  await fs.writeFile(path.join(owned, 'prototype.html'), CARRY_PAGE('Aprovar'), 'utf8');
+  const stub = stubBrowser({
+    1280: { scroll_width: 1280, viewport_width: 1280, clipped: [], offscreen: [], small_targets: [], text_samples: [] },
+    360: { scroll_width: 500, viewport_width: 360, clipped: [], offscreen: [], small_targets: [], text_samples: [] }
+  });
+  const evidenceFile = path.join(dir, '.aioson', 'context', 'features', 'orders', 'visual-evidence.json');
+  const base = { kind: 'visual', slug: 'orders', json: true, advisory: true, suppressExitCode: true };
+  // A machine with no Chromium: the launcher throws exactly like the real one.
+  const broken = async () => { throw new Error('Executable doesn\'t exist at /ms-playwright/chromium/headless_shell'); };
+
+  await runVerifyArtifact({ args: [dir], options: { ...base, runtime: true, browserLauncher: stub.launcher }, logger: makeLogger() });
+  const first = JSON.parse(await fs.readFile(evidenceFile, 'utf8'));
+  assert.equal(first.metrics.runtime.available, true);
+
+  // Same bytes, same fingerprint — this run simply could not open a browser.
+  const failed = await runVerifyArtifact({ args: [dir], options: { ...base, runtime: true, browserLauncher: broken }, logger: makeLogger() });
+  assert.equal(failed.metrics.runtime.available, true, 'a browser that never opened must not erase the measurement it could not repeat');
+  assert.equal(failed.metrics.runtime.carried_from, first.measured_at);
+  assert.match(failed.warnings.join('\n'), /runtime telemetry could not run/, 'this run still says it measured nothing itself');
+  assert.match(failed.issues.join('\n'), /wider than the viewport/, 'the carried findings travel with the carried section');
+  assert.equal(failed.metrics.assurance.verdict, first.metrics.assurance.verdict, 'the carried assurance reaches the same verdict');
+  const persisted = JSON.parse(await fs.readFile(evidenceFile, 'utf8'));
+  assert.equal(persisted.metrics.runtime.available, true, 'the persisted slot keeps the carried section');
+  assert.equal(persisted.metrics.runtime.carried_from, first.measured_at);
+
+  // Changed bytes: nothing is carried, and the drop names the browser failure
+  // rather than telling the caller to rerun with a flag they already passed.
+  await fs.writeFile(path.join(owned, 'prototype.html'), CARRY_PAGE('Confirmar'), 'utf8');
+  const changed = await runVerifyArtifact({ args: [dir], options: { ...base, runtime: true, browserLauncher: broken }, logger: makeLogger() });
+  assert.equal(changed.metrics.runtime.available, false, 'changed inputs never inherit an old measurement');
+  assert.match(changed.warnings.join('\n'), /runtime evidence dropped/);
+  assert.doesNotMatch(changed.warnings.join('\n'), /this run measured statically/, 'the drop must not claim a static run when --runtime was asked for');
+});

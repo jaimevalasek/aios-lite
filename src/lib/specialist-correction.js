@@ -125,6 +125,16 @@ function jsonAllowedPaths(value, paths = []) {
   return paths.filter(Boolean);
 }
 
+function parseCorrectionPaths(raw, extension, source) {
+  if (extension.toLowerCase() !== '.json') return markdownAllowedPaths(raw);
+  const packet = JSON.parse(raw);
+  // A selected packet must not inherit paths from deferred or historical findings.
+  // Keep recursive discovery for legacy artifacts without an explicit root allowlist.
+  return source === 'pentester' && packet && Object.hasOwn(packet, 'allowed_fix_paths')
+    ? jsonAllowedPaths({ allowed_fix_paths: packet.allowed_fix_paths })
+    : jsonAllowedPaths(packet);
+}
+
 function isSupportPath(relPath) {
   const normalized = `/${normalizeRelPath(relPath).toLowerCase()}`;
   return normalized.includes('/test/')
@@ -163,14 +173,10 @@ async function inspectCorrectionPacket(targetDir, planPath, source) {
   }
 
   let allowedPaths;
-  if (path.extname(absolute).toLowerCase() === '.json') {
-    try {
-      allowedPaths = jsonAllowedPaths(JSON.parse(raw));
-    } catch {
-      return { ok: false, reason: 'correction_packet_invalid_json', packet_path: normalizedPlan };
-    }
-  } else {
-    allowedPaths = markdownAllowedPaths(raw);
+  try {
+    allowedPaths = parseCorrectionPaths(raw, path.extname(absolute), source);
+  } catch {
+    return { ok: false, reason: 'correction_packet_invalid_json', packet_path: normalizedPlan };
   }
 
   allowedPaths = [...new Set(allowedPaths.map(normalizeRelPath).filter(Boolean))];

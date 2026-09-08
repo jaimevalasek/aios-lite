@@ -5,14 +5,8 @@ const fs = require('node:fs/promises');
 const { ensureDir } = require('../utils');
 const { resolveTargetDir } = require('../lib/project-root');
 
-const SECRET_PATTERNS = [
-  { name: 'OpenAI key',     regex: /sk-[a-zA-Z0-9]{20,}/ },
-  { name: 'Stripe live key', regex: /pk_live_[a-zA-Z0-9]{20,}/ },
-  { name: 'AWS access key',  regex: /AKIA[A-Z0-9]{16}/ },
-  { name: 'Google API key',  regex: /AIzaSy[a-zA-Z0-9_-]{33}/ },
-  { name: 'GitHub token',    regex: /gh[ps]_[a-zA-Z0-9]{36}/ },
-  { name: 'Generic secret',  regex: /(SECRET|TOKEN|PASSWORD|PRIVATE_KEY)\s*[:=]\s*['"]?[a-zA-Z0-9_/+=-]{16,}/i }
-];
+const { SECRET_PATTERNS, browserSecretPatterns, stripPublicStripeConfig } = require('../lib/qa-secret-patterns');
+const { recordProbe, summarizeProbes, probeSummaryMarkdown } = require('../lib/qa-probe-results');
 
 const SENSITIVE_FILE_PATHS = [
   '/.env', '/.env.local', '/.env.production', '/.git/config',
@@ -37,16 +31,8 @@ function makeFinding(severity, category, title, location, risk, fix) {
   return { id, severity, category, title, location, risk, fix, screenshot: '', route: location };
 }
 
-async function takeScreenshot(page, screenshotsDir, id) {
-  try {
-    const file = path.join(screenshotsDir, `${id}.png`);
-    await page.screenshot({ path: file, fullPage: false });
-    return file;
-  } catch { return ''; }
-}
-
 // --- Crawl all routes from base URL ---
-async function crawlRoutes(page, baseUrl, maxDepth, maxPages) {
+async function crawlRoutes(page, baseUrl, maxDepth, maxPages, results) {
   const visited = new Set();
   const queue = [{ url: baseUrl, depth: 0 }];
   const normalizeUrl = (href) => {
@@ -66,137 +52,124 @@ async function crawlRoutes(page, baseUrl, maxDepth, maxPages) {
 
     if (depth >= maxDepth) continue;
 
-    try {
-      await page.goto(normalized, { waitUntil: 'domcontentloaded', timeout: 8000 });
-      const links = await page.$$eval('a[href]', (els) => els.map((el) => el.href)).catch(() => []);
+    await recordProbe(results, [], 'discovery', normalized, async () => {
+      const response = await page.goto(normalized, { waitUntil: 'domcontentloaded', timeout: 8000 });
+      if (!response || response.status() >= 400 || [204, 205].includes(response.status())) return { status: 'unavailable', reason: response ? `http_${response.status()}` : 'discovery_navigation_failed' };
+      const links = await page.$$eval('a[href]', (els) => els.map((el) => el.href));
       for (const link of links) {
         const n = normalizeUrl(link);
         if (n && n.startsWith(baseUrl) && !visited.has(n)) {
           queue.push({ url: n, depth: depth + 1 });
         }
       }
-    } catch { /* unreachable route — skip */ }
+    });
   }
 
   return Array.from(visited);
 }
 
 // --- Per-route security scan ---
-async function scanRoute(page, route, baseUrl, findings, screenshotsDir) {
-  try {
-    await page.goto(route, { waitUntil: 'domcontentloaded', timeout: 10000 });
-  } catch { return; }
-
-  // Check exposed secrets in HTML source
-  const html = await page.content().catch(() => '');
-  for (const { name, regex } of SECRET_PATTERNS) {
-    if (regex.test(html)) {
-      findings.push(makeFinding(
-        'critical', 'security',
-        `${name} found in HTML source`,
-        route,
-        `${name} is embedded in the HTML and visible to any browser user.`,
-        'Remove from client-side rendering. Serve secrets only from server-side APIs.'
-      ));
-    }
-  }
-
-  // Check window globals
-  const exposed = await page.evaluate((patterns) => {
-    const sources = { '__NEXT_DATA__': window.__NEXT_DATA__, '__env__': window.__env__, 'ENV': window.ENV };
-    const found = [];
-    for (const [src, val] of Object.entries(sources)) {
-      if (!val) continue;
-      const str = JSON.stringify(val);
-      for (const { name, regex } of patterns) {
-        if (new RegExp(regex).test(str)) found.push({ source: src, keyType: name });
-      }
-    }
-    return found;
-  }, SECRET_PATTERNS.map((p) => ({ name: p.name, regex: p.regex.source }))).catch(() => []);
-
-  for (const item of exposed) {
-    const f = makeFinding(
-      'critical', 'security',
-      `${item.keyType} exposed in window.${item.source}`,
-      route,
-      `${item.keyType} visible to any user via the global object on this route.`,
-      'Move to server-side only. Never expose via NEXT_PUBLIC_ or client-side globals.'
-    );
-    f.screenshot = await takeScreenshot(page, screenshotsDir, f.id);
-    findings.push(f);
-  }
-
-  // Console error leakage
+async function scanRoute(page, route, findings, results) {
+  const checks = ['html_secrets', 'global_secrets', 'console_leaks', 'accessibility', 'overflow'];
   const consoleLogs = [];
-  page.on('console', (msg) => consoleLogs.push({ type: msg.type(), text: msg.text() }));
-  await page.waitForTimeout(300).catch(() => {});
-  const stackLeaks = consoleLogs.filter((l) => l.type === 'error' && /at\s+\w+\s+\(/.test(l.text));
-  if (stackLeaks.length > 0) {
-    findings.push(makeFinding(
-      'medium', 'security',
-      `Console exposes ${stackLeaks.length} stack trace(s)`,
-      route,
-      'Stack traces reveal application internals and library versions.',
-      'Disable verbose error logging in production. Use a centralized error service.'
-    ));
-  }
+  const onConsole = (msg) => consoleLogs.push({ type: msg.type(), text: msg.text() });
+  page.on('console', onConsole);
+  try {
+    const navigation = await recordProbe(results, findings, 'navigation', route, async () => {
+      const response = await page.goto(route, { waitUntil: 'domcontentloaded', timeout: 10000 });
+      if (!response || response.status() >= 400 || [204, 205].includes(response.status())) return { status: 'unavailable', reason: response ? `http_${response.status()}` : 'route_navigation_failed' };
+    });
+    if (navigation.status === 'unavailable') {
+      for (const probe of checks) results.push({ probe, target: route, status: 'unavailable', reason: 'navigation_prerequisite_failed' });
+      return;
+    }
 
-  // Accessibility quick check
-  const a11yIssues = await page.evaluate(() => {
-    const r = [];
-    const imgs = document.querySelectorAll('img:not([alt])');
-    if (imgs.length) r.push(`${imgs.length} image(s) missing alt`);
-    if (!document.querySelector('html[lang]')) r.push('html missing lang attribute');
-    return r;
-  }).catch(() => []);
+    await recordProbe(results, findings, 'html_secrets', route, async () => {
+      const html = await page.content();
+      for (const { name, regex } of SECRET_PATTERNS) {
+        if (regex.test(html)) findings.push(makeFinding('critical', 'security', `${name} found in HTML source`, route,
+          `${name} is embedded in the HTML and visible to any browser user.`,
+          'Remove from client-side rendering. Serve secrets only from server-side APIs.'));
+      }
+    });
 
-  if (a11yIssues.length > 0) {
-    findings.push(makeFinding(
-      'medium', 'accessibility',
-      `Accessibility issues: ${a11yIssues.join('; ')}`,
-      route,
-      'WCAG violations affect screen reader users.',
-      'Add alt attributes to images and lang attribute to <html> element.'
-    ));
-  }
+    await recordProbe(results, findings, 'global_secrets', route, async () => {
+      const exposed = await page.evaluate((patterns) => {
+        const sources = { '__NEXT_DATA__': window.__NEXT_DATA__, '__env__': window.__env__, 'ENV': window.ENV };
+        const found = [];
+        let inspected = 0;
+        for (const [src, val] of Object.entries(sources)) {
+          if (val === undefined || val === null) continue;
+          inspected++;
+          const str = JSON.stringify(val);
+          for (const { name, regex, flags } of patterns) {
+            if (new RegExp(regex, flags).test(str)) found.push({ source: src, keyType: name });
+          }
+        }
+        return { found, inspected };
+      }, browserSecretPatterns());
+      for (const item of exposed.found) {
+        // Do not capture secret-bearing pages as screenshots.
+        findings.push(makeFinding('critical', 'security', `${item.keyType} exposed in window.${item.source}`, route,
+          `${item.keyType} visible to any user via the global object on this route.`,
+          'Move to server-side only. Never expose via NEXT_PUBLIC_ or client-side globals.'));
+      }
+      if (!exposed.inspected) return { status: 'not_applicable', reason: 'no_known_configuration_globals' };
+    });
 
-  // Mobile overflow check
-  const hasOverflow = await page.evaluate(() => document.body.scrollWidth > window.innerWidth + 5).catch(() => false);
-  if (hasOverflow) {
-    findings.push(makeFinding(
-      'medium', 'ux',
-      'Horizontal overflow detected',
-      route,
-      'Content overflows horizontally. Breaks mobile layout.',
-      'Audit for fixed-width elements. Use responsive CSS (max-width: 100%, flexbox, grid).'
-    ));
+    await recordProbe(results, findings, 'console_leaks', route, async () => {
+      await page.waitForTimeout(300);
+      const stackLeaks = consoleLogs.filter((row) => row.type === 'error' && /at\s+\w+\s+\(/.test(row.text));
+      if (stackLeaks.length) findings.push(makeFinding('medium', 'security', `Console exposes ${stackLeaks.length} stack trace(s)`, route,
+        'Stack traces reveal application internals and library versions.',
+        'Disable verbose error logging in production. Use a centralized error service.'));
+    });
+
+    await recordProbe(results, findings, 'accessibility', route, async () => {
+      const issues = await page.evaluate(() => {
+        const found = [];
+        const imgs = document.querySelectorAll('img:not([alt])');
+        if (imgs.length) found.push(`${imgs.length} image(s) missing alt`);
+        if (!document.querySelector('html[lang]')) found.push('html missing lang attribute');
+        return found;
+      });
+      if (issues.length) findings.push(makeFinding('medium', 'accessibility', `Accessibility issues: ${issues.join('; ')}`, route,
+        'WCAG violations affect screen reader users.', 'Add alt attributes to images and lang attribute to <html> element.'));
+    });
+
+    await recordProbe(results, findings, 'overflow', route, async () => {
+      const overflow = await page.evaluate(() => document.body.scrollWidth > window.innerWidth + 5);
+      if (overflow) findings.push(makeFinding('medium', 'ux', 'Horizontal overflow detected', route,
+        'Content overflows horizontally. Breaks mobile layout.', 'Audit for fixed-width elements. Use responsive CSS.'));
+    });
+  } finally {
+    page.off('console', onConsole);
   }
 }
 
 // --- Check sensitive files (once per domain) ---
-async function scanSensitiveFiles(page, baseUrl, findings) {
+async function scanSensitiveFiles(page, baseUrl, findings, results) {
   for (const filePath of SENSITIVE_FILE_PATHS) {
-    try {
-      const response = await page.goto(`${baseUrl}${filePath}`, { waitUntil: 'commit', timeout: 5000 });
-      if (response && response.status() === 200) {
-        const body = await response.text().catch(() => '');
-        if (/[A-Z_]{3,}=/.test(body) || /(SECRET|PASSWORD|TOKEN|KEY)/i.test(body)) {
-          findings.push(makeFinding(
-            'critical', 'security',
-            `Sensitive file publicly accessible: ${filePath}`,
-            `${baseUrl}${filePath}`,
+    const target = `${baseUrl}${filePath}`;
+    await recordProbe(results, findings, 'sensitive_file', target, async () => {
+      const response = await page.goto(target, { waitUntil: 'commit', timeout: 5000 });
+      if (!response) return { status: 'unavailable', reason: 'sensitive_file_request_failed' };
+      if (response.status() === 404 || response.status() === 410) return { status: 'not_applicable', reason: 'resource_absent' };
+      if (response.status() >= 400 && ![401, 403].includes(response.status())) return { status: 'unavailable', reason: `http_${response.status()}` };
+      if (response.status() === 200) {
+        const body = stripPublicStripeConfig(await response.text());
+        if (SECRET_PATTERNS.some(({ regex }) => regex.test(body)) || /[A-Z_]{3,}=/.test(body) || /(SECRET|PASSWORD|TOKEN|KEY)/i.test(body)) {
+          findings.push(makeFinding('critical', 'security', `Sensitive file publicly accessible: ${filePath}`, target,
             'Configuration file exposes credentials, connection strings, or infrastructure details.',
-            `Block ${filePath} in your web server. Never deploy .env files to public directories.`
-          ));
+            `Block ${filePath} in your web server. Never deploy .env files to public directories.`));
         }
       }
-    } catch { /* not accessible — good */ }
+    });
   }
 }
 
 // --- Report ---
-function buildScanReport(projectName, baseUrl, routes, findings) {
+function buildScanReport(projectName, baseUrl, routes, findings, execution, routesScanned) {
   const sorted = [...findings].sort((a, b) => {
     const o = { critical: 0, high: 1, medium: 2, low: 3 };
     return (o[a.severity] ?? 4) - (o[b.severity] ?? 4);
@@ -208,7 +181,8 @@ function buildScanReport(projectName, baseUrl, routes, findings) {
   md += `> Generated by: \`aioson qa:scan\`  \n`;
   md += `> Mode: autonomous crawl  \n`;
   md += `> Browser: Chromium | URL: ${baseUrl}  \n`;
-  md += `> Routes scanned: ${routes.length}\n\n`;
+  md += `> Routes scanned: ${routesScanned}/${routes.length} discovered\n\n`;
+  md += probeSummaryMarkdown(execution);
 
   md += `### Routes discovered\n`;
   for (const r of routes.slice(0, 30)) md += `- ${r}\n`;
@@ -235,7 +209,7 @@ function buildScanReport(projectName, baseUrl, routes, findings) {
   md += `- Full security audit requires manual penetration testing.\n\n`;
 
   const c = bySev('critical').length, h = bySev('high').length, m = bySev('medium').length, l = bySev('low').length;
-  md += `### Summary\n- Routes: ${routes.length} | Critical: ${c} | High: ${h} | Medium: ${m} | Low: ${l}\n`;
+  md += `### Summary\n- Routes scanned: ${routesScanned}/${routes.length} | Critical: ${c} | High: ${h} | Medium: ${m} | Low: ${l}\n`;
 
   return md;
 }
@@ -272,6 +246,7 @@ async function runQaScan({ args, options = {}, logger, t }) {
 
   _counter = 0;
   const findings = [];
+  const probeResults = [];
 
   logger.log(t('qa_scan.starting', { url }));
   logger.log(t('qa_scan.crawling', { depth: maxDepth, pages: maxPages }));
@@ -299,20 +274,25 @@ async function runQaScan({ args, options = {}, logger, t }) {
 
   try {
     // Phase 1: crawl all routes
-    const routes = await crawlRoutes(page, url, maxDepth, maxPages);
+    const routes = await crawlRoutes(page, url, maxDepth, maxPages, probeResults);
     logger.log(t('qa_scan.routes_found', { count: routes.length }));
 
     // Phase 2: scan sensitive files (once)
-    await scanSensitiveFiles(page, url, findings).catch(() => {});
+    await scanSensitiveFiles(page, url, findings, probeResults);
 
     // Phase 3: scan each route
     for (const route of routes) {
       logger.log(t('qa_scan.scanning_route', { route }));
-      await scanRoute(page, route, url, findings, screenshotsDir).catch(() => {});
+      await scanRoute(page, route, findings, probeResults);
     }
 
     // Write reports
-    const mdContent = buildScanReport(projectName, url, routes, findings);
+    const execution = summarizeProbes(probeResults);
+    const routesScanned = routes.filter((route) => {
+      const checks = probeResults.filter((row) => row.target === route && row.probe !== 'discovery');
+      return checks.some((row) => row.probe === 'navigation') && checks.every((row) => row.status !== 'unavailable');
+    }).length;
+    const mdContent = buildScanReport(projectName, url, routes, findings, execution, routesScanned);
     const mdPath = path.join(targetDir, 'aios-qa-report.md');
     const jsonPath = path.join(targetDir, 'aios-qa-report.json');
 
@@ -320,7 +300,9 @@ async function runQaScan({ args, options = {}, logger, t }) {
     const jsonReport = {
       generated_at: new Date().toISOString(),
       project: projectName, url, mode: 'scan',
-      routes_scanned: routes.length,
+      routes_scanned: routesScanned,
+      routes_discovered: routes.length,
+      ...execution,
       summary: { critical: bySev('critical'), high: bySev('high'), medium: bySev('medium'), low: bySev('low') },
       findings
     };
@@ -333,17 +315,18 @@ async function runQaScan({ args, options = {}, logger, t }) {
 
     const summary = jsonReport.summary;
     logger.log(t('qa_scan.findings_summary', summary));
+    logger.log(`qa:scan execution: ${execution.execution_complete ? 'COMPLETE' : 'INCOMPLETE'} — ${routesScanned}/${routes.length} routes; ${execution.limitations.length} unavailable checks`);
 
     // HTML report (optional, additive — does not replace MD/JSON)
     let htmlPath;
     if (options.html) {
       const { writeHtmlReport } = require('../qa-html-report');
-      const result = await writeHtmlReport(targetDir, projectName, url, findings, [], null, 'scan', screenshotsDir, { routes });
+      const result = await writeHtmlReport(targetDir, projectName, url, findings, [], null, 'scan', screenshotsDir, { routes, execution });
       htmlPath = result.htmlPath;
       logger.log(t('qa_scan.html_report_written', { path: htmlPath }));
     }
 
-    const output = { ok: true, targetDir, url, routesScanned: routes.length, summary, mdPath, jsonPath, findings, ...(htmlPath ? { htmlPath } : {}) };
+    const output = { ok: true, targetDir, url, routesScanned, routesDiscovered: routes.length, ...execution, summary, mdPath, jsonPath, findings, ...(htmlPath ? { htmlPath } : {}) };
     if (options.json) return output;
     return output;
   } finally {

@@ -2,20 +2,11 @@
 
 const path = require('node:path');
 const fs = require('node:fs/promises');
-const { readTextIfExists, ensureDir } = require('../utils');
+const { ensureDir } = require('../utils');
 const { resolveTargetDir } = require('../lib/project-root');
 
 // --- Secret patterns for exposure detection ---
-const SECRET_PATTERNS = [
-  { name: 'OpenAI key',     regex: /sk-[a-zA-Z0-9]{20,}/ },
-  { name: 'Stripe live key', regex: /pk_live_[a-zA-Z0-9]{20,}/ },
-  { name: 'Stripe test key', regex: /pk_test_[a-zA-Z0-9]{20,}/ },
-  { name: 'AWS access key',  regex: /AKIA[A-Z0-9]{16}/ },
-  { name: 'Google API key',  regex: /AIzaSy[a-zA-Z0-9_-]{33}/ },
-  { name: 'GitHub token',    regex: /gh[ps]_[a-zA-Z0-9]{36}/ },
-  { name: 'Slack token',     regex: /xox[bpa]-[a-zA-Z0-9-]+/ },
-  { name: 'Generic secret',  regex: /(SECRET|TOKEN|PASSWORD|PRIVATE_KEY)\s*[:=]\s*['"]?[a-zA-Z0-9_/+=-]{16,}/i }
-];
+const { SECRET_PATTERNS, browserSecretPatterns, stripPublicStripeConfig } = require('../lib/qa-secret-patterns');
 
 const SENSITIVE_FILE_PATHS = [
   '/.env', '/.env.local', '/.env.production', '/.env.development',
@@ -34,7 +25,8 @@ const DEBUG_ROUTES = [
 // a global or linked CLI shares no node_modules with the project.
 const { loadPlaywright } = require('../lib/playwright-loader');
 const { openBrowser } = require('../lib/browser-session');
-const { readBrowserEvidence } = require('../lib/browser-evidence');
+const { collectQaAcEvidence } = require('../lib/qa-ac-evidence');
+const { recordObservedProbe, unavailable, summarizeProbes, probeSummaryMarkdown } = require('../lib/qa-probe-results');
 
 // --- Config ---
 async function loadConfig(targetDir) {
@@ -62,6 +54,16 @@ async function takeScreenshot(page, screenshotsDir, id) {
   } catch { return ''; }
 }
 
+async function navigate(page, url, options) {
+  const response = await page.goto(url, options);
+  const status = response && response.status();
+  if (!response || status >= 500 || [204, 205].includes(status)
+    || (options.waitUntil !== 'commit' && status >= 400)) {
+    throw new Error('navigation_unavailable');
+  }
+  return response;
+}
+
 // ============================================================
 // SECURITY PROBES
 // ============================================================
@@ -81,12 +83,12 @@ async function probeExposedSecrets(page, findings, screenshotsDir) {
     for (const [src, val] of Object.entries(sources)) {
       if (!val) continue;
       const str = JSON.stringify(val);
-      for (const { name, regex } of patterns) {
-        if (new RegExp(regex).test(str)) found.push({ source: src, keyType: name });
+      for (const { name, regex, flags } of patterns) {
+        if (new RegExp(regex, flags).test(str)) found.push({ source: src, keyType: name });
       }
     }
     return found;
-  }, SECRET_PATTERNS.map((p) => ({ name: p.name, regex: p.regex.source }))).catch(() => []);
+  }, browserSecretPatterns()).catch(unavailable([]));
 
   for (const item of exposed) {
     const f = makeFinding(
@@ -96,12 +98,12 @@ async function probeExposedSecrets(page, findings, screenshotsDir) {
       `${item.keyType} is visible to any browser user via the global object. Direct financial or account compromise exposure.`,
       `Move to server-side only. Never use NEXT_PUBLIC_ or client-side globals for secrets.`
     );
-    f.screenshot = await takeScreenshot(page, screenshotsDir, f.id);
+    // Secret-bearing pages must not be copied into screenshot artifacts.
     findings.push(f);
   }
 
   // Also scan the rendered HTML source
-  const html = await page.content().catch(() => '');
+  const html = await page.content().catch(unavailable(''));
   for (const { name, regex } of SECRET_PATTERNS) {
     if (regex.test(html)) {
       findings.push(makeFinding(
@@ -118,12 +120,13 @@ async function probeExposedSecrets(page, findings, screenshotsDir) {
 async function probeSensitiveFiles(page, baseUrl, findings) {
   for (const filePath of SENSITIVE_FILE_PATHS) {
     try {
-      const response = await page.goto(`${baseUrl}${filePath}`, {
+      const response = await navigate(page, `${baseUrl}${filePath}`, {
         waitUntil: 'commit', timeout: 5000
       });
       if (response && response.status() === 200) {
-        const body = await response.text().catch(() => '');
+        const body = stripPublicStripeConfig(await response.text().catch(unavailable('')));
         const looksLikeSensitive =
+          SECRET_PATTERNS.some(({ regex }) => regex.test(body)) ||
           /[A-Z_]{3,}=/.test(body) ||
           /<\?php/.test(body) ||
           /(SECRET|PASSWORD|TOKEN|KEY|PRIVATE)/i.test(body);
@@ -137,27 +140,27 @@ async function probeSensitiveFiles(page, baseUrl, findings) {
           ));
         }
       }
-    } catch { /* not accessible — good */ }
+    } catch { unavailable()(); }
   }
 }
 
 async function probeXss(page, baseUrl, findings, screenshotsDir) {
-  await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: 15000 }).catch(() => {});
+  await navigate(page, baseUrl, { waitUntil: 'domcontentloaded', timeout: 15000 }).catch(unavailable());
 
   let xssFired = false;
   page.on('dialog', async (dialog) => {
     xssFired = true;
-    await dialog.dismiss().catch(() => {});
+    await dialog.dismiss().catch(unavailable());
   });
 
-  const inputs = await page.$$('input[type="text"],input[type="search"],input[type="email"],input[type="url"],textarea').catch(() => []);
+  const inputs = await page.$$('input[type="text"],input[type="search"],input[type="email"],input[type="url"],textarea').catch(unavailable([]));
   for (const input of inputs.slice(0, 10)) {
-    await input.fill('<img src=x onerror="window.__xss=1">').catch(() => {});
+    await input.fill('<img src=x onerror="window.__xss=1">').catch(unavailable());
   }
-  await page.keyboard.press('Tab').catch(() => {});
-  await page.waitForTimeout(500).catch(() => {});
+  await page.keyboard.press('Tab').catch(unavailable());
+  await page.waitForTimeout(500).catch(unavailable());
 
-  const xssEval = await page.evaluate(() => window.__xss === 1).catch(() => false);
+  const xssEval = await page.evaluate(() => window.__xss === 1).catch(unavailable(false));
   if (xssFired || xssEval) {
     const f = makeFinding(
       'critical', 'security',
@@ -176,7 +179,7 @@ async function probeOpenRedirect(page, baseUrl, findings) {
   const evil = 'https://evil-phishing-example.com';
   for (const param of params) {
     try {
-      const response = await page.goto(`${baseUrl}?${param}=${encodeURIComponent(evil)}`, {
+      const response = await navigate(page, `${baseUrl}?${param}=${encodeURIComponent(evil)}`, {
         waitUntil: 'commit', timeout: 5000
       });
       const finalUrl = page.url();
@@ -193,19 +196,19 @@ async function probeOpenRedirect(page, baseUrl, findings) {
         ));
         break;
       }
-    } catch { /* not redirected */ }
+    } catch { unavailable()(); }
   }
 }
 
 async function probeInjectionInputs(page, baseUrl, findings) {
-  await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: 15000 }).catch(() => {});
-  const inputs = await page.$$('input[type="text"],input[type="search"],textarea').catch(() => []);
+  await navigate(page, baseUrl, { waitUntil: 'domcontentloaded', timeout: 15000 }).catch(unavailable());
+  const inputs = await page.$$('input[type="text"],input[type="search"],textarea').catch(unavailable([]));
   const sqlPayload = `' OR '1'='1' -- `;
   for (const input of inputs.slice(0, 5)) {
-    await input.fill(sqlPayload).catch(() => {});
+    await input.fill(sqlPayload).catch(unavailable());
   }
-  await page.waitForTimeout(500).catch(() => {});
-  const html = await page.content().catch(() => '');
+  await page.waitForTimeout(500).catch(unavailable());
+  const html = await page.content().catch(unavailable(''));
   if (/(SQL syntax|mysql_fetch|ORA-|pg_query|sqlite_|SQLSTATE)/i.test(html)) {
     findings.push(makeFinding(
       'critical', 'security',
@@ -220,9 +223,9 @@ async function probeInjectionInputs(page, baseUrl, findings) {
 async function probeDebugRoutes(page, baseUrl, findings) {
   for (const route of DEBUG_ROUTES) {
     try {
-      const response = await page.goto(`${baseUrl}${route}`, { waitUntil: 'commit', timeout: 4000 });
+      const response = await navigate(page, `${baseUrl}${route}`, { waitUntil: 'commit', timeout: 4000 });
       if (response && response.status() === 200) {
-        const title = await page.title().catch(() => '');
+        const title = await page.title().catch(unavailable(''));
         if (!/404|not found/i.test(title)) {
           findings.push(makeFinding(
             'medium', 'security',
@@ -233,7 +236,7 @@ async function probeDebugRoutes(page, baseUrl, findings) {
           ));
         }
       }
-    } catch { /* not accessible */ }
+    } catch { unavailable()(); }
   }
 }
 
@@ -293,16 +296,16 @@ async function probeInjectionInjection(page, findings, consoleLog, networkReques
 // PERSONA — NAIVE USER
 // ============================================================
 async function runNaivePersona(page, baseUrl, findings, screenshotsDir) {
-  await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: 15000 }).catch(() => {});
+  await navigate(page, baseUrl, { waitUntil: 'domcontentloaded', timeout: 15000 }).catch(unavailable());
 
   // Submit all empty forms
-  const forms = await page.$$('form').catch(() => []);
+  const forms = await page.$$('form').catch(unavailable([]));
   for (const form of forms.slice(0, 5)) {
     const beforeUrl = page.url();
-    await page.evaluate((f) => { try { f.submit(); } catch (_) {} }, form).catch(() => {});
-    await page.waitForTimeout(800).catch(() => {});
-    const title = await page.title().catch(() => '');
-    const html = await page.content().catch(() => '');
+    await page.evaluate((f) => f.submit(), form).catch(unavailable());
+    await page.waitForTimeout(800).catch(unavailable());
+    const title = await page.title().catch(unavailable(''));
+    const html = await page.content().catch(unavailable(''));
     if (/error|exception|stacktrace|500/i.test(title) || /Internal Server Error|Uncaught Exception/i.test(html)) {
       const f = makeFinding(
         'high', 'reliability',
@@ -313,19 +316,19 @@ async function runNaivePersona(page, baseUrl, findings, screenshotsDir) {
       );
       f.screenshot = await takeScreenshot(page, screenshotsDir, f.id);
       findings.push(f);
-      await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: 10000 }).catch(() => {});
+      await navigate(page, baseUrl, { waitUntil: 'domcontentloaded', timeout: 10000 }).catch(unavailable());
     }
   }
 
   // Type very long strings (buffer overflow / DoS potential)
-  await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: 10000 }).catch(() => {});
-  const inputs = await page.$$('input[type="text"],input[type="email"],input[type="search"],textarea').catch(() => []);
+  await navigate(page, baseUrl, { waitUntil: 'domcontentloaded', timeout: 10000 }).catch(unavailable());
+  const inputs = await page.$$('input[type="text"],input[type="email"],input[type="search"],textarea').catch(unavailable([]));
   const longStr = 'A'.repeat(10000);
   for (const input of inputs.slice(0, 5)) {
-    await input.fill(longStr).catch(() => {});
+    await input.fill(longStr).catch(unavailable());
   }
-  await page.waitForTimeout(500).catch(() => {});
-  const srcAfterLong = await page.content().catch(() => '');
+  await page.waitForTimeout(500).catch(unavailable());
+  const srcAfterLong = await page.content().catch(unavailable(''));
   if (/maximum call stack|out of memory|RangeError|Cannot read/i.test(srcAfterLong)) {
     findings.push(makeFinding(
       'high', 'reliability',
@@ -350,7 +353,7 @@ async function runNaivePersona(page, baseUrl, findings, screenshotsDir) {
       }
     }
     return dead.slice(0, 10);
-  }).catch(() => []);
+  }).catch(unavailable([]));
 
   if (deadClicks.length > 0) {
     findings.push(makeFinding(
@@ -366,18 +369,23 @@ async function runNaivePersona(page, baseUrl, findings, screenshotsDir) {
 // ============================================================
 // PERSONA — HACKER
 // ============================================================
-async function runHackerPersona(page, baseUrl, findings, screenshotsDir) {
-  await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: 15000 }).catch(() => {});
+async function runHackerPersona(page, baseUrl, findings, screenshotsDir, results) {
+  await navigate(page, baseUrl, { waitUntil: 'domcontentloaded', timeout: 15000 }).catch(unavailable());
 
-  await probeExposedSecrets(page, findings, screenshotsDir);
-  await probeSensitiveFiles(page, baseUrl, findings);
-  await probeXss(page, baseUrl, findings, screenshotsDir);
-  await probeOpenRedirect(page, baseUrl, findings);
-  await probeInjectionInputs(page, baseUrl, findings);
-  await probeDebugRoutes(page, baseUrl, findings);
+  const probes = {
+    exposed_secrets: () => probeExposedSecrets(page, findings, screenshotsDir),
+    sensitive_files: () => probeSensitiveFiles(page, baseUrl, findings),
+    xss: () => probeXss(page, baseUrl, findings, screenshotsDir),
+    open_redirect: () => probeOpenRedirect(page, baseUrl, findings),
+    injection_inputs: () => probeInjectionInputs(page, baseUrl, findings),
+    debug_routes: () => probeDebugRoutes(page, baseUrl, findings)
+  };
+  for (const [probe, action] of Object.entries(probes)) {
+    await recordObservedProbe(results, findings, probe, baseUrl, action);
+  }
 
   // IDOR probe: detect numeric IDs in current URL, try ±1
-  await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: 10000 }).catch(() => {});
+  await navigate(page, baseUrl, { waitUntil: 'domcontentloaded', timeout: 10000 }).catch(unavailable());
   const currentUrl = page.url();
   const idMatch = currentUrl.match(/\/(\d{1,9})(\/|$|\?)/);
   if (idMatch) {
@@ -385,7 +393,7 @@ async function runHackerPersona(page, baseUrl, findings, screenshotsDir) {
     for (const delta of [-1, 1, 9999]) {
       try {
         const probe = currentUrl.replace(`/${id}`, `/${id + delta}`);
-        const response = await page.goto(probe, { waitUntil: 'commit', timeout: 5000 });
+        const response = await navigate(page, probe, { waitUntil: 'commit', timeout: 5000 });
         if (response && response.status() === 200) {
           findings.push(makeFinding(
             'high', 'security',
@@ -396,7 +404,7 @@ async function runHackerPersona(page, baseUrl, findings, screenshotsDir) {
           ));
           break;
         }
-      } catch { /* not accessible */ }
+      } catch { unavailable()(); }
     }
   }
 }
@@ -405,19 +413,19 @@ async function runHackerPersona(page, baseUrl, findings, screenshotsDir) {
 // PERSONA — POWER USER
 // ============================================================
 async function runPowerPersona(page, baseUrl, findings) {
-  await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: 15000 }).catch(() => {});
+  await navigate(page, baseUrl, { waitUntil: 'domcontentloaded', timeout: 15000 }).catch(unavailable());
 
   // Keyboard navigation — visible focus indicator
   let missingFocus = 0;
   for (let i = 0; i < 25; i++) {
-    await page.keyboard.press('Tab').catch(() => {});
+    await page.keyboard.press('Tab').catch(unavailable());
     const focusOk = await page.evaluate(() => {
       const el = document.activeElement;
       if (!el || el === document.body) return true;
       const style = window.getComputedStyle(el);
       const outline = style.outline || '';
       return outline !== 'none' && !outline.startsWith('0px');
-    }).catch(() => true);
+    }).catch(unavailable(true));
     if (!focusOk) missingFocus++;
   }
 
@@ -432,21 +440,21 @@ async function runPowerPersona(page, baseUrl, findings) {
   }
 
   // Boundary values on number inputs
-  const numberInputs = await page.$$('input[type="number"],input[type="range"]').catch(() => []);
+  const numberInputs = await page.$$('input[type="number"],input[type="range"]').catch(unavailable([]));
   for (const input of numberInputs.slice(0, 5)) {
     for (const value of ['-999999999', '0', '999999999999999', '9007199254740992']) {
-      await input.fill(value).catch(() => {});
-      await page.keyboard.press('Tab').catch(() => {});
-      await page.waitForTimeout(200).catch(() => {});
+      await input.fill(value).catch(unavailable());
+      await page.keyboard.press('Tab').catch(unavailable());
+      await page.waitForTimeout(200).catch(unavailable());
     }
   }
 
   // Date boundary values
-  const dateInputs = await page.$$('input[type="date"]').catch(() => []);
+  const dateInputs = await page.$$('input[type="date"]').catch(unavailable([]));
   for (const input of dateInputs.slice(0, 3)) {
     for (const value of ['1900-01-01', '9999-12-31', '2000-02-29']) {
-      await input.fill(value).catch(() => {});
-      await page.keyboard.press('Tab').catch(() => {});
+      await input.fill(value).catch(unavailable());
+      await page.keyboard.press('Tab').catch(unavailable());
     }
   }
 }
@@ -460,17 +468,17 @@ async function runMobilePersona(browser, baseUrl, findings, screenshotsDir) {
     userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1',
     hasTouch: true,
     isMobile: true
-  }).catch(() => null);
-  if (!context) return;
+  }).catch(unavailable(null));
+  if (!context) return unavailable(undefined, 'mobile_context_unavailable')();
 
-  const page = await context.newPage().catch(() => null);
-  if (!page) { await context.close().catch(() => {}); return; }
+  const page = await context.newPage().catch(unavailable(null));
+  if (!page) { await context.close().catch(() => {}); return unavailable(undefined, 'mobile_page_unavailable')(); }
 
   try {
-    await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: 15000 }).catch(() => {});
+    await navigate(page, baseUrl, { waitUntil: 'domcontentloaded', timeout: 15000 }).catch(unavailable());
 
     // Horizontal overflow
-    const overflow = await page.evaluate(() => document.body.scrollWidth > window.innerWidth + 5).catch(() => false);
+    const overflow = await page.evaluate(() => document.body.scrollWidth > window.innerWidth + 5).catch(unavailable(false));
     if (overflow) {
       const f = makeFinding(
         'medium', 'ux',
@@ -494,7 +502,7 @@ async function runMobilePersona(browser, baseUrl, findings, screenshotsDir) {
         }
       }
       return small.slice(0, 8);
-    }).catch(() => []);
+    }).catch(unavailable([]));
 
     if (smallTargets.length > 0) {
       findings.push(makeFinding(
@@ -515,7 +523,7 @@ async function runMobilePersona(browser, baseUrl, findings, screenshotsDir) {
         if (size > 0 && size < 12) tiny.push({ tag: el.tagName, size, text: el.textContent.trim().substring(0, 40) });
       }
       return tiny.slice(0, 5);
-    }).catch(() => []);
+    }).catch(unavailable([]));
 
     if (tinyFonts.length > 0) {
       findings.push(makeFinding(
@@ -569,7 +577,7 @@ async function checkAccessibility(page, findings) {
     if (!document.querySelector('html[lang]')) result.push({ type: 'no_lang' });
 
     return result;
-  }).catch(() => []);
+  }).catch(unavailable([]));
 
   const defs = {
     img_no_alt:     { sev: 'medium', title: '{count} image(s) missing alt attribute', location: '<img> elements', risk: 'Screen readers cannot describe images to visually impaired users. WCAG 1.1.1 (Level A) violation.', fix: 'Add descriptive alt text to all informative images. Use alt="" for decorative images.' },
@@ -601,9 +609,9 @@ async function capturePerformance(page, thresholds, findings) {
       resourceCount: resources.length,
       resourceSizeKb: Math.round(resources.reduce((acc, r) => acc + (r.transferSize || 0), 0) / 1024)
     };
-  }).catch(() => null);
+  }).catch(unavailable(null));
 
-  if (!perf) return null;
+  if (!perf) return unavailable(null, 'performance_measurement_unavailable')();
 
   if (perf.loadComplete > (thresholds.page_load_ms || 3000)) {
     findings.push(makeFinding(
@@ -651,72 +659,10 @@ async function capturePerformance(page, thresholds, findings) {
 // ============================================================
 // AC COVERAGE
 // ============================================================
-function parseAcItems(prdContent) {
-  if (!prdContent) return [];
-  const items = [];
-  for (const match of String(prdContent).matchAll(/\|\s*(AC-\d+)\s*\|\s*([^|]+)\|/g)) {
-    items.push({ id: match[1].trim(), description: match[2].trim() });
-  }
-  for (const match of String(prdContent).matchAll(/🔴\s*([^\n]{10,100})/g)) {
-    if (items.length >= 20) break;
-    items.push({ id: `AC-${String(items.length + 1).padStart(2, '0')}`, description: match[1].trim() });
-  }
-  return items.slice(0, 20);
-}
-
-// An AC is exercised by a walkthrough step tagged with its id (browser:run
-// --slug), never by a screenshot of the entry page: the old per-AC
-// "Documented" row was the same home screenshot twelve times, and read as
-// coverage. Rows now carry the walkthrough verdict when one proved the AC,
-// and say `Not exercised` otherwise.
-async function runAcCoverage(page, baseUrl, prdPath, screenshotsDir, targetDir) {
-  const prdContent = await readTextIfExists(prdPath);
-  const acItems = parseAcItems(prdContent);
-  if (acItems.length === 0) return [];
-
-  await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: 15000 }).catch(() => {});
-  const entryShot = path.join(screenshotsDir, 'entry.png');
-  await page.screenshot({ path: entryShot, fullPage: false }).catch(() => {});
-  const proven = await collectWalkthroughIds(targetDir);
-
-  return acItems.map((ac) => {
-    const row = proven.get(String(ac.id).toUpperCase());
-    const status = row ? (row.status === 'pass' ? 'Covered' : (row.status === 'fail' ? 'Missing' : 'Partial')) : 'Not exercised';
-    return {
-      id: ac.id,
-      description: ac.description,
-      status,
-      walkthrough: row ? row.report : '',
-      screenshot: row ? '' : entryShot
-    };
-  });
-}
-
-// Every delivery walkthrough report under .aioson/context/features/*/browser/
-// — qa:run has no feature slug, so it reads them all.
-async function collectWalkthroughIds(targetDir) {
-  const ids = new Map();
-  const featuresDir = path.join(targetDir, '.aioson', 'context', 'features');
-  let slugs = [];
-  try {
-    slugs = (await fs.readdir(featuresDir, { withFileTypes: true })).filter((d) => d.isDirectory()).map((d) => d.name);
-  } catch {
-    return ids;
-  }
-  for (const slug of slugs) {
-    const evidence = readBrowserEvidence(targetDir, slug);
-    for (const [id, row] of evidence.ids) {
-      const current = ids.get(id);
-      if (!current || String(current.finished_at).localeCompare(String(row.finished_at)) < 0) ids.set(id, row);
-    }
-  }
-  return ids;
-}
-
 // ============================================================
 // REPORT GENERATION
 // ============================================================
-function buildMarkdownReport(projectName, url, findings, acCoverage, perf, mode) {
+function buildMarkdownReport(projectName, url, findings, acCoverage, perf, mode, execution, coverage) {
   const sorted = [...findings].sort((a, b) => {
     const o = { critical: 0, high: 1, medium: 2, low: 3 };
     return (o[a.severity] ?? 4) - (o[b.severity] ?? 4);
@@ -728,6 +674,9 @@ function buildMarkdownReport(projectName, url, findings, acCoverage, perf, mode)
   md += `> Generated by: \`aioson qa:${mode}\`  \n`;
   md += `> Browser: Chromium | Viewport: 1280×720  \n`;
   md += `> URL: ${url}\n\n`;
+
+  md += probeSummaryMarkdown(execution);
+  if (coverage.gaps.length) md += '### Coverage limitations\n' + coverage.gaps.map((gap) => `- ${gap.check}: ${gap.message}`).join('\n') + '\n\n';
 
   if (acCoverage.length > 0) {
     md += `### Acceptance criteria coverage\n| AC | Description | Status |\n|---|---|---|\n`;
@@ -774,15 +723,18 @@ function buildMarkdownReport(projectName, url, findings, acCoverage, perf, mode)
   return md;
 }
 
-async function writeReports(targetDir, projectName, url, findings, acCoverage, perf, mode) {
+async function writeReports(targetDir, projectName, url, findings, acCoverage, perf, mode, execution, coverage) {
   const mdPath = path.join(targetDir, 'aios-qa-report.md');
   const jsonPath = path.join(targetDir, 'aios-qa-report.json');
-  const md = buildMarkdownReport(projectName, url, findings, acCoverage, perf, mode);
+  const md = buildMarkdownReport(projectName, url, findings, acCoverage, perf, mode, execution, coverage);
   const bySev = (s) => findings.filter((f) => f.severity === s).length;
   const json = {
     generated_at: new Date().toISOString(),
     project: projectName, url, mode,
     summary: { critical: bySev('critical'), high: bySev('high'), medium: bySev('medium'), low: bySev('low') },
+    ...execution,
+    feature: coverage.feature,
+    ac_coverage_gaps: coverage.gaps,
     ac_coverage: acCoverage,
     performance: perf,
     findings
@@ -823,7 +775,9 @@ async function runQaRun({ args, options = {}, logger, t }) {
   const selectedPersona = String(options.persona || '').toLowerCase() || null;
   const headed = Boolean(options.headed);
   const screenshotsDir = path.join(targetDir, 'aios-qa-screenshots');
-  const prdPath = path.join(targetDir, '.aioson/context/prd.md');
+  const feature = String(options.feature || config.feature || '').trim() || null;
+  const coverage = await collectQaAcEvidence(targetDir, feature, url);
+  const probeResults = [];
   const thresholds = config.performance_thresholds || {};
 
   _counter = 0;
@@ -858,40 +812,39 @@ async function runQaRun({ args, options = {}, logger, t }) {
   page.on('request', (req) => networkRequests.push({ url: req.url(), method: req.method() }));
 
   try {
-    const personas = config.personas || ['naive', 'hacker', 'power', 'mobile'];
-
+    const personas = selectedPersona ? [selectedPersona] : (config.personas || ['naive', 'hacker', 'power', 'mobile']);
+    const actions = {
+      naive: () => runNaivePersona(page, url, findings, screenshotsDir),
+      hacker: () => runHackerPersona(page, url, findings, screenshotsDir, probeResults),
+      power: () => runPowerPersona(page, url, findings),
+      mobile: () => runMobilePersona(browser, url, findings, screenshotsDir)
+    };
+    const observe = (probe, action) => recordObservedProbe(probeResults, findings, probe, url, action);
     for (const persona of personas) {
-      if (selectedPersona && persona !== selectedPersona) continue;
       logger.log(t('qa_run.persona_start', { persona }));
       const before = findings.length;
-
-      if (persona === 'naive') await runNaivePersona(page, url, findings, screenshotsDir).catch(() => {});
-      else if (persona === 'hacker') await runHackerPersona(page, url, findings, screenshotsDir).catch(() => {});
-      else if (persona === 'power') await runPowerPersona(page, url, findings).catch(() => {});
-      else if (persona === 'mobile') await runMobilePersona(browser, url, findings, screenshotsDir).catch(() => {});
-
+      await observe(`persona_${persona}`, actions[persona] || (() => ({ status: 'unavailable', reason: 'unknown_persona' })));
       logger.log(t('qa_run.persona_done', { persona, count: findings.length - before }));
     }
 
-    // Network + console analysis
-    await probeInjectionInjection(page, findings, consoleLogs, networkRequests).catch(() => {});
-
-    // Accessibility
+    await observe('network_console', () => probeInjectionInjection(page, findings, consoleLogs, networkRequests));
     logger.log(t('qa_run.accessibility'));
-    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 15000 }).catch(() => {});
-    await checkAccessibility(page, findings).catch(() => {});
-
-    // Performance
+    await observe('accessibility', async () => {
+      await navigate(page, url, { waitUntil: 'domcontentloaded', timeout: 15000 });
+      await checkAccessibility(page, findings);
+    });
     logger.log(t('qa_run.performance'));
-    await page.goto(url, { waitUntil: 'load', timeout: 20000 }).catch(() => {});
-    const perf = await capturePerformance(page, thresholds, findings).catch(() => null);
-
-    // AC coverage
-    logger.log(t('qa_run.ac_scenarios'));
-    const acCoverage = await runAcCoverage(page, url, prdPath, screenshotsDir, targetDir).catch(() => []);
+    let perf = null;
+    await observe('performance', async () => {
+      await navigate(page, url, { waitUntil: 'load', timeout: 20000 });
+      perf = await capturePerformance(page, thresholds, findings);
+    });
+    const acCoverage = coverage.items;
+    const execution = summarizeProbes(probeResults);
+    logger.log(`qa:run execution: ${execution.execution_complete ? 'COMPLETE' : 'INCOMPLETE'} — ${execution.limitations.length} unavailable checks; ${coverage.gaps.length} AC inventory limitations`);
 
     // Write reports
-    const { mdPath, jsonPath } = await writeReports(targetDir, projectName, url, findings, acCoverage, perf, 'run');
+    const { mdPath, jsonPath } = await writeReports(targetDir, projectName, url, findings, acCoverage, perf, 'run', execution, coverage);
 
     logger.log(t('qa_run.done'));
     logger.log(t('qa_run.report_written', { path: mdPath }));
@@ -906,13 +859,13 @@ async function runQaRun({ args, options = {}, logger, t }) {
     let htmlPath, htmlDir;
     if (options.html) {
       const { writeHtmlReport } = require('../qa-html-report');
-      const result = await writeHtmlReport(targetDir, projectName, url, findings, acCoverage, perf, 'run', screenshotsDir, { thresholds });
+      const result = await writeHtmlReport(targetDir, projectName, url, findings, acCoverage, perf, 'run', screenshotsDir, { thresholds, execution });
       htmlPath = result.htmlPath;
       htmlDir = result.runDir;
       logger.log(t('qa_run.html_report_written', { path: htmlPath }));
     }
 
-    const output = { ok: true, targetDir, url, summary, mdPath, jsonPath, screenshotsDir, findings, acCoverage, ...(htmlPath ? { htmlPath, htmlDir } : {}) };
+    const output = { ok: true, targetDir, url, feature, ...execution, ac_coverage_gaps: coverage.gaps, summary, mdPath, jsonPath, screenshotsDir, findings, acCoverage, ...(htmlPath ? { htmlPath, htmlDir } : {}) };
     if (options.json) return output;
     return output;
   } finally {

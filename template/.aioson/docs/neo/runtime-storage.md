@@ -1,8 +1,8 @@
 ---
-description: Guarded local SQLite diagnosis, retention preview, pruning, and compaction for Neo
+description: Guarded local SQLite diagnosis, retention preview, pruning, and compaction for Neo — plus the regenerable browser evidence on disk
 agents: [neo]
 task_types: [runtime-storage, local-maintenance, telemetry-retention]
-triggers: [aios.sqlite large, runtime database size, remove old runtime data, prune, compact]
+triggers: [aios.sqlite large, runtime database size, remove old runtime data, prune, compact, screenshots taking space, visual-screenshots, walkthrough artifacts]
 ---
 
 # Neo Runtime Storage
@@ -41,5 +41,19 @@ but active coordination inside it is not disposable while work is in progress.
    - Compaction without deletion: `aioson runtime:compact . --json`.
 
 6. Report rows removed per table, bytes reclaimed, skipped compaction, and any integrity/locking error.
+
+## Evidence artifacts on disk
+
+The visual and browser gates leave regenerable binaries beside their reports: runtime captures under
+`.aioson/context/features/{slug}/visual-screenshots/` (from `verify:artifact --kind=visual --screenshots`) and
+per-step snapshots under `.aioson/briefings/{slug}/browser/{script}/` or `.aioson/context/features/{slug}/browser/{script}/`
+(from `browser:run`). They are not the evidence — the JSON and Markdown reports next to them are — and every report carries
+the line that regenerates its folder. The producers replace their folder on every run, `feature:archive` drops the
+binaries when a feature closes, and `hygiene:scan` lists what is orphaned or heavy under `heavy_evidence_artifacts`.
+
+- Preview: `aioson evidence:prune . --dry-run` (add `--slug={slug}` for one owner). Orphans — files the latest report no
+  longer references — are the default scope; `--all` removes every capture and snapshot, never a report.
+- Execute only on an explicit request, after showing the preview: `aioson evidence:prune .` or `aioson evidence:prune . --all`.
+- Never delete the reports (`visual-evidence.json`, `browser/{script}.json|.md`) or anything outside these folders.
 
 Do not route to another agent merely to run these commands. After maintenance, return to Neo's normal read-only routing behavior.

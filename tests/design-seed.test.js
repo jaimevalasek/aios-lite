@@ -23,7 +23,8 @@ const {
   fingerprintMatchReason,
   registryPath,
   REGISTERS,
-  TYPEFACE_BANK
+  TYPEFACE_BANK,
+  COMPOSITION_BANK
 } = require('../src/lib/design-seed');
 const { runDesignSeed } = require('../src/commands/design-seed');
 const { runVerifyArtifact } = require('../src/commands/verify-artifact');
@@ -248,6 +249,81 @@ test('design:seed returns the JSON contract and rejects an unknown register', as
       await fs.rm(dir, { recursive: true, force: true });
     }
   });
+});
+
+test('all registers produce distinct three-way alternatives, including their final accent hues', () => {
+  const failures = [];
+  for (const register of REGISTERS) {
+    for (let n = 0; n < 16; n += 1) {
+      const { candidates } = generateSeedCandidates({ slug: `seed-audit-${n}`, register, count: 3 });
+      if (new Set(candidates.map((c) => c.pairing.display)).size !== 3) failures.push(`${register}/${n}: repeated face`);
+      if (new Set(candidates.map((c) => c.composition.hero)).size !== 3) failures.push(`${register}/${n}: repeated composition`);
+      for (let i = 1; i < candidates.length; i += 1) {
+        if (candidates.slice(0, i).some((c) => hueDeltaDeg(c.accent_hue, candidates[i].accent_hue) < 28)) {
+          failures.push(`${register}/${n}: close final accents`);
+        }
+      }
+    }
+  }
+  assert.deepEqual(failures, []);
+});
+
+test('a free display face wins over recent faces without relying on lucky retries', () => {
+  const pool = TYPEFACE_BANK.filter((p) => p.registers.includes('technical'));
+  const free = pool[pool.length - 1].display;
+  const avoid = pool.slice(0, -1).map((p) => ({ display_face: p.display.toUpperCase() }));
+  for (let seed = 0; seed < 24; seed += 1) {
+    const { candidates } = generateSeedCandidates({ slug: 'one-free-face', register: 'technical', count: 1, seed, avoid });
+    assert.equal(candidates[0].pairing.display, free);
+  }
+});
+
+test('six alternatives exhaust each compatible bank before reusing it, and disclose reuse', () => {
+  for (const register of REGISTERS) {
+    const result = generateSeedCandidates({ slug: 'large-draw', register, count: 6 });
+    for (const [bank, key, readCandidate] of [
+      [TYPEFACE_BANK, 'display', (c) => c.pairing.display],
+      [COMPOSITION_BANK, 'hero', (c) => c.composition.hero]
+    ]) {
+      const available = new Set(bank.filter((entry) => entry.registers.includes(register)).map((entry) => entry[key]));
+      const firstPass = result.candidates.slice(0, Math.min(6, available.size)).map(readCandidate);
+      assert.equal(new Set(firstPass).size, firstPass.length, `${register}/${key}: premature reuse`);
+      if (available.size < 6) assert.ok(result.warnings.some((warning) => warning.includes(key)), `${register}/${key}: reuse is not disclosed`);
+    }
+  }
+});
+
+test('saturated palette history stays bounded, preserves the chosen pole and reports residual collisions', () => {
+  const avoid = Array.from({ length: 24 }, (_, i) => ({ accent_hue: i * 15, ground_pole: 'light' }));
+  const input = { slug: 'saturated-history', register: 'cinematic', pole: 'light', count: 3, avoid };
+  const result = generateSeedCandidates(input);
+  assert.deepEqual(result, generateSeedCandidates(input));
+  assert.equal(result.candidates.length, 3);
+  for (const candidate of result.candidates) {
+    assert.equal(candidate.pole, 'light');
+    assert.ok(candidate.diversity.recent_palette_matches > 0);
+    assert.ok(candidate.diversity.palette_trials <= 36);
+    assert.ok(result.warnings.some((warning) => warning.includes(candidate.label) && /palette/.test(warning)));
+    assert.ok(candidate.contrast.ink_on_ground >= 4.5);
+    assert.ok(candidate.contrast.accent_ink_on_accent >= 4.5);
+  }
+});
+
+test('drawn materials honor restrained registers and technical compositions do not prescribe shadows', () => {
+  for (let seed = 0; seed < 24; seed += 1) {
+    for (const register of ['technical', 'editorial', 'material']) {
+      const { candidates } = generateSeedCandidates({ slug: 'material-compatibility', register, seed, count: 3 });
+      for (const candidate of candidates) {
+        assert.ok(!['glass', 'ambient drift', 'conic ring'].includes(candidate.composition.material),
+          `${register}: incompatible ${candidate.composition.material}`);
+        if (register === 'technical') {
+          assert.doesNotMatch(candidate.composition.note, /shadow/);
+          const spacing = candidate.composition.rhythm.match(/\d+/g).map(Number);
+          assert.ok(Math.max(...spacing) <= 48, 'working surfaces must not inherit the oversized landing-page spacing');
+        }
+      }
+    }
+  }
 });
 
 test('the project identity remains part of the draw even when two projects share a feature slug', async () => {

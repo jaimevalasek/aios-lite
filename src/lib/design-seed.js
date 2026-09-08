@@ -80,87 +80,19 @@ function between(rng, lo, hi) {
   return lo + rng() * (hi - lo);
 }
 
-// ─── banks ──────────────────────────────────────────────────────────────────
-// Curated raw material, not a decision surface: the seed draws FROM these, the
-// engine composes WITH the draw. Every family is deliverable from its host
-// (Google Fonts / Fontshare) per the build contract's typeface exception.
-//
-// The bank deliberately avoids the training-saturated faces the telemetry
-// flags (SATURATED_DISPLAY_FACES in visual-telemetry.js): a face every model
-// reaches for by reflex reads as a default even when a fair draw picked it,
-// so a dice that can roll the monoculture defeats its own purpose. A test
-// keeps the two lists disjoint.
-
-const REGISTERS = ['technical', 'quiet', 'editorial', 'material', 'constructed', 'cinematic'];
-const POLES = ['light', 'dark', 'chromatic'];
-
-const TYPEFACE_BANK = [
-  { display: 'Young Serif', ui: 'Figtree', host: 'google', registers: ['editorial', 'material'], vibe: 'warm chunky oldstyle' },
-  { display: 'Gambetta', ui: 'Switzer', host: 'fontshare', registers: ['editorial', 'quiet'], vibe: 'calligraphic contemporary serif' },
-  { display: 'Petrona', ui: 'Archivo', host: 'google', registers: ['editorial'], vibe: 'upright latin serif with bite' },
-  { display: 'Italiana', ui: 'Karla', host: 'google', registers: ['quiet', 'editorial'], vibe: 'hairline display roman' },
-  { display: 'Abril Fatface', ui: 'Mulish', host: 'google', registers: ['material', 'editorial'], vibe: 'poster didone' },
-  { display: 'Gloock', ui: 'Hanken Grotesk', host: 'google', registers: ['editorial', 'cinematic'], vibe: 'heavy didone display' },
-  { display: 'Bodoni Moda', ui: 'Public Sans', host: 'google', registers: ['editorial'], vibe: 'true italian didone' },
-  { display: 'Spectral', ui: 'Work Sans', host: 'google', registers: ['quiet', 'editorial'], vibe: 'cool text serif' },
-  { display: 'Marcellus', ui: 'Mulish', host: 'google', registers: ['quiet', 'cinematic'], vibe: 'inscriptional capitals' },
-  { display: 'Schibsted Grotesk', ui: 'Archivo', host: 'google', registers: ['technical', 'constructed'], vibe: 'newsroom grotesque' },
-  { display: 'Sora', ui: 'Hanken Grotesk', host: 'google', registers: ['technical'], vibe: 'geometric future sans' },
-  { display: 'Unbounded', ui: 'Manrope', host: 'google', registers: ['constructed', 'cinematic'], vibe: 'expanded display sans' },
-  { display: 'Panchang', ui: 'General Sans', host: 'fontshare', registers: ['constructed'], vibe: 'squared wide display' },
-  { display: 'Anton', ui: 'Archivo', host: 'google', registers: ['constructed'], vibe: 'compressed poster sans' },
-  { display: 'Bricolage Grotesque', ui: 'Public Sans', host: 'google', registers: ['constructed', 'editorial'], vibe: 'characterful grotesque' },
-  { display: 'Familjen Grotesk', ui: 'Karla', host: 'google', registers: ['quiet', 'technical'], vibe: 'warm grotesque' },
-  { display: 'Fragment Mono', ui: 'Archivo', host: 'google', registers: ['technical'], vibe: 'monospace display' },
-  { display: 'Clash Display', ui: 'Satoshi', host: 'fontshare', registers: ['constructed', 'cinematic'], vibe: 'angular display grotesque' },
-  { display: 'Cabinet Grotesk', ui: 'General Sans', host: 'fontshare', registers: ['editorial', 'constructed'], vibe: 'retro grotesque' },
-  { display: 'Zodiak', ui: 'Switzer', host: 'fontshare', registers: ['editorial', 'material'], vibe: 'fat-face serif' },
-  { display: 'Sentient', ui: 'General Sans', host: 'fontshare', registers: ['quiet', 'editorial'], vibe: 'gentle transitional serif' },
-  { display: 'Boska', ui: 'Switzer', host: 'fontshare', registers: ['cinematic', 'editorial'], vibe: 'sharp fashion serif' },
-  { display: 'Erode', ui: 'Satoshi', host: 'fontshare', registers: ['editorial', 'quiet'], vibe: 'ink-trap text serif' }
-];
-
-const COMPOSITION_BANK = [
-  { hero: 'split-editorial', note: 'text column against a full-bleed media column, baselines locked across the seam', registers: ['editorial', 'quiet', 'material'] },
-  { hero: 'type-as-image', note: 'display type IS the hero — the wordmark or promise set at 96px+, media behind or absent', registers: ['editorial', 'constructed', 'cinematic'] },
-  { hero: 'full-bleed-stage', note: 'media or product fills the viewport under a legibility scrim, one action, UI out of the frame', registers: ['cinematic', 'material'] },
-  { hero: 'offset-grid', note: 'asymmetric 12-col grid with one element overlapping the seam and one bleeding off-canvas', registers: ['editorial', 'constructed'] },
-  { hero: 'centered-object', note: 'one subject floating at full presence in a generous field, soft grounded shadow, nothing competing', registers: ['quiet', 'material', 'technical'] },
-  { hero: 'stacked-manifesto', note: 'oversized stacked display lines with one word swapped for media or color, marquee optional', registers: ['constructed', 'editorial'] },
-  { hero: 'framed-plate', note: 'media in a drawn frame with hairline rules and small caps captions — a plate, not a card', registers: ['editorial', 'quiet'] },
-  { hero: 'collage-layers', note: 'overlapping color panels and cutout media at slight rotations — composed chaos with a strict palette', registers: ['constructed', 'material'] },
-  { hero: 'horizontal-rail', note: 'edge-to-edge horizontal scroll rail with snap and a visible overflow cue as the first move', registers: ['cinematic', 'constructed'] },
-  { hero: 'diagonal-axis', note: 'content set on one tilted axis or clipped section seams — the angle is the signature, used once', registers: ['constructed', 'cinematic'] }
-];
-
-// Names echo the visual-effects.md vocabulary — the doc owns the execution.
-const MATERIALS = ['radial wash', 'grain and noise', 'dither and halftone', 'conic ring', 'glass', 'ambient drift'];
-
-const RHYTHMS = ['96/128px desktop, 48/64px mobile', '112/160px desktop, 56/72px mobile', '80/120px desktop, 48/64px mobile'];
-
-const SCHEMES = ['mono', 'analogous', 'complementary', 'split-complementary', 'triadic', 'duo-accent', 'color-block'];
-
-// Pole = where the ground sits. 'chromatic' is a saturated color field —
-// the register shapes how far each posture reaches for it.
-const POLE_WEIGHTS = {
-  technical: [['light', 0.45], ['dark', 0.45], ['chromatic', 0.1]],
-  quiet: [['light', 0.6], ['dark', 0.3], ['chromatic', 0.1]],
-  editorial: [['light', 0.55], ['dark', 0.3], ['chromatic', 0.15]],
-  material: [['light', 0.4], ['dark', 0.4], ['chromatic', 0.2]],
-  constructed: [['light', 0.3], ['dark', 0.3], ['chromatic', 0.4]],
-  cinematic: [['dark', 0.7], ['light', 0.15], ['chromatic', 0.15]],
-  default: [['light', 0.4], ['dark', 0.35], ['chromatic', 0.25]]
-};
-
-const SCHEME_WEIGHTS = {
-  technical: [['mono', 0.35], ['duo-accent', 0.25], ['analogous', 0.2], ['complementary', 0.2]],
-  quiet: [['mono', 0.45], ['analogous', 0.35], ['complementary', 0.2]],
-  editorial: [['mono', 0.3], ['complementary', 0.25], ['analogous', 0.25], ['split-complementary', 0.2]],
-  material: [['analogous', 0.35], ['complementary', 0.3], ['mono', 0.2], ['duo-accent', 0.15]],
-  constructed: [['color-block', 0.3], ['triadic', 0.25], ['complementary', 0.25], ['duo-accent', 0.2]],
-  cinematic: [['mono', 0.35], ['duo-accent', 0.3], ['complementary', 0.2], ['analogous', 0.15]],
-  default: [['mono', 0.2], ['analogous', 0.2], ['complementary', 0.2], ['split-complementary', 0.1], ['triadic', 0.1], ['duo-accent', 0.1], ['color-block', 0.1]]
-};
+const {
+  REGISTERS,
+  POLES,
+  SCHEMES,
+  TYPEFACE_BANK,
+  COMPOSITION_BANK,
+  REGISTER_MATERIALS,
+  MATERIALS,
+  RHYTHMS,
+  TECHNICAL_RHYTHMS,
+  POLE_WEIGHTS,
+  SCHEME_WEIGHTS
+} = require('./design-seed-banks');
 
 // ─── palette construction (contrast-solved) ─────────────────────────────────
 
@@ -311,6 +243,62 @@ function round2(n) {
 const GOLDEN_ANGLE = 137.508;
 const REPETITION_DELTA_DEG = 24;
 const REPETITION_TIGHT_DELTA_DEG = 18;
+const CANDIDATE_ACCENT_SEPARATION = 28;
+const PALETTE_SEARCH_LIMIT = 36;
+
+// Rank constraints first; randomness only breaks equally suitable choices.
+// Repeated draws with replacement used to miss free entries in small banks.
+function pickLeastUsed(rng, pool, key, used, history = []) {
+  const normalize = (value) => String(value || '').trim().toLowerCase();
+  const usage = pool.map((entry) => used.get(normalize(key(entry))) || 0);
+  const minimum = Math.min(...usage);
+  const available = pool.filter((entry, i) => usage[i] === minimum);
+  const recent = available.map((entry) => history.filter((value) => normalize(value) === normalize(key(entry))).length);
+  const leastRecent = Math.min(...recent);
+  const selected = pickFrom(rng, available.filter((entry, i) => recent[i] === leastRecent));
+  used.set(normalize(key(selected)), minimum + 1);
+  return { value: selected, priorUses: minimum, recentUses: leastRecent };
+}
+
+function paletteDiversity(accentHue, pole, takenAccents, avoid) {
+  const candidateDistances = takenAccents.map((hue) => hueDeltaDeg(accentHue, hue));
+  const recentDistances = avoid.filter((entry) => entry && Number.isFinite(entry.accent_hue))
+    .map((entry) => ({ delta: hueDeltaDeg(accentHue, entry.accent_hue), samePole: entry.ground_pole === pole }));
+  const candidateMatches = candidateDistances.filter((delta) => delta < CANDIDATE_ACCENT_SEPARATION).length;
+  const recentMatches = recentDistances.filter(({ delta, samePole }) => fingerprintMatchReason(delta, samePole)).length;
+  const clearance = Math.min(180, ...candidateDistances.map((delta) => delta - CANDIDATE_ACCENT_SEPARATION),
+    ...recentDistances.map(({ delta, samePole }) => delta - (samePole ? REPETITION_DELTA_DEG : REPETITION_TIGHT_DELTA_DEG)));
+  return { candidateMatches, recentMatches, clearance, separation: candidateDistances.length ? Math.min(...candidateDistances) : null };
+}
+
+function drawPalette(rng, { baseHue, pole, scheme, takenAccents, avoid }) {
+  let best = null;
+  let trials = 0;
+  for (; trials < PALETTE_SEARCH_LIMIT; trials += 1) {
+    const hue = (baseHue + trials * GOLDEN_ANGLE) % 360;
+    const palette = buildPalette(rng, { baseHue: hue, pole, scheme });
+    const accentHue = Math.round(palette.roles.accent.h) % 360;
+    const diversity = paletteDiversity(accentHue, pole, takenAccents, avoid);
+    if (!best || diversity.candidateMatches < best.diversity.candidateMatches ||
+        (diversity.candidateMatches === best.diversity.candidateMatches &&
+          (diversity.recentMatches < best.diversity.recentMatches ||
+            (diversity.recentMatches === best.diversity.recentMatches && diversity.clearance > best.diversity.clearance)))) {
+      best = { hue, accentHue, palette, diversity };
+    }
+    if (!diversity.candidateMatches && !diversity.recentMatches) { trials += 1; break; }
+  }
+  return { ...best, trials };
+}
+
+function candidateWarnings(candidate) {
+  const d = candidate.diversity;
+  const warnings = [];
+  if (d.recent_palette_matches) warnings.push(`${candidate.label}: palette overlaps ${d.recent_palette_matches} recent fingerprint(s) after ${d.palette_trials} trials; least-conflicting sampled palette used, chosen pole preserved`);
+  if (d.accent_separation_deg !== null && d.accent_separation_deg < CANDIDATE_ACCENT_SEPARATION) warnings.push(`${candidate.label}: palette alternatives are only ${d.accent_separation_deg} degrees apart; draw diversity is limited`);
+  if (d.display_uses) warnings.push(`${candidate.label}: display reused after exhausting the compatible typeface bank`);
+  if (d.hero_uses) warnings.push(`${candidate.label}: hero reused after exhausting the compatible composition bank`);
+  return warnings;
+}
 
 /**
  * Two fingerprints read as "the same project again" when the accent hue
@@ -327,8 +315,8 @@ function fingerprintMatchReason(delta, samePole) {
 /**
  * Deterministic candidates for one project. `avoid` carries fingerprints of
  * OTHER recent projects ({ accent_hue, ground_pole }): a draw landing in an
- * already-shipped hue family on the same pole rotates away by the golden
- * angle — diversity by construction, not by luck.
+ * already-shipped hue family rotates away by the golden angle. A bounded
+ * search ranks residual conflicts and reports them when no free trial exists.
  */
 function generateSeedCandidates({ project = null, slug, register = null, count = 3, seed = 0, avoid = [], pole = null } = {}) {
   const normalizedRegister = register && REGISTERS.includes(String(register).toLowerCase())
@@ -345,57 +333,36 @@ function generateSeedCandidates({ project = null, slug, register = null, count =
 
   const baseHue0 = rng() * 360;
   const candidates = [];
-  const takenHues = [];
-  const usedDisplays = new Set();
-  const usedHeroes = new Set();
+  const takenAccents = [];
+  const usedDisplays = new Map();
+  const usedHeroes = new Map();
+  const usedMaterials = new Map();
 
   for (let i = 0; i < Math.max(1, Math.min(6, count)); i += 1) {
     const candidateRegister = normalizedRegister || pickFrom(rng, REGISTERS);
     const pole = fixedPole || pickWeighted(rng, POLE_WEIGHTS[candidateRegister] || POLE_WEIGHTS.default);
     const scheme = pickWeighted(rng, SCHEME_WEIGHTS[candidateRegister] || SCHEME_WEIGHTS.default);
 
-    let hue = (baseHue0 + i * GOLDEN_ANGLE) % 360;
-    for (let attempt = 0; attempt < 12 && takenHues.some((t) => hueDeltaDeg(hue, t) < 28); attempt += 1) {
-      hue = (hue + GOLDEN_ANGLE) % 360;
-    }
+    // Compare final accents both inside this draw and against measured history.
+    const drawn = drawPalette(rng, { baseHue: (baseHue0 + i * GOLDEN_ANGLE) % 360, pole, scheme, takenAccents, avoid });
+    const { hue, palette } = drawn;
+    takenAccents.push(drawn.accentHue);
 
-    // The avoidance check reads the BUILT accent, not the base hue — a
-    // complementary scheme rotates the accent 180° away from the base, and the
-    // accent is the hue the fingerprint registry records and the eye compares.
-    const avoided = (h) => avoid.some((f) =>
-      f && Number.isFinite(f.accent_hue) && Boolean(fingerprintMatchReason(hueDeltaDeg(h, f.accent_hue), f.ground_pole === pole)));
-    let palette = buildPalette(rng, { baseHue: hue, pole, scheme });
-    for (let attempt = 0; attempt < 12 && avoided(palette.roles.accent.h); attempt += 1) {
-      hue = (hue + GOLDEN_ANGLE) % 360;
-      palette = buildPalette(rng, { baseHue: hue, pole, scheme });
-    }
-    takenHues.push(hue);
-
-    // Candidates are alternatives — same pairing or hero twice in one draw
-    // wastes a slot, so re-pick a few times before accepting a repeat.
     const pairingPool = TYPEFACE_BANK.filter((p) => p.registers.includes(candidateRegister));
-    let pairing = pickFrom(rng, pairingPool.length ? pairingPool : TYPEFACE_BANK);
-    const repeatedDisplay = (candidate) => avoid.some((entry) =>
-      entry && entry.display_face && String(entry.display_face).toLowerCase() === String(candidate.display).toLowerCase());
-    for (let attempt = 0; attempt < 8 && (usedDisplays.has(pairing.display) || repeatedDisplay(pairing)); attempt += 1) {
-      pairing = pickFrom(rng, pairingPool.length ? pairingPool : TYPEFACE_BANK);
-    }
-    usedDisplays.add(pairing.display);
-
+    const chosenPairing = pickLeastUsed(rng, pairingPool, (p) => p.display, usedDisplays, avoid.map((entry) => entry && entry.display_face));
+    const pairing = chosenPairing.value;
     const compositionPool = COMPOSITION_BANK.filter((c) => c.registers.includes(candidateRegister));
-    let composition = pickFrom(rng, compositionPool.length ? compositionPool : COMPOSITION_BANK);
-    for (let attempt = 0; attempt < 6 && usedHeroes.has(composition.hero); attempt += 1) {
-      composition = pickFrom(rng, compositionPool.length ? compositionPool : COMPOSITION_BANK);
-    }
-    usedHeroes.add(composition.hero);
+    const chosenComposition = pickLeastUsed(rng, compositionPool, (c) => c.hero, usedHeroes);
+    const composition = chosenComposition.value;
+    const material = pickLeastUsed(rng, REGISTER_MATERIALS[candidateRegister], (value) => value, usedMaterials).value;
 
     candidates.push({
-      label: `${scheme}-${Math.round(hue)}`,
+      label: `${scheme}-${Math.round(hue) % 360}`,
       register: candidateRegister,
       pole,
       scheme,
-      base_hue: Math.round(hue),
-      accent_hue: Math.round(palette.roles.accent.h),
+      base_hue: Math.round(hue) % 360,
+      accent_hue: drawn.accentHue,
       roles: Object.fromEntries(Object.entries(palette.roles).map(([name, value]) => [name, { hex: value.hex, oklch: value.css }])),
       ...(palette.blocks ? { blocks: palette.blocks.map((b) => ({ hex: b.hex, oklch: b.css, ink: b.ink })) } : {}),
       contrast: palette.contrast,
@@ -403,14 +370,22 @@ function generateSeedCandidates({ project = null, slug, register = null, count =
       composition: {
         hero: composition.hero,
         note: composition.note,
-        rhythm: pickFrom(rng, RHYTHMS),
-        material: pickFrom(rng, MATERIALS),
+        rhythm: pickFrom(rng, candidateRegister === 'technical' ? TECHNICAL_RHYTHMS : RHYTHMS),
+        material,
         finishing: finishingFloor(candidateRegister, pole)
+      },
+      diversity: {
+        accent_separation_deg: drawn.diversity.separation,
+        recent_palette_matches: drawn.diversity.recentMatches,
+        palette_trials: drawn.trials,
+        display_uses: chosenPairing.priorUses,
+        recent_display_uses: chosenPairing.recentUses,
+        hero_uses: chosenComposition.priorUses
       }
     });
   }
 
-  return { basis, hash, register: normalizedRegister, pole: fixedPole, candidates };
+  return { basis, hash, register: normalizedRegister, pole: fixedPole, candidates, warnings: candidates.flatMap(candidateWarnings) };
 }
 
 // The drawn material is the SIGNATURE, never the whole system. Every candidate
@@ -584,8 +559,10 @@ function writeSeedRecord(targetDir, slug, payload) {
       display: c.pairing && c.pairing.display,
       ui: c.pairing && c.pairing.ui,
       hero: c.composition && c.composition.hero,
-      material: c.composition && c.composition.material
+      material: c.composition && c.composition.material,
+      ...(c.diversity ? { diversity: c.diversity } : {})
     })),
+    warnings: payload.warnings || [],
     history
   };
   fs.mkdirSync(path.dirname(file), { recursive: true });

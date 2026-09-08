@@ -97,6 +97,9 @@ async function runBrowserRun({ args, options = {}, logger, t }) {
       planned: loaded.script.steps.length
     }));
     if (report.persisted) logger.log(t('browser_run.report_written', { path: report.report_path }));
+    if (report.superseded_artifacts && report.superseded_artifacts.files > 0) {
+      logger.log(t('browser_run.superseded', { files: report.superseded_artifacts.files, kb: Math.round(report.superseded_artifacts.bytes / 1024) }));
+    }
     logger.log(t('browser_run.replay', { command: report.replay }));
   }
 

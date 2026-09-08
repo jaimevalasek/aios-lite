@@ -86,7 +86,9 @@ Only when the user explicitly names another model, load `.aioson/docs/briefing/p
 
 ### Prototype contract route
 
-A visible/rich surface requires prototype work before briefing approval; a genuinely non-visual feature records `prototype: not_applicable` without manufactured HTML. The routed module preserves the reference path `references/identity`, the `reference-identity-extract` process, the `--kind=identity` gate, and the resulting `identity.md`, then loads `prototype-forge` for its non-regression order and bounded premium quality pass.
+Build an initial draft, then offer stopping or a bounded premium quality pass; honor prior authorization. Draft delivery never grants approval.
+
+The module owns the proactive design system offer: references, accepted prototype (`source: intent`), or later. Reuse identity and prior choices; do not wait for an `identity.md` request. It owns consolidation and `references/identity` → `reference-identity-extract` → `--kind=identity`. Identity creation never authorizes refinement.
 
 While iterating, `prototype.html` and `prototype-manifest.md` remain `status: draft`; the user-controlled `aioson briefing:approve` freezes the manifest as `status: approved`, making the prototype binding evidence for layout, visible states, and interactions — never backend integration.
 
@@ -122,7 +124,7 @@ For concrete `{slug}`, after the updated briefing audit and before handoff, load
 - After review generation, give the exact `review.html` path, require a real browser, and accept feedback via Save to file, Download JSON, or Copy JSON into chat.
 - After an apply with blockers, point to the next generated review instead of modifying the briefing by hand.
 - When clean, tell the user to run `aioson briefing:approve . --slug={slug}`, then activate `@product`.
-- If `aioson classify . --feature={slug}` reports `recommend_prototype: true`, complete the bounded prototype route before approval; never loop on it.
+- If `aioson classify . --feature={slug}` reports `recommend_prototype: true`, follow the prototype continuation choice. Complete validation before approval; never restart refinement without authorization.
 
 Before `/compact`, update `mappings/{slug}/continuity.md` only for material context not already preserved in the briefing, source map, refinement report, or prototype. Follow `.aioson/docs/feature-continuity-mapping.md`; it is temporary and never a gate.
 

@@ -111,6 +111,43 @@ test('Refiner is a bounded filesystem state machine with on-demand rare routes',
   assert.match(kernel, /explicit confirmation before `--confirm`/i);
 });
 
+test('Refiner delivers its initial draft before optional visual work and preserves approval gates', async () => {
+  const kernel = await read(TEMPLATE, 'agents/refiner.md');
+  const prototype = await read(TEMPLATE, 'docs/briefing/prototype-and-delegation.md');
+  const initial = prototype.indexOf('## Build initial prototype');
+  const choice = prototype.indexOf('## Prototype continuation choice');
+  const validation = prototype.indexOf('## Authorized refinement and approval validation');
+  assert.ok(initial >= 0 && initial < choice && choice < validation, 'initial creation and user choice must precede expensive validation');
+  const draft = prototype.slice(initial, choice);
+  const checkpoint = prototype.slice(choice, validation);
+  const fullValidation = prototype.slice(validation);
+
+  assert.match(kernel, /Build an initial draft, then offer stopping or a bounded premium quality pass/i);
+  assert.match(kernel, /Draft delivery never grants approval/i);
+  assert.match(draft, /pause before Prototype Forge's `After the functional build`/);
+  assert.doesNotMatch(draft, /aioson (?:verify:artifact|browser:run)|--screenshots/);
+  assert.match(checkpoint, /Finish with the current prototype/);
+  assert.match(checkpoint, /Continue refining \(more time and tokens\)/);
+  assert.match(checkpoint, /stop and wait for the answer before polishing/i);
+  assert.match(checkpoint, /No answer authorizes no additional work/);
+  assert.match(checkpoint, /status: draft/);
+  assert.match(checkpoint, /Do not propose `briefing:approve` or Product as ready/);
+  assert.match(checkpoint, /`agent:done` static check.*does not restart work/);
+  assert.match(checkpoint, /one bounded cycle: inspect → repair → final verification/);
+  assert.match(checkpoint, /do not reset that budget/);
+  assert.match(checkpoint, /prior explicit request.*counts; do not ask again/);
+  assert.match(checkpoint, /Autopilot.*does not itself authorize the refinement loop/);
+  assert.match(checkpoint, /On resume, read it before work: pending\/finish is a stop/);
+  assert.match(checkpoint, /Update the record before final measurement/);
+  assert.match(checkpoint, /Stopping never waives an approval gate/);
+
+  // Approval still requires the same evidence and owns no implicit waiver.
+  assert.match(fullValidation, /--kind=visual --slug=\{slug\} --advisory --runtime --screenshots/);
+  assert.match(fullValidation, /aioson browser:run/);
+  assert.match(fullValidation, /refuses missing, stale, failed, or unverified evidence/);
+  assert.match(fullValidation, /do not restart it to make a gate green/);
+});
+
 test('Briefing modules are managed and template/workspace copies remain byte-identical', async () => {
   for (const relativePath of DOCS) {
     const managedPath = `.aioson/${relativePath}`;

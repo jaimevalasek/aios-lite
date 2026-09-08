@@ -270,7 +270,7 @@ function renderResidual() {
 
 // --- Main HTML builder ---
 
-function generateHtml({ projectName, url, mode, date, findings, acCoverage, perf, summary, routes, thresholds }) {
+function generateHtml({ projectName, url, mode, date, findings, acCoverage, perf, summary, routes, thresholds, execution }) {
   const sorted = [...findings].sort((a, b) => {
     const o = { critical: 0, high: 1, medium: 2, low: 3 };
     return (o[a.severity] ?? 4) - (o[b.severity] ?? 4);
@@ -284,7 +284,8 @@ function generateHtml({ projectName, url, mode, date, findings, acCoverage, perf
     summary.high > 0 ? `<span class="badge high">&#x25B2; ${summary.high} High</span>` : '',
     summary.medium > 0 ? `<span class="badge medium">&#x25CF; ${summary.medium} Medium</span>` : '',
     summary.low > 0 ? `<span class="badge low">&#x25CB; ${summary.low} Low</span>` : '',
-    total === 0 ? `<span class="badge ok">&#x2713; No findings</span>` : ''
+    execution?.execution_complete === false ? '<span class="badge high">INCOMPLETE execution</span>' : '',
+    total === 0 ? `<span class="badge ${execution?.execution_complete === false ? 'medium' : 'ok'}">No findings recorded</span>` : ''
   ].filter(Boolean).join('\n    ');
 
   const findingCards = sorted.map((f, i) => renderFinding(f, i)).join('');
@@ -326,10 +327,12 @@ ${renderAcCoverage(acCoverage)}
 
 ${mode === 'scan' ? renderRoutes(routes) : ''}
 
+${execution ? `<div class="card"><h2>Execution: ${execution.execution_complete ? 'COMPLETE' : 'INCOMPLETE'}</h2><p>Execution is not proof of complete security coverage. executed = ran without findings; failed = ran with findings; unavailable = not completed; not_applicable = absent surface.</p><ul>${execution.probe_results.map((row) => `<li>${esc(row.probe)}: ${esc(row.status)} — ${esc(row.target)}${row.reason ? ` (${esc(row.reason)})` : ''}</li>`).join('')}</ul></div>` : ''}
+
 <div class="card">
   <h2>Findings</h2>
   ${filterSection}
-  ${total > 0 ? findingCards : '<div class="empty">&#9989; No findings — great work!</div>'}
+  ${total > 0 ? findingCards : '<div class="empty">No findings recorded. Consult execution status and residual risks.</div>'}
   <div id="no-findings" style="display:none" class="empty">No findings match this filter.</div>
 </div>
 
@@ -372,7 +375,8 @@ async function updateReportsIndex(reportsDir) {
       s.high > 0 ? `<span class="badge high">${s.high} H</span>` : '',
       s.medium > 0 ? `<span class="badge medium">${s.medium} M</span>` : '',
       s.low > 0 ? `<span class="badge low">${s.low} L</span>` : '',
-      (!s.critical && !s.high && !s.medium && !s.low) ? `<span class="badge ok">&#x2713; Clean</span>` : ''
+      e.execution_complete === false ? '<span class="badge high">INCOMPLETE</span>' : '',
+      (!s.critical && !s.high && !s.medium && !s.low && e.execution_complete !== false) ? `<span class="badge ok">No findings recorded</span>` : ''
     ].filter(Boolean).join(' ');
 
     const dateStr = e.date ? new Date(e.date).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }) : e.folder;
@@ -453,7 +457,8 @@ async function writeHtmlReport(targetDir, projectName, url, findings, acCoverage
     perf,
     summary,
     routes: extraData.routes || null,
-    thresholds: extraData.thresholds || {}
+    thresholds: extraData.thresholds || {},
+    execution: extraData.execution
   });
 
   const htmlPath = path.join(runDir, 'index.html');
@@ -461,6 +466,7 @@ async function writeHtmlReport(targetDir, projectName, url, findings, acCoverage
 
   // Write meta.json for the index
   const meta = { runId, date: new Date().toISOString(), mode, url, project: projectName, summary };
+  if (extraData.execution) meta.execution_complete = extraData.execution.execution_complete;
   await fs.writeFile(path.join(runDir, 'meta.json'), `${JSON.stringify(meta, null, 2)}\n`, 'utf8');
 
   // Update reports/index.html

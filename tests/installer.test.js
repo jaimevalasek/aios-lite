@@ -204,6 +204,11 @@ test('installTemplate writes Forge metadata and gitignore entry', async () => {
   assert.equal(gitignore.includes('.aioson/cloud-imports/'), true);
   assert.equal(gitignore.includes('.aioson/mcp/servers.local.json'), true);
   assert.equal(gitignore.includes('mappings/'), true);
+  // Regenerable browser evidence stays out of the repository; the reports beside it stay tracked.
+  assert.equal(gitignore.includes('.aioson/context/**/visual-screenshots/'), true);
+  assert.equal(gitignore.includes('.aioson/context/**/browser/*/'), true);
+  assert.equal(gitignore.includes('.aioson/briefings/**/browser/*/'), true);
+  assert.equal(gitignore.includes('aios-qa-screenshots/'), true);
 });
 
 test('project constitution amendments require explicit approval and survive update', async () => {

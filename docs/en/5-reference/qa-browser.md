@@ -127,7 +127,7 @@ Summary: 5 passed, 0 failed, 1 warnings.
 Runs a full browser QA session: 4 personas, security probes, accessibility audit, performance capture, and AC coverage.
 
 ```bash
-aioson qa:run [path] [--url=<app-url>] [--persona=naive|hacker|power|mobile] [--headed] [--html] [--json]
+aioson qa:run [path] [--url=<app-url>] [--feature=<slug>] [--persona=naive|hacker|power|mobile] [--headed] [--html] [--json]
 ```
 
 **Flags:**
@@ -135,6 +135,7 @@ aioson qa:run [path] [--url=<app-url>] [--persona=naive|hacker|power|mobile] [--
 | Flag | Description |
 |------|-------------|
 | `--url=<url>` | Override URL from config |
+| `--feature=<slug>` | Bind acceptance-criteria coverage to that feature's PRD and its `browser:run` walkthroughs (also `feature` in `aios-qa.config.json`); without it the PRD is read as inventory only |
 | `--persona=<name>` | Run only one persona |
 | `--headed` | Show browser window (useful for debugging) |
 | `--html` | Also generate an HTML report in `reports/<run-id>/index.html` |

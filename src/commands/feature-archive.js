@@ -19,6 +19,7 @@ const path = require('node:path');
 const { contextDir, readFileSafe } = require('../preflight-engine');
 const { moveFileResilient, moveDirResilient } = require('../lib/fs-move');
 const { resolveTargetDir } = require('../lib/project-root');
+const { listDiagnosticDirs, dirStats, clearDir, formatBytes } = require('../lib/evidence-artifacts');
 
 const ARCHIVED_EXTENSIONS = ['md', 'yaml', 'yml', 'json'];
 
@@ -340,6 +341,10 @@ async function runFeatureArchive({ args = [], options = {}, logger }) {
   const dryRun = Boolean(options['dry-run'] || options.dryRun);
   const restore = Boolean(options.restore);
   const force = Boolean(options.force);
+  // Regenerable browser evidence (runtime captures, walkthrough snapshots) is
+  // dropped instead of archived: the reports beside it travel, the binaries
+  // that no report reads back do not. `--keep-diagnostics` carries them along.
+  const keepDiagnostics = Boolean(options['keep-diagnostics'] || options.keepDiagnostics);
   const jsonOut = Boolean(options.json);
 
   const log = (msg) => { if (logger && !jsonOut) logger.log(msg); };
@@ -419,6 +424,21 @@ async function runFeatureArchive({ args = [], options = {}, logger }) {
     }
   }
 
+  const diagnosticPlans = keepDiagnostics
+    ? []
+    : dirPlans
+      .filter((d) => d.action === 'move' && (d.label === 'dossier' || d.label === 'briefings'))
+      .flatMap((d) => listDiagnosticDirs(d.sourceDir).map((entry) => ({
+        owner: d.label,
+        dir: entry.dir,
+        kind: entry.kind,
+        path: path.relative(targetDir, entry.dir).split(path.sep).join('/'),
+        ...dirStats(entry.dir)
+      })))
+      .filter((entry) => entry.files > 0);
+  const diagnosticBytes = diagnosticPlans.reduce((sum, entry) => sum + entry.bytes, 0);
+  const diagnosticFiles = diagnosticPlans.reduce((sum, entry) => sum + entry.files, 0);
+
   const hasAnyDir = dirPlans.some((d) => d.action === 'move' || d.action === 'skip' || d.action === 'noop');
 
   if (
@@ -469,6 +489,7 @@ async function runFeatureArchive({ args = [], options = {}, logger }) {
       skip: toSkip,
       dirs,
       dossier: dirs.find((d) => d.label === 'dossier') || null,
+      diagnostics: diagnosticPlans.map(({ dir, ...rest }) => rest),
       manifestEntry: {
         slug,
         completed,
@@ -479,6 +500,10 @@ async function runFeatureArchive({ args = [], options = {}, logger }) {
     if (jsonOut) return result;
     log(`[dry-run] feature:archive — ${slug}:`);
     log(`  target: ${path.relative(targetDir, archiveDir)}/`);
+    if (diagnosticPlans.length > 0) {
+      log(`  would drop ${diagnosticFiles} regenerable diagnostic file(s), ${formatBytes(diagnosticBytes)} (pass --keep-diagnostics to archive them):`);
+      for (const entry of diagnosticPlans) log(`    • ${entry.path}/ (${entry.files} file(s), ${formatBytes(entry.bytes)})`);
+    }
     log(`  would move: ${toMove.length} file(s)`);
     for (const f of toMove) log(`    • ${f}`);
     if (toSkip.length) {
@@ -521,6 +546,18 @@ async function runFeatureArchive({ args = [], options = {}, logger }) {
         code: (err && err.code) || null,
         message: (err && err.message) || String(err)
       });
+    }
+  }
+
+  // Diagnostics go before the directory moves: what is dropped never
+  // travels, and a folder the OS refuses to delete is reported, not hidden.
+  const diagnosticsDropped = [];
+  for (const entry of diagnosticPlans) {
+    try {
+      const removed = clearDir(entry.dir);
+      diagnosticsDropped.push({ owner: entry.owner, kind: entry.kind, path: entry.path, files: removed.files, bytes: removed.bytes });
+    } catch (err) {
+      errors.push({ item: entry.path, kind: 'dir', code: (err && err.code) || null, message: `could not drop regenerable diagnostics: ${(err && err.message) || String(err)}` });
     }
   }
 
@@ -626,12 +663,19 @@ async function runFeatureArchive({ args = [], options = {}, logger }) {
     errors: errors.length > 0 ? errors : undefined,
     dirs: dirResults.length > 0 ? dirResults : undefined,
     dossier: dirResults.find((d) => d.label === 'dossier') || null,
+    diagnostics_dropped: diagnosticsDropped.length > 0 ? diagnosticsDropped : undefined,
     manifestEntry: entry
   };
 
   if (jsonOut) return result;
   log(`feature:archive — ${slug}:`);
   log(`  archive dir: ${path.relative(targetDir, archiveDir)}/`);
+  if (diagnosticsDropped.length > 0) {
+    const droppedFiles = diagnosticsDropped.reduce((sum, d) => sum + d.files, 0);
+    const droppedBytes = diagnosticsDropped.reduce((sum, d) => sum + d.bytes, 0);
+    log(`  dropped ${droppedFiles} regenerable diagnostic file(s), ${formatBytes(droppedBytes)} (captures and walkthrough snapshots; the reports were archived)`);
+    for (const d of diagnosticsDropped) log(`    • ${d.path}/`);
+  }
   log(`  moved: ${moved.length} file(s)`);
   for (const f of moved) log(`    • ${f}`);
   if (toSkip.length) {

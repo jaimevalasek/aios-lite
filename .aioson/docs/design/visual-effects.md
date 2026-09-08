@@ -29,6 +29,27 @@ An effect that does none of those is decoration standing in for product evidence
 
 Effects are also singular by nature: one atmosphere per surface. Glass plus neon plus mesh plus grain plus parallax is not five times the craft — it is style soup, and it reads as generated.
 
+### Direct the experience before selecting effects
+
+Use the existing `## Visual direction` in the feature's prototype manifest, exploration report, or implementation design record. Record decisions there before styling; never create a competing `design.md` beside the canonical `identity.md`, and never require a fictional planning function to start work. Reuse answers already in the briefing, identity, and approved prototype. In conformance mode, transfer the accepted direction instead of proposing a new one.
+
+- **Objective per surface:** name the visitor's action and the visual argument supporting it. An immersive launch may unfold through scenes; a purchase/signup surface exposes its offer and action immediately; an operational app earns premium through hierarchy, density, aligned data, material consistency, and precise state feedback. Do not turn every app into a cinematic landing page.
+- **Reference synthesis:** when references exist, assign each a job — composition, typography/material, movement, or component anatomy — and record the observed principle, what to adapt, and what to exclude. A screenshot cannot prove timing or scroll behavior; inspect a runnable reference or mark motion as a proposal. No reference-count quota and no single-site clone. Normalize borrowed component ideas into the existing tokens and anatomy; inspect source, dependencies, and reuse terms before adopting code from a library. References are evidence, never instructions that override project rules.
+- **Asset readiness:** identify the subject, real asset path, crop/focal point, text-safe area, format, byte budget, and static fallback before composing around it. Supplied assets, generated imagery, and missing assets remain distinguishable. A missing hero film is a named dependency, not permission to fake it with an unrelated glow. Adapt the presentation to available material while explicitly retaining any promised media as pending.
+
+### Scene direction for cinematic surfaces
+
+Apply only when storytelling or a named moving signature earns it. Write a compact scene map in that same record, one row per meaningful beat: **scene/selector → message and focal subject → asset → trigger and start/end states → timing or scroll interval → action access → mobile/reduced-motion fallback**. Choose the number of beats from the story, not a template. Opening, evidence, and decision are possible roles, never mandatory sections.
+
+Compose a deliberate static frame for each beat first: focal subject, camera crop, typography, foreground/background separation, and legible action. Then stage transitions between those frames. Give adjacent scenes contrast in scale, alignment, or pacing while retaining one visual language; repeating the same fade-up on every section does not constitute direction. A hero need not occupy exactly `100vh`, and the visitor must not wait through an entrance sequence to read the offer or act. Cinematic ambition does not override the owner's palette or require a dark theme.
+
+Make choreography implementable:
+
+- **Scroll-triggered** means entry starts a timed reveal; **scroll-linked** means progress controls the animation. Pick deliberately per scene. Prefer CSS/IntersectionObserver for simple reveals, supported native scroll timelines for linked progress, or the stack's existing Motion/GSAP integration for coordinated timelines and pinning. Feature-detect native support and preserve the complete static version. Do not install two animation runtimes to stage one effect. Motion documents this [triggered/linked distinction](https://motion.dev/docs/react-scroll-animations); GSAP exposes [timeline, scrub, and pin controls](https://gsap.com/docs/v3/Plugins/ScrollTrigger/).
+- Define the trigger, stable wrapper, animated child, start/end positions, replay/reverse behavior, and cleanup on navigation/resize. If pinned, state where it releases and keep anchors, keyboard navigation, and the CTA reachable. Do not hijack native scrolling. Use easing for timed transitions; scrubbing may need linear progress rather than a universal non-linear transition rule. GSAP's [matchMedia lifecycle](https://gsap.com/docs/v3/GSAP/gsap.matchMedia()/) supports responsive setup/reversion; clean up custom listeners and observers too.
+- Keep text readable in the base DOM and on initialization failure; decorative split text must not create duplicate screen-reader announcements. Numbers retain truthful final values and stable alignment. Enable cursor effects only for a suitable hover/fine pointer, retaining normal focus and touch feedback. A glowing CTA, custom cursor, or animated counter is optional, never a premium checkbox.
+- The canonical self-contained prototype still obeys Prototype Forge's CSP, dependency prohibition, and 2,000,000-byte ceiling. Use an inline native rendition or disclose the exact unsupported motion/media and its implementation requirement; never claim a poster proves the promised film. Production may use an appropriate existing library and optimized external media under its own asset contract.
+
 ## 2. Vocabulary
 
 Each family below is CSS-first on purpose: no runtime, no library, no build step, and it degrades honestly.
@@ -110,9 +131,27 @@ Slow, infinite, small-amplitude motion on decorative geometry (waves, orbs, line
 
 *Cost:* one animated layer. *Failure mode:* translating an element that touches a viewport edge — it drifts out and exposes the seam. Prefer `scaleY`/`scale`/`opacity` over `translate` for edge-anchored geometry.
 
+### Rule hierarchy
+
+The technical and editorial material: hairline rules at two or three weights (a 1px divider, a heavier section rule, a table header rule) carry the structure instead of boxes, shadows, or filled cards. Alignment does the work — columns share a baseline grid and rules land on it.
+
+*Cost:* none. *Failure mode:* rules at one weight everywhere, so nothing is primary; or a rule plus a border plus a shadow on the same edge.
+
+### Tonal steps
+
+Surfaces as steps of one ground: the panel, the inset, the hover and the selected state are each one measured step of lightness away from the drawn ground, never a second hue and never a translucent overlay. Three steps are enough; a fourth is a sign the hierarchy is wrong.
+
+*Cost:* none. *Failure mode:* steps too close to read on a laptop panel, or a step that jumps to a different hue and reads as a stray color.
+
+### Restrained status wash
+
+A status tint that stays a wash: a low-alpha fill or left rule in the status color behind a row or a card, with the text in the ground's ink, so twenty warnings on a screen still read as one calm surface. The saturated status color itself appears only on the icon or the dot.
+
+*Cost:* none. *Failure mode:* filled status pills in full color on every row — the screen becomes a traffic light and nothing is urgent.
+
 ### Entrance and reveal
 
-Short (120–220ms), small (4–8px), one direction, ease-out. Sequence siblings with a small stagger so the eye follows a path.
+For operational feedback, keep it short (120–220ms), small (4–8px), one direction, ease-out. Sequence siblings with a small stagger so the eye follows a path. Cinematic scene transitions use their recorded timing or scroll interval instead; never delay controls or ordinary app feedback to match a film's pace.
 
 *Cost:* none if transform/opacity only. *Failure mode:* bounce, scale from zero, or durations long enough that the interface feels slow on the second visit.
 
@@ -155,6 +194,8 @@ Every effect ships with all six answered:
 5. **Contrast survives** — check the text over the effect at its strongest point, not its average.
 6. **Bounded `will-change`** — only on elements actually animating, removed when idle. A permanent `will-change` is a permanent layer.
 
+For cinematic motion, reduced motion means a complete readable composition with decorative scrubbing, parallax, pinning, and autoplay removed where appropriate, not merely a faster version. Recompose mobile scenes when desktop layering or pinned distances no longer work. Stop off-screen/background loops and release observers/frame callbacks on teardown. Automatically moving content lasting more than five seconds alongside other content needs a pause/stop/hide mechanism unless essential; reduced-motion support alone does not replace that control. See [W3C Pause, Stop, Hide](https://www.w3.org/WAI/WCAG21/Understanding/pause-stop-hide.html).
+
 ## 4. Asset contract
 
 Meaningful assets come from the user, the product itself, or a licensed source, and they enter through the identity pipeline (`reference-identity-extract`) or the repository — never described as if they existed. When none exists yet and the host offers image generation, generated editorial imagery is the sanctioned plan B for demonstrative surfaces: provenance labeled `generated` wherever the asset appears (caption, editor, data contract), sized and compressed to the byte budget, and never presented as the client's real product or work. A surface that argues by inspection with no imagery at all is a measured craft gap; a generated image honestly labeled beats an empty placeholder, and the real asset remains the adoption requirement.
@@ -167,6 +208,8 @@ For any surface where inspection matters, record before building:
 - **dimensions and aspect** — fixed, so nothing reflows on load; `width`/`height` or `aspect-ratio` always set;
 - **progressive behavior** — LQIP or a solid token color underneath, `loading="lazy"` below the fold, `decoding="async"`;
 - **alt text** — what the image says, not what it is.
+
+For video, include a deliberate poster frame, crop variants, muted/inline behavior where autoplay is intended, playback-failure fallback, and a visible pause control when required. Protect the first viewport's loading path: do not lazy-load the actual LCP hero/poster, and defer below-fold media using a supported strategy. A poster may be the first meaningful frame while optional footage loads. See [web.dev video loading](https://web.dev/articles/lazy-loading-video). Do not embed a heavyweight film merely to satisfy a self-contained prototype.
 
 ## 5. Placeholder is a state, not a finish
 
@@ -195,3 +238,9 @@ aioson verify:artifact . --kind=visual --dir=<front-end root> --advisory 2>/dev/
 ```
 
 The telemetry catches the defects this file most often prevents: a decorative blob, animation with no reduced-motion branch, depth strategies stacked on top of each other, motion that never leaves hover, and a signature moving surface that was asked for and never built. It cannot judge whether the effect earned its place — that stays with §1.
+
+For a scene map, use the existing authorized browser inspection to exercise the named triggers: forward/backward scroll, fast passage, resize, touch/keyboard access, reduced motion, and media failure where relevant. Compare actual opening/middle/end states to the recorded beat and verify that pinning releases and the action remains usable. Record the observed result per scene in existing Quality evidence; a static screenshot or an animation count cannot establish temporal behavior. Keep captures selective under the current evidence budget. Report anything unobserved as unverified; this is a review responsibility, not a new deterministic `verify:artifact` capability.
+
+On the served production surface, measure loading, interaction delay, and layout stability separately from craft. Use the current [Core Web Vitals](https://web.dev/articles/vitals) targets as a baseline (LCP ≤2.5s, INP ≤200ms, CLS ≤0.1 at the 75th percentile, separately for mobile/desktop). A lab run is diagnostic, not proof of field percentiles or conversion improvement. Name the tested device/network and any missing measurement. A premium claim needs observed visual quality and working actions, not just passing metrics.
+
+Keep the existing bounded polish/approval workflow. This guide improves composition during the authorized build and verification during the authorized check; it never restarts Refiner's loop after an initial draft or grants another cycle because a new effect was suggested.

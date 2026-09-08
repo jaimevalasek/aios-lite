@@ -360,3 +360,84 @@ test('step records that quote live page text are part of the perimeter: expect t
   const md = buildMarkdown(report);
   assert.match(md, /step \[/, 'the step source appears in the injection section');
 });
+
+test('a rerun of the same script clears the artifacts the previous run left and says so', async () => {
+  const root = await tmp();
+  const script = normalizeScript({
+    name: 'checkout',
+    steps: [
+      { do: 'goto', url: '/', ac: 'AC-01' },
+      { do: 'click', target: 'role=button[name="Save"]', boundary: 'POST /api/orders', ac: 'AC-02' }
+    ],
+    boundary_wait: 10,
+    timeout: 50
+  }).script;
+  const artifactDir = path.join(root, '.aioson/context/features/orders/browser/checkout');
+
+  // Round 1: the boundary never fires — a failure snapshot pair lands on disk.
+  const failing = fakePage({ elements: { 'role=button[name=Save]': { visible: true } } });
+  const first = await runWalkthrough({ targetDir: root, script, url: 'http://127.0.0.1:3000', slug: 'orders', open: fakeOpener(failing), clock: fastClock });
+  assert.equal(first.ok, false);
+  assert.deepEqual(first.superseded_artifacts, { files: 0, bytes: 0 }, 'a first run supersedes nothing');
+  const afterFirst = await fs.readdir(artifactDir);
+  assert.ok(afterFirst.includes('checkout-step-01-failed.png'));
+  assert.ok(afterFirst.includes('checkout-step-01-failed.aria.txt'));
+
+  // A diagnostic run (--no-persist) owns no folder and touches nothing.
+  const diagnostic = await runWalkthrough({ targetDir: root, script, url: 'http://127.0.0.1:3000', slug: 'orders', open: fakeOpener(failing), clock: fastClock, persist: false });
+  assert.deepEqual(diagnostic.superseded_artifacts, { files: 0, bytes: 0 });
+  assert.equal((await fs.readdir(artifactDir)).length, 2, 'an unpersisted run leaves the folder alone');
+
+  // Round 2: the product is fixed — the stale failure pair must not survive the green run.
+  const passing = fakePage({
+    elements: {
+      'role=button[name=Save]': { visible: true, onClick: (p) => { hit(p, 'POST', 'http://127.0.0.1:3000/api/orders', 201); } }
+    }
+  });
+  const second = await runWalkthrough({ targetDir: root, script, url: 'http://127.0.0.1:3000', slug: 'orders', open: fakeOpener(passing), clock: fastClock });
+  assert.equal(second.ok, true, JSON.stringify(second.steps.filter((s) => !s.ok)));
+  assert.equal(second.superseded_artifacts.files, 2, 'both stale files are counted');
+  assert.ok(second.superseded_artifacts.bytes > 0);
+  let remaining = [];
+  try { remaining = await fs.readdir(artifactDir); } catch { remaining = []; }
+  assert.deepEqual(remaining.filter((name) => name.includes('-failed')), [], 'the folder mirrors the latest report only');
+  const persisted = JSON.parse(await fs.readFile(path.join(root, second.report_path), 'utf8'));
+  assert.equal(persisted.superseded_artifacts.files, 2, 'the count travels in the persisted report');
+  const md = await fs.readFile(path.join(root, second.markdown_path), 'utf8');
+  assert.match(md, /Artifacts: the folder holds this run only \(2 file\(s\)/);
+});
+
+// The artifact folder is named after the script, and the run clears it. A
+// name of `..` or `.` used to resolve to the report dir's parent — with no
+// slug that is `.aioson/context/` — and a caller's `--out` was cleared like
+// an owned folder. The name loses its leading dots and only a folder strictly
+// inside the framework's own report dir is ever cleared.
+test('the clear never leaves the owned artifact folder: dotted names fall back and --out is never cleared', async () => {
+  const root = await tmp();
+  assert.equal(normalizeScript({ name: '..', steps: [{ do: 'goto', url: '/' }] }).script.name, 'walkthrough');
+  assert.equal(normalizeScript({ name: '.', steps: [{ do: 'goto', url: '/' }] }).script.name, 'walkthrough');
+  assert.equal(normalizeScript({ name: '.hidden', steps: [{ do: 'goto', url: '/' }] }).script.name, 'hidden');
+  assert.equal(normalizeScript({ name: 'a.b', steps: [{ do: 'goto', url: '/' }] }).script.name, 'a.b');
+
+  const sibling = path.join(root, '.aioson/context/features/orders/visual-evidence.json');
+  await fs.mkdir(path.dirname(sibling), { recursive: true });
+  await fs.writeFile(sibling, '{"kept":true}');
+  const contextFile = path.join(root, '.aioson/context/project-pulse.md');
+  await fs.writeFile(contextFile, '# pulse');
+
+  const page = fakePage({ elements: {} });
+  const dotted = normalizeScript({ name: '..', steps: [{ do: 'goto', url: '/', ac: 'AC-01' }], timeout: 50 }).script;
+  await runWalkthrough({ targetDir: root, script: dotted, url: 'http://127.0.0.1:3000', slug: 'orders', open: fakeOpener(page), clock: fastClock });
+  assert.equal(await fs.readFile(sibling, 'utf8'), '{"kept":true}', 'the feature evidence beside the report dir survives');
+  await runWalkthrough({ targetDir: root, script: dotted, url: 'http://127.0.0.1:3000', open: fakeOpener(page), clock: fastClock });
+  assert.equal(await fs.readFile(contextFile, 'utf8'), '# pulse', '.aioson/context/ survives a slug-less run');
+
+  // A caller-named output folder is theirs: nothing inside it is cleared.
+  const out = path.join(root, 'my-reports');
+  const mine = path.join(out, 'walkthrough', 'keep.png');
+  await fs.mkdir(path.dirname(mine), { recursive: true });
+  await fs.writeFile(mine, 'mine');
+  const result = await runWalkthrough({ targetDir: root, script: dotted, url: 'http://127.0.0.1:3000', out: 'my-reports', open: fakeOpener(page), clock: fastClock });
+  assert.deepEqual(result.superseded_artifacts, { files: 0, bytes: 0 }, 'an --out folder is never cleared');
+  assert.equal(await fs.readFile(mine, 'utf8'), 'mine');
+});

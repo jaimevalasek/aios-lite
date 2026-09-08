@@ -216,7 +216,7 @@ test('a craft score it cannot compute never becomes a pass: the readable axes ar
 
   const conformance = readVisualImplementation(dir, SLUG).metrics.conformance;
   assert.equal(conformance.state, 'partial', JSON.stringify(conformance));
-  assert.deepEqual(conformance.not_compared, ['craft', 'materials']);
+  assert.deepEqual(conformance.not_compared, ['craft', 'materials', 'weight']);
   assert.deepEqual(conformance.compared, ['tells', 'typeface', 'display type', 'modern CSS']);
   assert.ok(
     conformance.regressed.some((row) => /^display type \d+px → \d+px$/.test(row)),
@@ -239,6 +239,43 @@ test('a utility-class build names the axes nothing could read, and invents no re
   assert.match(conformance.reason, /utility-class styling/);
   assert.match(done.reason, /NOT compared to a prototype floor/);
   assert.doesNotMatch(done.reason, /holds the prototype floor/);
+});
+
+test('implementation conformance carries the graded prototype floor and names an unavailable or incompatible axis', async (t) => {
+  const dir = await featureRepo();
+  t.after(() => fs.rm(dir, { recursive: true, force: true }));
+  await write(dir, 'src/ui/index.html', prototypeHtml());
+  const evidencePath = `.aioson/context/features/${SLUG}/visual-evidence.json`;
+  const measure = (options) => runVerifyArtifact({
+    args: [dir],
+    options: { kind: 'visual', advisory: true, json: true, suppressExitCode: true, ...options },
+    logger: { log() {}, error() {} }
+  });
+  for (const [mode, axis] of [['brand', 'weight'], ['operate', 'precision'], ['read', 'precision']]) {
+    const baseline = await measure({ slug: SLUG, 'surface-mode': mode });
+    assert.equal(baseline.metrics.craft[axis].scored, true);
+    assert.ok(baseline.metrics.craft[axis].score < 100);
+    // Isolate the new graded axis: every older floor measurement is identical.
+    baseline.metrics.craft[axis].score = 100;
+    await write(dir, evidencePath, JSON.stringify(baseline));
+    const measured = await measure({ dir: 'src/ui', conformance: SLUG, 'surface-mode': mode });
+    const comparison = measured.metrics.conformance;
+    assert.ok(comparison.compared.includes(axis), JSON.stringify(comparison));
+    assert.deepEqual(comparison.regressed, [`${axis} 100/100 → ${measured.metrics.craft[axis].score}/100`]);
+    assert.ok(measured.warnings.some((warning) => warning.includes(`visual conformance: the implementation regressed`) && warning.includes(axis)));
+    assert.ok(readVisualImplementation(dir, SLUG).metrics.conformance.regressed[0].startsWith(axis));
+
+    const switched = await measure({ dir: 'src/ui', conformance: SLUG, 'surface-mode': mode === 'brand' ? 'operate' : 'brand' });
+    assert.equal(switched.metrics.conformance.state, 'partial');
+    assert.ok(switched.metrics.conformance.not_compared.includes(axis));
+    assert.ok(!switched.metrics.conformance.regressed.some((row) => row.startsWith(axis)));
+    assert.match(switched.metrics.conformance.reason, /unavailable|surface mode/);
+
+    baseline.metrics.craft[axis] = { scored: false };
+    await write(dir, evidencePath, JSON.stringify(baseline));
+    const legacy = await measure({ dir: 'src/ui', conformance: SLUG, 'surface-mode': mode });
+    assert.ok(!legacy.metrics.conformance.compared.includes(axis), 'an unscored prototype must not invent a numeric floor');
+  }
 });
 
 test('site-forge carries the visual rider over its deliverable, and the engine installs under every profile', () => {

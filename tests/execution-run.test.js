@@ -456,6 +456,29 @@ test('a host that cannot run leaves a decision_required (state + telemetry), the
 
 // ───────────────────────── lane QA: measured corrections, findings, scope ─────────────────────────
 
+test('a QA PASS cannot override a measured correction cap violation', async (t) => {
+  const ctx = await setup(t);
+  const manifestFile = path.join(ctx.dir, '.aioson', 'context', `agent-execution-${SLUG}.json`);
+  const manifest = JSON.parse(await fs.readFile(manifestFile, 'utf8'));
+  manifest.development_lanes.lanes.frontend.qa.max_fix_files = 0;
+  await fs.writeFile(manifestFile, JSON.stringify(manifest));
+  assert.equal((await runCommand({ args: [ctx.dir], options: { sub: 'compile', feature: SLUG, json: true }, logger, env: ctx.env })).ok, true);
+  const fakes = adapters({
+    'dev:phase-2': { touch: ['src/ui/Orders.tsx'] },
+    'qa:phase-2': { touch: ['src/ui/Orders.tsx'], verdict: 'PASS', corrections: [{ path: 'src/ui/Orders.tsx', summary: 'changed the screen' }] }
+  });
+  const events = [];
+  const result = await run(ctx, { registry: fakes.registry, events });
+  const qa = (await readState(ctx)).units['phase-2'].qa;
+  assert.equal(qa.corrections_cap_exceeded, true);
+  assert.equal(qa.verdict, 'PASS', 'retain the original reviewer report for audit');
+  assert.equal(qa.status, 'failed', 'the measured contract controls the effective QA status');
+  assert.equal(result.summary.units.qa_failed, 1);
+  assert.ok(events.some((event) => event.type === 'unit' && event.role === 'qa' && event.unit === 'phase-2' && event.status === 'failed'));
+  assert.equal((await status(ctx)).units.find((unit) => unit.id === 'phase-2').qa.status, 'failed');
+  assert.equal(result.status, 'completed', 'integration still owns findings after the pipelines finish');
+});
+
 test('lane QA corrections are measured against the unit files and capped; scope drift and unowned changes become run findings; a failed review never blocks the run', async (t) => {
   const ctx = await setup(t);
   const manifestFile = path.join(ctx.dir, '.aioson', 'context', `agent-execution-${SLUG}.json`);
@@ -861,6 +884,34 @@ test('a declared fallback is signature-checked and named — an unproven backup 
   assert.ok(verified.warnings.some((w) => /fallback_signature_missing:.*backend\.dev\.fallbacks\[0\] qwen\/qwen-3\.8-max/.test(w)), verified.warnings.join('\n'));
   const fallbackCheck = verified.checks.find((c) => c.id === 'execution-plan:fallback-signatures');
   assert.equal(fallbackCheck.ok, false);
+});
+
+test('independent QA checks the resolved host and model of automatic capacity fallbacks before dispatch', async (t) => {
+  for (const independent of [true, false]) {
+    const roles = JSON.parse(JSON.stringify(ROLES));
+    roles.execution = { require_independent_qa: independent };
+    const ctx = await setup(t, { roles });
+    const manifestFile = path.join(ctx.dir, '.aioson', 'context', `agent-execution-${SLUG}.json`);
+    const manifest = JSON.parse(await fs.readFile(manifestFile, 'utf8'));
+    manifest.capacity_policy = { strategy: 'fallback', max_attempts: 2, backoff_ms: 0, allow_cross_host: true };
+    manifest.development_lanes.lanes.backend.qa.fallbacks = [{ host: 'codex', model: 'gpt-5.6', on: ['capacity'] }];
+    await fs.writeFile(manifestFile, JSON.stringify(manifest));
+    assert.equal((await runCommand({ args: [ctx.dir], options: { sub: 'compile', feature: SLUG, json: true }, logger, env: ctx.env })).ok, true);
+    const fakes = adapters();
+    fakes.registry.claude = fakeAdapter('claude', { script: { 'qa:phase-1': { fail: 'capacity' } }, log: fakes.log });
+    const result = await run(ctx, { registry: fakes.registry });
+    const selfCalls = fakes.log.filter((entry) => entry.key === 'qa:phase-1' && entry.host === 'codex');
+    if (independent) {
+      assert.equal(selfCalls.length, 0, 'do not launch the implementer as its own reviewer through a fallback');
+      assert.equal(result.status, 'decision_required');
+      const state = await readState(ctx);
+      assert.equal(state.units['phase-1'].pending_decision.reason, 'self_review_blocked');
+      assert.equal(state.units['phase-1'].qa.history.at(-1).reason, 'self_review_blocked');
+    } else {
+      assert.equal(selfCalls.length, 1, 'independent review remains opt-in');
+      assert.equal(result.status, 'completed');
+    }
+  }
 });
 
 // ───────────────────────── what the first real run taught the engine ─────────────────────────
